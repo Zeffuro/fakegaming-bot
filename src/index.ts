@@ -1,12 +1,12 @@
 import './deploy-commands.js';
 
-// @ts-ignore
 import {Client, Collection, Events, MessageFlags} from 'discord.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 import {configManager} from './config/configManagerSingleton.js';
+import {subscribeAllStreams} from "./services/twitchService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -50,8 +50,14 @@ for (const folder of moduleFolders) {
     }
 }
 
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`Logged in as ${client.user?.tag}`);
+    await subscribeAllStreams(client); // Initial check
+
+    // Poll every 60 seconds
+    setInterval(() => {
+        subscribeAllStreams(client);
+    }, 60_000);
 });
 
 client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {

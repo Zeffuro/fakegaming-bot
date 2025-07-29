@@ -2,7 +2,7 @@ import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('searchquote')
+    .setName('search-quote')
     .setDescription('Search quotes by text')
     .addStringOption(option =>
         option.setName('text')

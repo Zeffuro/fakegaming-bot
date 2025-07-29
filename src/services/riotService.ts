@@ -1,8 +1,6 @@
 import {configManager} from '../config/configManagerSingleton.js';
-// @ts-ignore
 import {RiotApi, LolApi} from 'twisted';
-// @ts-ignore
-import {AccountAPIRegionGroups, RegionGroups, Regions, regionToRegionGroupForAccountAPI} from "twisted/dist/constants";
+import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
 
 const lolApi = new LolApi({key: process.env.RIOT_API_KEY});
 const riotApi = new RiotApi({key: process.env.RIOT_API_KEY});

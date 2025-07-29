@@ -10,6 +10,9 @@
   "license": "AGPL-3.0-only",
   "description": "",
   "dependencies": {
+    "@twurple/api": "^7.4.0",
+    "@twurple/auth": "^7.4.0",
+    "@twurple/eventsub-ws": "^7.4.0",
     "@types/node": "^24.1.0",
     "discord-api-types": "^0.38.17",
     "discord.js": "^14.21.0",

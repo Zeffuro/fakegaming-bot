@@ -3,7 +3,7 @@ import {configManager} from '../../../config/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 
 export const data = new SlashCommandBuilder()
-    .setName('addquote')
+    .setName('add-quote')
     .setDescription('Add a quote')
     .addStringOption(option =>
         option.setName('quote')

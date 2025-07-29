@@ -6,11 +6,11 @@ import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../../../utils/leagueUtils.js';
 
 const data = new SlashCommandBuilder()
-    .setName('link-summoner')
-    .setDescription('Link your Discord account or another user to a League summoner')
+    .setName('link-riot')
+    .setDescription('Link your Discord account or another user to a Riot account')
     .addStringOption(option =>
-        option.setName('summoner')
-            .setDescription('Summoner name or Riot ID (e.g. Zeffuro#EUW)')
+        option.setName('riot-id')
+            .setDescription('Riot ID (e.g. Zeffuro#EUW)')
             .setRequired(true)
     )
     .addStringOption(option =>
@@ -30,7 +30,7 @@ export const testOnly = false;
 export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
-    const summonerInput = interaction.options.getString('summoner') ?? undefined;
+    const summonerInput = interaction.options.getString('riot-id') ?? undefined;
     const regionInput = interaction.options.getString('region') ?? undefined;
     const region = getRegionCodeFromName(regionInput);
     const targetUser = interaction.options.getUser('user');
@@ -56,7 +56,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             userId
         });
     } catch (error) {
-        await interaction.editReply('Failed to resolve summoner identity. Please check the summoner name and region.');
+        await interaction.editReply('Failed to resolve Riot Account. Please check the Riot ID and region.');
         return;
     }
 
@@ -71,7 +71,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         };
         await configManager.userManager.addUser(user);
     }
-    await interaction.editReply(`Linked <@${userId}> to summoner: ${identity.summoner} [${identity.region}]`);
+    await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }
 
 export {data};

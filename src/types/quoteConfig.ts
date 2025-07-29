@@ -1,4 +1,4 @@
-export type Quote = {
+export type QuoteConfig = {
     id: string;
     guildId: string;
     quote: string;

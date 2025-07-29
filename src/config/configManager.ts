@@ -2,14 +2,17 @@ import {db} from './db.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
 import {ServerManager} from './serverManager.js';
+import {TwitchManager} from './twitchManager.js';
 
 export class ConfigManager {
     userManager = new UserManager();
     quoteManager = new QuoteManager();
     serverManager = new ServerManager();
+    twitchManager = new TwitchManager();
 
     async init() {
         await db.read();
-        db.data ||= {users: [], servers: [], quotes: []};
+        const defaults = {users: [], servers: [], quotes: [], twitchStreams: []};
+        db.data = {...defaults, ...db.data};
     }
 }

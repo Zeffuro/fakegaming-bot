@@ -1,0 +1,52 @@
+import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
+import {configManager} from '../../../config/configManagerSingleton.js';
+import {verifyTwitchUser} from '../../../services/twitchService.js';
+
+export const data = new SlashCommandBuilder()
+    .setName('add-twitch-stream')
+    .setDescription('Add a Twitch stream for notifications')
+    .addStringOption(option =>
+        option.setName('username')
+            .setDescription('Twitch username')
+            .setRequired(true)
+    )
+    .addChannelOption(option =>
+        option.setName('channel')
+            .setDescription('Discord channel for notifications')
+            .setRequired(true)
+    )
+    .addStringOption(option =>
+        option.setName('message')
+            .setDescription('Custom notification message (optional)')
+            .setRequired(false)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+
+export const testOnly = false;
+
+export async function execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+        await interaction.reply({content: 'Only admins can use this command.', flags: MessageFlags.Ephemeral});
+        return;
+    }
+
+    const twitchUsername = interaction.options.getString('username', true);
+    const discordChannel = interaction.options.getChannel('channel', true);
+    const customMessage = interaction.options.getString('message', false) ?? undefined;
+
+    if (!(await verifyTwitchUser(twitchUsername))) {
+        await interaction.reply({
+            content: `Twitch user \`${twitchUsername}\` does not exist.`,
+            flags: MessageFlags.Ephemeral
+        });
+        return;
+    }
+
+    await configManager.twitchManager.addStream({
+        twitchUsername,
+        discordChannelId: discordChannel.id,
+        customMessage,
+    });
+
+    await interaction.reply(`Twitch stream \`${twitchUsername}\` added for notifications in <#${discordChannel.id}>.`);
+}
