@@ -1,0 +1,69 @@
+import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
+import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
+import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
+
+import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
+import {tierEmojis} from '../../../constants/leagueTierEmojis.js';
+
+export const data = new SlashCommandBuilder()
+    .setName('stats')
+    .setDescription('Get League of Legends stats for a summoner or linked user')
+    .addStringOption(option =>
+        option.setName('summoner')
+            .setDescription('Summoner name or Riot ID (e.g. Zeffuro#EUW)')
+            .setRequired(false)
+    )
+    .addStringOption(option =>
+        option.setName('region')
+            .setDescription('Region')
+            .setRequired(false)
+            .addChoices(...leagueRegionChoices)
+    )
+    .addUserOption(option =>
+        option.setName('user')
+            .setDescription('Discord user')
+            .setRequired(false)
+    );
+
+export const testOnly = false;
+
+export async function execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+
+    let identity;
+    try {
+        identity = await getLeagueIdentityFromInteraction(interaction);
+    } catch (error) {
+        await interaction.editReply('Please provide a summoner name and region, or link your account first.');
+        return;
+    }
+
+    try {
+        const summonerData = await getSummoner(identity.puuid, identity.region);
+        const leagueEntries = await getSummonerDetails(identity.puuid, identity.region);
+
+        const embed = new EmbedBuilder()
+            .setTitle(`Stats for ${identity.summoner} [${identity.region}]`)
+            .setThumbnail(`https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon${summonerData.profileIconId}.png`)
+            .addFields(
+                {name: 'Level', value: `${summonerData.summonerLevel}`, inline: true}
+            );
+
+        if (leagueEntries && leagueEntries.length > 0) {
+            leagueEntries.forEach((entry: any) => {
+                const emoji = tierEmojis[entry.tier] || '';
+                let value = `**${entry.tier} ${entry.rank}** ${emoji} (${entry.leaguePoints} LP)\nWins: ${entry.wins}, Losses: ${entry.losses}`;
+                if (entry.miniSeries) {
+                    value += `\nPromos: ${entry.miniSeries.progress} (${entry.miniSeries.wins}W/${entry.miniSeries.losses}L, Target: ${entry.miniSeries.target})`;
+                }
+                embed.addFields({name: entry.queueType, value, inline: false});
+            });
+        } else {
+            embed.addFields({name: 'Ranked', value: 'No ranked data found.', inline: false});
+        }
+
+        await interaction.editReply({embeds: [embed]});
+    } catch (error) {
+        await interaction.editReply('Failed to fetch stats. Please check the summoner name and region.');
+    }
+}

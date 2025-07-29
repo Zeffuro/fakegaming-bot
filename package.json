@@ -1,0 +1,24 @@
+{
+  "name": "fakegaming-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Zeffuro",
+  "license": "AGPL-3.0-only",
+  "description": "",
+  "dependencies": {
+    "@types/node": "^24.1.0",
+    "discord-api-types": "^0.38.17",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.1",
+    "lowdb": "^7.0.1",
+    "ts-node": "^10.9.2",
+    "twisted": "^1.67.2",
+    "typescript": "^5.8.3",
+    "uuid": "^11.1.0"
+  },
+  "type": "module"
+}
