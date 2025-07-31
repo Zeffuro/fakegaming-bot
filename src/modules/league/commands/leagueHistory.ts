@@ -1,11 +1,18 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
+import {SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder} from 'discord.js';
 import {getMatchHistory, getMatchDetails} from '../../../services/riotService.js';
 import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
 import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
+import {getAsset} from "../../../utils/assetCache.js";
+import {fileURLToPath} from 'url';
+import path from 'path';
+import {generateLeagueHistoryImage} from '../image/leagueHistoryImage.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const data = new SlashCommandBuilder()
-    .setName('match-history')
+    .setName('league-history')
     .setDescription('Get recent League of Legends match history for a summoner')
     .addStringOption(option =>
         option.setName('summoner')
@@ -37,22 +44,20 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const matchIds = await getMatchHistory(identity.puuid, regionToRegionGroupForAccountAPI(identity.region), 0, 5);
+    const regionGroup = regionToRegionGroupForAccountAPI(identity.region);
+    const matchIds = await getMatchHistory(identity.puuid, regionGroup, 0, 5);
 
-    const embed = new EmbedBuilder()
-        .setTitle(`Recent Matches for ${identity.summoner} [${identity.region}]`);
-
+    const matches = [];
     for (const matchId of matchIds) {
-        const match = await getMatchDetails(matchId, regionToRegionGroupForAccountAPI(identity.region));
-        const participant = match.info.participants.find((p: any) => p.puuid === identity.puuid);
-        if (participant) {
-            embed.addFields({
-                name: `Match: ${matchId}`,
-                value: `Champion: ${participant.championName}\nKDA: ${participant.kills}/${participant.deaths}/${participant.assists}\nResult: ${participant.win ? 'Win' : 'Loss'}`,
-                inline: false
-            });
-        }
+        const match = await getMatchDetails(matchId, regionGroup);
+        matches.push(match);
     }
 
-    await interaction.editReply({embeds: [embed]});
+    const buffer = await generateLeagueHistoryImage(matches, identity);
+    const attachment = new AttachmentBuilder(buffer, {name: 'league-history.png'});
+
+    await interaction.editReply({
+        content: `Recent matches for ${identity.summoner} [${identity.region}]`,
+        files: [attachment]
+    });
 }

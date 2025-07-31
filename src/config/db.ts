@@ -10,7 +10,6 @@ export type Data = {
     servers: ServerConfig[];
     quotes: QuoteConfig[];
     twitchStreams: TwitchStreamConfig[];
-    twitchTokens?: AccessToken;
 };
 
 const adapter = new JSONFile<Data>('data/config.json');

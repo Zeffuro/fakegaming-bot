@@ -6,11 +6,11 @@ import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
 import {tierEmojis} from '../../../constants/leagueTierEmojis.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('stats')
+    .setName('league-stats')
     .setDescription('Get League of Legends stats for a summoner or linked user')
     .addStringOption(option =>
         option.setName('summoner')
-            .setDescription('Summoner name or Riot ID (e.g. Zeffuro#EUW)')
+            .setDescription('Riot ID (e.g. Zeffuro#EUW)')
             .setRequired(false)
     )
     .addStringOption(option =>
@@ -34,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     try {
         identity = await getLeagueIdentityFromInteraction(interaction);
     } catch (error) {
-        await interaction.editReply('Please provide a summoner name and region, or link your account first.');
+        await interaction.editReply('Please provide a Riot ID and region, or link your account first.');
         return;
     }
 
@@ -64,6 +64,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         await interaction.editReply({embeds: [embed]});
     } catch (error) {
-        await interaction.editReply('Failed to fetch stats. Please check the summoner name and region.');
+        await interaction.editReply('Failed to fetch stats. Please check the Riot ID and region.');
     }
 }
