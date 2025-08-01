@@ -155,3 +155,33 @@ export function drawCircle(
     ctx.globalAlpha = 1;
     ctx.restore();
 }
+
+export async function drawVerticalList<T>(
+    ctx: CanvasRenderingContext2D,
+    items: T[],
+    startX: number,
+    startY: number,
+    gap: number,
+    render: (item: T, x: number, y: number, index: number) => void | Promise<void>
+) {
+    let y = startY;
+    for (let i = 0; i < items.length; i++) {
+        await render(items[i], startX, y, i);
+        y += gap;
+    }
+}
+
+export async function drawHorizontalList<T>(
+    ctx: CanvasRenderingContext2D,
+    items: T[],
+    startX: number,
+    startY: number,
+    gap: number,
+    render: (item: T, x: number, y: number, index: number) => void | Promise<void>
+) {
+    let x = startX;
+    for (let i = 0; i < items.length; i++) {
+        await render(items[i], x, startY, i);
+        x += gap;
+    }
+}
