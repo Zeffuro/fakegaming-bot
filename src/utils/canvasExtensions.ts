@@ -185,3 +185,22 @@ export async function drawHorizontalList<T>(
         x += gap;
     }
 }
+
+export async function drawGridList<T>(
+    ctx: CanvasRenderingContext2D,
+    items: T[],
+    startX: number,
+    startY: number,
+    columns: number,
+    cellWidth: number,
+    cellHeight: number,
+    render: (item: T, x: number, y: number, index: number) => void | Promise<void>
+) {
+    for (let i = 0; i < items.length; i++) {
+        const col = i % columns;
+        const row = Math.floor(i / columns);
+        const x = startX + col * cellWidth;
+        const y = startY + row * cellHeight;
+        await render(items[i], x, y, i);
+    }
+}

@@ -6,7 +6,7 @@ import {Regions} from 'twisted/dist/constants/regions.js';
 export async function getLeagueIdentityFromInteraction(
     interaction: ChatInputCommandInteraction,
 ) {
-    const summoner = interaction.options.getString('riot-id') ?? undefined;
+    const summoner = interaction.options.getString('riot-id') ?? interaction.options.getString('summoner') ?? undefined;
     const regionInput = interaction.options.getString('region') ?? undefined;
     const region = getRegionCodeFromName(regionInput);
     const user = interaction.options.getUser('user');

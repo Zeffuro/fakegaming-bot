@@ -4,6 +4,7 @@ import {getItemData} from '../../../cache/leagueItemDataCache.js';
 import {getSummonerSpellData} from '../../../cache/leagueSummonerSpellDataCache.js';
 import {getPerkStylesData} from '../../../cache/leaguePerkStylesDataCache.js';
 import {getPerksData} from '../../../cache/leaguePerksDataCache.js';
+import {getAugmentData} from '../../../cache/leagueAugmentDataCache.js';
 import {queueMapper, gameModeConvertMap} from '../../../constants/leagueMappers.js';
 import {
     drawItemSlotBackground,
@@ -11,7 +12,8 @@ import {
     drawCircle,
     drawRoundedRect,
     drawVerticalList,
-    drawHorizontalList
+    drawHorizontalList,
+    drawGridList
 } from '../../../utils/canvasExtensions.js';
 
 const ROW_HEIGHT = 110;
@@ -60,11 +62,10 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
         const queueLabel = queueMapper[match.info.queueId];
         const modeLabel = gameModeConvertMap[match.info.gameMode];
         const gameTypeLabel = queueLabel || modeLabel || match.info.gameMode;
+        drawGameModeLabel(ctx, gameTypeLabel, getModeColor(match.info.gameMode), PADDING + 16, y);
 
-        // Game mode color
-        ctx.fillStyle = getModeColor(gameTypeLabel);
-        ctx.font = 'bold 18px "Roboto", Arial';
-        ctx.fillText(gameTypeLabel, PADDING + 8, y + 8);
+        // Game time
+        drawGameTime(ctx, match.info.gameDuration, PADDING + 16, y + 8);
 
         // Champion icon above items, clipped as circle, smaller and padded Y
         let champX = PADDING + ICON_SIZE + 180;
@@ -75,17 +76,32 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
         // Summoner spell icons for main player (vertically stacked to the right of champion icon)
         const spellSize = Math.floor(champPortraitSize / 2);
         const spellGap = 2;
-        const spellX = champX + champPortraitSize + 8;
+        const spellX = champX + champPortraitSize + 12;
         let spellY = champY;
         const summonerSpellIds = [participant.summoner1Id, participant.summoner2Id];
         await drawSummonerSpells(ctx, summonerSpellIds, summonerSpellsJson, spellX, spellY, spellSize, spellGap);
 
-        // Rune tree icons next to summoner spells
-        const runeSize = spellSize;
-        const runeGap = spellGap;
-        const runeX = spellX + spellSize + 8;
-        const perkStyles = participant.perks?.styles || [];
-        await drawRunes(ctx, perkStyles, perksJson, perkStylesJson, runeX, champY, runeSize, runeGap);
+        // Arena (CHERRY) mode: show augments instead of spells/runes
+        if (match.info.gameMode === 'CHERRY') {
+            const augmentIds = [];
+            for (let i = 0; i < 6; i++) {
+                const aug = participant[`playerAugment${i}`];
+                if (aug) augmentIds.push(aug);
+            }
+            const augmentSize = Math.floor(champPortraitSize / 2);
+            const augmentGap = 2;
+            const augmentX = spellX + spellSize + 4;
+            const augmentY = champY;
+            await drawAugments(ctx, augmentIds, augmentX, augmentY, augmentSize, augmentGap);
+        } else {
+            // Rune tree icons next to summoner spells
+            const runeSize = spellSize;
+            const runeGap = spellGap;
+            const runeX = spellX + spellSize + 4;
+            const runeY = champY;
+            const perkStyles = participant.perks?.styles || [];
+            await drawRunes(ctx, perkStyles, perksJson, perkStylesJson, runeX, runeY, runeSize, runeGap);
+        }
 
         // Move result and multikill to left, above KDA
         ctx.font = 'bold 16px "Roboto", Arial';
@@ -98,12 +114,9 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
         // KDA
         drawKDA(ctx, participant, PADDING + ICON_SIZE + 24, y + 38);
 
-        // Game time (move to right of team names)
-        drawGameTime(ctx, match.info.gameDuration, WIDTH - 40, y + 8);
-
         // Items with backgrounds and borders at the bottom (properly contained)
         // Place items so they are visually centered above the rounded bottom
-        const itemsY = y + ROW_HEIGHT - ITEM_SIZE - 8 / 2;
+        const itemsY = y + ROW_HEIGHT - ITEM_SIZE - 12;
         const itemIds = Array.from({length: 7}, (_, j) => participant[`item${j}`]);
         const itemImages = await preloadAssets(
             itemIds,
@@ -115,17 +128,32 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
         await drawHorizontalList(ctx, itemImages, PADDING + ICON_SIZE + 180, itemsY, ITEM_SIZE + ITEM_GAP, (itemImg, x, y, j) => {
             drawItemSlotBackground(ctx, x, y, ITEM_SIZE, 8, '#222');
             drawClippedImage(ctx, itemImg, x, y, ITEM_SIZE, 'rounded', 8);
-            // No border for now
         });
 
         // Team names on the right, highlight player
-        const team1 = match.info.participants.filter((p: any) => p.teamId === 100);
-        const team2 = match.info.participants.filter((p: any) => p.teamId === 200);
-
-        // Draw both teams on the right with icons, adjust spacing to prevent overflow
-        const rightX = WIDTH - 300;
-        await drawTeamNamesWithIcons(ctx, team1, rightX, y + 3, identity.puuid, '#4fd18b');
-        await drawTeamNamesWithIcons(ctx, team2, rightX + 150, y + 3, identity.puuid, '#e05c5c');
+        const rightX = WIDTH - 280;
+        if (match.info.gameMode === 'CHERRY') {
+            // Arena: Only show teams with placement 1-4, grouped by playerSubteamId
+            const arenaParticipants = match.info.participants.filter((p: any) => p.placement >= 1 && p.placement <= 4);
+            // Group by playerSubteamId
+            const subTeamMap: Record<string, any[]> = {};
+            for (const p of arenaParticipants) {
+                if (!subTeamMap[p.playerSubteamId]) subTeamMap[p.playerSubteamId] = [];
+                subTeamMap[p.playerSubteamId].push(p);
+            }
+            // Convert to array of pairs, sort by best (lowest) placement in each pair
+            const teamPairs = Object.values(subTeamMap).sort((a, b) => {
+                const aPlace = Math.min(...a.map(p => p.placement));
+                const bPlace = Math.min(...b.map(p => p.placement));
+                return aPlace - bPlace;
+            });
+            await drawCherryTeamsWithIcons(ctx, teamPairs, rightX, y + 3, identity.puuid, '#fff');
+        } else {
+            const team1 = match.info.participants.filter((p: any) => p.teamId === 100);
+            const team2 = match.info.participants.filter((p: any) => p.teamId === 200);
+            await drawTeamNamesWithIcons(ctx, team1, rightX, y + 3, identity.puuid, '#fff');
+            await drawTeamNamesWithIcons(ctx, team2, rightX + 120, y + 3, identity.puuid, '#fff');
+        }
     });
 
     return canvas.toBuffer('image/png');
@@ -151,12 +179,44 @@ async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[]
                 drawClippedImage(ctx, champImg, px, py, iconSize, 'rounded', 4);
             }
         }
-        ctx.fillStyle = participant.puuid === playerPuuid ? color : '#eee';
+        ctx.fillStyle = participant.puuid === playerPuuid ? color : '#9e9eb1';
         ctx.fillText(truncateName(participant.riotIdGameName), px + nameOffsetX, py - 3);
     });
 }
 
-function truncateName(name: string, maxLen: number = 16): string {
+async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs: any[][], x: number, y: number, playerPuuid: string, color: string) {
+    const rowHeight = 20;
+    const iconSize = 16;
+    const nameOffsetX = iconSize + 8;
+    ctx.font = '14px "Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
+    await drawVerticalList(ctx, teamPairs, x, y, rowHeight, async (pair, px, py) => {
+        // Always draw two slots per row, even if a pair is missing a player
+        const safePair = [pair[0], pair[1] || {}];
+        // Preload champion images for the pair
+        const champImages = await Promise.all(safePair.map(async participant => {
+            if (!participant || !participant.championId) return undefined;
+            const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${participant.championId}.png`;
+            const champIconAsset = await getAsset(champIconUrl, `${participant.championId}.png`, 'champion');
+            return champIconAsset.buffer ? await loadImage(champIconAsset.buffer) : undefined;
+        }));
+        await drawHorizontalList(ctx, safePair, px, py, 120, (participant, x, y, i) => {
+            const champImg = champImages[i];
+            if (champImg) {
+                if (participant.puuid === playerPuuid) {
+                    drawClippedImage(ctx, champImg, x, y, iconSize, 'circle');
+                } else {
+                    drawClippedImage(ctx, champImg, x, y, iconSize, 'rounded', 4);
+                }
+            }
+            if (participant && participant.riotIdGameName) {
+                ctx.fillStyle = participant.puuid === playerPuuid ? color : '#9e9eb1';
+                ctx.fillText(truncateName(participant.riotIdGameName), x + nameOffsetX, y - 3);
+            }
+        });
+    });
+}
+
+function truncateName(name: string, maxLen: number = 14): string {
     // Use a font stack that supports more Unicode symbols
     // Truncate but preserve valid Unicode
     return name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
@@ -164,10 +224,10 @@ function truncateName(name: string, maxLen: number = 16): string {
 
 function communityDragonUrlFromAssetPath(assetPath: string): string {
     const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
+    // Remove the leading asset prefix and fully lowercase the rest
     let relPath = assetPath.replace(/^\/lol-game-data\/assets\//i, '');
-    relPath = relPath.replace(/([A-Z])/g, (m) => m.toLowerCase());
-    relPath = relPath.replace(/ /g, '');
-    relPath = relPath.replace(/\\+/g, '/');
+    relPath = relPath.replace(/\\+/g, '/'); // Normalize backslashes to slashes
+    relPath = relPath.toLowerCase(); // Lowercase the entire path for CommunityDragon
     return COMMUNITY_DRAGON_BASE + relPath;
 }
 
@@ -199,7 +259,59 @@ async function preloadAssets(
     return images;
 }
 
-// Extracted helper for champion icon drawing
+// Drawing helpers (ordered for clarity)
+
+function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: string, x: number, y: number, w: number, h: number, radius: number) {
+    ctx.save();
+    ctx.fillStyle = getResultColor(win, mode);
+    drawRoundedRect(ctx, x, y, w, h, radius);
+    ctx.restore();
+}
+
+function drawGameModeLabel(ctx: CanvasRenderingContext2D, label: string, color: string, x: number, y: number) {
+    ctx.fillStyle = color;
+    ctx.font = 'bold 18px "Roboto", Arial';
+    ctx.fillText(label, x, y);
+}
+
+function drawGameTime(ctx: CanvasRenderingContext2D, duration: number, x: number, y: number) {
+    const mins = Math.floor(duration / 60);
+    const secs = duration % 60;
+    ctx.font = '14px "Roboto", Arial';
+    ctx.fillStyle = '#bbb';
+    ctx.fillText(`${mins}m ${secs}s`, x, y);
+}
+
+function drawMultikillLabel(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
+    const multikillLabels = [
+        {key: 'pentaKills', label: 'Penta Kill'},
+        {key: 'quadraKills', label: 'Quadra Kill'},
+        {key: 'tripleKills', label: 'Triple Kill'},
+        {key: 'doubleKills', label: 'Double Kill'}
+    ];
+    let multikillLabel = '';
+    for (const {key, label} of multikillLabels) {
+        if (participant[key] && participant[key] > 0) {
+            multikillLabel = label;
+            break;
+        }
+    }
+    if (multikillLabel !== '') {
+        ctx.font = 'bold 14px "Roboto", Arial';
+        ctx.fillStyle = '#ffb74d';
+        ctx.fillText(multikillLabel, x, y);
+    }
+}
+
+function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
+    ctx.font = 'bold 20px "Roboto", Arial';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`${participant.kills} / ${participant.deaths} / ${participant.assists}`, x, y);
+    ctx.font = '14px "Roboto", Arial';
+    ctx.fillStyle = '#ccc';
+    ctx.fillText(`${((participant.kills + participant.assists) / Math.max(1, participant.deaths)).toFixed(2)} KDA`, x, y + 24);
+}
+
 async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, championId: number, champLevel: number, x: number, y: number, size: number) {
     const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${championId}.png`;
     const champIconAsset = await getAsset(champIconUrl, `${championId}.png`, 'champion');
@@ -221,7 +333,6 @@ async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, champion
     }
 }
 
-// Extracted helper for summoner spell drawing
 async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: number[], summonerSpellsJson: any[], x: number, y: number, size: number, gap: number) {
     const summonerSpellImages = await preloadAssets(
         spellIds,
@@ -237,7 +348,6 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
     }
 }
 
-// Extracted helper for rune icons drawing
 async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perksJson: any[], perkStylesJson: any, x: number, y: number, size: number, gap: number) {
     const keystoneId = perkStyles[0]?.selections?.[0]?.perk;
     const keystoneImages = await preloadAssets(
@@ -265,58 +375,24 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
     });
 }
 
-// Helper for drawing multikill label
-function drawMultikillLabel(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
-    const multikillLabels = [
-        {key: 'pentaKills', label: 'Penta Kill'},
-        {key: 'quadraKills', label: 'Quadra Kill'},
-        {key: 'tripleKills', label: 'Triple Kill'},
-        {key: 'doubleKills', label: 'Double Kill'}
-    ];
-    let multikillLabel = '';
-    for (const {key, label} of multikillLabels) {
-        if (participant[key] && participant[key] > 0) {
-            multikillLabel = label;
-            break;
+// Helper for drawing augments (Arena/CHERRY mode)
+async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string | number)[], x: number, y: number, size: number, gap: number) {
+    const augmentData = await getAugmentData();
+    const images = await preloadAssets(
+        augmentIds,
+        augmentData,
+        (entry) => entry.augmentSmallIconPath,
+        (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+        'augment'
+    );
+    // Use drawGridList for a 3x2 grid (3 rows, 2 columns)
+    const columns = 2;
+    const cellWidth = size + gap;
+    const cellHeight = size + gap;
+    await drawGridList(ctx, images, x, y, columns, cellWidth, cellHeight, (img, drawX, drawY) => {
+        if (img) {
+            drawCircle(ctx, drawX + size / 2, drawY + size / 2, size / 2, '#000', 0.85);
+            drawClippedImage(ctx, img, drawX, drawY, size, 'circle');
         }
-    }
-    if (multikillLabel !== '') {
-        ctx.font = 'bold 14px "Roboto", Arial';
-        ctx.fillStyle = '#ffb74d';
-        ctx.fillText(multikillLabel, x, y);
-    }
-}
-
-// Helper for drawing KDA and ratio
-function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
-    ctx.font = 'bold 20px "Roboto", Arial';
-    ctx.fillStyle = '#fff';
-    ctx.fillText(`${participant.kills} / ${participant.deaths} / ${participant.assists}`, x, y);
-    ctx.font = '14px "Roboto", Arial';
-    ctx.fillStyle = '#ccc';
-    ctx.fillText(`${((participant.kills + participant.assists) / Math.max(1, participant.deaths)).toFixed(2)} KDA`, x, y + 24);
-}
-
-// Helper for drawing row background
-function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: string, x: number, y: number, w: number, h: number, radius: number) {
-    ctx.save();
-    ctx.fillStyle = getResultColor(win, mode);
-    drawRoundedRect(ctx, x, y, w, h, radius);
-    ctx.restore();
-}
-
-// Helper for drawing game mode label
-function drawGameModeLabel(ctx: CanvasRenderingContext2D, label: string, color: string, x: number, y: number) {
-    ctx.fillStyle = color;
-    ctx.font = 'bold 18px "Roboto", Arial';
-    ctx.fillText(label, x, y);
-}
-
-// Helper for drawing game time
-function drawGameTime(ctx: CanvasRenderingContext2D, duration: number, x: number, y: number) {
-    const mins = Math.floor(duration / 60);
-    const secs = duration % 60;
-    ctx.font = '14px "Roboto", Arial';
-    ctx.fillStyle = '#bbb';
-    ctx.fillText(`${mins}m ${secs}s`, x, y);
+    });
 }

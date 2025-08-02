@@ -1,4 +1,3 @@
-// src/utils/itemDataCache.ts
 import {getAsset} from '../utils/assetCache.js';
 
 let cachedItemsData: any = null;
