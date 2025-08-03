@@ -13,17 +13,32 @@ import {
     drawRoundedRect,
     drawVerticalList,
     drawHorizontalList,
-    drawGridList
+    drawGridList,
+    drawRoundedBoxLabel,
+    applyShadow,
+    clearShadow
 } from '../../../utils/canvasExtensions.js';
+import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
 
 const ROW_HEIGHT = 110;
 const WIDTH = 820;
 const PADDING = 16;
-const ICON_SIZE = 64;
 const ITEM_SIZE = 32;
 const ITEM_GAP = 2;
 const FONT = '16px "Roboto", Arial';
-const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default';
+const NUMBER_FONT_FAMILY = '"Roboto", Arial, sans-serif';
+const TEAM_FONT_FAMILY = '"Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
+const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
+
+// Helper to build font strings
+function fontString({size = 14, weight = '', italic = false, family = TEAM_FONT_FAMILY}: {
+    size?: number,
+    weight?: string,
+    italic?: boolean,
+    family?: string
+} = {}) {
+    return `${italic ? 'italic ' : ''}${weight ? weight + ' ' : ''}${size}px ${family}`.trim();
+}
 
 function getResultColor(win: boolean, mode: string) {
     if (mode === 'Arena') return win ? '#2d3e5e' : '#7c3a3a';
@@ -46,43 +61,30 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
     const height = matches.length * ROW_HEIGHT + PADDING * 2;
     const canvas = createCanvas(WIDTH, height);
     const ctx = canvas.getContext('2d');
-
     ctx.font = FONT;
     ctx.textBaseline = 'top';
 
-    await drawVerticalList(ctx, matches, PADDING, PADDING, ROW_HEIGHT, async (match, _x, y, i) => {
-        // Find participant
+    await drawVerticalList(ctx, matches, PADDING, PADDING, ROW_HEIGHT, async (match, _x, y) => {
         const participant = match.info.participants.find((p: any) => p.puuid === identity.puuid);
         if (!participant) return;
 
-        // Row background (rounded)
         drawRowBackground(ctx, participant.win, match.info.gameMode, PADDING, y, WIDTH - PADDING * 2, ROW_HEIGHT - 8, 8);
 
-        // Game mode label
-        const queueLabel = queueMapper[match.info.queueId];
-        const modeLabel = gameModeConvertMap[match.info.gameMode];
-        const gameTypeLabel = queueLabel || modeLabel || match.info.gameMode;
-        drawGameModeLabel(ctx, gameTypeLabel, getModeColor(match.info.gameMode), PADDING + 16, y);
+        await drawMatchInfoLeft(ctx, match, participant, PADDING + 8, y + 8);
 
-        // Game time
-        drawGameTime(ctx, match.info.gameDuration, PADDING + 16, y + 8);
-
-        // Champion icon above items, clipped as circle, smaller and padded Y
-        let champX = PADDING + ICON_SIZE + 180;
-        let champPortraitSize = Math.floor(ITEM_SIZE * 1.75); // smaller
-        let champY = y + 3;
+        const champX = PADDING + 100;
+        const champPortraitSize = Math.floor(ITEM_SIZE * 1.75);
+        const champY = y + 4;
         await drawChampionIconWithLevel(ctx, participant.championId, participant.champLevel, champX, champY, champPortraitSize);
 
-        // Summoner spell icons for main player (vertically stacked to the right of champion icon)
         const spellSize = Math.floor(champPortraitSize / 2);
         const spellGap = 2;
-        const spellX = champX + champPortraitSize + 12;
-        let spellY = champY;
-        const summonerSpellIds = [participant.summoner1Id, participant.summoner2Id];
-        await drawSummonerSpells(ctx, summonerSpellIds, summonerSpellsJson, spellX, spellY, spellSize, spellGap);
+        let afterSpellsX: number;
+        let afterSpellsY = champY;
+        let augOrRuneWidth = spellSize;
 
-        // Arena (CHERRY) mode: show augments instead of spells/runes
         if (match.info.gameMode === 'CHERRY') {
+            afterSpellsX = champX + champPortraitSize + 8;
             const augmentIds = [];
             for (let i = 0; i < 6; i++) {
                 const aug = participant[`playerAugment${i}`];
@@ -90,33 +92,29 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
             }
             const augmentSize = Math.floor(champPortraitSize / 2);
             const augmentGap = 2;
-            const augmentX = spellX + spellSize + 4;
-            const augmentY = champY;
-            await drawAugments(ctx, augmentIds, augmentX, augmentY, augmentSize, augmentGap);
+            await drawAugments(ctx, augmentIds, afterSpellsX, afterSpellsY, augmentSize, augmentGap);
+            augOrRuneWidth = augmentSize * 2 + augmentGap;
         } else {
-            // Rune tree icons next to summoner spells
+            const spellX = champX + champPortraitSize + 8;
+            const summonerSpellIds = [participant.summoner1Id, participant.summoner2Id];
+            await drawSummonerSpells(ctx, summonerSpellIds, summonerSpellsJson, spellX, champY, spellSize, spellGap);
+
+            afterSpellsX = spellX + spellSize + 8;
             const runeSize = spellSize;
-            const runeGap = spellGap;
-            const runeX = spellX + spellSize + 4;
-            const runeY = champY;
             const perkStyles = participant.perks?.styles || [];
-            await drawRunes(ctx, perkStyles, perksJson, perkStylesJson, runeX, runeY, runeSize, runeGap);
+            await drawRunes(ctx, perkStyles, perksJson, perkStylesJson, afterSpellsX, afterSpellsY, runeSize, spellGap);
+
+            augOrRuneWidth = runeSize;
         }
+        const kdaX = afterSpellsX + augOrRuneWidth + 20;
+        const kdaY = champY + 8;
+        drawKDA(ctx, participant, kdaX, kdaY);
 
-        // Move result and multikill to left, above KDA
-        ctx.font = 'bold 16px "Roboto", Arial';
-        ctx.fillStyle = participant.win ? '#4fd18b' : '#e05c5c';
-        ctx.fillText(participant.win ? 'Victory' : 'Defeat', PADDING + ICON_SIZE + 24, y + 8);
+        const statsX = kdaX + 110;
+        const statsY = champY + 2;
+        await drawStatsVerticalList(ctx, match, participant, statsX, statsY);
 
-        // Multikill label (if any)
-        drawMultikillLabel(ctx, participant, PADDING + ICON_SIZE + 120, y + 8);
-
-        // KDA
-        drawKDA(ctx, participant, PADDING + ICON_SIZE + 24, y + 38);
-
-        // Items with backgrounds and borders at the bottom (properly contained)
-        // Place items so they are visually centered above the rounded bottom
-        const itemsY = y + ROW_HEIGHT - ITEM_SIZE - 12;
+        const itemsY = champY + champPortraitSize + 8;
         const itemIds = Array.from({length: 7}, (_, j) => participant[`item${j}`]);
         const itemImages = await preloadAssets(
             itemIds,
@@ -125,23 +123,20 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
             (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
             'item'
         );
-        await drawHorizontalList(ctx, itemImages, PADDING + ICON_SIZE + 180, itemsY, ITEM_SIZE + ITEM_GAP, (itemImg, x, y, j) => {
+        await drawHorizontalList(ctx, itemImages, champX, itemsY, ITEM_SIZE + ITEM_GAP, (itemImg, x, y) => {
             drawItemSlotBackground(ctx, x, y, ITEM_SIZE, 8, '#222');
             drawClippedImage(ctx, itemImg, x, y, ITEM_SIZE, 'rounded', 8);
         });
+        drawMultikillLabelBox(ctx, participant, champX, itemsY, ITEM_SIZE, ITEM_GAP);
 
-        // Team names on the right, highlight player
         const rightX = WIDTH - 280;
         if (match.info.gameMode === 'CHERRY') {
-            // Arena: Only show teams with placement 1-4, grouped by playerSubteamId
             const arenaParticipants = match.info.participants.filter((p: any) => p.placement >= 1 && p.placement <= 4);
-            // Group by playerSubteamId
             const subTeamMap: Record<string, any[]> = {};
             for (const p of arenaParticipants) {
                 if (!subTeamMap[p.playerSubteamId]) subTeamMap[p.playerSubteamId] = [];
                 subTeamMap[p.playerSubteamId].push(p);
             }
-            // Convert to array of pairs, sort by best (lowest) placement in each pair
             const teamPairs = Object.values(subTeamMap).sort((a, b) => {
                 const aPlace = Math.min(...a.map(p => p.placement));
                 const bPlace = Math.min(...b.map(p => p.placement));
@@ -155,15 +150,57 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
             await drawTeamNamesWithIcons(ctx, team2, rightX + 120, y + 3, identity.puuid, '#fff');
         }
     });
-
     return canvas.toBuffer('image/png');
+}
+
+async function drawMatchInfoLeft(
+    ctx: CanvasRenderingContext2D,
+    match: any,
+    participant: any,
+    x: number,
+    y: number
+) {
+    let mode = '';
+    if (match.info.queueId && queueMapper[match.info.queueId]) {
+        mode = queueMapper[match.info.queueId];
+    } else if (match.info.gameMode && gameModeConvertMap[match.info.gameMode]) {
+        mode = gameModeConvertMap[match.info.gameMode];
+    } else {
+        mode = match.info.gameMode || 'Unknown';
+    }
+    let ago = '';
+    if (match.info.gameEndTimestamp) {
+        ago = timeAgo(match.info.gameEndTimestamp);
+    }
+    const result = participant.win ? 'Victory' : 'Defeat';
+    const durationSec = participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000);
+    const matchLength = formatDuration(durationSec);
+    const resultColor = participant.win ? '#4fd18b' : '#e05c5c';
+    const modeColor = participant.win ? '#4fa3ff' : '#e05c5c';
+    const timeAgoColor = '#e0e0e0';
+    const matchLengthColor = '#bdbdbd';
+    const infoLines = [
+        {text: mode, font: fontString({size: 16, weight: 'bold', family: NUMBER_FONT_FAMILY}), color: modeColor},
+        {text: ago, font: fontString({size: 14, family: NUMBER_FONT_FAMILY}), color: timeAgoColor},
+        {text: result, font: fontString({size: 15, weight: 'bold', family: NUMBER_FONT_FAMILY}), color: resultColor},
+        {text: matchLength, font: fontString({size: 14, family: NUMBER_FONT_FAMILY}), color: matchLengthColor},
+    ];
+    await drawVerticalList(ctx, infoLines, x, y, 22, (line, lx, ly) => {
+        ctx.save();
+        ctx.font = line.font;
+        ctx.fillStyle = line.color;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(line.text, lx, ly);
+        ctx.restore();
+    });
 }
 
 async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[], x: number, y: number, playerPuuid: string, color: string) {
     const rowHeight = 20;
     const iconSize = 16;
     const nameOffsetX = iconSize + 8;
-    ctx.font = '14px "Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
+    ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
     // Preload all champion images for the team
     const champImages = await Promise.all(team.map(async participant => {
         const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${participant.championId}.png`;
@@ -180,6 +217,7 @@ async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[]
             }
         }
         ctx.fillStyle = participant.puuid === playerPuuid ? color : '#9e9eb1';
+        ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
         ctx.fillText(truncateName(participant.riotIdGameName), px + nameOffsetX, py - 3);
     });
 }
@@ -188,7 +226,7 @@ async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs
     const rowHeight = 20;
     const iconSize = 16;
     const nameOffsetX = iconSize + 8;
-    ctx.font = '14px "Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
+    ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
     await drawVerticalList(ctx, teamPairs, x, y, rowHeight, async (pair, px, py) => {
         // Always draw two slots per row, even if a pair is missing a player
         const safePair = [pair[0], pair[1] || {}];
@@ -208,6 +246,7 @@ async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs
                     drawClippedImage(ctx, champImg, x, y, iconSize, 'rounded', 4);
                 }
             }
+            ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
             if (participant && participant.riotIdGameName) {
                 ctx.fillStyle = participant.puuid === playerPuuid ? color : '#9e9eb1';
                 ctx.fillText(truncateName(participant.riotIdGameName), x + nameOffsetX, y - 3);
@@ -223,7 +262,6 @@ function truncateName(name: string, maxLen: number = 14): string {
 }
 
 function communityDragonUrlFromAssetPath(assetPath: string): string {
-    const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
     // Remove the leading asset prefix and fully lowercase the rest
     let relPath = assetPath.replace(/^\/lol-game-data\/assets\//i, '');
     relPath = relPath.replace(/\\+/g, '/'); // Normalize backslashes to slashes
@@ -262,75 +300,135 @@ async function preloadAssets(
 // Drawing helpers (ordered for clarity)
 
 function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: string, x: number, y: number, w: number, h: number, radius: number) {
+    // Draw background color first (no shadow)
     ctx.save();
     ctx.fillStyle = getResultColor(win, mode);
-    drawRoundedRect(ctx, x, y, w, h, radius);
+    drawRoundedRect(ctx, x, y, w, h, radius + 4);
     ctx.restore();
 }
 
-function drawGameModeLabel(ctx: CanvasRenderingContext2D, label: string, color: string, x: number, y: number) {
-    ctx.fillStyle = color;
-    ctx.font = 'bold 18px "Roboto", Arial';
-    ctx.fillText(label, x, y);
-}
-
-function drawGameTime(ctx: CanvasRenderingContext2D, duration: number, x: number, y: number) {
-    const mins = Math.floor(duration / 60);
-    const secs = duration % 60;
-    ctx.font = '14px "Roboto", Arial';
-    ctx.fillStyle = '#bbb';
-    ctx.fillText(`${mins}m ${secs}s`, x, y);
-}
-
-function drawMultikillLabel(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
-    const multikillLabels = [
-        {key: 'pentaKills', label: 'Penta Kill'},
-        {key: 'quadraKills', label: 'Quadra Kill'},
-        {key: 'tripleKills', label: 'Triple Kill'},
-        {key: 'doubleKills', label: 'Double Kill'}
-    ];
-    let multikillLabel = '';
-    for (const {key, label} of multikillLabels) {
-        if (participant[key] && participant[key] > 0) {
-            multikillLabel = label;
-            break;
-        }
-    }
-    if (multikillLabel !== '') {
-        ctx.font = 'bold 14px "Roboto", Arial';
-        ctx.fillStyle = '#ffb74d';
-        ctx.fillText(multikillLabel, x, y);
-    }
-}
-
 function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
-    ctx.font = 'bold 20px "Roboto", Arial';
+    ctx.font = fontString({size: 20, weight: 'bold', family: NUMBER_FONT_FAMILY});
+    ctx.textBaseline = 'top';
+    // Calculate widths for proper centering
+    const killsText = `${participant.kills}`;
+    const slash1 = ' / ';
+    const deathsText = `${participant.deaths}`;
+    const slash2 = ' / ';
+    const assistsText = `${participant.assists}`;
+    const kdaText = `${killsText}${slash1}${deathsText}${slash2}${assistsText}`;
+    const totalWidth = ctx.measureText(kdaText).width;
+    let drawX = x;
+    // Draw kills
     ctx.fillStyle = '#fff';
-    ctx.fillText(`${participant.kills} / ${participant.deaths} / ${participant.assists}`, x, y);
-    ctx.font = '14px "Roboto", Arial';
-    ctx.fillStyle = '#ccc';
+    ctx.fillText(killsText, drawX, y);
+    drawX += ctx.measureText(killsText).width;
+    // Draw first slash
+    ctx.fillStyle = '#fff';
+    ctx.fillText(slash1, drawX, y);
+    drawX += ctx.measureText(slash1).width;
+    // Draw deaths in red
+    ctx.fillStyle = '#e05c5c';
+    ctx.fillText(deathsText, drawX, y);
+    drawX += ctx.measureText(deathsText).width;
+    // Draw second slash
+    ctx.fillStyle = '#fff';
+    ctx.fillText(slash2, drawX, y);
+    drawX += ctx.measureText(slash2).width;
+    // Draw assists
+    ctx.fillStyle = '#fff';
+    ctx.fillText(assistsText, drawX, y);
+    // KDA ratio below
+    ctx.font = fontString({size: 12, family: NUMBER_FONT_FAMILY}); // smaller
+    ctx.fillStyle = '#bdbdbd'; // lighter gray
     ctx.fillText(`${((participant.kills + participant.assists) / Math.max(1, participant.deaths)).toFixed(2)} KDA`, x, y + 24);
 }
 
 async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, championId: number, champLevel: number, x: number, y: number, size: number) {
+    const LEVEL_CIRCLE_RATIO = 0.22;
+    const LEVEL_CIRCLE_OFFSET = 8;
+    const LEVEL_CIRCLE_COLOR = '#222';
+    const LEVEL_CIRCLE_OPACITY = 0.85;
+    const LEVEL_CIRCLE_SHADOW_BLUR = 8;
+    const LEVEL_CIRCLE_SHADOW_COLOR = 'rgba(0,0,0,0.5)';
+    const LEVEL_TEXT_COLOR = '#fff';
+    const LEVEL_TEXT_SHADOW_COLOR = 'rgba(0,0,0,0.7)';
+    const LEVEL_TEXT_SHADOW_BLUR = 3;
+
     const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${championId}.png`;
     const champIconAsset = await getAsset(champIconUrl, `${championId}.png`, 'champion');
-    if (champIconAsset.buffer) {
-        const champImg = await loadImage(champIconAsset.buffer);
-        drawClippedImage(ctx, champImg, x, y, size, 'circle');
-        // Draw champLevel in a small circle at bottom right
-        const levelCircleRadius = Math.floor(size * 0.22);
-        const levelCircleX = x + size - levelCircleRadius - 8;
-        const levelCircleY = y + size - levelCircleRadius - 8;
-        ctx.save();
-        drawCircle(ctx, levelCircleX + levelCircleRadius, levelCircleY + levelCircleRadius, levelCircleRadius, '#222', 0.85);
-        ctx.font = `bold ${Math.floor(levelCircleRadius * 1.2)}px Roboto, Arial`;
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(String(champLevel), levelCircleX + levelCircleRadius, levelCircleY + levelCircleRadius);
-        ctx.restore();
+    if (!champIconAsset.buffer) return;
+    const champImg = await loadImage(champIconAsset.buffer);
+    drawClippedImage(ctx, champImg, x, y, size, 'circle');
+
+    // Calculate level circle position and size
+    const radius = Math.floor(size * LEVEL_CIRCLE_RATIO);
+    const centerX = x + size - radius - LEVEL_CIRCLE_OFFSET + radius;
+    const centerY = y + size - radius - LEVEL_CIRCLE_OFFSET + radius;
+
+    // Draw level circle with shadow
+    ctx.save();
+    applyShadow(ctx, LEVEL_CIRCLE_SHADOW_COLOR, LEVEL_CIRCLE_SHADOW_BLUR);
+    drawCircle(ctx, centerX, centerY, radius, LEVEL_CIRCLE_COLOR, LEVEL_CIRCLE_OPACITY);
+    clearShadow(ctx);
+
+    // Draw level number with subtle shadow
+    ctx.font = fontString({size: Math.floor(radius * 1.2), weight: 'bold'});
+    ctx.fillStyle = LEVEL_TEXT_COLOR;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    applyShadow(ctx, LEVEL_TEXT_SHADOW_COLOR, LEVEL_TEXT_SHADOW_BLUR);
+    ctx.fillText(String(champLevel), centerX, centerY);
+    ctx.restore();
+}
+
+async function drawStatsVerticalList(
+    ctx: CanvasRenderingContext2D,
+    match: any,
+    participant: any,
+    x: number,
+    y: number
+) {
+    let lines;
+    if (match.info.gameMode === 'CHERRY') {
+        const placement = participant.placement || 0;
+        const placementText = placement > 0 ? `Placement: ${placement}` : 'Placement: -';
+        const statFont = fontString({size: 15, weight: 'bold', family: NUMBER_FONT_FAMILY});
+        const statColor = '#e05c5c';
+        lines = [
+            {text: placementText, color: statColor, font: statFont}
+        ];
+    } else {
+        const team = match.info.participants.filter((p: any) => p.teamId === participant.teamId);
+        const teamKills = team.reduce((sum: number, p: any) => sum + (p.kills || 0), 0);
+        const killP = teamKills > 0 ? Math.round(((participant.kills + participant.assists) / teamKills) * 100) : 0;
+        const cs = (participant.totalMinionsKilled || 0) + (participant.neutralMinionsKilled || 0);
+        const durationMin = Math.max(1, (participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000)) / 60);
+        const csPerMin = cs / durationMin;
+        const vision = participant.visionScore || 0;
+        let rank = participant.tier ? `${participant.tier} ${participant.rank || ''}`.trim() : '';
+        if (!rank && participant.leagueTier) rank = participant.leagueTier;
+        if (!rank) rank = 'Unranked';
+        const statFont = fontString({size: 13, family: NUMBER_FONT_FAMILY});
+        const statFontBold = fontString({size: 13, weight: 'bold', family: NUMBER_FONT_FAMILY});
+        const statColor = '#ccc';
+        const killPColor = '#e05c5c';
+        lines = [
+            {text: `${killP}% Kill P.`, color: killPColor, font: statFontBold},
+            {text: `${cs} CS (${csPerMin.toFixed(1)})`, color: statColor, font: statFont},
+            {text: `${vision} Vision`, color: statColor, font: statFont},
+            {text: rank, color: rank === 'Unranked' ? '#bdbdbd' : statColor, font: statFontBold},
+        ];
     }
+    await drawVerticalList(ctx, lines, x, y, 18, (line, lx, ly) => {
+        ctx.save();
+        ctx.font = line.font;
+        ctx.fillStyle = line.color;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(line.text, lx, ly);
+        ctx.restore();
+    });
 }
 
 async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: number[], summonerSpellsJson: any[], x: number, y: number, size: number, gap: number) {
@@ -395,4 +493,43 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
             drawClippedImage(ctx, img, drawX, drawY, size, 'circle');
         }
     });
+}
+
+// Draws a multikill label (if any) to the right of the items in a rounded rectangle box
+function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: any, champX: number, itemsY: number, ITEM_SIZE: number, ITEM_GAP: number) {
+    const multikillLabels = [
+        {key: 'pentaKills', label: 'Penta Kill'},
+        {key: 'quadraKills', label: 'Quadra Kill'},
+        {key: 'tripleKills', label: 'Triple Kill'},
+        {key: 'doubleKills', label: 'Double Kill'}
+    ];
+    let multikillLabel = '';
+    for (const {key, label} of multikillLabels) {
+        if (participant[key] && participant[key] > 0) {
+            multikillLabel = label;
+            break;
+        }
+    }
+    if (multikillLabel) {
+        const itemsCount = 7;
+        const itemsTotalWidth = itemsCount * ITEM_SIZE + (itemsCount - 1) * ITEM_GAP;
+        // Use drawRoundedBoxLabel for consistent style
+        const font = fontString({size: 16, weight: 'bold', family: NUMBER_FONT_FAMILY});
+        const paddingX = 14; // less padding
+        const paddingY = 4;
+        const borderRadius = 12;
+        ctx.font = font;
+        const labelWidth = ctx.measureText(multikillLabel).width + paddingX * 2;
+        const labelHeight = parseInt(font.match(/\d+/)?.[0] || '16', 10) + paddingY * 2;
+        const labelX = champX + itemsTotalWidth + 16;
+        const labelY = itemsY + (ITEM_SIZE - labelHeight) / 2;
+        drawRoundedBoxLabel(ctx, multikillLabel, labelX, labelY, {
+            font,
+            textColor: '#fff',
+            bgColor: '#c0392b',
+            paddingX,
+            paddingY,
+            borderRadius
+        });
+    }
 }
