@@ -19,6 +19,7 @@ if (!fs.existsSync(dataDir)) {
 await configManager.init();
 
 if (!process.env.DISCORD_BOT_TOKEN) {
+    console.log('Environment variables not found, loading from .env file');
     dotenv.config();
 }
 
