@@ -1,5 +1,4 @@
-// @ts-ignore
-import {Regions} from 'twisted/dist/constants';
+import {Regions} from 'twisted/dist/constants/index.js';
 
 export const leagueRegionChoices = [
     {name: 'Brazil', value: Regions.BRAZIL},
