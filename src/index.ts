@@ -17,7 +17,10 @@ if (!fs.existsSync(dataDir)) {
 }
 
 await configManager.init();
-dotenv.config();
+
+if (!process.env.DISCORD_BOT_TOKEN) {
+    dotenv.config();
+}
 
 // Extend Client to add commands property
 class FakegamingBot extends Client {

@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Add a unique argument to break the cache on every build
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 
 # Clone your bot's repository
 RUN git clone https://github.com/Zeffuro/fakegaming-bot.git .
