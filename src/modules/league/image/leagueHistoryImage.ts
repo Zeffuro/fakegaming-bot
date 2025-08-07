@@ -495,21 +495,25 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
     });
 }
 
-// Draws a multikill label (if any) to the right of the items in a rounded rectangle box
-function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: any, champX: number, itemsY: number, ITEM_SIZE: number, ITEM_GAP: number) {
+// Helper to get the multikill label for a participant
+function getMultikillLabel(participant: any): string {
     const multikillLabels = [
         {key: 'pentaKills', label: 'Penta Kill'},
         {key: 'quadraKills', label: 'Quadra Kill'},
         {key: 'tripleKills', label: 'Triple Kill'},
         {key: 'doubleKills', label: 'Double Kill'}
     ];
-    let multikillLabel = '';
     for (const {key, label} of multikillLabels) {
         if (participant[key] && participant[key] > 0) {
-            multikillLabel = label;
-            break;
+            return label;
         }
     }
+    return '';
+}
+
+// Draws a multikill label (if any) to the right of the items in a rounded rectangle box
+function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: any, champX: number, itemsY: number, ITEM_SIZE: number, ITEM_GAP: number) {
+    const multikillLabel = getMultikillLabel(participant);
     if (multikillLabel) {
         const itemsCount = 7;
         const itemsTotalWidth = itemsCount * ITEM_SIZE + (itemsCount - 1) * ITEM_GAP;

@@ -39,8 +39,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     try {
-        const summonerData = await getSummoner(identity.puuid, identity.region);
-        const leagueEntries = await getSummonerDetails(identity.puuid, identity.region);
+        const summonerResult = await getSummoner(identity.puuid, identity.region);
+        if (!summonerResult.success) {
+            await interaction.editReply(`Failed to fetch summoner: ${summonerResult.error}`);
+            return;
+        }
+        const summonerData = summonerResult.data;
+
+        const leagueResult = await getSummonerDetails(identity.puuid, identity.region);
+        if (!leagueResult.success) {
+            await interaction.editReply(`Failed to fetch ranked stats: ${leagueResult.error}`);
+            return;
+        }
+        const leagueEntries = leagueResult.data;
 
         const embed = new EmbedBuilder()
             .setTitle(`Stats for ${identity.summoner} [${identity.region}]`)

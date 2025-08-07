@@ -1,19 +1,13 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder} from 'discord.js';
-import {getMatchHistory, getMatchDetails} from '../../../services/riotService.js';
+import {getTftMatchHistory, getTftMatchDetails} from '../../../services/riotService.js';
 import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
 import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
-import {getAsset} from "../../../utils/assetCache.js";
-import {fileURLToPath} from 'url';
-import path from 'path';
-import {generateLeagueHistoryImage} from '../image/leagueHistoryImage.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import {generateTftHistoryImage} from '../image/tftHistoryImage.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('league-history')
-    .setDescription('Get recent League of Legends match history for a summoner')
+    .setName('tft-history')
+    .setDescription('Get recent Teamfight Tactics match history for a summoner')
     .addStringOption(option =>
         option.setName('summoner')
             .setDescription('Summoner name or Riot ID (e.g. Zeffuro#EUW)')
@@ -31,7 +25,7 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = false;
+export const testOnly = true;
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
@@ -45,16 +39,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const regionGroup = regionToRegionGroupForAccountAPI(identity.region);
-    const matchHistoryResult = await getMatchHistory(identity.puuid, regionGroup, 0, 5);
+    const matchHistoryResult = await getTftMatchHistory(identity.puuid, regionGroup, 0, 5);
     if (!matchHistoryResult.success) {
-        await interaction.editReply(`Failed to fetch match history: ${matchHistoryResult.error}`);
+        await interaction.editReply(`Failed to fetch TFT match history: ${matchHistoryResult.error}`);
         return;
     }
     const matchIds = matchHistoryResult.data;
 
     const matches = [];
     for (const matchId of matchIds) {
-        const matchResult = await getMatchDetails(matchId, regionGroup);
+        const matchResult = await getTftMatchDetails(matchId, regionGroup);
         if (!matchResult.success) {
             await interaction.editReply(`Failed to fetch details for match ${matchId}: ${matchResult.error}`);
             return;
@@ -62,11 +56,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         matches.push(matchResult.data);
     }
 
-    const buffer = await generateLeagueHistoryImage(matches, identity);
-    const attachment = new AttachmentBuilder(buffer, {name: 'league-history.png'});
+    const buffer = await generateTftHistoryImage(matches, identity);
+    const attachment = new AttachmentBuilder(buffer, {name: 'tft-history.png'});
 
     await interaction.editReply({
-        content: `Recent matches for ${identity.summoner} [${identity.region}]`,
+        content: `Recent TFT matches for ${identity.summoner} [${identity.region}]`,
         files: [attachment]
     });
 }

@@ -1,18 +1,23 @@
 import {configManager} from '../config/configManagerSingleton.js';
-import {RiotApi, LolApi} from 'twisted';
+import {RiotApi, LolApi, TftApi} from 'twisted';
 import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
 
-const lolApi = new LolApi({key: process.env.RIOT_API_KEY});
-const riotApi = new RiotApi({key: process.env.RIOT_API_KEY});
+const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
+const riotApi = new RiotApi({key: process.env.RIOT_LEAGUE_API_KEY});
 
 const puuidCache = new Map<string, string>();
 
-export async function getSummoner(puuid: string, region: Regions): Promise<any> {
+export async function getSummoner(puuid: string, region: Regions): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
     try {
         const {response} = await lolApi.Summoner.getByPUUID(puuid, region as any);
-        return response;
-    } catch (error) {
-        throw new Error('Failed to fetch summoner');
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch summoner'};
     }
 }
 
@@ -30,30 +35,42 @@ export async function getPUUIDByRiotId(gameName: string, tagLine: string, region
     }
 }
 
-export async function getMatchHistory(puuid: string, region: AccountAPIRegionGroups, start: number = 0, count: number = 20): Promise<any> {
+export async function getMatchHistory(puuid: string, region: AccountAPIRegionGroups, start: number = 0, count: number = 20): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
     try {
         const {response} = await lolApi.MatchV5.list(puuid, region, {start, count});
-        return response;
-    } catch (error) {
-        throw new Error('Failed to fetch match history');
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch match history'};
     }
 }
 
-export async function getMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<any> {
+export async function getMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
     try {
         const {response} = await lolApi.MatchV5.get(matchId, region);
-        return response;
-    } catch (error) {
-        throw new Error('Failed to fetch match details');
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch match details'};
     }
 }
 
-export async function getSummonerDetails(puuid: string, region: Regions): Promise<any> {
+export async function getSummonerDetails(puuid: string, region: Regions): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
     try {
         const {response} = await lolApi.League.byPUUID(puuid, region);
-        return response;
-    } catch (error) {
-        throw new Error('Failed to fetch summoner details');
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch summoner details'};
     }
 }
 
@@ -88,7 +105,10 @@ export async function resolveLeagueIdentity(options: {
             puuid = await getPUUIDByRiotId(gameName, tagLine, accountRegion);
         } else {
             const summonerData = await getSummoner(gameName, region);
-            puuid = summonerData.puuid;
+            if (!summonerData.success) {
+                throw new Error(summonerData.error || 'Failed to fetch summoner');
+            }
+            puuid = summonerData.data.puuid;
         }
     }
 
@@ -97,4 +117,31 @@ export async function resolveLeagueIdentity(options: {
     }
 
     return {summoner, region, puuid};
+}
+
+// TFT: Teamfight Tactics
+export async function getTftMatchHistory(puuid: string, region: AccountAPIRegionGroups, start: number = 0, count: number = 20): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
+    try {
+        const {response} = await tftApi.Match.list(puuid, region, {start, count});
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch TFT match history'};
+    }
+}
+
+export async function getTftMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
+    success: boolean,
+    data?: any,
+    error?: string
+}> {
+    try {
+        const {response} = await tftApi.Match.get(matchId, region);
+        return {success: true, data: response};
+    } catch (error: any) {
+        return {success: false, error: error?.message || 'Failed to fetch TFT match details'};
+    }
 }
