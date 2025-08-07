@@ -9,6 +9,9 @@ export async function getAugmentData(): Promise<any> {
         'cherry-augments.json',
         'augmentdata'
     );
+    if (!asset.buffer) {
+        throw new Error('Asset buffer is null');
+    }
     cachedAugmentsData = JSON.parse(asset.buffer.toString());
     return cachedAugmentsData;
 }

@@ -9,6 +9,9 @@ export async function getSummonerSpellData(): Promise<any> {
         'summoner-spells.json',
         'summonerspelldata'
     );
+    if (!asset.buffer) {
+        throw new Error('Asset buffer is null');
+    }
     cachedSummonerSpellsData = JSON.parse(asset.buffer.toString());
     return cachedSummonerSpellsData;
 }

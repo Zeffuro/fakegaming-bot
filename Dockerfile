@@ -15,7 +15,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Add a unique argument to break the cache on every build
-ARG CACHEBUST=2
+# You will need to provide a new value for this in Portainer
+ARG CACHEBUST=12
 
 # Clone your bot's repository
 RUN git clone https://github.com/Zeffuro/fakegaming-bot.git .
@@ -23,5 +24,6 @@ RUN git clone https://github.com/Zeffuro/fakegaming-bot.git .
 # Install the Node.js dependencies
 RUN npm install
 
-# Command to run the bot using ts-node
-CMD ["node", "--loader", "ts-node/esm", "src/index.ts"]
+RUN npx tsc
+
+CMD ["node", "dist/index.js"]

@@ -9,6 +9,9 @@ export async function getPerksData(): Promise<any> {
         'perks.json',
         'perksdata'
     );
+    if (!asset.buffer) {
+        throw new Error('Asset buffer is null');
+    }
     cachedPerksData = JSON.parse(asset.buffer.toString());
     return cachedPerksData;
 }

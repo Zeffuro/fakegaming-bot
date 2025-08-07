@@ -9,6 +9,9 @@ export async function getItemData(): Promise<any> {
         'items.json',
         'itemdata'
     );
+    if (!asset.buffer) {
+        throw new Error('Asset buffer is null');
+    }
     cachedItemsData = JSON.parse(asset.buffer.toString());
     return cachedItemsData;
 }

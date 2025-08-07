@@ -9,6 +9,9 @@ export async function getPerkStylesData(): Promise<any> {
         'perkstyles.json',
         'perkstylesdata'
     );
+    if (!asset.buffer) {
+        throw new Error('Asset buffer is null');
+    }
     cachedPerkStylesData = JSON.parse(asset.buffer.toString());
     return cachedPerkStylesData;
 }
