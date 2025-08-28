@@ -32,23 +32,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    const existing = configManager.youtubeManager
-        .getVideoChannels()
-        .some(c => c.youtubeChannelId === youtubeChannelId);
-
-    if (existing) {
-        await interaction.reply({
-            content: `Youtube channel \`${youtubeUsername}\` is already configured for video notifications.`,
-            flags: MessageFlags.Ephemeral
-        });
-        return;
-    }
-
     let youtubeChannelId: string | null;
     youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
     if (!youtubeChannelId) {
         await interaction.reply({
             content: `Youtube channel \`${youtubeUsername}\` does not exist.`,
+            flags: MessageFlags.Ephemeral
+        });
+        return;
+    }
+
+    const existing = configManager.youtubeManager.getVideoChannel(youtubeChannelId, discordChannel.id);
+
+    if (existing) {
+        await interaction.reply({
+            content: `Youtube channel \`${youtubeUsername}\` is already configured for video notifications in this channel.`,
             flags: MessageFlags.Ephemeral
         });
         return;

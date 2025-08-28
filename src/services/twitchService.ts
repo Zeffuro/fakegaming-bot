@@ -1,6 +1,16 @@
 import {ApiClient} from '@twurple/api';
 import {AppTokenAuthProvider} from '@twurple/auth';
-import {ChannelType, Client, EmbedBuilder, TextChannel, NewsChannel, ThreadChannel} from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelType,
+    Client,
+    EmbedBuilder,
+    TextChannel,
+    NewsChannel,
+    ThreadChannel
+} from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
@@ -60,7 +70,18 @@ export async function subscribeAllStreams(client: Client) {
                     ? stream.customMessage.replace('{streamer}', user.displayName)
                     : `Hey @everyone, ${user.displayName} is now live on https://twitch.tv/${user.name} ! Go check it out!`;
 
-                await channel.send({content: message, embeds: [embed]});
+                const watchButton = new ButtonBuilder()
+                    .setLabel('Watch Stream')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(`https://twitch.tv/${user.name}`);
+
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
+
+                await channel.send({
+                    content: message,
+                    embeds: [embed],
+                    components: [row]
+                });
             }
         }
         liveStatus[user.id] = isLive;

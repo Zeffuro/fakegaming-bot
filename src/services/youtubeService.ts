@@ -1,12 +1,37 @@
 import axios from 'axios';
 import Parser from 'rss-parser';
-import {ChannelType, Client, EmbedBuilder, TextChannel, NewsChannel, ThreadChannel} from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ChannelType,
+    Client,
+    EmbedBuilder,
+    TextChannel,
+    NewsChannel,
+    ThreadChannel
+} from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 
 const apiKey = process.env.YOUTUBE_API_KEY!;
 const liveStatus: Record<string, boolean> = {};
 
-const parser = new Parser();
+const parser = new Parser({
+    customFields: {
+        item: [
+            'yt:videoId',
+            'author',
+            'published',
+            'title',
+            ['media:group', 'mediaGroup', {keepArray: false}],
+            ['media:community', 'mediaCommunity', {keepArray: false}],
+            ['media:thumbnail', 'mediaThumbnail', {keepArray: false}],
+            ['media:description', 'mediaDescription', {keepArray: false}],
+            ['media:statistics', 'mediaStatistics', {keepArray: false}],
+            ['media:starRating', 'mediaStarRating', {keepArray: false}]
+        ]
+    }
+});
 
 export async function getYoutubeChannelId(identifier: string): Promise<string | null> {
     const isChannelId = /^UC[\w-]{22}$/.test(identifier);
@@ -69,7 +94,7 @@ export async function checkAndAnnounceNewVideos(client: Client) {
         if (!feedItems || feedItems.length === 0) return;
 
         const latestVideo = feedItems[0];
-        if (ytChannel.lastVideoId === latestVideo.id) return; // Already announced
+        if (ytChannel.lastVideoId === latestVideo['yt:videoId']) return; // Already announced
 
         const discordChannel = client.channels.cache.get(ytChannel.discordChannelId);
         if (
@@ -80,14 +105,11 @@ export async function checkAndAnnounceNewVideos(client: Client) {
                 discordChannel.type === ChannelType.PrivateThread)
         ) {
             const mediaGroup = latestVideo.mediaGroup || {};
-            const mediaCommunity = latestVideo.mediaCommunity || {};
-            const thumbnailUrl = mediaGroup['media:thumbnail']?.$.url ?? null;
-            const description = (mediaGroup['media:description'] ?? latestVideo.contentSnippet ?? 'New video!').slice(0, 4000);
-            const views = mediaCommunity['media:statistics']?.$.views?.toString() ?? 'N/A';
-            const starRating = mediaCommunity['media:starRating']?.$;
-            const rating = starRating
-                ? `${starRating.average} (${starRating.count} ratings)`
-                : 'N/A';
+            const mediaCommunity = mediaGroup['media:community']?.[0] || latestVideo.mediaCommunity || {};
+
+            const thumbnailUrl = mediaGroup['media:thumbnail']?.[0]?.$.url
+                || latestVideo.mediaThumbnail?.$.url
+                || null;
 
             const embed = new EmbedBuilder()
                 .setColor(0xff0000)
@@ -97,27 +119,24 @@ export async function checkAndAnnounceNewVideos(client: Client) {
                     name: latestVideo.author ?? 'Unknown',
                     url: `https://youtube.com/channel/${ytChannel.youtubeChannelId}`
                 })
-                .setDescription(description)
-                .setThumbnail(thumbnailUrl)
-                .addFields(
-                    {name: 'Views', value: views, inline: true},
-                    {name: 'Rating', value: rating, inline: true},
-                    {
-                        name: 'Published',
-                        value: latestVideo.pubDate ? `<t:${Math.floor(new Date(latestVideo.pubDate).getTime() / 1000)}:f>` : 'N/A',
-                        inline: false
-                    }
-                )
-                .setTimestamp(new Date(latestVideo.pubDate ?? Date.now()));
+                .setImage(thumbnailUrl)
+                .setTimestamp(new Date(latestVideo.published ?? Date.now()));
+
+            const watchButton = new ButtonBuilder()
+                .setLabel('Watch Video')
+                .setStyle(ButtonStyle.Link)
+                .setURL(latestVideo.link ?? 'https://youtube.com');
+
+            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
 
             const message = ytChannel.customMessage
-                ? ytChannel.customMessage.replace('{title}', latestVideo.title ?? 'New Video')
+                ? ytChannel.customMessage.replace('{title}', latestVideo.title ?? 'New Video') + '\n' + latestVideo.link
                 : `Hey @everyone, new video from ${latestVideo.author}: ${latestVideo.link}`;
 
-            await (discordChannel as TextChannel).send({content: message, embeds: [embed]});
+            await (discordChannel as TextChannel).send({content: message, embeds: [embed], components: [row]});
 
             // Update lastVideoId and persist
-            ytChannel.lastVideoId = latestVideo.id;
+            ytChannel.lastVideoId = latestVideo['yt:videoId'];
             await configManager.youtubeManager.setVideoChannel(ytChannel);
         }
     }));

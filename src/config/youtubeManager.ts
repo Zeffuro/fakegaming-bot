@@ -20,8 +20,10 @@ export class YoutubeManager {
         return db.data!.youtubeVideoChannels;
     }
 
-    getVideoChannel(channelId: string): YoutubeVideoConfig | undefined {
-        return db.data!.youtubeVideoChannels.find(channel => channel.youtubeChannelId === channelId);
+    getVideoChannel(youtubeChannelId: string, discordChannelId: string): YoutubeVideoConfig | undefined {
+        return db.data!.youtubeVideoChannels.find(
+            channel => channel.youtubeChannelId === youtubeChannelId && channel.discordChannelId === discordChannelId
+        );
     }
 
     getVideoChannels(): YoutubeVideoConfig[] {
@@ -30,7 +32,9 @@ export class YoutubeManager {
     }
 
     async setVideoChannel(channel: YoutubeVideoConfig) {
-        const idx = db.data!.youtubeVideoChannels.findIndex(user => channel.youtubeChannelId === channel.youtubeChannelId);
+        const idx = db.data!.youtubeVideoChannels.findIndex(
+            c => c.youtubeChannelId === channel.youtubeChannelId && c.discordChannelId === channel.discordChannelId
+        );
         if (idx !== -1) {
             db.data!.youtubeVideoChannels[idx] = channel;
         } else {
