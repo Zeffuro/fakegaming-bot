@@ -16,7 +16,7 @@ WORKDIR /app
 
 # Add a unique argument to break the cache on every build
 # You will need to provide a new value for this in Portainer
-ARG CACHEBUST=12
+ARG CACHEBUST=13
 
 # Clone your bot's repository
 RUN git clone https://github.com/Zeffuro/fakegaming-bot.git .
