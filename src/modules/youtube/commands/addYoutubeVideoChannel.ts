@@ -1,14 +1,14 @@
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
-import {verifyTwitchUser} from '../../../services/twitchService.js';
+import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('add-twitch-stream')
-    .setDescription('Add a Twitch stream for notifications')
+    .setName('add-youtube-channel')
+    .setDescription('Add a Youtube Channel for new video notifications')
     .addStringOption(option =>
         option.setName('username')
-            .setDescription('Twitch username')
+            .setDescription('Youtube username')
             .setRequired(true)
     )
     .addChannelOption(option =>
@@ -28,23 +28,38 @@ export const testOnly = false;
 export async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
 
-    const twitchUsername = interaction.options.getString('username', true);
+    const youtubeUsername = interaction.options.getString('username', true);
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    if (!(await verifyTwitchUser(twitchUsername))) {
+    const existing = configManager.youtubeManager
+        .getVideoChannels()
+        .some(c => c.youtubeChannelId === youtubeChannelId);
+
+    if (existing) {
         await interaction.reply({
-            content: `Twitch user \`${twitchUsername}\` does not exist.`,
+            content: `Youtube channel \`${youtubeUsername}\` is already configured for video notifications.`,
             flags: MessageFlags.Ephemeral
         });
         return;
     }
 
-    await configManager.twitchManager.addStream({
-        twitchUsername,
+    let youtubeChannelId: string | null;
+    youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
+    if (!youtubeChannelId) {
+        await interaction.reply({
+            content: `Youtube channel \`${youtubeUsername}\` does not exist.`,
+            flags: MessageFlags.Ephemeral
+        });
+        return;
+    }
+
+    await configManager.youtubeManager.addVideoChannel({
+        youtubeChannelId,
         discordChannelId: discordChannel.id,
+        lastVideoId: undefined,
         customMessage,
     });
 
-    await interaction.reply(`Twitch stream \`${twitchUsername}\` added for notifications in <#${discordChannel.id}>.`);
+    await interaction.reply(`Youtube channel \`${youtubeUsername}\` added for video notifications in #${discordChannel.id}.`);
 }

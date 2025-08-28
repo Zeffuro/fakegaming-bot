@@ -3,12 +3,14 @@ import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
 import {ServerManager} from './serverManager.js';
 import {TwitchManager} from './twitchManager.js';
+import {YoutubeManager} from "./youtubeManager.js";
 
 export class ConfigManager {
     userManager = new UserManager();
     quoteManager = new QuoteManager();
     serverManager = new ServerManager();
     twitchManager = new TwitchManager();
+    youtubeManager = new YoutubeManager();
 
     async init() {
         await db.read();

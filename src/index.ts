@@ -7,6 +7,7 @@ import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 import {configManager} from './config/configManagerSingleton.js';
 import {subscribeAllStreams} from "./services/twitchService.js";
+import {checkAndAnnounceNewVideos} from './services/youtubeService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,11 +58,17 @@ for (const folder of moduleFolders) {
 client.once('ready', async () => {
     console.log(`Logged in as ${client.user?.tag}`);
     await subscribeAllStreams(client); // Initial check
+    await checkAndAnnounceNewVideos(client);
 
-    // Poll every 60 seconds
+    // Poll Twitch every 60 seconds
     setInterval(() => {
         subscribeAllStreams(client);
     }, 60_000);
+
+    // Poll YouTube Videos every 5 minutes
+    setInterval(() => {
+        checkAndAnnounceNewVideos(client);
+    }, 5 * 60_000);
 });
 
 client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {

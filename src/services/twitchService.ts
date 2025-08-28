@@ -58,7 +58,7 @@ export async function subscribeAllStreams(client: Client) {
 
                 const message = stream.customMessage
                     ? stream.customMessage.replace('{streamer}', user.displayName)
-                    : `Hey <@everyone>, ${user.displayName} is now live on https://twitch.tv/${user.name} ! Go check it out!`;
+                    : `Hey @everyone, ${user.displayName} is now live on https://twitch.tv/${user.name} ! Go check it out!`;
 
                 await channel.send({content: message, embeds: [embed]});
             }

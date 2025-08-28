@@ -4,13 +4,21 @@ import {UserConfig} from '../types/userConfig.js';
 import {ServerConfig} from '../types/serverConfig.js';
 import {QuoteConfig} from '../types/quoteConfig.js';
 import {TwitchStreamConfig} from "../types/twitchStreamConfig.js";
+import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
 
 export type Data = {
     users: UserConfig[];
     servers: ServerConfig[];
     quotes: QuoteConfig[];
     twitchStreams: TwitchStreamConfig[];
+    youtubeVideoChannels: YoutubeVideoConfig[];
 };
 
 const adapter = new JSONFile<Data>('data/config.json');
-export const db = new Low<Data>(adapter, {users: [], servers: [], quotes: [], twitchStreams: []});
+export const db = new Low<Data>(adapter, {
+    users: [],
+    servers: [],
+    quotes: [],
+    twitchStreams: [],
+    youtubeVideoChannels: []
+});
