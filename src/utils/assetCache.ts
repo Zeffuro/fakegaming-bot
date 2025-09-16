@@ -7,7 +7,8 @@ import axios from 'axios';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const assetRoot = path.join(__dirname, '../..', 'data', 'assets');
+const dataRoot = process.env.DATA_ROOT || path.join(__dirname, '..', '..', 'data');
+const assetRoot = path.join(dataRoot, 'assets');
 
 export function getAssetCacheDir(type: string): string {
     const dir = path.join(assetRoot, type);

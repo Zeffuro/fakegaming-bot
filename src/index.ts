@@ -13,10 +13,7 @@ import {checkAndSendReminders} from "./services/reminderService.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, {recursive: true});
-}
+const dataDir = process.env.DATA_ROOT || path.join(__dirname, '..', 'data');
 
 await configManager.init();
 

@@ -12,18 +12,12 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory inside the container
-WORKDIR /app
+WORKDIR /app/code
 
-# Add a unique argument to break the cache on every build
-# You will need to provide a new value for this in Portainer
-ARG CACHEBUST=13
-
-# Clone your bot's repository
-RUN git clone https://github.com/Zeffuro/fakegaming-bot.git .
+COPY package*.json ./
 
 # Install the Node.js dependencies
 RUN npm install
 
-RUN npx tsc
-
+# The command to run your bot, relative to the WORKDIR
 CMD ["node", "dist/index.js"]

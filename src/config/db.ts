@@ -6,6 +6,7 @@ import {QuoteConfig} from '../types/quoteConfig.js';
 import {TwitchStreamConfig} from "../types/twitchStreamConfig.js";
 import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
 import {ReminderConfig} from "../types/reminderConfig.js";
+import path from "path";
 
 export type Data = {
     users: UserConfig[];
@@ -16,7 +17,9 @@ export type Data = {
     reminders: ReminderConfig[];
 };
 
-const adapter = new JSONFile<Data>('data/config.json');
+const dataRoot = process.env.DATA_ROOT || 'data';
+const adapter = new JSONFile<Data>(path.join(dataRoot, 'config.json'));
+
 export const db = new Low<Data>(adapter, {
     users: [],
     servers: [],
