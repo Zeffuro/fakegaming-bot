@@ -4,6 +4,7 @@ import {QuoteManager} from './quoteManager.js';
 import {ServerManager} from './serverManager.js';
 import {TwitchManager} from './twitchManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
+import {ReminderManager} from "./reminderManager.js";
 
 export class ConfigManager {
     userManager = new UserManager();
@@ -11,6 +12,7 @@ export class ConfigManager {
     serverManager = new ServerManager();
     twitchManager = new TwitchManager();
     youtubeManager = new YoutubeManager();
+    reminderManager = new ReminderManager();
 
     async init() {
         await db.read();

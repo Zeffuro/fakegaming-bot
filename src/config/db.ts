@@ -5,6 +5,7 @@ import {ServerConfig} from '../types/serverConfig.js';
 import {QuoteConfig} from '../types/quoteConfig.js';
 import {TwitchStreamConfig} from "../types/twitchStreamConfig.js";
 import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
+import {ReminderConfig} from "../types/reminderConfig.js";
 
 export type Data = {
     users: UserConfig[];
@@ -12,6 +13,7 @@ export type Data = {
     quotes: QuoteConfig[];
     twitchStreams: TwitchStreamConfig[];
     youtubeVideoChannels: YoutubeVideoConfig[];
+    reminders: ReminderConfig[];
 };
 
 const adapter = new JSONFile<Data>('data/config.json');
@@ -20,5 +22,6 @@ export const db = new Low<Data>(adapter, {
     servers: [],
     quotes: [],
     twitchStreams: [],
-    youtubeVideoChannels: []
+    youtubeVideoChannels: [],
+    reminders: []
 });
