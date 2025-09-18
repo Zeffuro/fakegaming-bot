@@ -11,7 +11,7 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = true;
+export const testOnly = false;
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user', false);
