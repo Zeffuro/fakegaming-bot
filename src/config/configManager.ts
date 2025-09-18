@@ -5,6 +5,7 @@ import {ServerManager} from './serverManager.js';
 import {TwitchManager} from './twitchManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
+import {BirthdayManager} from "./birthdayManager.js";
 
 export class ConfigManager {
     userManager = new UserManager();
@@ -13,6 +14,7 @@ export class ConfigManager {
     twitchManager = new TwitchManager();
     youtubeManager = new YoutubeManager();
     reminderManager = new ReminderManager();
+    birthdayManager = new BirthdayManager();
 
     async init() {
         await db.read();

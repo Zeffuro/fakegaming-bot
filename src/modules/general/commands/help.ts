@@ -7,7 +7,8 @@ export const data = new SlashCommandBuilder()
 export const testOnly = false;
 
 export async function execute(interaction: any) {
-    const commands = interaction.client.commands;
+    const commands = Array.from(interaction.client.commands.entries())
+        .sort(([a], [b]) => a.localeCompare(b));
     let helpText = '**Available Commands:**\n\n';
     for (const [name, cmd] of commands) {
         helpText += `\`/${name}\` — ${cmd.data.description}\n`;

@@ -9,6 +9,8 @@ import {configManager} from './config/configManagerSingleton.js';
 import {subscribeAllStreams} from "./services/twitchService.js";
 import {checkAndAnnounceNewVideos} from './services/youtubeService.js';
 import {checkAndSendReminders} from "./services/reminderService.js";
+import {checkAndAnnounceBirthdays} from "./services/birthdayService.js";
+import {scheduleAtTime} from './utils/scheduleAtTime.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,6 +50,7 @@ for (const folder of moduleFolders) {
             client.commands.set(commandModule.data.name, {
                 data: commandModule.data,
                 execute: commandModule.execute,
+                autocomplete: commandModule.autocomplete,
             });
         }
     }
@@ -58,6 +61,7 @@ client.once('clientReady', async () => {
     await subscribeAllStreams(client); // Initial check
     await checkAndAnnounceNewVideos(client);
     await checkAndSendReminders(client);
+    await checkAndAnnounceBirthdays(client);
 
     // Poll Twitch every 60 seconds
     setInterval(() => {
@@ -73,17 +77,29 @@ client.once('clientReady', async () => {
     setInterval(() => {
         checkAndSendReminders(client);
     }, 60_000);
+
+    // Check birthdays daily at 9 AM
+    scheduleAtTime(9, 0, () => {
+        checkAndAnnounceBirthdays(client);
+    });
 });
 
 client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {
-    if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
     const command = client.commands.get(interaction.commandName);
     if (!command) return;
-    try {
-        await command.execute(interaction);
-    } catch (error) {
-        console.error(error);
-        await interaction.reply({content: 'Error executing command.', flags: MessageFlags.Ephemeral});
+
+    if (interaction.isAutocomplete() && command.autocomplete) {
+        await command.autocomplete(interaction);
+        return;
+    }
+    if (interaction.isChatInputCommand()) {
+        try {
+            await command.execute(interaction);
+        } catch (error) {
+            console.error(error);
+            await interaction.reply({content: 'Error executing command.', flags: MessageFlags.Ephemeral});
+        }
     }
 });
 

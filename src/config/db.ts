@@ -6,6 +6,7 @@ import {QuoteConfig} from '../types/quoteConfig.js';
 import {TwitchStreamConfig} from "../types/twitchStreamConfig.js";
 import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
 import {ReminderConfig} from "../types/reminderConfig.js";
+import {BirthdayConfig} from "../types/birthdayConfig.js";
 import path from "path";
 
 export type Data = {
@@ -15,6 +16,7 @@ export type Data = {
     twitchStreams: TwitchStreamConfig[];
     youtubeVideoChannels: YoutubeVideoConfig[];
     reminders: ReminderConfig[];
+    birthdays: BirthdayConfig[];
 };
 
 const dataRoot = process.env.DATA_ROOT || 'data';
@@ -26,5 +28,6 @@ export const db = new Low<Data>(adapter, {
     quotes: [],
     twitchStreams: [],
     youtubeVideoChannels: [],
-    reminders: []
+    reminders: [],
+    birthdays: []
 });
