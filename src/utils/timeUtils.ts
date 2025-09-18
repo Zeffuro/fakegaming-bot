@@ -1,4 +1,6 @@
-import ms from 'ms';
+import * as msImport from 'ms';
+
+const ms = (msImport as any).default || msImport;
 
 export function parseTimespan(timespan: string): number | null {
     const result = ms(timespan);

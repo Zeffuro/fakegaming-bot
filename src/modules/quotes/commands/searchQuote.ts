@@ -15,7 +15,7 @@ export const testOnly = false;
 export async function execute(interaction: ChatInputCommandInteraction) {
     const text = interaction.options.getString('text', true);
     const guildId = interaction.guildId!;
-    const quotes = configManager.quoteManager.searchQuotes(guildId, text);
+    const quotes = configManager.quoteManager.searchQuotes({guildId, text});
 
     if (!quotes || quotes.length === 0) {
         await interaction.reply('No quotes found matching your search.');

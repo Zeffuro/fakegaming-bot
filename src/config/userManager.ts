@@ -7,7 +7,7 @@ export class UserManager {
         await db.write();
     }
 
-    getUser(discordId: string): UserConfig | undefined {
+    getUser({discordId}: { discordId: string }): UserConfig | undefined {
         return db.data!.users.find(user => user.discordId === discordId);
     }
 
@@ -21,16 +21,16 @@ export class UserManager {
         await db.write();
     }
 
-    async setTimezone(discordId: string, timezone: string) {
-        const user = this.getUser(discordId);
+    async setTimezone({discordId, timezone}: {discordId: string, timezone: string}) {
+        const user = this.getUser({discordId});
         if (user) {
             user.timezone = timezone;
             await this.setUser(user);
         }
     }
 
-    async setDefaultReminderTimeSpan(discordId: string, timespan: string) {
-        const user = this.getUser(discordId);
+    async setDefaultReminderTimeSpan({discordId, timespan}: {discordId: string, timespan: string}) {
+        const user = this.getUser({discordId});
         if (user) {
             user.defaultReminderTimeSpan = timespan;
             await this.setUser(user);

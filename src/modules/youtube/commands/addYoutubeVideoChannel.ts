@@ -42,7 +42,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const existing = configManager.youtubeManager.getVideoChannel(youtubeChannelId, discordChannel.id);
+    const existing = await configManager.youtubeManager.getVideoChannel({
+        youtubeChannelId,
+        discordChannelId: discordChannel.id
+    });
 
     if (existing) {
         await interaction.reply({

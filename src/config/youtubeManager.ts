@@ -20,7 +20,10 @@ export class YoutubeManager {
         return db.data!.youtubeVideoChannels;
     }
 
-    getVideoChannel(youtubeChannelId: string, discordChannelId: string): YoutubeVideoConfig | undefined {
+    async getVideoChannel({youtubeChannelId, discordChannelId}: {
+        youtubeChannelId: string,
+        discordChannelId: string
+    }): Promise<YoutubeVideoConfig | undefined> {
         return db.data!.youtubeVideoChannels.find(
             channel => channel.youtubeChannelId === youtubeChannelId && channel.discordChannelId === discordChannelId
         );

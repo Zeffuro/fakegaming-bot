@@ -8,15 +8,26 @@ export class BirthdayManager {
         await db.write();
     }
 
-    async hasBirthday({userId, channelId}: { userId: string; channelId: string }): Promise<boolean> {
+    async hasBirthday({userId, guildId}: { userId: string; guildId: string }): Promise<boolean> {
+        return !!this.getBirthday({userId, guildId});
+    }
+
+    getBirthday({userId, guildId}: { userId: string; guildId: string }): BirthdayConfig | undefined {
         db.data!.birthdays ||= [];
-        return db.data!.birthdays.some(
-            b => b.userId === userId && b.channelId === channelId
+        return db.data!.birthdays.find(
+            birthday => birthday.userId === userId && birthday.guildId === guildId
         );
     }
 
     getBirthdays(): BirthdayConfig[] {
         db.data!.birthdays ||= [];
         return db.data!.birthdays;
+    }
+
+    async removeBirthday({userId, guildId}: { userId: string, guildId: string }) {
+        db.data!.birthdays = db.data!.birthdays.filter(
+            birthday => !(birthday.userId === userId && birthday.guildId === guildId)
+        );
+        await db.write();
     }
 }

@@ -23,7 +23,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.userManager.setTimezone(userId, timezone);
+    await configManager.userManager.setTimezone({discordId: userId, timezone: timezone});
     await interaction.reply(`Timezone set to \`${timezone}\`.`);
 }
 

@@ -15,7 +15,7 @@ export const testOnly = false;
 export async function execute(interaction: ChatInputCommandInteraction) {
     const user = interaction.options.getUser('user', true);
     const guildId = interaction.guildId!;
-    const quotes = configManager.quoteManager.getQuotesByAuthor(guildId, user.id);
+    const quotes = configManager.quoteManager.getQuotesByAuthor({guildId: guildId, authorId: user.id});
 
     if (!quotes || quotes.length === 0) {
         await interaction.reply(`No quotes found for ${user.tag}.`);

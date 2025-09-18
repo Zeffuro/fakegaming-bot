@@ -12,11 +12,11 @@ export class ReminderManager {
         return db.data!.reminders || [];
     }
 
-    getRemindersByUser(userId: string): ReminderConfig[] {
+    getRemindersByUser({userId}: { userId: string }): ReminderConfig[] {
         return (db.data!.reminders || []).filter(reminder => reminder.userId === userId);
     }
 
-    async removeReminder(id: string) {
+    async removeReminder({id}: { id: string }) {
         db.data!.reminders = (db.data!.reminders || []).filter(reminder => reminder.id !== id);
         await db.write();
     }

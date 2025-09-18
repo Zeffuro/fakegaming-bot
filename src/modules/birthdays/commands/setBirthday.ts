@@ -48,6 +48,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const year = interaction.options.getInteger('year', false) ?? undefined;
     const channel = interaction.options.getChannel('channel', false) ?? interaction.channel;
     const targetUser = interaction.options.getUser('user', false);
+    const guildId = interaction.guildId ?? "";
 
     let userId: string = interaction.user.id;
     if (targetUser) {
@@ -71,7 +72,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const alreadySet = await configManager.birthdayManager.hasBirthday({
         userId,
-        channelId: channel.id,
+        guildId: guildId,
     });
 
     if (alreadySet) {
@@ -87,6 +88,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         day,
         month: monthObj.value,
         year,
+        guildId: guildId,
         channelId: channel.id,
     });
 

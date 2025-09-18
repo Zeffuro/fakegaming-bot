@@ -10,7 +10,8 @@ export async function checkAndSendReminders(client: Client) {
     for (const reminder of dueReminders) {
         try {
             const user = await client.users.fetch(reminder.userId);
-            const elapsed = formatElapsed(now - (reminder.timestamp - parseTimespan(reminder.timespan)));
+            const timespanMs = parseTimespan(reminder.timespan ?? "") ?? 0;
+            const elapsed = formatElapsed(now - (reminder.timestamp - timespanMs));
             const embed = new EmbedBuilder()
                 .setTitle('⏰ Reminder')
                 .setDescription(reminder.message)
@@ -20,6 +21,6 @@ export async function checkAndSendReminders(client: Client) {
         } catch (err) {
             console.error(`Failed to send reminder to user ${reminder.userId}:`, err);
         }
-        await configManager.reminderManager.removeReminder(reminder.id);
+        await configManager.reminderManager.removeReminder({id: reminder.id});
     }
 }

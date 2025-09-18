@@ -8,17 +8,17 @@ export class QuoteManager {
         await db.write();
     }
 
-    getQuotes(guildId: string): QuoteConfig[] {
+    getQuotes({guildId}: { guildId: string }): QuoteConfig[] {
         db.data!.quotes ||= [];
         return db.data!.quotes.filter(quote => quote.guildId === guildId);
     }
 
-    getQuotesByAuthor(guildId: string, authorId: string): QuoteConfig[] {
+    getQuotesByAuthor({guildId, authorId}: { guildId: string, authorId: string }): QuoteConfig[] {
         db.data!.quotes ||= [];
         return db.data!.quotes.filter(quote => quote.guildId === guildId && quote.authorId === authorId);
     }
 
-    searchQuotes(guildId: string, text: string): QuoteConfig[] {
+    searchQuotes({guildId, text}: { guildId: string, text: string }): QuoteConfig[] {
         db.data!.quotes ||= [];
         const lowerText = text.toLowerCase();
         return db.data!.quotes.filter(quote => quote.guildId === guildId && quote.quote.toLowerCase().includes(lowerText));

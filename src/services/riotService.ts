@@ -81,7 +81,7 @@ export async function resolveLeagueIdentity(options: {
 }): Promise<{ summoner: string; region: Regions; puuid: string }> {
     let {summoner, region, userId} = options;
 
-    const userConfig = userId ? configManager.userManager.getUser(userId) : undefined;
+    const userConfig = userId ? configManager.userManager.getUser({discordId: userId}) : undefined;
     let puuid: string | undefined;
 
     if (!summoner && !region && userConfig) {

@@ -60,7 +60,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    let user = configManager.userManager.getUser(userId);
+    let user = configManager.userManager.getUser({discordId: userId});
     if (user) {
         user.league = {summonerName: identity.summoner, region: identity.region, puuid: identity.puuid};
         await configManager.userManager.setUser(user);
