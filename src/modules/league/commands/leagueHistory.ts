@@ -4,9 +4,6 @@ import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
 import {generateLeagueHistoryImage} from '../image/leagueHistoryImage.js';
-import {fileURLToPath} from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
 
 const data = new SlashCommandBuilder()
     .setName('league-history')
@@ -40,7 +37,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let identity;
     try {
         identity = await getLeagueIdentityFromInteraction(interaction);
-    } catch (error) {
+    } catch {
         await interaction.editReply('Please provide a summoner name and region, or link your account first.');
         return;
     }

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint src --ext .ts,.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs --watch",
     "build": "tsc"
@@ -32,7 +33,9 @@
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/ms": "^2.1.0",
+    "eslint": "^9.36.0",
     "jest": "^30.1.3",
-    "ts-jest": "^29.4.4"
+    "ts-jest": "^29.4.4",
+    "typescript-eslint": "^8.44.0"
   }
 }

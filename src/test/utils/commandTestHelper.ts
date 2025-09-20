@@ -1,9 +1,8 @@
 import {jest} from '@jest/globals';
 import {autoMockManager} from '../factories/autoMockManager.js';
-import {ChatInputCommandInteraction} from 'discord.js';
 
 interface CommandTestOptions {
-    managerClass: new (...args: any[]) => any;
+    managerClass: new (..._args: any[]) => any;
     managerKey: string;
     commandPath: string;
     mocks?: Array<{ module: string, factory: () => any }>;

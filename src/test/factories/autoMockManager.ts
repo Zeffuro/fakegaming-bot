@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 
-export function autoMockManager<T extends object>(ManagerClass: new (...args: any[]) => T): jest.Mocked<T> {
+export function autoMockManager<T extends object>(ManagerClass: new (..._args: any[]) => T): jest.Mocked<T> {
     const mock: Partial<Record<string, any>> = {};
     let prototype = ManagerClass.prototype;
     while (prototype && prototype !== Object.prototype) {

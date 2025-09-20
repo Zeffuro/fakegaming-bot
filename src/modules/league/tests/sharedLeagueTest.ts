@@ -1,4 +1,4 @@
-import {jest} from '@jest/globals';
+import {jest, expect} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {UserManager} from "../../../config/userManager.js";

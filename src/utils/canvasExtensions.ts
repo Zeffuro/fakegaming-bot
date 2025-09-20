@@ -150,7 +150,7 @@ export function drawCircle(ctx: CanvasRenderingContext2D, x: number, y: number, 
  * @param gap The gap between items.
  * @param render The render callback for each item.
  */
-export async function drawVerticalList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, gap: number, render: (item: T, x: number, y: number, index: number) => void | Promise<void>) {
+export async function drawVerticalList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, gap: number, render: (_item: T, _x: number, _y: number, _index: number) => void | Promise<void>) {
     let y = startY;
     for (let i = 0; i < items.length; i++) {
         await render(items[i], startX, y, i);
@@ -167,7 +167,7 @@ export async function drawVerticalList<T>(ctx: CanvasRenderingContext2D, items: 
  * @param gap The gap between items.
  * @param render The render callback for each item.
  */
-export async function drawHorizontalList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, gap: number, render: (item: T, x: number, y: number, index: number) => void | Promise<void>) {
+export async function drawHorizontalList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, gap: number, render: (_item: T, _x: number, _y: number, _index: number) => void | Promise<void>) {
     let x = startX;
     for (let i = 0; i < items.length; i++) {
         await render(items[i], x, startY, i);
@@ -186,7 +186,7 @@ export async function drawHorizontalList<T>(ctx: CanvasRenderingContext2D, items
  * @param cellHeight The height of each cell.
  * @param render The render callback for each item.
  */
-export async function drawGridList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, columns: number, cellWidth: number, cellHeight: number, render: (item: T, x: number, y: number, index: number) => void | Promise<void>) {
+export async function drawGridList<T>(ctx: CanvasRenderingContext2D, items: T[], startX: number, startY: number, columns: number, cellWidth: number, cellHeight: number, render: (_item: T, _x: number, _y: number, _index: number) => void | Promise<void>) {
     for (let i = 0; i < items.length; i++) {
         const col = i % columns;
         const row = Math.floor(i / columns);

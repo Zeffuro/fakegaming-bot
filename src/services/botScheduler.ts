@@ -7,8 +7,8 @@ import {checkAndAnnounceBirthdays} from './birthdayService.js';
 /**
  * Runs a background service and logs errors if they occur.
  */
-function runService(service: (client: any) => Promise<any>, client: any, name: string) {
-    service(client).catch(err => console.error(`Error in ${name}:`, err));
+function runService(service: (_client: any) => Promise<any>, _client: any, name: string) {
+    service(_client).catch(err => console.error(`Error in ${name}:`, err));
 }
 
 /**

@@ -12,7 +12,8 @@ import {
 import {configManager} from '../config/configManagerSingleton.js';
 
 const apiKey = process.env.YOUTUBE_API_KEY!;
-const liveStatus: Record<string, boolean> = {};
+const _liveStatus: Record<string, boolean> = {};
+void _liveStatus; // Prevent ESLint unused variable error
 
 const parser = new Parser({
     customFields: {
@@ -114,7 +115,6 @@ export async function checkAndAnnounceNewVideos(client: Client) {
                 discordChannel.type === ChannelType.PrivateThread)
         ) {
             const mediaGroup = latestVideo.mediaGroup || {};
-            const mediaCommunity = mediaGroup['media:community']?.[0] || latestVideo.mediaCommunity || {};
 
             const thumbnailUrl = mediaGroup['media:thumbnail']?.[0]?.$.url
                 || latestVideo.mediaThumbnail?.$.url

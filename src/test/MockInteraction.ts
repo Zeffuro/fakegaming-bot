@@ -10,7 +10,7 @@ export class MockInteraction {
     channel: GuildTextBasedChannel | null;
     reply: jest.Mock;
     responded: boolean = false;
-    memberPermissions?: { has: (perm: bigint) => boolean };
+    memberPermissions?: { has: (_perm: bigint) => boolean };
 
     constructor({
                     client,
@@ -46,16 +46,16 @@ export class MockInteraction {
             castChannelOptions[key] = channelOptions[key] as unknown as GuildTextBasedChannel;
         }
         this.options = {
-            getString: jest.fn((name: string, required?: boolean) => stringOptions[name]),
-            getUser: jest.fn((name: string, required?: boolean) => castUserOptions[name]),
-            getInteger: jest.fn((name: string, required?: boolean) => integerOptions[name]),
-            getChannel: jest.fn((name: string, required?: boolean) => castChannelOptions[name]),
+            getString: jest.fn((name: string, _required?: boolean) => stringOptions[name]),
+            getUser: jest.fn((name: string, _required?: boolean) => castUserOptions[name]),
+            getInteger: jest.fn((name: string, _required?: boolean) => integerOptions[name]),
+            getChannel: jest.fn((name: string, _required?: boolean) => castChannelOptions[name]),
             getFocused: jest.fn(() => focused),
         };
         this.user = user as unknown as User;
         this.guildId = guildId;
         this.channel = channel as unknown as GuildTextBasedChannel;
-        this.reply = jest.fn((...args) => {
+        this.reply = jest.fn((..._args) => {
             this.responded = true;
             return Promise.resolve();
         });
@@ -63,12 +63,12 @@ export class MockInteraction {
         this.client = client;
     }
 
-    deferReply(...args: any[]) {
+    deferReply(..._args: any[]) {
         this.responded = true;
         return Promise.resolve();
     }
 
-    editReply(...args: any[]) {
+    editReply(..._args: any[]) {
         this.responded = true;
         return Promise.resolve();
     }

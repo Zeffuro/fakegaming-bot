@@ -36,7 +36,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let identity;
     try {
         identity = await getLeagueIdentityFromInteraction(interaction);
-    } catch (error) {
+    } catch {
         await interaction.editReply('Please provide a summoner name and region, or link your account first.');
         return;
     }

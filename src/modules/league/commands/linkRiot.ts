@@ -61,7 +61,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             region,
             userId
         });
-    } catch (error) {
+    } catch {
         await interaction.editReply('Failed to resolve Riot Account. Please check the Riot ID and region.');
         return;
     }

@@ -54,13 +54,6 @@ function getResultColor(win: boolean, mode: string) {
     return win ? '#2d3e5e' : '#7c3a3a';
 }
 
-function getModeColor(mode: string) {
-    if (mode === 'ARAM') return '#f9b44c';
-    if (mode.includes('Ranked')) return '#4fa3ff';
-    if (mode === 'Arena') return '#e67e22';
-    return '#888';
-}
-
 export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[], identity: {
     puuid: string
 }): Promise<Buffer> {
@@ -142,7 +135,7 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
             itemIds,
             itemsJson as LeagueItem[],
             (entry) => entry.iconPath,
-            (iconPath, id) => communityDragonAssetUrl(iconPath),
+            (iconPath, _) => communityDragonAssetUrl(iconPath),
             'item'
         );
         await drawHorizontalList(ctx, itemImages, champX, itemsY, ITEM_SIZE + ITEM_GAP, (itemImg, x, y) => {
@@ -287,8 +280,8 @@ function truncateName(name: string, maxLen: number = 14): string {
 async function preloadAssets<T>(
     ids: (number | string)[],
     jsonData: T[],
-    getIconPath: (entry: T) => string | undefined,
-    buildUrl: (iconPath: string, id: number | string) => string,
+    getIconPath: (_entry: T) => string | undefined,
+    buildUrl: (_iconPath: string, _id: number | string) => string,
     assetType: string
 ): Promise<(import('canvas').Image | undefined)[]> {
     const images: (import('canvas').Image | undefined)[] = [];
@@ -304,6 +297,7 @@ async function preloadAssets<T>(
                     images.push(img);
                     continue;
                 } catch {
+                    // Intentionally empty: ignore image load errors
                 }
             }
         }
@@ -332,7 +326,8 @@ function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: 
     const slash2 = ' / ';
     const assistsText = `${participant.assists}`;
     const kdaText = `${killsText}${slash1}${deathsText}${slash2}${assistsText}`;
-    const totalWidth = ctx.measureText(kdaText).width;
+    ctx.measureText(kdaText).width;
+
     let drawX = x;
     // Draw kills
     ctx.fillStyle = '#fff';
@@ -451,7 +446,7 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
         spellIds,
         summonerSpellsJson as LeagueSummonerSpell[],
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonAssetUrl(iconPath),
+        (iconPath, _) => communityDragonAssetUrl(iconPath),
         'summonerspell'
     );
     for (let i = 0; i < summonerSpellImages.length; i++) {
@@ -467,7 +462,7 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
         [keystoneId],
         perksJson,
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonAssetUrl(iconPath),
+        (iconPath, _) => communityDragonAssetUrl(iconPath),
         'keystone'
     );
     const styles: LeaguePerkStyle[] = perkStylesJson.styles
@@ -476,7 +471,7 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
         [secondaryRuneId],
         styles,
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonAssetUrl(iconPath),
+        (iconPath, _) => communityDragonAssetUrl(iconPath),
         'perkstyle'
     );
     await drawVerticalList(ctx, [keystoneImages[0], secondaryRuneImages[0]], x, y, size + gap, (img, x, y, r) => {
@@ -496,7 +491,7 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
         augmentIds,
         augmentData,
         (entry) => entry.augmentSmallIconPath,
-        (iconPath, id) => communityDragonAssetUrl(iconPath),
+        (iconPath, _) => communityDragonAssetUrl(iconPath),
         'augment'
     );
     // Use drawGridList for a 3x2 grid (3 rows, 2 columns)
@@ -539,7 +534,7 @@ function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: any, 
         const paddingY = 4;
         const borderRadius = 12;
         ctx.font = font;
-        const labelWidth = ctx.measureText(multikillLabel).width + paddingX * 2;
+
         const labelHeight = parseInt(font.match(/\d+/)?.[0] || '16', 10) + paddingY * 2;
         const labelX = champX + itemsTotalWidth + 16;
         const labelY = itemsY + (ITEM_SIZE - labelHeight) / 2;

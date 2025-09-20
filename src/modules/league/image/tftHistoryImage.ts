@@ -1,4 +1,4 @@
-import {CanvasRenderingContext2D, createCanvas, loadImage} from 'canvas';
+import {createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
 import {tftUnitIconUrl} from "../utils/assetUrl.js";

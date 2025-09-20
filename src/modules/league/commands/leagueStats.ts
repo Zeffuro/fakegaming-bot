@@ -36,7 +36,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let identity;
     try {
         identity = await getLeagueIdentityFromInteraction(interaction);
-    } catch (error) {
+    } catch {
         await interaction.editReply('Please provide a Riot ID and region, or link your account first.');
         return;
     }
@@ -77,7 +77,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         }
 
         await interaction.editReply({embeds: [embed]});
-    } catch (error) {
+    } catch {
         await interaction.editReply('Failed to fetch stats. Please check the Riot ID and region.');
     }
 }

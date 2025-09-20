@@ -1,9 +1,7 @@
 import './deploy-commands.js';
 
 import {Client, Collection, Events, MessageFlags} from 'discord.js';
-import fs from 'fs';
 import path from 'path';
-import {pathToFileURL} from 'url';
 import {bootstrapEnv} from './core/bootstrapEnv.js';
 import {configManager} from './config/configManagerSingleton.js';
 import {startBotServices} from './services/botScheduler.js';
@@ -16,8 +14,6 @@ if (!process.env.DISCORD_BOT_TOKEN) {
     console.error('DISCORD_BOT_TOKEN is not set in environment variables.');
     process.exit(1);
 }
-
-const dataDir = process.env.DATA_ROOT || path.join(__dirname, '..', 'data');
 
 await configManager.init();
 

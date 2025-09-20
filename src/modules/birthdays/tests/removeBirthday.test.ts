@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {BirthdayManager} from '../../../config/birthdayManager.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {PermissionFlagsBits, User} from 'discord.js';
+import {PermissionFlagsBits} from 'discord.js';
 
 describe('removeBirthday command', () => {
     beforeEach(() => {

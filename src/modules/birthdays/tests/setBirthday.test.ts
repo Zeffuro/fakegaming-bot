@@ -1,7 +1,6 @@
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {BirthdayManager} from '../../../config/birthdayManager.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import type {GuildTextBasedChannel} from 'discord.js';
 
 describe('setBirthday command', () => {
     it('sets a birthday for a user', async () => {
@@ -12,7 +11,7 @@ describe('setBirthday command', () => {
         });
 
         mockManager.hasBirthday.mockResolvedValue(false);
-        
+
         const interaction = new MockInteraction({
             stringOptions: {month: "January"},
             integerOptions: {day: 5, year: 1990},
