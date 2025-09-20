@@ -1,7 +1,7 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder} from 'discord.js';
 import {getTftMatchHistory, getTftMatchDetails} from '../../../services/riotService.js';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
-import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
+import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
 import {generateTftHistoryImage} from '../image/tftHistoryImage.js';
 

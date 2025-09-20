@@ -3,7 +3,7 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, M
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
-import {getRegionCodeFromName} from '../../../utils/leagueUtils.js';
+import {getRegionCodeFromName} from '../utils/leagueUtils.js';
 
 const data = new SlashCommandBuilder()
     .setName('link-riot')

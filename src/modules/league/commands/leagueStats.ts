@@ -1,6 +1,6 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
-import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
+import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {tierEmojis} from '../constants/leagueTierEmojis.js';

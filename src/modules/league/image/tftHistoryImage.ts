@@ -1,6 +1,7 @@
 import {CanvasRenderingContext2D, createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
+import {tftUnitIconUrl} from "../utils/assetUrl.js";
 
 const ROW_HEIGHT = 100;
 const WIDTH = 800;
@@ -47,7 +48,7 @@ export async function generateTftHistoryImage(matches: any[], identity: any): Pr
         for (const unit of units) {
             if (!unit.character_id) continue;
             const champId = unit.character_id.replace('TFT5_', '').replace('TFT6_', '').replace('TFT7_', '').replace('TFT8_', '').replace('TFT9_', '');
-            const champIconUrl = `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/${unit.character_id.toLowerCase()}/icon.png`;
+            const champIconUrl = tftUnitIconUrl(champId)
             const asset = await getAsset(champIconUrl, `${unit.character_id}.png`, 'tftchampion');
             if (asset.buffer) {
                 const img = await loadImage(asset.buffer);

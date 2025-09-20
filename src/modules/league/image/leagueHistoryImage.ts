@@ -5,6 +5,7 @@ import {getSummonerSpellData} from '../../../cache/leagueSummonerSpellDataCache.
 import {getPerkStylesData} from '../../../cache/leaguePerkStylesDataCache.js';
 import {getPerksData} from '../../../cache/leaguePerksDataCache.js';
 import {getAugmentData} from '../../../cache/leagueAugmentDataCache.js';
+import {leagueChampionIconUrl, communityDragonAssetUrl} from "../utils/assetUrl.js";
 import {queueMapper, gameModeConvertMap} from '../constants/leagueMappers.js';
 import {
     drawItemSlotBackground,
@@ -28,7 +29,6 @@ const ITEM_GAP = 2;
 const FONT = '16px "Roboto", Arial';
 const NUMBER_FONT_FAMILY = '"Roboto", Arial, sans-serif';
 const TEAM_FONT_FAMILY = '"Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
-const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
 
 // Helper to build font strings
 function fontString({size = 14, weight = '', italic = false, family = TEAM_FONT_FAMILY}: {
@@ -120,7 +120,7 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
             itemIds,
             itemsJson,
             (entry) => entry.iconPath,
-            (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+            (iconPath, id) => communityDragonAssetUrl(iconPath),
             'item'
         );
         await drawHorizontalList(ctx, itemImages, champX, itemsY, ITEM_SIZE + ITEM_GAP, (itemImg, x, y) => {
@@ -203,7 +203,7 @@ async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[]
     ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
     // Preload all champion images for the team
     const champImages = await Promise.all(team.map(async participant => {
-        const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${participant.championId}.png`;
+        const champIconUrl = leagueChampionIconUrl(participant.championId);
         const champIconAsset = await getAsset(champIconUrl, `${participant.championId}.png`, 'champion');
         return champIconAsset.buffer ? await loadImage(champIconAsset.buffer) : undefined;
     }));
@@ -233,7 +233,7 @@ async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs
         // Preload champion images for the pair
         const champImages = await Promise.all(safePair.map(async participant => {
             if (!participant || !participant.championId) return undefined;
-            const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${participant.championId}.png`;
+            const champIconUrl = leagueChampionIconUrl(participant.championId);
             const champIconAsset = await getAsset(champIconUrl, `${participant.championId}.png`, 'champion');
             return champIconAsset.buffer ? await loadImage(champIconAsset.buffer) : undefined;
         }));
@@ -259,14 +259,6 @@ function truncateName(name: string, maxLen: number = 14): string {
     // Use a font stack that supports more Unicode symbols
     // Truncate but preserve valid Unicode
     return name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
-}
-
-function communityDragonUrlFromAssetPath(assetPath: string): string {
-    // Remove the leading asset prefix and fully lowercase the rest
-    let relPath = assetPath.replace(/^\/lol-game-data\/assets\//i, '');
-    relPath = relPath.replace(/\\+/g, '/'); // Normalize backslashes to slashes
-    relPath = relPath.toLowerCase(); // Lowercase the entire path for CommunityDragon
-    return COMMUNITY_DRAGON_BASE + relPath;
 }
 
 async function preloadAssets(
@@ -355,7 +347,7 @@ async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, champion
     const LEVEL_TEXT_SHADOW_COLOR = 'rgba(0,0,0,0.7)';
     const LEVEL_TEXT_SHADOW_BLUR = 3;
 
-    const champIconUrl = `${COMMUNITY_DRAGON_BASE}/v1/champion-icons/${championId}.png`;
+    const champIconUrl = leagueChampionIconUrl(championId);
     const champIconAsset = await getAsset(champIconUrl, `${championId}.png`, 'champion');
     if (!champIconAsset.buffer) return;
     const champImg = await loadImage(champIconAsset.buffer);
@@ -436,7 +428,7 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
         spellIds,
         summonerSpellsJson,
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+        (iconPath, id) => communityDragonAssetUrl(iconPath),
         'summonerspell'
     );
     for (let i = 0; i < summonerSpellImages.length; i++) {
@@ -452,7 +444,7 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
         [keystoneId],
         perksJson,
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+        (iconPath, id) => communityDragonAssetUrl(iconPath),
         'keystone'
     );
     const secondaryRuneId = perkStyles[1]?.style;
@@ -460,7 +452,7 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
         [secondaryRuneId],
         perkStylesJson.styles,
         (entry) => entry.iconPath,
-        (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+        (iconPath, id) => communityDragonAssetUrl(iconPath),
         'perkstyle'
     );
     await drawVerticalList(ctx, [keystoneImages[0], secondaryRuneImages[0]], x, y, size + gap, (img, x, y, r) => {
@@ -480,7 +472,7 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
         augmentIds,
         augmentData,
         (entry) => entry.augmentSmallIconPath,
-        (iconPath, id) => communityDragonUrlFromAssetPath(iconPath),
+        (iconPath, id) => communityDragonAssetUrl(iconPath),
         'augment'
     );
     // Use drawGridList for a 3x2 grid (3 rows, 2 columns)
