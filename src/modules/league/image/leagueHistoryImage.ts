@@ -1,4 +1,5 @@
 import {CanvasRenderingContext2D, createCanvas, loadImage} from 'canvas';
+import {MatchV5DTOs} from 'twisted/dist/models-dto/matches/match-v5/match.dto.js';
 import {getAsset} from '../../../utils/assetCache.js';
 import {getItemData} from '../../../cache/leagueItemDataCache.js';
 import {getSummonerSpellData} from '../../../cache/leagueSummonerSpellDataCache.js';
@@ -52,7 +53,7 @@ function getModeColor(mode: string) {
     return '#888';
 }
 
-export async function generateLeagueHistoryImage(matches: any[], identity: any): Promise<Buffer> {
+export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[], identity: any): Promise<Buffer> {
     const itemsJson = await getItemData();
     const summonerSpellsJson = await getSummonerSpellData();
     const perkStylesJson = await getPerkStylesData();
@@ -85,11 +86,14 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
 
         if (match.info.gameMode === 'CHERRY') {
             afterSpellsX = champX + champPortraitSize + 8;
-            const augmentIds = [];
-            for (let i = 0; i < 6; i++) {
-                const aug = participant[`playerAugment${i}`];
-                if (aug) augmentIds.push(aug);
-            }
+            const augmentIds = [
+                participant.playerAugment1,
+                participant.playerAugment2,
+                participant.playerAugment3,
+                participant.playerAugment4,
+                participant.playerAugment5,
+                participant.playerAugment6,
+            ].filter(Boolean);
             const augmentSize = Math.floor(champPortraitSize / 2);
             const augmentGap = 2;
             await drawAugments(ctx, augmentIds, afterSpellsX, afterSpellsY, augmentSize, augmentGap);
@@ -115,7 +119,15 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
         await drawStatsVerticalList(ctx, match, participant, statsX, statsY);
 
         const itemsY = champY + champPortraitSize + 8;
-        const itemIds = Array.from({length: 7}, (_, j) => participant[`item${j}`]);
+        const itemIds = [
+            participant.item0,
+            participant.item1,
+            participant.item2,
+            participant.item3,
+            participant.item4,
+            participant.item5,
+            participant.item6,
+        ];
         const itemImages = await preloadAssets(
             itemIds,
             itemsJson,
@@ -134,8 +146,10 @@ export async function generateLeagueHistoryImage(matches: any[], identity: any):
             const arenaParticipants = match.info.participants.filter((p: any) => p.placement >= 1 && p.placement <= 4);
             const subTeamMap: Record<string, any[]> = {};
             for (const p of arenaParticipants) {
-                if (!subTeamMap[p.playerSubteamId]) subTeamMap[p.playerSubteamId] = [];
-                subTeamMap[p.playerSubteamId].push(p);
+                if (p.playerSubteamId !== undefined) {
+                    subTeamMap[p.playerSubteamId] = subTeamMap[p.playerSubteamId] || [];
+                    subTeamMap[p.playerSubteamId].push(p);
+                }
             }
             const teamPairs = Object.values(subTeamMap).sort((a, b) => {
                 const aPlace = Math.min(...a.map(p => p.placement));
@@ -382,7 +396,7 @@ async function drawStatsVerticalList(
     y: number
 ) {
     let lines;
-    if (match.info.gameMode === 'CHERRY') {
+    if (gameModeConvertMap[match.info.gameMode] === 'Arena') {
         const placement = participant.placement || 0;
         const placementText = placement > 0 ? `Placement: ${placement}` : 'Placement: -';
         const statFont = fontString({size: 15, weight: 'bold', family: NUMBER_FONT_FAMILY});
