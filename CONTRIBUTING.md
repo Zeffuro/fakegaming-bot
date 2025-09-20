@@ -47,9 +47,26 @@ Thanks for your interest in contributing! Please follow these guidelines to get 
 
 ## Running Tests
 
-_If/when tests are added:_
+Unit tests use [Jest](https://jestjs.io/).
 
-- Run tests with `npm test`.
+- Run all tests with:
+  ```bash
+  npm test
+  ```
+
+Test files are located in src/modules/*/tests/ and src/services/tests/.
+
+### Writing Tests
+
+- Use `.test.ts` files for unit tests.
+- Mock Discord.js interactions and managers as needed (see `MockInteraction` and `setupCommandTest` in
+  `src/test/utils/`).
+- Prefer testing command logic and service functions in isolation.
+
+### Mocking
+
+- Use `jest.unstable_mockModule` for mocking imports.
+- Use `jest.fn()` for mocking functions and methods.
 
 ## Spelling Dictionary
 

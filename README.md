@@ -1,5 +1,12 @@
 # fakegaming-bot
 
+[![Build Status](https://github.com/Zeffuro/fakegaming-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Zeffuro/fakegaming-bot/actions)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/node-%3E=22.0.0-brightgreen)](https://nodejs.org/)
+[![ESLint](https://img.shields.io/badge/code_style-eslint-blue.svg)](https://eslint.org/)
+[![Jest](https://img.shields.io/badge/tested_with-jest-99424f.svg?logo=jest)](https://jestjs.io/)
+[![Last Commit](https://img.shields.io/github/last-commit/Zeffuro/fakegaming-bot)](https://github.com/Zeffuro/fakegaming-bot/commits)
+
 A modular Discord bot for community management, Twitch stream notifications, YouTube video announcements, League of
 Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 
@@ -28,7 +35,9 @@ _As of September 20th, 2025, the following commands are available:_
 | `/add-quote`           | Add a quote                                                                     | All users          |
 | `/quotes`              | Get all quotes for a user                                                       | All users          |
 | `/search-quote`        | Search quotes by text                                                           | All users          |
+| `/birthday`            | Show your or another user's birthday                                            | All users          |
 | `/set-birthday`        | Set your birthday and channel for birthday messages (admins can set for others) | All users / Admins |
+| `/remove-birthday`     | Remove your birthday or another user's birthday (admins only)                   | Admin only         |
 | `/set-reminder`        | Set a reminder                                                                  | All users          |
 | `/set-timezone`        | Set your timezone                                                               | All users          |
 | `/add-twitch-stream`   | Add a Twitch stream for notifications                                           | Admin only         |
@@ -111,14 +120,31 @@ You can also run fakegaming-bot in a Docker container.
     - By default, the bot runs with the command `node dist/index.js`.
     - The working directory inside the container is `/app/code`.
 
+### Persisting Data with Docker Volumes
+
+To keep your bot's data outside the container, map a host directory to `/app/data` (or your custom path set by
+`DATA_ROOT`):
+
+```bash
+  docker run --env-file .env -v /path/on/host:/app/data fakegaming-bot
+```
+
+- /app/data is the default data directory inside the container.
+- You can change this by setting the DATA_ROOT environment variable in your .env file.
+
 ---
 
 ## Project Structure
 
 - `src/index.ts` — Main entry point, bot setup and event handling
-- `src/modules/` — Command modules
-- `src/services/` — Twitch, YouTube, and reminder services
-- `src/config/` — Configuration management
+- `src/core/` — Environment bootstrap, command loading, and module preloaders
+- `src/modules/` — Command modules (each feature in its own folder)
+- `src/services/` — Twitch, YouTube, reminders, and other background services
+- `src/config/` — Configuration and manager classes for bot features
+- `src/constants/` — Shared constants and enums
+- `src/types/` — Custom TypeScript types and interfaces
+- `src/utils/` — Utility functions (general helpers, time, permissions, etc.)
+- `src/test/` — Shared test utilities, mocks, and factories
 
 ---
 
@@ -127,6 +153,16 @@ You can also run fakegaming-bot in a Docker container.
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for code style, how to add commands or preloaders, PR process, and more.
 
 Pull requests and issues are welcome!
+
+### Running Tests
+
+Unit tests use [Jest](https://jestjs.io/).
+
+To run all tests, use `npm test`.
+
+Test files are in `src/modules/*/tests/` and `src/services/tests/`.
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
 
 ---
 
