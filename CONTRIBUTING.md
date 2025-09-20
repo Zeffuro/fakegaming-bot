@@ -51,6 +51,16 @@ _If/when tests are added:_
 
 - Run tests with `npm test`.
 
+## Spelling Dictionary
+
+To avoid false spelling errors (e.g. `summonerspells`), we use a team-shared dictionary.
+
+- The dictionary is located at `.idea/dictionaries/team.dic`.
+- If you add new domain-specific words, add them to this file and commit the change.
+- WebStorm will automatically use this dictionary for spellchecking.
+
+If you see spelling warnings for valid project terms, add them to `team.dic` and commit.
+
 ## Reporting Issues
 
 - Use [GitHub Issues](https://github.com/Zeffuro/fakegaming-bot/issues) for bugs, features, and questions.

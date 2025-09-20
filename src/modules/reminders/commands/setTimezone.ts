@@ -2,7 +2,7 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteractio
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {isValidTimezone, getTimezoneSuggestions} from '../../../utils/timezoneUtils.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('set-timezone')
     .setDescription('Set your timezone')
     .addStringOption(option =>
@@ -12,9 +12,11 @@ export const data = new SlashCommandBuilder()
             .setAutocomplete(true)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the set-timezone command, setting the user's timezone in the config manager.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const timezone = interaction.options.getString('timezone', true);
     const userId = interaction.user.id;
 
@@ -27,10 +29,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply(`Timezone set to \`${timezone}\`.`);
 }
 
-export async function autocomplete(interaction: AutocompleteInteraction) {
+async function autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused();
     const suggestions = getTimezoneSuggestions(focusedValue);
     await interaction.respond(
         suggestions.map((tz: string) => ({name: tz, value: tz})).slice(0, 25)
     );
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, autocomplete, testOnly};

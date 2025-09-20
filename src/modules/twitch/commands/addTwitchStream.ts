@@ -3,7 +3,7 @@ import {configManager} from '../../../config/configManagerSingleton.js';
 import {verifyTwitchUser} from '../../../services/twitchService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('add-twitch-stream')
     .setDescription('Add a Twitch stream for notifications')
     .addStringOption(option =>
@@ -23,9 +23,13 @@ export const data = new SlashCommandBuilder()
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-export const testOnly = false;
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the add-twitch-stream command, adding a Twitch stream for notifications in a Discord channel.
+ * Checks admin permissions, validates the Twitch user, prevents duplicates, and adds the stream for notifications.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
 
     const twitchUsername = interaction.options.getString('username', true);
@@ -59,3 +63,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply(`Twitch stream \`${twitchUsername}\` added for notifications in <#${discordChannel.id}>.`);
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

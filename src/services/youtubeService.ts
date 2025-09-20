@@ -7,9 +7,7 @@ import {
     ChannelType,
     Client,
     EmbedBuilder,
-    TextChannel,
-    NewsChannel,
-    ThreadChannel
+    TextChannel
 } from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 
@@ -33,6 +31,10 @@ const parser = new Parser({
     }
 });
 
+/**
+ * Gets the YouTube channel ID for a given identifier (channel ID, handle, or username).
+ * Returns null if not found.
+ */
 export async function getYoutubeChannelId(identifier: string): Promise<string | null> {
     const isChannelId = /^UC[\w-]{22}$/.test(identifier);
     const isHandle = identifier.startsWith('@');
@@ -68,6 +70,10 @@ export async function getYoutubeChannelId(identifier: string): Promise<string | 
     }
 }
 
+/**
+ * Fetches the RSS feed items for a YouTube channel by channel ID.
+ * Returns null if no items are found.
+ */
 export async function getYoutubeChannelFeed(channelId: string) {
     const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
     try {
@@ -86,6 +92,9 @@ export async function getYoutubeChannelFeed(channelId: string) {
     }
 }
 
+/**
+ * Checks for new videos on all configured YouTube channels and announces them in Discord.
+ */
 export async function checkAndAnnounceNewVideos(client: Client) {
     const channels = configManager.youtubeManager.getAll();
 

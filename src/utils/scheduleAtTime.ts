@@ -1,3 +1,9 @@
+/**
+ * Schedules a callback to run at a specific hour and minute, then repeats every 24 hours.
+ * @param hour The hour (0-23) at which to run the callback.
+ * @param minute The minute (0-59) at which to run the callback.
+ * @param callback The function to execute at the scheduled time.
+ */
 export function scheduleAtTime(hour: number, minute: number, callback: () => void) {
     function getNextRunDelay() {
         const now = new Date();

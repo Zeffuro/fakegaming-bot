@@ -5,6 +5,9 @@ import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
 
+/**
+ * Slash command metadata for Discord registration.
+ */
 const data = new SlashCommandBuilder()
     .setName('link-riot')
     .setDescription('Link your Discord account or another user to a Riot account')
@@ -25,9 +28,12 @@ const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the link-riot command, linking a Discord user to a Riot account.
+ * Handles admin permission checks and updates the user manager.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     const summonerInput = interaction.options.getString('riot-id') ?? undefined;
@@ -74,4 +80,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }
 
-export {data};
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

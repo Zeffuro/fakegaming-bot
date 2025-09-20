@@ -13,6 +13,8 @@
 
 # IDE settings
 .idea/
+!.idea/dictionaries/
+!.idea/dictionaries/team.dic
 .vscode/
 
 # OS files

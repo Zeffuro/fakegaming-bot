@@ -1,6 +1,9 @@
 import {Client, TextChannel} from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 
+/**
+ * Checks all birthdays and announces them in the configured Discord channels if today matches.
+ */
 export async function checkAndAnnounceBirthdays(client: Client) {
     const today = new Date();
     const day = today.getDate();

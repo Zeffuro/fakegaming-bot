@@ -3,7 +3,7 @@ import {configManager} from '../../../config/configManagerSingleton.js';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('add-youtube-channel')
     .setDescription('Add a Youtube Channel for new video notifications')
     .addStringOption(option =>
@@ -23,9 +23,13 @@ export const data = new SlashCommandBuilder()
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
-export const testOnly = false;
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the add-youtube-channel command, adding a YouTube channel for video notifications in a Discord channel.
+ * Checks admin permissions, validates the YouTube channel, prevents duplicates, and adds the channel for notifications.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
 
     const youtubeUsername = interaction.options.getString('username', true);
@@ -64,3 +68,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply(`Youtube channel \`${youtubeUsername}\` added for video notifications in #${discordChannel.id}.`);
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

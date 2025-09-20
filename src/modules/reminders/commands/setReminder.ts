@@ -3,7 +3,7 @@ import {configManager} from '../../../config/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 import {parseTimespan} from "../../../utils/timeUtils.js";
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('set-reminder')
     .setDescription('Set a reminder')
     .addStringOption(option =>
@@ -17,9 +17,11 @@ export const data = new SlashCommandBuilder()
             .setRequired(true)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the set-reminder command, setting a reminder for the user after a specified timespan.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const timespan = interaction.options.getString('timespan', true);
     const message = interaction.options.getString('message', true);
     const userId = interaction.user.id;
@@ -46,3 +48,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         flags: MessageFlags.Ephemeral
     });
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

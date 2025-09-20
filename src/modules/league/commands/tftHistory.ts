@@ -5,7 +5,7 @@ import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
 import {generateTftHistoryImage} from '../image/tftHistoryImage.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('tft-history')
     .setDescription('Get recent Teamfight Tactics match history for a summoner')
     .addStringOption(option =>
@@ -25,9 +25,12 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = true;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the tft-history command, replying with a recent TFT match history image for a summoner.
+ * Handles errors and provides feedback if match history cannot be fetched.
+ * Replies with an image attachment showing recent TFT matches.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     let identity;
@@ -64,3 +67,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         files: [attachment]
     });
 }
+
+const testOnly = true;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

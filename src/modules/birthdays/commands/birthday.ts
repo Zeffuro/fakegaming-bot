@@ -6,18 +6,20 @@ import {
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {months} from "../../../constants/months.js";
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('birthday')
     .setDescription('Show your or another user\'s birthday')
     .addUserOption(option =>
         option.setName('user')
             .setDescription('User to look up (optional)')
             .setRequired(false)
-    )
+    );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the birthday command, replying with the birthday of the user or another user in the channel.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user', false);
 
     let userId = interaction.user.id;
@@ -39,3 +41,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         flags: MessageFlags.Ephemeral
     });
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

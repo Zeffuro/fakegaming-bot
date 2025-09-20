@@ -1,7 +1,7 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('quotes')
     .setDescription('Get all quotes for a user')
     .addUserOption(option =>
@@ -10,9 +10,11 @@ export const data = new SlashCommandBuilder()
             .setRequired(true)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the quotes command, replying with all quotes for a specified user.
+ * Replies with a formatted list or a message if none are found.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const user = interaction.options.getUser('user', true);
     const guildId = interaction.guildId!;
     const quotes = configManager.quoteManager.getQuotesByAuthor({guildId: guildId, authorId: user.id});
@@ -25,3 +27,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const formatted = quotes.map(quote => `> ${quote.quote}\n— <@${quote.authorId}> (${new Date(quote.timestamp).toLocaleString()})`).join('\n\n');
     await interaction.reply(`Quotes for ${user.tag}:\n${formatted}`);
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

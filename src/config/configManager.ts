@@ -7,6 +7,9 @@ import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
 
+/**
+ * Aggregates all manager classes and provides database initialization.
+ */
 export class ConfigManager {
     userManager = new UserManager();
     quoteManager = new QuoteManager();
@@ -16,6 +19,9 @@ export class ConfigManager {
     reminderManager = new ReminderManager();
     birthdayManager = new BirthdayManager();
 
+    /**
+     * Initializes the database with default data.
+     */
     async init() {
         await db.read();
         db.data = {...defaultData, ...db.data};

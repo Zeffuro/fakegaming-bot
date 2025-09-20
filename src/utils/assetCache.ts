@@ -10,12 +10,20 @@ const __dirname = path.dirname(__filename);
 const dataRoot = process.env.DATA_ROOT || path.join(__dirname, '..', '..', 'data');
 const assetRoot = path.join(dataRoot, 'assets');
 
+/**
+ * Gets the cache directory for a given asset type, creating it if it does not exist.
+ * Returns the absolute path to the cache directory.
+ */
 export function getAssetCacheDir(type: string): string {
     const dir = path.join(assetRoot, type);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive: true});
     return dir;
 }
 
+/**
+ * Retrieves an asset from the cache or downloads it if not present.
+ * Returns a CachedAsset object with buffer and path.
+ */
 export async function getAsset(assetUrl: string, assetName: string, type: string): Promise<CachedAsset> {
     const cacheDir = getAssetCacheDir(type);
     const cachePath = path.join(cacheDir, assetName);

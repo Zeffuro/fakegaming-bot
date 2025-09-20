@@ -6,10 +6,7 @@ import {
     ButtonStyle,
     ChannelType,
     Client,
-    EmbedBuilder,
-    TextChannel,
-    NewsChannel,
-    ThreadChannel
+    EmbedBuilder
 } from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 
@@ -21,11 +18,18 @@ const appApiClient = new ApiClient({authProvider: appAuthProvider});
 
 const liveStatus: Record<string, boolean> = {};
 
+/**
+ * Verifies if a Twitch user exists by username.
+ * Returns true if found, false otherwise.
+ */
 export async function verifyTwitchUser(username: string): Promise<boolean> {
     const user = await appApiClient.users.getUserByName(username);
     return user !== null;
 }
 
+/**
+ * Subscribes to all configured Twitch streams and announces when they go live.
+ */
 export async function subscribeAllStreams(client: Client) {
     const streams = configManager.twitchManager.getAll();
 

@@ -5,7 +5,7 @@ import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {tierEmojis} from '../constants/leagueTierEmojis.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('league-stats')
     .setDescription('Get League of Legends stats for a summoner or linked user')
     .addStringOption(option =>
@@ -25,9 +25,12 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = false;
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the league-stats command, replying with a Discord embed of League stats for a summoner or linked user.
+ * Handles errors and provides feedback if stats cannot be fetched.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     let identity;
@@ -78,3 +81,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         await interaction.editReply('Failed to fetch stats. Please check the Riot ID and region.');
     }
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

@@ -1,7 +1,7 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('search-quote')
     .setDescription('Search quotes by text')
     .addStringOption(option =>
@@ -10,9 +10,11 @@ export const data = new SlashCommandBuilder()
             .setRequired(true)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the search-quote command, searching for quotes by text.
+ * Replies with matching quotes or a message if none are found.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const text = interaction.options.getString('text', true);
     const guildId = interaction.guildId!;
     const quotes = configManager.quoteManager.searchQuotes({guildId, text});
@@ -25,3 +27,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const formatted = quotes.map(quote => `> ${quote.quote}\n— <@${quote.authorId}> (${new Date(quote.timestamp).toLocaleString()})`).join('\n\n');
     await interaction.reply(`Quotes matching "${text}":\n${formatted}`);
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

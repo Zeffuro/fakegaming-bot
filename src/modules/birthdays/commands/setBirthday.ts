@@ -10,7 +10,7 @@ import {configManager} from '../../../config/configManagerSingleton.js';
 import {months} from "../../../constants/months.js";
 import {requireAdmin} from "../../../utils/permissions.js";
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('set-birthday')
     .setDescription('Set your birthday and the channel to post in')
     .addIntegerOption(option =>
@@ -36,13 +36,16 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     ).addUserOption(option =>
         option.setName('user')
-            .setDescription('Set birthday for another user (admins only)')
+            .setDescription('User to set birthday for (admins only)')
             .setRequired(false)
     );
 
-export const testOnly = false;
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the set-birthday command, allowing a user or admin to set a birthday and announcement channel.
+ * Replies with a confirmation or error message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const day = interaction.options.getInteger('day', true);
     const monthName = interaction.options.getString('month', true);
     const year = interaction.options.getInteger('year', false) ?? undefined;
@@ -98,7 +101,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-export async function autocomplete(interaction: AutocompleteInteraction) {
+/**
+ * Provides autocomplete suggestions for the month option.
+ *
+ * @param interaction - The Discord AutocompleteInteraction object containing focused value.
+ * @returns {Promise<void>} Resolves when the suggestions are sent.
+ */
+async function autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused();
     const choices = months
         .filter(month => month.name.toLowerCase().startsWith(focusedValue.toLowerCase()))
@@ -126,3 +135,8 @@ function getBirthdayResponse(targetUser: User | null, day: number, month: number
 
     return `${targetUser ? `<@${targetUser.id}>'s` : "Your"} birthday reminder is set!${age ? ` Turning ${age} soon` : ""}. Only ${daysUntil === 0 ? "today" : `${daysUntil} days left until ${formattedDate}`} 🎉`;
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, autocomplete, testOnly};

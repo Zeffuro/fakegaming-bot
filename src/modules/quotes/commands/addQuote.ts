@@ -2,7 +2,7 @@ import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('add-quote')
     .setDescription('Add a quote')
     .addStringOption(option =>
@@ -16,9 +16,11 @@ export const data = new SlashCommandBuilder()
             .setRequired(true)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the add-quote command, adding a quote for a specified user.
+ * Replies with a confirmation message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const quoteText = interaction.options.getString('quote', true);
     const author = interaction.options.getUser('author', true);
     const submitter = interaction.user;
@@ -35,3 +37,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply(`Quote added for ${author.tag}: "${quoteText}"`);
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

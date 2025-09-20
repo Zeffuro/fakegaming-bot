@@ -1,5 +1,10 @@
 import {timezones} from '../constants/timezones.js';
 
+/**
+ * Returns a list of timezones that match the query string (case-insensitive).
+ * @param query The search query to filter timezones.
+ * @returns An array of matching timezone strings.
+ */
 export function getTimezoneSuggestions(query: string): string[] {
     const q = query.toLowerCase();
     return timezones.filter((tz: string) => tz.toLowerCase().includes(q));
@@ -12,6 +17,12 @@ function isGmtOffset(tz: string): boolean {
     return offset >= 0 && offset <= 12;
 }
 
+/**
+ * Checks if the provided timezone string is valid.
+ * Accepts standard timezones, 'UTC', 'GMT', and GMT offsets.
+ * @param tz The timezone string to validate.
+ * @returns True if the timezone is valid, false otherwise.
+ */
 export function isValidTimezone(tz: string): boolean {
     if (timezones.includes(tz)) return true;
 

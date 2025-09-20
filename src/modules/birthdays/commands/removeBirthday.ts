@@ -2,7 +2,7 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'di
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
-export const data = new SlashCommandBuilder()
+const data = new SlashCommandBuilder()
     .setName('remove-birthday')
     .setDescription('Remove your birthday or another user\'s birthday (admins only)')
     .addUserOption(option =>
@@ -11,9 +11,11 @@ export const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-export const testOnly = false;
-
-export async function execute(interaction: ChatInputCommandInteraction) {
+/**
+ * Executes the remove-birthday command, removing the birthday of the user or another user (admins only).
+ * Replies with a confirmation message.
+ */
+async function execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user', false);
     const guildId = interaction.guildId!;
     let userId = interaction.user.id;
@@ -30,3 +32,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         flags: MessageFlags.Ephemeral
     });
 }
+
+const testOnly = false;
+
+// noinspection JSUnusedGlobalSymbols
+export default {data, execute, testOnly};

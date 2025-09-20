@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import {pathToFileURL} from 'url';
 
+/**
+ * Loads all command modules from the specified modulesPath and registers them with the Discord client.
+ * Only modules with both data and execute are registered.
+ */
 export async function loadCommands(client: any, modulesPath: string) {
     const moduleFolders = fs.readdirSync(modulesPath);
     for (const folder of moduleFolders) {
@@ -11,11 +15,12 @@ export async function loadCommands(client: any, modulesPath: string) {
         for (const file of commandFiles) {
             const commandPath = path.join(commandsPath, file);
             const commandModule = await import(pathToFileURL(commandPath).href);
-            if (commandModule.data && commandModule.execute) {
-                client.commands.set(commandModule.data.name, {
-                    data: commandModule.data,
-                    execute: commandModule.execute,
-                    autocomplete: commandModule.autocomplete,
+            const cmd = commandModule.default;
+            if (cmd?.data && cmd?.execute) {
+                client.commands.set(cmd.data.name, {
+                    data: cmd.data,
+                    execute: cmd.execute,
+                    autocomplete: cmd.autocomplete,
                 });
             }
         }

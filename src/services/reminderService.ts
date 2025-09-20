@@ -2,6 +2,9 @@ import {Client, EmbedBuilder} from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 import {formatElapsed, parseTimespan} from '../utils/timeUtils.js';
 
+/**
+ * Checks all reminders and sends them to users if due. Removes sent reminders from the config.
+ */
 export async function checkAndSendReminders(client: Client) {
     const allReminders = configManager.reminderManager.getAll();
     const now = Date.now();
