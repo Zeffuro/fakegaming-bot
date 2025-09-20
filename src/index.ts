@@ -8,6 +8,7 @@ import {bootstrapEnv} from './core/bootstrapEnv.js';
 import {configManager} from './config/configManagerSingleton.js';
 import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
+import {preloadAllModules} from './core/preloadModules.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -19,6 +20,8 @@ if (!process.env.DISCORD_BOT_TOKEN) {
 const dataDir = process.env.DATA_ROOT || path.join(__dirname, '..', 'data');
 
 await configManager.init();
+
+await preloadAllModules();
 
 class FakegamingBot extends Client {
     commands: Collection<string, any>;

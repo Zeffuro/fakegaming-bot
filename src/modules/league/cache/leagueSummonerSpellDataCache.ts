@@ -1,19 +1,13 @@
-import {getAsset} from '../../../utils/assetCache.js';
 import {LeagueSummonerSpell} from '../types/leagueAssetTypes.js';
+import {getTypedAsset} from '../../../utils/typedAssetCache.js';
 
-let cachedSummonerSpellsData: LeagueSummonerSpell[];
+const cache = {value: undefined as LeagueSummonerSpell[] | undefined};
 
 export async function getSummonerSpellData(): Promise<LeagueSummonerSpell[]> {
-    if (cachedSummonerSpellsData) return cachedSummonerSpellsData;
-    const asset = await getAsset(
+    return getTypedAsset<LeagueSummonerSpell[]>(
         'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json',
         'summoner-spells.json',
-        'summonerspelldata'
+        'summonerspelldata',
+        cache
     );
-    if (!asset.buffer) {
-        throw new Error('Asset buffer is null');
-    }
-    cachedSummonerSpellsData = JSON.parse(asset.buffer.toString());
-    return cachedSummonerSpellsData;
 }
-

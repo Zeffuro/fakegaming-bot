@@ -1,18 +1,13 @@
-import {getAsset} from '../../../utils/assetCache.js';
-import {LeagueItem} from "../types/leagueAssetTypes.js";
+import {LeagueItem} from '../types/leagueAssetTypes.js';
+import {getTypedAsset} from '../../../utils/typedAssetCache.js';
 
-let cachedItemsData: LeagueItem[];
+const cache = {value: undefined as LeagueItem[] | undefined};
 
 export async function getItemData(): Promise<LeagueItem[]> {
-    if (cachedItemsData) return cachedItemsData;
-    const asset = await getAsset(
+    return getTypedAsset<LeagueItem[]>(
         'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json',
         'items.json',
-        'itemdata'
+        'itemdata',
+        cache
     );
-    if (!asset.buffer) {
-        throw new Error('Asset buffer is null');
-    }
-    cachedItemsData = JSON.parse(asset.buffer.toString());
-    return cachedItemsData;
 }
