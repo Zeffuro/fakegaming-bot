@@ -20,6 +20,13 @@ import {
     applyShadow,
     clearShadow
 } from '../../../utils/canvasExtensions.js';
+import {
+    LeagueItem,
+    LeagueSummonerSpell,
+    LeaguePerk,
+    LeaguePerkStyle,
+    LeagueAugment,
+} from "../types/leagueAssetTypes.js";
 import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
 
 const ROW_HEIGHT = 110;
@@ -53,7 +60,9 @@ function getModeColor(mode: string) {
     return '#888';
 }
 
-export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[], identity: any): Promise<Buffer> {
+export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[], identity: {
+    puuid: string
+}): Promise<Buffer> {
     const itemsJson = await getItemData();
     const summonerSpellsJson = await getSummonerSpellData();
     const perkStylesJson = await getPerkStylesData();
@@ -130,7 +139,7 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
         ];
         const itemImages = await preloadAssets(
             itemIds,
-            itemsJson,
+            itemsJson as LeagueItem[],
             (entry) => entry.iconPath,
             (iconPath, id) => communityDragonAssetUrl(iconPath),
             'item'
@@ -169,8 +178,8 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
 
 async function drawMatchInfoLeft(
     ctx: CanvasRenderingContext2D,
-    match: any,
-    participant: any,
+    match: MatchV5DTOs.MatchDto,
+    participant: MatchV5DTOs.ParticipantDto,
     x: number,
     y: number
 ) {
@@ -210,7 +219,7 @@ async function drawMatchInfoLeft(
     });
 }
 
-async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[], x: number, y: number, playerPuuid: string, color: string) {
+async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: MatchV5DTOs.ParticipantDto[], x: number, y: number, playerPuuid: string, color: string) {
     const rowHeight = 20;
     const iconSize = 16;
     const nameOffsetX = iconSize + 8;
@@ -232,11 +241,11 @@ async function drawTeamNamesWithIcons(ctx: CanvasRenderingContext2D, team: any[]
         }
         ctx.fillStyle = participant.puuid === playerPuuid ? color : '#9e9eb1';
         ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
-        ctx.fillText(truncateName(participant.riotIdGameName), px + nameOffsetX, py - 3);
+        ctx.fillText(truncateName(participant.riotIdGameName ?? participant.summonerName ?? ''), px + nameOffsetX, py - 3);
     });
 }
 
-async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs: any[][], x: number, y: number, playerPuuid: string, color: string) {
+async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs: MatchV5DTOs.ParticipantDto[][], x: number, y: number, playerPuuid: string, color: string) {
     const rowHeight = 20;
     const iconSize = 16;
     const nameOffsetX = iconSize + 8;
@@ -270,15 +279,14 @@ async function drawCherryTeamsWithIcons(ctx: CanvasRenderingContext2D, teamPairs
 }
 
 function truncateName(name: string, maxLen: number = 14): string {
-    // Use a font stack that supports more Unicode symbols
-    // Truncate but preserve valid Unicode
-    return name.length > maxLen ? name.slice(0, maxLen - 1) + '…' : name;
+    const chars = Array.from(name); // Unicode-aware
+    return chars.length > maxLen ? chars.slice(0, maxLen - 1).join('') + '…' : name;
 }
 
-async function preloadAssets(
+async function preloadAssets<T>(
     ids: (number | string)[],
-    jsonData: any[],
-    getIconPath: (entry: any) => string | undefined,
+    jsonData: T[],
+    getIconPath: (entry: T) => string | undefined,
     buildUrl: (iconPath: string, id: number | string) => string,
     assetType: string
 ): Promise<(import('canvas').Image | undefined)[]> {
@@ -438,9 +446,9 @@ async function drawStatsVerticalList(
 }
 
 async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: number[], summonerSpellsJson: any[], x: number, y: number, size: number, gap: number) {
-    const summonerSpellImages = await preloadAssets(
+    const summonerSpellImages = await preloadAssets<LeagueSummonerSpell>(
         spellIds,
-        summonerSpellsJson,
+        summonerSpellsJson as LeagueSummonerSpell[],
         (entry) => entry.iconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'summonerspell'
@@ -454,9 +462,9 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
 
 async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perksJson: any[], perkStylesJson: any, x: number, y: number, size: number, gap: number) {
     const keystoneId = perkStyles[0]?.selections?.[0]?.perk;
-    const keystoneImages = await preloadAssets(
+    const keystoneImages = await preloadAssets<LeaguePerk>(
         [keystoneId],
-        perksJson,
+        perksJson as LeaguePerk[],
         (entry) => entry.iconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'keystone'
@@ -464,7 +472,7 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
     const secondaryRuneId = perkStyles[1]?.style;
     const secondaryRuneImages = await preloadAssets(
         [secondaryRuneId],
-        perkStylesJson.styles,
+        perkStylesJson.styles as LeaguePerkStyle[],
         (entry) => entry.iconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'perkstyle'
@@ -482,9 +490,9 @@ async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perks
 // Helper for drawing augments (Arena/CHERRY mode)
 async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string | number)[], x: number, y: number, size: number, gap: number) {
     const augmentData = await getAugmentData();
-    const images = await preloadAssets(
+    const images = await preloadAssets<LeagueAugment>(
         augmentIds,
-        augmentData,
+        augmentData as LeagueAugment[],
         (entry) => entry.augmentSmallIconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'augment'
