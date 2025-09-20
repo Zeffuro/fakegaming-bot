@@ -16,9 +16,9 @@
     "@twurple/api": "^7.4.0",
     "@twurple/auth": "^7.4.0",
     "@twurple/eventsub-ws": "^7.4.0",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.5.2",
     "canvas": "^3.0.0-rc3",
-    "discord-api-types": "^0.38.17",
+    "discord-api-types": "^0.38.26",
     "discord.js": "^14.21.0",
     "dotenv": "^17.2.1",
     "lowdb": "^7.0.1",
@@ -27,7 +27,7 @@
     "ts-node": "^10.9.2",
     "twisted": "^1.67.2",
     "typescript": "^5.8.3",
-    "uuid": "^11.1.0"
+    "uuid": "^13.0.0"
   },
   "type": "module",
   "devDependencies": {
