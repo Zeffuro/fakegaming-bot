@@ -7,6 +7,10 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -14,3 +18,7 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
+    groups:
+      ci-actions:
+        patterns:
+          - "*"
