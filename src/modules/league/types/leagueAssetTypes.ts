@@ -24,6 +24,10 @@ export interface LeaguePerkStyle {
     iconPath: string;
 }
 
+export interface LeaguePerkStylesData {
+    styles: LeaguePerkStyle[];
+}
+
 // Minimal type for Arena Augment (arenaAugments.json)
 export interface LeagueAugment {
     id: number | string;

@@ -1,11 +1,11 @@
 import {CanvasRenderingContext2D, createCanvas, loadImage} from 'canvas';
 import {MatchV5DTOs} from 'twisted/dist/models-dto/matches/match-v5/match.dto.js';
 import {getAsset} from '../../../utils/assetCache.js';
-import {getItemData} from '../../../cache/leagueItemDataCache.js';
-import {getSummonerSpellData} from '../../../cache/leagueSummonerSpellDataCache.js';
-import {getPerkStylesData} from '../../../cache/leaguePerkStylesDataCache.js';
-import {getPerksData} from '../../../cache/leaguePerksDataCache.js';
-import {getAugmentData} from '../../../cache/leagueAugmentDataCache.js';
+import {getItemData} from '../cache/leagueItemDataCache.js';
+import {getSummonerSpellData} from '../cache/leagueSummonerSpellDataCache.js';
+import {getPerkStylesData} from '../cache/leaguePerkStylesDataCache.js';
+import {getPerksData} from '../cache/leaguePerksDataCache.js';
+import {getAugmentData} from '../cache/leagueAugmentDataCache.js';
 import {leagueChampionIconUrl, communityDragonAssetUrl} from "../utils/assetUrl.js";
 import {queueMapper, gameModeConvertMap} from '../constants/leagueMappers.js';
 import {
@@ -25,6 +25,7 @@ import {
     LeagueSummonerSpell,
     LeaguePerk,
     LeaguePerkStyle,
+    LeaguePerkStylesData,
     LeagueAugment,
 } from "../types/leagueAssetTypes.js";
 import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
@@ -460,19 +461,20 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
     }
 }
 
-async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perksJson: any[], perkStylesJson: any, x: number, y: number, size: number, gap: number) {
+async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perksJson: LeaguePerk[], perkStylesJson: LeaguePerkStylesData, x: number, y: number, size: number, gap: number) {
     const keystoneId = perkStyles[0]?.selections?.[0]?.perk;
     const keystoneImages = await preloadAssets<LeaguePerk>(
         [keystoneId],
-        perksJson as LeaguePerk[],
+        perksJson,
         (entry) => entry.iconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'keystone'
     );
+    const styles: LeaguePerkStyle[] = perkStylesJson.styles
     const secondaryRuneId = perkStyles[1]?.style;
-    const secondaryRuneImages = await preloadAssets(
+    const secondaryRuneImages = await preloadAssets<LeaguePerkStyle>(
         [secondaryRuneId],
-        perkStylesJson.styles as LeaguePerkStyle[],
+        styles,
         (entry) => entry.iconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'perkstyle'
@@ -492,7 +494,7 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
     const augmentData = await getAugmentData();
     const images = await preloadAssets<LeagueAugment>(
         augmentIds,
-        augmentData as LeagueAugment[],
+        augmentData,
         (entry) => entry.augmentSmallIconPath,
         (iconPath, id) => communityDragonAssetUrl(iconPath),
         'augment'

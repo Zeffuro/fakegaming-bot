@@ -1,8 +1,9 @@
-import {getAsset} from '../utils/assetCache.js';
+import {getAsset} from '../../../utils/assetCache.js';
+import {LeagueItem} from "../types/leagueAssetTypes.js";
 
-let cachedItemsData: any = null;
+let cachedItemsData: LeagueItem[];
 
-export async function getItemData(): Promise<any> {
+export async function getItemData(): Promise<LeagueItem[]> {
     if (cachedItemsData) return cachedItemsData;
     const asset = await getAsset(
         'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json',

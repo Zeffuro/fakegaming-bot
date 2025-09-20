@@ -1,8 +1,9 @@
-import {getAsset} from '../utils/assetCache.js';
+import {getAsset} from '../../../utils/assetCache.js';
+import {LeaguePerkStylesData} from "../types/leagueAssetTypes.js";
 
-let cachedPerkStylesData: any = null;
+let cachedPerkStylesData: LeaguePerkStylesData;
 
-export async function getPerkStylesData(): Promise<any> {
+export async function getPerkStylesData(): Promise<LeaguePerkStylesData> {
     if (cachedPerkStylesData) return cachedPerkStylesData;
     const asset = await getAsset(
         'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perkstyles.json',

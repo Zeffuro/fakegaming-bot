@@ -1,8 +1,9 @@
-import {getAsset} from '../utils/assetCache.js';
+import {getAsset} from '../../../utils/assetCache.js';
+import {LeagueSummonerSpell} from '../types/leagueAssetTypes.js';
 
-let cachedSummonerSpellsData: any = null;
+let cachedSummonerSpellsData: LeagueSummonerSpell[];
 
-export async function getSummonerSpellData(): Promise<any> {
+export async function getSummonerSpellData(): Promise<LeagueSummonerSpell[]> {
     if (cachedSummonerSpellsData) return cachedSummonerSpellsData;
     const asset = await getAsset(
         'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json',
