@@ -32,7 +32,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const timestamp = Date.now() + ms;
 
-    await configManager.reminderManager.addReminder({
+    await configManager.reminderManager.add({
         id: uuidv4(),
         userId,
         message,

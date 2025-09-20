@@ -1,7 +1,7 @@
 // @ts-ignore
 import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
-import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
+import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../../../utils/leagueUtils.js';
 
@@ -69,7 +69,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             discordId: userId,
             league: {summonerName: identity.summoner, region: identity.region, puuid: identity.puuid}
         };
-        await configManager.userManager.addUser(user);
+        await configManager.userManager.add(user);
     }
     await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }

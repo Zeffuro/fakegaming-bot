@@ -1,30 +1,25 @@
 import './deploy-commands.js';
 
 import {Client, Collection, Events, MessageFlags} from 'discord.js';
-import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import {fileURLToPath, pathToFileURL} from 'url';
+import {pathToFileURL} from 'url';
+import {bootstrapEnv} from './core/bootstrapEnv.js';
 import {configManager} from './config/configManagerSingleton.js';
-import {subscribeAllStreams} from "./services/twitchService.js";
-import {checkAndAnnounceNewVideos} from './services/youtubeService.js';
-import {checkAndSendReminders} from "./services/reminderService.js";
-import {checkAndAnnounceBirthdays} from "./services/birthdayService.js";
-import {scheduleAtTime} from './utils/scheduleAtTime.js';
+import {startBotServices} from './services/botScheduler.js';
+import {loadCommands} from './core/loadCommands.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const {__dirname} = bootstrapEnv(import.meta.url);
+
+if (!process.env.DISCORD_BOT_TOKEN) {
+    console.error('DISCORD_BOT_TOKEN is not set in environment variables.');
+    process.exit(1);
+}
 
 const dataDir = process.env.DATA_ROOT || path.join(__dirname, '..', 'data');
 
 await configManager.init();
 
-if (!process.env.DISCORD_BOT_TOKEN) {
-    console.log('Environment variables not found, loading from .env file');
-    dotenv.config();
-}
-
-// Extend Client to add commands property
 class FakegamingBot extends Client {
     commands: Collection<string, any>;
 
@@ -37,51 +32,17 @@ class FakegamingBot extends Client {
 const client = new FakegamingBot({intents: [1 << 0]}); // Guilds intent
 
 const modulesPath = path.join(__dirname, 'modules');
-const moduleFolders = fs.readdirSync(modulesPath);
 
-for (const folder of moduleFolders) {
-    const commandsPath = path.join(modulesPath, folder, 'commands');
-    if (!fs.existsSync(commandsPath)) continue;
-    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
-    for (const file of commandFiles) {
-        const commandPath = path.join(commandsPath, file);
-        const commandModule = await import(pathToFileURL(commandPath).href);
-        if (commandModule.data && commandModule.execute) {
-            client.commands.set(commandModule.data.name, {
-                data: commandModule.data,
-                execute: commandModule.execute,
-                autocomplete: commandModule.autocomplete,
-            });
-        }
-    }
+try {
+    await loadCommands(client, modulesPath);
+} catch (err) {
+    console.error('Error loading commands:', err);
+    process.exit(1);
 }
 
 client.once('clientReady', async () => {
     console.log(`Logged in as ${client.user?.tag}`);
-    await subscribeAllStreams(client); // Initial check
-    await checkAndAnnounceNewVideos(client);
-    await checkAndSendReminders(client);
-    await checkAndAnnounceBirthdays(client);
-
-    // Poll Twitch every 60 seconds
-    setInterval(() => {
-        subscribeAllStreams(client);
-    }, 60_000);
-
-    // Poll YouTube Videos every 5 minutes
-    setInterval(() => {
-        checkAndAnnounceNewVideos(client);
-    }, 5 * 60_000);
-
-    // Check reminders and send them out
-    setInterval(() => {
-        checkAndSendReminders(client);
-    }, 60_000);
-
-    // Check birthdays daily at 9 AM
-    scheduleAtTime(9, 0, () => {
-        checkAndAnnounceBirthdays(client);
-    });
+    startBotServices(client);
 });
 
 client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {

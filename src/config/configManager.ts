@@ -1,4 +1,4 @@
-import {db} from './db.js';
+import {db, defaultData} from './db.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
 import {ServerManager} from './serverManager.js';
@@ -18,7 +18,6 @@ export class ConfigManager {
 
     async init() {
         await db.read();
-        const defaults = {users: [], servers: [], quotes: [], twitchStreams: []};
-        db.data = {...defaults, ...db.data};
+        db.data = {...defaultData, ...db.data};
     }
 }

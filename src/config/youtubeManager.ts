@@ -1,48 +1,33 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {YoutubeVideoConfig} from '../types/youtubeVideoConfig.js';
-import {UserConfig} from "../types/userConfig.js";
 
-export class YoutubeManager {
-    async addStream(config: YoutubeVideoConfig) {
-        db.data!.youtubeVideoChannels ||= [];
-        db.data!.youtubeVideoChannels.push(config);
-        await db.write();
+export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
+    constructor() {
+        super('youtubeVideoChannels');
     }
 
     async addVideoChannel(config: YoutubeVideoConfig) {
-        db.data!.youtubeVideoChannels ||= [];
-        db.data!.youtubeVideoChannels.push(config);
-        await db.write();
-    }
-
-    getStreams(): YoutubeVideoConfig[] {
-        db.data!.youtubeVideoChannels ||= [];
-        return db.data!.youtubeVideoChannels;
+        await this.add(config);
     }
 
     async getVideoChannel({youtubeChannelId, discordChannelId}: {
         youtubeChannelId: string,
         discordChannelId: string
     }): Promise<YoutubeVideoConfig | undefined> {
-        return db.data!.youtubeVideoChannels.find(
+        return this.collection.find(
             channel => channel.youtubeChannelId === youtubeChannelId && channel.discordChannelId === discordChannelId
         );
     }
 
-    getVideoChannels(): YoutubeVideoConfig[] {
-        db.data!.youtubeVideoChannels ||= [];
-        return db.data!.youtubeVideoChannels;
-    }
-
     async setVideoChannel(channel: YoutubeVideoConfig) {
-        const idx = db.data!.youtubeVideoChannels.findIndex(
+        const idx = this.collection.findIndex(
             c => c.youtubeChannelId === channel.youtubeChannelId && c.discordChannelId === channel.discordChannelId
         );
         if (idx !== -1) {
-            db.data!.youtubeVideoChannels[idx] = channel;
+            this.collection[idx] = channel;
         } else {
-            db.data!.youtubeVideoChannels.push(channel);
+            this.collection.push(channel);
         }
-        await db.write();
+        await this.setAll(this.collection);
     }
 }

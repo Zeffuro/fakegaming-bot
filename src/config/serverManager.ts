@@ -1,13 +1,12 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {ServerConfig} from '../types/serverConfig.js';
 
-export class ServerManager {
-    async addServer(server: ServerConfig) {
-        db.data!.servers.push(server);
-        await db.write();
+export class ServerManager extends BaseManager<ServerConfig> {
+    constructor() {
+        super('servers');
     }
 
     getServer(serverId: string): ServerConfig | undefined {
-        return db.data!.servers.find(server => server.serverId === serverId);
+        return this.collection.find(server => server.serverId === serverId);
     }
 }

@@ -1,27 +1,26 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {UserConfig} from '../types/userConfig.js';
 
-export class UserManager {
-    async addUser(user: UserConfig) {
-        db.data!.users.push(user);
-        await db.write();
+export class UserManager extends BaseManager<UserConfig> {
+    constructor() {
+        super('users');
     }
 
     getUser({discordId}: { discordId: string }): UserConfig | undefined {
-        return db.data!.users.find(user => user.discordId === discordId);
+        return this.collection.find(user => user.discordId === discordId);
     }
 
     async setUser(user: UserConfig) {
-        const idx = db.data!.users.findIndex(user => user.discordId === user.discordId);
+        const idx = this.collection.findIndex(u => u.discordId === user.discordId);
         if (idx !== -1) {
-            db.data!.users[idx] = user;
+            this.collection[idx] = user;
         } else {
-            db.data!.users.push(user);
+            this.collection.push(user);
         }
-        await db.write();
+        await this.setAll(this.collection);
     }
 
-    async setTimezone({discordId, timezone}: {discordId: string, timezone: string}) {
+    async setTimezone({discordId, timezone}: { discordId: string, timezone: string }) {
         const user = this.getUser({discordId});
         if (user) {
             user.timezone = timezone;
@@ -29,7 +28,7 @@ export class UserManager {
         }
     }
 
-    async setDefaultReminderTimeSpan({discordId, timespan}: {discordId: string, timespan: string}) {
+    async setDefaultReminderTimeSpan({discordId, timespan}: { discordId: string, timespan: string }) {
         const user = this.getUser({discordId});
         if (user) {
             user.defaultReminderTimeSpan = timespan;

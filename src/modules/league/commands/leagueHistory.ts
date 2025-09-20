@@ -1,6 +1,6 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder} from 'discord.js';
 import {getMatchHistory, getMatchDetails} from '../../../services/riotService.js';
-import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
+import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
 import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
 import {getAsset} from "../../../utils/assetCache.js";

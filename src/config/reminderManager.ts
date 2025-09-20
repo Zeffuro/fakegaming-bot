@@ -1,23 +1,17 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {ReminderConfig} from '../types/reminderConfig.js';
 
-export class ReminderManager {
-    async addReminder(reminder: ReminderConfig) {
-        db.data!.reminders = db.data!.reminders || [];
-        db.data!.reminders.push(reminder);
-        await db.write();
-    }
-
-    getAllReminders(): ReminderConfig[] {
-        return db.data!.reminders || [];
+export class ReminderManager extends BaseManager<ReminderConfig> {
+    constructor() {
+        super('reminders');
     }
 
     getRemindersByUser({userId}: { userId: string }): ReminderConfig[] {
-        return (db.data!.reminders || []).filter(reminder => reminder.userId === userId);
+        return this.collection.filter(reminder => reminder.userId === userId);
     }
 
     async removeReminder({id}: { id: string }) {
-        db.data!.reminders = (db.data!.reminders || []).filter(reminder => reminder.id !== id);
-        await db.write();
+        const filtered = this.collection.filter(reminder => reminder.id !== id);
+        await this.setAll(filtered);
     }
 }

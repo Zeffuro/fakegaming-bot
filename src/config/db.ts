@@ -19,10 +19,7 @@ export type Data = {
     birthdays: BirthdayConfig[];
 };
 
-const dataRoot = process.env.DATA_ROOT || 'data';
-const adapter = new JSONFile<Data>(path.join(dataRoot, 'config.json'));
-
-export const db = new Low<Data>(adapter, {
+export const defaultData: Data = {
     users: [],
     servers: [],
     quotes: [],
@@ -30,4 +27,9 @@ export const db = new Low<Data>(adapter, {
     youtubeVideoChannels: [],
     reminders: [],
     birthdays: []
-});
+};
+
+const dataRoot = process.env.DATA_ROOT || 'data';
+const adapter = new JSONFile<Data>(path.join(dataRoot, 'config.json'));
+
+export const db = new Low<Data>(adapter, defaultData);

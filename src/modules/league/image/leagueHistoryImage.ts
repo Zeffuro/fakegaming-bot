@@ -5,7 +5,7 @@ import {getSummonerSpellData} from '../../../cache/leagueSummonerSpellDataCache.
 import {getPerkStylesData} from '../../../cache/leaguePerkStylesDataCache.js';
 import {getPerksData} from '../../../cache/leaguePerksDataCache.js';
 import {getAugmentData} from '../../../cache/leagueAugmentDataCache.js';
-import {queueMapper, gameModeConvertMap} from '../../../constants/leagueMappers.js';
+import {queueMapper, gameModeConvertMap} from '../constants/leagueMappers.js';
 import {
     drawItemSlotBackground,
     drawClippedImage,

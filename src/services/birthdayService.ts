@@ -6,7 +6,7 @@ export async function checkAndAnnounceBirthdays(client: Client) {
     const day = today.getDate();
     const month = today.getMonth() + 1; // months are 0-indexed
 
-    const birthdays = configManager.birthdayManager.getBirthdays();
+    const birthdays = configManager.birthdayManager.getAll();
 
     for (const b of birthdays) {
         if (b.day === day && b.month === month) {

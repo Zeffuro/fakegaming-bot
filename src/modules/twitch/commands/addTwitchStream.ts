@@ -32,8 +32,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    const existing = configManager.twitchManager.getStreams().find(
-        s => s.twitchUsername === twitchUsername && s.discordChannelId === discordChannel.id
+    const existing = configManager.twitchManager.getAll().find(
+        stream => stream.twitchUsername === twitchUsername && stream.discordChannelId === discordChannel.id
     );
     if (existing) {
         await interaction.reply({
@@ -51,7 +51,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.twitchManager.addStream({
+    await configManager.twitchManager.add({
         twitchUsername,
         discordChannelId: discordChannel.id,
         customMessage,

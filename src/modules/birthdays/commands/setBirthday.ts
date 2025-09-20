@@ -83,7 +83,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.birthdayManager.addBirthday({
+    await configManager.birthdayManager.add({
         userId: userId,
         day,
         month: monthObj.value,

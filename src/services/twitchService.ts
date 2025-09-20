@@ -27,7 +27,7 @@ export async function verifyTwitchUser(username: string): Promise<boolean> {
 }
 
 export async function subscribeAllStreams(client: Client) {
-    const streams = configManager.twitchManager.getStreams();
+    const streams = configManager.twitchManager.getAll();
 
     await Promise.all(streams.map(async (stream) => {
         const user = await appApiClient.users.getUserByName(stream.twitchUsername);

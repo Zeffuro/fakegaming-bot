@@ -1,6 +1,6 @@
 import {ChatInputCommandInteraction} from 'discord.js';
 import {resolveLeagueIdentity} from '../services/riotService.js';
-import {leagueRegionChoices} from '../constants/leagueRegions.js';
+import {leagueRegionChoices} from '../modules/league/constants/leagueRegions.js';
 import {Regions} from 'twisted/dist/constants/regions.js';
 
 export async function getLeagueIdentityFromInteraction(

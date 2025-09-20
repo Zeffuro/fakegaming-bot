@@ -1,11 +1,9 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {BirthdayConfig} from '../types/birthdayConfig.js';
 
-export class BirthdayManager {
-    async addBirthday(birthday: BirthdayConfig) {
-        db.data!.birthdays ||= [];
-        db.data!.birthdays.push(birthday);
-        await db.write();
+export class BirthdayManager extends BaseManager<BirthdayConfig> {
+    constructor() {
+        super('birthdays');
     }
 
     async hasBirthday({userId, guildId}: { userId: string; guildId: string }): Promise<boolean> {
@@ -13,21 +11,15 @@ export class BirthdayManager {
     }
 
     getBirthday({userId, guildId}: { userId: string; guildId: string }): BirthdayConfig | undefined {
-        db.data!.birthdays ||= [];
-        return db.data!.birthdays.find(
+        return this.collection.find(
             birthday => birthday.userId === userId && birthday.guildId === guildId
         );
     }
 
-    getBirthdays(): BirthdayConfig[] {
-        db.data!.birthdays ||= [];
-        return db.data!.birthdays;
-    }
-
     async removeBirthday({userId, guildId}: { userId: string, guildId: string }) {
-        db.data!.birthdays = db.data!.birthdays.filter(
+        const filtered = this.collection.filter(
             birthday => !(birthday.userId === userId && birthday.guildId === guildId)
         );
-        await db.write();
+        await this.setAll(filtered);
     }
 }

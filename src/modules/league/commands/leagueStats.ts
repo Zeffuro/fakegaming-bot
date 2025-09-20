@@ -2,8 +2,8 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'di
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../../../utils/leagueUtils.js";
 
-import {leagueRegionChoices} from '../../../constants/leagueRegions.js';
-import {tierEmojis} from '../../../constants/leagueTierEmojis.js';
+import {leagueRegionChoices} from '../constants/leagueRegions.js';
+import {tierEmojis} from '../constants/leagueTierEmojis.js';
 
 export const data = new SlashCommandBuilder()
     .setName('league-stats')

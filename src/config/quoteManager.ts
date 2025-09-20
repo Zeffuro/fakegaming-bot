@@ -1,26 +1,21 @@
-import {db} from './db.js';
+import {BaseManager} from './baseManager.js';
 import {QuoteConfig} from '../types/quoteConfig.js';
 
-export class QuoteManager {
-    async addQuote(quote: QuoteConfig) {
-        db.data!.quotes ||= [];
-        db.data!.quotes.push(quote);
-        await db.write();
+export class QuoteManager extends BaseManager<QuoteConfig> {
+    constructor() {
+        super('quotes');
     }
 
     getQuotes({guildId}: { guildId: string }): QuoteConfig[] {
-        db.data!.quotes ||= [];
-        return db.data!.quotes.filter(quote => quote.guildId === guildId);
+        return this.collection.filter(quote => quote.guildId === guildId);
     }
 
     getQuotesByAuthor({guildId, authorId}: { guildId: string, authorId: string }): QuoteConfig[] {
-        db.data!.quotes ||= [];
-        return db.data!.quotes.filter(quote => quote.guildId === guildId && quote.authorId === authorId);
+        return this.collection.filter(quote => quote.guildId === guildId && quote.authorId === authorId);
     }
 
     searchQuotes({guildId, text}: { guildId: string, text: string }): QuoteConfig[] {
-        db.data!.quotes ||= [];
         const lowerText = text.toLowerCase();
-        return db.data!.quotes.filter(quote => quote.guildId === guildId && quote.quote.toLowerCase().includes(lowerText));
+        return this.collection.filter(quote => quote.guildId === guildId && quote.quote.toLowerCase().includes(lowerText));
     }
 }

@@ -24,7 +24,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const submitter = interaction.user;
     const guildId = interaction.guildId!;
 
-    await configManager.quoteManager.addQuote({
+    await configManager.quoteManager.add({
         id: uuidv4(),
         guildId,
         quote: quoteText,

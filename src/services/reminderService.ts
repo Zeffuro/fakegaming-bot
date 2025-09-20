@@ -3,7 +3,7 @@ import {configManager} from '../config/configManagerSingleton.js';
 import {formatElapsed, parseTimespan} from '../utils/timeUtils.js';
 
 export async function checkAndSendReminders(client: Client) {
-    const allReminders = configManager.reminderManager.getAllReminders();
+    const allReminders = configManager.reminderManager.getAll();
     const now = Date.now();
     const dueReminders = allReminders.filter(reminder => reminder.timestamp <= now);
 

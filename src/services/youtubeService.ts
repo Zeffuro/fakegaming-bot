@@ -87,7 +87,7 @@ export async function getYoutubeChannelFeed(channelId: string) {
 }
 
 export async function checkAndAnnounceNewVideos(client: Client) {
-    const channels = configManager.youtubeManager.getVideoChannels();
+    const channels = configManager.youtubeManager.getAll();
 
     await Promise.all(channels.map(async (ytChannel) => {
         const feedItems = await getYoutubeChannelFeed(ytChannel.youtubeChannelId);
