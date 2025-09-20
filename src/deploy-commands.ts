@@ -18,12 +18,13 @@ for (const folder of moduleFolders) {
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js') || file.endsWith('.ts'));
     for (const file of commandFiles) {
         const commandPath = path.join(commandsPath, file);
-        const command = await import(pathToFileURL(commandPath).href);
-        if ('data' in command) {
-            if (command.testOnly) {
-                testCommands.push(command.data.toJSON());
+        const commandModule = await import(pathToFileURL(commandPath).href);
+        const cmd = commandModule.default;
+        if (cmd?.data) {
+            if (cmd.testOnly) {
+                testCommands.push(cmd.data.toJSON());
             } else {
-                globalCommands.push(command.data.toJSON());
+                globalCommands.push(cmd.data.toJSON());
             }
         }
     }
