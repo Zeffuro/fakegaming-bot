@@ -38,4 +38,4 @@ async function autocomplete(interaction: AutocompleteInteraction) {
 const testOnly = false;
 
 // noinspection JSUnusedGlobalSymbols
-export default {data, execute, autocomplete};
+export default {data, execute, testOnly, autocomplete};

@@ -37,18 +37,18 @@ export abstract class BasePatchNotesFetcher {
 
     /**
      * Parses raw data into a PatchNoteConfig object.
-     * @param raw Raw response data
+     * @param _raw Raw response data
      * @returns PatchNoteConfig or null if parsing fails
      */
-    abstract parsePatchNotes(raw: any): PatchNoteConfig | null;
+    abstract parsePatchNotes(_raw: any): PatchNoteConfig | null;
 
     /**
      * Returns the thumbnail URL for the patch note.
      * Subclasses can override to extract from raw or patchNote.
      * @param _raw Raw response data
-     * @param patchNote Parsed patch note config
+     * @param _patchNote Parsed patch note config
      */
-    getThumbnailUrl(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+    getThumbnailUrl(_raw: any, _patchNote?: PatchNoteConfig): string | undefined {
         return undefined;
     }
 
@@ -56,9 +56,9 @@ export abstract class BasePatchNotesFetcher {
      * Returns the version string for the patch note.
      * Subclasses can override to extract from raw or patchNote.
      * @param _raw Raw response data
-     * @param patchNote Parsed patch note config
+     * @param _patchNote Parsed patch note config
      */
-    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+    getVersion(_raw: any, _patchNote?: PatchNoteConfig): string | undefined {
         return undefined;
     }
 
