@@ -25,26 +25,8 @@ Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 ## Available Commands
 
 <!-- COMMAND_TABLE_START -->
-
-| Command                 | Description                                                                     | Permissions        |
-|-------------------------|---------------------------------------------------------------------------------|--------------------|
-| `/help`                 | List all available commands and their descriptions                              | All users          |
-| `/league-history`       | Get recent League of Legends match history for a summoner                       | All users          |
-| `/league-stats`         | Get League of Legends stats for a summoner or linked user                       | All users          |
-| `/link-riot`            | Link your Discord account or another user to a Riot account                     | All users          |
-| `/add-quote`            | Add a quote                                                                     | All users          |
-| `/quotes`               | Get all quotes for a user                                                       | All users          |
-| `/search-quote`         | Search quotes by text                                                           | All users          |
-| `/birthday`             | Show your or another user's birthday                                            | All users          |
-| `/set-birthday`         | Set your birthday and channel for birthday messages (admins can set for others) | All users / Admins |
-| `/remove-birthday`      | Remove your birthday or another user's birthday (admins only)                   | Admin only         |
-| `/set-reminder`         | Set a reminder                                                                  | All users          |
-| `/set-timezone`         | Set your timezone                                                               | All users          |
-| `/add-twitch-stream`    | Add a Twitch stream for notifications                                           | Admin only         |
-| `/add-youtube-channel`  | Add a YouTube channel for new video notifications                               | Admin only         |
-| `/subscribe-patchnotes` | Subscribe a channel to patch notes for a game                                   | Admin only         |
-| `/tft-history`          | Get recent Teamfight Tactics match history for a summoner (guild)               | All users          |
-
+| Command | Description | Permissions |
+|---------|-------------|-------------|
 <!-- COMMAND_TABLE_END -->
 ---
 
