@@ -21,29 +21,11 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
     }
 
     /**
-     * Returns the thumbnail URL from the parsed patch note.
-     * @param _raw Raw response data
-     * @param patchNote Parsed patch note config
-     */
-    getThumbnailUrl(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
-        return patchNote?.imageUrl;
-    }
-
-    /**
-     * Returns the version string from the parsed patch note.
-     * @param _raw Raw response data
-     * @param patchNote Parsed patch note config
-     */
-    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
-        return patchNote?.version;
-    }
-
-    /**
      * Fetches and parses the full patch content from a patch note URL.
      * @param url Patch note URL
      * @returns Content and highlight image, or null
      */
-    async fetchFullPatchContent(url: string): Promise<{ content: string, highlightImage?: string } | null> {
+    async fetchFullPatchContent(url: string): Promise<{ content: string, fullImage?: string } | null> {
         const res = await axios.get(url);
         const $ = cheerio.load(res.data);
         const nextData = $('#__NEXT_DATA__').html();
@@ -55,11 +37,11 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
 
         const $$ = cheerio.load(richTextHtml);
         const blockquote = $$('#patch-notes-container blockquote').first().text().trim();
-        const highlightImage = $$('#patch-patch-highlights').parent().next('.content-border').find('img').attr('src');
+        const fullImage = $$('#patch-patch-highlights').parent().next('.content-border').find('img').attr('src');
 
         return {
             content: cleanDiscordContent(blockquote),
-            highlightImage
+            fullImage
         };
     }
 

@@ -70,13 +70,4 @@ export class OverwatchPatchNotesFetcher extends BasePatchNotesFetcher {
             version: isoDate
         };
     }
-
-    /**
-     * Returns the version string from the parsed patch note.
-     * @param _raw Raw response data.
-     * @param patchNote Parsed patch note config.
-     */
-    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
-        return patchNote?.version;
-    }
 }
