@@ -3,7 +3,7 @@ import path from 'path';
 import {fileURLToPath, pathToFileURL} from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../modules');
+const modulesPath = path.join(__dirname, '../src/modules');
 
 async function findCommandDirs(modulesPath) {
     const moduleFolders = fs.readdirSync(modulesPath);
