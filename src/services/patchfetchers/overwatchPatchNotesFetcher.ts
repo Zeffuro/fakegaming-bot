@@ -19,7 +19,7 @@ function trimPatchTitle(title: string): string {
  */
 export class OverwatchPatchNotesFetcher extends BasePatchNotesFetcher {
     constructor() {
-        super('Overwatch', 0xFF8000);
+        super('Overwatch 2', 0xFF8000);
     }
 
     /**
@@ -47,11 +47,14 @@ export class OverwatchPatchNotesFetcher extends BasePatchNotesFetcher {
         const title = trimPatchTitle(rawTitle);
         if (!title) return null;
 
+        const sectionTitle = patchDiv.find('.PatchNotes-sectionTitle').first().text().trim();
+        const sectionTitleBlock = sectionTitle ? `**${sectionTitle}**\n` : '';
+
         const contentArr: string[] = [];
         patchDiv.find('.PatchNotes-sectionDescription').each((_, el) => {
             contentArr.push($(el).text().trim());
         });
-        const content = contentArr.join('\n\n');
+        const content = sectionTitleBlock + contentArr.join('\n\n');
         if (!content) return null;
 
         const publishedAt = new Date(dateText).getTime() || Date.now();
