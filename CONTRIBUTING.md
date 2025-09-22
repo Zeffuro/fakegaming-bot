@@ -39,6 +39,24 @@ Thanks for your interest in contributing! Please follow these guidelines to get 
 - Add your asset or service preloader to `src/core/preloadModules.ts`.
 - Preloaders should be async functions.
 
+## Writing Patch Notes Fetchers
+
+Want to add patch notes support for a new game? Follow these steps:
+
+- **Create a new fetcher class:**  
+  Extend `BasePatchNotesFetcher` in `src/services/patchfetchers/`.
+- **Implement game-specific logic:**  
+  Your class should provide:
+    - The patch notes URL (`getPatchNotesUrl`)
+    - Parsing logic for the latest patch (`parsePatchNotes`)
+    - Optional: methods for extracting images, version info, or enriching patch data
+- **See an example:**  
+  Check out `leaguePatchNotesFetcher.ts` for a working implementation.
+- **Register your fetcher:**  
+  Add your new class to the list in `loadPatchNoteFetchers.ts` so the bot can use it.
+
+This helps the bot announce new patch notes for your game in Discord channels.
+
 ## Branching & Pull Requests
 
 - Create feature branches from `main`.

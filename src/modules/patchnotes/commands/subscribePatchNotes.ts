@@ -1,6 +1,13 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, AutocompleteInteraction} from 'discord.js';
+import {
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    ChannelType,
+    AutocompleteInteraction,
+    PermissionFlagsBits
+} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
+import {requireAdmin} from "../../../utils/permissions.js";
 
 const data = new SlashCommandBuilder()
     .setName('subscribe-patchnotes')
@@ -16,9 +23,11 @@ const data = new SlashCommandBuilder()
             .setDescription('Channel to receive patch notes')
             .setRequired(true)
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-    );
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    if (!(await requireAdmin(interaction))) return;
     const game = interaction.options.getString('game', true);
     const channel = interaction.options.getChannel('channel', true);
 
