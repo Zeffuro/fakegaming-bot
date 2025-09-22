@@ -1,18 +1,21 @@
 import fs from 'fs';
 import path from 'path';
-import {fileURLToPath, pathToFileURL} from 'url';
+import { pathToFileURL, fileURLToPath } from 'url';
 
+// __dirname is dist/scripts/ when running built JS
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../src/modules');
+const modulesPath = path.join(__dirname, '../modules'); // Looks in dist/modules
 
-if (!fs.existsSync(modulesPath)) {
-    console.error(`ERROR: modules directory not found at ${modulesPath}`);
-    process.exit(1);
-}
+function findCommandDirs(modulesPath: string): string[] {
+    if (!fs.existsSync(modulesPath)) {
+        console.error(`ERROR: modules directory not found at ${modulesPath}`);
+        process.exit(1);
+    }
+    const moduleFolders = fs.readdirSync(modulesPath, { withFileTypes: true })
+        .filter(f => f.isDirectory())
+        .map(f => f.name);
 
-async function findCommandDirs(modulesPath) {
-    const moduleFolders = fs.readdirSync(modulesPath);
-    const commandDirs = [];
+    const commandDirs: string[] = [];
     for (const folder of moduleFolders) {
         const commandsPath = path.join(modulesPath, folder, 'commands');
         if (fs.existsSync(commandsPath)) {
@@ -22,10 +25,10 @@ async function findCommandDirs(modulesPath) {
     return commandDirs;
 }
 
-async function loadCommands(commandDirs) {
-    const commands = [];
+async function loadCommands(commandDirs: string[]) {
+    const commands: { name: string, description: string, permissions: string }[] = [];
     for (const dir of commandDirs) {
-        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') || f.endsWith('.ts'));
+        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
         for (const file of files) {
             const cmdPath = path.join(dir, file);
             try {
@@ -39,14 +42,14 @@ async function loadCommands(commandDirs) {
                     });
                 }
             } catch (e) {
-                // Ignore files that can't be imported
+                console.error(`Failed to import ${cmdPath}:`, e);
             }
         }
     }
     return commands;
 }
 
-function generateTable(commands) {
+function generateTable(commands: { name: string, description: string, permissions: string }[]) {
     let table = `| Command | Description | Permissions |\n|---------|-------------|-------------|\n`;
     for (const cmd of commands.sort((a, b) => a.name.localeCompare(b.name))) {
         table += `|\`/${cmd.name}\`|${cmd.description}|${cmd.permissions}|\n`;
@@ -55,7 +58,7 @@ function generateTable(commands) {
 }
 
 async function main() {
-    const commandDirs = await findCommandDirs(modulesPath);
+    const commandDirs = findCommandDirs(modulesPath);
     const commands = await loadCommands(commandDirs);
     if (commands.length === 0) {
         console.warn('WARNING: No commands found. The command table will be empty.');
@@ -64,8 +67,9 @@ async function main() {
     }
     const table = generateTable(commands);
 
-    const readmePath = path.join(__dirname, '../README.md');
-    let readme;
+    // README is at project root, so go up two levels from dist/scripts/
+    const readmePath = path.join(__dirname, '../../README.md');
+    let readme: string;
     try {
         readme = fs.readFileSync(readmePath, 'utf8');
     } catch (err) {
@@ -75,10 +79,10 @@ async function main() {
     const start = '<!-- COMMAND_TABLE_START -->';
     const end = '<!-- COMMAND_TABLE_END -->';
     const regex = new RegExp(`${start}[\\s\\S]*?${end}`, 'm');
-    const newSection = `${start}\n${table}${end}`;
+    const newSection = `${start}\n\n${table}${end}`;
     let updated = false;
     if (regex.test(readme)) {
-        if (readme.match(regex)[0] !== newSection) {
+        if (readme.match(regex)![0] !== newSection) {
             readme = readme.replace(regex, newSection);
             updated = true;
         }
