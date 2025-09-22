@@ -5,6 +5,11 @@ import {fileURLToPath, pathToFileURL} from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const modulesPath = path.join(__dirname, '../src/modules');
 
+if (!fs.existsSync(modulesPath)) {
+    console.error(`ERROR: modules directory not found at ${modulesPath}`);
+    process.exit(1);
+}
+
 async function findCommandDirs(modulesPath) {
     const moduleFolders = fs.readdirSync(modulesPath);
     const commandDirs = [];
@@ -24,7 +29,6 @@ async function loadCommands(commandDirs) {
         for (const file of files) {
             const cmdPath = path.join(dir, file);
             try {
-                // Use dynamic import for ESM
                 const commandModule = await import(pathToFileURL(cmdPath).href);
                 const cmd = commandModule.default || commandModule;
                 if (cmd && cmd.data && cmd.data.name && cmd.data.description) {
@@ -53,23 +57,41 @@ function generateTable(commands) {
 async function main() {
     const commandDirs = await findCommandDirs(modulesPath);
     const commands = await loadCommands(commandDirs);
+    if (commands.length === 0) {
+        console.warn('WARNING: No commands found. The command table will be empty.');
+    } else {
+        console.log(`Found ${commands.length} commands in ${commandDirs.length} directories.`);
+    }
     const table = generateTable(commands);
 
     const readmePath = path.join(__dirname, '../README.md');
-    let readme = fs.readFileSync(readmePath, 'utf8');
+    let readme;
+    try {
+        readme = fs.readFileSync(readmePath, 'utf8');
+    } catch (err) {
+        console.error(`ERROR: Could not read README at ${readmePath}:`, err);
+        process.exit(1);
+    }
     const start = '<!-- COMMAND_TABLE_START -->';
     const end = '<!-- COMMAND_TABLE_END -->';
     const regex = new RegExp(`${start}[\\s\\S]*?${end}`, 'm');
-
     const newSection = `${start}\n${table}${end}`;
+    let updated = false;
     if (regex.test(readme)) {
-        readme = readme.replace(regex, newSection);
-    } else {
+        if (readme.match(regex)[0] !== newSection) {
+            readme = readme.replace(regex, newSection);
+            updated = true;
+        }
+    } else if (!readme.endsWith(newSection)) {
         readme += `\n\n${newSection}\n`;
+        updated = true;
     }
-
-    fs.writeFileSync(readmePath, readme);
-    console.log('README.md command table updated!');
+    if (updated) {
+        fs.writeFileSync(readmePath, readme);
+        console.log('README.md command table updated!');
+    } else {
+        console.log('README.md command table is already up-to-date.');
+    }
 }
 
 main();

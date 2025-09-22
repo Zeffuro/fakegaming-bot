@@ -4,26 +4,42 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/modules/**/commands/*'
+      - 'scripts/generate-command-table.js'
+      - '.github/workflows/update-command-table.yml'
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   update-command-table:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
+
       - name: Install dependencies
         run: npm ci
+
       - name: Update README command table
         run: node scripts/generate-command-table.js
-      - name: Commit and push changes
+
+      - name: Check for changes
+        id: changes
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "chore: update command table in README [skip ci]" || exit 0
-          git push
+          git diff --exit-code README.md || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Create pull request for command table update
+        if: steps.changes.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: "chore: update command table in README [skip ci]"
+          branch: "bot/update-command-table"
+          title: "chore: update command table in README"
+          body: "This PR updates the command table in the README automatically."
+          labels: "bot, automated pr"
