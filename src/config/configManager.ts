@@ -6,6 +6,7 @@ import {TwitchManager} from './twitchManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
+import {PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.js";
 
 /**
  * Aggregates all manager classes and provides database initialization.
@@ -18,6 +19,8 @@ export class ConfigManager {
     youtubeManager = new YoutubeManager();
     reminderManager = new ReminderManager();
     birthdayManager = new BirthdayManager();
+    patchNotesManager = new PatchNotesManager();
+    patchSubscriptionManager = new PatchSubscriptionManager();
 
     /**
      * Initializes the database with default data.

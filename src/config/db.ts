@@ -8,6 +8,8 @@ import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
 import {ReminderConfig} from "../types/reminderConfig.js";
 import {BirthdayConfig} from "../types/birthdayConfig.js";
 import path from "path";
+import {PatchNoteConfig} from "../types/patchNoteConfig.js";
+import {PatchSubscriptionConfig} from "../types/patchSubscriptionConfig.js";
 
 /**
  * Represents the structure of all configuration data stored in the database.
@@ -21,6 +23,8 @@ export type Data = {
     youtubeVideoChannels: YoutubeVideoConfig[];
     reminders: ReminderConfig[];
     birthdays: BirthdayConfig[];
+    patchNotes: PatchNoteConfig[];
+    patchSubscriptions: PatchSubscriptionConfig[];
 };
 
 /**
@@ -33,7 +37,9 @@ export const defaultData: Data = {
     twitchStreams: [],
     youtubeVideoChannels: [],
     reminders: [],
-    birthdays: []
+    birthdays: [],
+    patchNotes: [],
+    patchSubscriptions: []
 };
 
 const dataRoot = process.env.DATA_ROOT || 'data';
