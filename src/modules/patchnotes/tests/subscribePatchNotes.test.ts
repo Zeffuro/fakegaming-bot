@@ -13,7 +13,7 @@ describe('subscribePatchNotes command', () => {
         });
 
         configManager.patchNotesManager = {
-            getLatestPatch: jest.fn() as (game: string) => PatchNoteConfig | undefined
+            getLatestPatch: jest.fn() as (_game: string) => PatchNoteConfig | undefined
         } as unknown as typeof configManager.patchNotesManager;
 
         const interaction = new MockInteraction({
