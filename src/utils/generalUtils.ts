@@ -27,3 +27,45 @@ export function formatDuration(durationSec: number): string {
     const sec = durationSec % 60;
     return `${min}m ${sec.toString().padStart(2, '0')}s`;
 }
+
+/**
+ * Cleans up text for Discord by removing tabs, collapsing multiple newlines, and trimming whitespace.
+ * Useful for formatting patch notes or other content before saving or sending.
+ * @param raw - The raw string to clean.
+ * @returns The cleaned string, ready for Discord or database storage.
+ */
+export function cleanDiscordContent(raw: string): string {
+    let cleaned = raw.replace(/\t+/g, '');
+    cleaned = cleaned.replace(/\n{2,}/g, '\n');
+    cleaned = cleaned.trim();
+    return cleaned;
+}
+
+/**
+ * Converts minutes to milliseconds.
+ * Useful for scheduling intervals in a readable way.
+ * @param {number} minutes - The number of minutes.
+ * @returns {number} The equivalent milliseconds.
+ */
+export function minutes(minutes: number): number {
+    return minutes * 60_000;
+}
+
+/**
+ * Truncates a string to a specified maximum length, appending '...' if truncated.
+ * @param {string} text - The input string to truncate.
+ * @param {number} max - The maximum allowed length of the string.
+ * @returns {string} The truncated string, with '...' appended if truncation occurred.
+ */
+export function truncateDescription(text: string, max: number): string {
+    if (text.length <= max) return text;
+    const cut = text.slice(0, max);
+    const lastLineBreak = cut.lastIndexOf('\n');
+    let truncated: string;
+    if (lastLineBreak > max * 0.5) {
+        truncated = cut.slice(0, lastLineBreak);
+    } else {
+        truncated = cut.slice(0, max - 3);
+    }
+    return `${truncated}\n...`;
+}

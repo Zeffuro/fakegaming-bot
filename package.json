@@ -18,6 +18,7 @@
     "@twurple/eventsub-ws": "^7.4.0",
     "@types/node": "^24.5.2",
     "canvas": "^3.0.0-rc3",
+    "cheerio": "^1.1.2",
     "discord-api-types": "^0.38.26",
     "discord.js": "^14.21.0",
     "dotenv": "^17.2.1",
