@@ -1,8 +1,8 @@
-import {Client, ChannelType, EmbedBuilder} from 'discord.js';
+import {Client, ChannelType} from 'discord.js';
 import {configManager} from '../config/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from '../loaders/loadPatchNoteFetchers.js';
 import {PatchNotesManager} from "../config/patchNotesManager.js";
-import {truncateDescription} from "../utils/generalUtils.js"
+import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.js";
 
 /**
  * Scans all games for new patch notes and updates them if newer.
@@ -23,10 +23,10 @@ export async function scanAndUpdatePatchNotes(patchNotesManager: PatchNotesManag
  * Builds a rich embed for each patch note, including accent color, logo, title, truncated content, and image.
  * Updates the last announced timestamp for each subscription after sending.
  *
- * @param {Client} client - The Discord client instance used to send messages.
- * @returns {Promise<void>} Resolves when all announcements are sent.
+ * @param client - The Discord client instance used to send messages.
+ * @returns A promise that resolves when all announcements are sent.
  */
-export async function announceNewPatchNotes(client: Client) {
+export async function announceNewPatchNotes(client: Client): Promise<void> {
     const notes = configManager.patchNotesManager.getAll();
     const subscriptions = configManager.patchSubscriptionManager.getAll();
 
@@ -35,17 +35,7 @@ export async function announceNewPatchNotes(client: Client) {
             if (!sub.lastAnnouncedAt || note.publishedAt > sub.lastAnnouncedAt) {
                 const channel = client.channels.cache.get(sub.channelId);
                 if (channel && (channel.type === ChannelType.GuildText || channel.type === ChannelType.GuildAnnouncement)) {
-                    const embed = new EmbedBuilder()
-                        .setColor(note.accentColor ?? 0x5865F2)
-                        .setTitle(note.title)
-                        .setDescription(`${truncateDescription(note.content, 350)}`)
-                        .setURL(note.url)
-                        .setImage(note.imageUrl ?? null)
-                        .setTimestamp(new Date(note.publishedAt))
-                        .setFooter({text: new Date(note.publishedAt).toLocaleString()})
-                        .setThumbnail(note.logoUrl ?? null)
-                        .setAuthor({name: note.game});
-
+                    const embed = buildPatchNoteEmbed(note);
                     await channel.send({embeds: [embed]});
                     sub.lastAnnouncedAt = note.publishedAt;
                     await configManager.patchSubscriptionManager.setAll(subscriptions);

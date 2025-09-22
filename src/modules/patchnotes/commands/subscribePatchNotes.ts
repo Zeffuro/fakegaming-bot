@@ -6,8 +6,9 @@ import {
     PermissionFlagsBits
 } from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
-import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
 import {requireAdmin} from "../../../utils/permissions.js";
+import {gameAutocomplete} from "../shared/gameAutocomplete.js";
+import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
 
 const data = new SlashCommandBuilder()
     .setName('subscribe-patchnotes')
@@ -33,15 +34,19 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     await configManager.patchSubscriptionManager.subscribe(game, channel.id);
 
-    await interaction.reply(`Subscribed <#${channel.id}> to patch notes for \`${game}\`.`);
+    const latestPatch = configManager.patchNotesManager.getLatestPatch(game);
+    if (latestPatch) {
+        await interaction.reply({
+            content: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`,
+            embeds: [buildPatchNoteEmbed(latestPatch)]
+        });
+    } else {
+        await interaction.reply(`Subscribed <#${channel.id}> to patch notes for \`${game}\`.`);
+    }
 }
 
 async function autocomplete(interaction: AutocompleteInteraction) {
-    const fetchers = await loadPatchNoteFetchers();
-    const games = fetchers.map(fetcher => fetcher.game);
-    const focused = interaction.options.getFocused();
-    const filtered = games.filter(game => game.toLowerCase().includes(focused.toLowerCase()));
-    await interaction.respond(filtered.map(game => ({name: game, value: game})));
+    await gameAutocomplete(interaction);
 }
 
 const testOnly = false;
