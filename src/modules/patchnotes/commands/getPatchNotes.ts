@@ -44,7 +44,7 @@ async function autocomplete(interaction: AutocompleteInteraction) {
     await gameAutocomplete(interaction);
 }
 
-const testOnly = true;
+const testOnly = false;
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly, autocomplete};
