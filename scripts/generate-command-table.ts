@@ -1,17 +1,17 @@
 import fs from 'fs';
 import path from 'path';
-import { pathToFileURL, fileURLToPath } from 'url';
+import {pathToFileURL, fileURLToPath} from 'url';
 
 // __dirname is dist/scripts/ when running built JS
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../modules'); // Looks in dist/modules
+const modulesPath = path.join(__dirname, '../src/modules');
 
 function findCommandDirs(modulesPath: string): string[] {
     if (!fs.existsSync(modulesPath)) {
         console.error(`ERROR: modules directory not found at ${modulesPath}`);
         process.exit(1);
     }
-    const moduleFolders = fs.readdirSync(modulesPath, { withFileTypes: true })
+    const moduleFolders = fs.readdirSync(modulesPath, {withFileTypes: true})
         .filter(f => f.isDirectory())
         .map(f => f.name);
 
