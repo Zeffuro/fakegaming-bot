@@ -15,7 +15,7 @@ export abstract class BasePatchNotesFetcher {
      * @param game Name of the game
      * @param accentColor Optional accent color for embeds
      */
-    constructor(game: string, accentColor?: number) {
+    protected constructor(game: string, accentColor?: number) {
         this.game = game;
         this.accentColor = accentColor;
     }
@@ -26,13 +26,20 @@ export abstract class BasePatchNotesFetcher {
     abstract getPatchNotesUrl(): string;
 
     /**
+     * Returns an array of URLs to fetch patch notes from.
+     * Subclasses can override for multiple sources.
+     */
+    getPatchNotesUrls(): string[] {
+        return [this.getPatchNotesUrl()];
+    }
+
+    /**
      * Fetches raw data from the patch notes URL.
      * @returns Raw response data
      */
-    async fetchRawData(): Promise<any> {
-        const url = this.getPatchNotesUrl();
-        const res = await axios.get(url);
-        return res.data;
+    async fetchRawData(): Promise<any[]> {
+        const urls = this.getPatchNotesUrls();
+        return await Promise.all(urls.map(url => axios.get(url).then(res => res.data)));
     }
 
     /**
@@ -48,8 +55,8 @@ export abstract class BasePatchNotesFetcher {
      * @param _raw Raw response data
      * @param _patchNote Parsed patch note config
      */
-    getThumbnailUrl(_raw: any, _patchNote?: PatchNoteConfig): string | undefined {
-        return undefined;
+    getThumbnailUrl(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+        return patchNote?.imageUrl;
     }
 
     /**
@@ -58,8 +65,8 @@ export abstract class BasePatchNotesFetcher {
      * @param _raw Raw response data
      * @param _patchNote Parsed patch note config
      */
-    getVersion(_raw: any, _patchNote?: PatchNoteConfig): string | undefined {
-        return undefined;
+    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+        return patchNote?.version;
     }
 
     /**
@@ -93,7 +100,7 @@ export abstract class BasePatchNotesFetcher {
      * @param _url Patch note URL
      * @returns Content and highlight image, or null
      */
-    protected async fetchFullPatchContent(_url: string): Promise<{ content: string, highlightImage?: string } | null> {
+    protected async fetchFullPatchContent(_url: string): Promise<{ content: string, fullImage?: string } | null> {
         return null;
     }
 
@@ -103,20 +110,24 @@ export abstract class BasePatchNotesFetcher {
      * @returns Latest PatchNoteConfig or null if not newer
      */
     async fetchLatestPatchNote(storedVersion?: string): Promise<PatchNoteConfig | null> {
-        const raw = await this.fetchRawData();
-        const patchNote = this.parsePatchNotes(raw);
-        if (!patchNote) return null;
-
-        if (!this.compareVersions(storedVersion, patchNote.version)) {
-            return null;
+        const raws = await this.fetchRawData();
+        let latest: PatchNoteConfig | null = null;
+        for (const raw of raws) {
+            const patchNote = this.parsePatchNotes(raw);
+            if (patchNote && this.compareVersions(storedVersion, patchNote.version)) {
+                if (!latest || this.compareVersions(latest.version, patchNote.version)) {
+                    latest = patchNote;
+                }
+            }
         }
-
-        const full = await this.fetchFullPatchContent(patchNote.url);
+        if (!latest) return null;
+        const full = await this.fetchFullPatchContent(latest.url);
         if (full) {
-            patchNote.content = full.content;
-            patchNote.imageUrl = full.highlightImage;
+            latest.content = full.content;
+            if (full.fullImage) {
+                latest.imageUrl = full.fullImage;
+            }
         }
-
-        return this.enrichPatchNote(raw, patchNote);
+        return this.enrichPatchNote(null, latest);
     }
 }
