@@ -24,7 +24,7 @@ Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 
 ## Available Commands
 
-_As of September 20th, 2025, the following commands are available:_
+<!-- COMMAND_TABLE_START -->
 
 | Command                 | Description                                                                     | Permissions        |
 |-------------------------|---------------------------------------------------------------------------------|--------------------|
@@ -45,6 +45,7 @@ _As of September 20th, 2025, the following commands are available:_
 | `/subscribe-patchnotes` | Subscribe a channel to patch notes for a game                                   | Admin only         |
 | `/tft-history`          | Get recent Teamfight Tactics match history for a summoner (guild)               | All users          |
 
+<!-- COMMAND_TABLE_END -->
 ---
 
 ## Getting Started
