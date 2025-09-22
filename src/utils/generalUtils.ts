@@ -59,13 +59,9 @@ export function minutes(minutes: number): number {
  */
 export function truncateDescription(text: string, max: number): string {
     if (text.length <= max) return text;
-    const cut = text.slice(0, max);
-    const lastLineBreak = cut.lastIndexOf('\n');
-    let truncated: string;
-    if (lastLineBreak > max * 0.5) {
-        truncated = cut.slice(0, lastLineBreak);
-    } else {
-        truncated = cut.slice(0, max - 3);
-    }
-    return `${truncated}\n...`;
+    // Find the last space before max, fallback to max-3 if none found
+    let cut = text.slice(0, max);
+    const lastSpace = cut.lastIndexOf(' ');
+    const truncateAt = lastSpace > max * 0.5 ? lastSpace : max - 3;
+    return `${cut.slice(0, truncateAt).trim()}...`;
 }

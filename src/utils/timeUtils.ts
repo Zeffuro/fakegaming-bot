@@ -24,3 +24,15 @@ export function formatElapsed(ms: number): string {
     const days = Math.floor(ms / 1000 / 60 / 60 / 24);
     return `${days} day${days !== 1 ? 's' : ''}, ${hrs} hrs, ${mins} mins, ${secs} secs ago`;
 }
+
+/**
+ * Converts a date string (e.g., "September 16, 2025") to ISO format ("YYYY-MM-DD").
+ * Useful for normalizing patch note dates for version comparison.
+ * @param dateStr - The date string to convert.
+ * @returns The ISO date string ("YYYY-MM-DD"), or `undefined` if parsing fails.
+ */
+export function parseDateToISO(dateStr: string): string | undefined {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return undefined;
+    return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
