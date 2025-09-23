@@ -1,12 +1,8 @@
-import {fileURLToPath} from 'url';
 import {CachedAsset} from '../types/cachedAsset.js';
 import {resolveDataRoot} from "../../../common/src/core/dataRoot.js";
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const dataRoot = resolveDataRoot();
 const assetRoot = path.join(dataRoot, 'assets');

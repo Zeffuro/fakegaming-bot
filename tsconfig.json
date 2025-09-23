@@ -14,6 +14,8 @@
   },
   "include": [
     "packages/bot/src",
+    "packages/common/src",
+    "packages/dashboard/src",
     "scripts"
   ]
 }

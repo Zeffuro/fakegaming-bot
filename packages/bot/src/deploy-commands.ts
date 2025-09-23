@@ -49,7 +49,7 @@ export async function deployCommands() {
             Routes.applicationCommands(process.env.CLIENT_ID!),
             {body: globalCommands},
         );
-        //console.log('Accepted global commands:', updatedGlobal);
+        console.log('Accepted global commands:', updatedGlobal);
     } else {
         console.log('Global commands are up to date.');
     }
@@ -64,7 +64,7 @@ export async function deployCommands() {
                 Routes.applicationGuildCommands(process.env.CLIENT_ID!, process.env.GUILD_ID),
                 {body: testCommands},
             );
-            //console.log('Updated test (guild) commands.', updatedTest);
+            console.log('Updated test (guild) commands.', updatedTest);
         } else {
             console.log('Test (guild) commands are up to date.');
         }

@@ -1,15 +1,6 @@
 import {Low} from 'lowdb';
 import {JSONFile} from 'lowdb/node';
-import {UserConfig} from '../../../common/src/models/user-config.js';
-import {ServerConfig} from '../../../common/src/models/server-config.js';
-import {QuoteConfig} from '../../../common/src/models/quote-config.js';
-import {TwitchStreamConfig} from '../../../common/src/models/twitch-stream-config.js';
-import {YoutubeVideoConfig} from '../../../common/src/models/youtube-video-config.js';
-import {ReminderConfig} from '../../../common/src/models/reminder-config.js';
-import {BirthdayConfig} from '../../../common/src/models/birthday-config.js';
 import path from "path";
-import {PatchNoteConfig} from '../../../common/src/models/patch-note-config.js';
-import {PatchSubscriptionConfig} from '../../../common/src/models/patch-subscription-config.js';
 
 /**
  * Represents the structure of all configuration data stored in the database.
