@@ -26,25 +26,26 @@ Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 
 <!-- COMMAND_TABLE_START -->
 
-| Command | Description | Permissions |
-|---------|-------------|-------------|
-|`/add-quote`|Add a quote|All users|
-|`/add-twitch-stream`|Add a Twitch stream for notifications|All users|
-|`/add-youtube-channel`|Add a Youtube Channel for new video notifications|All users|
-|`/birthday`|Show your or another user's birthday|All users|
-|`/get-patchnotes`|Get the latest patch notes for a game|All users|
-|`/help`|List all available commands and their descriptions.|All users|
-|`/league-history`|Get recent League of Legends match history for a summoner|All users|
-|`/league-stats`|Get League of Legends stats for a summoner or linked user|All users|
-|`/link-riot`|Link your Discord account or another user to a Riot account|All users|
-|`/quotes`|Get all quotes for a user|All users|
-|`/remove-birthday`|Remove your birthday or another user's birthday (admins only)|All users|
-|`/search-quote`|Search quotes by text|All users|
-|`/set-birthday`|Set your birthday and the channel to post in|All users|
-|`/set-reminder`|Set a reminder|All users|
-|`/set-timezone`|Set your timezone|All users|
-|`/subscribe-patchnotes`|Subscribe a channel to patch notes for a game|All users|
-|`/tft-history`|Get recent Teamfight Tactics match history for a summoner|All users|
+| Command                 | Description                                                   | Permissions |
+|-------------------------|---------------------------------------------------------------|-------------|
+| `/add-quote`            | Add a quote                                                   | All users   |
+| `/add-twitch-stream`    | Add a Twitch stream for notifications                         | All users   |
+| `/add-youtube-channel`  | Add a Youtube Channel for new video notifications             | All users   |
+| `/birthday`             | Show your or another user's birthday                          | All users   |
+| `/get-patchnotes`       | Get the latest patch notes for a game                         | All users   |
+| `/help`                 | List all available commands and their descriptions.           | All users   |
+| `/league-history`       | Get recent League of Legends match history for a summoner     | All users   |
+| `/league-stats`         | Get League of Legends stats for a summoner or linked user     | All users   |
+| `/link-riot`            | Link your Discord account or another user to a Riot account   | All users   |
+| `/quotes`               | Get all quotes for a user                                     | All users   |
+| `/remove-birthday`      | Remove your birthday or another user's birthday (admins only) | All users   |
+| `/search-quote`         | Search quotes by text                                         | All users   |
+| `/set-birthday`         | Set your birthday and the channel to post in                  | All users   |
+| `/set-reminder`         | Set a reminder                                                | All users   |
+| `/set-timezone`         | Set your timezone                                             | All users   |
+| `/subscribe-patchnotes` | Subscribe a channel to patch notes for a game                 | All users   |
+| `/tft-history`          | Get recent Teamfight Tactics match history for a summoner     | All users   |
+
 <!-- COMMAND_TABLE_END -->
 ---
 
@@ -102,7 +103,8 @@ You can also use IDE run configurations (e.g. JetBrains/WebStorm with Bundled (t
 
 League of Legends and Teamfight Tactics assets are downloaded and cached in memory at bot startup for fast command
 response.  
-See [`src/core/preloadModules.ts`](src/core/preloadModules.ts) for details. You can add new preloaders for other games
+See [`src/core/preloadModules.ts`](packages/bot/src/core/preloadModules.ts) for details. You can add new preloaders for
+other games
 or services by updating this file.
 
 ---

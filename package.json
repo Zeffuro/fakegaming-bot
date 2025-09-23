@@ -1,48 +1,28 @@
 {
-  "name": "fakegaming-bot",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "lint": "eslint src --ext .ts,.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs",
-    "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs --watch",
-    "build": "tsc"
-  },
-  "keywords": [],
-  "author": "Zeffuro",
-  "license": "AGPL-3.0-only",
-  "description": "",
-  "dependencies": {
-    "@twurple/api": "^7.4.0",
-    "@twurple/auth": "^7.4.0",
-    "@twurple/eventsub-ws": "^7.4.0",
-    "@types/node": "^24.5.2",
-    "canvas": "^3.0.0-rc3",
-    "cheerio": "^1.1.2",
-    "discord-api-types": "^0.38.26",
-    "discord.js": "^14.21.0",
-    "dotenv": "^17.2.1",
-    "dotenv-expand": "^12.0.3",
-    "lowdb": "^7.0.1",
-    "ms": "^2.1.3",
-    "pg": "^8.16.3",
-    "rss-parser": "^3.13.0",
-    "sequelize": "^6.37.7",
-    "sequelize-typescript": "^2.1.6",
-    "sqlite3": "^5.1.7",
-    "ts-node": "^10.9.2",
-    "twisted": "^1.67.2",
-    "typescript": "^5.8.3",
-    "uuid": "^13.0.0"
-  },
+  "name": "fakegaming-bot-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/bot",
+    "packages/dashboard",
+    "packages/shared"
+  ],
   "type": "module",
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/ms": "^2.1.0",
-    "@types/sequelize": "^4.28.20",
     "eslint": "^9.36.0",
     "jest": "^30.1.3",
-    "ts-jest": "^29.4.4",
-    "typescript-eslint": "^8.44.0"
+    "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "test": "npm run test --workspaces",
+    "start:bot": "npm --workspace packages/bot run start",
+    "start:dashboard": "npm --workspace packages/dashboard run start"
+  },
+  "dependencies": {
+    "umzug": "^3.8.2"
   }
 }
