@@ -1,5 +1,5 @@
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
-import {PatchNoteConfig} from '../../types/patchNoteConfig.js';
+import {PatchNoteConfig} from '../../models/patch-note-config.js';
 import * as cheerio from 'cheerio';
 import {parseDateToISO} from "../../utils/timeUtils.js";
 
@@ -59,7 +59,7 @@ export class OverwatchPatchNotesFetcher extends BasePatchNotesFetcher {
 
         const publishedAt = new Date(dateText).getTime() || Date.now();
 
-        return {
+        return PatchNoteConfig.build({
             game: this.game,
             title,
             content,
@@ -68,6 +68,6 @@ export class OverwatchPatchNotesFetcher extends BasePatchNotesFetcher {
             logoUrl: 'https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Overwatch_2_logo.webp',
             imageUrl: undefined,
             version: isoDate
-        };
+        });
     }
 }

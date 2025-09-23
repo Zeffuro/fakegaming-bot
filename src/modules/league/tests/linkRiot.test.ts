@@ -1,6 +1,10 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
+import {LeagueConfig} from '../../../models/league-config.js';
+import {UserConfig} from '../../../models/user-config.js';
+
+jest.spyOn(LeagueConfig, 'create').mockResolvedValue({} as any);
 
 describe('linkRiot command', () => {
     it('links Riot account and replies', async () => {
@@ -31,6 +35,7 @@ describe('linkRiot command', () => {
 
         mockManager.getUser = jest.fn().mockReturnValue(undefined);
         mockManager.add = jest.fn();
+        mockManager.getUserWithLeague = jest.fn(() => Promise.resolve(null));
 
         const interaction = new MockInteraction({
             stringOptions: {'riot-id': 'Zeffuro#EUW', region: 'EUW'},

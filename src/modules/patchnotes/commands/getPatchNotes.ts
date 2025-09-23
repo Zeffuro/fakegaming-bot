@@ -20,7 +20,7 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const game = interaction.options.getString('game', true);
-    const latestPatch = configManager.patchNotesManager.getLatestPatch(game);
+    const latestPatch = await configManager.patchNotesManager.getLatestPatch(game);
 
     if (latestPatch) {
         await interaction.reply({embeds: [buildPatchNoteEmbed(latestPatch)]});

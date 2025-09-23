@@ -1,6 +1,6 @@
 // src/services/patchfetchers/marvelRivalsPatchNotesFetcher.ts
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
-import {PatchNoteConfig} from '../../types/patchNoteConfig.js';
+import {PatchNoteConfig} from '../../models/patch-note-config.js';
 import * as cheerio from 'cheerio';
 
 /**
@@ -50,7 +50,7 @@ export class MarvelRivalsPatchNotesFetcher extends BasePatchNotesFetcher {
 
         if (!url || !title || !content || !version) return null;
 
-        return {
+        return PatchNoteConfig.build({
             game: this.game,
             title,
             content,
@@ -59,7 +59,7 @@ export class MarvelRivalsPatchNotesFetcher extends BasePatchNotesFetcher {
             logoUrl: 'https://www.marvelrivals.com/pc/gw/20241128194803/img/logo_ad22b142.png',
             imageUrl: img,
             version
-        };
+        });
     }
 
     /**

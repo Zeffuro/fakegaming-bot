@@ -25,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let userId = interaction.user.id;
     if (targetUser) userId = targetUser.id;
 
-    const birthday = configManager.birthdayManager.getBirthday({userId, guildId: interaction.guildId!});
+    const birthday = await configManager.birthdayManager.getBirthday({userId, guildId: interaction.guildId!});
 
     if (!birthday) {
         await interaction.reply({

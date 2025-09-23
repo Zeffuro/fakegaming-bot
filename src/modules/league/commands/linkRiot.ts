@@ -1,9 +1,9 @@
-// @ts-ignore
 import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
 import {configManager} from '../../../config/configManagerSingleton.js';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
+import {LeagueConfig} from '../../../models/league-config.js';
 
 /**
  * Slash command metadata for Discord registration.
@@ -66,16 +66,35 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    let user = configManager.userManager.getUser({discordId: userId});
+    // Fetch user with league relation
+    let user = await configManager.userManager.getUserWithLeague(userId);
+
     if (user) {
-        user.league = {summonerName: identity.summoner, region: identity.region, puuid: identity.puuid};
-        await configManager.userManager.setUser(user);
+        if (user.league) {
+            // Update existing LeagueConfig
+            await user.league.update({
+                summonerName: identity.summoner,
+                region: identity.region,
+                puuid: identity.puuid
+            });
+        } else {
+            // Create new LeagueConfig
+            await LeagueConfig.create({
+                discordId: userId,
+                summonerName: identity.summoner,
+                region: identity.region,
+                puuid: identity.puuid
+            });
+        }
     } else {
-        user = {
+        // Create UserConfig and LeagueConfig
+        user = await configManager.userManager.add({discordId: userId});
+        await LeagueConfig.create({
             discordId: userId,
-            league: {summonerName: identity.summoner, region: identity.region, puuid: identity.puuid}
-        };
-        await configManager.userManager.add(user);
+            summonerName: identity.summoner,
+            region: identity.region,
+            puuid: identity.puuid
+        });
     }
     await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }

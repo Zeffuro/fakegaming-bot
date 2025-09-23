@@ -34,7 +34,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     await configManager.patchSubscriptionManager.subscribe(game, channel.id);
 
-    const latestPatch = configManager.patchNotesManager.getLatestPatch(game);
+    const latestPatch = await configManager.patchNotesManager.getLatestPatch(game);
     if (latestPatch) {
         await interaction.reply({
             content: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`,

@@ -36,10 +36,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    const existing = configManager.twitchManager.getAll().find(
-        stream => stream.twitchUsername === twitchUsername && stream.discordChannelId === discordChannel.id
-    );
-    if (existing) {
+    if (await configManager.twitchManager.exists(twitchUsername, discordChannel.id)) {
         await interaction.reply({
             content: `Twitch stream \`${twitchUsername}\` is already configured for notifications in this channel.`,
             flags: MessageFlags.Ephemeral

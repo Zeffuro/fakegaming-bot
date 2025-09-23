@@ -1,30 +1,75 @@
 import {Low} from 'lowdb';
 import {JSONFile} from 'lowdb/node';
-import {UserConfig} from '../types/userConfig.js';
-import {ServerConfig} from '../types/serverConfig.js';
-import {QuoteConfig} from '../types/quoteConfig.js';
-import {TwitchStreamConfig} from "../types/twitchStreamConfig.js";
-import {YoutubeVideoConfig} from "../types/youtubeVideoConfig.js";
-import {ReminderConfig} from "../types/reminderConfig.js";
-import {BirthdayConfig} from "../types/birthdayConfig.js";
+import {UserConfig} from '../models/user-config.js';
+import {ServerConfig} from '../models/server-config.js';
+import {QuoteConfig} from '../models/quote-config.js';
+import {TwitchStreamConfig} from '../models/twitch-stream-config.js';
+import {YoutubeVideoConfig} from '../models/youtube-video-config.js';
+import {ReminderConfig} from '../models/reminder-config.js';
+import {BirthdayConfig} from '../models/birthday-config.js';
 import path from "path";
-import {PatchNoteConfig} from "../types/patchNoteConfig.js";
-import {PatchSubscriptionConfig} from "../types/patchSubscriptionConfig.js";
+import {PatchNoteConfig} from '../models/patch-note-config.js';
+import {PatchSubscriptionConfig} from '../models/patch-subscription-config.js';
 
 /**
  * Represents the structure of all configuration data stored in the database.
  * Includes users, servers, quotes, streams, channels, reminders, and birthdays.
  */
 export type Data = {
-    users: UserConfig[];
-    servers: ServerConfig[];
-    quotes: QuoteConfig[];
-    twitchStreams: TwitchStreamConfig[];
-    youtubeVideoChannels: YoutubeVideoConfig[];
-    reminders: ReminderConfig[];
-    birthdays: BirthdayConfig[];
-    patchNotes: PatchNoteConfig[];
-    patchSubscriptions: PatchSubscriptionConfig[];
+    users: Array<{
+        discordId: string;
+        timezone?: string;
+        defaultReminderTimeSpan?: string;
+        league?: {
+            summonerName: string;
+            region: string;
+            puuid: string;
+        };
+    }>;
+    servers: Array<{ serverId: string; prefix: string; welcomeMessage?: string; }>;
+    quotes: Array<{
+        id: string;
+        guildId: string;
+        quote: string;
+        authorId: string;
+        submitterId: string;
+        timestamp: number;
+    }>;
+    twitchStreams: Array<{ twitchUsername: string; discordChannelId: string; customMessage?: string; }>;
+    youtubeVideoChannels: Array<{
+        youtubeChannelId: string;
+        discordChannelId: string;
+        lastVideoId?: string;
+        customMessage?: string;
+    }>;
+    reminders: Array<{
+        id: string;
+        userId: string;
+        message: string;
+        timespan: string;
+        timestamp: number;
+        completed?: boolean;
+    }>;
+    birthdays: Array<{
+        userId: string;
+        day: number;
+        month: number;
+        year?: number;
+        guildId: string;
+        channelId: string;
+    }>;
+    patchNotes: Array<{
+        game: string;
+        title: string;
+        content: string;
+        url: string;
+        publishedAt: number;
+        logoUrl?: string;
+        imageUrl?: string;
+        version?: string;
+        accentColor?: number;
+    }>;
+    patchSubscriptions: Array<{ game: string; channelId: string; lastAnnouncedAt?: number; }>;
 };
 
 /**

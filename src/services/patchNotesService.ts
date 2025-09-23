@@ -10,7 +10,7 @@ import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.j
 export async function scanAndUpdatePatchNotes(patchNotesManager: PatchNotesManager) {
     const fetchers = await loadPatchNoteFetchers();
     for (const fetcher of fetchers) {
-        const latestStored = patchNotesManager.getLatestPatch(fetcher.game);
+        const latestStored = await patchNotesManager.getLatestPatch(fetcher.game);
         const latestPatch = await fetcher.fetchLatestPatchNote(latestStored?.version);
         if (latestPatch) {
             await patchNotesManager.setLatestPatch(latestPatch);
@@ -20,15 +20,10 @@ export async function scanAndUpdatePatchNotes(patchNotesManager: PatchNotesManag
 
 /**
  * Announces new patch notes for all subscribed games in their respective Discord channels.
- * Builds a rich embed for each patch note, including accent color, logo, title, truncated content, and image.
- * Updates the last announced timestamp for each subscription after sending.
- *
- * @param client - The Discord client instance used to send messages.
- * @returns A promise that resolves when all announcements are sent.
  */
 export async function announceNewPatchNotes(client: Client): Promise<void> {
-    const notes = configManager.patchNotesManager.getAll();
-    const subscriptions = configManager.patchSubscriptionManager.getAll();
+    const notes = await configManager.patchNotesManager.getAll();
+    const subscriptions = await configManager.patchSubscriptionManager.getAll();
 
     for (const note of notes) {
         for (const sub of subscriptions.filter(s => s.game === note.game)) {

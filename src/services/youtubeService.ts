@@ -97,7 +97,7 @@ export async function getYoutubeChannelFeed(channelId: string) {
  * Checks for new videos on all configured YouTube channels and announces them in Discord.
  */
 export async function checkAndAnnounceNewVideos(client: Client) {
-    const channels = configManager.youtubeManager.getAll();
+    const channels = await configManager.youtubeManager.getAll();
 
     await Promise.all(channels.map(async (ytChannel) => {
         const feedItems = await getYoutubeChannelFeed(ytChannel.youtubeChannelId);

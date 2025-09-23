@@ -65,9 +65,8 @@ describe('addTwitchStream command', () => {
             ],
         });
 
-        mockManager.getAll.mockReturnValue([
-            {twitchUsername: 'twitchuser', discordChannelId: '4167801562951251571'}
-        ]);
+        // Mock exists to return true
+        mockManager.exists = jest.fn(() => Promise.resolve(true));
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'twitchuser'},

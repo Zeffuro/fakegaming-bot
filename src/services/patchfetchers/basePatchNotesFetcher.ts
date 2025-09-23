@@ -2,7 +2,7 @@
  * Abstract base class for fetching patch notes for a game.
  * Subclasses should implement game-specific parsing and enrichment logic.
  */
-import {PatchNoteConfig} from '../../types/patchNoteConfig.js';
+import {PatchNoteConfig} from '../../models/patch-note-config.js';
 import axios from 'axios';
 
 export abstract class BasePatchNotesFetcher {
@@ -76,12 +76,12 @@ export abstract class BasePatchNotesFetcher {
      * @returns Enriched PatchNoteConfig
      */
     protected enrichPatchNote(raw: any, patchNote: PatchNoteConfig): PatchNoteConfig {
-        return {
+        return PatchNoteConfig.build({
             ...patchNote,
             imageUrl: this.getThumbnailUrl(raw, patchNote),
             version: this.getVersion(raw, patchNote),
             accentColor: this.accentColor
-        };
+        });
     }
 
     /**

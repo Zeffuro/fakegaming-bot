@@ -1,4 +1,3 @@
-import {db, defaultData} from './db.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
 import {ServerManager} from './serverManager.js';
@@ -7,9 +6,10 @@ import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
 import {PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.js";
+import {sequelize} from './sequelize.js';
 
 /**
- * Aggregates all manager classes and provides database initialization.
+ * Aggregates all manager classes.
  */
 export class ConfigManager {
     userManager = new UserManager();
@@ -23,10 +23,9 @@ export class ConfigManager {
     patchSubscriptionManager = new PatchSubscriptionManager();
 
     /**
-     * Initializes the database with default data.
+     * Initializes the database (optional, for Sequelize sync).
      */
     async init() {
-        await db.read();
-        db.data = {...defaultData, ...db.data};
+        await sequelize.sync({alter: true});
     }
 }

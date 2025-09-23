@@ -1,50 +1,47 @@
-import {db} from './db.js';
+import {Model, ModelCtor} from 'sequelize-typescript';
 
 /**
- * Base class for managing a collection in the database.
- * @template T The type of items managed by this class.
+ * Base class for managing a Sequelize model.
+ * @template T The type of Sequelize Model managed by this class.
  */
-export class BaseManager<T> {
-    protected collectionKey: keyof typeof db.data;
+export class BaseManager<T extends Model> {
+    /**
+     * The Sequelize model constructor managed by this class.
+     */
+    protected model: ModelCtor<T>;
 
     /**
-     * Creates a new manager for the specified collection.
-     * @param collectionKey The key of the collection in the database.
+     * Creates a new BaseManager for the given Sequelize model.
+     * @param model The Sequelize model constructor.
      */
-    constructor(collectionKey: keyof typeof db.data) {
-        this.collectionKey = collectionKey;
+    constructor(model: ModelCtor<T>) {
+        this.model = model;
     }
 
     /**
-     * Gets the collection of items from the database.
+     * Retrieves all records from the model.
+     * @returns A promise resolving to an array of all model instances.
      */
-    protected get collection(): T[] {
-        db.data![this.collectionKey] ||= [];
-        return db.data![this.collectionKey] as T[];
+    async getAll(): Promise<T[]> {
+        return await this.model.findAll();
     }
 
     /**
-     * Adds an item to the collection and writes to the database.
-     * @param item The item to add.
+     * Adds a new record to the model.
+     * @param item The attributes for the new record.
+     * @returns A promise resolving to the created model instance.
      */
-    async add(item: T) {
-        this.collection.push(item);
-        await db.write();
+    async add(item: T['_creationAttributes']): Promise<T> {
+        return await this.model.create(item);
     }
 
     /**
-     * Returns all items in the collection.
+     * Replaces all records in the model with the provided items.
+     * @param items The array of attributes for the new records.
+     * @returns A promise resolving to an array of created model instances.
      */
-    getAll(): T[] {
-        return this.collection;
-    }
-
-    /**
-     * Replaces all items in the collection and writes to the database.
-     * @param items The new items to set.
-     */
-    async setAll(items: T[]) {
-        db.data![this.collectionKey] = items as any;
-        await db.write();
+    async setAll(items: readonly T['_creationAttributes'][]): Promise<T[]> {
+        await this.model.destroy({where: {}});
+        return await this.model.bulkCreate(items);
     }
 }

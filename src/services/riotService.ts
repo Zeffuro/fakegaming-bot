@@ -105,13 +105,15 @@ export async function resolveLeagueIdentity(options: {
 }): Promise<{ summoner: string; region: Regions; puuid: string }> {
     let {summoner, region, userId} = options;
 
-    const userConfig = userId ? configManager.userManager.getUser({discordId: userId}) : undefined;
+    const userConfig = userId
+        ? await configManager.userManager.getUserWithLeague(userId)
+        : undefined;
     let puuid: string | undefined;
 
-    if (!summoner && !region && userConfig) {
-        summoner = userConfig.league?.summonerName;
-        region = userConfig.league?.region as Regions;
-        if (userConfig.league?.puuid) puuid = userConfig.league.puuid;
+    if (!summoner && !region && userConfig && userConfig.league) {
+        summoner = userConfig.league.summonerName;
+        region = userConfig.league.region as Regions;
+        if (userConfig.league.puuid) puuid = userConfig.league.puuid;
     }
 
     if (!summoner || !region) {

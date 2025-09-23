@@ -1,5 +1,5 @@
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
-import {PatchNoteConfig} from '../../types/patchNoteConfig.js';
+import {PatchNoteConfig} from '../../models/patch-note-config.js';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import {cleanDiscordContent} from '../../utils/generalUtils.js';
@@ -75,7 +75,7 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
         const versionMatch = title.match(/Patch\s([\d.]+)/);
         const version = versionMatch ? versionMatch[1] : title.replace(' Notes', '');
 
-        return {
+        return PatchNoteConfig.build({
             game: this.game,
             title,
             content,
@@ -84,6 +84,6 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
             logoUrl: 'https://wiki.leagueoflegends.com/en-us/images/League_of_Legends_Icon.png',
             imageUrl,
             version
-        };
+        });
     }
 }

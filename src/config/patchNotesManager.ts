@@ -1,40 +1,35 @@
 import {BaseManager} from './baseManager.js';
-import {PatchNoteConfig} from '../types/patchNoteConfig.js';
-import {PatchSubscriptionConfig} from '../types/patchSubscriptionConfig.js';
+import {PatchNoteConfig} from '../models/patch-note-config.js';
+import {PatchSubscriptionConfig} from '../models/patch-subscription-config.js';
 
 export class PatchNotesManager extends BaseManager<PatchNoteConfig> {
     constructor() {
-        super('patchNotes');
+        super(PatchNoteConfig);
     }
 
-    getLatestPatch(game: string): PatchNoteConfig | undefined {
-        return this.collection
-            .filter(note => note.game === game)
-            .sort((a, b) => b.publishedAt - a.publishedAt)[0];
+    async getLatestPatch(game: string): Promise<PatchNoteConfig | null> {
+        return await this.model.findOne({
+            where: {game},
+            order: [['publishedAt', 'DESC']]
+        });
     }
 
-    async setLatestPatch(note: PatchNoteConfig) {
-        const filtered = this.collection.filter(n => n.game !== note.game);
-        filtered.push(note);
-        await this.setAll(filtered);
+    async setLatestPatch(note: Partial<PatchNoteConfig>) {
+        await this.model.upsert(note);
     }
 }
 
 export class PatchSubscriptionManager extends BaseManager<PatchSubscriptionConfig> {
     constructor() {
-        super('patchSubscriptions');
+        super(PatchSubscriptionConfig);
     }
 
-    getSubscriptions(game: string): string[] {
-        return this.collection
-            .filter(sub => sub.game === game)
-            .map(sub => sub.channelId);
+    async getSubscriptions(game: string): Promise<string[]> {
+        const subs = await this.model.findAll({where: {game}});
+        return subs.map(sub => sub.channelId);
     }
 
     async subscribe(game: string, channelId: string) {
-        if (!this.collection.find(sub => sub.game === game && sub.channelId === channelId)) {
-            this.collection.push({game, channelId});
-            await this.setAll(this.collection);
-        }
+        await this.model.findOrCreate({where: {game, channelId}});
     }
 }

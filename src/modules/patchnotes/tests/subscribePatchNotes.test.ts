@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {PatchSubscriptionManager} from '../../../config/patchNotesManager.js';
-import {PatchNoteConfig} from "../../../types/patchNoteConfig.js";
+import {PatchNoteConfig} from "../../../models/patch-note-config.js";
 
 describe('subscribePatchNotes command', () => {
     it('subscribes a channel to patch notes and replies', async () => {
