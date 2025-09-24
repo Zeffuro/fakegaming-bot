@@ -10,8 +10,8 @@
     "build": "tsc",
     "start": "node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts,.js",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.mjs",
-    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.mjs --watch"
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs",
+    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs --watch"
   },
   "dependencies": {
     "@twurple/api": "^7.4.0",

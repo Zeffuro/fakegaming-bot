@@ -4,7 +4,7 @@ import {pathToFileURL, fileURLToPath} from 'url';
 
 // __dirname is dist/scripts/ when running built JS
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../src/modules');
+const modulesPath = path.join(__dirname, '../packages/bot/src/modules');
 
 function findCommandDirs(modulesPath: string): string[] {
     if (!fs.existsSync(modulesPath)) {

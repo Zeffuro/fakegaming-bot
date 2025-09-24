@@ -1,16 +1,25 @@
 import {jest} from '@jest/globals';
 
-export function autoMockManager<T extends object>(ManagerClass: new (..._args: any[]) => T): jest.Mocked<T> {
-    const mock: Partial<Record<string, any>> = {};
-    let prototype = ManagerClass.prototype;
-    while (prototype && prototype !== Object.prototype) {
-        for (const key of Object.getOwnPropertyNames(prototype)) {
-            if (key === 'constructor') continue;
-            if (typeof prototype[key] === 'function' && !(key in mock)) {
-                mock[key] = jest.fn();
-            }
-        }
-        prototype = Object.getPrototypeOf(prototype);
+const managerExtraMethods: Record<string, string[]> = {
+    ReminderManager: ['add'],
+    TwitchManager: ['add', 'getAll', 'exists'],
+    YoutubeManager: ['add', 'addVideoChannel', 'getVideoChannel'],
+    QuoteManager: ['add'],
+    BirthdayManager: ['add', 'hasBirthday'],
+};
+
+export function autoMockManager(managerClass: any) {
+    const methods = new Set(
+        Object.getOwnPropertyNames(managerClass.prototype)
+            .filter(m => m !== 'constructor')
+    );
+    // Add extra known methods for this manager
+    const extra = managerExtraMethods[managerClass.name] || [];
+    for (const m of extra) methods.add(m);
+
+    const mock: any = {};
+    for (const method of methods) {
+        mock[method] = jest.fn();
     }
-    return mock as jest.Mocked<T>;
+    return mock;
 }

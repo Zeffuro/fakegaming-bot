@@ -38,7 +38,7 @@ describe('addYoutubeVideoChannel command', () => {
 
         await command.execute(interaction as any);
 
-        expect(mockManager.addVideoChannel).toHaveBeenCalledWith(
+        expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({
                 youtubeChannelId: 'UC1234567890abcdef',
                 discordChannelId: '4167801562951251571',

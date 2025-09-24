@@ -7,7 +7,7 @@ describe('checkAndSendReminders', () => {
         const mockClient = {
             users: {fetch: jest.fn(() => Promise.resolve(mockUser))}
         };
-        jest.unstable_mockModule('../../config/configManagerSingleton.js', () => ({
+        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
             configManager: {
                 reminderManager: {
                     getAll: jest.fn(() => [{

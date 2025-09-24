@@ -7,7 +7,7 @@ describe('checkAndAnnounceNewVideos', () => {
         const mockClient = {
             channels: {cache: {get: jest.fn(() => mockChannel)}}
         };
-        jest.unstable_mockModule('../../config/configManagerSingleton.js', () => ({
+        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
             configManager: {
                 youtubeManager: {
                     getAll: jest.fn(() => [{

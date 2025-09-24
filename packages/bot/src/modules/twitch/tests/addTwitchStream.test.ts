@@ -66,7 +66,7 @@ describe('addTwitchStream command', () => {
         });
 
         // Mock exists to return true
-        mockManager.exists = jest.fn(() => Promise.resolve(true));
+        mockManager.streamExists = jest.fn(() => Promise.resolve(true));
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'twitchuser'},

@@ -16,7 +16,7 @@ export async function setupCommandTest({
                                        }: CommandTestOptions) {
     const mockManager = autoMockManager(managerClass);
 
-    jest.unstable_mockModule('../../config/configManagerSingleton.js', () => ({
+    jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
         configManager: {
             [managerKey]: mockManager,
         },

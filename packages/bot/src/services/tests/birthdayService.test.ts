@@ -8,7 +8,7 @@ describe('checkAndAnnounceBirthdays', () => {
             channels: {fetch: jest.fn(() => Promise.resolve(mockChannel))}
         };
         // Mock configManager before importing the service
-        jest.unstable_mockModule('../../config/configManagerSingleton.js', () => ({
+        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
             configManager: {
                 birthdayManager: {
                     getAll: jest.fn(() => [{
