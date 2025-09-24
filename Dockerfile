@@ -18,6 +18,7 @@ COPY package*.json ./
 
 # Install the Node.js dependencies
 RUN npm install
+RUN npm run build
 
 # The command to run your bot, relative to the WORKDIR
 CMD ["node", "packages/bot/dist/index.js"]
