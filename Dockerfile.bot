@@ -14,10 +14,16 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory inside the container
 WORKDIR /app/code
 
-COPY . .
+COPY package.json package-lock.json ./
+COPY packages/bot/package.json packages/bot/
+COPY packages/common/package.json packages/common/
+COPY packages/dashboard/package.json packages/dashboard/
 
 # Install the Node.js dependencies
 RUN npm install
+
+COPY . .
+
 RUN npm run build
 
 ARG CACHEBUST=1
