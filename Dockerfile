@@ -20,4 +20,4 @@ COPY package*.json ./
 RUN npm install
 
 # The command to run your bot, relative to the WORKDIR
-CMD ["node", "dist/index.js"]
+CMD ["node", "packages/bot/dist/index.js"]
