@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory inside the container
 WORKDIR /app/code
 
-COPY package*.json ./
+COPY . .
 
 # Install the Node.js dependencies
 RUN npm install
