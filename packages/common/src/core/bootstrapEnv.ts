@@ -11,7 +11,10 @@ import dotenvExpand from 'dotenv-expand';
 export function bootstrapEnv(metaUrl: string) {
     const __filename = fileURLToPath(metaUrl);
     const __dirname = path.dirname(__filename);
-    const envPath = path.resolve(__dirname, '../../../.env');
+
+    const envFile = process.env.NODE_ENV === 'development' ? '.env.development' : '.env';
+    const envPath = path.resolve(__dirname, '../../../', envFile);
+
     dotenvExpand.expand(dotenv.config({path: envPath}));
     return {__filename, __dirname};
 }

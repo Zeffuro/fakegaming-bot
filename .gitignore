@@ -4,9 +4,13 @@
 # Build output
 /dist/
 /build/
+/packages/bot/dist/
+/packages/dashboard/dist/
+/packages/common/dist/
 
 # Environment variables
 .env
+.env.development
 
 # Logs
 *.log

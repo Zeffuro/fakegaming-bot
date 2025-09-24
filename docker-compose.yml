@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17
+    container_name: fakegaming-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fakegaming}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-fakegaming}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ${POSTGRES_DATA_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-db}:/var/lib/postgresql/data
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: fakegaming-bot
+    restart: unless-stopped
+    environment:
+      DATA_ROOT: /app/data
+      DATABASE_PROVIDER: postgresql
+      DATABASE_URL: postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fakegaming}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      CLIENT_ID: ${CLIENT_ID}
+      GUILD_ID: ${GUILD_ID}
+      RIOT_LEAGUE_API_KEY: ${RIOT_LEAGUE_API_KEY}
+      RIOT_TFT_API_KEY: ${RIOT_TFT_API_KEY}
+      RIOT_DEV_API_KEY: ${RIOT_DEV_API_KEY}
+      TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID}
+      TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+    depends_on:
+      - postgres
+    volumes:
+      - ${BOT_DATA_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-data}:/app/data
+      - ${BOT_CODE_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-app}:/app/code
+
+  # dashboard:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.bot
+  #   container_name: fakegaming-dashboard
+  #   restart: unless-stopped
+  #   environment:
+  #     # Add dashboard-specific env vars here
+  #   depends_on:
+  #     - postgres
+  #   volumes:
+  #     - ${BOT_CODE_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-app}:/app/code
+  #   profiles: ["dashboard"] # Only run with --profile dashboard
+
+# Place host-specific paths and secrets in a .env file (not in git)

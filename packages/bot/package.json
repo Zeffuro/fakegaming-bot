@@ -8,7 +8,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc",
-    "start": "node --loader ts-node/esm src/index.ts",
+    "start": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
+    "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts,.js",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs",
     "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs --watch"
