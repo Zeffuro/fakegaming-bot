@@ -20,5 +20,7 @@ COPY package*.json ./
 RUN npm install
 RUN npm run build
 
+ARG CACHEBUST=1
+
 # The command to run your bot, relative to the WORKDIR
 CMD ["node", "packages/bot/dist/index.js"]
