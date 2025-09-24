@@ -9,10 +9,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "experimentalDecorators": true,
     "baseUrl": "."
   },
   "include": [
-    "src",
+    "packages/bot/src",
+    "packages/common/src",
+    "packages/dashboard/src",
     "scripts"
   ]
 }

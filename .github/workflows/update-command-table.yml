@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'src/modules/**/commands/*'
+      - '../../packages/bot/src/modules/**/commands/*'
       - '../../scripts/generate-command-table.ts'
       - '.github/workflows/update-command-table.yml'
 

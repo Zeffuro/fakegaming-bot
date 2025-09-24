@@ -23,12 +23,19 @@ const nodeGlobals = {
 export default [
     configs.recommended,
     {
-        files: ['src/**/*.ts', 'src/**/*.js'],
+        files: [
+            'packages/bot/src/**/*.ts',
+            'packages/bot/src/**/*.js',
+            'packages/common/src/**/*.ts',
+            'packages/common/src/**/*.js',
+            'packages/dashboard/src/**/*.ts',
+            'packages/dashboard/src/**/*.js',
+        ],
         ignores: ['dist/**', 'node_modules/**'],
         languageOptions: {
             parser: tsParser,
             parserOptions: {
-                project: './tsconfig.json',
+                project: '../../tsconfig.json',
                 sourceType: 'module',
             },
             globals: nodeGlobals,
@@ -41,7 +48,14 @@ export default [
         },
     },
     {
-        files: ['src/**/*.test.ts', 'src/**/*.test.js'],
+        files: [
+            'packages/bot/src/**/*.test.ts',
+            'packages/bot/src/**/*.test.js',
+            'packages/common/src/**/*.test.ts',
+            'packages/common/src/**/*.test.js',
+            'packages/dashboard/src/**/*.test.ts',
+            'packages/dashboard/src/**/*.test.js',
+        ],
         ignores: ['dist/**', 'node_modules/**'],
         languageOptions: {
             globals: {

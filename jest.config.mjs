@@ -3,7 +3,11 @@ export default {
     testEnvironment: 'node',
     extensionsToTreatAsEsm: ['.ts'],
     moduleFileExtensions: ['ts', 'js', 'json'],
-    roots: ['<rootDir>/src'],
+    roots: [
+        '<rootDir>/packages/bot/src',
+        '<rootDir>/packages/common/src',
+        '<rootDir>/packages/dashboard/src'
+    ],
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
     },

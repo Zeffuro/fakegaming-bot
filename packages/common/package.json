@@ -1,0 +1,24 @@
+{
+  "name": "@zeffuro/fakegaming-common",
+  "version": "1.0.0",
+  "description": "Common database models and utilities for FakeGaming projects.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "author": "Zeffuro",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "tsc -b",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "sequelize": "^6.37.7",
+    "sequelize-typescript": "^2.1.6"
+  },
+  "devDependencies": {
+    "eslint": "^9.36.0",
+    "jest": "^30.1.3",
+    "@types/jest": "^30.0.0"
+  }
+}
