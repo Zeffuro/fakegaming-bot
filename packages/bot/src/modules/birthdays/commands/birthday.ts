@@ -3,7 +3,7 @@ import {
     ChatInputCommandInteraction,
     MessageFlags
 } from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {months} from "../../../constants/months.js";
 
 const data = new SlashCommandBuilder()

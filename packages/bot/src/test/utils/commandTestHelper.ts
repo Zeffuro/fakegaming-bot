@@ -16,7 +16,7 @@ export async function setupCommandTest({
                                        }: CommandTestOptions) {
     const mockManager = autoMockManager(managerClass);
 
-    jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
+    jest.unstable_mockModule('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js', () => ({
         configManager: {
             [managerKey]: mockManager,
         },
@@ -32,7 +32,7 @@ export async function setupCommandTest({
         jest.unstable_mockModule(module, factory);
     }
 
-    const {configManager} = await import('../../../../common/src/managers/configManagerSingleton.js');
+    const {configManager} = await import('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js');
     const command = (await import(commandPath)).default;
 
     return {configManager, command, mockManager};

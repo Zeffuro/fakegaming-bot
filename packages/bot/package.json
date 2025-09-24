@@ -15,6 +15,7 @@
     "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs --watch"
   },
   "dependencies": {
+    "@zeffuro/fakegaming-common": "1.0.0",
     "@twurple/api": "^7.4.0",
     "@twurple/auth": "^7.4.0",
     "@twurple/eventsub-ws": "^7.4.0",

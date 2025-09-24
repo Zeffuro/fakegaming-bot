@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
 const data = new SlashCommandBuilder()

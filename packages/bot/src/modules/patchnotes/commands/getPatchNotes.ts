@@ -3,7 +3,7 @@ import {
     ChatInputCommandInteraction,
     AutocompleteInteraction
 } from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
 import {buildPatchNoteEmbed} from '../shared/patchNoteEmbed.js';
 import {gameAutocomplete} from '../shared/gameAutocomplete.js';

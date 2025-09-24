@@ -2,8 +2,8 @@ import './deploy-commands.js';
 
 import {Client, Collection, Events, MessageFlags} from 'discord.js';
 import path from 'path';
-import {bootstrapEnv} from '../../common/src/core/bootstrapEnv.js';
-import {configManager} from '../../common/src/managers/configManagerSingleton.js';
+import {bootstrapEnv} from '@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';

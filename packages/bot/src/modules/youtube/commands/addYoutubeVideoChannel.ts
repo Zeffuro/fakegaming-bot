@@ -1,5 +1,5 @@
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 

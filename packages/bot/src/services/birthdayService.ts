@@ -1,5 +1,5 @@
 import {Client, TextChannel} from 'discord.js';
-import {configManager} from '../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 /**
  * Checks all birthdays and announces them in the configured Discord channels if today matches.

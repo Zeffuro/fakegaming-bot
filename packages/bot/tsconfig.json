@@ -2,11 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "../../",
+    "rootDir": "./src",
     "composite": false
   },
   "include": [
-    "src",
-    "../common/src"
+    "src"
   ]
 }

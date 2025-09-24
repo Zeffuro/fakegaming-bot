@@ -1,6 +1,6 @@
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {PatchNotesManager} from '../../../../../common/src/managers/patchNotesManager.js';
+import {PatchNotesManager} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
 
 describe('getPatchNotes command', () => {
     it('replies with the latest patch note embed for Overwatch 2', async () => {

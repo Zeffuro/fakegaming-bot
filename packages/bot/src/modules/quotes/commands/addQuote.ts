@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 
 const data = new SlashCommandBuilder()

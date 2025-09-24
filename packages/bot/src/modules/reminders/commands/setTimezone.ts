@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction} from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {isValidTimezone, getTimezoneSuggestions} from '../../../utils/timezoneUtils.js';
 
 const data = new SlashCommandBuilder()

@@ -1,5 +1,5 @@
 import {CachedAsset} from '../types/cachedAsset.js';
-import {resolveDataRoot} from "../../../common/src/core/dataRoot.js";
+import {resolveDataRoot} from "@zeffuro/fakegaming-common/dist/core/dataRoot.js";
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';

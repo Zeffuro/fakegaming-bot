@@ -1,8 +1,8 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {PatchSubscriptionManager} from '../../../../../common/src/managers/patchNotesManager.js';
-import {PatchNoteConfig} from "../../../../../common/src/models/patch-note-config.js";
+import {PatchSubscriptionManager} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
+import {PatchNoteConfig} from "@zeffuro/fakegaming-common/dist/models/patch-note-config.js";
 
 describe('subscribePatchNotes command', () => {
     it('subscribes a channel to patch notes and replies', async () => {

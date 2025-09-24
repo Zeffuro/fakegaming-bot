@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {PermissionFlagsBits} from 'discord.js';
-import {TwitchManager} from "../../../../../common/src/managers/twitchManager.js";
+import {TwitchManager} from "@zeffuro/fakegaming-common/dist/managers/twitchManager.js";
 
 describe('addTwitchStream command', () => {
     beforeEach(() => {

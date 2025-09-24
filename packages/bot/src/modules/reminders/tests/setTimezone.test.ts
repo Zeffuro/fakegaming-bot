@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {UserManager} from '../../../../../common/src/managers/userManager.js';
+import {UserManager} from '@zeffuro/fakegaming-common/dist/managers/userManager.js';
 
 describe('setTimezone command', () => {
     beforeEach(() => {

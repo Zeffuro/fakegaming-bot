@@ -1,5 +1,5 @@
 import {scheduleAtTime} from '../utils/scheduleAtTime.js';
-import {configManager} from "../../../common/src/managers/configManagerSingleton.js";
+import {configManager} from "@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js";
 import {subscribeAllStreams} from './twitchService.js';
 import {checkAndAnnounceNewVideos} from './youtubeService.js';
 import {checkAndSendReminders} from './reminderService.js';

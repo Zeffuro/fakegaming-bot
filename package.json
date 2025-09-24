@@ -4,7 +4,7 @@
   "workspaces": [
     "packages/bot",
     "packages/dashboard",
-    "packages/shared"
+    "packages/common"
   ],
   "type": "module",
   "devDependencies": {
@@ -18,7 +18,7 @@
     "typescript": "^5.9.2"
   },
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace packages/common && npm run build --workspace packages/bot && npm run build --workspace packages/dashboard",
     "lint": "npm run lint --workspaces",
     "test": "npm run test --workspaces",
     "start:bot": "npm --workspace packages/bot run start",

@@ -1,5 +1,5 @@
 import {EmbedBuilder} from 'discord.js';
-import {PatchNoteConfig} from '../../../../../common/src/models/patch-note-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
 import {truncateDescription} from '../../../utils/generalUtils.js';
 
 export function buildPatchNoteEmbed(note: PatchNoteConfig): EmbedBuilder {

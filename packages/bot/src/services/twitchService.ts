@@ -8,7 +8,7 @@ import {
     Client,
     EmbedBuilder
 } from 'discord.js';
-import {configManager} from '../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;

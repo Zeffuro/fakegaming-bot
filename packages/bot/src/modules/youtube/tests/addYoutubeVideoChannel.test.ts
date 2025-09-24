@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {GuildTextBasedChannel, PermissionFlagsBits} from 'discord.js';
-import {YoutubeManager} from "../../../../../common/src/managers/youtubeManager.js";
+import {YoutubeManager} from "@zeffuro/fakegaming-common/dist/managers/youtubeManager.js";
 
 describe('addYoutubeVideoChannel command', () => {
     beforeEach(() => {

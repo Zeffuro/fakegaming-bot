@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {ReminderManager} from '../../../../../common/src/managers/reminderManager.js';
+import {ReminderManager} from '@zeffuro/fakegaming-common/dist/managers/reminderManager.js';
 
 describe('setReminder command', () => {
     beforeEach(() => {

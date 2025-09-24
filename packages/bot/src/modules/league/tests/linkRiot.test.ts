@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {LeagueConfig} from '../../../../../common/src/models/league-config.js';
+import {LeagueConfig} from '@zeffuro/fakegaming-common/dist/models/league-config.js';
 
 jest.spyOn(LeagueConfig, 'create').mockResolvedValue({} as any);
 

@@ -1,5 +1,5 @@
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {BirthdayManager} from '../../../../../common/src/managers/birthdayManager.js';
+import {BirthdayManager} from '@zeffuro/fakegaming-common/dist/managers/birthdayManager.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 
 describe('setBirthday command', () => {

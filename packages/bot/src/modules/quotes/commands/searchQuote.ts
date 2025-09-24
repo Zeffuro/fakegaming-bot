@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
-import {configManager} from '../../../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 const data = new SlashCommandBuilder()
     .setName('search-quote')

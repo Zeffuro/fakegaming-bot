@@ -1,6 +1,6 @@
 // src/services/patchfetchers/marvelRivalsPatchNotesFetcher.ts
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
-import {PatchNoteConfig} from '../../../../common/src/models/patch-note-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
 import * as cheerio from 'cheerio';
 
 /**

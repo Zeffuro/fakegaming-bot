@@ -1,7 +1,7 @@
 import {jest, expect} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {UserManager} from "../../../../../common/src/managers/userManager.js";
+import {UserManager} from "@zeffuro/fakegaming-common/dist/managers/userManager.js";
 import {mockLeagueUtils, mockRiotService, mockTierEmojis} from '../test/leagueMockFactories.js';
 
 export async function runLeagueTest(commandPath: string, expected: any) {

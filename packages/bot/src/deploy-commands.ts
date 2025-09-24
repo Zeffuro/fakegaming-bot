@@ -3,7 +3,7 @@ import {Routes} from 'discord-api-types/rest/v10';
 import fs from 'fs';
 import path from 'path';
 import {pathToFileURL} from 'url';
-import {bootstrapEnv} from '../../common/src/core/bootstrapEnv.js';
+import {bootstrapEnv} from '@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 

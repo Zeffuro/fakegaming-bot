@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import {pathToFileURL} from 'url';
 import {BasePatchNotesFetcher} from '../services/patchfetchers/basePatchNotesFetcher.js';
-import {bootstrapEnv} from "../../../common/src/core/bootstrapEnv.js";
+import {bootstrapEnv} from "@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js";
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 

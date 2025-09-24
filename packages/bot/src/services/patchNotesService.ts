@@ -1,7 +1,7 @@
 import {Client, ChannelType} from 'discord.js';
-import {configManager} from '../../../common/src/managers/configManagerSingleton.js';
+import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from '../loaders/loadPatchNoteFetchers.js';
-import {PatchNotesManager} from "../../../common/src/managers/patchNotesManager.js";
+import {PatchNotesManager} from "@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js";
 import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.js";
 
 /**
