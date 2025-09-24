@@ -12,6 +12,7 @@
     "cross-env": "^10.0.0",
     "eslint": "^9.36.0",
     "jest": "^30.1.3",
+    "rimraf": "^3.0.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2"
@@ -22,7 +23,8 @@
     "test": "npm run test --workspaces",
     "start:bot": "npm --workspace packages/bot run start",
     "start:bot:dev": "npm --workspace packages/bot run start:dev",
-    "start:dashboard": "npm --workspace packages/dashboard run start"
+    "start:dashboard": "npm --workspace packages/dashboard run start",
+    "clean": "rimraf \"packages/*/dist\""
   },
   "dependencies": {
     "umzug": "^3.8.2"

@@ -11,6 +11,7 @@
 # Environment variables
 .env
 .env.development
+stack.env
 
 # Logs
 *.log
