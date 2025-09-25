@@ -2,6 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {ReminderManager} from '@zeffuro/fakegaming-common/dist/managers/reminderManager.js';
+import {CommandInteraction, User} from "discord.js";
 
 describe('setReminder command', () => {
     beforeEach(() => {
@@ -32,11 +33,11 @@ describe('setReminder command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {timespan: '1h', message: 'Take a break!'},
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -71,11 +72,11 @@ describe('setReminder command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {timespan: 'notatime', message: 'Test'},
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.stringContaining('Invalid timespan format')

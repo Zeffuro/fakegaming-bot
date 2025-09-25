@@ -1,8 +1,13 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {GuildTextBasedChannel, PermissionFlagsBits} from 'discord.js';
-import {YoutubeManager} from "@zeffuro/fakegaming-common/dist/managers/youtubeManager.js";
+import {
+    CommandInteraction,
+    GuildTextBasedChannel,
+    PermissionFlagsBits,
+} from 'discord.js';
+import {YoutubeManager} from '@zeffuro/fakegaming-common/dist/managers/youtubeManager.js';
+import {YoutubeVideoConfig} from '@zeffuro/fakegaming-common';
 
 describe('addYoutubeVideoChannel command', () => {
     beforeEach(() => {
@@ -19,34 +24,45 @@ describe('addYoutubeVideoChannel command', () => {
                 {
                     module: '../../services/youtubeService.js',
                     factory: () => ({
-                        getYoutubeChannelId: jest.fn(() => Promise.resolve('UC1234567890abcdef')),
+                        getYoutubeChannelId: jest.fn(() =>
+                            Promise.resolve('UC1234567890abcdef'),
+                        ),
                     }),
                 },
             ],
         });
 
-        mockManager.getVideoChannel.mockResolvedValue(undefined);
+        const getVideoChannelMock = mockManager
+            .getVideoChannel as jest.MockedFunction<
+            (youtubeChannelId: string) => Promise<YoutubeVideoConfig | undefined>
+        >;
+
+        getVideoChannelMock.mockResolvedValue(undefined);
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'youtubeuser', message: 'New video!'},
-            channelOptions: {channel: {id: '4167801562951251571'} as GuildTextBasedChannel},
+            channelOptions: {
+                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+            },
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({
                 youtubeChannelId: 'UC1234567890abcdef',
                 discordChannelId: '4167801562951251571',
                 customMessage: 'New video!',
-            })
+            }),
         );
         expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('Youtube channel `youtubeuser` added for video notifications')
+            expect.stringContaining(
+                'Youtube channel `youtubeuser` added for video notifications',
+            ),
         );
     });
 
@@ -67,19 +83,21 @@ describe('addYoutubeVideoChannel command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'missinguser'},
-            channelOptions: {channel: {id: '4167801562951251571'}},
+            channelOptions: {
+                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+            },
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({
                 content: expect.stringContaining('does not exist'),
-            })
+            }),
         );
     });
 
@@ -92,32 +110,43 @@ describe('addYoutubeVideoChannel command', () => {
                 {
                     module: '../../services/youtubeService.js',
                     factory: () => ({
-                        getYoutubeChannelId: jest.fn(() => Promise.resolve('UC1234567890abcdef')),
+                        getYoutubeChannelId: jest.fn(() =>
+                            Promise.resolve('UC1234567890abcdef'),
+                        ),
                     }),
                 },
             ],
         });
 
-        mockManager.getVideoChannel.mockResolvedValue({
+        const getVideoChannelMock = mockManager
+            .getVideoChannel as jest.MockedFunction<
+            (youtubeChannelId: string) => Promise<YoutubeVideoConfig | undefined>
+        >;
+
+        getVideoChannelMock.mockResolvedValue({
             youtubeChannelId: 'UC1234567890abcdef',
             discordChannelId: '4167801562951251571',
-        });
+        } as unknown as YoutubeVideoConfig);
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'youtubeuser'},
-            channelOptions: {channel: {id: '4167801562951251571'}},
+            channelOptions: {
+                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+            },
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({
-                content: expect.stringContaining('already configured for video notifications'),
-            })
+                content: expect.stringContaining(
+                    'already configured for video notifications',
+                ),
+            }),
         );
     });
 });

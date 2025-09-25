@@ -1,7 +1,7 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
-
+import {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js'; // Import LeagueEntryDTO
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {tierEmojis} from '../constants/leagueTierEmojis.js';
 
@@ -25,7 +25,6 @@ const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-
 /**
  * Executes the league-stats command, replying with a Discord embed of League stats for a summoner or linked user.
  * Handles errors and provides feedback if stats cannot be fetched.
@@ -43,28 +42,28 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     try {
         const summonerResult = await getSummoner(identity.puuid, identity.region);
-        if (!summonerResult.success) {
+        if (!summonerResult.success || !summonerResult.data) {
             await interaction.editReply(`Failed to fetch summoner: ${summonerResult.error}`);
             return;
         }
-        const summonerData = summonerResult.data;
+        const summonerData = summonerResult.data as { profileIconId?: number; summonerLevel?: number };
 
         const leagueResult = await getSummonerDetails(identity.puuid, identity.region);
-        if (!leagueResult.success) {
+        if (!leagueResult.success || !leagueResult.data) {
             await interaction.editReply(`Failed to fetch ranked stats: ${leagueResult.error}`);
             return;
         }
-        const leagueEntries = leagueResult.data;
+        const leagueEntries = leagueResult.data as LeagueEntryDTO[];
 
         const embed = new EmbedBuilder()
             .setTitle(`Stats for ${identity.summoner} [${identity.region}]`)
-            .setThumbnail(`https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon${summonerData.profileIconId}.png`)
+            .setThumbnail(`https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon${summonerData.profileIconId ?? 0}.png`)
             .addFields(
-                {name: 'Level', value: `${summonerData.summonerLevel}`, inline: true}
+                {name: 'Level', value: `${summonerData.summonerLevel ?? 'N/A'}`, inline: true}
             );
 
-        if (leagueEntries && leagueEntries.length > 0) {
-            leagueEntries.forEach((entry: any) => {
+        if (Array.isArray(leagueEntries) && leagueEntries.length > 0) {
+            leagueEntries.forEach((entry: LeagueEntryDTO) => {
                 const emoji = tierEmojis[entry.tier] || '';
                 let value = `**${entry.tier} ${entry.rank}** ${emoji} (${entry.leaguePoints} LP)\nWins: ${entry.wins}, Losses: ${entry.losses}`;
                 if (entry.miniSeries) {

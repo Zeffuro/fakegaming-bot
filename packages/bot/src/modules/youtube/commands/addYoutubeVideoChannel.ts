@@ -1,5 +1,5 @@
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
@@ -36,8 +36,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    let youtubeChannelId: string | null;
-    youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
+    const youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
     if (!youtubeChannelId) {
         await interaction.reply({
             content: `Youtube channel \`${youtubeUsername}\` does not exist.`,
@@ -46,7 +45,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const existing = await configManager.youtubeManager.getVideoChannel({
+    const existing = await getConfigManager().youtubeManager.getVideoChannel({
         youtubeChannelId,
         discordChannelId: discordChannel.id
     });
@@ -59,7 +58,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.youtubeManager.add({
+    await getConfigManager().youtubeManager.add({
         youtubeChannelId,
         discordChannelId: discordChannel.id,
         lastVideoId: undefined,

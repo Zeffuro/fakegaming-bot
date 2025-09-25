@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
 const data = new SlashCommandBuilder()
@@ -25,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         userId = targetUser.id;
     }
 
-    await configManager.birthdayManager.removeBirthday({userId, guildId});
+    await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
 
     await interaction.reply({
         content: `${targetUser ? `<@${targetUser.id}>'s` : "Your"} birthday has been removed.`,

@@ -8,7 +8,7 @@ import {
     Client,
     EmbedBuilder
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 const clientId = process.env.TWITCH_CLIENT_ID!;
 const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
@@ -31,7 +31,7 @@ export async function verifyTwitchUser(username: string): Promise<boolean> {
  * Subscribes to all configured Twitch streams and announces when they go live.
  */
 export async function subscribeAllStreams(client: Client) {
-    const streams = await configManager.twitchManager.getAll();
+    const streams = await getConfigManager().twitchManager.getAllPlain();
 
     await Promise.all(streams.map(async (stream) => {
         const user = await appApiClient.users.getUserByName(stream.twitchUsername);

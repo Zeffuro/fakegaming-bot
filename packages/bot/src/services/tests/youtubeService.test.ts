@@ -1,4 +1,5 @@
 import {jest} from '@jest/globals';
+import type {Client} from 'discord.js';
 
 describe('checkAndAnnounceNewVideos', () => {
     it('announces new videos', async () => {
@@ -7,10 +8,10 @@ describe('checkAndAnnounceNewVideos', () => {
         const mockClient = {
             channels: {cache: {get: jest.fn(() => mockChannel)}}
         };
-        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
-            configManager: {
+        jest.unstable_mockModule('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js', () => ({
+            getConfigManager: () => ({
                 youtubeManager: {
-                    getAll: jest.fn(() => [{
+                    getAllPlain: jest.fn(() => [{
                         youtubeChannelId: 'UC123',
                         discordChannelId: '4167801562951251571',
                         lastVideoId: 'old',
@@ -18,7 +19,7 @@ describe('checkAndAnnounceNewVideos', () => {
                     }]),
                     setVideoChannel: jest.fn()
                 }
-            }
+            })
         }));
         jest.unstable_mockModule('rss-parser', () => {
             class MockParser {
@@ -48,7 +49,7 @@ describe('checkAndAnnounceNewVideos', () => {
             }
         }));
         const {checkAndAnnounceNewVideos} = await import('../youtubeService.js');
-        await checkAndAnnounceNewVideos(mockClient as any);
+        await checkAndAnnounceNewVideos(mockClient as unknown as Client);
         expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('youtube.com/watch?v=new')
         }));

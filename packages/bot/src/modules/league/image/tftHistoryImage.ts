@@ -3,12 +3,16 @@ import {getAsset} from '../../../utils/assetCache.js';
 import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
 import {tftUnitIconUrl} from "../utils/assetUrl.js";
 
+import type {MatchTFTDTO} from 'twisted/dist/models-dto/matches/tft-matches/match-tft.dto.js';
+
 const ROW_HEIGHT = 100;
 const WIDTH = 800;
 const PADDING = 16;
 const FONT = '16px "Roboto", Arial';
 
-export async function generateTftHistoryImage(matches: any[], identity: any): Promise<Buffer> {
+export async function generateTftHistoryImage(matches: MatchTFTDTO[], identity: {
+    puuid: string
+}): Promise<Buffer> {
     const height = matches.length * ROW_HEIGHT + PADDING * 2;
     const canvas = createCanvas(WIDTH, height);
     const ctx = canvas.getContext('2d');
@@ -18,7 +22,11 @@ export async function generateTftHistoryImage(matches: any[], identity: any): Pr
     for (let i = 0; i < matches.length; i++) {
         const match = matches[i];
         const y = PADDING + i * ROW_HEIGHT;
-        const participant = match.info.participants.find((p: any) => p.puuid === identity.puuid);
+        const participants = match.info.participants;
+        type ParticipantDto = typeof participants[number];
+        const participant = participants.find(
+            (p: ParticipantDto) => p.puuid === identity.puuid
+        ) as ParticipantDto | undefined;
         if (!participant) continue;
 
         // Draw background
@@ -58,7 +66,8 @@ export async function generateTftHistoryImage(matches: any[], identity: any): Pr
         }
 
         // Traits
-        const traits = (participant.traits || []).filter((t: any) => t.tier_current > 0);
+        type TraitDto = typeof participant.traits[number];
+        const traits = (participant.traits || []).filter((t: TraitDto) => t.tier_current > 0);
         let traitX = PADDING + 220;
         for (const trait of traits) {
             ctx.font = '12px Roboto';

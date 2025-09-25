@@ -1,9 +1,14 @@
+debugger;
 import './deploy-commands.js';
 
-import {Client, Collection, Events, MessageFlags} from 'discord.js';
+import {
+    Events,
+    MessageFlags
+} from 'discord.js';
 import path from 'path';
+import {FakegamingBot} from './core/FakegamingBot.js';
 import {bootstrapEnv} from '@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';
@@ -11,27 +16,22 @@ import {deployCommands} from "./deploy-commands.js";
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
+
 (async () => {
     try {
-        await deployCommands();
+        deployCommands().then(() => {
+            console.log("Slash commands deployed.");
+        }).catch(err => {
+            console.error("Failed to deploy slash commands:", err);
+        });
 
         if (!process.env.DISCORD_BOT_TOKEN) {
             console.error('DISCORD_BOT_TOKEN is not set in environment variables.');
             process.exit(1);
         }
-
-        await configManager.init();
+        await getConfigManager().init();
 
         await preloadAllModules();
-
-        class FakegamingBot extends Client {
-            commands: Collection<string, any>;
-
-            constructor(options: any) {
-                super(options);
-                this.commands = new Collection();
-            }
-        }
 
         const client = new FakegamingBot({intents: [1 << 0]}); // Guilds intent
 
@@ -49,6 +49,7 @@ const {__dirname} = bootstrapEnv(import.meta.url);
             startBotServices(client);
         });
 
+
         client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {
             if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
             const command = client.commands.get(interaction.commandName);
@@ -63,7 +64,18 @@ const {__dirname} = bootstrapEnv(import.meta.url);
                     await command.execute(interaction);
                 } catch (error) {
                     console.error(error);
-                    await interaction.reply({content: 'Error executing command.', flags: MessageFlags.Ephemeral});
+                    try {
+                        if (!interaction.replied && !interaction.deferred) {
+                            await interaction.reply({
+                                content: 'Error executing command.',
+                                flags: MessageFlags.Ephemeral
+                            });
+                        } else {
+                            await interaction.editReply({content: 'Error executing command.'});
+                        }
+                    } catch (err) {
+                        console.error('Failed to send error reply:', err);
+                    }
                 }
             }
         });
@@ -80,8 +92,13 @@ const {__dirname} = bootstrapEnv(import.meta.url);
         } else {
             console.error('Full object:', JSON.stringify(e, null, 2));
             // Try to log stack if available
-            if (typeof (e as any).stack === 'string') {
-                console.error('Stack:', (e as any).stack);
+            if (typeof e === 'object' && e !== null) {
+                if ('message' in e) {
+                    console.error('Error message:', (e as { message: string }).message);
+                }
+                if ('stack' in e) {
+                    console.error('Stack:', (e as { stack: string }).stack);
+                }
             }
             // Print a stack trace for the *catch location* (not the throw location)
             console.trace('Catch location stack trace');
@@ -89,3 +106,5 @@ const {__dirname} = bootstrapEnv(import.meta.url);
         process.exit(1);
     }
 })();
+
+export {FakegamingBot};

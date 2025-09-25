@@ -1,4 +1,4 @@
-import {sequelize} from '../sequelize.js';
+import {getSequelize} from '../sequelize.js';
 import {runMigrations} from '../migrate.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
@@ -27,8 +27,18 @@ export class ConfigManager {
      * Initializes the database (optional, for Sequelize sync).
      */
     async init() {
-        await sequelize.authenticate();
-        await runMigrations(sequelize);
-        await sequelize.sync();
+        console.log('Initializing database connection...');
+        await getSequelize().authenticate()
+            .then(() => {
+                console.log('Database connection successful.');
+                // Start your app logic here
+            })
+            .catch((err) => {
+                console.error('Database connection failed:', err);
+                process.exit(1);
+            });
+        //await sequelize.authenticate();
+        await runMigrations(getSequelize());
+        await getSequelize().sync();
     }
 }

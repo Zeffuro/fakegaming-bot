@@ -1,7 +1,7 @@
 {
   "name": "@zeffuro/fakegaming-bot-dashboard",
   "version": "1.0.0",
-  "description": "Dashboard for Fakegaming.eu Botd.",
+  "description": "Dashboard for Fakegaming.eu Bot.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
@@ -10,9 +10,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node --loader ts-node/esm src/index.ts",
-    "lint": "eslint src --ext .ts,.js",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs",
-    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs --watch"
+    "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
   },
   "dependencies": {},
   "devDependencies": {

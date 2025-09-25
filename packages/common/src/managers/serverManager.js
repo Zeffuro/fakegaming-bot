@@ -8,6 +8,6 @@ export class ServerManager extends BaseManager {
         super(ServerConfig);
     }
     async getServer(serverId) {
-        return await this.model.findOne({ where: { serverId } });
+        return (await this.model.findOne({ where: { serverId } }))?.get() ?? null;
     }
 }

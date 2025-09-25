@@ -32,6 +32,14 @@ import {timeAgo, formatDuration} from '../../../utils/generalUtils.js';
 
 type ArenaParticipant = MatchV5DTOs.ParticipantDto & { playerSubteamId?: number };
 
+interface ExtendedParticipantDto extends MatchV5DTOs.ParticipantDto {
+    tier?: string;
+    rank?: string;
+    leagueTier?: string;
+
+    [key: string]: unknown; // For dynamic access, but not `any`
+}
+
 const ROW_HEIGHT = 110;
 const WIDTH = 820;
 const PADDING = 16;
@@ -71,7 +79,7 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
     ctx.textBaseline = 'top';
 
     await drawVerticalList(ctx, matches, PADDING, PADDING, ROW_HEIGHT, async (match, _x, y) => {
-        const participant = match.info.participants.find((p: any) => p.puuid === identity.puuid);
+        const participant = match.info.participants.find((p: MatchV5DTOs.ParticipantDto) => p.puuid === identity.puuid) as ExtendedParticipantDto | undefined;
         if (!participant) return;
 
         drawRowBackground(ctx, participant.win, match.info.gameMode, PADDING, y, WIDTH - PADDING * 2, ROW_HEIGHT - 8, 8);
@@ -86,7 +94,7 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
         const spellSize = Math.floor(champPortraitSize / 2);
         const spellGap = 2;
         let afterSpellsX: number;
-        let afterSpellsY = champY;
+        const afterSpellsY = champY;
         let augOrRuneWidth = spellSize;
 
         if (match.info.gameMode === 'CHERRY') {
@@ -148,7 +156,7 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
 
         const rightX = WIDTH - 280;
         if (match.info.gameMode === 'CHERRY') {
-            const arenaParticipants = match.info.participants.filter((p: any) => p.placement >= 1 && p.placement <= 4) as ArenaParticipant[];
+            const arenaParticipants = match.info.participants.filter((p: MatchV5DTOs.ParticipantDto) => p.placement >= 1 && p.placement <= 4) as ArenaParticipant[];
             const subTeamMap: Record<string, ArenaParticipant[]> = {};
             for (const p of arenaParticipants) {
                 if (p.playerSubteamId !== undefined) {
@@ -163,8 +171,8 @@ export async function generateLeagueHistoryImage(matches: MatchV5DTOs.MatchDto[]
             });
             await drawCherryTeamsWithIcons(ctx, teamPairs, rightX, y + 3, identity.puuid, '#fff');
         } else {
-            const team1 = match.info.participants.filter((p: any) => p.teamId === 100);
-            const team2 = match.info.participants.filter((p: any) => p.teamId === 200);
+            const team1 = match.info.participants.filter((p: MatchV5DTOs.ParticipantDto) => p.teamId === 100);
+            const team2 = match.info.participants.filter((p: MatchV5DTOs.ParticipantDto) => p.teamId === 200);
             await drawTeamNamesWithIcons(ctx, team1, rightX, y + 3, identity.puuid, '#fff');
             await drawTeamNamesWithIcons(ctx, team2, rightX + 120, y + 3, identity.puuid, '#fff');
         }
@@ -288,7 +296,7 @@ async function preloadAssets<T>(
 ): Promise<(import('canvas').Image | undefined)[]> {
     const images: (import('canvas').Image | undefined)[] = [];
     for (const id of ids) {
-        const entry = jsonData.find((item: any) => item.id === id);
+        const entry = jsonData.find((item: T) => (item as Record<string, unknown>).id === id);
         const iconPath = entry ? getIconPath(entry) : undefined;
         if (iconPath) {
             const assetUrl = buildUrl(iconPath, id);
@@ -318,17 +326,19 @@ function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: st
     ctx.restore();
 }
 
-function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: number) {
+function drawKDA(ctx: CanvasRenderingContext2D, participant: Record<string, unknown>, x: number, y: number) {
+    const kills = participant.kills as number ?? 0;
+    const deaths = participant.deaths as number ?? 0;
+    const assists = participant.assists as number ?? 0;
+
     ctx.font = fontString({size: 20, weight: 'bold', family: NUMBER_FONT_FAMILY});
     ctx.textBaseline = 'top';
     // Calculate widths for proper centering
-    const killsText = `${participant.kills}`;
+    const killsText = `${kills}`;
     const slash1 = ' / ';
-    const deathsText = `${participant.deaths}`;
+    const deathsText = `${deaths}`;
     const slash2 = ' / ';
-    const assistsText = `${participant.assists}`;
-    const kdaText = `${killsText}${slash1}${deathsText}${slash2}${assistsText}`;
-    ctx.measureText(kdaText).width;
+    const assistsText = `${assists}`;
 
     let drawX = x;
     // Draw kills
@@ -353,7 +363,7 @@ function drawKDA(ctx: CanvasRenderingContext2D, participant: any, x: number, y: 
     // KDA ratio below
     ctx.font = fontString({size: 12, family: NUMBER_FONT_FAMILY}); // smaller
     ctx.fillStyle = '#bdbdbd'; // lighter gray
-    ctx.fillText(`${((participant.kills + participant.assists) / Math.max(1, participant.deaths)).toFixed(2)} KDA`, x, y + 24);
+    ctx.fillText(`${((kills + assists) / Math.max(1, deaths)).toFixed(2)} KDA`, x, y + 24);
 }
 
 async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, championId: number, champLevel: number, x: number, y: number, size: number) {
@@ -396,8 +406,8 @@ async function drawChampionIconWithLevel(ctx: CanvasRenderingContext2D, champion
 
 async function drawStatsVerticalList(
     ctx: CanvasRenderingContext2D,
-    match: any,
-    participant: any,
+    match: MatchV5DTOs.MatchDto,
+    participant: ExtendedParticipantDto,
     x: number,
     y: number
 ) {
@@ -411,15 +421,15 @@ async function drawStatsVerticalList(
             {text: placementText, color: statColor, font: statFont}
         ];
     } else {
-        const team = match.info.participants.filter((p: any) => p.teamId === participant.teamId);
-        const teamKills = team.reduce((sum: number, p: any) => sum + (p.kills || 0), 0);
+        const team = match.info.participants.filter((p: MatchV5DTOs.ParticipantDto) => p.teamId === participant.teamId);
+        const teamKills = team.reduce((sum: number, p: MatchV5DTOs.ParticipantDto) => sum + (p.kills || 0), 0);
         const killP = teamKills > 0 ? Math.round(((participant.kills + participant.assists) / teamKills) * 100) : 0;
         const cs = (participant.totalMinionsKilled || 0) + (participant.neutralMinionsKilled || 0);
         const durationMin = Math.max(1, (participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000)) / 60);
         const csPerMin = cs / durationMin;
         const vision = participant.visionScore || 0;
-        let rank = participant.tier ? `${participant.tier} ${participant.rank || ''}`.trim() : '';
-        if (!rank && participant.leagueTier) rank = participant.leagueTier;
+        let rank = participant?.tier ? `${participant.tier} ${participant.rank ?? ''}`.trim() : '';
+        if (!rank && participant?.leagueTier) rank = participant.leagueTier;
         if (!rank) rank = 'Unranked';
         const statFont = fontString({size: 13, family: NUMBER_FONT_FAMILY});
         const statFontBold = fontString({size: 13, weight: 'bold', family: NUMBER_FONT_FAMILY});
@@ -443,7 +453,7 @@ async function drawStatsVerticalList(
     });
 }
 
-async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: number[], summonerSpellsJson: any[], x: number, y: number, size: number, gap: number) {
+async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: number[], summonerSpellsJson: LeagueSummonerSpell[], x: number, y: number, size: number, gap: number) {
     const summonerSpellImages = await preloadAssets<LeagueSummonerSpell>(
         spellIds,
         summonerSpellsJson as LeagueSummonerSpell[],
@@ -458,24 +468,28 @@ async function drawSummonerSpells(ctx: CanvasRenderingContext2D, spellIds: numbe
     }
 }
 
-async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: any[], perksJson: LeaguePerk[], perkStylesJson: LeaguePerkStylesData, x: number, y: number, size: number, gap: number) {
-    const keystoneId = perkStyles[0]?.selections?.[0]?.perk;
+async function drawRunes(ctx: CanvasRenderingContext2D, perkStyles: unknown[], perksJson: LeaguePerk[], perkStylesJson: LeaguePerkStylesData, x: number, y: number, size: number, gap: number) {
+    const keystoneId = (perkStyles[0] as { selections?: { perk?: number }[] })?.selections?.[0]?.perk;
+    const keystoneIds = [keystoneId].filter((id): id is number => typeof id === 'number');
     const keystoneImages = await preloadAssets<LeaguePerk>(
-        [keystoneId],
+        keystoneIds,
         perksJson,
         (entry) => entry.iconPath,
         (iconPath, _) => communityDragonAssetUrl(iconPath),
         'keystone'
     );
+
     const styles: LeaguePerkStyle[] = perkStylesJson.styles
-    const secondaryRuneId = perkStyles[1]?.style;
+    const secondaryRuneId = (perkStyles[1] as { style?: number })?.style;
+    const secondaryRuneIds = [secondaryRuneId].filter((id): id is number => typeof id === 'number');
     const secondaryRuneImages = await preloadAssets<LeaguePerkStyle>(
-        [secondaryRuneId],
+        secondaryRuneIds,
         styles,
         (entry) => entry.iconPath,
         (iconPath, _) => communityDragonAssetUrl(iconPath),
         'perkstyle'
     );
+    
     await drawVerticalList(ctx, [keystoneImages[0], secondaryRuneImages[0]], x, y, size + gap, (img, x, y, r) => {
         if (img) {
             if (r === 0) {
@@ -509,7 +523,7 @@ async function drawAugments(ctx: CanvasRenderingContext2D, augmentIds: (string |
 }
 
 // Helper to get the multikill label for a participant
-function getMultikillLabel(participant: any): string {
+function getMultikillLabel(participant: MatchV5DTOs.ParticipantDto): string {
     const multikillLabels = [
         {key: 'pentaKills', label: 'Penta Kill'},
         {key: 'quadraKills', label: 'Quadra Kill'},
@@ -517,7 +531,7 @@ function getMultikillLabel(participant: any): string {
         {key: 'doubleKills', label: 'Double Kill'}
     ];
     for (const {key, label} of multikillLabels) {
-        if (participant[key] && participant[key] > 0) {
+        if ((participant as unknown as Record<string, number>)[key] && (participant as unknown as Record<string, number>)[key]! > 0) {
             return label;
         }
     }
@@ -525,7 +539,7 @@ function getMultikillLabel(participant: any): string {
 }
 
 // Draws a multikill label (if any) to the right of the items in a rounded rectangle box
-function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: any, champX: number, itemsY: number, ITEM_SIZE: number, ITEM_GAP: number) {
+function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: MatchV5DTOs.ParticipantDto, champX: number, itemsY: number, ITEM_SIZE: number, ITEM_GAP: number) {
     const multikillLabel = getMultikillLabel(participant);
     if (multikillLabel) {
         const itemsCount = 7;

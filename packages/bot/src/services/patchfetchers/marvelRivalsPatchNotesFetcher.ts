@@ -67,7 +67,7 @@ export class MarvelRivalsPatchNotesFetcher extends BasePatchNotesFetcher {
      * @param _raw Raw response data.
      * @param patchNote Parsed patch note config.
      */
-    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+    getVersion(_raw: string, patchNote?: PatchNoteConfig): string | undefined {
         return patchNote?.version;
     }
 }

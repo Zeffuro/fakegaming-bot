@@ -1,5 +1,5 @@
 import {Client, TextChannel} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 /**
  * Checks all birthdays and announces them in the configured Discord channels if today matches.
@@ -9,20 +9,20 @@ export async function checkAndAnnounceBirthdays(client: Client) {
     const day = today.getDate();
     const month = today.getMonth() + 1; // months are 0-indexed
 
-    const birthdays = await configManager.birthdayManager.getAll();
+    const birthdays = await getConfigManager().birthdayManager.getAllPlain();
 
-    for (const b of birthdays) {
-        if (b.day === day && b.month === month) {
+    for (const birthday of birthdays) {
+        if (birthday.day === day && birthday.month === month) {
             try {
-                const channel = await client.channels.fetch(b.channelId);
+                const channel = await client.channels.fetch(birthday.channelId);
                 if (channel && channel.isTextBased()) {
-                    const ageText = b.year ? ` (turning ${today.getFullYear() - b.year})` : "";
+                    const ageText = birthday.year ? ` (turning ${today.getFullYear() - birthday.year})` : "";
                     await (channel as TextChannel).send(
-                        `🎉 Happy birthday <@${b.userId}>${ageText}!`
+                        `🎉 Happy birthday <@${birthday.userId}>${ageText}!`
                     );
                 }
             } catch (err) {
-                console.error(`Failed to send birthday message for user ${b.userId}:`, err);
+                console.error(`Failed to send birthday message for user ${birthday.userId}:`, err);
             }
         }
     }

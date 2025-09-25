@@ -32,7 +32,7 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
         if (!nextData) return null;
 
         const data = JSON.parse(nextData);
-        const richTextHtml = data?.props?.pageProps?.page?.blades?.find((b: any) => b.type === 'patchNotesRichText')?.richText?.body;
+        const richTextHtml = data?.props?.pageProps?.page?.blades?.find((b: Record<string, unknown>) => b.type === 'patchNotesRichText')?.richText?.body;
         if (!richTextHtml) return null;
 
         const $$ = cheerio.load(richTextHtml);
@@ -59,21 +59,24 @@ export class LeaguePatchNotesFetcher extends BasePatchNotesFetcher {
         const blades = data?.props?.pageProps?.page?.blades;
         if (!Array.isArray(blades)) return null;
 
-        const articleGrid = blades.find((b: any) => b.type === 'articleCardGrid');
+        const articleGrid = blades.find((b: Record<string, unknown>) => b.type === 'articleCardGrid');
         if (!articleGrid || !Array.isArray(articleGrid.items) || articleGrid.items.length === 0) return null;
 
-        const latestPatch = articleGrid.items[0];
-        const title = latestPatch?.title;
-        const url = latestPatch?.action?.payload?.url;
-        const content = latestPatch?.description?.body;
-        const publishedAt = latestPatch?.publishedAt ? new Date(latestPatch.publishedAt).getTime() : Date.now();
-        const imageUrl = latestPatch?.media?.url;
+        const latestPatch = (articleGrid.items as Record<string, unknown>[])[0] as Record<string, unknown>;
+        const title = latestPatch?.title as string;
+        const payload = (latestPatch?.action as { payload?: { url?: string } })?.payload;
+        const url = payload?.url as string | undefined;
+        const content = (latestPatch?.description as Record<string, unknown>)?.body as string;
+        const publishedAt = latestPatch?.publishedAt ? new Date(latestPatch.publishedAt as string).getTime() : Date.now();
+        const imageUrl = (latestPatch?.media as Record<string, unknown>)?.url as string;
 
         if (!title || !url || !content) return null;
 
-        const fullUrl = url.startsWith('http') ? url : `https://www.leagueoflegends.com${url}`;
-        const versionMatch = title.match(/Patch\s([\d.]+)/);
-        const version = versionMatch ? versionMatch[1] : title.replace(' Notes', '');
+        const fullUrl = url && typeof url === 'string' && url.startsWith('http')
+            ? url
+            : `https://www.leagueoflegends.com${url ?? ''}`;
+        const versionMatch = (title as string).match(/Patch\s([\d.]+)/);
+        const version = versionMatch ? versionMatch[1] : (title as string).replace(' Notes', '');
 
         return PatchNoteConfig.build({
             game: this.game,

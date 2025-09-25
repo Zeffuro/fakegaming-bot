@@ -1,4 +1,5 @@
 import {jest} from '@jest/globals';
+import type {Client} from 'discord.js';
 
 describe('subscribeAllStreams', () => {
     it('announces live Twitch streams', async () => {
@@ -7,16 +8,16 @@ describe('subscribeAllStreams', () => {
         const mockClient = {
             channels: {cache: {get: jest.fn(() => mockChannel)}}
         };
-        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
-            configManager: {
+        jest.unstable_mockModule('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js', () => ({
+            getConfigManager: () => ({
                 twitchManager: {
-                    getAll: jest.fn(() => [{
+                    getAllPlain: jest.fn(() => [{
                         twitchUsername: 'streamer',
                         discordChannelId: '456',
                         customMessage: null
                     }])
                 }
-            }
+            })
         }));
         jest.unstable_mockModule('@twurple/api', () => ({
             ApiClient: jest.fn(() => ({
@@ -38,7 +39,7 @@ describe('subscribeAllStreams', () => {
             }))
         }));
         const {subscribeAllStreams} = await import('../twitchService.js');
-        await subscribeAllStreams(mockClient as any);
+        await subscribeAllStreams(mockClient as unknown as Client);
         expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('Streamer is now live')
         }));

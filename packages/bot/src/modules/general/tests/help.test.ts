@@ -1,6 +1,8 @@
 import {jest} from '@jest/globals';
+import {FakegamingBot} from '../../../core/FakegamingBot.js';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
+import {Collection, CommandInteraction} from "discord.js";
 
 describe('help command', () => {
     beforeEach(() => {
@@ -15,15 +17,28 @@ describe('help command', () => {
             commandPath: '../../modules/general/commands/help.js',
         });
 
-        const mockCommands = new Map([
-            ['birthday', {data: {description: 'Show your birthday.'}}],
-            ['remove-birthday', {data: {description: 'Remove your birthday.'}}],
+        const mockCommands = new Collection<string, {
+            data: { description: string },
+            execute: (interaction: CommandInteraction) => Promise<void>
+        }>([
+            ['birthday', {
+                data: {description: 'Show your birthday.'},
+                execute: async () => {
+                }
+            }],
+            ['remove-birthday', {
+                data: {description: 'Remove your birthday.'},
+                execute: async () => {
+                }
+            }],
         ]);
 
         const interaction = new MockInteraction();
-        interaction.client = {commands: mockCommands};
+        const mockClient = new FakegamingBot({intents: []});
+        mockClient.commands = mockCommands;
+        interaction.client = mockClient;
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({

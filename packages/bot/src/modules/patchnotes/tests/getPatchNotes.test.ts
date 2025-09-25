@@ -1,6 +1,7 @@
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {PatchNotesManager} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
+import {CommandInteraction} from "discord.js";
 
 describe('getPatchNotes command', () => {
     it('replies with the latest patch note embed for Overwatch 2', async () => {
@@ -27,7 +28,7 @@ describe('getPatchNotes command', () => {
             stringOptions: {game: 'Overwatch 2'}
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({

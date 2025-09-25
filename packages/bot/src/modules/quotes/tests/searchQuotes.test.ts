@@ -2,6 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {QuoteManager} from '@zeffuro/fakegaming-common/dist/managers/quoteManager.js';
+import {CommandInteraction} from "discord.js";
 
 describe('searchQuote command', () => {
     beforeEach(() => {
@@ -29,7 +30,7 @@ describe('searchQuote command', () => {
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.searchQuotes).toHaveBeenCalledWith({
             guildId: '135381928284343204',
@@ -57,7 +58,7 @@ describe('searchQuote command', () => {
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.stringContaining('No quotes found matching your search.')

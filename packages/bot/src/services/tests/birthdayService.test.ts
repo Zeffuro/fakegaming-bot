@@ -1,4 +1,5 @@
 import {jest} from '@jest/globals';
+import type {Client} from 'discord.js';
 
 describe('checkAndAnnounceBirthdays', () => {
     it('announces birthdays for today', async () => {
@@ -7,11 +8,11 @@ describe('checkAndAnnounceBirthdays', () => {
         const mockClient = {
             channels: {fetch: jest.fn(() => Promise.resolve(mockChannel))}
         };
-        // Mock configManager before importing the service
-        jest.unstable_mockModule('../../../../common/src/managers/configManagerSingleton.js', () => ({
-            configManager: {
+
+        jest.unstable_mockModule('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js', () => ({
+            getConfigManager: () => ({
                 birthdayManager: {
-                    getAll: jest.fn(() => [{
+                    getAllPlain: jest.fn(() => [{
                         userId: '987654321098765432',
                         day: new Date().getDate(),
                         month: new Date().getMonth() + 1,
@@ -19,10 +20,11 @@ describe('checkAndAnnounceBirthdays', () => {
                         channelId: '4167801562951251571'
                     }])
                 }
-            }
+            })
         }));
+        
         const {checkAndAnnounceBirthdays} = await import('../birthdayService.js');
-        await checkAndAnnounceBirthdays(mockClient as any);
+        await checkAndAnnounceBirthdays(mockClient as unknown as Client);
         expect(mockSend).toHaveBeenCalledWith(expect.stringContaining('Happy birthday'));
     });
 });

@@ -18,7 +18,7 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
         youtubeChannelId: string,
         discordChannelId: string
     }): Promise<YoutubeVideoConfig | null> {
-        return await this.getOne({youtubeChannelId, discordChannelId});
+        return (await this.getOne({youtubeChannelId, discordChannelId}))?.get() ?? null;
     }
 
     // Simplified to use the new upsert method in BaseManager

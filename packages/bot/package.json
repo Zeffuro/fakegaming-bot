@@ -10,9 +10,9 @@
     "build": "tsc",
     "start": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
-    "lint": "eslint src --ext .ts,.js",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs",
-    "test:watch": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ../../jest.config.mjs --watch"
+    "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests",
+    "profile": "node --inspect-brk dist/index.js"
   },
   "dependencies": {
     "@zeffuro/fakegaming-common": "1.0.0",

@@ -1,12 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import {pathToFileURL} from 'url';
+import type {FakegamingBot} from '../index.js';
 
 /**
  * Loads all command modules from the specified modulesPath and registers them with the Discord client.
  * Only modules with both data and execute are registered.
  */
-export async function loadCommands(client: any, modulesPath: string) {
+export async function loadCommands(client: FakegamingBot, modulesPath: string) {
     const moduleFolders = fs.readdirSync(modulesPath);
     for (const folder of moduleFolders) {
         const commandsPath = path.join(modulesPath, folder, 'commands');

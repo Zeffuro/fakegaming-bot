@@ -3,7 +3,7 @@ import {
     ChatInputCommandInteraction,
     MessageFlags
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {months} from "../../../constants/months.js";
 
 const data = new SlashCommandBuilder()
@@ -25,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let userId = interaction.user.id;
     if (targetUser) userId = targetUser.id;
 
-    const birthday = await configManager.birthdayManager.getBirthday({userId, guildId: interaction.guildId!});
+    const birthday = await getConfigManager().birthdayManager.getBirthday({userId, guildId: interaction.guildId!});
 
     if (!birthday) {
         await interaction.reply({

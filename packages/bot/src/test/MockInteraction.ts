@@ -1,10 +1,17 @@
 import {jest} from '@jest/globals';
+import type {UnknownFunction} from 'jest-mock';
 import {ChannelType} from 'discord.js';
-import type {GuildTextBasedChannel, User} from 'discord.js';
+import type {Client, GuildTextBasedChannel, User} from 'discord.js';
 
 export class MockInteraction {
-    client: any;
-    options: any;
+    client: Client | undefined;
+    options: {
+        getString: jest.Mock;
+        getUser: jest.Mock;
+        getInteger: jest.Mock;
+        getChannel: jest.Mock;
+        getFocused: jest.Mock;
+    };
     user: User;
     guildId: string;
     channel: GuildTextBasedChannel | null;
@@ -27,15 +34,15 @@ export class MockInteraction {
                         send: jest.fn()
                     } as unknown as GuildTextBasedChannel,
                 }: {
-        client?: any,
+        client?: Client,
         stringOptions?: Record<string, string>,
-        userOptions?: Record<string, any>,
+        userOptions?: Record<string, User>,
         integerOptions?: Record<string, number>,
-        channelOptions?: Record<string, any>,
+        channelOptions?: Record<string, GuildTextBasedChannel>,
         focused?: string,
-        user?: any,
+        user?: User,
         guildId?: string,
-        channel?: any,
+        channel?: GuildTextBasedChannel,
     } = {}) {
         const castUserOptions: Record<string, User> = {};
         for (const key in userOptions) {
@@ -46,11 +53,11 @@ export class MockInteraction {
             castChannelOptions[key] = channelOptions[key] as unknown as GuildTextBasedChannel;
         }
         this.options = {
-            getString: jest.fn((name: string, _required?: boolean) => stringOptions[name]),
-            getUser: jest.fn((name: string, _required?: boolean) => castUserOptions[name]),
-            getInteger: jest.fn((name: string, _required?: boolean) => integerOptions[name]),
-            getChannel: jest.fn((name: string, _required?: boolean) => castChannelOptions[name]),
-            getFocused: jest.fn(() => focused),
+            getString: jest.fn(((name: string, _required?: boolean) => stringOptions[name]) as UnknownFunction),
+            getUser: jest.fn(((name: string, _required?: boolean) => castUserOptions[name]) as UnknownFunction),
+            getInteger: jest.fn(((name: string, _required?: boolean) => integerOptions[name]) as UnknownFunction),
+            getChannel: jest.fn(((name: string, _required?: boolean) => castChannelOptions[name]) as UnknownFunction),
+            getFocused: jest.fn((() => focused) as UnknownFunction),
         };
         this.user = user as unknown as User;
         this.guildId = guildId;
@@ -63,12 +70,12 @@ export class MockInteraction {
         this.client = client;
     }
 
-    deferReply(..._args: any[]) {
+    deferReply(..._args: unknown[]) {
         this.responded = true;
         return Promise.resolve();
     }
 
-    editReply(..._args: any[]) {
+    editReply(..._args: unknown[]) {
         this.responded = true;
         return Promise.resolve();
     }

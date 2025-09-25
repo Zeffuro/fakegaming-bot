@@ -15,7 +15,7 @@ export class BirthdayManager extends BaseManager<BirthdayConfig> {
     }
 
     async getBirthday({userId, guildId}: { userId: string; guildId: string }): Promise<BirthdayConfig | null> {
-        return await this.getOne({userId, guildId});
+        return (await this.getOne({userId, guildId}))?.get() ?? null;
     }
 
     async removeBirthday({userId, guildId}: { userId: string, guildId: string }) {

@@ -1,21 +1,22 @@
-import {db} from '../packages/bot/src/config/db.js';
-import {sequelize} from '../packages/common/src/sequelize.js';
+import {db} from '../packages/bot/src/config/db.ts';
+import {getSequelize} from '@zeffuro/fakegaming-common/dist/sequelize.js';
 import {Op} from 'sequelize';
-import {UserConfig} from '../packages/common/src/models/user-config.js';
-import {LeagueConfig} from '../packages/common/src/models/league-config.js';
-import {ServerConfig} from '../packages/common/src/models/server-config.js';
-import {QuoteConfig} from '../packages/common/src/models/quote-config.js';
-import {TwitchStreamConfig} from '../packages/common/src/models/twitch-stream-config.js';
-import {YoutubeVideoConfig} from '../packages/common/src/models/youtube-video-config.js';
-import {ReminderConfig} from '../packages/common/src/models/reminder-config.js';
-import {BirthdayConfig} from '../packages/common/src/models/birthday-config.js';
-import {PatchNoteConfig} from '../packages/common/src/models/patch-note-config.js';
-import {PatchSubscriptionConfig} from '../packages/common/src/models/patch-subscription-config.js';
+import {UserConfig} from '@zeffuro/fakegaming-common/dist/models/user-config.js';
+import {LeagueConfig} from '@zeffuro/fakegaming-common/dist/models/league-config.js';
+import {ServerConfig} from '@zeffuro/fakegaming-common/dist/models/server-config.js';
+import {QuoteConfig} from '@zeffuro/fakegaming-common/dist/models/quote-config.js';
+import {TwitchStreamConfig} from '@zeffuro/fakegaming-common/dist/models/twitch-stream-config.js';
+import {YoutubeVideoConfig} from '@zeffuro/fakegaming-common/dist/models/youtube-video-config.js';
+import {ReminderConfig} from '@zeffuro/fakegaming-common/dist/models/reminder-config.js';
+import {BirthdayConfig} from '@zeffuro/fakegaming-common/dist/models/birthday-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
+import {PatchSubscriptionConfig} from '@zeffuro/fakegaming-common/dist/models/patch-subscription-config.js';
 
 async function migrateLowdbToSequelize() {
-    await sequelize.sync({force: true});
+    await getSequelize().sync({force: true});
     await db.read();
 
+    console.log('Migrating users:', db.data.users?.length ?? 0);
     for (const user of db.data.users) {
         if (typeof user.discordId === 'string' && user.discordId.length > 0) {
             const userRecord = await UserConfig.create({

@@ -78,8 +78,9 @@ export const defaultData: Data = {
     patchSubscriptions: []
 };
 
-const dataRoot = process.env.DATA_ROOT || 'data';
+const dataRoot = 'data';
 const adapter = new JSONFile<Data>(path.join(dataRoot, 'config.json'));
+console.log(path.join(dataRoot, 'config.json'));
 
 /**
  * The main config database instance, using LowDB and JSONFile for persistent storage.

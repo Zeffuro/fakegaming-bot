@@ -1,2 +1,8 @@
 import { ConfigManager } from './configManager.js';
-export const configManager = new ConfigManager();
+let _configManager;
+export function getConfigManager() {
+    if (!_configManager) {
+        _configManager = new ConfigManager();
+    }
+    return _configManager;
+}

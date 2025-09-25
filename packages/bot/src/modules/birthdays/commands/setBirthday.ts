@@ -6,7 +6,7 @@ import {
     User,
     AutocompleteInteraction
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {months} from "../../../constants/months.js";
 import {requireAdmin} from "../../../utils/permissions.js";
 
@@ -73,7 +73,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const alreadySet = await configManager.birthdayManager.hasBirthday({
+    const alreadySet = await getConfigManager().birthdayManager.hasBirthday({
         userId,
         guildId: guildId,
     });
@@ -86,7 +86,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.birthdayManager.add({
+    await getConfigManager().birthdayManager.add({
         userId: userId,
         day,
         month: monthObj.value,
@@ -117,7 +117,7 @@ async function autocomplete(interaction: AutocompleteInteraction) {
 
 function getBirthdayResponse(targetUser: User | null, day: number, month: number, year?: number): string {
     const now = new Date();
-    let nextBirthday = new Date(now.getFullYear(), month - 1, day);
+    const nextBirthday = new Date(now.getFullYear(), month - 1, day);
 
     // If today is the birthday, don't increment the year
     if (

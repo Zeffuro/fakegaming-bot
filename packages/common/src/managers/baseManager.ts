@@ -4,7 +4,6 @@ import {
     DestroyOptions,
     FindAndCountOptions,
     FindOrCreateOptions,
-    FindOptions,
     UpdateOptions,
     WhereOptions,
     Attributes,
@@ -19,6 +18,11 @@ export class BaseManager<T extends Model> {
 
     async getAll(): Promise<T[]> {
         return await this.model.findAll();
+    }
+
+    async getAllPlain(): Promise<T[]> {
+        const rows = await this.model.findAll({raw: true});
+        return rows.map(r => ({...r}));
     }
 
     async set(item: CreationAttributes<T>, primaryKeyName: keyof CreationAttributes<T>): Promise<[T, boolean]> {
@@ -40,16 +44,31 @@ export class BaseManager<T extends Model> {
         return await this.model.findOne({where});
     }
 
+    async getOnePlain(where: WhereOptions<Attributes<T>>): Promise<object | null> {
+        const row = await this.model.findOne({where, raw: true});
+        return row ? {...row} : null;
+    }
+
     async getMany(where: WhereOptions<Attributes<T>>): Promise<T[]> {
         return await this.model.findAll({where});
+    }
+
+    async getManyPlain(where: WhereOptions<Attributes<T>>): Promise<object[]> {
+        const rows = await this.model.findAll({where, raw: true});
+        return rows.map(r => ({...r}));
     }
 
     async add(config: CreationAttributes<T>): Promise<T> {
         return await this.model.create(config);
     }
 
+    async addPlain(config: CreationAttributes<T>): Promise<T> {
+        const instance = await this.model.create(config);
+        return instance.get({plain: true}); // consistent plain object
+    }
+
     async upsert(item: CreationAttributes<T>): Promise<boolean> {
-        const [_, created] = await this.model.upsert(item);
+        const [, created] = await this.model.upsert(item);
         return created || false;
     }
 
@@ -67,23 +86,35 @@ export class BaseManager<T extends Model> {
     }
 
     async getAndCountAll(options?: FindAndCountOptions<Attributes<T>>): Promise<{ rows: T[], count: number }> {
-        return await this.model.findAndCountAll(options);
+        const result = await this.model.findAndCountAll({...options, raw: true});
+        return {rows: result.rows.map(r => ({...r})), count: result.count};
     }
 
-    async findByPk(id: any): Promise<T | null> {
+    async findByPk(id: string | number): Promise<T | null> {
         return await this.model.findByPk(id);
     }
 
-    async update(attributes: CreationAttributes<T>, where: WhereOptions<Attributes<T>>): Promise<[number, T[]]> {
+    async findByPkPlain(id: string | number): Promise<T | null> {
+        const row = await this.model.findByPk(id, {raw: true});
+        return row ? {...row} : null;
+    }
+
+    async update(
+        attributes: CreationAttributes<T>,
+        where: WhereOptions<Attributes<T>>
+    ): Promise<[number, T[]]> {
         const result = await this.model.update(attributes, {
             where,
             returning: true
         } as UpdateOptions<Attributes<T>>);
 
-        const affectedCount: number = Array.isArray(result) ? result[0] : result;
-        const affectedRows: T[] = [];
+        // result might be [number] or [number, T[]]
+        const [affectedCount, rows] = result as unknown as [number, T[] | undefined];
 
-        return [affectedCount, affectedRows];
+        // Normalize rows (only if provided)
+        const cleanRows = rows ? rows.map(r => r.get({plain: true})) : [];
+
+        return [affectedCount, cleanRows];
     }
 
     async remove(where: WhereOptions<Attributes<T>>): Promise<number> {

@@ -1,6 +1,5 @@
 import {Umzug, SequelizeStorage} from 'umzug';
 import {Sequelize} from 'sequelize-typescript';
-import {pathToFileURL} from 'url';
 import path from 'path';
 import {PROJECT_ROOT} from './core/projectRoot.js';
 

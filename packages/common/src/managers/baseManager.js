@@ -28,7 +28,7 @@ export class BaseManager {
         return await this.model.create(config);
     }
     async upsert(item) {
-        const [_, created] = await this.model.upsert(item);
+        const [, created] = await this.model.upsert(item);
         return created || false;
     }
     async findOrCreate(config) {

@@ -1,4 +1,5 @@
-import {MessageFlags, SlashCommandBuilder} from 'discord.js';
+import {CommandInteraction, MessageFlags, SlashCommandBuilder} from 'discord.js';
+import type {FakegamingBot} from '../../../index.js';
 
 const data = new SlashCommandBuilder()
     .setName('help')
@@ -8,9 +9,10 @@ const data = new SlashCommandBuilder()
  * Executes the help command, listing all available commands and their descriptions.
  * Replies with a formatted help message.
  */
-async function execute(interaction: any) {
+async function execute(interaction: CommandInteraction) {
+    const client = interaction.client as FakegamingBot;
     const commands = Array.from(
-        interaction.client.commands.entries() as IterableIterator<[string, { data: { description: string } }]>
+        client.commands.entries() as IterableIterator<[string, { data: { description: string } }]>
     );
     let helpText = '**Available Commands:**\n\n';
     for (const [name, cmd] of commands.sort((a, b) => a[0].localeCompare(b[0]))) {

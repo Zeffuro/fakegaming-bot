@@ -2,6 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {UserManager} from '@zeffuro/fakegaming-common/dist/managers/userManager.js';
+import {CommandInteraction, User} from "discord.js";
 
 describe('setTimezone command', () => {
     beforeEach(() => {
@@ -27,11 +28,11 @@ describe('setTimezone command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {timezone: 'Europe/Berlin'},
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.setTimezone).toHaveBeenCalledWith({
             discordId: '123456789012345678',
@@ -60,11 +61,11 @@ describe('setTimezone command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {timezone: 'Invalid/Zone'},
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.stringContaining('Invalid timezone')

@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {BirthdayManager} from '@zeffuro/fakegaming-common/dist/managers/birthdayManager.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {PermissionFlagsBits} from 'discord.js';
+import {CommandInteraction, PermissionFlagsBits, User} from 'discord.js';
 
 describe('removeBirthday command', () => {
     beforeEach(() => {
@@ -17,11 +17,11 @@ describe('removeBirthday command', () => {
         });
 
         const interaction = new MockInteraction({
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.removeBirthday).toHaveBeenCalledWith({
             userId: '123456789012345678',
@@ -44,15 +44,15 @@ describe('removeBirthday command', () => {
         const {requireAdmin} = await import('../../../utils/permissions.js');
 
         const interaction = new MockInteraction({
-            user: {id: '098765432987654321'},
+            user: {id: '098765432987654321'} as unknown as User,
             guildId: '135381928284343204',
-            userOptions: {user: {id: '987654321098765432'}},
+            userOptions: {user: {id: '987654321098765432'} as unknown as User},
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(requireAdmin).toHaveBeenCalled();
         expect(mockManager.removeBirthday).toHaveBeenCalledWith({

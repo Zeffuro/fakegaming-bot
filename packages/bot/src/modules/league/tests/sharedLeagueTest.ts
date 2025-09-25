@@ -3,8 +3,9 @@ import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {UserManager} from "@zeffuro/fakegaming-common/dist/managers/userManager.js";
 import {mockLeagueUtils, mockRiotService, mockTierEmojis} from '../test/leagueMockFactories.js';
+import {CommandInteraction} from "discord.js";
 
-export async function runLeagueTest(commandPath: string, expected: any) {
+export async function runLeagueTest(commandPath: string, expected: Record<string, unknown>) {
     const {command} = await setupCommandTest({
         managerClass: UserManager,
         managerKey: 'dummy',
@@ -20,7 +21,7 @@ export async function runLeagueTest(commandPath: string, expected: any) {
     interaction.deferReply = jest.fn(() => Promise.resolve());
     interaction.editReply = jest.fn(() => Promise.resolve());
 
-    await command.execute(interaction as any);
+    await command.execute(interaction as unknown as CommandInteraction);
 
     expect(interaction.editReply).toHaveBeenCalledWith(
         expect.objectContaining(expected)

@@ -2,7 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
 import {QuoteManager} from '@zeffuro/fakegaming-common/dist/managers/quoteManager.js';
-import {User} from 'discord.js';
+import {CommandInteraction, User} from 'discord.js';
 
 describe('addQuote command', () => {
     beforeEach(() => {
@@ -24,7 +24,7 @@ describe('addQuote command', () => {
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({

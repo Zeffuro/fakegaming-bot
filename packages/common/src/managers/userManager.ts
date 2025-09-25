@@ -11,14 +11,15 @@ export class UserManager extends BaseManager<UserConfig> {
     }
 
     async getUser({discordId}: { discordId: string }): Promise<UserConfig | null> {
-        return await this.getOne({discordId});
+        return (await this.getOne({discordId}))?.get() ?? null;
     }
 
-    async getUserWithLeague(discordId: string) {
-        return await this.model.findOne({
+    async getUserWithLeague(discordId: string): Promise<UserConfig | null> {
+        const user = await this.model.findOne({
             where: {discordId},
             include: [{model: LeagueConfig}]
         });
+        return user?.get({plain: true}) ?? null;
     }
 
     async setUser(user: Partial<UserConfig>) {

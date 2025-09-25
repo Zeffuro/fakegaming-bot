@@ -10,7 +10,7 @@ export class ReminderManager extends BaseManager<ReminderConfig> {
     }
 
     async getRemindersByUser({userId}: { userId: string }): Promise<ReminderConfig[]> {
-        return await this.getMany({userId});
+        return (await this.getMany({userId})).map(r => r.get());
     }
 
     async removeReminder({id}: { id: string }) {

@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {PermissionFlagsBits} from 'discord.js';
+import {CommandInteraction, GuildTextBasedChannel, PermissionFlagsBits} from 'discord.js';
 import {TwitchManager} from "@zeffuro/fakegaming-common/dist/managers/twitchManager.js";
 
 describe('addTwitchStream command', () => {
@@ -29,14 +29,14 @@ describe('addTwitchStream command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'twitchuser', message: 'Go live!'},
-            channelOptions: {channel: {id: '4167801562951251571'}},
+            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -70,14 +70,14 @@ describe('addTwitchStream command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'twitchuser'},
-            channelOptions: {channel: {id: '4167801562951251571'}},
+            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -105,14 +105,14 @@ describe('addTwitchStream command', () => {
 
         const interaction = new MockInteraction({
             stringOptions: {username: 'missinguser'},
-            channelOptions: {channel: {id: '4167801562951251571'}},
+            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
             guildId: '135381928284343204',
         });
         interaction.memberPermissions = {
             has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
         };
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({

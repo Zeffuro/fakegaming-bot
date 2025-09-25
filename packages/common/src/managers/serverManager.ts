@@ -10,6 +10,6 @@ export class ServerManager extends BaseManager<ServerConfig> {
     }
 
     async getServer(serverId: string): Promise<ServerConfig | null> {
-        return await this.model.findOne({where: {serverId}});
+        return (await this.model.findOne({where: {serverId}}))?.get() ?? null;
     }
 }

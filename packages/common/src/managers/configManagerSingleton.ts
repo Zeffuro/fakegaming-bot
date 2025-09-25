@@ -1,3 +1,10 @@
 import {ConfigManager} from './configManager.js';
 
-export const configManager = new ConfigManager();
+let _configManager: ConfigManager | undefined;
+
+export function getConfigManager(): ConfigManager {
+    if (!_configManager) {
+        _configManager = new ConfigManager();
+    }
+    return _configManager;
+}

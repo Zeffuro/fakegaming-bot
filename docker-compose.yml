@@ -22,8 +22,8 @@ services:
     restart: unless-stopped
     environment:
       DATA_ROOT: /app/data
-      DATABASE_PROVIDER: postgresql
-      DATABASE_URL: postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fakegaming}
+      DATABASE_PROVIDER: postgres
+      DATABASE_URL: postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB:-fakegaming}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       CLIENT_ID: ${CLIENT_ID}
       GUILD_ID: ${GUILD_ID}

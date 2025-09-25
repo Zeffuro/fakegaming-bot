@@ -49,6 +49,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
     const matchIds = matchHistoryResult.data;
 
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+        await interaction.editReply('No match history found.');
+        return;
+    }
+
     const matches = [];
     for (const matchId of matchIds) {
         const matchResult = await getTftMatchDetails(matchId, regionGroup);
@@ -58,8 +63,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
         }
         matches.push(matchResult.data);
     }
+    const validMatches = matches.filter((m): m is import('twisted/dist/models-dto/matches/tft-matches/match-tft.dto.js').MatchTFTDTO => !!m);
 
-    const buffer = await generateTftHistoryImage(matches, identity);
+    const buffer = await generateTftHistoryImage(validMatches, identity);
     const attachment = new AttachmentBuilder(buffer, {name: 'tft-history.png'});
 
     await interaction.editReply({

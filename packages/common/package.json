@@ -9,8 +9,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc -b",
-    "lint": "eslint src --ext .ts",
-    "test": "jest"
+    "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
   },
   "dependencies": {
     "sequelize": "^6.37.7",

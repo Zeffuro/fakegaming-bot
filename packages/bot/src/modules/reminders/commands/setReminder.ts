@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 import {parseTimespan} from "../../../utils/timeUtils.js";
 
@@ -34,7 +34,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const timestamp = Date.now() + ms;
 
-    await configManager.reminderManager.add({
+    await getConfigManager().reminderManager.add({
         id: uuidv4(),
         userId,
         message,

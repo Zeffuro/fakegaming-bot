@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
@@ -67,7 +67,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     // Fetch user with league relation
-    let user = await configManager.userManager.getUserWithLeague(userId);
+    let user = await getConfigManager().userManager.getUserWithLeague(userId);
 
     if (user) {
         if (user.league) {
@@ -88,7 +88,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         }
     } else {
         // Create UserConfig and LeagueConfig
-        user = await configManager.userManager.add({discordId: userId});
+        user = await getConfigManager().userManager.add({discordId: userId});
         await LeagueConfig.create({
             discordId: userId,
             summonerName: identity.summoner,

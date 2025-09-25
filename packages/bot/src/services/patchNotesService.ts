@@ -1,8 +1,9 @@
 import {Client, ChannelType} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from '../loaders/loadPatchNoteFetchers.js';
 import {PatchNotesManager} from "@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js";
 import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.js";
+import {PatchNoteConfig, PatchSubscriptionConfig} from "@zeffuro/fakegaming-common";
 
 /**
  * Scans all games for new patch notes and updates them if newer.
@@ -13,7 +14,10 @@ export async function scanAndUpdatePatchNotes(patchNotesManager: PatchNotesManag
         const latestStored = await patchNotesManager.getLatestPatch(fetcher.game);
         const latestPatch = await fetcher.fetchLatestPatchNote(latestStored?.version);
         if (latestPatch) {
-            await patchNotesManager.setLatestPatch(latestPatch);
+            await patchNotesManager.setLatestPatch({
+                ...latestPatch,
+                game: fetcher.game
+            });
         }
     }
 }
@@ -22,8 +26,8 @@ export async function scanAndUpdatePatchNotes(patchNotesManager: PatchNotesManag
  * Announces new patch notes for all subscribed games in their respective Discord channels.
  */
 export async function announceNewPatchNotes(client: Client): Promise<void> {
-    const notes = await configManager.patchNotesManager.getAll();
-    const subscriptions = await configManager.patchSubscriptionManager.getAll();
+    const notes = await getConfigManager().patchNotesManager.getAllPlain() as PatchNoteConfig[];
+    const subscriptions: PatchSubscriptionConfig[] = await getConfigManager().patchSubscriptionManager.getAllPlain() as PatchSubscriptionConfig[];
 
     for (const note of notes) {
         for (const sub of subscriptions.filter(s => s.game === note.game)) {
@@ -33,7 +37,7 @@ export async function announceNewPatchNotes(client: Client): Promise<void> {
                     const embed = buildPatchNoteEmbed(note);
                     await channel.send({embeds: [embed]});
                     sub.lastAnnouncedAt = note.publishedAt;
-                    await configManager.patchSubscriptionManager.upsert(sub.get());
+                    await getConfigManager().patchSubscriptionManager.upsert(sub.get());
                 }
             }
         }

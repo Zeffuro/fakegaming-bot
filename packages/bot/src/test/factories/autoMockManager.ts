@@ -8,7 +8,7 @@ const managerExtraMethods: Record<string, string[]> = {
     BirthdayManager: ['add', 'hasBirthday'],
 };
 
-export function autoMockManager(managerClass: any) {
+export function autoMockManager(managerClass: new (...args: unknown[]) => object) {
     const methods = new Set(
         Object.getOwnPropertyNames(managerClass.prototype)
             .filter(m => m !== 'constructor')
@@ -17,7 +17,7 @@ export function autoMockManager(managerClass: any) {
     const extra = managerExtraMethods[managerClass.name] || [];
     for (const m of extra) methods.add(m);
 
-    const mock: any = {};
+    const mock: Record<string, jest.Mock> = {};
     for (const method of methods) {
         mock[method] = jest.fn();
     }

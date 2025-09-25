@@ -11,21 +11,21 @@ export class QuoteManager extends BaseManager<QuoteConfig> {
     }
 
     async getQuotes({guildId}: { guildId: string }): Promise<QuoteConfig[]> {
-        return await this.model.findAll({where: {guildId}});
+        return (await this.model.findAll({where: {guildId}})).map(q => q.get());
     }
 
     async getQuotesByAuthor({guildId, authorId}: { guildId: string, authorId: string }): Promise<QuoteConfig[]> {
-        return await this.model.findAll({where: {guildId, authorId}});
+        return (await this.model.findAll({where: {guildId, authorId}})).map(q => q.get());
     }
 
     async searchQuotes({guildId, text}: { guildId: string, text: string }): Promise<QuoteConfig[]> {
-        return await this.model.findAll({
+        return (await this.model.findAll({
             where: {
                 guildId,
                 quote: {
                     [Op.like]: `%${text}%`
                 }
             }
-        });
+        })).map(q => q.get({plain: true}) as QuoteConfig);
     }
 }

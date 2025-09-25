@@ -48,23 +48,28 @@ async function execute(interaction: ChatInputCommandInteraction) {
         await interaction.editReply(`Failed to fetch match history: ${matchHistoryResult.error}`);
         return;
     }
-    const matchIds = matchHistoryResult.data;
+    const matchIds = matchHistoryResult.data as string[] | undefined;
 
-    const matches = [];
+    if (!Array.isArray(matchIds) || matchIds.length === 0) {
+        await interaction.editReply('No match history found.');
+        return;
+    }
+
+    const matches: import('twisted/dist/models-dto/matches/match-v5/match.dto.js').MatchV5DTOs.MatchDto[] = [];
     for (const matchId of matchIds) {
         const matchResult = await getMatchDetails(matchId, regionGroup);
-        if (!matchResult.success) {
+        if (!matchResult.success || !matchResult.data) {
             await interaction.editReply(`Failed to fetch details for match ${matchId}: ${matchResult.error}`);
             return;
         }
-        matches.push(matchResult.data);
+        matches.push(matchResult.data as import('twisted/dist/models-dto/matches/match-v5/match.dto.js').MatchV5DTOs.MatchDto);
     }
 
     const buffer = await generateLeagueHistoryImage(matches, identity);
     const attachment = new AttachmentBuilder(buffer, {name: 'league-history.png'});
 
     await interaction.editReply({
-        content: `Recent matches for ${identity.summoner} [${identity.region}]`,
+        content: `Recent League matches for ${identity.summoner} [${identity.region}]`,
         files: [attachment]
     });
 }

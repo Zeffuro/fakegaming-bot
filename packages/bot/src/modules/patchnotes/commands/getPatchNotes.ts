@@ -3,7 +3,7 @@ import {
     ChatInputCommandInteraction,
     AutocompleteInteraction
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
 import {buildPatchNoteEmbed} from '../shared/patchNoteEmbed.js';
 import {gameAutocomplete} from '../shared/gameAutocomplete.js';
@@ -20,7 +20,7 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const game = interaction.options.getString('game', true);
-    const latestPatch = await configManager.patchNotesManager.getLatestPatch(game);
+    const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
 
     if (latestPatch) {
         await interaction.reply({embeds: [buildPatchNoteEmbed(latestPatch)]});

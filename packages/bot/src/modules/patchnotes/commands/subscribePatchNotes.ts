@@ -5,7 +5,7 @@ import {
     AutocompleteInteraction,
     PermissionFlagsBits
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {requireAdmin} from "../../../utils/permissions.js";
 import {gameAutocomplete} from "../shared/gameAutocomplete.js";
 import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
@@ -32,9 +32,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const game = interaction.options.getString('game', true);
     const channel = interaction.options.getChannel('channel', true);
 
-    await configManager.patchSubscriptionManager.subscribe(game, channel.id);
+    await getConfigManager().patchSubscriptionManager.subscribe(game, channel.id);
 
-    const latestPatch = await configManager.patchNotesManager.getLatestPatch(game);
+    const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (latestPatch) {
         await interaction.reply({
             content: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`,

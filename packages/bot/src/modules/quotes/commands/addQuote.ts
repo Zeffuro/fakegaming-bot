@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {v4 as uuidv4} from 'uuid';
 
 const data = new SlashCommandBuilder()
@@ -26,7 +26,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const submitter = interaction.user;
     const guildId = interaction.guildId!;
 
-    await configManager.quoteManager.add({
+    await getConfigManager().quoteManager.add({
         id: uuidv4(),
         guildId,
         quote: quoteText,

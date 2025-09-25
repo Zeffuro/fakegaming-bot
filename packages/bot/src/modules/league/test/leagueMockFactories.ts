@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 
 export const mockLeagueUtils = {
-    getLeagueIdentityFromInteraction: jest.fn((_options: any) => Promise.resolve({
+    getLeagueIdentityFromInteraction: jest.fn((_options: Record<string, unknown>) => Promise.resolve({
         summoner: 'Zeffuro',
         region: 'EUW1',
         puuid: 'oDOOxyCaz72A-bXvUTbVrSasRENrwtVVELN3zILCqgXSY8n8RW_EIMrPY7kh8UTnRb1Xah41jy9VwQ'
@@ -28,11 +28,11 @@ export const mockRiotService = {
             }
         }
     })),
-    getSummoner: jest.fn((_puuid: any, _region: any) => Promise.resolve({
+    getSummoner: jest.fn((_puuid: string, _region: string) => Promise.resolve({
         success: true,
         data: {profileIconId: 123, summonerLevel: 42}
     })),
-    getSummonerDetails: jest.fn((_puuid: any, _region: any) => Promise.resolve({
+    getSummonerDetails: jest.fn((_puuid: string, _region: string) => Promise.resolve({
         success: true,
         data: [{
             tier: 'GOLD',

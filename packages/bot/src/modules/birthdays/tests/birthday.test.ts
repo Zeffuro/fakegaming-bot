@@ -2,6 +2,7 @@ import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {BirthdayManager} from '@zeffuro/fakegaming-common/dist/managers/birthdayManager.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
+import {CommandInteraction, User} from "discord.js";
 
 describe('birthday command', () => {
     beforeEach(() => {
@@ -15,14 +16,15 @@ describe('birthday command', () => {
             commandPath: '../../modules/birthdays/commands/birthday.js',
         });
 
-        mockManager.getBirthday.mockImplementation(({userId, guildId}: { userId: string, guildId: string }) => {
+        mockManager.getBirthday.mockImplementation((args: unknown) => {
+            const {userId, guildId} = args as { userId: string; guildId: string };
             if (userId === '123456789012345678' && guildId === '135381928284343204') {
                 return {
-                    userId: '123456789012345678',
+                    userId,
                     day: 5,
                     month: 1,
                     year: 1990,
-                    guildId: '135381928284343204',
+                    guildId,
                     channelId: '929533532185956352',
                 };
             }
@@ -31,11 +33,11 @@ describe('birthday command', () => {
 
         const interaction = new MockInteraction({
             userOptions: {},
-            user: {id: '123456789012345678'},
+            user: {id: '123456789012345678'} as unknown as User,
             guildId: '135381928284343204',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -55,11 +57,11 @@ describe('birthday command', () => {
 
         const interaction = new MockInteraction({
             userOptions: {},
-            user: {id: '987654321098765432'},
+            user: {id: '987654321098765432'} as unknown as User,
             guildId: '246813579246813579',
         });
 
-        await command.execute(interaction as any);
+        await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({

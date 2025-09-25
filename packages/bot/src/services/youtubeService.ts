@@ -9,7 +9,7 @@ import {
     EmbedBuilder,
     TextChannel
 } from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 
 const apiKey = process.env.YOUTUBE_API_KEY!;
 const _liveStatus: Record<string, boolean> = {};
@@ -97,7 +97,7 @@ export async function getYoutubeChannelFeed(channelId: string) {
  * Checks for new videos on all configured YouTube channels and announces them in Discord.
  */
 export async function checkAndAnnounceNewVideos(client: Client) {
-    const channels = await configManager.youtubeManager.getAll();
+    const channels = await getConfigManager().youtubeManager.getAllPlain();
 
     await Promise.all(channels.map(async (ytChannel) => {
         const feedItems = await getYoutubeChannelFeed(ytChannel.youtubeChannelId);
@@ -146,7 +146,7 @@ export async function checkAndAnnounceNewVideos(client: Client) {
 
             // Update lastVideoId and persist
             ytChannel.lastVideoId = latestVideo['yt:videoId'];
-            await configManager.youtubeManager.setVideoChannel(ytChannel);
+            await getConfigManager().youtubeManager.setVideoChannel(ytChannel);
         }
     }));
 }

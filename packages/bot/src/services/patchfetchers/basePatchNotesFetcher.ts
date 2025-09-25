@@ -5,7 +5,7 @@
 import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
 import axios from 'axios';
 
-export abstract class BasePatchNotesFetcher {
+export abstract class BasePatchNotesFetcher<RawPatchNote = unknown> {
     /** Accent color for embeds */
     protected accentColor?: number;
     /** Name of the game */
@@ -37,7 +37,7 @@ export abstract class BasePatchNotesFetcher {
      * Fetches raw data from the patch notes URL.
      * @returns Raw response data
      */
-    async fetchRawData(): Promise<any[]> {
+    async fetchRawData(): Promise<RawPatchNote[]> {
         const urls = this.getPatchNotesUrls();
         return await Promise.all(urls.map(url => axios.get(url).then(res => res.data)));
     }
@@ -47,7 +47,7 @@ export abstract class BasePatchNotesFetcher {
      * @param _raw Raw response data
      * @returns PatchNoteConfig or null if parsing fails
      */
-    abstract parsePatchNotes(_raw: any): PatchNoteConfig | null;
+    abstract parsePatchNotes(_raw: RawPatchNote): PatchNoteConfig | null;
 
     /**
      * Returns the thumbnail URL for the patch note.
@@ -55,7 +55,7 @@ export abstract class BasePatchNotesFetcher {
      * @param _raw Raw response data
      * @param _patchNote Parsed patch note config
      */
-    getThumbnailUrl(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+    getThumbnailUrl(_raw: RawPatchNote, patchNote?: PatchNoteConfig): string | undefined {
         return patchNote?.imageUrl;
     }
 
@@ -65,7 +65,7 @@ export abstract class BasePatchNotesFetcher {
      * @param _raw Raw response data
      * @param _patchNote Parsed patch note config
      */
-    getVersion(_raw: any, patchNote?: PatchNoteConfig): string | undefined {
+    getVersion(_raw: RawPatchNote, patchNote?: PatchNoteConfig): string | undefined {
         return patchNote?.version;
     }
 
@@ -75,13 +75,13 @@ export abstract class BasePatchNotesFetcher {
      * @param patchNote Parsed patch note config
      * @returns Enriched PatchNoteConfig
      */
-    protected enrichPatchNote(raw: any, patchNote: PatchNoteConfig): PatchNoteConfig {
-        return PatchNoteConfig.build({
+    protected enrichPatchNote(raw: RawPatchNote, patchNote: PatchNoteConfig): PatchNoteConfig {
+        return {
             ...patchNote,
             imageUrl: this.getThumbnailUrl(raw, patchNote),
             version: this.getVersion(raw, patchNote),
             accentColor: this.accentColor
-        });
+        } as PatchNoteConfig;
     }
 
     /**
@@ -116,7 +116,7 @@ export abstract class BasePatchNotesFetcher {
             const patchNote = this.parsePatchNotes(raw);
             if (patchNote && this.compareVersions(storedVersion, patchNote.version)) {
                 if (!latest || this.compareVersions(latest.version, patchNote.version)) {
-                    latest = patchNote;
+                    latest = patchNote.get();
                 }
             }
         }
@@ -128,6 +128,6 @@ export abstract class BasePatchNotesFetcher {
                 latest.imageUrl = full.fullImage;
             }
         }
-        return this.enrichPatchNote(null, latest);
+        return this.enrichPatchNote({} as RawPatchNote, latest);
     }
 }

@@ -1,6 +1,4 @@
-import * as msImport from 'ms';
-
-const ms = (msImport as any).default || msImport;
+import ms from 'ms';
 
 /**
  * Parses a timespan string (e.g., '2h', '30m') into milliseconds.
@@ -8,7 +6,7 @@ const ms = (msImport as any).default || msImport;
  * @returns The number of milliseconds, or null if invalid.
  */
 export function parseTimespan(timespan: string): number | null {
-    const result = ms(timespan);
+    const result = ms(timespan as unknown as ms.StringValue);
     return typeof result === 'number' && result > 0 ? result : null;
 }
 
@@ -35,4 +33,15 @@ export function parseDateToISO(dateStr: string): string | undefined {
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return undefined;
     return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+export function parseDateSafe(date: string | number | Date | undefined): Date | undefined {
+    if (!date) return undefined;
+    if (date instanceof Date) return date;
+    if (typeof date === 'number') return new Date(date);
+    // Try to parse string as number first, then as date string
+    const asNumber = Number(date);
+    if (!isNaN(asNumber) && asNumber > 1000000000000) return new Date(asNumber);
+    const parsed = new Date(date);
+    return isNaN(parsed.getTime()) ? undefined : parsed;
 }

@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction} from 'discord.js';
-import {configManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
 import {isValidTimezone, getTimezoneSuggestions} from '../../../utils/timezoneUtils.js';
 
 const data = new SlashCommandBuilder()
@@ -25,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    await configManager.userManager.setTimezone({discordId: userId, timezone: timezone});
+    await getConfigManager().userManager.setTimezone({discordId: userId, timezone: timezone});
     await interaction.reply(`Timezone set to \`${timezone}\`.`);
 }
 
