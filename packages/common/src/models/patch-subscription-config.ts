@@ -1,5 +1,6 @@
-import {Table, Column, Model, DataType} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, Unique} from 'sequelize-typescript';
 
+@Unique('unique_game_channel_patch_subscription')
 @Table
 export class PatchSubscriptionConfig extends Model {
     @Column(DataType.STRING)

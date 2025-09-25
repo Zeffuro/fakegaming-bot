@@ -13,7 +13,7 @@ export class PatchNotesManager extends BaseManager<PatchNoteConfig> {
 
     // Simplified to use the new upsert method in BaseManager
     async setLatestPatch(note: Partial<PatchNoteConfig>) {
-        await this.upsert(note);
+        await this.model.upsert(note, {conflictFields: ['game']});
     }
 }
 
