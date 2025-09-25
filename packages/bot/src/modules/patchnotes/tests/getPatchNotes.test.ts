@@ -1,16 +1,15 @@
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {PatchNotesManager} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
 import {CommandInteraction} from "discord.js";
 
 describe('getPatchNotes command', () => {
     it('replies with the latest patch note embed for Overwatch 2', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: PatchNotesManager,
             managerKey: 'patchNotesManager',
             commandPath: '../../modules/patchnotes/commands/getPatchNotes.js',
+            interactionOptions: {stringOptions: {game: 'Overwatch 2'}}
         });
-
         // Mock the latest patch note
         mockManager.getLatestPatch.mockReturnValue({
             game: 'Overwatch 2',
@@ -23,11 +22,6 @@ describe('getPatchNotes command', () => {
             version: '2025-06-01',
             accentColor: 0xFF8000
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {game: 'Overwatch 2'}
-        });
-
         await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(

@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {QuoteManager} from '@zeffuro/fakegaming-common/dist/managers/quoteManager.js';
 import {CommandInteraction, User} from 'discord.js';
 
@@ -11,17 +10,16 @@ describe('addQuote command', () => {
     });
 
     it('adds a quote and replies', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: QuoteManager,
             managerKey: 'quoteManager',
             commandPath: '../../modules/quotes/commands/addQuote.js',
-        });
-
-        const interaction = new MockInteraction({
-            stringOptions: {quote: 'Test quote'},
-            userOptions: {author: {id: '123456789012345678', tag: 'Author#0001'} as User},
-            user: {id: '292685065920446469', tag: 'Submitter#0002'} as User,
-            guildId: '135381928284343204',
+            interactionOptions: {
+                stringOptions: {quote: 'Test quote'},
+                userOptions: {author: {id: '123456789012345678', tag: 'Author#0001'} as User},
+                user: {id: '292685065920446469', tag: 'Submitter#0002'} as User,
+                guildId: '135381928284343204',
+            }
         });
 
         await command.execute(interaction as unknown as CommandInteraction);

@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {
     CommandInteraction,
     GuildTextBasedChannel,
@@ -16,7 +15,7 @@ describe('addYoutubeVideoChannel command', () => {
     });
 
     it('adds a YouTube channel and replies with confirmation', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: YoutubeManager, // YoutubeManager is mocked via configManager
             managerKey: 'youtubeManager',
             commandPath: '../../modules/youtube/commands/addYoutubeVideoChannel.js',
@@ -30,6 +29,16 @@ describe('addYoutubeVideoChannel command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'youtubeuser', message: 'New video!'},
+                channelOptions: {
+                    channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+                },
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
 
         const getVideoChannelMock = mockManager
@@ -38,17 +47,6 @@ describe('addYoutubeVideoChannel command', () => {
         >;
 
         getVideoChannelMock.mockResolvedValue(undefined);
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'youtubeuser', message: 'New video!'},
-            channelOptions: {
-                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
-            },
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 
@@ -67,7 +65,7 @@ describe('addYoutubeVideoChannel command', () => {
     });
 
     it('replies with error if YouTube channel does not exist', async () => {
-        const {command} = await setupCommandTest({
+        const {command, interaction} = await setupCommandWithInteraction({
             managerClass: YoutubeManager,
             managerKey: 'youtubeManager',
             commandPath: '../../modules/youtube/commands/addYoutubeVideoChannel.js',
@@ -79,18 +77,17 @@ describe('addYoutubeVideoChannel command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'missinguser'},
+                channelOptions: {
+                    channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+                },
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'missinguser'},
-            channelOptions: {
-                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
-            },
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 
@@ -102,7 +99,7 @@ describe('addYoutubeVideoChannel command', () => {
     });
 
     it('replies with error if channel already configured', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: YoutubeManager,
             managerKey: 'youtubeManager',
             commandPath: '../../modules/youtube/commands/addYoutubeVideoChannel.js',
@@ -116,6 +113,16 @@ describe('addYoutubeVideoChannel command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'youtubeuser'},
+                channelOptions: {
+                    channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
+                },
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
 
         const getVideoChannelMock = mockManager
@@ -127,17 +134,6 @@ describe('addYoutubeVideoChannel command', () => {
             youtubeChannelId: 'UC1234567890abcdef',
             discordChannelId: '4167801562951251571',
         } as unknown as YoutubeVideoConfig);
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'youtubeuser'},
-            channelOptions: {
-                channel: {id: '4167801562951251571'} as GuildTextBasedChannel,
-            },
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 

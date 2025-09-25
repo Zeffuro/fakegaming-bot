@@ -1,7 +1,6 @@
 import {jest} from '@jest/globals';
 import {FakegamingBot} from '../../../core/FakegamingBot.js';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {Collection, CommandInteraction} from "discord.js";
 
 describe('help command', () => {
@@ -11,12 +10,12 @@ describe('help command', () => {
     });
 
     it('replies with a list of available commands and descriptions', async () => {
-        const {command} = await setupCommandTest({
+        const {command, interaction} = await setupCommandWithInteraction({
             managerClass: Object, // No manager needed for help
             managerKey: '',       // No manager key needed
             commandPath: '../../modules/general/commands/help.js',
+            interactionOptions: {}
         });
-
         const mockCommands = new Collection<string, {
             data: { description: string },
             execute: (interaction: CommandInteraction) => Promise<void>
@@ -32,12 +31,9 @@ describe('help command', () => {
                 }
             }],
         ]);
-
-        const interaction = new MockInteraction();
         const mockClient = new FakegamingBot({intents: []});
         mockClient.commands = mockCommands;
         interaction.client = mockClient;
-
         await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(

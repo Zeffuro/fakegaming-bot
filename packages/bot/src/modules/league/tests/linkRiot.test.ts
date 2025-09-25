@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {LeagueConfig} from '@zeffuro/fakegaming-common/dist/models/league-config.js';
 import {CommandInteraction} from "discord.js";
 
@@ -8,7 +7,7 @@ jest.spyOn(LeagueConfig, 'create').mockResolvedValue({} as Partial<LeagueConfig>
 
 describe('linkRiot command', () => {
     it('links Riot account and replies', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: class {
             },
             managerKey: 'userManager',
@@ -30,20 +29,17 @@ describe('linkRiot command', () => {
                         }))
                     })
                 }
-            ]
+            ],
+            interactionOptions: {
+                stringOptions: {'riot-id': 'Zeffuro#EUW', region: 'EUW'},
+                userOptions: {},
+                deferReplyImpl: jest.fn(() => Promise.resolve()),
+                editReplyImpl: jest.fn(() => Promise.resolve()),
+            }
         });
-
         mockManager.getUser = jest.fn().mockReturnValue(undefined);
         mockManager.add = jest.fn();
         mockManager.getUserWithLeague = jest.fn(() => Promise.resolve(null));
-
-        const interaction = new MockInteraction({
-            stringOptions: {'riot-id': 'Zeffuro#EUW', region: 'EUW'},
-            userOptions: {},
-        });
-        interaction.deferReply = jest.fn(() => Promise.resolve());
-        interaction.editReply = jest.fn(() => Promise.resolve());
-
         await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.editReply).toHaveBeenCalledWith(

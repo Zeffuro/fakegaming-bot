@@ -25,11 +25,10 @@ export async function deployCommands() {
             const commandModule = await import(pathToFileURL(commandPath).href);
             const cmd = commandModule.default;
             if (cmd?.data) {
-                if (cmd.testOnly) {
-                    testCommands.push(cmd.data.toJSON());
-                } else {
+                if (!cmd.testOnly) {
                     globalCommands.push(cmd.data.toJSON());
                 }
+                testCommands.push(cmd.data.toJSON());
             }
         }
     }

@@ -1,25 +1,58 @@
-# Contributing to fakegaming-bot
+# Contributing to fakegaming-bot Monorepo
 
 Thanks for your interest in contributing! Please follow these guidelines to get started.
+
+---
+
+## Monorepo Structure
+
+This project is a monorepo managed with npm workspaces. It contains multiple packages:
+
+- `packages/bot` — The Discord bot (commands, services, integrations)
+- `packages/common` — Shared code (models, types, utilities)
+- `packages/dashboard` — Dashboard for bot management (WIP/optional)
+- `data/` — Persistent data, assets, and config (used by the bot)
+- `migrations/` — Database migration scripts
+- `scripts/` — Utility scripts (e.g., codegen, migration helpers)
+
+---
 
 ## Getting Started
 
 1. **Fork the repo and clone your fork**
-2. Install dependencies:
+2. Install all dependencies for all packages:
    ```bash
    npm install
    ```
-3. Copy `.env.example` to `.env` and fill in your keys:
+3. Copy the root `.env.example` to `.env` in the root of the repository:
    ```bash
    cp .env.example .env
    ```
-   See the README for details.
-
-4. Start the bot in development using [tsx](https://github.com/esbuild-kit/tsx) (recommended for TypeScript):
+   Edit `.env` and fill in your credentials. See comments in `.env.example` for details.
+4. Start the bot in development from the root:
    ```bash
-   npx tsx src/index.ts
+   npm run start:bot:dev
    ```
-   If your IDE (e.g. WebStorm) supports run configurations, set it to use the Bundled (tsx) TypeScript loader.
+   Or, from the bot package:
+   ```bash
+   cd packages/bot
+   npm run start:dev
+   ```
+
+### Using Docker Compose (Optional)
+
+- You can use Docker Compose to run the bot and its dependencies:
+  ```bash
+  docker-compose up --build
+  ```
+- The root `.env` file is used for all services.
+- See `docker-compose.yml` for service definitions and volume mappings.
+- To stop and remove containers:
+  ```bash
+  docker-compose down
+  ```
+
+---
 
 ## Code Style
 
@@ -27,58 +60,84 @@ Thanks for your interest in contributing! Please follow these guidelines to get 
 - Prefer ES modules (`import/export`).
 - Use 4-space indentation.
 - Write JSDoc comments for exported functions/classes.
+- Lint all packages with:
+  ```bash
+  npm run lint
+  ```
+  Or run `npm run lint` in a specific package directory.
 
-## Adding Commands
+---
 
-- Put new command modules in `src/modules/yourmodule/`.
-- Export a `data` object (for Discord command registration) and an `execute` function.
+## Adding Features & Commands
+
+- Add new Discord commands in `packages/bot/src/modules/yourmodule/`.
+- Shared code (models, types, utilities) should go in `packages/common`.
+- Dashboard features go in `packages/dashboard`.
+- Export a `data` object (for Discord command registration) and an `execute` function for new commands.
 - Register your module in the command loader if needed.
+
+---
+
+## Database Changes & Migrations
+
+- **Models:** All database models are defined in `packages/common` (typically in `packages/common/src/models/`).
+- **Schema changes:** Any change to the database schema (adding/removing fields, tables, etc.) requires a new migration
+  script in the `migrations/` directory.
+- **Writing migrations:**
+    - Create a new migration file in `migrations/` (follow the naming convention: `YYYYMMDD-description.ts`).
+    - Write migrations in TypeScript, following the style of existing migration files.
+- **Running migrations:**
+    - Use the provided migration scripts or commands (see `scripts/` or package.json) to apply migrations to your
+      database.
+    - Always run migrations and ensure your database is up to date before running or testing the bot.
+
+---
 
 ## Adding Preloaders
 
-- Add your asset or service preloader to `src/core/preloadModules.ts`.
+- Add your asset or service preloader to `packages/bot/src/core/preloadModules.ts`.
 - Preloaders should be async functions.
+
+---
 
 ## Writing Patch Notes Fetchers
 
-Want to add patch notes support for a new game? Follow these steps:
+- Extend `BasePatchNotesFetcher` in `packages/bot/src/services/patchfetchers/`.
+- Implement game-specific logic (see `leaguePatchNotesFetcher.ts` for an example).
+- Register your fetcher in `loadPatchNoteFetchers.ts`.
 
-- **Create a new fetcher class:**  
-  Extend `BasePatchNotesFetcher` in `src/services/patchfetchers/`.
-- **Implement game-specific logic:**  
-  Your class should provide:
-    - The patch notes URL (`getPatchNotesUrl`)
-    - Parsing logic for the latest patch (`parsePatchNotes`)
-    - Optional: methods for extracting images, version info, or enriching patch data
-- **See an example:**  
-  Check out `leaguePatchNotesFetcher.ts` for a working implementation.
-- **Register your fetcher:**  
-  Add your new class to the list in `loadPatchNoteFetchers.ts` so the bot can use it.
-
-This helps the bot announce new patch notes for your game in Discord channels.
+---
 
 ## Branching & Pull Requests
 
 - Create feature branches from `main`.
 - Submit PRs with a clear description of your changes.
 - Link related issues if applicable.
+- If your change affects multiple packages, make sure to test all affected areas.
+
+---
 
 ## Running Tests
 
 Unit tests use [Jest](https://jestjs.io/).
 
-- Run all tests with:
+- Run all tests for all packages:
   ```bash
   npm test
   ```
-
-Test files are located in src/modules/*/tests/ and src/services/tests/.
+- Or, run tests in a specific package:
+  ```bash
+  cd packages/bot
+  npm test
+  ```
+- Test files are located in `src/modules/*/tests/` and `src/services/tests/` (for the bot), and similar locations in
+  other packages.
 
 ### Writing Tests
 
 - Use `.test.ts` files for unit tests.
 - Mock Discord.js interactions and managers as needed (see `MockInteraction` and `setupCommandTest` in
-  `src/test/utils/`).
+  `packages/bot/src/test/utils/`).
 - Prefer testing command logic and service functions in isolation.
 
 ### Mocking
@@ -86,23 +145,53 @@ Test files are located in src/modules/*/tests/ and src/services/tests/.
 - Use `jest.unstable_mockModule` for mocking imports.
 - Use `jest.fn()` for mocking functions and methods.
 
-## Spelling Dictionary
+---
 
-To avoid false spelling errors (e.g. `summonerspells`), we use a team-shared dictionary.
+## Spelling Dictionary
 
 - The dictionary is located at `.idea/dictionaries/team.dic`.
 - If you add new domain-specific words, add them to this file and commit the change.
 - WebStorm will automatically use this dictionary for spellchecking.
 
-If you see spelling warnings for valid project terms, add them to `team.dic` and commit.
+---
 
 ## Reporting Issues
 
 - Use [GitHub Issues](https://github.com/Zeffuro/fakegaming-bot/issues) for bugs, features, and questions.
 
+---
+
+## Continuous Integration (CI)
+
+This project uses **GitHub Actions** for continuous integration:
+
+- **Builds, lints, and tests** all packages on every pull request and push to `main`.
+- **Checks migrations** and code formatting.
+- Ensures all code passes before merging.
+- See the [CI workflow](https://github.com/Zeffuro/fakegaming-bot/actions) for details.
+
+---
+
+## Code of Conduct
+
+Participation in this project is governed by our [Code of Conduct](./CODE_OF_CONDUCT.md). Please be respectful and help
+us keep the community welcoming.
+
+---
+
+## Security Policy
+
+If you discover a security vulnerability, please see [SECURITY.md](./SECURITY.md) for how to report it privately.
+
+---
+
 ## License
 
 By contributing, you agree that your code will be released under the AGPLv3.
+
+- **You can use, modify, and share this project, but if you deploy it or make it public, you must also share your
+  changes under the same license.**
+- See [LICENSE](./LICENSE) for the full text.
 
 ---
 

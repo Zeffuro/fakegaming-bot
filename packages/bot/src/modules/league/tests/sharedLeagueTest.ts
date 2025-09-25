@@ -1,12 +1,11 @@
 import {jest, expect} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {UserManager} from "@zeffuro/fakegaming-common/dist/managers/userManager.js";
 import {mockLeagueUtils, mockRiotService, mockTierEmojis} from '../test/leagueMockFactories.js';
 import {CommandInteraction} from "discord.js";
 
 export async function runLeagueTest(commandPath: string, expected: Record<string, unknown>) {
-    const {command} = await setupCommandTest({
+    const {command, interaction} = await setupCommandWithInteraction({
         managerClass: UserManager,
         managerKey: 'dummy',
         commandPath,
@@ -14,12 +13,12 @@ export async function runLeagueTest(commandPath: string, expected: Record<string
             {module: '../../modules/league/utils/leagueUtils.js', factory: () => mockLeagueUtils},
             {module: '../../services/riotService.js', factory: () => mockRiotService},
             {module: '../../modules/league/constants/leagueTierEmojis.js', factory: () => mockTierEmojis}
-        ]
+        ],
+        interactionOptions: {
+            deferReplyImpl: jest.fn(() => Promise.resolve()),
+            editReplyImpl: jest.fn(() => Promise.resolve()),
+        }
     });
-
-    const interaction = new MockInteraction({});
-    interaction.deferReply = jest.fn(() => Promise.resolve());
-    interaction.editReply = jest.fn(() => Promise.resolve());
 
     await command.execute(interaction as unknown as CommandInteraction);
 

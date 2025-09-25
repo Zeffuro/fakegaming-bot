@@ -97,14 +97,45 @@ export async function getYoutubeChannelFeed(channelId: string) {
  * Checks for new videos on all configured YouTube channels and announces them in Discord.
  */
 export async function checkAndAnnounceNewVideos(client: Client) {
-    const channels = await getConfigManager().youtubeManager.getAllPlain();
-
+    const channels: Array<{
+        youtubeChannelId: string;
+        discordChannelId: string;
+        lastVideoId?: string;
+        customMessage?: string
+    }> = await getConfigManager().youtubeManager.getAllPlain();
+    console.debug('[YouTubeService] Channels:', channels);
+    if (!channels || !Array.isArray(channels) || channels.length === 0) {
+        console.debug('[YouTubeService] No channels to process');
+        return;
+    }
     await Promise.all(channels.map(async (ytChannel) => {
+        if (!ytChannel || !ytChannel.youtubeChannelId || !ytChannel.discordChannelId) return;
         const feedItems = await getYoutubeChannelFeed(ytChannel.youtubeChannelId);
-        if (!feedItems || feedItems.length === 0) return;
+        console.debug(`[YouTubeService] Feed items for channel ${ytChannel.youtubeChannelId}:`, feedItems);
+        if (!feedItems || !Array.isArray(feedItems) || feedItems.length === 0) {
+            console.debug(`[YouTubeService] No feed items for channel ${ytChannel.youtubeChannelId}`);
+            return;
+        }
 
-        const latestVideo = feedItems[0];
-        if (ytChannel.lastVideoId === latestVideo['yt:videoId']) return; // Already announced
+        let newVideos: typeof feedItems = [];
+        if (ytChannel.lastVideoId) {
+            const idx = feedItems.findIndex(item => item['yt:videoId'] === ytChannel.lastVideoId);
+            if (idx === 0) {
+                // lastVideoId matches the latest video, nothing new
+                newVideos = [];
+            } else if (idx > 0) {
+                // Announce all videos before lastVideoId (i.e., newer videos)
+                newVideos = feedItems.slice(0, idx).reverse();
+            } else {
+                // lastVideoId not found, announce only the latest video
+                newVideos = [feedItems[0]];
+            }
+        } else {
+            // No lastVideoId, announce only the latest video
+            newVideos = [feedItems[0]];
+        }
+        console.debug(`[YouTubeService] New videos for channel ${ytChannel.youtubeChannelId}:`, newVideos);
+        if (newVideos.length === 0) return;
 
         const discordChannel = client.channels.cache.get(ytChannel.discordChannelId);
         if (
@@ -114,38 +145,33 @@ export async function checkAndAnnounceNewVideos(client: Client) {
                 discordChannel.type === ChannelType.PublicThread ||
                 discordChannel.type === ChannelType.PrivateThread)
         ) {
-            const mediaGroup = latestVideo.mediaGroup || {};
-
-            const thumbnailUrl = mediaGroup['media:thumbnail']?.[0]?.$.url
-                || latestVideo.mediaThumbnail?.$.url
-                || null;
-
-            const embed = new EmbedBuilder()
-                .setColor(0xff0000)
-                .setTitle(latestVideo.title ?? null)
-                .setURL(latestVideo.link ?? null)
-                .setAuthor({
-                    name: latestVideo.author ?? 'Unknown',
-                    url: `https://youtube.com/channel/${ytChannel.youtubeChannelId}`
-                })
-                .setImage(thumbnailUrl)
-                .setTimestamp(new Date(latestVideo.published ?? Date.now()));
-
-            const watchButton = new ButtonBuilder()
-                .setLabel('Watch Video')
-                .setStyle(ButtonStyle.Link)
-                .setURL(latestVideo.link ?? 'https://youtube.com');
-
-            const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
-
-            const message = ytChannel.customMessage
-                ? ytChannel.customMessage.replace('{title}', latestVideo.title ?? 'New Video') + '\n' + latestVideo.link
-                : `Hey @everyone, new video from ${latestVideo.author}: ${latestVideo.link}`;
-
-            await (discordChannel as TextChannel).send({content: message, embeds: [embed], components: [row]});
-
-            // Update lastVideoId and persist
-            ytChannel.lastVideoId = latestVideo['yt:videoId'];
+            for (const video of newVideos) {
+                const mediaGroup = video.mediaGroup || {};
+                const thumbnailUrl = mediaGroup['media:thumbnail']?.[0]?.$.url
+                    || video.mediaThumbnail?.$.url
+                    || null;
+                const embed = new EmbedBuilder()
+                    .setColor(0xff0000)
+                    .setTitle(video.title ?? null)
+                    .setURL(video.link ?? null)
+                    .setAuthor({
+                        name: video.author ?? 'Unknown',
+                        url: `https://youtube.com/channel/${ytChannel.youtubeChannelId}`
+                    })
+                    .setImage(thumbnailUrl)
+                    .setTimestamp(new Date(video.published ?? Date.now()));
+                const watchButton = new ButtonBuilder()
+                    .setLabel('Watch Video')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(video.link ?? 'https://youtube.com');
+                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
+                const message = ytChannel.customMessage
+                    ? ytChannel.customMessage.replace('{title}', video.title ?? 'New Video') + '\n' + video.link
+                    : `Hey @everyone, new video from ${video.author}: ${video.link}`;
+                console.debug(`[YouTubeService] Sending message for video ${video['yt:videoId']} to channel ${ytChannel.discordChannelId}`);
+                await (discordChannel as TextChannel).send({content: message, embeds: [embed], components: [row]});
+            }
+            ytChannel.lastVideoId = newVideos[0]['yt:videoId'];
             await getConfigManager().youtubeManager.setVideoChannel(ytChannel);
         }
     }));

@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import type {UnknownFunction} from 'jest-mock';
-import {ChannelType} from 'discord.js';
+import {ChannelType, Message} from 'discord.js';
 import type {Client, GuildTextBasedChannel, User} from 'discord.js';
 
 export class MockInteraction {
@@ -18,7 +18,20 @@ export class MockInteraction {
     reply: jest.Mock;
     responded: boolean = false;
     memberPermissions?: { has: (_perm: bigint) => boolean };
+    deferReplyImpl?: (...args: unknown[]) => Promise<unknown>;
+    editReplyImpl?: (...args: unknown[]) => Promise<unknown>;
+    fetchReplyImpl?: (...args: unknown[]) => Promise<Partial<Message>>;
+    replyHistory?: unknown[][];
 
+    /**
+     * @param options
+     *  - replyImpl: custom reply mock
+     *  - deferReplyImpl: custom deferReply mock
+     *  - editReplyImpl: custom editReply mock
+     *  - fetchReplyImpl: custom fetchReply mock
+     *  - memberPermissions: permissions object
+     *  - replyHistory: array to collect all reply calls
+     */
     constructor({
                     client,
                     stringOptions = {},
@@ -33,6 +46,12 @@ export class MockInteraction {
                         type: ChannelType.GuildText,
                         send: jest.fn()
                     } as unknown as GuildTextBasedChannel,
+                    replyImpl,
+                    deferReplyImpl,
+                    editReplyImpl,
+                    fetchReplyImpl,
+                    memberPermissions,
+                    replyHistory
                 }: {
         client?: Client,
         stringOptions?: Record<string, string>,
@@ -43,6 +62,12 @@ export class MockInteraction {
         user?: User,
         guildId?: string,
         channel?: GuildTextBasedChannel,
+        replyImpl?: jest.Mock,
+        deferReplyImpl?: (...args: unknown[]) => Promise<unknown>,
+        editReplyImpl?: (...args: unknown[]) => Promise<unknown>,
+        fetchReplyImpl?: (...args: unknown[]) => Promise<Partial<Message>>,
+        memberPermissions?: { has: (_perm: bigint) => boolean },
+        replyHistory?: unknown[][],
     } = {}) {
         const castUserOptions: Record<string, User> = {};
         for (const key in userOptions) {
@@ -62,21 +87,62 @@ export class MockInteraction {
         this.user = user as unknown as User;
         this.guildId = guildId;
         this.channel = channel as unknown as GuildTextBasedChannel;
-        this.reply = jest.fn((..._args) => {
+        this.reply = replyImpl ?? jest.fn((...args) => {
             this.responded = true;
+            if (replyHistory) replyHistory.push(args);
             return Promise.resolve();
         });
         this.responded = false;
         this.client = client;
+        this.memberPermissions = memberPermissions;
+        this.deferReplyImpl = deferReplyImpl;
+        this.editReplyImpl = editReplyImpl;
+        this.fetchReplyImpl = fetchReplyImpl;
+        this.replyHistory = replyHistory;
+        // If editReplyImpl is a jest mock, assign it to this.editReply for spying
+        if (editReplyImpl && jest.isMockFunction(editReplyImpl)) {
+            this.editReply = editReplyImpl;
+        }
+        if (deferReplyImpl && jest.isMockFunction(deferReplyImpl)) {
+            this.deferReply = deferReplyImpl;
+        }
     }
 
     deferReply(..._args: unknown[]) {
+        if (typeof this.deferReplyImpl === 'function') {
+            return this.deferReplyImpl(..._args);
+        }
         this.responded = true;
         return Promise.resolve();
     }
 
     editReply(..._args: unknown[]) {
+        if (typeof this.editReplyImpl === 'function') {
+            return this.editReplyImpl(..._args);
+        }
         this.responded = true;
         return Promise.resolve();
+    }
+
+    fetchReply(..._args: unknown[]) {
+        if (typeof this.fetchReplyImpl === 'function') {
+            return this.fetchReplyImpl(..._args);
+        }
+        this.responded = true;
+        return Promise.resolve({
+            react: jest.fn()
+        } as unknown as Partial<Message>);
+    }
+
+    /**
+     * Helper to create an admin interaction
+     */
+    static admin(options: ConstructorParameters<typeof MockInteraction>[0] = {}) {
+        return new MockInteraction({
+            ...options,
+            memberPermissions: {
+                has: () => true
+            }
+        });
     }
 }

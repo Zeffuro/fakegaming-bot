@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {CommandInteraction, GuildTextBasedChannel, PermissionFlagsBits} from 'discord.js';
 import {TwitchManager} from "@zeffuro/fakegaming-common/dist/managers/twitchManager.js";
 
@@ -11,7 +10,7 @@ describe('addTwitchStream command', () => {
     });
 
     it('adds a Twitch stream and replies with confirmation', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: TwitchManager, // TwitchManager is mocked via configManager
             managerKey: 'twitchManager',
             commandPath: '../../modules/twitch/commands/addTwitchStream.js',
@@ -23,18 +22,17 @@ describe('addTwitchStream command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'twitchuser', message: 'Go live!'},
+                channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
 
         mockManager.getAll.mockReturnValue([]);
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'twitchuser', message: 'Go live!'},
-            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 
@@ -51,7 +49,7 @@ describe('addTwitchStream command', () => {
     });
 
     it('replies with error if Twitch stream already exists', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: TwitchManager,
             managerKey: 'twitchManager',
             commandPath: '../../modules/twitch/commands/addTwitchStream.js',
@@ -63,19 +61,18 @@ describe('addTwitchStream command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'twitchuser'},
+                channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
 
         // Mock exists to return true
         mockManager.streamExists = jest.fn(() => Promise.resolve(true));
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'twitchuser'},
-            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 
@@ -87,7 +84,7 @@ describe('addTwitchStream command', () => {
     });
 
     it('replies with error if Twitch user does not exist', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: TwitchManager,
             managerKey: 'twitchManager',
             commandPath: '../../modules/twitch/commands/addTwitchStream.js',
@@ -99,18 +96,17 @@ describe('addTwitchStream command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {username: 'missinguser'},
+                channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
+                guildId: '135381928284343204',
+                memberPermissions: {
+                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+                },
+            }
         });
 
         mockManager.getAll.mockReturnValue([]);
-
-        const interaction = new MockInteraction({
-            stringOptions: {username: 'missinguser'},
-            channelOptions: {channel: {id: '4167801562951251571'} as unknown as GuildTextBasedChannel},
-            guildId: '135381928284343204',
-        });
-        interaction.memberPermissions = {
-            has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
-        };
 
         await command.execute(interaction as unknown as CommandInteraction);
 

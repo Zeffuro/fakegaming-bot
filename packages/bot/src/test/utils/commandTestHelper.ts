@@ -42,3 +42,20 @@ export async function setupCommandTest({
 
     return {getConfigManager, command, mockManager};
 }
+
+/**
+ * Like setupCommandTest, but also returns a preconfigured MockInteraction.
+ * @param options CommandTestOptions plus interactionOptions for MockInteraction
+ * @returns { getConfigManager, command, mockManager, interaction }
+ */
+export async function setupCommandWithInteraction({
+                                                      interactionOptions = {},
+                                                      ...options
+                                                  }: CommandTestOptions & {
+    interactionOptions?: ConstructorParameters<typeof import('../MockInteraction.js').MockInteraction>[0]
+}) {
+    const {getConfigManager, command, mockManager} = await setupCommandTest(options);
+    const {MockInteraction} = await import('../MockInteraction.js');
+    const interaction = new MockInteraction(interactionOptions);
+    return {getConfigManager, command, mockManager, interaction};
+}

@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {ReminderManager} from '@zeffuro/fakegaming-common/dist/managers/reminderManager.js';
 import {CommandInteraction, User} from "discord.js";
 
@@ -11,7 +10,7 @@ describe('setReminder command', () => {
     });
 
     it('sets a reminder and replies with confirmation', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: ReminderManager,
             managerKey: 'reminderManager',
             commandPath: '../../modules/reminders/commands/setReminder.js',
@@ -29,16 +28,13 @@ describe('setReminder command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {timespan: '1h', message: 'Take a break!'},
+                user: {id: '123456789012345678'} as unknown as User,
+                guildId: '135381928284343204',
+            }
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {timespan: '1h', message: 'Take a break!'},
-            user: {id: '123456789012345678'} as unknown as User,
-            guildId: '135381928284343204',
-        });
-
         await command.execute(interaction as unknown as CommandInteraction);
-
         expect(mockManager.add).toHaveBeenCalledWith(
             expect.objectContaining({
                 id: 'b7e6a8c2-3f4b-4e2a-9c1d-8f2e7a6b5c3d',
@@ -56,7 +52,7 @@ describe('setReminder command', () => {
     });
 
     it('replies with error for invalid timespan', async () => {
-        const {command} = await setupCommandTest({
+        const {command, interaction} = await setupCommandWithInteraction({
             managerClass: ReminderManager,
             managerKey: 'reminderManager',
             commandPath: '../../modules/reminders/commands/setReminder.js',
@@ -68,14 +64,12 @@ describe('setReminder command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {timespan: 'notatime', message: 'Test'},
+                user: {id: '123456789012345678'} as unknown as User,
+                guildId: '135381928284343204',
+            }
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {timespan: 'notatime', message: 'Test'},
-            user: {id: '123456789012345678'} as unknown as User,
-            guildId: '135381928284343204',
-        });
-
         await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(

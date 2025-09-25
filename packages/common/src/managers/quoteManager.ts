@@ -10,7 +10,7 @@ export class QuoteManager extends BaseManager<QuoteConfig> {
         super(QuoteConfig);
     }
 
-    async getQuotes({guildId}: { guildId: string }): Promise<QuoteConfig[]> {
+    async getQuotesByGuild({guildId}: { guildId: string }): Promise<QuoteConfig[]> {
         return (await this.model.findAll({where: {guildId}})).map(q => q.get());
     }
 

@@ -24,6 +24,10 @@ export async function checkAndSendReminders(client: Client) {
         } catch (err) {
             console.error(`Failed to send reminder to user ${reminder.userId}:`, err);
         }
-        await getConfigManager().reminderManager.removeReminder({id: reminder.id});
+        try {
+            await getConfigManager().reminderManager.removeReminder({id: reminder.id});
+        } catch (err) {
+            console.error(`Failed to remove reminder ${reminder.id}:`, err);
+        }
     }
 }

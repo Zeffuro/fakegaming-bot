@@ -1,6 +1,5 @@
 import {jest} from '@jest/globals';
-import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
-import {MockInteraction} from '../../../test/MockInteraction.js';
+import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {UserManager} from '@zeffuro/fakegaming-common/dist/managers/userManager.js';
 import {CommandInteraction, User} from "discord.js";
 
@@ -11,7 +10,7 @@ describe('setTimezone command', () => {
     });
 
     it('sets timezone and replies with confirmation', async () => {
-        const {command, mockManager} = await setupCommandTest({
+        const {command, mockManager, interaction} = await setupCommandWithInteraction({
             managerClass: UserManager,
             managerKey: 'userManager',
             commandPath: '../../modules/reminders/commands/setTimezone.js',
@@ -24,16 +23,13 @@ describe('setTimezone command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {timezone: 'Europe/Berlin'},
+                user: {id: '123456789012345678'} as unknown as User,
+                guildId: '135381928284343204',
+            }
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {timezone: 'Europe/Berlin'},
-            user: {id: '123456789012345678'} as unknown as User,
-            guildId: '135381928284343204',
-        });
-
         await command.execute(interaction as unknown as CommandInteraction);
-
         expect(mockManager.setTimezone).toHaveBeenCalledWith({
             discordId: '123456789012345678',
             timezone: 'Europe/Berlin',
@@ -44,7 +40,7 @@ describe('setTimezone command', () => {
     });
 
     it('replies with error for invalid timezone', async () => {
-        const {command} = await setupCommandTest({
+        const {command, interaction} = await setupCommandWithInteraction({
             managerClass: UserManager,
             managerKey: 'userManager',
             commandPath: '../../modules/reminders/commands/setTimezone.js',
@@ -57,14 +53,12 @@ describe('setTimezone command', () => {
                     }),
                 },
             ],
+            interactionOptions: {
+                stringOptions: {timezone: 'Invalid/Zone'},
+                user: {id: '123456789012345678'} as unknown as User,
+                guildId: '135381928284343204',
+            }
         });
-
-        const interaction = new MockInteraction({
-            stringOptions: {timezone: 'Invalid/Zone'},
-            user: {id: '123456789012345678'} as unknown as User,
-            guildId: '135381928284343204',
-        });
-
         await command.execute(interaction as unknown as CommandInteraction);
 
         expect(interaction.reply).toHaveBeenCalledWith(

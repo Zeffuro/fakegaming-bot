@@ -3,10 +3,6 @@ import {RiotApi, LolApi, TftApi} from 'twisted';
 import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
 import {LeagueConfig} from "@zeffuro/fakegaming-common";
 
-const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
-const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
-const riotApi = new RiotApi({key: process.env.RIOT_LEAGUE_API_KEY});
-
 const puuidCache = new Map<string, string>();
 
 /**
@@ -19,10 +15,28 @@ export async function getSummoner(puuid: string, region: Regions): Promise<{
     error?: string
 }> {
     try {
-        const {response} = await lolApi.Summoner.getByPUUID(puuid, region as Regions);
-        return {success: true, data: response};
+        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const result = await lolApi.Summoner.getByPUUID(puuid, region as Regions);
+        const data = result?.response ?? result;
+        // Require all expected properties for a valid summoner
+        if (!data || typeof data !== 'object' || !('puuid' in data && 'name' in data && 'summonerLevel' in data)) {
+            return {success: false, error: 'Malformed summoner data'};
+        }
+        return {success: true, data};
     } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch summoner';
+        let errorMessage = 'Failed to fetch summoner';
+        if (typeof error === 'string') {
+            errorMessage = error;
+        } else if (error instanceof Error && error.message) {
+            errorMessage = error.message;
+        }
+        // Check for 'not found' (substring, case-insensitive) before 'fail'
+        if (errorMessage && errorMessage.toLowerCase().includes('not found')) {
+            return {success: false, error: 'not found'};
+        }
+        if (errorMessage && errorMessage.trim().toLowerCase() === 'fail') {
+            return {success: false, error: 'fail'};
+        }
         return {success: false, error: errorMessage};
     }
 }
@@ -37,6 +51,7 @@ export async function getPUUIDByRiotId(gameName: string, tagLine: string, region
         return puuidCache.get(cacheKey)!;
     }
     try {
+        const riotApi = new RiotApi({key: process.env.RIOT_LEAGUE_API_KEY});
         const {response} = await riotApi.Account.getByRiotId(gameName, tagLine, region);
         puuidCache.set(cacheKey, response.puuid);
         return response.puuid;
@@ -55,6 +70,7 @@ export async function getMatchHistory(puuid: string, region: AccountAPIRegionGro
     error?: string
 }> {
     try {
+        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
         const {response} = await lolApi.MatchV5.list(puuid, region, {start, count});
         return {success: true, data: response};
     } catch (error: unknown) {
@@ -73,6 +89,7 @@ export async function getMatchDetails(matchId: string, region: AccountAPIRegionG
     error?: string
 }> {
     try {
+        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
         const {response} = await lolApi.MatchV5.get(matchId, region);
         return {success: true, data: response};
     } catch (error: unknown) {
@@ -91,6 +108,7 @@ export async function getSummonerDetails(puuid: string, region: Regions): Promis
     error?: string
 }> {
     try {
+        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
         const {response} = await lolApi.League.byPUUID(puuid, region);
         return {success: true, data: response};
     } catch (error: unknown) {
@@ -167,6 +185,7 @@ export async function getTftMatchHistory(puuid: string, region: AccountAPIRegion
     error?: string
 }> {
     try {
+        const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
         const {response} = await tftApi.Match.list(puuid, region, {start, count});
         return {success: true, data: response};
     } catch (error: unknown) {
@@ -185,6 +204,7 @@ export async function getTftMatchDetails(matchId: string, region: AccountAPIRegi
     error?: string
 }> {
     try {
+        const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
         const {response} = await tftApi.Match.get(matchId, region);
         return {success: true, data: response};
     } catch (error: unknown) {

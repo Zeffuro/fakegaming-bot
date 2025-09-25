@@ -32,62 +32,77 @@ export async function verifyTwitchUser(username: string): Promise<boolean> {
  */
 export async function subscribeAllStreams(client: Client) {
     const streams = await getConfigManager().twitchManager.getAllPlain();
+    console.debug('[TwitchService] Streams:', streams);
+    if (!streams || !Array.isArray(streams) || streams.length === 0) {
+        console.debug('[TwitchService] No streams to process');
+        return;
+    }
 
-    await Promise.all(streams.map(async (stream) => {
-        const user = await appApiClient.users.getUserByName(stream.twitchUsername);
-        if (!user) return;
+    // Reset liveStatus for stateless test runs
+    for (const key in liveStatus) delete liveStatus[key];
 
-        const streamData = await appApiClient.streams.getStreamByUserId(user.id);
-        const isLive = streamData !== null;
+    await Promise.all(streams.map(async (stream, idx) => {
+        try {
+            console.debug(`[TwitchService] Processing stream #${idx}:`, stream);
+            const user = await appApiClient.users.getUserByName(stream.twitchUsername);
+            console.debug(`[TwitchService] User for ${stream.twitchUsername}:`, user);
+            if (!user) return;
 
-        if (isLive && !liveStatus[user.id]) {
-            const channel = client.channels.cache.get(stream.discordChannelId);
-            if (
-                channel &&
-                (channel.type === ChannelType.GuildText ||
-                    channel.type === ChannelType.GuildAnnouncement ||
-                    channel.type === ChannelType.PublicThread ||
-                    channel.type === ChannelType.PrivateThread)
-            ) {
-                const embed = new EmbedBuilder()
-                    .setColor(0x9146FF)
-                    .setTitle(`${user.displayName} is now live!`)
-                    .setURL(`https://twitch.tv/${user.name}`)
-                    .setAuthor({
-                        name: user.displayName,
-                        iconURL: user.profilePictureUrl,
-                        url: `https://twitch.tv/${user.name}`
-                    })
-                    .setDescription(streamData.title || 'Live on Twitch!')
-                    .addFields(
-                        {name: 'Viewers', value: `${streamData.viewers ?? 'N/A'}`, inline: true}
-                    )
-                    .setThumbnail(user.profilePictureUrl)
-                    .setImage(
-                        streamData.thumbnailUrl
-                            ? streamData.thumbnailUrl.replace('{width}', '640').replace('{height}', '360')
-                            : null
-                    )
-                    .setTimestamp();
+            const streamData = await appApiClient.streams.getStreamByUserId(user.id);
+            console.debug(`[TwitchService] Stream data for user ${user.id}:`, streamData);
+            const isLive = streamData !== null;
 
-                const message = stream.customMessage
-                    ? stream.customMessage.replace('{streamer}', user.displayName)
-                    : `Hey @everyone, ${user.displayName} is now live on https://twitch.tv/${user.name} ! Go check it out!`;
+            // Only announce if live and not already announced
+            if (isLive && !liveStatus[user.id]) {
+                const channel = client.channels.cache.get(stream.discordChannelId);
+                if (
+                    channel &&
+                    (channel.type === ChannelType.GuildText ||
+                        channel.type === ChannelType.GuildAnnouncement ||
+                        channel.type === ChannelType.PublicThread ||
+                        channel.type === ChannelType.PrivateThread)
+                ) {
+                    const embed = new EmbedBuilder()
+                        .setColor(0x9146FF)
+                        .setTitle(`${user.displayName || user.name || 'Streamer'} is now live!`)
+                        .setURL(user.name ? `https://twitch.tv/${user.name}` : null)
+                        .setAuthor({
+                            name: user.displayName || user.name || 'Streamer',
+                            iconURL: user.profilePictureUrl || undefined,
+                            url: user.name ? `https://twitch.tv/${user.name}` : undefined
+                        })
+                        .setDescription(streamData.title || 'Live on Twitch!')
+                        .addFields(
+                            {name: 'Viewers', value: `${streamData.viewers ?? 'N/A'}`, inline: true}
+                        )
+                        .setThumbnail(user.profilePictureUrl || null)
+                        .setImage(
+                            streamData.thumbnailUrl
+                                ? streamData.thumbnailUrl.replace('{width}', '640').replace('{height}', '360')
+                                : null
+                        )
+                        .setTimestamp();
 
-                const watchButton = new ButtonBuilder()
-                    .setLabel('Watch Stream')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(`https://twitch.tv/${user.name}`);
+                    const message = stream.customMessage
+                        ? stream.customMessage.replace('{streamer}', user.displayName || user.name || 'Streamer')
+                        : `Hey @everyone, ${user.displayName || user.name || 'Streamer'} is now live on https://twitch.tv/${user.name || ''} ! Go check it out!`;
 
-                const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
+                    const watchButton = new ButtonBuilder()
+                        .setLabel('Watch Stream')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL(`https://twitch.tv/${user.name}`);
 
-                await channel.send({
-                    content: message,
-                    embeds: [embed],
-                    components: [row]
-                });
+                    const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
+
+                    await channel.send({
+                        content: message,
+                        embeds: [embed],
+                        components: [row]
+                    });
+                }
             }
+        } catch (err) {
+            console.error(`[TwitchService] Error processing stream #${idx}:`, err);
         }
-        liveStatus[user.id] = isLive;
     }));
 }

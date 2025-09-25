@@ -1,4 +1,4 @@
-# fakegaming-bot
+# fakegaming-bot Monorepo
 
 [![Build Status](https://github.com/Zeffuro/fakegaming-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Zeffuro/fakegaming-bot/actions)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
@@ -8,7 +8,8 @@
 [![Last Commit](https://img.shields.io/github/last-commit/Zeffuro/fakegaming-bot)](https://github.com/Zeffuro/fakegaming-bot/commits)
 
 A modular Discord bot for community management, Twitch stream notifications, YouTube video announcements, League of
-Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
+Legends stats, quotes, reminders, and more. Built with TypeScript and Discord.js. **This project is now a monorepo**
+containing multiple packages.
 
 ---
 
@@ -19,6 +20,145 @@ Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 - League of Legends and Teamfight Tactics stats
 - Quote management
 - Reminders and timezone support
+
+---
+
+## Monorepo Structure
+
+This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces) to manage multiple packages:
+
+- **packages/bot** — The Discord bot (commands, services, integrations)
+- **packages/common** — Shared code (database models, utilities, types)
+- **packages/dashboard** — Dashboard for bot management (WIP/optional)
+
+- `data/` — Persistent data, assets, and config (used by the bot)
+- `migrations/` — Database migration scripts
+- `scripts/` — Utility scripts (e.g., codegen, migration helpers)
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v22+ recommended)
+- npm (v8+)
+- (Optional) Docker & Docker Compose for containerized development/production
+
+### Installation
+
+Install all dependencies for all packages:
+
+```bash
+npm install
+```
+
+### Environment Variables
+
+- Copy the root `.env.example` to `.env` in the root of the repository:
+  ```bash
+  cp .env.example .env
+  ```
+- The root `.env` file is used for all services (bot, dashboard, database, etc.).
+- Edit the `.env` file and fill in your credentials and configuration. See comments in `.env.example` for details.
+- If a package requires additional environment variables, see its README or `.env.example` in its directory (if
+  present).
+
+---
+
+## Running & Development
+
+### Running with Docker Compose
+
+You can run the bot and its dependencies using Docker Compose:
+
+```bash
+docker-compose up --build
+```
+
+- This will start the bot, database, and any other defined services.
+- The root `.env` file is used for environment variables.
+- Data and database volumes are mapped as defined in `docker-compose.yml` and `.env`.
+- To stop and remove containers:
+  ```bash
+  docker-compose down
+  ```
+- For production, review and adjust the `docker-compose.yml` and environment variables as needed.
+
+### Running the Bot (Development)
+
+From the repo root:
+
+```bash
+npm run start:bot:dev
+```
+
+Or, from the bot package:
+
+```bash
+cd packages/bot
+npm run start:dev
+```
+
+### Running the Bot (Production)
+
+From the repo root:
+
+```bash
+npm run start:bot
+```
+
+Or, from the bot package:
+
+```bash
+cd packages/bot
+npm start
+```
+
+---
+
+## Building, Linting, and Testing
+
+- **Build all packages:**
+  ```bash
+  npm run build
+  ```
+- **Lint all packages:**
+  ```bash
+  npm run lint
+  ```
+- **Test all packages:**
+  ```bash
+  npm test
+  ```
+- You can also run these scripts in each package directory for more granular control.
+
+---
+
+## Database & Migrations
+
+- **Database models** are defined in `packages/common` (typically in `packages/common/src/models/`).
+- **Schema changes:** Any change to the database schema (adding/removing fields, tables, etc.) requires a new migration
+  script in the `migrations/` directory.
+- **Writing migrations:**
+    - Create a new migration file in `migrations/` (see existing files for naming conventions, e.g.,
+      `YYYYMMDD-description.ts`).
+    - Migrations should be written in TypeScript and follow the project's migration conventions.
+- **Running migrations:**
+    - Use the provided migration scripts or commands (see `scripts/` or package.json scripts) to apply migrations to
+      your database.
+    - Ensure your database is up to date before running the bot.
+
+---
+
+## Continuous Integration (CI)
+
+This project uses **GitHub Actions** for continuous integration:
+
+- **Builds, lints, and tests** all packages on every pull request and push to `main`.
+- **Checks migrations** and code formatting.
+- Ensures all code passes before merging.
+- See the [CI workflow](https://github.com/Zeffuro/fakegaming-bot/actions) for details.
 
 ---
 
@@ -47,132 +187,61 @@ Legends stats, quotes, and reminders. Built with TypeScript and Discord.js.
 | `/tft-history`          | Get recent Teamfight Tactics match history for a summoner     | All users   |
 
 <!-- COMMAND_TABLE_END -->
----
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v22+ recommended)
-- npm
-
-### Installation
-
-```bash
-npm install
-```
-
-### Environment Variables
-
-Create a `.env` file in the project root with the following keys (see `.env.example` for all options):
-
-```
-DISCORD_BOT_TOKEN=your_discord_bot_token
-CLIENT_ID=your_discord_client_id
-GUILD_ID=your_discord_guild_id
-RIOT_LEAGUE_API_KEY=your_riot_league_api_key
-RIOT_TFT_API_KEY=your_riot_tft_api_key
-RIOT_DEV_API_KEY=your_riot_dev_api_key
-TWITCH_CLIENT_ID=your_twitch_client_id
-TWITCH_CLIENT_SECRET=your_twitch_client_secret
-YOUTUBE_API_KEY=your_youtube_api_key
-DATA_ROOT=optional_path_to_data_directory
-```
-
----
-
-### Running the Bot
-
-Recommended for development:
-
-```bash
-npx tsx src/index.ts
-```
-
-Or, in production:
-
-```bash
-npm start
-```
-
-You can also use IDE run configurations (e.g. JetBrains/WebStorm with Bundled (tsx) TypeScript loader).
-
----
-
-## Asset Preloading & Caching
-
-League of Legends and Teamfight Tactics assets are downloaded and cached in memory at bot startup for fast command
-response.  
-See [`src/core/preloadModules.ts`](packages/bot/src/core/preloadModules.ts) for details. You can add new preloaders for
-other games
-or services by updating this file.
-
----
-
-## Running in Docker
-
-You can also run fakegaming-bot in a Docker container.
-
-1. Build the image:
-    ```bash
-    docker build -t fakegaming-bot .
-    ```
-2. Run the container (provide your environment variables with a `.env` file or `-e` flags):
-    ```bash
-    docker run --env-file .env fakegaming-bot
-    ```
-    - By default, the bot runs with the command `node dist/index.js`.
-    - The working directory inside the container is `/app/code`.
-
-### Persisting Data with Docker Volumes
-
-To keep your bot's data outside the container, map a host directory to `/app/data` (or your custom path set by
-`DATA_ROOT`):
-
-```bash
-  docker run --env-file .env -v /path/on/host:/app/data fakegaming-bot
-```
-
-- /app/data is the default data directory inside the container.
-- You can change this by setting the DATA_ROOT environment variable in your .env file.
-
----
-
-## Project Structure
-
-- `src/index.ts` — Main entry point, bot setup and event handling
-- `src/core/` — Environment bootstrap, command loading, and module preloaders
-- `src/modules/` — Command modules (each feature in its own folder)
-- `src/services/` — Twitch, YouTube, reminders, and other background services
-- `src/config/` — Configuration and manager classes for bot features
-- `src/constants/` — Shared constants and enums
-- `src/types/` — Custom TypeScript types and interfaces
-- `src/utils/` — Utility functions (general helpers, time, permissions, etc.)
-- `src/test/` — Shared test utilities, mocks, and factories
+> **Note:** The command table above is auto-generated by CI. You do not need to update it manually.
 
 ---
 
 ## Development & Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for code style, how to add commands or preloaders, PR process, and more.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for code style, how to add commands or preloaders, PR process, and more. Pull
+requests and issues are welcome!
 
-Pull requests and issues are welcome!
+---
 
-### Running Tests
+## Code of Conduct
 
-Unit tests use [Jest](https://jestjs.io/).
+Participation in this project is governed by our [Code of Conduct](./CODE_OF_CONDUCT.md). Please be respectful and help
+us keep the community welcoming.
 
-To run all tests, use `npm test`.
+---
 
-Test files are in `src/modules/*/tests/` and `src/services/tests/`.
+## Security Policy
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
+If you discover a security vulnerability, please see [SECURITY.md](./SECURITY.md) for how to report it privately.
 
 ---
 
 ## License
 
 This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
-See [LICENSE](./LICENSE) for details.
+
+- **You can use, modify, and share this project, but if you deploy it or make it public, you must also share your
+  changes under the same license.**
+- See [LICENSE](./LICENSE) for the full text.
+
+---
+
+## FAQ
+
+**Q: Can I use this bot on my own server?**
+A: Yes! This project is open source and self-hosted. Follow the instructions above to deploy it to your own environment.
+
+**Q: Is there a public instance or support server?**
+A: No, this bot is used privately. There is no public instance or official support server.
+
+**Q: How do I add new commands or features?**
+A: See the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on adding commands, features, and database changes.
+
+**Q: Where are the database models?**
+A: All models are in `packages/common` (see the Database & Migrations section above).
+
+**Q: How do I report bugs or request features?**
+A: Use GitHub Issues. See the Reporting Issues section in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+**Q: Who maintains this project?**
+A: [@Zeffuro](https://github.com/Zeffuro)
+
+---
 
 Maintained by [@Zeffuro](https://github.com/Zeffuro)
