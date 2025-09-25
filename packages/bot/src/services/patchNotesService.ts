@@ -37,7 +37,7 @@ export async function announceNewPatchNotes(client: Client): Promise<void> {
                     const embed = buildPatchNoteEmbed(note);
                     await channel.send({embeds: [embed]});
                     sub.lastAnnouncedAt = note.publishedAt;
-                    await getConfigManager().patchSubscriptionManager.upsert(sub.get());
+                    await getConfigManager().patchSubscriptionManager.upsertSubscription(sub);
                 }
             }
         }

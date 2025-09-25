@@ -1,7 +1,8 @@
-import {Table, Column, Model, DataType} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, Unique} from 'sequelize-typescript';
 
 @Table
 export class PatchNoteConfig extends Model {
+    @Unique
     @Column(DataType.STRING)
     declare game: string;
 
