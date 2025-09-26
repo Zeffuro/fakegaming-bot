@@ -25,3 +25,8 @@ export * from './managers/configManagerSingleton.js';
 
 // Export sequelize
 export * from './sequelize.js';
+
+// Export core utilities
+export * from './core/bootstrapEnv.js';
+export * from './core/dataRoot.js';
+export * from './core/projectRoot.js';

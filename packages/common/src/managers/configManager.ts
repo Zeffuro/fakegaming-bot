@@ -26,9 +26,9 @@ export class ConfigManager {
     /**
      * Initializes the database (optional, for Sequelize sync).
      */
-    async init() {
+    async init(useTest = false) {
         console.log('Initializing database connection...');
-        await getSequelize().authenticate()
+        await getSequelize(useTest).authenticate()
             .then(() => {
                 console.log('Database connection successful.');
                 // Start your app logic here
@@ -38,7 +38,7 @@ export class ConfigManager {
                 process.exit(1);
             });
         //await sequelize.authenticate();
-        await runMigrations(getSequelize());
-        await getSequelize().sync();
+        await runMigrations(getSequelize(useTest));
+        await getSequelize(useTest).sync();
     }
 }

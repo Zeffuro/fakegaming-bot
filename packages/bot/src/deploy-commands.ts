@@ -8,6 +8,15 @@ import {bootstrapEnv} from '@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js
 const {__dirname} = bootstrapEnv(import.meta.url);
 
 export async function deployCommands() {
+    function findDuplicates(arr: { name: string }[]) {
+        const seen = new Set<string>();
+        return arr.filter(cmd => {
+            if (seen.has(cmd.name)) return true;
+            seen.add(cmd.name);
+            return false;
+        });
+    }
+
     const testCommands: object[] = [];
     const globalCommands: object[] = [];
     const modulesPath = path.join(__dirname, 'modules');
@@ -31,6 +40,14 @@ export async function deployCommands() {
                 testCommands.push(cmd.data.toJSON());
             }
         }
+    }
+
+    const globalDupes = findDuplicates(globalCommands as any);
+    const testDupes = findDuplicates(testCommands as any);
+    if (globalDupes.length || testDupes.length) {
+        throw new Error(
+            `Duplicate command names found:\nGlobal: ${globalDupes.map(c => c.name).join(', ')}\nTest: ${testDupes.map(c => c.name).join(', ')}`
+        );
     }
 
     const rest = new REST({version: '10'}).setToken(process.env.DISCORD_BOT_TOKEN!);

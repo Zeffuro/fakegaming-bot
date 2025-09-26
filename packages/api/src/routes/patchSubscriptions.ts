@@ -1,0 +1,69 @@
+import {Router} from 'express';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
+
+const router = Router();
+
+/**
+ * @openapi
+ * /patchSubscriptions:
+ *   get:
+ *     summary: List all patch subscriptions
+ *     tags: [PatchSubscriptions]
+ *     responses:
+ *       200:
+ *         description: List of patch subscriptions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/PatchSubscriptionConfig'
+ */
+router.get('/', async (req, res) => {
+    const subs = await getConfigManager().patchSubscriptionManager.getAllPlain();
+    res.json(subs);
+});
+
+/**
+ * @openapi
+ * /patchSubscriptions:
+ *   post:
+ *     summary: Subscribe to a game/channel
+ *     tags: [PatchSubscriptions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PatchSubscriptionConfig'
+ *     responses:
+ *       201:
+ *         description: Created
+ */
+router.post('/', async (req, res) => {
+    await getConfigManager().patchSubscriptionManager.subscribe(req.body.game, req.body.channelId);
+    res.status(201).json({success: true});
+});
+
+/**
+ * @openapi
+ * /patchSubscriptions:
+ *   put:
+ *     summary: Upsert (add or update) a patch subscription
+ *     tags: [PatchSubscriptions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PatchSubscriptionConfig'
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.put('/', async (req, res) => {
+    await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
+    res.json({success: true});
+});
+
+export default router;

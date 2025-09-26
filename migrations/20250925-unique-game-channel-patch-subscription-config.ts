@@ -1,4 +1,4 @@
-import {Sequelize} from 'sequelize-typescript';
+import {Sequelize} from 'sequelize';
 
 export const up = async ({context}: { context: Sequelize }) => {
     await context.getQueryInterface().addConstraint('PatchSubscriptionConfigs', {

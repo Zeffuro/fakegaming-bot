@@ -1,5 +1,4 @@
-import {DataTypes} from 'sequelize';
-import type {Sequelize} from 'sequelize-typescript';
+import {DataTypes, Sequelize} from 'sequelize';
 
 export const up = async ({context}: { context: Sequelize }) => {
     const qi = context.getQueryInterface();
@@ -9,8 +8,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         discordId: {type: DataTypes.STRING, primaryKey: true, allowNull: false},
         timezone: {type: DataTypes.STRING, allowNull: true},
         defaultReminderTimeSpan: {type: DataTypes.STRING, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // LeagueConfig
@@ -25,8 +24,8 @@ export const up = async ({context}: { context: Sequelize }) => {
             references: {model: 'UserConfigs', key: 'discordId'},
             onDelete: 'CASCADE'
         },
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // ServerConfig
@@ -34,8 +33,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         serverId: {type: DataTypes.STRING, primaryKey: true, allowNull: false},
         prefix: {type: DataTypes.STRING, allowNull: false},
         welcomeMessage: {type: DataTypes.TEXT, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // QuoteConfig
@@ -46,8 +45,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         authorId: {type: DataTypes.STRING, allowNull: false},
         submitterId: {type: DataTypes.STRING, allowNull: false},
         timestamp: {type: DataTypes.BIGINT, allowNull: false},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // TwitchStreamConfig
@@ -56,8 +55,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         twitchUsername: {type: DataTypes.STRING, allowNull: false},
         discordChannelId: {type: DataTypes.STRING, allowNull: false},
         customMessage: {type: DataTypes.TEXT, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // YoutubeVideoConfig
@@ -67,8 +66,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         discordChannelId: {type: DataTypes.STRING, allowNull: false},
         lastVideoId: {type: DataTypes.STRING, allowNull: true},
         customMessage: {type: DataTypes.TEXT, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // ReminderConfig
@@ -79,8 +78,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         timespan: {type: DataTypes.STRING, allowNull: false},
         timestamp: {type: DataTypes.BIGINT, allowNull: false},
         completed: {type: DataTypes.BOOLEAN, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // BirthdayConfig
@@ -91,8 +90,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         year: {type: DataTypes.INTEGER, allowNull: true},
         guildId: {type: DataTypes.STRING, allowNull: false},
         channelId: {type: DataTypes.STRING, allowNull: false},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // PatchNoteConfig
@@ -107,8 +106,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         imageUrl: {type: DataTypes.STRING, allowNull: true},
         version: {type: DataTypes.STRING, allowNull: true},
         accentColor: {type: DataTypes.INTEGER, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 
     // PatchSubscriptionConfig
@@ -117,8 +116,8 @@ export const up = async ({context}: { context: Sequelize }) => {
         game: {type: DataTypes.STRING, allowNull: false},
         channelId: {type: DataTypes.STRING, allowNull: false},
         lastAnnouncedAt: {type: DataTypes.BIGINT, allowNull: true},
-        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
-        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW},
+        createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
+        updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
     });
 };
 

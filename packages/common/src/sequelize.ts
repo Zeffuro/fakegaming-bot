@@ -16,11 +16,12 @@ import type {Options} from 'sequelize';
 
 let sequelize: Sequelize | undefined;
 
-export function getSequelize(): Sequelize {
+export function getSequelize(useTest = false): Sequelize {
     if (sequelize) return sequelize;
 
     const provider: Dialect = process.env.DATABASE_PROVIDER as Dialect;
     const dbUrl = process.env.DATABASE_URL?.replace(/^"|"$/g, '');
+    const sqlitePath = useTest ? ':memory:' : path.join(resolveDataRoot(), 'dev.sqlite');
 
     const options: Options = {
         dialect: provider,
@@ -28,7 +29,7 @@ export function getSequelize(): Sequelize {
     };
 
     if (provider === 'sqlite') {
-        options.storage = path.join(resolveDataRoot(), 'dev.sqlite');
+        options.storage = sqlitePath;
         sequelize = new Sequelize(options);
     } else if (dbUrl) {
         sequelize = new Sequelize(dbUrl, options);

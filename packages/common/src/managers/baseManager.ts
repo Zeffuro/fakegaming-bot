@@ -26,11 +26,16 @@ export class BaseManager<T extends Model> {
     }
 
     async set(item: CreationAttributes<T>, primaryKeyName: keyof CreationAttributes<T>): Promise<[T, boolean]> {
+        // Only include model attributes in defaults
+        const modelAttributes = Object.keys(this.model.getAttributes());
+        const filteredDefaults = Object.fromEntries(
+            Object.entries(item).filter(([key]) => modelAttributes.includes(key))
+        );
         const [record, created] = await this.model.findOrCreate({
             where: {
                 [primaryKeyName]: item[primaryKeyName]
             } as WhereOptions<CreationAttributes<T>>,
-            defaults: item,
+            defaults: filteredDefaults,
         } as FindOrCreateOptions<Attributes<T>, CreationAttributes<T>>);
 
         if (!created) {
@@ -110,9 +115,8 @@ export class BaseManager<T extends Model> {
 
         // result might be [number] or [number, T[]]
         const [affectedCount, rows] = result as unknown as [number, T[] | undefined];
-
         // Normalize rows (only if provided)
-        const cleanRows = rows ? rows.map(r => r.get({plain: true})) : [];
+        const cleanRows = Array.isArray(rows) ? rows.map(r => r.get({plain: true})) : [];
 
         return [affectedCount, cleanRows];
     }

@@ -1,5 +1,4 @@
-import {DataTypes} from 'sequelize';
-import type {Sequelize} from 'sequelize-typescript';
+import {DataTypes, Sequelize} from 'sequelize';
 
 export const up = async ({context}: { context: Sequelize }) => {
     await context.getQueryInterface().addColumn('UserConfigs', 'nickname', {
