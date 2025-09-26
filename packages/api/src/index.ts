@@ -1,11 +1,11 @@
 import express from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 
 const app = express();
 const port = process.env.PORT || 3001;
 
 app.get('/api/quotes', async (req, res) => {
-    const quotes = await getConfigManager().quoteManager.getAllQuotes();
+    const quotes = await getConfigManager().quoteManager.getAllPlain();
     res.json(quotes);
 });
 

@@ -20,7 +20,8 @@ COPY packages/common/package.json packages/common/
 COPY packages/dashboard/package.json packages/dashboard/
 
 # Install the Node.js dependencies
-RUN npm install
+RUN npm install -g pnpm
+RUN pnpm install
 
 COPY . .
 

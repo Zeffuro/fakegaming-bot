@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 
 const data = new SlashCommandBuilder()
     .setName('quotes')

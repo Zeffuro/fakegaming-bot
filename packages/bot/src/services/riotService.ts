@@ -1,4 +1,4 @@
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {RiotApi, LolApi, TftApi} from 'twisted';
 import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
 import {LeagueConfig} from "@zeffuro/fakegaming-common";

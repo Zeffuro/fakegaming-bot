@@ -9,7 +9,7 @@ import {
     EmbedBuilder,
     TextChannel
 } from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 
 const apiKey = process.env.YOUTUBE_API_KEY!;
 const _liveStatus: Record<string, boolean> = {};

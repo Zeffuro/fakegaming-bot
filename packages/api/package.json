@@ -14,6 +14,7 @@
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
   },
   "dependencies": {
+    "@zeffuro/fakegaming-common": "workspace:*",
     "express": "^5.1.0"
   },
   "devDependencies": {

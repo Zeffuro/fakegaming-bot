@@ -1,5 +1,5 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';

@@ -5,7 +5,7 @@ import {
     AutocompleteInteraction,
     PermissionFlagsBits
 } from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {requireAdmin} from "../../../utils/permissions.js";
 import {gameAutocomplete} from "../shared/gameAutocomplete.js";
 import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
