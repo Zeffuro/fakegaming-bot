@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -76,7 +77,7 @@ router.get('/:userId/:guildId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', async (req, res) => {
+router.post('/', jwtAuth, async (req, res) => {
     const {userId, guildId, date, day, month, year, channelId} = req.body;
     let birthdayFields: any = {userId, guildId, channelId};
     if (date) {
@@ -112,7 +113,7 @@ router.post('/', async (req, res) => {
  *       200:
  *         description: Success
  */
-router.delete('/:userId/:guildId', async (req, res) => {
+router.delete('/:userId/:guildId', jwtAuth, async (req, res) => {
     await getConfigManager().birthdayManager.removeBirthday({userId: req.params.userId, guildId: req.params.guildId});
     res.json({success: true});
 });

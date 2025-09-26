@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.get('/:discordId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', async (req, res) => {
+router.post('/', jwtAuth, async (req, res) => {
     await getConfigManager().userManager.setUser(req.body);
     res.status(201).json({success: true});
 });
@@ -98,7 +99,7 @@ router.post('/', async (req, res) => {
  *       200:
  *         description: Success
  */
-router.put('/:discordId/timezone', async (req, res) => {
+router.put('/:discordId/timezone', jwtAuth, async (req, res) => {
     await getConfigManager().userManager.setTimezone({discordId: req.params.discordId, timezone: req.body.timezone});
     res.json({success: true});
 });
@@ -128,7 +129,7 @@ router.put('/:discordId/timezone', async (req, res) => {
  *       200:
  *         description: Success
  */
-router.put('/:discordId/defaultReminderTimeSpan', async (req, res) => {
+router.put('/:discordId/defaultReminderTimeSpan', jwtAuth, async (req, res) => {
     await getConfigManager().userManager.setDefaultReminderTimeSpan({
         discordId: req.params.discordId,
         timespan: req.body.timespan

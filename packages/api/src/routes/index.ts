@@ -1,4 +1,5 @@
 import {Router} from 'express';
+import authRouter from './auth.js';
 import quotesRouter from './quotes.js';
 import usersRouter from './users.js';
 import serversRouter from './servers.js';
@@ -11,6 +12,7 @@ import patchSubscriptionsRouter from './patchSubscriptions.js';
 
 const router = Router();
 
+router.use('/auth', authRouter);
 router.use('/quotes', quotesRouter);
 router.use('/users', usersRouter);
 router.use('/servers', serversRouter);

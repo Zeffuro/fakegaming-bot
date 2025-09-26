@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -68,7 +69,7 @@ router.get('/:game', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', async (req, res) => {
+router.post('/', jwtAuth, async (req, res) => {
     await getConfigManager().patchNotesManager.setLatestPatch(req.body);
     res.status(201).json({success: true});
 });

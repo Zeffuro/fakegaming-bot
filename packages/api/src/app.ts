@@ -2,16 +2,26 @@ import express from 'express';
 import apiRouter from './routes/index.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import path from 'path';
-import {PROJECT_ROOT, bootstrapEnv} from '@zeffuro/fakegaming-common';
+import {PROJECT_ROOT} from '@zeffuro/fakegaming-common';
 import swaggerUi from 'swagger-ui-express';
-
-bootstrapEnv(import.meta.url);
+import {jwtAuth} from './middleware/auth.js';
+import cors from 'cors';
 
 const app = express();
 
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+}));
+// Apply JWT auth to all /api routes except /api/auth/login
+app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/auth/login')) return next();
+    return jwtAuth(req, res, next);
+});
 app.use('/api', apiRouter);
 
+// Add OpenAPI security scheme
 const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
@@ -24,7 +34,17 @@ const swaggerOptions = {
                 url: '/api',
                 description: 'API base path'
             }
-        ]
+        ],
+        components: {
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                }
+            }
+        },
+        security: [{bearerAuth: []}],
     },
     apis: [path.join(PROJECT_ROOT, 'packages/api/src/routes/*.ts')],
 };

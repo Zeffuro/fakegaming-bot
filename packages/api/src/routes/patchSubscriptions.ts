@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', async (req, res) => {
+router.post('/', jwtAuth, async (req, res) => {
     await getConfigManager().patchSubscriptionManager.subscribe(req.body.game, req.body.channelId);
     res.status(201).json({success: true});
 });
@@ -61,7 +62,7 @@ router.post('/', async (req, res) => {
  *       200:
  *         description: Success
  */
-router.put('/', async (req, res) => {
+router.put('/', jwtAuth, async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
     res.json({success: true});
 });

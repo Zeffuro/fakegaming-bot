@@ -1,4 +1,6 @@
 import {bootstrapEnv, getConfigManager} from '@zeffuro/fakegaming-common';
+
+bootstrapEnv(import.meta.url);
 import app, {swaggerSpec, swaggerUi} from './app.js';
 import {sequelizeModelToOpenAPISchema} from './utils/sequelize-to-openapi.js';
 import {
@@ -12,8 +14,6 @@ import {
     UserConfig,
     YoutubeVideoConfig
 } from '@zeffuro/fakegaming-common';
-
-bootstrapEnv(import.meta.url);
 
 const port = process.env.PORT || 3001;
 

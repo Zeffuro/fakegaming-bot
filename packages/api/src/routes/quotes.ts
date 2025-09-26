@@ -1,5 +1,6 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -144,7 +145,7 @@ router.get('/guild/:guildId/author/:authorId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', async (req, res) => {
+router.post('/', jwtAuth, async (req, res) => {
     const created = await getConfigManager().quoteManager.addPlain(req.body);
     res.status(201).json(created);
 });
@@ -167,7 +168,7 @@ router.post('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', jwtAuth, async (req, res) => {
     const count = await getConfigManager().quoteManager.remove({id: req.params.id});
     if (count === 0) return res.status(404).json({error: 'Quote not found'});
     res.json({success: true});

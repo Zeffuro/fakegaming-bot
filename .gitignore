@@ -10,9 +10,19 @@ node_modules/
 /packages/dashboard/dist/
 /packages/common/dist/
 
+# Next.js build output
+.next/
+
 # Environment variables
-.env
-.env.development
+packages/api/.env
+packages/api/.env.development
+packages/api/.env.production
+packages/bot/.env
+packages/bot/.env.development
+packages/bot/.env.production
+packages/dashboard/.env
+packages/dashboard/.env.development
+packages/dashboard/.env.production
 stack.env
 
 # Logs
