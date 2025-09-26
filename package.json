@@ -2,12 +2,14 @@
   "name": "fakegaming-bot-monorepo",
   "private": true,
   "workspaces": [
+    "packages/api",
     "packages/bot",
     "packages/dashboard",
     "packages/common"
   ],
   "type": "module",
   "devDependencies": {
+    "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node-fetch": "^2.6.13",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
@@ -22,9 +24,10 @@
     "typescript": "^5.9.2"
   },
   "scripts": {
-    "build": "npm run build --workspace packages/common && npm run build --workspace packages/bot && npm run build --workspace packages/dashboard",
+    "build": "npm run build --workspace packages/common && npm run build --workspace packages/bot && npm run build --workspace packages/dashboard && npm run build --workspace packages/api",
     "lint": "npm run lint --workspaces",
-    "test": "npm run test --workspace packages/bot && npm run test --workspace packages/dashboard && npm run test --workspace packages/common",
+    "test": "npm run test --workspace packages/bot && npm run test --workspace packages/dashboard && npm run test --workspace packages/common && npm run test --workspace packages/api",
+    "start:api": "npm --workspace packages/api run start",
     "start:bot": "npm --workspace packages/bot run start",
     "start:bot:dev": "npm --workspace packages/bot run start:dev",
     "start:dashboard": "npm --workspace packages/dashboard run start",
