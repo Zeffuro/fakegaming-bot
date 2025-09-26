@@ -1,5 +1,6 @@
-# Node modules
-/node_modules/
+# Node modules (root + all packages)
+node_modules/
+**/node_modules/
 
 # Build output
 /dist/

@@ -15,7 +15,7 @@
     "profile": "node --inspect-brk dist/index.js"
   },
   "dependencies": {
-    "@zeffuro/fakegaming-common": "1.0.0",
+    "@zeffuro/fakegaming-common": "workspace:*",
     "@twurple/api": "^7.4.0",
     "@twurple/auth": "^7.4.0",
     "@twurple/eventsub-ws": "^7.4.0",

@@ -1,0 +1,8 @@
+packages:
+  - packages/*
+
+ignoredBuiltDependencies:
+  - canvas
+  - esbuild
+  - sqlite3
+  - unrs-resolver
