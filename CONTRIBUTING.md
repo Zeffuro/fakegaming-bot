@@ -19,6 +19,11 @@ This project is a monorepo managed with npm workspaces. It contains multiple pac
 
 ## Getting Started
 
+> **Note:** Using [pnpm](https://pnpm.io/) is recommended on Windows or in monorepo setups, as it avoids deeply nested
+`node_modules` trees.  
+> Both `npm` and `pnpm` are supported; all workspace scripts work with either.  
+> If you use pnpm and commit changes, please commit the `pnpm-lock.yaml` alongside your changes.
+
 1. **Fork the repo and clone your fork**
 2. Install all dependencies for all packages:
    ```bash

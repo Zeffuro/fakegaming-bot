@@ -1,5 +1,5 @@
 import express from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers/configManagerSingleton.js';
 
 const app = express();
 const port = process.env.PORT || 3001;

@@ -39,6 +39,14 @@ This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/w
 
 ## Getting Started
 
+> **Windows & Monorepo Users:**  
+> It’s recommended to use [pnpm](https://pnpm.io/) instead of npm to avoid very deep `node_modules` folders, which can
+> cause issues with GitKraken, Windows Explorer, or certain tools.  
+> All scripts (`install`, `run build`, `run lint`, `test`, etc.) work with both npm and pnpm.  
+> This project includes both `package-lock.json` (npm) and `pnpm-lock.yaml` (pnpm) for reproducible installs. Use the
+> package manager of your choice, but if you add new dependencies, please ensure both lockfiles are updated or let us know
+> which one you used.
+
 ### Prerequisites
 
 - Node.js (v22+ recommended)

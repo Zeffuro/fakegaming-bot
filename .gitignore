@@ -5,6 +5,7 @@ node_modules/
 # Build output
 /dist/
 /build/
+/packages/api/dist/
 /packages/bot/dist/
 /packages/dashboard/dist/
 /packages/common/dist/
@@ -30,3 +31,6 @@ Thumbs.db
 # Data
 /data/*
 !/data/.gitkeep
+
+# Misc
+.devcontext
