@@ -26,8 +26,7 @@ export function bootstrapEnv(metaUrl?: string) {
     } else if (process.env.NODE_ENV === 'production') {
         envFile = '.env.production';
     }
-    // Capture environment before loading .env
-    const envBefore = {...process.env};
+
     // Always resolve .env files from the package root (one level up from src)
     let envPath = path.resolve(__dirname, '..', envFile);
     console.log(`[bootstrapEnv] Loading environment from ${envPath}`);
