@@ -1,26 +1,22 @@
-FROM node:20-alpine
-
+FROM node:22-slim AS deps
 WORKDIR /app
-
-# Copy root package.json and pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
-
-# Enable pnpm via corepack
 RUN corepack enable
 
-# Copy API package manifest and tsconfig for dependency install
-COPY packages/api/package.json packages/api/tsconfig.json ./packages/api/
+COPY package.json pnpm-lock.yaml ./
+COPY packages/api/package.json packages/common/package.json ./
+RUN pnpm install --filter @zeffuro/fakegaming-bot-api...
 
-# Install only API dependencies
-RUN pnpm install --prod --filter @zeffuro/fakegaming-bot-api...
-
-# Copy the API source code
+FROM node:22-slim AS builder
+WORKDIR /app
+COPY --from=deps /app ./
 COPY packages/api ./packages/api
+COPY packages/common ./packages/common
+RUN pnpm run build --filter @zeffuro/fakegaming-bot-api...
 
-WORKDIR /app/packages/api
-
-RUN pnpm run build
-
+FROM node:22-slim AS runner
+WORKDIR /app
+RUN corepack enable
+COPY --from=builder /app/packages/api/dist ./dist
+COPY --from=deps /app/node_modules ./node_modules
 EXPOSE 3001
-
 CMD ["node", "dist/index.js"]

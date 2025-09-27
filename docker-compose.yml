@@ -1,5 +1,6 @@
 version: '3.8'
 
+# -------------------- POSTGRES --------------------
 services:
   postgres:
     image: postgres:17
@@ -7,14 +8,15 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-fakegaming}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fakegaming}
       POSTGRES_DB: ${POSTGRES_DB:-fakegaming}
-    ports:
-      - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
+    # Internal only by default; uncomment to expose externally for testing
+    # ports:
+    #   - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ${POSTGRES_DATA_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-db}:/var/lib/postgresql/data
-    profiles: [ "postgres" ]
+      - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
 
+  # -------------------- BOT --------------------
   bot:
     image: zeffuro/fakegaming-bot:latest
     container_name: fakegaming-bot
@@ -22,9 +24,9 @@ services:
     env_file:
       - ./packages/bot/.env
     environment:
-      DATA_ROOT: ${DATA_ROOT}
-      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      DATA_ROOT: ${DATA_ROOT:-./data}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-sqlite}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD:-fakegaming}@fakegaming-postgres:5432/${POSTGRES_DB:-fakegaming}}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       CLIENT_ID: ${CLIENT_ID}
       GUILD_ID: ${GUILD_ID}
@@ -36,12 +38,12 @@ services:
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
     volumes:
-      - ${BOT_DATA_PATH}:/app/data
-    profiles: [ "bot" ]
-    # To expose the bot to the host, uncomment the following lines:
-    # ports:
-    #   - "${PORT:-3002}:${PORT:-3002}"
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
+    depends_on:
+      - postgres
+    # No exposed ports
 
+  # -------------------- API --------------------
   api:
     image: zeffuro/fakegaming-api:latest
     container_name: fakegaming-api
@@ -49,20 +51,20 @@ services:
     env_file:
       - ./packages/api/.env
     environment:
-      PORT: ${PORT}
-      PUBLIC_URL: ${PUBLIC_URL}
-      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      PORT: ${PORT:-3001}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3001/api}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-sqlite}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD:-fakegaming}@fakegaming-postgres:5432/${POSTGRES_DB:-fakegaming}}
       JWT_SECRET: ${JWT_SECRET}
       DASHBOARD_CLIENT_ID: ${DASHBOARD_CLIENT_ID}
       DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET}
     depends_on:
       - postgres
-    profiles: [ "api" ]
-    # To expose the API to the host, uncomment the following lines:
+    # Expose API port only if needed
     # ports:
     #   - "${PORT:-3001}:${PORT:-3001}"
 
+  # -------------------- DASHBOARD --------------------
   dashboard:
     image: zeffuro/fakegaming-dashboard:latest
     container_name: fakegaming-dashboard
@@ -70,21 +72,16 @@ services:
     env_file:
       - ./packages/dashboard/.env
     environment:
-      PORT: ${PORT}
-      PUBLIC_URL: ${PUBLIC_URL}
-      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      PORT: ${PORT:-3000}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      API_URL: ${API_URL:-http://localhost:3001/api}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      API_URL: ${API_URL}
       DASHBOARD_CLIENT_ID: ${DASHBOARD_CLIENT_ID}
       DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET}
       DASHBOARD_ADMINS: ${DASHBOARD_ADMINS}
     depends_on:
-      - postgres
+      - api
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
-    profiles: [ "dashboard" ]
-
-# Place host-specific paths and secrets in a .env file (not in git)

@@ -1,5 +1,56 @@
+# Git
 .git
-node_modules
-test
-*.log
+.gitignore
+.gitattributes
+
+# Node modules (local, not runtime)
+node_modules/
+**/node_modules/
+.pnpm-store
+.pnp.*
+.pnpm-debug.log*
+
+# Build outputs (we only copy dist/.next/public into runtime)
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Source code (runtime stage only needs compiled code)
+packages/api/src/
+packages/bot/src/
+packages/common/src/
+packages/dashboard/src/
+
+# Env files (never bake secrets into images)
+.env
+.env.*
+stack.env
+packages/api/.env
+packages/api/.env.*
 packages/bot/.env
+packages/bot/.env.*
+packages/dashboard/.env
+packages/dashboard/.env.*
+
+# Logs
+*.log
+
+# IDE/project files
+.idea/
+.vscode/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local data
+data/*
+!data/.gitkeep
+
+# Backups
+backups/
+
+# Misc
+.devcontext
