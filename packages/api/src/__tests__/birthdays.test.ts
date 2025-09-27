@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../app.js';
 import {configManager} from '../jest.setup.js';
+import {signTestJwt} from '../testUtils/jwt.js';
 
 const testBirthday = {
     userId: 'birthdayuser1',
@@ -31,21 +32,24 @@ beforeEach(async () => {
 });
 
 describe('Birthdays API', () => {
+    let token: string;
+    beforeAll(() => {
+        token = signTestJwt();
+    });
     it('should list all birthdays', async () => {
-        const res = await request(app).get('/api/birthdays');
+        const res = await request(app).get('/api/birthdays').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body)).toBe(true);
     });
-
     it('should get a birthday by userId and guildId', async () => {
-        const res = await request(app).get(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
+        const res = await request(app).get(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.userId).toBe(testBirthday.userId);
         expect(res.body.guildId).toBe(testBirthday.guildId);
     });
-
     it('should add or update a birthday', async () => {
-        const res = await request(app).post('/api/birthdays').send({
+        const token = signTestJwt();
+        const res = await request(app).post('/api/birthdays').set('Authorization', `Bearer ${token}`).send({
             userId: 'birthdayuser2',
             guildId: 'birthdayguild2',
             date: '1999-12-31',
@@ -63,13 +67,14 @@ describe('Birthdays API', () => {
             channelId: 'testchannel3',
             ...parseDate('1990-01-01')
         }, 'userId');
-        const res = await request(app).delete('/api/birthdays/birthdayuser3/birthdayguild3');
+        const token = signTestJwt();
+        const res = await request(app).delete('/api/birthdays/birthdayuser3/birthdayguild3').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
     });
 
     it('should return 404 for non-existent birthday', async () => {
-        const res = await request(app).get('/api/birthdays/nonexistentuser/nonexistentguild');
+        const res = await request(app).get('/api/birthdays/nonexistentuser/nonexistentguild').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
 });

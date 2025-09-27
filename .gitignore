@@ -42,5 +42,8 @@ Thumbs.db
 /data/*
 !/data/.gitkeep
 
+# Backups
+backups/
+
 # Misc
 .devcontext

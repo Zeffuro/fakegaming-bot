@@ -10,9 +10,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-fakegaming}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "${POSTGRES_PORT:-5432}:${POSTGRES_PORT:-5432}"
     volumes:
       - ${POSTGRES_DATA_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-db}:/var/lib/postgresql/data
+    profiles: [ "postgres" ]
 
   bot:
     build:
@@ -20,10 +21,12 @@ services:
       dockerfile: Dockerfile.bot
     container_name: fakegaming-bot
     restart: unless-stopped
+    env_file:
+      - ./packages/bot/.env
     environment:
-      DATA_ROOT: /app/data
-      DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB:-fakegaming}
+      DATA_ROOT: ${DATA_ROOT}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       CLIENT_ID: ${CLIENT_ID}
       GUILD_ID: ${GUILD_ID}
@@ -33,24 +36,66 @@ services:
       TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID}
       TWITCH_CLIENT_SECRET: ${TWITCH_CLIENT_SECRET}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+    volumes:
+      - ${BOT_DATA_PATH}:/app/data
+      - ${BOT_CODE_PATH}:/app/code
+    profiles: [ "bot" ]
+    # To expose the bot to the host, uncomment the following lines:
+    # ports:
+    #   - "${PORT:-3002}:${PORT:-3002}"
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: fakegaming-api
+    restart: unless-stopped
+    env_file:
+      - ./packages/api/.env
+    environment:
+      PORT: ${PORT}
+      PUBLIC_URL: ${PUBLIC_URL}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      DASHBOARD_CLIENT_ID: ${DASHBOARD_CLIENT_ID}
+      DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET}
     depends_on:
       - postgres
     volumes:
-      - ${BOT_DATA_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-data}:/app/data
-      - ${BOT_CODE_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-app}:/app/code
+      - ${API_CODE_PATH}:/app/code
+    profiles: [ "api" ]
+    # To expose the API to the host, uncomment the following lines:
+    # ports:
+    #   - "${PORT:-3001}:${PORT:-3001}"
 
-  # dashboard:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile.bot
-  #   container_name: fakegaming-dashboard
-  #   restart: unless-stopped
-  #   environment:
-  #     # Add dashboard-specific env vars here
-  #   depends_on:
-  #     - postgres
-  #   volumes:
-  #     - ${BOT_CODE_PATH:-/var/www/vhosts/fakegaming.eu/fakegaming-bot-app}:/app/code
-  #   profiles: ["dashboard"] # Only run with --profile dashboard
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: fakegaming-dashboard
+    restart: unless-stopped
+    env_file:
+      - ./packages/dashboard/.env
+    environment:
+      PORT: ${PORT}
+      PUBLIC_URL: ${PUBLIC_URL}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      API_URL: ${API_URL}
+      DASHBOARD_CLIENT_ID: ${DASHBOARD_CLIENT_ID}
+      DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET}
+      DASHBOARD_ADMINS: ${DASHBOARD_ADMINS}
+    depends_on:
+      - postgres
+    volumes:
+      - ${DASHBOARD_CODE_PATH}:/app/code
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    profiles: [ "dashboard" ]
 
 # Place host-specific paths and secrets in a .env file (not in git)

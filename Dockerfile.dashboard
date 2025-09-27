@@ -1,0 +1,29 @@
+# Dockerfile for Dashboard (Next.js)
+FROM node:20-alpine AS base
+
+# Set working directory for code
+WORKDIR /app/code
+
+# Enable pnpm via corepack
+RUN corepack enable
+
+# Copy only package files for dependency installation
+COPY packages/dashboard/package.json packages/dashboard/pnpm-lock.yaml /app/
+
+# Install dependencies in /app (not /app/code)
+WORKDIR /app
+RUN pnpm install --prod
+
+# Switch back to code directory for runtime
+WORKDIR /app/code
+
+# Do NOT copy code; it will be mounted at /app/code
+
+# Build Next.js app (will write to host code directory)
+RUN pnpm run build
+
+# Expose dashboard port (default 3000)
+EXPOSE 3000
+
+# Start dashboard (production)
+CMD ["pnpm", "start"]

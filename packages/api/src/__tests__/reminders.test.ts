@@ -1,6 +1,7 @@
 import request from 'supertest';
 import app from '../app.js';
 import {configManager} from '../jest.setup.js';
+import {signTestJwt} from '../testUtils/jwt.js';
 
 const testReminder = {
     id: 'reminder-1',
@@ -20,20 +21,22 @@ beforeEach(async () => {
 });
 
 describe('Reminders API', () => {
+    let token: string;
+    beforeAll(() => {
+        token = signTestJwt();
+    });
     it('should list all reminders', async () => {
-        const res = await request(app).get('/api/reminders');
+        const res = await request(app).get('/api/reminders').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(Array.isArray(res.body)).toBe(true);
     });
-
     it('should get a reminder by id', async () => {
-        const res = await request(app).get(`/api/reminders/${reminderId}`);
+        const res = await request(app).get(`/api/reminders/${reminderId}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(reminderId);
     });
-
     it('should add a new reminder', async () => {
-        const res = await request(app).post('/api/reminders').send({
+        const res = await request(app).post('/api/reminders').set('Authorization', `Bearer ${token}`).send({
             id: 'reminder-2',
             userId: 'reminderuser2',
             message: 'Another reminder',
@@ -43,7 +46,6 @@ describe('Reminders API', () => {
         expect(res.status).toBe(201);
         expect(res.body.userId).toBe('reminderuser2');
     });
-
     it('should delete a reminder', async () => {
         // Add a reminder to delete
         const created = await configManager.reminderManager.addPlain({
@@ -53,13 +55,12 @@ describe('Reminders API', () => {
             timespan: '1h',
             timestamp: Date.now() + 3600000
         });
-        const res = await request(app).delete(`/api/reminders/${created.id}`);
+        const res = await request(app).delete(`/api/reminders/${created.id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
     });
-
     it('should return 404 for non-existent reminder', async () => {
-        const res = await request(app).get('/api/reminders/999999');
+        const res = await request(app).get('/api/reminders/999999').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
 });

@@ -6,5 +6,7 @@ ignoredBuiltDependencies:
   - unrs-resolver
 
 onlyBuiltDependencies:
+  - '@scarf/scarf'
   - canvas
+  - sharp
   - sqlite3

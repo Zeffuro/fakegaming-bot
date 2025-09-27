@@ -1,5 +1,6 @@
 import parser from "@typescript-eslint/parser";
 import eslintPlugin from "@typescript-eslint/eslint-plugin";
+import nextPlugin from "@next/eslint-plugin-next";
 import globals from "globals";
 
 export default [
@@ -39,6 +40,15 @@ export default [
         files: ["packages/common/src/models/**/*.js"],
         rules: {
             "no-cond-assign": "off",
+        },
+    },
+    {
+        files: ["packages/dashboard/**/*.{js,jsx,ts,tsx}"],
+        plugins: {
+            "@next/next": nextPlugin,
+        },
+        rules: {
+            ...nextPlugin.configs["core-web-vitals"].rules,
         },
     },
 ];

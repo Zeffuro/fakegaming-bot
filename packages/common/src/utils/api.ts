@@ -8,3 +8,4 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit) {
     };
     return fetch(input, {...init, headers});
 }
+

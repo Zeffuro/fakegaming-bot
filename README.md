@@ -44,7 +44,8 @@ This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/w
 > cause issues with GitKraken, Windows Explorer, or certain tools.  
 > All scripts (`install`, `run build`, `run lint`, `test`, etc.) work with both npm and pnpm.  
 > This project includes both `package-lock.json` (npm) and `pnpm-lock.yaml` (pnpm) for reproducible installs. Use the
-> package manager of your choice, but if you add new dependencies, please ensure both lockfiles are updated or let us know
+> package manager of your choice, but if you add new dependencies, please ensure both lockfiles are updated or let us
+> know
 > which one you used.
 
 ### Prerequisites
@@ -249,6 +250,18 @@ A: Use GitHub Issues. See the Reporting Issues section in [CONTRIBUTING.md](./CO
 
 **Q: Who maintains this project?**
 A: [@Zeffuro](https://github.com/Zeffuro)
+
+---
+
+## Invite the Bot
+
+To invite the bot to your Discord server, use the following links (replace `[client_id]` with your bot's client ID):
+
+- **With Administrator permissions:**  
+  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=522368`
+
+- **Without Administrator permissions:**  
+  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=522360`
 
 ---
 

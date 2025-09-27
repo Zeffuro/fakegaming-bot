@@ -2,7 +2,6 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "lib": [
       "dom",
       "dom.iterable",
@@ -13,10 +12,18 @@
     "incremental": true,
     "resolveJsonModule": true,
     "jsx": "preserve",
-    "moduleResolution": "node"
+    "module": "esnext",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
-    "src"
+    "app",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

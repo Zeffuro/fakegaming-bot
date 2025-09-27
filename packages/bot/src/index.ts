@@ -2,7 +2,7 @@ debugger;
 import './deploy-commands.js';
 
 import {
-    Events,
+    Events, GatewayIntentBits,
     MessageFlags
 } from 'discord.js';
 import path from 'path';
@@ -33,7 +33,14 @@ const {__dirname} = bootstrapEnv(import.meta.url);
 
         await preloadAllModules();
 
-        const client = new FakegamingBot({intents: [1 << 0]}); // Guilds intent
+        const client = new FakegamingBot({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMembers
+            ]
+        });
 
         const modulesPath = path.join(__dirname, 'modules');
 
