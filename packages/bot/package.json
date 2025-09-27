@@ -8,7 +8,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "pnpm --filter @zeffuro/fakegaming-common... run build && tsc",
-    "start": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
+    "start": "cross-env NODE_ENV=production node dist/index.js",
+    "prod:dev": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests",
@@ -22,6 +23,7 @@
     "axios": "^1.12.2",
     "canvas": "^3.2.0",
     "cheerio": "^1.1.2",
+    "cross-env": "^10.0.0",
     "discord-api-types": "^0.38.26",
     "discord.js": "^14.22.1",
     "jest-mock": "^30.0.5",
@@ -30,6 +32,7 @@
     "rss-parser": "^3.13.0",
     "sqlite3": "^5.1.7",
     "twisted": "^1.70.0",
+    "ts-node": "^10.9.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

@@ -9,7 +9,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "tsc",
-    "start": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
+    "start": "cross-env NODE_ENV=production node dist/index.js",
+    "prod:dev": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
     "test": "node --loader ts-node/esm --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
@@ -17,13 +18,15 @@
   "dependencies": {
     "@zeffuro/fakegaming-common": "workspace:*",
     "cors": "^2.8.5",
+    "cross-env": "^10.0.0",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-jwt": "^8.5.1",
     "sequelize": "^6.37.7",
     "sequelize-typescript": "^2.1.6",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1"
+    "swagger-ui-express": "^5.0.1",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

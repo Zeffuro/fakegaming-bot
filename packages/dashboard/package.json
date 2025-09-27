@@ -9,7 +9,7 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm --filter @zeffuro/fakegaming-common... run build && next build",
+    "build": "next build",
     "start": "next start",
     "start:dev": "next dev",
     "lint": "eslint app --ext .ts --config ../../eslint.config.mjs",
@@ -22,6 +22,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/material": "^7.3.2",
     "better-auth": "^1.3.18",
+    "cross-env": "^10.0.0",
     "jsonwebtoken": "^9.0.2",
     "next": "^15.5.4",
     "react": "^19.1.1",

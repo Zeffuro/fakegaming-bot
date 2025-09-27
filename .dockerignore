@@ -16,6 +16,8 @@ build/
 .next/
 out/
 coverage/
+packages/dashboard/.next
+packages/dashboard/.next/cache
 
 # Env files (never bake secrets into images)
 .env
