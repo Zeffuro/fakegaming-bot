@@ -7,7 +7,7 @@
   "author": "Zeffuro",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "build": "tsc",
+    "build": "pnpm --filter @zeffuro/fakegaming-common... run build && tsc",
     "start": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",

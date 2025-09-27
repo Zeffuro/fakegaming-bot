@@ -9,7 +9,7 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm --filter @zeffuro/fakegaming-common... run build && next build",
     "start": "next start",
     "start:dev": "next dev",
     "lint": "eslint app --ext .ts --config ../../eslint.config.mjs",
