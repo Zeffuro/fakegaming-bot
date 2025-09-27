@@ -43,7 +43,8 @@
     "start:bot:dev": "pnpm --filter @zeffuro/fakegaming-bot run start:dev",
     "start:dashboard": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start",
     "start:dashboard:dev": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start:dev",
-    "clean": "node scripts/clean.js"
+    "clean": "node scripts/clean.js",
+    "fulltest": "pnpm run clean && pnpm run lint && pnpm run build && pnpm run test"
   },
   "dependencies": {
     "cors": "^2.8.5",

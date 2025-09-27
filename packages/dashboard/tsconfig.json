@@ -23,11 +23,10 @@
   },
   "include": [
     "app",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "src/__tests__/**/*"
   ],
   "exclude": [
-    "node_modules",
-    "app/**/*.test.ts",
-    "app/**/__tests__"
+    "node_modules"
   ]
 }
