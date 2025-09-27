@@ -58,4 +58,6 @@ COPY --from=builder /app/packages/common/dist ../common/dist
 COPY --from=builder /app/node_modules ../node_modules
 COPY --from=builder /pnpm /pnpm
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 CMD ["pnpm", "start"]

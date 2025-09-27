@@ -44,6 +44,7 @@ FROM node:22-bullseye-slim AS runner
 
 WORKDIR /app/packages/api
 
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
@@ -56,5 +57,7 @@ COPY --from=builder /pnpm /pnpm
 
 ENV NODE_ENV=production
 EXPOSE 3001
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 CMD ["pnpm", "start"]

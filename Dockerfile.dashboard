@@ -52,4 +52,6 @@ COPY --from=builder /pnpm /pnpm
 ENV NODE_ENV=production
 EXPOSE 3000
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 CMD ["pnpm", "start"]
