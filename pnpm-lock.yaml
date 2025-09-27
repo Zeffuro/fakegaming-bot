@@ -32,6 +32,9 @@ importers:
       swagger-ui-express:
         specifier: ^5.0.1
         version: 5.0.1(express@5.1.0)
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.2
     devDependencies:
       '@next/eslint-plugin-next':
         specifier: ^15.5.4
@@ -117,9 +120,6 @@ importers:
       tsx:
         specifier: ^4.20.6
         version: 4.20.6
-      typescript:
-        specifier: ^5.9.2
-        version: 5.9.2
 
   packages/api:
     dependencies:
