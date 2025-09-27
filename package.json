@@ -1,12 +1,6 @@
 {
   "name": "fakegaming-bot-monorepo",
   "private": true,
-  "workspaces": [
-    "packages/api",
-    "packages/bot",
-    "packages/dashboard",
-    "packages/common"
-  ],
   "type": "module",
   "devDependencies": {
     "@next/eslint-plugin-next": "^15.5.4",

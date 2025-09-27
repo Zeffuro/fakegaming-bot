@@ -2,14 +2,24 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY packages/api/package.json packages/api/package-lock.json ./
-RUN npm install --production
+# Copy root package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
 
+# Enable pnpm via corepack
+RUN corepack enable
+
+# Copy API package manifest and tsconfig for dependency install
+COPY packages/api/package.json packages/api/tsconfig.json ./packages/api/
+
+# Install only API dependencies
+RUN pnpm install --prod --filter @zeffuro/fakegaming-bot-api...
+
+# Copy the API source code
 COPY packages/api ./packages/api
 
 WORKDIR /app/packages/api
 
-RUN npm run build
+RUN pnpm run build
 
 EXPOSE 3001
 

@@ -4,9 +4,16 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY packages/dashboard/package.json packages/dashboard/pnpm-lock.yaml ./
-RUN pnpm install --prod
+# Copy root package.json and pnpm-lock.yaml
+COPY package.json pnpm-lock.yaml ./
 
+# Copy dashboard package manifest for dependency install
+COPY packages/dashboard/package.json packages/dashboard/tsconfig.json ./packages/dashboard/
+
+# Install only dashboard dependencies
+RUN pnpm install --prod --filter @zeffuro/fakegaming-bot-dashboard...
+
+# Copy the dashboard source code
 COPY packages/dashboard ./packages/dashboard
 
 WORKDIR /app/packages/dashboard
