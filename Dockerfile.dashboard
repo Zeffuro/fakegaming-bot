@@ -4,26 +4,24 @@ WORKDIR /app
 RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
-COPY packages/dashboard/package.json ./packages/dashboard/
+COPY packages/dashboard/package.json packages/dashboard/
 
-RUN pnpm install --filter @zeffuro/fakegaming-bot-dashboard... --prod
+RUN pnpm install --filter @zeffuro/fakegaming-bot-dashboard
 
 # -------------------- BUILDER --------------------
 FROM node:22-slim AS builder
 WORKDIR /app
-RUN corepack enable
 
 COPY --from=deps /app ./
 COPY packages/dashboard ./packages/dashboard
 
-RUN pnpm run build --filter @zeffuro/fakegaming-bot-dashboard...
+RUN pnpm run build --filter @zeffuro/fakegaming-bot-dashboard
 
 # -------------------- RUNNER --------------------
 FROM node:22-slim AS runner
 WORKDIR /app/packages/dashboard
 RUN corepack enable
 
-# Copy build output + node_modules
 COPY --from=builder /app/packages/dashboard/.next ./.next
 COPY --from=builder /app/packages/dashboard/public ./public
 COPY --from=deps /app/node_modules ./node_modules
