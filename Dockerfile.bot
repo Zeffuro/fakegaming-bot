@@ -1,7 +1,5 @@
-# Use the official Node.js 22 slim image as the base
 FROM node:22-slim
 
-# Install git and system dependencies for 'canvas' and native modules
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
@@ -11,25 +9,20 @@ RUN apt-get update && apt-get install -y \
     libgif-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Set the working directory for code
-WORKDIR /app/code
+WORKDIR /app
 
-# Enable pnpm via corepack
 RUN corepack enable
 
-# Copy only necessary package files for dependency installation
-COPY package.json pnpm-lock.yaml /app/
-COPY packages/bot/package.json /app/packages/bot/
-COPY packages/common/package.json /app/packages/common/
-
-# Install dependencies using pnpm (from /app, not /app/code)
-WORKDIR /app
+# Copy package files and install dependencies
+COPY package.json pnpm-lock.yaml ./
+COPY packages/bot/package.json packages/bot/
+COPY packages/common/package.json packages/common/
 RUN pnpm install --filter @zeffuro/fakegaming-bot... --filter @zeffuro/fakegaming-common... --prod
 
-# Switch back to code directory for runtime
-WORKDIR /app/code
+# Copy bot source code
+COPY packages/bot ./packages/bot
+COPY packages/common ./packages/common
 
-# Do NOT copy code; it will be mounted at /app/code
+WORKDIR /app/packages/bot
 
-# The command to run your bot, relative to the WORKDIR
-CMD ["pnpm", "--filter", "@zeffuro/fakegaming-bot", "start"]
+CMD ["pnpm", "start"]

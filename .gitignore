@@ -24,6 +24,8 @@ packages/dashboard/.env
 packages/dashboard/.env.development
 packages/dashboard/.env.production
 stack.env
+.env
+.env.development
 
 # Logs
 *.log

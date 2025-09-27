@@ -16,9 +16,7 @@ services:
     profiles: [ "postgres" ]
 
   bot:
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
+    image: zeffuro/fakegaming-bot:latest
     container_name: fakegaming-bot
     restart: unless-stopped
     env_file:
@@ -39,16 +37,13 @@ services:
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
     volumes:
       - ${BOT_DATA_PATH}:/app/data
-      - ${BOT_CODE_PATH}:/app/code
     profiles: [ "bot" ]
     # To expose the bot to the host, uncomment the following lines:
     # ports:
     #   - "${PORT:-3002}:${PORT:-3002}"
 
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: zeffuro/fakegaming-api:latest
     container_name: fakegaming-api
     restart: unless-stopped
     env_file:
@@ -63,17 +58,13 @@ services:
       DASHBOARD_CLIENT_SECRET: ${DASHBOARD_CLIENT_SECRET}
     depends_on:
       - postgres
-    volumes:
-      - ${API_CODE_PATH}:/app/code
     profiles: [ "api" ]
     # To expose the API to the host, uncomment the following lines:
     # ports:
     #   - "${PORT:-3001}:${PORT:-3001}"
 
   dashboard:
-    build:
-      context: .
-      dockerfile: Dockerfile.dashboard
+    image: zeffuro/fakegaming-dashboard:latest
     container_name: fakegaming-dashboard
     restart: unless-stopped
     env_file:
@@ -92,8 +83,6 @@ services:
       DASHBOARD_ADMINS: ${DASHBOARD_ADMINS}
     depends_on:
       - postgres
-    volumes:
-      - ${DASHBOARD_CODE_PATH}:/app/code
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
     profiles: [ "dashboard" ]

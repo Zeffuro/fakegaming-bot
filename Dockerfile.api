@@ -1,20 +1,16 @@
-# Dockerfile for API service
-FROM node:20-alpine AS base
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY packages/api/package.json packages/api/package-lock.json ./
 RUN npm install --production
 
-# Copy source code
-COPY packages/api ./
+COPY packages/api ./packages/api
 
-# Build TypeScript
+WORKDIR /app/packages/api
+
 RUN npm run build
 
-# Expose API port (default 3001)
 EXPOSE 3001
 
-# Start API (production)
 CMD ["node", "dist/index.js"]
-
