@@ -32,6 +32,9 @@ WORKDIR /app
 COPY packages/api ./packages/api
 COPY packages/common ./packages/common
 
+WORKDIR /app
+RUN pnpm --filter @zeffuro/fakegaming-common... run build
+
 # Build api package
 WORKDIR /app/packages/api
 RUN pnpm run build
