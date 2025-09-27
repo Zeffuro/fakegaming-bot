@@ -17,12 +17,6 @@ build/
 out/
 coverage/
 
-# Source code (runtime stage only needs compiled code)
-packages/api/src/
-packages/bot/src/
-packages/common/src/
-packages/dashboard/src/
-
 # Env files (never bake secrets into images)
 .env
 .env.*

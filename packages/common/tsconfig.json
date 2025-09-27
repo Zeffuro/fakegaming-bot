@@ -8,5 +8,9 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "app/**/*.test.ts",
+    "app/**/__tests__"
   ]
 }

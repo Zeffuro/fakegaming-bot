@@ -1,50 +1,55 @@
 # -------------------- BASE --------------------
 FROM node:22-bullseye-slim AS base
-WORKDIR /app
 
-# Install essential build tools for node_modules (Next.js and canvas)
 RUN apt-get update && apt-get install -y \
-    git build-essential python3 python3-distutils libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev \
+    git build-essential python3 python3-distutils \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable Corepack (pnpm)
-RUN corepack enable
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-# Copy root package.json & lockfile
-COPY package.json pnpm-lock.yaml ./
+RUN corepack enable \
+    && corepack prepare pnpm@latest --activate
 
-# Copy dashboard package.json
-COPY packages/dashboard/package.json packages/dashboard/
-
-# Install dependencies recursively
-RUN pnpm install --recursive
-
-# -------------------- BUILD --------------------
-FROM base AS builder
 WORKDIR /app
 
-# Copy node_modules from base stage
-COPY --from=base /app/node_modules ./node_modules
+# Copy root files for dependency install & build chain
+COPY package.json pnpm-lock.yaml tsconfig.json ./
+COPY packages/dashboard/package.json packages/dashboard/
+COPY packages/dashboard/tsconfig.json packages/dashboard/
+COPY packages/dashboard/.eslintrc.cjs packages/dashboard/.eslintrc.cjs
 
-# Copy dashboard source
+# Install all deps for dashboard (including devDeps for typescript/eslint etc)
+RUN pnpm install --filter @zeffuro/fakegaming-bot-dashboard...
+
+# -------------------- BUILDER --------------------
+FROM base AS builder
+
+WORKDIR /app
+
+# Copy source code (dashboard)
 COPY packages/dashboard ./packages/dashboard
 
-# Build Next.js dashboard
-RUN pnpm exec pnpm --filter @zeffuro/fakegaming-bot-dashboard run build
+# Build dashboard (Next.js)
+WORKDIR /app/packages/dashboard
+RUN pnpm run build
 
 # -------------------- RUNNER --------------------
 FROM node:22-bullseye-slim AS runner
-WORKDIR /app
 
-# Copy only necessary artifacts from builder
-COPY --from=builder /app/node_modules ./node_modules
+WORKDIR /app/packages/dashboard
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
+# Copy built output and minimal files
 COPY --from=builder /app/packages/dashboard/.next ./.next
 COPY --from=builder /app/packages/dashboard/public ./public
 COPY --from=builder /app/packages/dashboard/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /pnpm /pnpm
 
-# Production environment
 ENV NODE_ENV=production
 EXPOSE 3000
 
-# Start the dashboard
-CMD ["pnpm", "--filter", "@zeffuro/fakegaming-bot-dashboard", "start"]
+CMD ["pnpm", "start"]
