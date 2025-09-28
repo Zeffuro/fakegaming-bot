@@ -1,8 +1,10 @@
-import {dirname} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import path from "path";
+import {fileURLToPath} from "node:url";
+
+const traceRoot = path.join(fileURLToPath(import.meta.url), '../..');
 
 const nextConfig = {
-    outputFileTracingRoot: dirname(fileURLToPath(import.meta.url)),
+    outputFileTracingRoot: traceRoot,
     output: 'standalone',
 };
 
