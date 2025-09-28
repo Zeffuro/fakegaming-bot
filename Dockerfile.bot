@@ -1,9 +1,11 @@
 # -------------------- BASE --------------------
 FROM node:22-bullseye-slim AS base
 
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
-    git build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev \
-    pkg-config python3 make g++ curl \
+    build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev \
+    pkg-config python3 make g++ git curl \
+    libsqlite3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ENV PNPM_HOME="/pnpm"
@@ -13,37 +15,56 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml tsconfig.json ./
+# Copy pnpm configuration and source code
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY packages/bot ./packages/bot
 COPY packages/common ./packages/common
 
+# Install dependencies (creates symlinks)
 RUN pnpm install --recursive
 
 # -------------------- BUILDER --------------------
 FROM base AS builder
 WORKDIR /app
+
+# Build TS/JS files
 RUN pnpm -r run build
 
 # -------------------- RUNNER --------------------
 FROM node:22-bullseye-slim AS runner
 
+# Install runtime libraries for canvas
 RUN apt-get update && apt-get install -y \
     libcairo2 libpango1.0-0 libjpeg62-turbo libgif7 \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/packages/bot
+WORKDIR /app
 
 ENV PNPM_HOME="/pnpm"
 ENV NODE_PATH="/app/node_modules"
-ENV PATH="/app/node_modules/.bin:$PATH"
+ENV PATH="/app/node_modules/.bin:$PNPM_HOME:$PATH"
 
-# Copy ALL sources for correct symlink resolution
+# Copy all sources
 COPY --from=builder /app /app
-
-EXPOSE 3001
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Temporarily install dependencies for rebuilding native modules
+RUN apt-get update && apt-get install -y \
+    build-essential pkg-config python3 make g++ libsqlite3-dev \
+    libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev
+
+# Rebuild native modules
+RUN pnpm rebuild sqlite3
 RUN pnpm rebuild canvas
+
+# Clean up heavy dependencies
+RUN apt-get purge -y build-essential pkg-config python3 make g++ libsqlite3-dev \
+        libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app/packages/bot
 
 CMD ["pnpm", "start"]

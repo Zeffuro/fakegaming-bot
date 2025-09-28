@@ -10,8 +10,9 @@ import cors from 'cors';
 const app = express();
 
 app.use(express.json());
+const DASHBOARD_URL = process.env.DASHBOARD_URL || process.env.PUBLIC_URL || 'http://localhost:3000';
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: DASHBOARD_URL,
     credentials: true
 }));
 // Apply JWT auth to all /api routes except /api/auth/login

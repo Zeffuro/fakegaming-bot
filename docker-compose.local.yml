@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  # The postgres service is commented out as it's not needed for local testing
+  # postgres:
+  #   volumes:
+  #     - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
+
+  # -------------------- BOT --------------------
+  bot:
+    # Use 'build' for local testing instead of 'image'
+    build:
+      context: .
+      dockerfile: ./Dockerfile.bot
+    # Use the development environment file
+    env_file:
+      - ./packages/bot/.env.development
+    # Ensure the container name and restart policy are kept
+    container_name: fakegaming-bot
+    restart: unless-stopped
+    # Use the same data volume as the production config
+    volumes:
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
+    # Remove 'depends_on: postgres' if postgres is commented out
+
+  # -------------------- API --------------------
+  api:
+    # Use 'build' for local testing instead of 'image'
+    build:
+      context: .
+      dockerfile: ./Dockerfile.api
+    # Use the development environment file
+    env_file:
+      - ./packages/api/.env.development
+    # Expose the API port for local access
+    ports:
+      # Map host port 8080 to container port 8080 (adjust if your API uses a different port)
+      - "8080:8080"
+    # Ensure the container name and restart policy are kept
+    container_name: fakegaming-api
+    restart: unless-stopped
+    volumes:
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
+    # Remove 'depends_on: postgres' if postgres is commented out
+
+  # -------------------- DASHBOARD --------------------
+  dashboard:
+    # Use 'build' for local testing instead of 'image'
+    build:
+      context: .
+      dockerfile: ./Dockerfile.dashboard
+    # Use the development environment file
+    env_file:
+      - ./packages/dashboard/.env.development
+    # Expose the Dashboard port for local access
+    ports:
+      # Map host port 3000 to container port 3000
+      - "3000:3000"
+    # Set HOST=0.0.0.0 to ensure Next.js binds correctly inside the container
+    environment:
+      - HOST=0.0.0.0
+    # Ensure the container name and restart policy are kept
+    container_name: fakegaming-dashboard
+    restart: unless-stopped
+    volumes:
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
