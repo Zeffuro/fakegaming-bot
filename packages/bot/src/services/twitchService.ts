@@ -38,9 +38,6 @@ export async function subscribeAllStreams(client: Client) {
         return;
     }
 
-    // Reset liveStatus for stateless test runs
-    for (const key in liveStatus) delete liveStatus[key];
-
     await Promise.all(streams.map(async (stream, idx) => {
         try {
             console.debug(`[TwitchService] Processing stream #${idx}:`, stream);
@@ -54,6 +51,7 @@ export async function subscribeAllStreams(client: Client) {
 
             // Only announce if live and not already announced
             if (isLive && !liveStatus[user.id]) {
+                liveStatus[user.id] = true;
                 const channel = client.channels.cache.get(stream.discordChannelId);
                 if (
                     channel &&
@@ -100,6 +98,8 @@ export async function subscribeAllStreams(client: Client) {
                         components: [row]
                     });
                 }
+            } else if (!isLive && liveStatus[user.id]) {
+                liveStatus[user.id] = false;
             }
         } catch (err) {
             console.error(`[TwitchService] Error processing stream #${idx}:`, err);
