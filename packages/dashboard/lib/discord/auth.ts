@@ -1,13 +1,5 @@
-// Shared Discord OAuth logic for API routes
 import jwt from "jsonwebtoken";
-
-const PUBLIC_URL = process.env.PUBLIC_URL || process.env.NEXT_PUBLIC_PUBLIC_URL;
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI =
-    (PUBLIC_URL ? `${PUBLIC_URL.replace(/\/$/, "")}/api/auth/discord/callback` : process.env.DISCORD_REDIRECT_URI) ||
-    "http://localhost:3000/api/auth/discord/callback";
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+import {DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET} from "@/lib/env";
 
 export function getDiscordOAuthUrl() {
     return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20guilds`;
@@ -18,8 +10,8 @@ export async function exchangeCodeForToken(code: string) {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: new URLSearchParams({
-            client_id: DISCORD_CLIENT_ID!,
-            client_secret: DISCORD_CLIENT_SECRET!,
+            client_id: DISCORD_CLIENT_ID,
+            client_secret: DISCORD_CLIENT_SECRET,
             grant_type: "authorization_code",
             code,
             redirect_uri: DISCORD_REDIRECT_URI,

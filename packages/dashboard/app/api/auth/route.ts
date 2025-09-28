@@ -5,7 +5,7 @@ import {
     fetchDiscordUser,
     issueJwt,
     verifyJwt
-} from "../../utils/discordOAuth";
+} from "@/lib/discord/auth";
 
 // /api/auth/discord: Redirect to Discord OAuth
 export async function GET() {

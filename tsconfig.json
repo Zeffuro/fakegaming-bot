@@ -14,7 +14,7 @@
   "include": [
     "packages/bot/src",
     "packages/common/src",
-    "packages/dashboard/app",
+    "packages/dashboard/**/*",
     "scripts"
   ]
 }

@@ -1,5 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
-import {exchangeCodeForToken, fetchDiscordUser, issueJwt} from "../../../../utils/discordOAuth";
+import {exchangeCodeForToken, fetchDiscordUser, issueJwt} from "@/lib/discord/auth";
+import {getBaseUrl} from "@/lib/util/getBaseUrl";
 
 export async function GET(req: NextRequest) {
     const {searchParams} = new URL(req.url);
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     const jwtToken = issueJwt(user);
 
     // Set JWT in HttpOnly cookie and redirect to dashboard
-    const dashboardUrl = new URL("/dashboard", req.url);
+    const dashboardUrl = new URL("/dashboard", getBaseUrl(req));
     const response = NextResponse.redirect(dashboardUrl);
     response.cookies.set("jwt", jwtToken, {
         httpOnly: true,

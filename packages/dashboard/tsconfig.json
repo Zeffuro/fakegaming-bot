@@ -19,10 +19,19 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
   },
   "include": [
     "app",
+    "components",
+    "lib",
+    "util",
     ".next/types/**/*.ts",
     "src/__tests__/**/*"
   ],
