@@ -44,4 +44,6 @@ EXPOSE 3001
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+RUN pnpm rebuild canvas
+
 CMD ["pnpm", "start"]
