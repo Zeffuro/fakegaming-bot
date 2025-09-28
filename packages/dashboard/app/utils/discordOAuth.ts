@@ -1,9 +1,12 @@
 // Shared Discord OAuth logic for API routes
 import jwt from "jsonwebtoken";
 
+const PUBLIC_URL = process.env.PUBLIC_URL || process.env.NEXT_PUBLIC_PUBLIC_URL;
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
-const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || "http://localhost:3000/api/auth/discord/callback";
+const DISCORD_REDIRECT_URI =
+    (PUBLIC_URL ? `${PUBLIC_URL.replace(/\/$/, "")}/api/auth/discord/callback` : process.env.DISCORD_REDIRECT_URI) ||
+    "http://localhost:3000/api/auth/discord/callback";
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export function getDiscordOAuthUrl() {
@@ -40,3 +43,6 @@ export function issueJwt(user: any) {
     }, JWT_SECRET, {expiresIn: "7d"});
 }
 
+export function verifyJwt(token: string) {
+    return jwt.verify(token, JWT_SECRET);
+}
