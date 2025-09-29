@@ -9,18 +9,24 @@ import remindersRouter from './reminders.js';
 import birthdaysRouter from './birthdays.js';
 import patchNotesRouter from './patchNotes.js';
 import patchSubscriptionsRouter from './patchSubscriptions.js';
+import disabledCommandsRouter from './disabledCommands.js';
 
 const router = Router();
 
-router.use('/auth', authRouter);
-router.use('/quotes', quotesRouter);
-router.use('/users', usersRouter);
-router.use('/servers', serversRouter);
-router.use('/twitch', twitchRouter);
-router.use('/youtube', youtubeRouter);
-router.use('/reminders', remindersRouter);
-router.use('/birthdays', birthdaysRouter);
-router.use('/patchNotes', patchNotesRouter);
-router.use('/patchSubscriptions', patchSubscriptionsRouter);
+const routes = [
+    { path: '/auth', handler: authRouter },
+    { path: '/quotes', handler: quotesRouter },
+    { path: '/users', handler: usersRouter },
+    { path: '/servers', handler: serversRouter },
+    { path: '/twitch', handler: twitchRouter },
+    { path: '/youtube', handler: youtubeRouter },
+    { path: '/reminders', handler: remindersRouter },
+    { path: '/birthdays', handler: birthdaysRouter },
+    { path: '/patchNotes', handler: patchNotesRouter },
+    { path: '/patchSubscriptions', handler: patchSubscriptionsRouter },
+    { path: '/disabledCommands', handler: disabledCommandsRouter },
+];
+
+routes.forEach(({ path, handler }) => router.use(path, handler));
 
 export default router;

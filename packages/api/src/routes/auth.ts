@@ -22,6 +22,9 @@ const router = Router();
  *                 type: string
  *               clientSecret:
  *                 type: string
+ *           example:
+ *             clientId: your_client_id
+ *             clientSecret: your_client_secret
  *     responses:
  *       200:
  *         description: JWT token

@@ -9,6 +9,7 @@ export * from './models/reminder-config.js';
 export * from './models/birthday-config.js';
 export * from './models/patch-note-config.js';
 export * from './models/patch-subscription-config.js';
+export * from './models/disabled-command-config.js';
 
 // Export managers
 export * from './managers/baseManager.js';
@@ -20,6 +21,7 @@ export * from './managers/youtubeManager.js';
 export * from './managers/reminderManager.js';
 export * from './managers/birthdayManager.js';
 export * from './managers/patchNotesManager.js';
+export * from './managers/disabledCommandManager.js';
 export * from './managers/configManager.js';
 export * from './managers/configManagerSingleton.js';
 

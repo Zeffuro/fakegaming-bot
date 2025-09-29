@@ -8,6 +8,7 @@ import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
 import {PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.js";
+import {DisabledCommandManager} from "./disabledCommandManager.js";
 
 /**
  * Aggregates all manager classes.
@@ -22,6 +23,7 @@ export class ConfigManager {
     birthdayManager = new BirthdayManager();
     patchNotesManager = new PatchNotesManager();
     patchSubscriptionManager = new PatchSubscriptionManager();
+    disabledCommandManager = new DisabledCommandManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

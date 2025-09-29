@@ -9,11 +9,6 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
         super(YoutubeVideoConfig);
     }
 
-    // Removed the addVideoChannel method
-    // async addVideoChannel(config: Partial<YoutubeVideoConfig>) {
-    //     await this.add(config);
-    // }
-
     async getVideoChannel({youtubeChannelId, discordChannelId}: {
         youtubeChannelId: string,
         discordChannelId: string

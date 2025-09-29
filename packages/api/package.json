@@ -13,7 +13,9 @@
     "prod:dev": "cross-env NODE_ENV=production node --loader ts-node/esm src/index.ts",
     "start:dev": "cross-env NODE_ENV=development node --loader ts-node/esm src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
-    "test": "node --loader ts-node/esm --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
+    "test": "node --loader ts-node/esm --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests",
+    "export:openapi": "pnpm tsx scripts/export-openapi.ts",
+    "postbuild": "pnpm run export:openapi"
   },
   "dependencies": {
     "@zeffuro/fakegaming-common": "workspace:*",
