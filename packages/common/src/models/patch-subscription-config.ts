@@ -10,6 +10,9 @@ export class PatchSubscriptionConfig extends Model {
     @Column(DataType.STRING)
     declare channelId: string;
 
+    @Column(DataType.STRING)
+    declare guildId: string;
+
     @Column(DataType.BIGINT)
     declare lastAnnouncedAt?: number;
 }

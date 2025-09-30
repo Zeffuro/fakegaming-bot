@@ -10,6 +10,7 @@ export * from './models/birthday-config.js';
 export * from './models/patch-note-config.js';
 export * from './models/patch-subscription-config.js';
 export * from './models/disabled-command-config.js';
+export * from './models/cache-config.js';
 
 // Export managers
 export * from './managers/baseManager.js';
@@ -27,6 +28,9 @@ export * from './managers/configManagerSingleton.js';
 
 // Export sequelize
 export * from './sequelize.js';
+
+// Export cache
+export * from './cache.js';
 
 // Export core utilities
 export * from './core/bootstrapEnv.js';

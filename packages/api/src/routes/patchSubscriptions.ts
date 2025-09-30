@@ -42,7 +42,9 @@ router.get('/', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    await getConfigManager().patchSubscriptionManager.subscribe(req.body.game, req.body.channelId);
+    const { game, channelId, guildId } = req.body;
+    if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
+    await getConfigManager().patchSubscriptionManager.subscribe(game, channelId, guildId);
     res.status(201).json({success: true});
 });
 
@@ -63,6 +65,8 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Success
  */
 router.put('/', jwtAuth, async (req, res) => {
+    const { game, channelId, guildId } = req.body;
+    if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
     res.json({success: true});
 });

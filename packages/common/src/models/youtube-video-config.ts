@@ -13,4 +13,7 @@ export class YoutubeVideoConfig extends Model {
 
     @Column(DataType.TEXT)
     declare customMessage?: string;
+
+    @Column(DataType.STRING)
+    declare guildId: string;
 }

@@ -1,8 +1,21 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
+import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
+import type { AuthenticatedRequest } from '../types/express.js';
+import { CacheManager } from '../../../common/src/models/cache-manager';
 
 const router = Router();
+
+async function getUserGuilds(discordId: string): Promise<string[]> {
+    const cacheKey = `user:${discordId}:guilds`;
+    let guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        const cacheEntry = await CacheManager.findByPk(cacheKey);
+        guilds = cacheEntry ? JSON.parse(cacheEntry.value) : [];
+    }
+    return guilds;
+}
 
 /**
  * @openapi
@@ -52,14 +65,19 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/channel', async (req, res) => {
-    const {youtubeChannelId, discordChannelId} = req.query;
-    if (!youtubeChannelId || !discordChannelId) return res.status(400).json({error: 'youtubeChannelId and discordChannelId required'});
-    const config = await getConfigManager().youtubeManager.getVideoChannel({
-        youtubeChannelId: String(youtubeChannelId),
-        discordChannelId: String(discordChannelId)
-    });
-    if (!config) return res.status(404).json({error: 'Not found'});
+router.get('/channel', jwtAuth, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
+    const youtubeChannelId = getStringQueryParam(req.query, 'youtubeChannelId');
+    const discordChannelId = getStringQueryParam(req.query, 'discordChannelId');
+    const guildId = getStringQueryParam(req.query, 'guildId');
+    if (!youtubeChannelId || !discordChannelId || !guildId) {
+        return res.status(400).json({ error: 'Missing required query parameters' });
+    }
+    const guilds = await getUserGuilds(discordId);
+    if (!isGuildAdmin(guilds, guildId)) {
+        return res.status(403).json({ error: 'Not authorized for this guild' });
+    }
+    const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.json(config);
 });
 

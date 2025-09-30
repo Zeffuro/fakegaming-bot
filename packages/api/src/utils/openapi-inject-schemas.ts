@@ -1,5 +1,6 @@
 import {
     BirthdayConfig,
+    CacheConfig,
     DisabledCommandConfig,
     PatchNoteConfig,
     PatchSubscriptionConfig,
@@ -16,6 +17,7 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
     swaggerSpec.components = swaggerSpec.components || {};
     swaggerSpec.components.schemas = {
         BirthdayConfig: sequelizeModelToOpenAPISchema(BirthdayConfig),
+        CacheConfig: sequelizeModelToOpenAPISchema(CacheConfig),
         DisabledCommandConfig: sequelizeModelToOpenAPISchema(DisabledCommandConfig),
         PatchNoteConfig: sequelizeModelToOpenAPISchema(PatchNoteConfig),
         PatchSubscriptionConfig: sequelizeModelToOpenAPISchema(PatchSubscriptionConfig),

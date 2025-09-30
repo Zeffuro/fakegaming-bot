@@ -53,10 +53,9 @@ router.get('/', async (req, res) => {
  *         description: Not found
  */
 router.get('/:userId/:guildId', async (req, res) => {
-    const birthday = await getConfigManager().birthdayManager.getBirthday({
-        userId: req.params.userId,
-        guildId: req.params.guildId
-    });
+    const { userId, guildId } = req.params;
+    if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
+    const birthday = await getConfigManager().birthdayManager.getBirthday({ userId, guildId });
     if (!birthday) return res.status(404).json({error: 'Birthday not found'});
     res.json(birthday);
 });
@@ -79,6 +78,9 @@ router.get('/:userId/:guildId', async (req, res) => {
  */
 router.post('/', jwtAuth, async (req, res) => {
     const {userId, guildId, date, day, month, year, channelId} = req.body;
+    if (!userId || !guildId || (!date && (day === undefined || month === undefined || year === undefined))) {
+        return res.status(400).json({ error: 'Missing required birthday fields' });
+    }
     let birthdayFields: any = {userId, guildId, channelId};
     if (date) {
         const [y, m, d] = date.split('-').map(Number);
@@ -114,7 +116,9 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Success
  */
 router.delete('/:userId/:guildId', jwtAuth, async (req, res) => {
-    await getConfigManager().birthdayManager.removeBirthday({userId: req.params.userId, guildId: req.params.guildId});
+    const { userId, guildId } = req.params;
+    if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
+    await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
     res.json({success: true});
 });
 

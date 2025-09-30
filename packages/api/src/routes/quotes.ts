@@ -1,6 +1,8 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
+import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
+import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
 
@@ -52,10 +54,15 @@ router.get('/', async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/search', async (req, res) => {
+router.get('/search', jwtAuth, async (req, res) => {
     try {
-        const {guildId, text} = req.query;
+        const guildId = getStringQueryParam(req.query, 'guildId');
+        const text = getStringQueryParam(req.query, 'text');
         if (!guildId || !text) return res.status(400).json({error: 'guildId and text required'});
+        const { guilds } = (req as AuthenticatedRequest).user;
+        if (!isGuildAdmin(guilds, guildId)) {
+            return res.status(403).json({ error: 'Not authorized for this guild' });
+        }
         const quotes = await getConfigManager().quoteManager.searchQuotes({
             guildId: String(guildId),
             text: String(text)
@@ -89,8 +96,14 @@ router.get('/search', async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/guild/:guildId', async (req, res) => {
-    const quotes = await getConfigManager().quoteManager.getQuotesByGuild({guildId: req.params.guildId});
+router.get('/guild/:guildId', jwtAuth, async (req, res) => {
+    const guildId = getStringQueryParam(req.params, 'guildId');
+    if (!guildId) return res.status(400).json({ error: 'Missing guildId parameter' });
+    const { guilds } = (req as AuthenticatedRequest).user;
+    if (!isGuildAdmin(guilds, guildId)) {
+        return res.status(403).json({ error: 'Not authorized for this guild' });
+    }
+    const quotes = await getConfigManager().quoteManager.getQuotesByGuild({guildId});
     res.json(quotes);
 });
 
@@ -122,10 +135,9 @@ router.get('/guild/:guildId', async (req, res) => {
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
 router.get('/guild/:guildId/author/:authorId', async (req, res) => {
-    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor({
-        guildId: req.params.guildId,
-        authorId: req.params.authorId
-    });
+    const { guildId, authorId } = req.params;
+    if (!guildId || !authorId) return res.status(400).json({ error: 'Missing guildId or authorId parameter' });
+    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor({ guildId, authorId });
     res.json(quotes);
 });
 
@@ -169,7 +181,9 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Not found
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
-    const count = await getConfigManager().quoteManager.remove({id: req.params.id});
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
+    const count = await getConfigManager().quoteManager.remove({id});
     if (count === 0) return res.status(404).json({error: 'Quote not found'});
     res.json({success: true});
 });
@@ -197,7 +211,9 @@ router.delete('/:id', jwtAuth, async (req, res) => {
  *         description: Quote not found
  */
 router.get('/:id', async (req, res) => {
-    const quote = await getConfigManager().quoteManager.findByPkPlain(req.params.id);
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
+    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
     if (!quote) return res.status(404).json({error: 'Quote not found'});
     res.json(quote);
 });

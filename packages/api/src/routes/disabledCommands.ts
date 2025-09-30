@@ -1,6 +1,7 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
+import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
 
@@ -77,7 +78,17 @@ router.get('/check', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
+    const { discordId, guilds } = (req as AuthenticatedRequest).user;
+    const { guildId, commandName } = req.body;
+    if (!guildId || !commandName) {
+        return res.status(400).json({ error: 'guildId and commandName required' });
+    }
+    if (!guilds || !guilds.includes(guildId)) {
+        return res.status(403).json({ error: 'Not authorized for this guild' });
+    }
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} disabled command '${commandName}' for guild ${guildId} at ${new Date().toISOString()}`);
     res.status(201).json(created);
 });
 
@@ -98,7 +109,22 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Success
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
-    await getConfigManager().disabledCommandManager.remove({id: req.params.id});
+    const { discordId, guilds } = (req as AuthenticatedRequest).user;
+    const id = req.params.id;
+    if (!id) {
+        return res.status(400).json({ error: 'Missing id' });
+    }
+    // Find the config to get guildId for permission check
+    const config = await getConfigManager().disabledCommandManager.getById(id);
+    if (!config) {
+        return res.status(404).json({ error: 'Config not found' });
+    }
+    if (!guilds || !guilds.includes(config.guildId)) {
+        return res.status(403).json({ error: 'Not authorized for this guild' });
+    }
+    await getConfigManager().disabledCommandManager.remove({id});
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} enabled command '${config.commandName}' for guild ${config.guildId} at ${new Date().toISOString()}`);
     res.json({success: true});
 });
 

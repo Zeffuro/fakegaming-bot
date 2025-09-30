@@ -151,6 +151,9 @@
           "channelId": {
             "type": "string"
           },
+          "guildId": {
+            "type": "string"
+          },
           "lastAnnouncedAt": {
             "type": "integer",
             "format": "int64"
@@ -287,6 +290,9 @@
           "customMessage": {
             "type": "string"
           },
+          "guildId": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -351,6 +357,9 @@
           "customMessage": {
             "type": "string"
           },
+          "guildId": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -387,24 +396,20 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "clientId": {
-                    "type": "string"
-                  },
-                  "clientSecret": {
+                  "code": {
                     "type": "string"
                   }
                 }
               },
               "example": {
-                "clientId": "your_client_id",
-                "clientSecret": "your_client_secret"
+                "code": "your_discord_oauth_code"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "JWT token",
+            "description": "JWT token and user info",
             "content": {
               "application/json": {
                 "schema": {
@@ -412,6 +417,40 @@
                   "properties": {
                     "token": {
                       "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "discriminator": {
+                          "type": "string"
+                        },
+                        "avatar": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "guilds": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "icon": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }

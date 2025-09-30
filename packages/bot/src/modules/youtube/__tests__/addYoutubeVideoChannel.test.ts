@@ -54,6 +54,7 @@ describe('addYoutubeVideoChannel command', () => {
             expect.objectContaining({
                 youtubeChannelId: 'UC1234567890abcdef',
                 discordChannelId: '4167801562951251571',
+                guildId: '135381928284343204',
                 customMessage: 'New video!',
             }),
         );

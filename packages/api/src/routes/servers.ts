@@ -1,5 +1,10 @@
 import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
+import { jwtAuth } from '../middleware/auth.js';
+import { isGuildAdmin } from '../utils/requestHelpers.js';
+import type { AuthenticatedRequest } from '../types/express.js';
+import { cacheGet } from '@zeffuro/fakegaming-common/src/cache';
+import { CacheManager } from '@zeffuro/fakegaming-common/src/models/cache-manager';
 
 const router = Router();
 
@@ -46,8 +51,25 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/:serverId', async (req, res) => {
-    const server = await getConfigManager().serverManager.getServer(req.params.serverId);
+async function getUserGuilds(discordId: string): Promise<string[]> {
+    const cacheKey = `user:${discordId}:guilds`;
+    let guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        const cacheEntry = await CacheManager.findByPk(cacheKey);
+        guilds = cacheEntry ? JSON.parse(cacheEntry.value) : [];
+    }
+    return guilds;
+}
+
+router.get('/:serverId', jwtAuth, async (req, res) => {
+    const { serverId } = req.params;
+    const { discordId } = (req as AuthenticatedRequest).user;
+    if (!serverId) return res.status(400).json({ error: 'Missing serverId parameter' });
+    const guilds = await getUserGuilds(discordId);
+    if (!isGuildAdmin(guilds, serverId)) {
+        return res.status(403).json({ error: 'Not authorized for this server' });
+    }
+    const server = await getConfigManager().serverManager.getServer(serverId);
     if (!server) return res.status(404).json({error: 'Server not found'});
     res.json(server);
 });

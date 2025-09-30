@@ -13,13 +13,11 @@ export class ApiClient {
 
     get<T>(path: string, init: RequestInit = {}) {
         let apiPath = `${getApiUrl()}${path}`;
-        console.log("Fetching from:", apiPath);
         return apiFetch<T>(apiPath, init, this.token);
     }
 
     post<T>(path: string, body: any, init: RequestInit = {}) {
         let apiPath = `${getApiUrl()}${path}`;
-        console.log("Fetching from:", apiPath);
         return apiFetch<T>(
             apiPath,
             {
@@ -32,5 +30,16 @@ export class ApiClient {
         );
     }
 
-    // Add put, delete, etc. as needed!
+    delete<T>(path: string, init: RequestInit = {}) {
+        let apiPath = `${getApiUrl()}${path}`;
+        return apiFetch<T>(
+            apiPath,
+            {
+                ...init,
+                method: "DELETE",
+                headers: { ...init.headers },
+            },
+            this.token
+        );
+    }
 }

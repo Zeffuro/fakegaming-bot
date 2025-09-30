@@ -7,7 +7,7 @@ export default function Home() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
     useEffect(() => {
-        fetch("/api/auth/me", {method: "PUT"})
+        fetch("/api/auth/me", {method: "PUT", credentials: "include"})
             .then(res => res.ok ? res.json() : Promise.reject())
             .then(data => {
                 if (data.user) setIsLoggedIn(true);

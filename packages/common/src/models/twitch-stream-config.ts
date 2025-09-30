@@ -10,4 +10,7 @@ export class TwitchStreamConfig extends Model {
 
     @Column(DataType.TEXT)
     declare customMessage?: string;
+
+    @Column(DataType.STRING)
+    declare guildId: string;
 }

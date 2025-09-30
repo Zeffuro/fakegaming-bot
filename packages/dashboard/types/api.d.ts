@@ -24,17 +24,15 @@ export interface paths {
             requestBody: {
                 content: {
                     /** @example {
-                     *       "clientId": "your_client_id",
-                     *       "clientSecret": "your_client_secret"
+                     *       "code": "your_discord_oauth_code"
                      *     } */
                     "application/json": {
-                        clientId?: string;
-                        clientSecret?: string;
+                        code?: string;
                     };
                 };
             };
             responses: {
-                /** @description JWT token */
+                /** @description JWT token and user info */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -42,6 +40,17 @@ export interface paths {
                     content: {
                         "application/json": {
                             token?: string;
+                            user?: {
+                                id?: string;
+                                username?: string;
+                                discriminator?: string;
+                                avatar?: string;
+                            };
+                            guilds?: {
+                                id?: string;
+                                name?: string;
+                                icon?: string;
+                            }[];
                         };
                     };
                 };
@@ -1535,6 +1544,7 @@ export interface components {
             id: number;
             game?: string;
             channelId?: string;
+            guildId?: string;
             /** Format: int64 */
             lastAnnouncedAt?: number;
             /** Format: date-time */
@@ -1583,6 +1593,7 @@ export interface components {
             twitchUsername?: string;
             discordChannelId?: string;
             customMessage?: string;
+            guildId?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1605,6 +1616,7 @@ export interface components {
             discordChannelId?: string;
             lastVideoId?: string;
             customMessage?: string;
+            guildId?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

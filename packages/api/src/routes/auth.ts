@@ -1,9 +1,8 @@
 import {Router} from 'express';
-import jwt from 'jsonwebtoken';
-// @ts-ignore
-import {getJwtSecret} from '../middleware/auth.js';
+import { exchangeCodeForToken, fetchDiscordUser, fetchDiscordGuilds, issueJwt } from '@zeffuro/fakegaming-common/src/discord/auth.js';
 
 const router = Router();
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
 
 /**
  * @openapi
@@ -18,16 +17,13 @@ const router = Router();
  *           schema:
  *             type: object
  *             properties:
- *               clientId:
- *                 type: string
- *               clientSecret:
+ *               code:
  *                 type: string
  *           example:
- *             clientId: your_client_id
- *             clientSecret: your_client_secret
+ *             code: your_discord_oauth_code
  *     responses:
  *       200:
- *         description: JWT token
+ *         description: JWT token and user info
  *         content:
  *           application/json:
  *             schema:
@@ -35,20 +31,53 @@ const router = Router();
  *               properties:
  *                 token:
  *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     discriminator:
+ *                       type: string
+ *                     avatar:
+ *                       type: string
+ *                 guilds:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       icon:
+ *                         type: string
  */
-router.post('/login', (req, res) => {
-    const {clientId, clientSecret} = req.body;
-    const validId = process.env.DASHBOARD_CLIENT_ID;
-    const validSecret = process.env.DASHBOARD_CLIENT_SECRET;
-    if (!clientId || !clientSecret) {
-        return res.status(400).json({error: 'clientId and clientSecret required'});
+router.post('/login', async (req, res) => {
+    const { code } = req.body;
+    if (!code) {
+        return res.status(400).json({ error: 'Missing Discord OAuth code' });
     }
-    if (clientId !== validId || clientSecret !== validSecret) {
-        return res.status(401).json({error: 'Invalid credentials'});
+    try {
+        const tokenData = await exchangeCodeForToken(
+            code,
+            process.env.DISCORD_CLIENT_ID!,
+            process.env.DISCORD_CLIENT_SECRET!,
+            process.env.DISCORD_REDIRECT_URI!
+        );
+        const accessToken = tokenData.access_token;
+        if (!accessToken) {
+            return res.status(401).json({ error: 'Invalid Discord OAuth code' });
+        }
+        const user = await fetchDiscordUser(accessToken);
+        const guilds = await fetchDiscordGuilds(accessToken);
+        const jwtToken = issueJwt(user, guilds, process.env.JWT_SECRET!, JWT_AUDIENCE);
+        res.json({ token: jwtToken, user, guilds });
+    } catch (err) {
+        console.error('Error in /auth/login:', err);
+        res.status(500).json({ error: 'Failed to authenticate with Discord' });
     }
-    // Issue JWT for dashboard service
-    const token = jwt.sign({service: 'dashboard'}, getJwtSecret(), {expiresIn: '1d'});
-    res.json({token});
 });
 
 export default router;

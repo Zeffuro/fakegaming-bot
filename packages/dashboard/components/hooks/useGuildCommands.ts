@@ -1,51 +1,59 @@
 import { useState, useCallback } from "react";
-import { ApiClient } from "@/lib/util/apiClient";
 import { disabledCommands_guild_guildId_get_Response200, disabledCommands_post_Request } from "@/types/apiResponses";
 
-export function useGuildCommands(guildId: string, token?: string) {
+export function useGuildCommands(guildId: string) {
   const [disabledCommands, setDisabledCommands] = useState<string[]>([]);
   const [loadingCommand, setLoadingCommand] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
-  const api = new ApiClient(token);
 
   const fetchDisabledCommands = useCallback(async () => {
     setError(null);
     try {
-      const res = await api.get<disabledCommands_guild_guildId_get_Response200>(`/disabledCommands/guild/${guildId}`);
-      setDisabledCommands(res.map(c => c.commandName).filter((name): name is string => !!name));
+      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
+      setDisabledCommands(data.map(c => c.commandName).filter((name): name is string => !!name));
     } catch (err: any) {
       setError(err.message || "Failed to fetch disabled commands");
       setDisabledCommands([]);
     }
-  }, [guildId, api]);
+  }, [guildId]);
 
   const disableCommand = useCallback(async (commandName: string) => {
     setLoadingCommand(commandName);
     setError(null);
     try {
-      await api.post<unknown>("/disabledCommands", { guildId, commandName } as disabledCommands_post_Request);
+      const res = await fetch(`/api/external/disabledCommands`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ guildId, commandName } as disabledCommands_post_Request),
+      });
+      if (!res.ok) throw new Error(await res.text());
       await fetchDisabledCommands();
     } catch (err: any) {
       setError(err.message || "Failed to disable command");
     }
     setLoadingCommand(undefined);
-  }, [guildId, api, fetchDisabledCommands]);
+  }, [guildId, fetchDisabledCommands]);
 
   const enableCommand = useCallback(async (commandName: string) => {
     setLoadingCommand(commandName);
     setError(null);
     try {
-      const res = await api.get<disabledCommands_guild_guildId_get_Response200>(`/disabledCommands/guild/${guildId}`);
-      const config = res.find(c => c.commandName === commandName);
-      if (config) {
-        await api.get<unknown>(`/disabledCommands/${config.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
+      const config = data.find(c => c.commandName === commandName);
+      if (config && config.id) {
+        const delRes = await fetch(`/api/external/disabledCommands?id=${config.id}`, { method: "DELETE" });
+        if (!delRes.ok) throw new Error(await delRes.text());
       }
       await fetchDisabledCommands();
     } catch (err: any) {
       setError(err.message || "Failed to enable command");
     }
     setLoadingCommand(undefined);
-  }, [guildId, api, fetchDisabledCommands]);
+  }, [guildId, fetchDisabledCommands]);
 
   return {
     disabledCommands,

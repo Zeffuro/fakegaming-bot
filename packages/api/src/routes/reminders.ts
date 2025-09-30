@@ -48,7 +48,9 @@ router.get('/', async (req, res) => {
  *         description: Not found
  */
 router.get('/:id', async (req, res) => {
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(req.params.id);
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
+    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
     if (!reminder) return res.status(404).json({error: 'Reminder not found'});
     res.json(reminder);
 });
@@ -91,7 +93,9 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Success
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
-    await getConfigManager().reminderManager.removeReminder({id: req.params.id});
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
+    await getConfigManager().reminderManager.removeReminder({id});
     res.json({success: true});
 });
 

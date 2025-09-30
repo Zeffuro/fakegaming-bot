@@ -31,8 +31,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
     const game = interaction.options.getString('game', true);
     const channel = interaction.options.getChannel('channel', true);
+    const guildId = interaction.guildId!;
 
-    await getConfigManager().patchSubscriptionManager.subscribe(game, channel.id);
+    await getConfigManager().patchSubscriptionManager.subscribe(game, channel.id, guildId);
 
     const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (latestPatch) {
