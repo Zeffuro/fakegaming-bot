@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, cacheGet, cacheSet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
@@ -137,6 +137,85 @@ router.put('/:discordId/defaultReminderTimeSpan', jwtAuth, async (req, res) => {
         timespan: req.body.timespan
     });
     res.json({success: true});
+});
+
+/**
+ * @openapi
+ * /users/{discordId}/guilds:
+ *   get:
+ *     summary: Get guilds for a user from Redis cache
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: discordId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: List of guilds
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *       503:
+ *         description: Redis unavailable or cache missing
+ */
+router.get('/:discordId/guilds', async (req, res) => {
+    const { discordId } = req.params;
+    if (!discordId) return res.status(400).json({ error: 'Missing discordId parameter' });
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
+    res.json(guilds);
+});
+
+/**
+ * @openapi
+ * /users/{discordId}/guilds:
+ *   post:
+ *     summary: Set or update guilds for a user in Redis cache
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: discordId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               guilds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *       503:
+ *         description: Redis unavailable
+ */
+router.post('/:discordId/guilds', async (req, res) => {
+    const { discordId } = req.params;
+    const { guilds } = req.body;
+    if (!discordId || !Array.isArray(guilds)) {
+        return res.status(400).json({ error: 'Missing discordId or guilds array' });
+    }
+    const cacheKey = `user:${discordId}:guilds`;
+    try {
+        await cacheSet(cacheKey, guilds, 1000 * 60 * 60 * 24 * 7); // 7 days TTL
+        res.json({ success: true });
+    } catch (err) {
+        res.status(503).json({ error: 'Redis unavailable or failed to set guilds' });
+    }
 });
 
 export default router;

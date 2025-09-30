@@ -1,6 +1,7 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
+import { isGuildAdmin } from '../utils/requestHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
@@ -78,12 +79,17 @@ router.get('/check', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    const { discordId, guilds } = (req as AuthenticatedRequest).user;
+    const { discordId } = (req as AuthenticatedRequest).user;
     const { guildId, commandName } = req.body;
     if (!guildId || !commandName) {
         return res.status(400).json({ error: 'guildId and commandName required' });
     }
-    if (!guilds || !guilds.includes(guildId)) {
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
+    if (!isGuildAdmin(guilds, guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
@@ -108,8 +114,8 @@ router.post('/', jwtAuth, async (req, res) => {
  *       200:
  *         description: Success
  */
-router.delete('/:id', jwtAuth, async (req, res) => {
-    const { discordId, guilds } = (req as AuthenticatedRequest).user;
+router.delete('/:id', jwtAuth, async (req: any, res: any) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const id = req.params.id;
     if (!id) {
         return res.status(400).json({ error: 'Missing id' });
@@ -119,7 +125,9 @@ router.delete('/:id', jwtAuth, async (req, res) => {
     if (!config) {
         return res.status(404).json({ error: 'Config not found' });
     }
-    if (!guilds || !guilds.includes(config.guildId)) {
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds || !isGuildAdmin(guilds, config.guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }
     await getConfigManager().disabledCommandManager.remove({id});

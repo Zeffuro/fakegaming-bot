@@ -18,7 +18,7 @@ export default function GuildCommandsPage() {
     fetchDisabledCommands,
     disableCommand,
     enableCommand,
-  } = useGuildCommands(guildId as string, token);
+  } = useGuildCommands(guildId as string);
 
   useEffect(() => {
     fetchDisabledCommands();

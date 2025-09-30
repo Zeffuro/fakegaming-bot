@@ -1320,6 +1320,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{discordId}/guilds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get guilds for a user from Redis cache */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of guilds */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": Record<string, never>[];
+                    };
+                };
+                /** @description Redis unavailable or cache missing */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /** Set or update guilds for a user in Redis cache */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        guilds?: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Redis unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/youtube": {
         parameters: {
             query?: never;
@@ -1505,6 +1583,16 @@ export interface components {
             year?: number;
             guildId?: string;
             channelId?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CacheConfig: {
+            /** Format: int64 */
+            id: number;
+            guildId?: string;
+            commandName?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

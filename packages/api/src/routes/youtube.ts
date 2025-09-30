@@ -3,19 +3,8 @@ import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
-import { CacheManager } from '../../../common/src/models/cache-manager';
 
 const router = Router();
-
-async function getUserGuilds(discordId: string): Promise<string[]> {
-    const cacheKey = `user:${discordId}:guilds`;
-    let guilds = await cacheGet(cacheKey);
-    if (!guilds) {
-        const cacheEntry = await CacheManager.findByPk(cacheKey);
-        guilds = cacheEntry ? JSON.parse(cacheEntry.value) : [];
-    }
-    return guilds;
-}
 
 /**
  * @openapi
@@ -73,7 +62,11 @@ router.get('/channel', jwtAuth, async (req, res) => {
     if (!youtubeChannelId || !discordChannelId || !guildId) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
-    const guilds = await getUserGuilds(discordId);
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
     if (!isGuildAdmin(guilds, guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }

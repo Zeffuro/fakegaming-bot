@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
@@ -54,13 +54,18 @@ router.get('/', async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/search', jwtAuth, async (req, res) => {
+router.get('/search', jwtAuth, async (req: any, res: any) => {
     try {
-        const guildId = getStringQueryParam(req.query, 'guildId');
-        const text = getStringQueryParam(req.query, 'text');
+        const { discordId } = (req as AuthenticatedRequest).user;
+        const guildId = req.query.guildId;
+        const text = req.query.text;
         if (!guildId || !text) return res.status(400).json({error: 'guildId and text required'});
-        const { guilds } = (req as AuthenticatedRequest).user;
-        if (!isGuildAdmin(guilds, guildId)) {
+        const cacheKey = `user:${discordId}:guilds`;
+        const guilds = await cacheGet(cacheKey);
+        if (!guilds) {
+            return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+        }
+        if (!guilds.includes(guildId)) {
             return res.status(403).json({ error: 'Not authorized for this guild' });
         }
         const quotes = await getConfigManager().quoteManager.searchQuotes({
@@ -96,11 +101,16 @@ router.get('/search', jwtAuth, async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/guild/:guildId', jwtAuth, async (req, res) => {
+router.get('/guild/:guildId', jwtAuth, async (req: any, res: any) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const guildId = getStringQueryParam(req.params, 'guildId');
     if (!guildId) return res.status(400).json({ error: 'Missing guildId parameter' });
-    const { guilds } = (req as AuthenticatedRequest).user;
-    if (!isGuildAdmin(guilds, guildId)) {
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
+    if (!guilds.includes(guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }
     const quotes = await getConfigManager().quoteManager.getQuotesByGuild({guildId});

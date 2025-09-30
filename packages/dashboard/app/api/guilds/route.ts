@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from "next/server";
 import jwt from "jsonwebtoken";
-import { getCache, setCache } from "@/lib/cache";
+import { cacheGet, cacheSet } from "@zeffuro/fakegaming-common";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
@@ -51,12 +51,12 @@ export async function GET(req: NextRequest) {
 
     // Fetch bot's guilds with cache utility
     let botGuilds: any[] = [];
-    let cachedBotGuilds = await getCache(BOT_GUILDS_CACHE_KEY);
+    let cachedBotGuilds = await cacheGet(BOT_GUILDS_CACHE_KEY);
     if (cachedBotGuilds) {
         botGuilds = cachedBotGuilds;
     } else {
         botGuilds = await fetchGuilds("/users/@me/guilds", BOT_TOKEN);
-        await setCache(BOT_GUILDS_CACHE_KEY, botGuilds, BOT_GUILDS_CACHE_TTL);
+        await cacheSet(BOT_GUILDS_CACHE_KEY, botGuilds, BOT_GUILDS_CACHE_TTL);
     }
 
     // If user is in admin array, return all bot guilds
@@ -66,15 +66,15 @@ export async function GET(req: NextRequest) {
 
     // Fetch user's guilds with per-user cache utility
     let userGuilds = [];
-    const userGuildsCacheKey = `user_guilds:${user.id}`;
-    let cachedUserGuilds = await getCache(userGuildsCacheKey);
+    const userGuildsCacheKey = `user:${user.id}:guilds`;
+    let cachedUserGuilds = await cacheGet(userGuildsCacheKey);
     if (cachedUserGuilds) {
         userGuilds = cachedUserGuilds;
     } else {
         const userAccessToken = req.cookies.get("discord_access_token")?.value || "";
         if (userAccessToken) {
             userGuilds = await fetchGuilds("/users/@me/guilds", userAccessToken);
-            await setCache(userGuildsCacheKey, userGuilds, USER_GUILDS_CACHE_TTL);
+            await cacheSet(userGuildsCacheKey, userGuilds, USER_GUILDS_CACHE_TTL);
         }
     }
     if (!userGuilds.length) {

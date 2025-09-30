@@ -241,6 +241,20 @@ export type users_discordId_timezone_put_Request = paths["/users/{discordId}/tim
 export type users_discordId_defaultReminderTimeSpan_put_Request = paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
+ * Response for [GET /users/{discordId}/guilds 200]
+ *
+ * @see paths["/users/{discordId}/guilds"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type users_discordId_guilds_get_Response200 = paths["/users/{discordId}/guilds"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /users/{discordId}/guilds]
+ *
+ * @see paths["/users/{discordId}/guilds"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type users_discordId_guilds_post_Request = paths["/users/{discordId}/guilds"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
  * Response for [GET /youtube 200]
  *
  * @see paths["/youtube"]["get"]["responses"]["200"]["content"]["application/json"]

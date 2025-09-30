@@ -1,22 +1,10 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
-import { cacheGet } from '../../../common/src/cache';
-import { CacheManager } from '../../../common/src/models/cache-manager';
 
 const router = Router();
-
-async function getUserGuilds(discordId: string): Promise<string[]> {
-    const cacheKey = `user:${discordId}:guilds`;
-    let guilds = await cacheGet(cacheKey);
-    if (!guilds) {
-        const cacheEntry = await CacheManager.findByPk(cacheKey);
-        guilds = cacheEntry ? JSON.parse(cacheEntry.value) : [];
-    }
-    return guilds;
-}
 
 /**
  * @openapi
@@ -60,7 +48,7 @@ router.get('/', async (req, res) => {
  *       200:
  *         description: Existence result
  */
-router.get('/exists', jwtAuth, async (req, res) => {
+router.get('/exists', jwtAuth, async (req: any, res: any) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const twitchUsername = getStringQueryParam(req.query, 'twitchUsername');
     const discordChannelId = getStringQueryParam(req.query, 'discordChannelId');
@@ -68,7 +56,11 @@ router.get('/exists', jwtAuth, async (req, res) => {
     if (!twitchUsername || !discordChannelId || !guildId) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
-    const guilds = await getUserGuilds(discordId);
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
     if (!isGuildAdmin(guilds, guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }
@@ -123,8 +115,12 @@ router.get('/:id', async (req, res) => {
 router.post('/stream', jwtAuth, async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { twitchUsername, discordChannelId, guildId, customMessage } = req.body;
-    const guilds = await getUserGuilds(discordId);
-    if (!guildId || !guilds.includes(guildId)) {
+    const cacheKey = `user:${discordId}:guilds`;
+    const guilds = await cacheGet(cacheKey);
+    if (!guilds) {
+        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+    }
+    if (!isGuildAdmin(guilds, guildId)) {
         return res.status(403).json({ error: 'Not authorized for this guild' });
     }
     // Add or update stream config

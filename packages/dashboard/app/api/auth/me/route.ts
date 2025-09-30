@@ -17,6 +17,6 @@ export async function PUT(req: NextRequest) {
     } catch (err) {
         // Log error and JWT for debugging
         console.error("JWT verification failed", err, jwtToken);
-        return NextResponse.json({error: "Invalid token", details: err?.message || String(err)}, {status: 401});
+        return NextResponse.json({error: "Invalid token", details: String(err)}, {status: 401});
     }
 }

@@ -71,9 +71,9 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid Discord OAuth code' });
         }
         const user = await fetchDiscordUser(accessToken);
-        const guilds = await fetchDiscordGuilds(accessToken);
-        const jwtToken = issueJwt(user, guilds, process.env.JWT_SECRET!, JWT_AUDIENCE);
-        res.json({ token: jwtToken, user, guilds });
+        // TODO: Add guilds to redis cache?
+        const jwtToken = issueJwt(user, process.env.JWT_SECRET!, JWT_AUDIENCE);
+        res.json({ token: jwtToken, user });
     } catch (err) {
         console.error('Error in /auth/login:', err);
         res.status(500).json({ error: 'Failed to authenticate with Discord' });
