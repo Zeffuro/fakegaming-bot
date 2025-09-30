@@ -1,32 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Helper to extract JWT from request (customize as needed)
 function getJwt(req: NextRequest): string | undefined {
-  // Example: from Authorization header
   const auth = req.headers.get('authorization');
   if (auth && auth.startsWith('Bearer ')) return auth;
-  // Example: from cookies
   const jwt = req.cookies.get('jwt')?.value;
   return jwt ? `Bearer ${jwt}` : undefined;
 }
 
-export async function handler(req: NextRequest, { params }: { params: { proxy: string[] } }) {
+async function proxyHandler(req: NextRequest, { params }: { params: { proxy: string[] } }) {
   const { proxy } = params;
   const apiPath = '/' + proxy.join('/');
   const method = req.method;
   const jwt = getJwt(req);
-
-  // Build bot API URL (preserve query string)
   const baseUrl = process.env.BOT_API_URL;
   const search = req.nextUrl.search || '';
   const url = `${baseUrl}${apiPath}${search}`;
-
-  // Prepare fetch options
   const headers: Record<string, string> = {
     'Content-Type': req.headers.get('content-type') || 'application/json',
   };
   if (jwt) headers['Authorization'] = jwt;
-
   const fetchOptions: RequestInit = {
     method,
     headers,
@@ -34,8 +26,6 @@ export async function handler(req: NextRequest, { params }: { params: { proxy: s
   if (method !== 'GET' && method !== 'HEAD') {
     fetchOptions.body = await req.text();
   }
-
-  // Forward request to bot API
   const res = await fetch(url, fetchOptions);
   const contentType = res.headers.get('content-type');
   let data;
@@ -47,5 +37,18 @@ export async function handler(req: NextRequest, { params }: { params: { proxy: s
   return NextResponse.json(data, { status: res.status });
 }
 
-export { handler as GET, handler as POST, handler as DELETE, handler as PUT, handler as PATCH };
-
+export async function GET(req: NextRequest, context: { params: { proxy: string[] } }) {
+  return proxyHandler(req, context);
+}
+export async function POST(req: NextRequest, context: { params: { proxy: string[] } }) {
+  return proxyHandler(req, context);
+}
+export async function DELETE(req: NextRequest, context: { params: { proxy: string[] } }) {
+  return proxyHandler(req, context);
+}
+export async function PUT(req: NextRequest, context: { params: { proxy: string[] } }) {
+  return proxyHandler(req, context);
+}
+export async function PATCH(req: NextRequest, context: { params: { proxy: string[] } }) {
+  return proxyHandler(req, context);
+}

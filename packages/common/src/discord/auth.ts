@@ -36,10 +36,10 @@ export async function fetchDiscordUser(accessToken: string) {
     throw new Error("Discord rate limit exceeded for /users/@me");
 }
 
-export async function fetchDiscordGuilds(accessToken: string) {
+export async function fetchDiscordGuilds(accessToken: string, tokenType: "Bearer" | "Bot" = "Bearer") {
     for (let attempt = 0; attempt < 3; attempt++) {
         const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `${tokenType} ${accessToken}` },
         });
         if (guildsRes.status === 429) {
             const errorBody = await guildsRes.json();
@@ -53,6 +53,10 @@ export async function fetchDiscordGuilds(accessToken: string) {
         return await guildsRes.json();
     }
     throw new Error("Discord rate limit exceeded for /users/@me/guilds");
+}
+
+export function getDiscordOAuthUrl(discordClientId: string, discordRedirectUri: string) {
+    return `https://discord.com/api/oauth2/authorize?client_id=${discordClientId}&redirect_uri=${encodeURIComponent(discordRedirectUri)}&response_type=code&scope=identify%20guilds`;
 }
 
 export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAULT_AUDIENCE) {

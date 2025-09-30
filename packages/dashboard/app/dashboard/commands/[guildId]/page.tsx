@@ -9,7 +9,7 @@ import { Box, Typography, Container, CircularProgress, Alert } from "@mui/materi
 
 export default function GuildCommandsPage() {
   const { guildId } = useParams();
-  const { user, loading: userLoading, isAdmin, guilds } = useDashboardData();
+  const { user, loading: userLoading, guilds } = useDashboardData();
   const guild = guilds.find(g => g.id === guildId);
   const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
   const {

@@ -8,12 +8,13 @@ import GuildCard from "@/components/Guild/GuildCard";
 import GuildModal from "@/components/Guild/GuildModal";
 
 import {useDashboardData} from "@/components/hooks/useDashboardData";
+import FullscreenLoader from "@/components/FullscreenLoader";
 
 export default function Dashboard() {
-    const {user, guilds, loading, isAdmin} = useDashboardData();
+    const {user, guilds, isAdmin, loading} = useDashboardData();
     const [selectedGuild, setSelectedGuild] = useState<any>(null);
 
-    if (loading) return <Box sx={{p: 4}}><Typography>Loading dashboard...</Typography></Box>;
+    if (loading) return <FullscreenLoader />;
     if (!user) return null;
 
     return (

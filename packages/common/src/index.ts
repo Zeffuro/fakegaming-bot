@@ -32,6 +32,9 @@ export * from './sequelize.js';
 // Export cache
 export * from './cache.js';
 
+// Export auth
+export * from './discord/auth.js'
+
 // Export core utilities
 export * from './core/bootstrapEnv.js';
 export * from './core/dataRoot.js';
