@@ -3,6 +3,7 @@ import * as Models from './models/index.js';
 import * as Managers from './managers/index.js';
 import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
+import * as Testing from './testing/index.js';
 
 // Sequelize - fixed import names
 import { getSequelize } from './sequelize.js';
@@ -110,3 +111,8 @@ export type { MinimalGuildData } from './discord/types.js';
 
 // Export permission utilities
 export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from './utils/permissionUtils.js';
+
+// Export all testing utilities
+export {
+  Testing
+};

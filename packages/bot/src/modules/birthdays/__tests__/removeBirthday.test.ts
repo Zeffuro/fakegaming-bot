@@ -1,61 +1,144 @@
-import {jest} from '@jest/globals';
-import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {BirthdayManager} from '@zeffuro/fakegaming-common/managers';
-import {CommandInteraction, PermissionFlagsBits, User} from 'discord.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { CommandInteraction } from 'discord.js';
 
 describe('removeBirthday command', () => {
     beforeEach(() => {
-        jest.resetModules();
-        jest.clearAllMocks();
-    });
-    it('removes the user\'s birthday', async () => {
-        const {command, mockManager, interaction} = await setupCommandWithInteraction({
-            managerClass: BirthdayManager,
-            managerKey: 'birthdayManager',
-            commandPath: '../../modules/birthdays/commands/removeBirthday.js',
-            interactionOptions: {
-                user: {id: '123456789012345678'} as unknown as User,
-                guildId: '135381928284343204',
-            }
-        });
-        await command.execute(interaction as unknown as CommandInteraction);
-        expect(mockManager.removeBirthday).toHaveBeenCalledWith({
-            userId: '123456789012345678',
-            guildId: '135381928284343204',
-        });
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('Your birthday has been removed.'),
-            })
-        );
+        // Reset all mocks and clear module cache before each test
+        vi.resetAllMocks();
+        vi.resetModules();
     });
 
-    it('removes another user\'s birthday (admin)', async () => {
-        const {command, mockManager, interaction} = await setupCommandWithInteraction({
-            managerClass: BirthdayManager,
-            managerKey: 'birthdayManager',
-            commandPath: '../../modules/birthdays/commands/removeBirthday.js',
-            interactionOptions: {
-                user: {id: '098765432987654321'} as unknown as User,
-                guildId: '135381928284343204',
-                userOptions: {user: {id: '987654321098765432'} as unknown as User},
-                memberPermissions: {
-                    has: (perm: bigint) => perm === PermissionFlagsBits.Administrator,
+    it('removes user\'s own birthday', async () => {
+        // Create a mock for removeBirthday
+        const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
+
+        // Setup the test environment
+        const { command, interaction } = await setupCommandTest(
+            'modules/birthdays/commands/removeBirthday.js',
+            {
+                interaction: {
+                    user: { id: '123456789012345678' },
+                    guildId: '135381928284343204'
                 },
+                managerOverrides: {
+                    birthdayManager: {
+                        removeBirthday: removeBirthdaySpy
+                    }
+                }
             }
-        });
-        const {requireAdmin} = await import('../../../utils/permissions.js');
+        );
+
+        // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
 
-        expect(requireAdmin).toHaveBeenCalled();
-        expect(mockManager.removeBirthday).toHaveBeenCalledWith({
-            userId: '987654321098765432',
-            guildId: '135381928284343204',
+        // Verify removeBirthday was called with correct parameters
+        expect(removeBirthdaySpy).toHaveBeenCalledWith({
+            userId: '123456789012345678',
+            guildId: '135381928284343204'
         });
+
+        // Verify the interaction reply
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.objectContaining({
-                content: expect.stringContaining('<@987654321098765432>\'s birthday has been removed.'),
+                content: expect.stringContaining('Your birthday has been removed'),
+                flags: expect.anything()
             })
         );
+    });
+
+    it('allows admin to remove another user\'s birthday', async () => {
+        // Target user ID
+        const targetUserId = '234567890123456789';
+
+        // Create mocks
+        const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
+        const requireAdminSpy = vi.fn().mockResolvedValue(true); // User is admin
+
+        // Mock the requireAdmin function
+        vi.doMock('../../../utils/permissions.js', () => ({
+            requireAdmin: requireAdminSpy
+        }));
+
+        // Setup the test environment with target user option
+        const { command, interaction } = await setupCommandTest(
+            'modules/birthdays/commands/removeBirthday.js',
+            {
+                interaction: {
+                    user: { id: '123456789012345678' },
+                    guildId: '135381928284343204',
+                    options: {
+                        getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
+                    }
+                },
+                managerOverrides: {
+                    birthdayManager: {
+                        removeBirthday: removeBirthdaySpy
+                    }
+                }
+            }
+        );
+
+        // Execute the command
+        await command.execute(interaction as unknown as CommandInteraction);
+
+        // Verify requireAdmin was called
+        expect(requireAdminSpy).toHaveBeenCalledWith(interaction);
+
+        // Verify removeBirthday was called with the target user's ID
+        expect(removeBirthdaySpy).toHaveBeenCalledWith({
+            userId: targetUserId,
+            guildId: '135381928284343204'
+        });
+
+        // Verify the interaction reply mentions the target user
+        expect(interaction.reply).toHaveBeenCalledWith(
+            expect.objectContaining({
+                content: expect.stringContaining(`<@${targetUserId}>'s birthday has been removed`),
+                flags: expect.anything()
+            })
+        );
+    });
+
+    it('prevents non-admin from removing another user\'s birthday', async () => {
+        // Target user ID
+        const targetUserId = '234567890123456789';
+
+        // Create mocks
+        const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
+        const requireAdminSpy = vi.fn().mockResolvedValue(false); // User is NOT admin
+
+        // Mock the requireAdmin function
+        vi.doMock('../../../utils/permissions.js', () => ({
+            requireAdmin: requireAdminSpy
+        }));
+
+        // Setup the test environment with target user option
+        const { command, interaction } = await setupCommandTest(
+            'modules/birthdays/commands/removeBirthday.js',
+            {
+                interaction: {
+                    user: { id: '123456789012345678' },
+                    guildId: '135381928284343204',
+                    options: {
+                        getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
+                    }
+                },
+                managerOverrides: {
+                    birthdayManager: {
+                        removeBirthday: removeBirthdaySpy
+                    }
+                }
+            }
+        );
+
+        // Execute the command
+        await command.execute(interaction as unknown as CommandInteraction);
+
+        // Verify requireAdmin was called
+        expect(requireAdminSpy).toHaveBeenCalledWith(interaction);
+
+        // Verify removeBirthday was NOT called
+        expect(removeBirthdaySpy).not.toHaveBeenCalled();
     });
 });
