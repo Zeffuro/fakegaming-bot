@@ -28,7 +28,7 @@ beforeEach(async () => {
 describe('PatchNotes API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all patch notes', async () => {
         const res = await request(app).get('/api/patchNotes').set('Authorization', `Bearer ${token}`);
@@ -41,7 +41,7 @@ describe('PatchNotes API', () => {
         expect(res.body.game).toBe(testPatch.game);
     });
     it('should upsert (add/update) a patch note', async () => {
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).post('/api/patchNotes').set('Authorization', `Bearer ${token}`).send({
             game: testPatch.game, // Use the same game as the initial patch
             version: '2.0.0',

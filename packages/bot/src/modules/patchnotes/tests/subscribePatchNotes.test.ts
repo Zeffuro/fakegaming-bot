@@ -4,7 +4,7 @@ import {MockInteraction} from '../../../test/MockInteraction.js';
 import {
     PatchNotesManager,
     PatchSubscriptionManager
-} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
+} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, GuildTextBasedChannel} from "discord.js";
 
 describe('subscribePatchNotes command', () => {
@@ -28,7 +28,7 @@ describe('subscribePatchNotes command', () => {
 
         await command.execute(interaction as unknown as CommandInteraction);
 
-        expect(mockManager.subscribe).toHaveBeenCalledWith('League of Legends', '1234567890');
+        expect(mockManager.subscribe).toHaveBeenCalledWith('League of Legends', '1234567890', '135381928284343204');
         expect(interaction.reply).toHaveBeenCalledWith(
             expect.stringContaining('Subscribed <#1234567890> to patch notes for `League of Legends`.')
         );

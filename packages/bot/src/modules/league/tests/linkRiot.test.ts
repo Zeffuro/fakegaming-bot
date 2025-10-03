@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {LeagueConfig} from '@zeffuro/fakegaming-common/dist/models/league-config.js';
+import {LeagueConfig} from '@zeffuro/fakegaming-common/models';
 import {CommandInteraction} from "discord.js";
 
 jest.spyOn(LeagueConfig, 'create').mockResolvedValue({} as Partial<LeagueConfig>);

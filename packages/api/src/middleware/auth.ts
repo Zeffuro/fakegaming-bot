@@ -10,7 +10,13 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
         secret: JWT_SECRET,
         algorithms: ['HS256'],
         audience: JWT_AUDIENCE,
-    })(req, res, next);
+        requestProperty: 'user',
+    })(req, res, (err) => {
+        if (err) {
+            console.error('JWT validation error:', err);
+        }
+        next(err);
+    });
 };
 
 export const getJwtSecret = (): string => {

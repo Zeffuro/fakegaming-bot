@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { bootstrapEnv } from "@zeffuro/fakegaming-common";
+import { bootstrapEnv } from "../lib/common/core";
 
 const { __dirname } = bootstrapEnv(import.meta.url);
 

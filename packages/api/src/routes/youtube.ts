@@ -1,7 +1,8 @@
 import {Router} from 'express';
-import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
-import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
+import {getStringQueryParam} from '../utils/requestHelpers.js';
+import {requireGuildAdmin} from '../utils/authHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
@@ -23,8 +24,13 @@ const router = Router();
  *                 $ref: '#/components/schemas/YoutubeVideoConfig'
  */
 router.get('/', async (req, res) => {
-    const configs = await getConfigManager().youtubeManager.getAllPlain();
-    res.json(configs);
+    try {
+        const configs = await getConfigManager().youtubeManager.getAllPlain();
+        res.json(configs);
+    } catch (error) {
+        console.error('[YouTube API] Error fetching all configs:', error);
+        res.status(500).json({ error: 'Failed to fetch YouTube configurations' });
+    }
 });
 
 /**
@@ -44,6 +50,13 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: guildId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: YouTube config
@@ -54,24 +67,23 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/channel', jwtAuth, async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
+router.get('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
     const youtubeChannelId = getStringQueryParam(req.query, 'youtubeChannelId');
     const discordChannelId = getStringQueryParam(req.query, 'discordChannelId');
     const guildId = getStringQueryParam(req.query, 'guildId');
+
     if (!youtubeChannelId || !discordChannelId || !guildId) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
-    const cacheKey = `user:${discordId}:guilds`;
-    const guilds = await cacheGet(cacheKey);
-    if (!guilds) {
-        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+
+    try {
+        // Permission check is now handled by the requireGuildAdmin middleware
+        const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
+        res.json(config);
+    } catch (error) {
+        console.error('[YouTube API] Error fetching channel config:', error);
+        res.status(500).json({ error: 'Failed to fetch YouTube channel configuration' });
     }
-    if (!isGuildAdmin(guilds, guildId)) {
-        return res.status(403).json({ error: 'Not authorized for this guild' });
-    }
-    const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
-    res.json(config);
 });
 
 /**
@@ -142,6 +154,48 @@ router.post('/', jwtAuth, async (req, res) => {
 router.put('/', jwtAuth, async (req, res) => {
     await getConfigManager().youtubeManager.setVideoChannel(req.body);
     res.json({success: true});
+});
+
+/**
+ * @openapi
+ * /youtube/channel:
+ *   post:
+ *     summary: Add a new YouTube channel config
+ *     tags: [YouTube]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/YoutubeVideoConfig'
+ *     responses:
+ *       201:
+ *         description: Created
+ */
+router.post('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId, customMessage } = req.body;
+
+    if (!youtubeChannelId || !discordChannelId || !guildId) {
+        return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    try {
+        // Permission check is now handled by the requireGuildAdmin middleware
+
+        // Add or update channel config
+        await getConfigManager().youtubeManager.upsert({ youtubeChannelId, discordChannelId, guildId, customMessage });
+
+        // Log the action
+        const { discordId } = (req as AuthenticatedRequest).user;
+        console.log(`[AUDIT] User ${discordId} set YouTube channel config for guild ${guildId} at ${new Date().toISOString()}`);
+
+        res.status(201).json({ success: true });
+    } catch (error) {
+        console.error('[YouTube API] Error creating/updating channel config:', error);
+        res.status(500).json({ error: 'Failed to save YouTube channel configuration' });
+    }
 });
 
 export default router;

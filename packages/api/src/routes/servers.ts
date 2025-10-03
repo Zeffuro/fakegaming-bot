@@ -1,8 +1,7 @@
 import {Router} from 'express';
-import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
-import { jwtAuth } from '../middleware/auth.js';
-import { isGuildAdmin } from '../utils/requestHelpers.js';
-import type { AuthenticatedRequest } from '../types/express.js';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
+import {jwtAuth} from '../middleware/auth.js';
+import {checkUserGuildAccess} from '../utils/authHelpers.js';
 
 const router = Router();
 
@@ -39,6 +38,8 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Server config
@@ -51,16 +52,15 @@ router.get('/', async (req, res) => {
  */
 router.get('/:serverId', jwtAuth, async (req, res) => {
     const { serverId } = req.params;
-    const { discordId } = (req as AuthenticatedRequest).user;
     if (!serverId) return res.status(400).json({ error: 'Missing serverId parameter' });
-    const cacheKey = `user:${discordId}:guilds`;
-    const guilds = await cacheGet(cacheKey);
-    if (!guilds) {
-        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+
+    // Check user's access to this server/guild
+    const accessResult = await checkUserGuildAccess(req, res, serverId);
+    if (!accessResult.authorized) {
+        // Response already sent by checkUserGuildAccess
+        return;
     }
-    if (!isGuildAdmin(guilds, serverId)) {
-        return res.status(403).json({ error: 'Not authorized for this server' });
-    }
+
     const server = await getConfigManager().serverManager.getServer(serverId);
     if (!server) return res.status(404).json({error: 'Server not found'});
     res.json(server);

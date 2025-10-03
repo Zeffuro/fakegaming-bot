@@ -17,7 +17,7 @@ beforeAll(async () => {
 describe('Servers API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all servers', async () => {
         const res = await request(app).get('/api/servers').set('Authorization', `Bearer ${token}`);

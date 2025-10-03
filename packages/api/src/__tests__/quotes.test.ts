@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../app.js';
 import {configManager} from '../jest.setup.js';
-import {QuoteConfig} from '@zeffuro/fakegaming-common';
+import {QuoteConfig} from '@zeffuro/fakegaming-common/models';
 import {signTestJwt} from '../testUtils/jwt.js';
 
 let quoteId: string;
@@ -24,7 +24,7 @@ beforeEach(async () => {
 describe('Quotes API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all quotes', async () => {
         const res = await request(app).get('/api/quotes').set('Authorization', `Bearer ${token}`);
@@ -62,7 +62,7 @@ describe('Quotes API', () => {
         expect(res.body.some((q: QuoteConfig) => q.quote.includes('test quote'))).toBe(true);
     });
     it('should add a new quote', async () => {
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).post('/api/quotes').set('Authorization', `Bearer ${token}`).send({
             id: 'test-quote-2',
             guildId: 'testguild2',
@@ -84,7 +84,7 @@ describe('Quotes API', () => {
             quote: 'To be deleted.',
             timestamp: 1700000000002
         });
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).delete(`/api/quotes/${created.id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);

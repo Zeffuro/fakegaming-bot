@@ -5,35 +5,54 @@ import { useDashboardData } from "@/components/hooks/useDashboardData";
 import { BOT_COMMANDS } from "@/lib/commands";
 import CommandList from "@/components/Commands/CommandList";
 import { useGuildCommands } from "@/components/hooks/useGuildCommands";
-import { Box, Typography, Container, CircularProgress, Alert } from "@mui/material";
+import { Box, Typography, Alert, Paper } from "@mui/material";
+import DashboardLayout from "@/components/DashboardLayout";
 
 export default function GuildCommandsPage() {
   const { guildId } = useParams();
-  const { user, loading: userLoading, guilds } = useDashboardData();
+  const { guilds } = useDashboardData();
   const guild = guilds.find(g => g.id === guildId);
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
   const {
     disabledCommands,
     loadingCommand,
     fetchDisabledCommands,
     disableCommand,
     enableCommand,
+    error
   } = useGuildCommands(guildId as string);
 
   useEffect(() => {
-    fetchDisabledCommands();
-  }, [guildId]);
+    if (guildId) {
+      fetchDisabledCommands();
+    }
+  }, [guildId, fetchDisabledCommands]);
 
-  if (userLoading) return <Box sx={{ p: 4 }}><CircularProgress /></Box>;
-  if (!user) return <Box sx={{ p: 4 }}><Alert severity="error">Not authenticated.</Alert></Box>;
-  if (!guild) return <Box sx={{ p: 4 }}><Alert severity="error">Guild not found.</Alert></Box>;
+  if (!guild) {
+    return (
+      <DashboardLayout>
+        <Alert severity="error">Guild not found or you don't have access to this guild.</Alert>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <>
-      <Container maxWidth="md">
-        <Typography variant="h5" sx={{ mb: 2 }}>
-          Manage Commands for <b>{guild.name}</b>
+    <DashboardLayout guild={guild} currentModule="commands" maxWidth="md">
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ mb: 2, fontWeight: 600 }}>
+          Command Management
         </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Enable or disable bot commands for this server. Disabled commands will not be available to server members.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
         <CommandList
           commands={BOT_COMMANDS}
           disabledCommands={disabledCommands}
@@ -43,7 +62,7 @@ export default function GuildCommandsPage() {
             else disableCommand(commandName);
           }}
         />
-      </Container>
-    </>
+      </Paper>
+    </DashboardLayout>
   );
 }

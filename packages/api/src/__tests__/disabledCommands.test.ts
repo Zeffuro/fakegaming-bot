@@ -19,7 +19,7 @@ beforeEach(async () => {
 describe('DisabledCommands API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
 
     it('should list all disabled commands', async () => {

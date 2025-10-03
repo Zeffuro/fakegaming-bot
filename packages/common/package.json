@@ -7,9 +7,39 @@
   "type": "module",
   "author": "Zeffuro",
   "license": "AGPL-3.0-only",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./models": {
+      "import": "./dist/models/index.js",
+      "types": "./dist/models/index.d.ts"
+    },
+    "./managers": {
+      "import": "./dist/managers/index.js",
+      "types": "./dist/managers/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core/index.js",
+      "types": "./dist/core/index.d.ts"
+    },
+    "./discord": {
+      "import": "./dist/discord/index.js",
+      "types": "./dist/discord/index.d.ts"
+    },
+    "./utils/cache": {
+      "import": "./dist/utils/cacheManager.js",
+      "types": "./dist/utils/cacheManager.d.ts"
+    },
+    "./auth": {
+      "import": "./dist/discord/auth.js",
+      "types": "./dist/discord/auth.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
+    "lint": "eslint src --ext .ts,.d.ts --config ../../eslint.config.mjs",
     "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config ./jest.config.mjs --passWithNoTests"
   },
   "dependencies": {

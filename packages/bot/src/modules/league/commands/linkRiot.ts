@@ -1,9 +1,9 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
-import {LeagueConfig} from '@zeffuro/fakegaming-common/dist/models/league-config.js';
+import {LeagueConfig} from '@zeffuro/fakegaming-common/models';
 
 /**
  * Slash command metadata for Discord registration.

@@ -5,7 +5,7 @@ import {signTestJwt} from '../testUtils/jwt.js';
 describe('PatchSubscriptions API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all patch subscriptions', async () => {
         const res = await request(app).get('/api/patchSubscriptions').set('Authorization', `Bearer ${token}`);
@@ -16,7 +16,8 @@ describe('PatchSubscriptions API', () => {
     it('should subscribe to a game/channel', async () => {
         const res = await request(app).post('/api/patchSubscriptions').set('Authorization', `Bearer ${token}`).send({
             game: 'patchsubgame2',
-            channelId: 'patchsubchan2'
+            channelId: 'patchsubchan2',
+            guildId: 'testguild2'
         });
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
@@ -25,7 +26,8 @@ describe('PatchSubscriptions API', () => {
     it('should upsert a patch subscription', async () => {
         const res = await request(app).put('/api/patchSubscriptions').set('Authorization', `Bearer ${token}`).send({
             game: 'patchsubgame1',
-            channelId: 'patchsubchan1'
+            channelId: 'patchsubchan1',
+            guildId: 'testguild1'
         });
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);

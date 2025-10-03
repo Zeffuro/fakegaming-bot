@@ -34,7 +34,7 @@ beforeEach(async () => {
 describe('Birthdays API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all birthdays', async () => {
         const res = await request(app).get('/api/birthdays').set('Authorization', `Bearer ${token}`);
@@ -48,7 +48,7 @@ describe('Birthdays API', () => {
         expect(res.body.guildId).toBe(testBirthday.guildId);
     });
     it('should add or update a birthday', async () => {
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).post('/api/birthdays').set('Authorization', `Bearer ${token}`).send({
             userId: 'birthdayuser2',
             guildId: 'birthdayguild2',
@@ -67,7 +67,7 @@ describe('Birthdays API', () => {
             channelId: 'testchannel3',
             ...parseDate('1990-01-01')
         }, 'userId');
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).delete('/api/birthdays/birthdayuser3/birthdayguild3').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);

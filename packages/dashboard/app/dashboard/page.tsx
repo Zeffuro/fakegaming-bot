@@ -1,42 +1,49 @@
 "use client";
-import React, {useState} from "react";
+import React from "react";
 import {
-    Typography, Box, Container
+    Typography, Box, Alert
 } from "@mui/material";
-import TopBar from "../../components/TopBar/TopBar";
 import GuildCard from "@/components/Guild/GuildCard";
-import GuildModal from "@/components/Guild/GuildModal";
-
+import DashboardLayout from "@/components/DashboardLayout";
+import { useRouter } from "next/navigation";
 import {useDashboardData} from "@/components/hooks/useDashboardData";
-import FullscreenLoader from "@/components/FullscreenLoader";
 
 export default function Dashboard() {
-    const {user, guilds, isAdmin, loading} = useDashboardData();
-    const [selectedGuild, setSelectedGuild] = useState<any>(null);
+    const {guilds, isAdmin, loading, error} = useDashboardData();
+    const router = useRouter();
 
-    if (loading) return <FullscreenLoader />;
-    if (!user) return null;
+    const handleGuildClick = (guild: any) => {
+        router.push(`/dashboard/${guild.id}`);
+    };
+
+    if (error) {
+        return (
+            <DashboardLayout>
+                <Alert severity="error">{error}</Alert>
+            </DashboardLayout>
+        );
+    }
 
     return (
-        <>
-            <TopBar user={user}/>
-            <Container maxWidth="lg">
-                <Typography variant="h5" sx={{mb: 2}}>
-                    Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
-                </Typography>
-                <Box
-                    sx={{
-                        display: "grid",
-                        gridTemplateColumns: {xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr", lg: "1fr 1fr 1fr 1fr"},
-                        gap: 3,
-                    }}
-                >
-                    {guilds.map(guild => (
-                        <GuildCard key={guild.id} guild={guild} onClick={() => setSelectedGuild(guild)}/>
-                    ))}
-                </Box>
-                <GuildModal guild={selectedGuild} open={!!selectedGuild} onClose={() => setSelectedGuild(null)}/>
-            </Container>
-        </>
+        <DashboardLayout loading={loading}>
+            {!loading && (
+                <>
+                    <Typography variant="h4" sx={{mb: 4, fontWeight: 600}}>
+                        Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
+                    </Typography>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: {xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr", lg: "1fr 1fr 1fr 1fr"},
+                            gap: 3,
+                        }}
+                    >
+                        {guilds.map(guild => (
+                            <GuildCard key={guild.id} guild={guild} onClick={() => handleGuildClick(guild)}/>
+                        ))}
+                    </Box>
+                </>
+            )}
+        </DashboardLayout>
     );
 }

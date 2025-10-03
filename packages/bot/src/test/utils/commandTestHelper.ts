@@ -36,7 +36,7 @@ export async function setupCommandTest({
         jest.unstable_mockModule(module, factory);
     }
 
-    const configManagerModule = await import('@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js');
+    const configManagerModule = await import('@zeffuro/fakegaming-common/managers');
     const getConfigManager = configManagerModule.getConfigManager;
     const command = (await import(commandPath)).default;
 

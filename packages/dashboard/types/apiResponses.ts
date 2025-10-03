@@ -192,6 +192,13 @@ export type servers_serverId_get_Response200 = paths["/servers/{serverId}"]["get
 export type twitch_get_Response200 = paths["/twitch"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [POST /twitch 201]
+ *
+ * @see paths["/twitch"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type twitch_post_Response201 = paths["/twitch"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
  * Request body for [POST /twitch]
  *
  * @see paths["/twitch"]["post"]["requestBody"]["content"]["application/json"]
@@ -241,20 +248,6 @@ export type users_discordId_timezone_put_Request = paths["/users/{discordId}/tim
 export type users_discordId_defaultReminderTimeSpan_put_Request = paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
- * Response for [GET /users/{discordId}/guilds 200]
- *
- * @see paths["/users/{discordId}/guilds"]["get"]["responses"]["200"]["content"]["application/json"]
- */
-export type users_discordId_guilds_get_Response200 = paths["/users/{discordId}/guilds"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
- * Request body for [POST /users/{discordId}/guilds]
- *
- * @see paths["/users/{discordId}/guilds"]["post"]["requestBody"]["content"]["application/json"]
- */
-export type users_discordId_guilds_post_Request = paths["/users/{discordId}/guilds"]["post"]["requestBody"]["content"]["application/json"];
-
-/**
  * Response for [GET /youtube 200]
  *
  * @see paths["/youtube"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -281,6 +274,13 @@ export type youtube_put_Request = paths["/youtube"]["put"]["requestBody"]["conte
  * @see paths["/youtube/channel"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type youtube_channel_get_Response200 = paths["/youtube/channel"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /youtube/channel]
+ *
+ * @see paths["/youtube/channel"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type youtube_channel_post_Request = paths["/youtube/channel"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
  * Response for [GET /youtube/{id} 200]

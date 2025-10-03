@@ -1,9 +1,8 @@
 import {Client, ChannelType} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, PatchNotesManager} from '@zeffuro/fakegaming-common/managers';
 import {loadPatchNoteFetchers} from '../loaders/loadPatchNoteFetchers.js';
-import {PatchNotesManager} from "@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js";
 import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.js";
-import {PatchNoteConfig, PatchSubscriptionConfig} from "@zeffuro/fakegaming-common";
+import {PatchNoteConfig, PatchSubscriptionConfig} from "@zeffuro/fakegaming-common/models";
 
 /**
  * Scans all games for new patch notes and updates them if newer.

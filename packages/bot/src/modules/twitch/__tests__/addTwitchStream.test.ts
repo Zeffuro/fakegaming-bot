@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
 import {CommandInteraction, GuildTextBasedChannel, PermissionFlagsBits} from 'discord.js';
-import {TwitchManager} from "@zeffuro/fakegaming-common/dist/managers/twitchManager.js";
+import {TwitchManager} from '@zeffuro/fakegaming-common/managers';
 
 describe('addTwitchStream command', () => {
     beforeEach(() => {

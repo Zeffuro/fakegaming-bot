@@ -23,7 +23,7 @@ beforeEach(async () => {
 describe('Reminders API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all reminders', async () => {
         const res = await request(app).get('/api/reminders').set('Authorization', `Bearer ${token}`);

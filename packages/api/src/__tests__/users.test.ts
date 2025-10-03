@@ -11,7 +11,7 @@ const testUser = {
 describe('Users API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should create or update a user', async () => {
         const res = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`).send(testUser);

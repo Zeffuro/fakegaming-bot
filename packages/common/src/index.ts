@@ -1,41 +1,112 @@
-// Export models
-export * from './models/user-config.js';
-export * from './models/league-config.js';
-export * from './models/server-config.js';
-export * from './models/quote-config.js';
-export * from './models/twitch-stream-config.js';
-export * from './models/youtube-video-config.js';
-export * from './models/reminder-config.js';
-export * from './models/birthday-config.js';
-export * from './models/patch-note-config.js';
-export * from './models/patch-subscription-config.js';
-export * from './models/disabled-command-config.js';
-export * from './models/cache-config.js';
+// Import from sub-entry points
+import * as Models from './models/index.js';
+import * as Managers from './managers/index.js';
+import * as Core from './core/index.js';
+import * as Discord from './discord/index.js';
 
-// Export managers
-export * from './managers/baseManager.js';
-export * from './managers/userManager.js';
-export * from './managers/serverManager.js';
-export * from './managers/quoteManager.js';
-export * from './managers/twitchManager.js';
-export * from './managers/youtubeManager.js';
-export * from './managers/reminderManager.js';
-export * from './managers/birthdayManager.js';
-export * from './managers/patchNotesManager.js';
-export * from './managers/disabledCommandManager.js';
-export * from './managers/configManager.js';
-export * from './managers/configManagerSingleton.js';
+// Sequelize - fixed import names
+import { getSequelize } from './sequelize.js';
 
-// Export sequelize
-export * from './sequelize.js';
+// Cache utilities
+import { cacheGet, cacheSet, cacheDel, ensureRedis } from './cache.js';
+import { CACHE_KEYS, CACHE_TTL, getCacheManager, defaultCacheManager, type CacheManager } from './utils/cacheManager.js';
 
-// Export cache
-export * from './cache.js';
+// Export all models
+export {
+  Models
+};
 
-// Export auth
-export * from './discord/auth.js'
+// Re-export individual models for backward compatibility
+export {
+  UserConfig,
+  LeagueConfig,
+  ServerConfig,
+  QuoteConfig,
+  TwitchStreamConfig,
+  YoutubeVideoConfig,
+  ReminderConfig,
+  BirthdayConfig,
+  PatchNoteConfig,
+  PatchSubscriptionConfig,
+  DisabledCommandConfig,
+  CacheConfig
+} from './models/index.js';
 
-// Export core utilities
-export * from './core/bootstrapEnv.js';
-export * from './core/dataRoot.js';
-export * from './core/projectRoot.js';
+// Export all managers as a namespace
+export {
+  Managers
+};
+
+// Re-export individual managers for backward compatibility
+export {
+  getConfigManager,
+  ConfigManager,
+  BaseManager,
+  UserManager,
+  ServerManager,
+  QuoteManager,
+  TwitchManager,
+  YoutubeManager,
+  ReminderManager,
+  BirthdayManager,
+  PatchNotesManager,
+  DisabledCommandManager
+} from './managers/index.js';
+
+// Export core utilities as a namespace
+export {
+  Core
+};
+
+// Re-export individual core utilities for backward compatibility
+export {
+  bootstrapEnv,
+  // Fixed core exports based on actual exports
+  PROJECT_ROOT
+} from './core/index.js';
+
+// Export Discord utilities as a namespace
+export {
+  Discord
+};
+
+// Re-export individual Discord auth utilities with the correct names
+export {
+  // Export the actual functions that are available
+  getDiscordGuilds,
+  exchangeCodeForToken,
+  fetchDiscordUser,
+  getDiscordOAuthUrl,
+  issueJwt,
+  verifyJwt,
+  getDiscordGuildChannels
+} from './discord/index.js';
+
+// Export sequelize - fixed to use getSequelize
+export {
+  getSequelize
+};
+
+// Export cache utilities
+export {
+  // Low-level cache functions
+  cacheGet,
+  cacheSet,
+  cacheDel,
+  ensureRedis,
+  // Cache manager
+  CACHE_KEYS,
+  CACHE_TTL,
+  getCacheManager,
+  defaultCacheManager,
+  type CacheManager
+};
+
+// For backward compatibility, export getCachedData function
+export const getCachedData = defaultCacheManager.getCachedData.bind(defaultCacheManager);
+
+// Export Discord types
+export type { MinimalGuildData } from './discord/types.js';
+
+// Export permission utilities
+export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from './utils/permissionUtils.js';

@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 import { swaggerSpec } from "../src/app.js";
-import {bootstrapEnv, getConfigManager} from "@zeffuro/fakegaming-common";
+import {bootstrapEnv} from "@zeffuro/fakegaming-common/core";
+import {getConfigManager} from "@zeffuro/fakegaming-common/managers";
 import {injectOpenApiSchemas} from "../src/utils/openapi-inject-schemas.js";
 const {__dirname} = bootstrapEnv(import.meta.url);
 

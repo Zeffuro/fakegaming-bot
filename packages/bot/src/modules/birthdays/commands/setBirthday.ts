@@ -6,7 +6,7 @@ import {
     User,
     AutocompleteInteraction
 } from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {months} from "../../../constants/months.js";
 import {requireAdmin} from "../../../utils/permissions.js";
 

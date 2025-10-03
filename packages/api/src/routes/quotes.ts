@@ -1,7 +1,8 @@
 import {Router} from 'express';
-import {getConfigManager, cacheGet} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
-import { getStringQueryParam, isGuildAdmin } from '../utils/requestHelpers.js';
+import {checkUserGuildAccess} from '../utils/authHelpers.js';
+import { getStringQueryParam } from '../utils/requestHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
@@ -44,6 +45,8 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of quotes
@@ -54,20 +57,19 @@ router.get('/', async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/search', jwtAuth, async (req: any, res: any) => {
+router.get('/search', jwtAuth, async (req, res) => {
     try {
-        const { discordId } = (req as AuthenticatedRequest).user;
-        const guildId = req.query.guildId;
-        const text = req.query.text;
+        const guildId = req.query.guildId as string;
+        const text = req.query.text as string;
         if (!guildId || !text) return res.status(400).json({error: 'guildId and text required'});
-        const cacheKey = `user:${discordId}:guilds`;
-        const guilds = await cacheGet(cacheKey);
-        if (!guilds) {
-            return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+
+        // Check user's access to this guild
+        const accessResult = await checkUserGuildAccess(req, res, guildId);
+        if (!accessResult.authorized) {
+            // Response already sent by checkUserGuildAccess
+            return;
         }
-        if (!guilds.includes(guildId)) {
-            return res.status(403).json({ error: 'Not authorized for this guild' });
-        }
+
         const quotes = await getConfigManager().quoteManager.searchQuotes({
             guildId: String(guildId),
             text: String(text)
@@ -91,6 +93,8 @@ router.get('/search', jwtAuth, async (req: any, res: any) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of quotes
@@ -101,18 +105,17 @@ router.get('/search', jwtAuth, async (req: any, res: any) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/guild/:guildId', jwtAuth, async (req: any, res: any) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
+router.get('/guild/:guildId', jwtAuth, async (req, res) => {
     const guildId = getStringQueryParam(req.params, 'guildId');
     if (!guildId) return res.status(400).json({ error: 'Missing guildId parameter' });
-    const cacheKey = `user:${discordId}:guilds`;
-    const guilds = await cacheGet(cacheKey);
-    if (!guilds) {
-        return res.status(503).json({ error: 'Redis unavailable or guilds not cached for user' });
+
+    // Check user's access to this guild
+    const accessResult = await checkUserGuildAccess(req, res, guildId);
+    if (!accessResult.authorized) {
+        // Response already sent by checkUserGuildAccess
+        return;
     }
-    if (!guilds.includes(guildId)) {
-        return res.status(403).json({ error: 'Not authorized for this guild' });
-    }
+
     const quotes = await getConfigManager().quoteManager.getQuotesByGuild({guildId});
     res.json(quotes);
 });
@@ -134,6 +137,8 @@ router.get('/guild/:guildId', jwtAuth, async (req: any, res: any) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of quotes
@@ -144,9 +149,17 @@ router.get('/guild/:guildId', jwtAuth, async (req: any, res: any) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/guild/:guildId/author/:authorId', async (req, res) => {
+router.get('/guild/:guildId/author/:authorId', jwtAuth, async (req, res) => {
     const { guildId, authorId } = req.params;
     if (!guildId || !authorId) return res.status(400).json({ error: 'Missing guildId or authorId parameter' });
+
+    // Check user's access to this guild
+    const accessResult = await checkUserGuildAccess(req, res, guildId);
+    if (!accessResult.authorized) {
+        // Response already sent by checkUserGuildAccess
+        return;
+    }
+
     const quotes = await getConfigManager().quoteManager.getQuotesByAuthor({ guildId, authorId });
     res.json(quotes);
 });
@@ -157,6 +170,8 @@ router.get('/guild/:guildId/author/:authorId', async (req, res) => {
  *   post:
  *     summary: Add a new quote
  *     tags: [Quotes]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -168,7 +183,24 @@ router.get('/guild/:guildId/author/:authorId', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
+    const { guildId } = req.body;
+
+    // If the quote is for a specific guild, check admin permissions
+    if (guildId) {
+        // Check permissions using our helper
+        const accessResult = await checkUserGuildAccess(req, res, guildId);
+        if (!accessResult.authorized) {
+            // Response already sent by checkUserGuildAccess
+            return;
+        }
+    }
+
     const created = await getConfigManager().quoteManager.addPlain(req.body);
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} created quote${guildId ? ` for guild ${guildId}` : ''} at ${new Date().toISOString()}`);
+
     res.status(201).json(created);
 });
 
@@ -184,6 +216,8 @@ router.post('/', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Success
@@ -191,10 +225,33 @@ router.post('/', jwtAuth, async (req, res) => {
  *         description: Not found
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
+
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-    const count = await getConfigManager().quoteManager.remove({id});
-    if (count === 0) return res.status(404).json({error: 'Quote not found'});
+
+    // Get the quote first to check if it has a guildId
+    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
+    if (!quote) {
+        return res.status(404).json({error: 'Quote not found'});
+    }
+
+    // If quote has a guildId, check guild admin permissions
+    if (quote.guildId) {
+        // Check permissions using our helper
+        const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
+        if (!accessResult.authorized) {
+            // Response already sent by checkUserGuildAccess
+            return;
+        }
+    }
+
+    // Prefix with underscore to indicate it's intentionally unused
+    const _count = await getConfigManager().quoteManager.remove({id});
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} deleted quote ${id}${quote.guildId ? ` from guild ${quote.guildId}` : ''} at ${new Date().toISOString()}`);
+
     res.json({success: true});
 });
 

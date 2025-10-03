@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {QuoteManager} from '@zeffuro/fakegaming-common/dist/managers/quoteManager.js';
+import {QuoteManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, User} from 'discord.js';
 
 describe('addQuote command', () => {

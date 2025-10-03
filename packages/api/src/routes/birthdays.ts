@@ -1,6 +1,8 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
+import {requireGuildAdmin} from '../utils/authHelpers.js';
+import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
 
@@ -66,6 +68,8 @@ router.get('/:userId/:guildId', async (req, res) => {
  *   post:
  *     summary: Add or update a birthday
  *     tags: [Birthdays]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -76,7 +80,8 @@ router.get('/:userId/:guildId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const {userId, guildId, date, day, month, year, channelId} = req.body;
     if (!userId || !guildId || (!date && (day === undefined || month === undefined || year === undefined))) {
         return res.status(400).json({ error: 'Missing required birthday fields' });
@@ -91,6 +96,10 @@ router.post('/', jwtAuth, async (req, res) => {
         if (day !== undefined) birthdayFields.day = day;
     }
     await getConfigManager().birthdayManager.set(birthdayFields, 'userId');
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
+
     res.status(201).json({success: true});
 });
 
@@ -111,14 +120,23 @@ router.post('/', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Success
  */
-router.delete('/:userId/:guildId', jwtAuth, async (req, res) => {
+router.delete('/:userId/:guildId', jwtAuth, requireGuildAdmin, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.params;
+
     if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
+
     await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} removed birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
+
     res.json({success: true});
 });
 

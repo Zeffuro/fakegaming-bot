@@ -10,7 +10,7 @@ import {
     TwitchStreamConfig,
     UserConfig,
     YoutubeVideoConfig
-} from "@zeffuro/fakegaming-common";
+} from "@zeffuro/fakegaming-common/models";
 import { sequelizeModelToOpenAPISchema } from "./sequelize-to-openapi.js";
 
 export function injectOpenApiSchemas(swaggerSpec: any) {

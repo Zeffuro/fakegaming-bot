@@ -2,7 +2,7 @@ import express from 'express';
 import apiRouter from './routes/index.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import path from 'path';
-import {PROJECT_ROOT} from '@zeffuro/fakegaming-common';
+import {PROJECT_ROOT} from '@zeffuro/fakegaming-common/core';
 import swaggerUi from 'swagger-ui-express';
 import {jwtAuth} from './middleware/auth.js';
 import {errorHandler} from './middleware/errorHandler.js';

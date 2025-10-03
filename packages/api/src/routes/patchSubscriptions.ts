@@ -1,6 +1,7 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
+import {requireGuildAdmin} from '../utils/authHelpers.js';
 
 const router = Router();
 
@@ -31,6 +32,8 @@ router.get('/', async (req, res) => {
  *   post:
  *     summary: Subscribe to a game/channel
  *     tags: [PatchSubscriptions]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -41,7 +44,7 @@ router.get('/', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     const { game, channelId, guildId } = req.body;
     if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
     await getConfigManager().patchSubscriptionManager.subscribe(game, channelId, guildId);
@@ -54,6 +57,8 @@ router.post('/', jwtAuth, async (req, res) => {
  *   put:
  *     summary: Upsert (add or update) a patch subscription
  *     tags: [PatchSubscriptions]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -64,7 +69,7 @@ router.post('/', jwtAuth, async (req, res) => {
  *       200:
  *         description: Success
  */
-router.put('/', jwtAuth, async (req, res) => {
+router.put('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     const { game, channelId, guildId } = req.body;
     if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);

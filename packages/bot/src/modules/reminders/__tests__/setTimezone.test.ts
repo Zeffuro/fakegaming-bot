@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {UserManager} from '@zeffuro/fakegaming-common/dist/managers/userManager.js';
+import {UserManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, User} from "discord.js";
 
 describe('setTimezone command', () => {

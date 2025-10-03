@@ -5,3 +5,4 @@ export const DISCORD_REDIRECT_URI =
     process.env.DISCORD_REDIRECT_URI || `${PUBLIC_URL}/api/auth/discord/callback`;
 export const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 export const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
+export const API_URL = process.env.API_URL || "http://localhost:3001".replace(/\/$/, "");

@@ -7,8 +7,8 @@ import {
 } from 'discord.js';
 import path from 'path';
 import {FakegamingBot} from './core/FakegamingBot.js';
-import {bootstrapEnv} from '@zeffuro/fakegaming-common/dist/core/bootstrapEnv.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';

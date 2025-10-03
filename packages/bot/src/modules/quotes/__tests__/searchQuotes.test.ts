@@ -1,7 +1,7 @@
 import {jest} from '@jest/globals';
 import {setupCommandTest} from '../../../test/utils/commandTestHelper.js';
 import {MockInteraction} from '../../../test/MockInteraction.js';
-import {QuoteManager} from '@zeffuro/fakegaming-common/dist/managers/quoteManager.js';
+import {QuoteManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction} from "discord.js";
 
 describe('searchQuote command', () => {

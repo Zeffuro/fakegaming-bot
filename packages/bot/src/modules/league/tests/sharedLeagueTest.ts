@@ -1,6 +1,6 @@
 import {jest, expect} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {UserManager} from "@zeffuro/fakegaming-common/dist/managers/userManager.js";
+import {UserManager} from "@zeffuro/fakegaming-common/managers";
 import {mockLeagueUtils, mockRiotService, mockTierEmojis} from '../test/leagueMockFactories.js';
 import {CommandInteraction} from "discord.js";
 

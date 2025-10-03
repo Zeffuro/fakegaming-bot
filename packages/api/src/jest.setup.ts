@@ -1,4 +1,5 @@
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import './testUtils/mockCache.js'; // Import cache mocking first
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import 'ts-node/register';
 
 import path from 'path';
@@ -14,5 +15,6 @@ beforeAll(async () => {
     process.env.DATABASE_PROVIDER = 'sqlite';
     await configManager.init(true); // runs migrations + sync
 });
+
 
 export {configManager};

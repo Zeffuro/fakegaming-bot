@@ -1,5 +1,5 @@
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {PatchNotesManager} from '@zeffuro/fakegaming-common/dist/managers/patchNotesManager.js';
+import {PatchNotesManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction} from "discord.js";
 
 describe('getPatchNotes command', () => {

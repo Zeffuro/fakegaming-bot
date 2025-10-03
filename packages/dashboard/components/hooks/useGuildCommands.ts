@@ -9,7 +9,9 @@ export function useGuildCommands(guildId: string) {
   const fetchDisabledCommands = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`);
+      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error(await res.text());
       const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
       setDisabledCommands(data.map(c => c.commandName).filter((name): name is string => !!name));
@@ -27,6 +29,7 @@ export function useGuildCommands(guildId: string) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ guildId, commandName } as disabledCommands_post_Request),
+        credentials: 'include',
       });
       if (!res.ok) throw new Error(await res.text());
       await fetchDisabledCommands();
@@ -40,12 +43,14 @@ export function useGuildCommands(guildId: string) {
     setLoadingCommand(commandName);
     setError(null);
     try {
-      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`);
+      const res = await fetch(`/api/external/disabledCommands?guildId=${guildId}`, {
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error(await res.text());
       const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
       const config = data.find(c => c.commandName === commandName);
       if (config && config.id) {
-        const delRes = await fetch(`/api/external/disabledCommands?id=${config.id}`, { method: "DELETE" });
+        const delRes = await fetch(`/api/external/disabledCommands?id=${config.id}`, { method: "DELETE", credentials: 'include' });
         if (!delRes.ok) throw new Error(await delRes.text());
       }
       await fetchDisabledCommands();

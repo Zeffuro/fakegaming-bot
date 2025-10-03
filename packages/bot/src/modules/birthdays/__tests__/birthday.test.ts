@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {BirthdayManager} from '@zeffuro/fakegaming-common/dist/managers/birthdayManager.js';
+import {BirthdayManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, User} from "discord.js";
 
 describe('birthday command', () => {

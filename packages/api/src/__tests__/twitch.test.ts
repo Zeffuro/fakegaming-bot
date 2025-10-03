@@ -17,7 +17,7 @@ beforeEach(async () => {
 describe('Twitch API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all twitch configs', async () => {
         const res = await request(app).get('/api/twitch').set('Authorization', `Bearer ${token}`);

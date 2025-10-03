@@ -1,6 +1,6 @@
 import {jest} from '@jest/globals';
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {ReminderManager} from '@zeffuro/fakegaming-common/dist/managers/reminderManager.js';
+import {ReminderManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, User} from "discord.js";
 
 describe('setReminder command', () => {

@@ -5,8 +5,8 @@ import {
     GuildTextBasedChannel,
     PermissionFlagsBits,
 } from 'discord.js';
-import {YoutubeManager} from '@zeffuro/fakegaming-common/dist/managers/youtubeManager.js';
-import {YoutubeVideoConfig} from '@zeffuro/fakegaming-common';
+import {YoutubeManager} from '@zeffuro/fakegaming-common/managers';
+import {YoutubeVideoConfig} from '@zeffuro/fakegaming-common/models';
 
 describe('addYoutubeVideoChannel command', () => {
     beforeEach(() => {

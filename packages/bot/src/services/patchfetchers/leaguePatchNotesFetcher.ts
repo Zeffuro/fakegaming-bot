@@ -1,5 +1,5 @@
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
-import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
 import {cleanDiscordContent} from '../../utils/generalUtils.js';

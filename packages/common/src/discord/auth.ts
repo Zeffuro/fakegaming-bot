@@ -36,7 +36,7 @@ export async function fetchDiscordUser(accessToken: string) {
     throw new Error("Discord rate limit exceeded for /users/@me");
 }
 
-export async function fetchDiscordGuilds(accessToken: string, tokenType: "Bearer" | "Bot" = "Bearer") {
+export async function getDiscordGuilds(accessToken: string, tokenType: "Bearer" | "Bot" = "Bearer") {
     for (let attempt = 0; attempt < 3; attempt++) {
         const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
             headers: { Authorization: `${tokenType} ${accessToken}` },
@@ -62,7 +62,10 @@ export function getDiscordOAuthUrl(discordClientId: string, discordRedirectUri: 
 export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAULT_AUDIENCE) {
     return jwt.sign({
         discordId: user.id,
-        username: user.username
+        username: user.username,
+        global_name: user.global_name || null,
+        avatar: user.avatar || null,
+        discriminator: user.discriminator || null
     }, jwtSecret, {
         expiresIn: "7d",
         audience
@@ -71,4 +74,25 @@ export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAUL
 
 export function verifyJwt(token: string, jwtSecret: string, audience: string = DEFAULT_AUDIENCE) {
     return jwt.verify(token, jwtSecret, { audience });
+}
+
+export async function getDiscordGuildChannels(guildId: string, botToken: string) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const channelsRes = await fetch(`https://discord.com/api/guilds/${guildId}/channels`, {
+            headers: { Authorization: `Bot ${botToken}` },
+        });
+        if (channelsRes.status === 429) {
+            const errorBody = await channelsRes.json();
+            const retryAfter = errorBody.retry_after ? Number(errorBody.retry_after) * 1000 : 1000;
+            await new Promise(resolve => setTimeout(resolve, retryAfter));
+            continue;
+        }
+        if (!channelsRes.ok) {
+            throw new Error(await channelsRes.text());
+        }
+        const channels = await channelsRes.json();
+        // Filter to only text channels (type 0) and announcement channels (type 5)
+        return channels.filter((channel: any) => channel.type === 0 || channel.type === 5);
+    }
+    throw new Error("Discord rate limit exceeded for guild channels");
 }

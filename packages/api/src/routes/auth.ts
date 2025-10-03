@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import { exchangeCodeForToken, fetchDiscordUser, fetchDiscordGuilds, issueJwt } from '@zeffuro/fakegaming-common/src/discord/auth.js';
+import { exchangeCodeForToken, fetchDiscordUser, issueJwt } from '@zeffuro/fakegaming-common/discord';
 
 const router = Router();
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";

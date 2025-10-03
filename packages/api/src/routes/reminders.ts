@@ -1,6 +1,7 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
+import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
 
@@ -20,7 +21,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/ReminderConfig'
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_, res) => {
     const reminders = await getConfigManager().reminderManager.getAllPlain();
     res.json(reminders);
 });
@@ -61,6 +62,8 @@ router.get('/:id', async (req, res) => {
  *   post:
  *     summary: Add a new reminder
  *     tags: [Reminders]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -72,7 +75,14 @@ router.get('/:id', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
+
+    // No need to check guild permissions since reminders are sent to user DMs
     const created = await getConfigManager().reminderManager.addPlain(req.body);
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} created reminder at ${new Date().toISOString()}`);
+
     res.status(201).json(created);
 });
 
@@ -88,14 +98,30 @@ router.post('/', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Success
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
+    const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
+
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
+
+    // Get the reminder first to check if it exists
+    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
+    if (!reminder) {
+        return res.status(404).json({error: 'Reminder not found'});
+    }
+
+    // No need to check guild permissions since reminders are sent to user DMs
     await getConfigManager().reminderManager.removeReminder({id});
+
+    // Audit log
+    console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
+
     res.json({success: true});
 });
 

@@ -1,5 +1,4 @@
 export default {
-    preset: 'ts-jest/presets/default-esm',
     testEnvironment: 'node',
     extensionsToTreatAsEsm: ['.ts'],
     moduleFileExtensions: ['ts', 'js', 'json'],
@@ -8,11 +7,6 @@ export default {
         '^(\\.{1,2}/.*)\\.js$': '$1',
     },
     transform: {
-        '^.+\\.m?[tj]sx?$': [
-            'ts-jest',
-            {
-                useESM: true,
-            },
-        ],
+        "^.+\\.(t|j)sx?$": ["@swc/jest"],
     },
 };

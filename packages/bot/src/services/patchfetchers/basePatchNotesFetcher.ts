@@ -2,7 +2,7 @@
  * Abstract base class for fetching patch notes for a game.
  * Subclasses should implement game-specific parsing and enrichment logic.
  */
-import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import axios from 'axios';
 
 export abstract class BasePatchNotesFetcher<RawPatchNote = unknown> {

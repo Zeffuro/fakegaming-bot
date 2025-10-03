@@ -1,5 +1,5 @@
 import {setupCommandWithInteraction} from '../../../test/utils/commandTestHelper.js';
-import {BirthdayManager} from '@zeffuro/fakegaming-common/dist/managers/birthdayManager.js';
+import {BirthdayManager} from '@zeffuro/fakegaming-common/managers';
 import {CommandInteraction, GuildTextBasedChannel} from "discord.js";
 
 describe('setBirthday command', () => {

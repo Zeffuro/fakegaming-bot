@@ -1,6 +1,6 @@
 import {Client} from "discord.js";
 import {scheduleAtTime} from '../utils/scheduleAtTime.js';
-import {getConfigManager} from "@zeffuro/fakegaming-common/dist/managers/configManagerSingleton.js";
+import {getConfigManager} from "@zeffuro/fakegaming-common/managers";
 import {subscribeAllStreams} from './twitchService.js';
 import {checkAndAnnounceNewVideos} from './youtubeService.js';
 import {checkAndSendReminders} from './reminderService.js';
