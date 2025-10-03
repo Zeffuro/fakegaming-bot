@@ -1,4 +1,3 @@
-// filepath: F:\Coding\discord-bot\packages\common\src\testing\mocks\cacheMock.ts
 import { vi, beforeEach, afterEach } from 'vitest';
 
 /**

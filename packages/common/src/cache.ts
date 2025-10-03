@@ -36,18 +36,26 @@ export async function initRedis(config: string | CacheConfig): Promise<void> {
 
   if (!redis) {
     try {
-      // Lazy-load Redis to avoid loading the module unless needed
-      const IORedis = await import('ioredis');
+      // Use dynamic import with a type assertion to handle different module formats
+      const ioredisModule = await import('ioredis');
 
-      // Handle the dynamic import correctly with proper type handling
+      // Get the Redis constructor - handle both ESM and CommonJS module formats
+      // For ESM, the constructor might be the default export
+      // For CommonJS, it might be the module itself
+      const RedisConstructor = (ioredisModule.default || ioredisModule) as unknown as {
+        new (url: string, options?: RedisOptions): Redis;
+        new (options: RedisOptions): Redis;
+      };
+
+      // Create Redis instance with the appropriate configuration
       if (url) {
         if (options) {
-          redis = new IORedis.Redis(url, options);
+          redis = new RedisConstructor(url, options);
         } else {
-          redis = new IORedis.Redis(url);
+          redis = new RedisConstructor(url);
         }
       } else if (options) {
-        redis = new IORedis.Redis(options);
+        redis = new RedisConstructor(options);
       }
 
       connectingPromise = new Promise<void>((resolve, reject) => {

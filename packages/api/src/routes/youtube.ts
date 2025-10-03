@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 import {getStringQueryParam} from '../utils/requestHelpers.js';
-import {requireGuildAdmin} from '../utils/authHelpers.js';
+import {requireGuildAdmin, checkUserGuildAccess} from '../utils/authHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = Router();
@@ -195,6 +195,63 @@ router.post('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
     } catch (error) {
         console.error('[YouTube API] Error creating/updating channel config:', error);
         res.status(500).json({ error: 'Failed to save YouTube channel configuration' });
+    }
+});
+
+/**
+ * @openapi
+ * /youtube/{id}:
+ *   delete:
+ *     summary: Delete a YouTube channel configuration
+ *     tags: [YouTube]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       404:
+ *         description: Not found
+ */
+router.delete('/:id', jwtAuth, async (req, res) => {
+    try {
+        const id = req.params.id;
+        const config = await getConfigManager().youtubeManager.findByPkPlain(id);
+
+        if (!config) {
+            return res.status(404).json({ error: 'YouTube configuration not found' });
+        }
+
+        // Check guild admin permission using the guildId from the config
+        const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
+        if (!authResult.authorized) {
+            // Response already sent by checkUserGuildAccess
+            return;
+        }
+
+        // Delete the configuration
+        await getConfigManager().youtubeManager.remove({ id });
+
+        // Log the action
+        const { discordId } = (req as AuthenticatedRequest).user;
+        console.log(`[AUDIT] User ${discordId} deleted YouTube config ID ${id} at ${new Date().toISOString()}`);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[YouTube API] Error deleting config:', error);
+        res.status(500).json({ error: 'Failed to delete YouTube configuration' });
     }
 });
 

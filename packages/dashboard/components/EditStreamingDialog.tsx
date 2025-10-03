@@ -6,12 +6,9 @@ import {
   DialogActions,
   Box,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Button,
-  CircularProgress
+  CircularProgress,
+  Autocomplete
 } from "@mui/material";
 import { StreamingConfig } from "@/components/hooks/useStreamingForm";
 
@@ -45,6 +42,8 @@ export default function EditStreamingDialog<T extends StreamingConfig>({
   saving
 }: EditStreamingDialogProps<T>) {
   if (!config) return null;
+
+  const selectedChannel = channels.find(ch => ch.id === config.discordChannelId) || null;
 
   return (
     <Dialog
@@ -81,51 +80,86 @@ export default function EditStreamingDialog<T extends StreamingConfig>({
               }
             }}
             helperText={`Enter the ${moduleName} ${channelNameLabel.toLowerCase()}`}
-            FormHelperTextProps={{ sx: { color: 'grey.400' } }}
+            slotProps={{
+              formHelperText: { sx: { color: 'grey.400' } }
+            }}
           />
-          <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel sx={{ color: 'grey.300' }}>Discord Channel</InputLabel>
-            <Select
-              value={config.discordChannelId}
-              label="Discord Channel"
-              onChange={(e) => onConfigChange('discordChannelId', e.target.value)}
-              disabled={loadingChannels}
-              sx={{
-                color: 'grey.100',
-                '& .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.600' },
-                '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'grey.500' },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'primary.main' }
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    bgcolor: 'grey.800',
-                    border: 1,
-                    borderColor: 'grey.700',
-                    '& .MuiMenuItem-root': {
-                      color: 'grey.100',
-                      '&:hover': { bgcolor: 'grey.700' }
-                    }
+
+          <Autocomplete
+            fullWidth
+            options={channels}
+            getOptionLabel={(option) => `#${option.name}`}
+            value={selectedChannel}
+            onChange={(event, newValue) => {
+              onConfigChange('discordChannelId', newValue?.id || '');
+            }}
+            loading={loadingChannels}
+            disabled={loadingChannels}
+            slots={{
+              paper: ({ children, ...other }) => (
+                <div
+                  {...other}
+                  style={{
+                    backgroundColor: 'rgb(66, 66, 66)',
+                    border: '1px solid rgb(97, 97, 97)',
+                    borderRadius: '4px',
+                    ...other.style
+                  }}
+                >
+                  {children}
+                </div>
+              )
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Discord Channel"
+                sx={{
+                  mb: 2,
+                  '& .MuiInputLabel-root': { color: 'grey.300' },
+                  '& .MuiOutlinedInput-root': {
+                    color: 'grey.100',
+                    '& fieldset': { borderColor: 'grey.600' },
+                    '&:hover fieldset': { borderColor: 'grey.500' },
+                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
                   }
-                }
-              }}
-            >
-              {loadingChannels ? (
-                <MenuItem disabled>
-                  <CircularProgress size={20} sx={{ mr: 1 }} />
-                  Loading channels...
-                </MenuItem>
-              ) : channels.length === 0 ? (
-                <MenuItem disabled>No channels available</MenuItem>
-              ) : (
-                channels.map((channel) => (
-                  <MenuItem key={channel.id} value={channel.id}>
-                    #{channel.name}
-                  </MenuItem>
-                ))
-              )}
-            </Select>
-          </FormControl>
+                }}
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {loadingChannels ? <CircularProgress size={20} /> : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  }
+                }}
+              />
+            )}
+            renderOption={(props, option) => {
+              const { key, ...otherProps } = props;
+              return (
+                <li
+                  key={key}
+                  {...otherProps}
+                  style={{
+                    backgroundColor: 'rgb(66, 66, 66)',
+                    color: 'rgb(245, 245, 245)',
+                    padding: '8px 16px',
+                  }}
+                >
+                  #{option.name}
+                </li>
+              );
+            }}
+            noOptionsText={loadingChannels ? "Loading channels..." : "No channels available"}
+            sx={{
+              '& .MuiAutocomplete-popupIndicator': { color: 'grey.400' },
+              '& .MuiAutocomplete-clearIndicator': { color: 'grey.400' }
+            }}
+          />
+
           <TextField
             fullWidth
             label="Custom Message (Optional)"
@@ -141,7 +175,9 @@ export default function EditStreamingDialog<T extends StreamingConfig>({
               }
             }}
             helperText="Optional custom message for notifications"
-            FormHelperTextProps={{ sx: { color: 'grey.400' } }}
+            slotProps={{
+              formHelperText: { sx: { color: 'grey.400' } }
+            }}
           />
         </Box>
       </DialogContent>

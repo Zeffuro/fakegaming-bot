@@ -213,6 +213,13 @@ export type twitch_post_Request = paths["/twitch"]["post"]["requestBody"]["conte
 export type twitch_id_get_Response200 = paths["/twitch/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [DELETE /twitch/{id} 200]
+ *
+ * @see paths["/twitch/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type twitch_id_delete_Response200 = paths["/twitch/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /users 200]
  *
  * @see paths["/users"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -288,3 +295,10 @@ export type youtube_channel_post_Request = paths["/youtube/channel"]["post"]["re
  * @see paths["/youtube/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type youtube_id_get_Response200 = paths["/youtube/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [DELETE /youtube/{id} 200]
+ *
+ * @see paths["/youtube/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type youtube_id_delete_Response200 = paths["/youtube/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];

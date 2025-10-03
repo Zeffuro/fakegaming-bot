@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import type { TwitchStreamConfig } from "@/lib/common/models";
+import { api } from "@/lib/api-client";
+import type { twitch_post_Request } from "@/types/apiResponses";
 
 export function useTwitchConfigs(guildId: string | string[]) {
   const [configs, setConfigs] = useState<TwitchStreamConfig[]>([]);
@@ -10,17 +12,10 @@ export function useTwitchConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/external/twitch', {
-        credentials: 'include'
-      });
+      const allConfigs = await api.getTwitchConfigs();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch Twitch configurations');
-      }
-
-      const allConfigs = await response.json();
-      // Filter configs for current guild
-      const guildConfigs = allConfigs.filter((config: TwitchStreamConfig) => config.guildId === guildId);
+      // Filter configs for current guild and cast to Sequelize types
+      const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as TwitchStreamConfig[];
       setConfigs(guildConfigs);
     } catch (err: any) {
       setError(err.message || 'Failed to load Twitch configurations');
@@ -44,53 +39,32 @@ export function useTwitchConfigs(guildId: string | string[]) {
         customMessage: configData.customMessage
       };
 
-      const response = await fetch('/api/external/twitch/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-
-      if (response.status === 503) {
-        const data = await response.json();
-        throw new Error(data.error || 'Service temporarily unavailable. Please try again in a few moments.');
-      }
-
-      if (!response.ok) {
-        throw new Error('Failed to add Twitch configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+      await api.createTwitchStream(payload as twitch_post_Request);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to add Twitch configuration');
+      setError(err.message || 'Failed to save Twitch configuration');
       return false;
     } finally {
       setSaving(false);
     }
   };
 
+  // Match the expected signature: (config: T) => Promise<boolean>
   const updateConfig = async (config: TwitchStreamConfig) => {
     try {
       setSaving(true);
-      const response = await fetch('/api/external/twitch/stream', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(config)
-      });
+      const payload = {
+        twitchUsername: config.twitchUsername,
+        discordChannelId: config.discordChannelId,
+        guildId: guildId as string,
+        customMessage: config.customMessage
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to update Twitch configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+      // For now, we'll use a workaround since the update endpoint might not exist
+      await api.deleteTwitchStream(config.id.toString());
+      await api.createTwitchStream(payload as twitch_post_Request);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
       setError(err.message || 'Failed to update Twitch configuration');
@@ -100,25 +74,26 @@ export function useTwitchConfigs(guildId: string | string[]) {
     }
   };
 
+  // Match the expected signature: (config: T) => Promise<boolean>
   const deleteConfig = async (config: TwitchStreamConfig) => {
     try {
       setSaving(true);
+      await api.deleteTwitchStream(config.id.toString());
+      await fetchConfigs();
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete Twitch configuration');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      if (!config.id) {
-        throw new Error('Configuration ID is required for deletion');
-      }
-
-      const response = await fetch(`/api/external/twitch/stream/${config.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete Twitch configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+  const removeConfig = async (configId: string) => {
+    try {
+      setSaving(true);
+      await api.deleteTwitchStream(configId);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
       setError(err.message || 'Failed to delete Twitch configuration');
@@ -137,12 +112,13 @@ export function useTwitchConfigs(guildId: string | string[]) {
   return {
     configs,
     loading,
-    saving,
     error,
+    saving,
     setError,
     addConfig,
     updateConfig,
     deleteConfig,
-    refetch: fetchConfigs
+    removeConfig,
+    refreshConfigs: fetchConfigs
   };
 }

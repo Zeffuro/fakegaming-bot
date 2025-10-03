@@ -68,6 +68,14 @@ export function useStreamingForm<T extends StreamingConfig>({
     }
   };
 
+  const handleChannelAutocompleteChange = (channelId: string, isEdit: boolean = false) => {
+    if (isEdit && editingConfig) {
+      setEditingConfig({ ...editingConfig, discordChannelId: channelId });
+    } else {
+      setNewConfig({ ...newConfig, discordChannelId: channelId });
+    }
+  };
+
   const handleChannelNameChange = (value: string, isEdit: boolean = false) => {
     if (isEdit && editingConfig) {
       setEditingConfig({ ...editingConfig, [channelNameField]: value });
@@ -103,6 +111,7 @@ export function useStreamingForm<T extends StreamingConfig>({
     handleUpdateConfig,
     handleDeleteConfig,
     handleChannelChange,
+    handleChannelAutocompleteChange,
     handleChannelNameChange,
     handleCustomMessageChange,
     resetForm

@@ -100,15 +100,23 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
             return NextResponse.json(responseBody, { status });
         }
 
+        // For successful responses
         console.log(`[ProxyHandler] Successful response from ${apiPath} with status ${response.status}`);
         console.log(`[ProxyHandler] Response Headers: ${JSON.stringify([...response.headers])}`);
-        console.log(`[ProxyHandler] Response Body: ${await response.text()}`);
 
-        // Return the successful response
+        // Clone the response to read it twice (once for logging, once for returning)
+        const responseClone = response.clone();
+
+        // Read the response body for logging
+        const responseText = await responseClone.text();
+        console.log(`[ProxyHandler] Response Body: ${responseText}`);
+
+        // Return the original response (which hasn't been consumed yet)
+        const contentType = response.headers.get('Content-Type') || 'application/json';
         return new NextResponse(await response.text(), {
             status: response.status,
             headers: {
-                'Content-Type': response.headers.get('Content-Type') || 'application/json',
+                'Content-Type': contentType,
             },
         });
     } catch (error) {

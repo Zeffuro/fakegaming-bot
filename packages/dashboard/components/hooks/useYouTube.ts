@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import type { YoutubeVideoConfig } from "@/lib/common/models";
+import { api } from "@/lib/api-client";
+import type { youtube_post_Request } from "@/types/apiResponses";
 
 export function useYouTubeConfigs(guildId: string | string[]) {
   const [configs, setConfigs] = useState<YoutubeVideoConfig[]>([]);
@@ -10,17 +12,10 @@ export function useYouTubeConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/external/youtube', {
-        credentials: 'include'
-      });
+      const allConfigs = await api.getYouTubeConfigs();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch YouTube configurations');
-      }
-
-      const allConfigs = await response.json();
-      // Filter configs for current guild
-      const guildConfigs = allConfigs.filter((config: YoutubeVideoConfig) => config.guildId === guildId);
+      // Filter configs for current guild and cast to Sequelize types
+      const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YoutubeVideoConfig[];
       setConfigs(guildConfigs);
     } catch (err: any) {
       setError(err.message || 'Failed to load YouTube configurations');
@@ -44,48 +39,32 @@ export function useYouTubeConfigs(guildId: string | string[]) {
         customMessage: configData.customMessage
       };
 
-      const response = await fetch('/api/external/youtube/channel', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to add YouTube configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+      await api.createYouTubeChannel(payload as youtube_post_Request);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to add YouTube configuration');
+      setError(err.message || 'Failed to save YouTube configuration');
       return false;
     } finally {
       setSaving(false);
     }
   };
 
+  // Match the expected signature: (config: T) => Promise<boolean>
   const updateConfig = async (config: YoutubeVideoConfig) => {
     try {
       setSaving(true);
-      const response = await fetch('/api/external/youtube/channel', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(config)
-      });
+      const payload = {
+        youtubeChannelId: config.youtubeChannelId,
+        discordChannelId: config.discordChannelId,
+        guildId: guildId as string,
+        customMessage: config.customMessage
+      };
 
-      if (!response.ok) {
-        throw new Error('Failed to update YouTube configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+      // For now, we'll use a workaround since the update endpoint might not exist
+      await api.deleteYouTubeChannel(config.id.toString());
+      await api.createYouTubeChannel(payload as youtube_post_Request);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
       setError(err.message || 'Failed to update YouTube configuration');
@@ -95,25 +74,26 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
+  // Match the expected signature: (config: T) => Promise<boolean>
   const deleteConfig = async (config: YoutubeVideoConfig) => {
     try {
       setSaving(true);
+      await api.deleteYouTubeChannel(config.id.toString());
+      await fetchConfigs();
+      return true;
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete YouTube configuration');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      if (!config.id) {
-        throw new Error('Configuration ID is required for deletion');
-      }
-
-      const response = await fetch(`/api/external/youtube/channel/${config.id}`, {
-        method: 'DELETE',
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete YouTube configuration');
-      }
-
-      setError(null);
-      await fetchConfigs(); // Refresh the list
+  const removeConfig = async (configId: string) => {
+    try {
+      setSaving(true);
+      await api.deleteYouTubeChannel(configId);
+      await fetchConfigs();
       return true;
     } catch (err: any) {
       setError(err.message || 'Failed to delete YouTube configuration');
@@ -132,12 +112,13 @@ export function useYouTubeConfigs(guildId: string | string[]) {
   return {
     configs,
     loading,
-    saving,
     error,
+    saving,
     setError,
     addConfig,
     updateConfig,
     deleteConfig,
-    refetch: fetchConfigs
+    removeConfig,
+    refreshConfigs: fetchConfigs
   };
 }

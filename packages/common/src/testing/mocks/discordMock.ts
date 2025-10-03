@@ -1,4 +1,3 @@
-// filepath: F:\Coding\discord-bot\packages\common\src\testing\mocks\discordMock.ts
 import { vi, beforeEach } from 'vitest';
 import {
     PermissionsBitField,
