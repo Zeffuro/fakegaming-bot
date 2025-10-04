@@ -20,6 +20,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY packages/bot ./packages/bot
 COPY packages/common ./packages/common
 
+COPY migrations ./migrations
+
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive
 

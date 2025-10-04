@@ -19,6 +19,8 @@ COPY packages/dashboard ./packages/dashboard
 COPY packages/common ./packages/common
 COPY packages/api/openapi.json ./packages/api/openapi.json
 
+COPY migrations ./migrations
+
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive --frozen-lockfile --ignore-scripts
 RUN pnpm --filter @zeffuro/fakegaming-common run build
