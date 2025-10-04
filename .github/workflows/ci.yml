@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -20,35 +20,6 @@ jobs:
 
       - name: Build all packages
         run: pnpm -r run build
-
-      # Upload build artifacts so lint-and-test can use them
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            packages/**/dist
-            packages/**/.next
-            !**/node_modules
-          retention-days: 1
-
-  lint-and-test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup Node.js, pnpm, and dependencies
-        uses: ./.github/actions/setup-node-pnpm
-        with:
-          install-deps: 'true'
-          build-natives: 'true'
-
-      # Download the build artifacts from the build job
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build-output
 
       - name: Lint
         run: pnpm run lint
