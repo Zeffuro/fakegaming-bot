@@ -8,9 +8,10 @@ Thanks for your interest in contributing! Please follow these guidelines to get 
 
 This project is a monorepo managed with npm workspaces. It contains multiple packages:
 
+- `packages/api` — Express REST API for external integrations
 - `packages/bot` — The Discord bot (commands, services, integrations)
 - `packages/common` — Shared code (models, types, utilities)
-- `packages/dashboard` — Dashboard for bot management (WIP/optional)
+- `packages/dashboard` — Next.js dashboard for bot management
 - `data/` — Persistent data, assets, and config (used by the bot)
 - `migrations/` — Database migration scripts
 - `scripts/` — Utility scripts (e.g., codegen, migration helpers)
@@ -124,7 +125,7 @@ This project is a monorepo managed with npm workspaces. It contains multiple pac
 
 ## Running Tests
 
-Unit tests use [Jest](https://jestjs.io/).
+Unit tests use [Vitest](https://vitest.dev/).
 
 - Run all tests for all packages:
   ```bash
@@ -135,20 +136,20 @@ Unit tests use [Jest](https://jestjs.io/).
   cd packages/bot
   npm test
   ```
-- Test files are located in `src/modules/*/tests/` and `src/services/tests/` (for the bot), and similar locations in
+- Test files are located in `src/modules/*/__tests__/` and `src/services/__tests__/` (for the bot), and similar locations in
   other packages.
 
 ### Writing Tests
 
 - Use `.test.ts` files for unit tests.
-- Mock Discord.js interactions and managers as needed (see `MockInteraction` and `setupCommandTest` in
-  `packages/bot/src/test/utils/`).
+- Vitest is configured in each package's `vitest.config.ts`
+- Mock Discord.js interactions as needed
 - Prefer testing command logic and service functions in isolation.
 
 ### Mocking
 
-- Use `jest.unstable_mockModule` for mocking imports.
-- Use `jest.fn()` for mocking functions and methods.
+- Use `vi.mock()` for mocking modules (Vitest syntax, not Jest)
+- Use `vi.fn()` for mocking functions and methods
 
 ---
 

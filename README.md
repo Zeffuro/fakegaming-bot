@@ -4,7 +4,7 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E=22.0.0-brightgreen)](https://nodejs.org/)
 [![ESLint](https://img.shields.io/badge/code_style-eslint-blue.svg)](https://eslint.org/)
-[![Jest](https://img.shields.io/badge/tested_with-jest-99424f.svg?logo=jest)](https://jestjs.io/)
+[![Vitest](https://img.shields.io/badge/tested_with-vitest-6E9F18.svg?logo=vitest)](https://vitest.dev/)
 [![Last Commit](https://img.shields.io/github/last-commit/Zeffuro/fakegaming-bot)](https://github.com/Zeffuro/fakegaming-bot/commits)
 
 A modular Discord bot for community management, Twitch stream notifications, YouTube video announcements, League of
@@ -27,9 +27,10 @@ containing multiple packages.
 
 This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces) to manage multiple packages:
 
+- **packages/api** — Express REST API for external integrations and bot operations
 - **packages/bot** — The Discord bot (commands, services, integrations)
 - **packages/common** — Shared code (database models, utilities, types)
-- **packages/dashboard** — Dashboard for bot management (WIP/optional)
+- **packages/dashboard** — Dashboard for bot management (Next.js)
 
 - `data/` — Persistent data, assets, and config (used by the bot)
 - `migrations/` — Database migration scripts
