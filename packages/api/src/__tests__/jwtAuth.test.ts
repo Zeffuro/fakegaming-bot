@@ -1,6 +1,7 @@
+import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 import jwt from 'jsonwebtoken';
 
 describe('JWT Authentication', () => {

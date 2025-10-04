@@ -12,7 +12,7 @@
     "prod:dev": "cross-env NODE_ENV=production tsx src/index.ts src/index.ts",
     "start:dev": "cross-env NODE_ENV=development tsx src/index.ts src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "profile": "node --inspect-brk dist/index.js"

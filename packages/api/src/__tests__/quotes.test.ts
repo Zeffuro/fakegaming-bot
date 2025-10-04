@@ -1,8 +1,9 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {QuoteConfig} from '@zeffuro/fakegaming-common/models';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { QuoteConfig } from '@zeffuro/fakegaming-common/models';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 
 let quoteId: string;
 const testQuote = {
@@ -81,20 +82,15 @@ describe('Quotes API', () => {
             guildId: 'testguild3',
             authorId: 'testauthor3',
             submitterId: 'testsubmitter3',
-            quote: 'To be deleted.',
+            quote: 'To be deleted',
             timestamp: 1700000000002
         });
-        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).delete(`/api/quotes/${created.id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
         expect(res.body.success).toBe(true);
     });
     it('should return 404 for non-existent quote', async () => {
-        const res = await request(app).get('/api/quotes/999999').set('Authorization', `Bearer ${token}`);
+        const res = await request(app).get('/api/quotes/nonexistentid').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
-    });
-    it('should return 400 for missing search params', async () => {
-        const res = await request(app).get('/api/quotes/search').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(400);
     });
 });

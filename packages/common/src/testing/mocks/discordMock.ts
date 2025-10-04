@@ -15,8 +15,7 @@ import {
     InteractionType
 } from 'discord.js';
 import type {
-    Client,
-    EmbedBuilder
+    Client
 } from 'discord.js';
 
 /**

@@ -72,8 +72,15 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
 router.put('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     const { game, channelId, guildId } = req.body;
     if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
-    await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
-    res.json({success: true});
+
+    try {
+        // Use subscribe instead of upsertSubscription to avoid SQLite constraint issues
+        await getConfigManager().patchSubscriptionManager.subscribe(game, channelId, guildId);
+        res.json({success: true});
+    } catch (error) {
+        console.error('[PatchSubscriptions API] Error upserting subscription:', error);
+        res.status(500).json({ error: 'Failed to upsert patch subscription' });
+    }
 });
 
 export default router;

@@ -35,7 +35,9 @@ services:
     # Expose the API port for local access
     ports:
       # Map host port 8080 to container port 8080 (adjust if your API uses a different port)
-      - "8080:8080"
+      - "3001:3001"
+    environment:
+      - PUBLIC_URL=http://api:3001/api
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-api
     restart: unless-stopped
@@ -59,6 +61,8 @@ services:
     # Set HOST=0.0.0.0 to ensure Next.js binds correctly inside the container
     environment:
       - HOST=0.0.0.0
+      - API_URL=http://api:3001/api
+      - PUBLIC_URL=http://localhost:3000
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-dashboard
     restart: unless-stopped

@@ -1,7 +1,8 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 
 const testReminder = {
     id: 'reminder-1',

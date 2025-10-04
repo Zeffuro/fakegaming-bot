@@ -138,3 +138,6 @@ export * from '../mocks/cacheMock.js';
 export * from '../mocks/discordMock.js';
 export * from '../mocks/managerMock.js';
 export * from '../mocks/modelMock.js';
+
+// Re-export createMockConfigManager for external use
+export { createMockConfigManager };

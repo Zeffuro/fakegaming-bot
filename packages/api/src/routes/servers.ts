@@ -54,15 +54,17 @@ router.get('/:serverId', jwtAuth, async (req, res) => {
     const { serverId } = req.params;
     if (!serverId) return res.status(400).json({ error: 'Missing serverId parameter' });
 
-    // Check user's access to this server/guild
+    // First check if server exists
+    const server = await getConfigManager().serverManager.getServer(serverId);
+    if (!server) return res.status(404).json({error: 'Server not found'});
+
+    // Then check user's access to this server/guild
     const accessResult = await checkUserGuildAccess(req, res, serverId);
     if (!accessResult.authorized) {
         // Response already sent by checkUserGuildAccess
         return;
     }
 
-    const server = await getConfigManager().serverManager.getServer(serverId);
-    if (!server) return res.status(404).json({error: 'Server not found'});
     res.json(server);
 });
 

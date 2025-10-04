@@ -65,3 +65,9 @@ export {
   withAllMocks,
   type TestSetupOptions
 } from './utils/testUtils.js';
+
+// Export JWT test utilities
+export {
+  signTestJwt,
+  verifyTestJwt
+} from './utils/jwtTestUtils.js';

@@ -1,7 +1,9 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { getSequelize } from '@zeffuro/fakegaming-common';
 
 const testPatch = {
     game: 'testgame1',
@@ -13,7 +15,7 @@ beforeEach(async () => {
     // Clean up patch notes table before each test
     await configManager.patchNotesManager.forceTruncate();
     // Debug: print table schema and indexes
-    const sequelize = configManager.patchNotesManager.getSequelize();
+    const sequelize = getSequelize(true);
     if (sequelize) {
         const [schema] = await sequelize.query('PRAGMA table_info(PatchNoteConfigs);');
         const [indexes] = await sequelize.query('PRAGMA index_list(PatchNoteConfigs);');

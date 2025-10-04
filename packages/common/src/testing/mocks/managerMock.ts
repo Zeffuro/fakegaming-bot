@@ -15,7 +15,7 @@ let activeMockConfigManager: any;
  * @param methods Object containing mock implementations for manager methods
  * @returns Mock manager with specified methods
  */
-export function createMockBaseManager<T = any>(methods: ManagerMethodMocks = {}): any {
+export function createMockBaseManager<_T = any>(methods: ManagerMethodMocks = {}): any {
     // Base methods that are common to all managers
     const baseMethods = {
         getAllPlain: vi.fn().mockResolvedValue([]),

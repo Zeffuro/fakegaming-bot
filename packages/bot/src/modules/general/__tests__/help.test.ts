@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction, Collection } from 'discord.js';
 
@@ -110,7 +110,7 @@ describe('help command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Create a spy to capture the reply content
-        const replySpy = interaction.reply as unknown as jest.SpyInstance;
+        const replySpy = interaction.reply as unknown as Mock;
         const replyContent = replySpy.mock.calls[0][0].content;
 
         // Check that 'apple' appears before 'middle', which appears before 'zebra'
