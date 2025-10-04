@@ -6,8 +6,8 @@ on:
     branches:
       - main
     paths:
-      - '../../packages/bot/src/modules/**/commands/*'
-      - '../../scripts/generate-command-table.ts'
+      - 'packages/bot/src/modules/**/commands/*'
+      - 'scripts/generate-command-table.ts'
       - '.github/workflows/update-command-table.yml'
 
 permissions:
@@ -17,29 +17,36 @@ permissions:
 jobs:
   update-command-table:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
         with:
           node-version: 22
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      - name: Enable Corepack and install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
 
       - name: Install dependencies
-        run: pnpm ci
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - name: Build
-        run: pnpm run build
+      - name: Build all packages
+        run: pnpm -r run build
 
-      - name: Update README command table
-        run: node dist/scripts/generate-command-table.js
+      - name: Generate README command table
+        run: pnpm tsx scripts/generate-command-table.ts
 
       - name: Check for changes
         id: changes
         run: |
-          git diff --exit-code README.md || echo "changed=true" >> $GITHUB_OUTPUT
+          if git diff --exit-code README.md; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create pull request for command table update
         if: steps.changes.outputs.changed == 'true'
