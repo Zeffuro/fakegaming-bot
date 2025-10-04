@@ -12,10 +12,6 @@ const data = new SlashCommandBuilder()
             .setAutocomplete(true)
     );
 
-/**
- * Executes the set-timezone command, setting the user's timezone in the config manager.
- * Replies with a confirmation or error message.
- */
 async function execute(interaction: ChatInputCommandInteraction) {
     const timezone = interaction.options.getString('timezone', true);
     const userId = interaction.user.id;

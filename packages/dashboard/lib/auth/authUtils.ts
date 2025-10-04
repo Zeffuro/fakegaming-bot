@@ -53,12 +53,10 @@ export function isDashboardAdmin(discordId: string): boolean {
  * Check if user has access to a specific guild
  */
 export async function checkGuildAccess(user: AuthenticatedUser, guildId: string): Promise<GuildAccessResult> {
-    // Dashboard admins have access to all guilds
     if (isDashboardAdmin(user.discordId)) {
         return { hasAccess: true, isAdmin: true };
     }
 
-    // Check user's guild cache
     const guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(user.discordId));
 
     if (!guilds) {

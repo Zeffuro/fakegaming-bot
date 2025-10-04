@@ -84,7 +84,6 @@ export function createMockChannel(overrides: Partial<Channel> = {}): Channel {
 export function createMockTextChannel(overrides: Partial<TextChannel> = {}): TextChannel {
     const channelId = overrides.id || '929533532185956352';
 
-    // Create a base channel without recursive guild creation
     const baseChannelProps = {
         id: channelId,
         type: 0,
@@ -150,7 +149,6 @@ export function createMockGuildMember(overrides: Record<string, any> = {}): Guil
     const userId = overrides.id || '123456789012345678';
     const guildId = overrides.guildId || '135381928284343204';
 
-    // Create user without circular guild reference
     const user = {
         id: userId,
         username: 'testuser',

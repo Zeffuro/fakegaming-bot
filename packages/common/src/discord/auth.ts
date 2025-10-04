@@ -91,7 +91,6 @@ export async function getDiscordGuildChannels(guildId: string, botToken: string)
             throw new Error(await channelsRes.text());
         }
         const channels = await channelsRes.json();
-        // Filter to only text channels (type 0) and announcement channels (type 5)
         return channels.filter((channel: any) => channel.type === 0 || channel.type === 5);
     }
     throw new Error("Discord rate limit exceeded for guild channels");

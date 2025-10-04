@@ -45,7 +45,7 @@ export default function GuildTwitchPage() {
       error={error}
       moduleTitle="Twitch Live Notifications"
       moduleIcon={<LiveTv color="secondary" />}
-      moduleColor="#9146FF" // Twitch purple
+      moduleColor="#9146FF"
       moduleName="Twitch"
       channelNameField="twitchUsername"
       channelNameLabel="Channel Name"

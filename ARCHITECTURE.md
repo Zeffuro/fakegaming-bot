@@ -39,14 +39,19 @@ This document defines where different types of code should live in our monorepo.
 - ✅ **Guild management** (guilds, channels for dashboard users)
 - ✅ **Dashboard-specific data** (user preferences, dashboard config)
 - ✅ **Server-side rendering data** (data needed for pages)
+- ✅ **External API proxy** (proxying requests to the Express API with authentication)
 
 **Authentication:** HTTP-only cookies with JWT
 
 **Current endpoints:**
 - `/auth/discord` - Discord OAuth initiation
 - `/auth/discord/callback` - OAuth callback handler
+- `/auth/me` - Get current authenticated user
+- `/auth/logout` - Logout and clear session
+- `/user` - User data for dashboard
 - `/guilds` - User's accessible guilds
 - `/guilds/[guildId]/channels` - Guild channels for dashboard
+- `/external/[...proxy]` - Proxy requests to Express API with auth
 
 ### 📦 Common Package (`packages/common`) - Shared Logic
 **What belongs here:**
@@ -146,18 +151,47 @@ When adding a new feature, ask yourself:
 - **Duplicate auth logic** → Should use shared auth utils
 - **API endpoint logic in components** → Should be in API routes
 
-## Migration Notes
+---
 
-### Recent Improvements (October 2025)
-- ✅ **Created shared authentication utilities** (`lib/auth/authUtils.ts`)
-- ✅ **Eliminated duplicate auth logic** between guilds and channels routes
-- ✅ **Separated data logic from UI** in YouTube page using custom hooks
-- ✅ **Fixed API endpoint usage** - YouTube page now uses correct dashboard API
-- ✅ **Improved code organization** - Clear separation of concerns
+## Bot Module Organization
 
-### Benefits Achieved
-1. **Reduced code duplication** - Auth logic shared between routes
-2. **Better maintainability** - Data logic separated from UI
-3. **Improved testability** - Hooks can be tested independently
-4. **Clearer architecture** - Each file has a single responsibility
-5. **Easier debugging** - API calls centralized in hooks
+### Command Structure
+Commands are organized by module in `packages/bot/src/modules/`:
+
+```
+modules/
+├── general/        # General utility commands (help, roll, poll, weather)
+├── league/         # League of Legends integration
+├── quotes/         # Quote management system
+├── reminders/      # Reminder system with timezone support
+├── birthdays/      # Birthday tracking and notifications
+├── twitch/         # Twitch stream notifications
+├── youtube/        # YouTube video notifications
+├── patchnotes/     # Game patch notes distribution
+```
+
+Each module contains:
+- `commands/` - Discord slash commands
+- `__tests__/` - Unit tests for commands
+- `shared/` - Shared utilities (optional)
+
+### Service Organization
+Background services in `packages/bot/src/services/`:
+
+```
+services/
+├── patchfetchers/     # Game-specific patch note fetchers
+├── patchNotesService.ts
+├── scheduledReminderService.ts
+└── birthdayService.ts
+```
+
+### Adding a New Module
+
+1. Create module directory: `packages/bot/src/modules/yourmodule/`
+2. Add commands in `commands/` subdirectory
+3. Export command data and execute function
+4. Add tests in `__tests__/` subdirectory
+5. Register in command loader if needed
+
+---

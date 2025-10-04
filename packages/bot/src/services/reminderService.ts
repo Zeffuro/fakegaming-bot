@@ -2,9 +2,6 @@ import {Client, EmbedBuilder} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {formatElapsed, parseTimespan} from '../utils/timeUtils.js';
 
-/**
- * Checks all reminders and sends them to users if due. Removes sent reminders from the config.
- */
 export async function checkAndSendReminders(client: Client) {
     const allReminders = await getConfigManager().reminderManager.getAllPlain();
     const now = Date.now();

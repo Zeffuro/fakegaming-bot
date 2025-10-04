@@ -5,10 +5,6 @@ import {LeagueConfig} from "@zeffuro/fakegaming-common/models";
 
 const puuidCache = new Map<string, string>();
 
-/**
- * Fetches a summoner's data by PUUID and region.
- * Returns success, data, and error fields.
- */
 export async function getSummoner(puuid: string, region: Regions): Promise<{
     success: boolean,
     data?: object,
@@ -41,10 +37,6 @@ export async function getSummoner(puuid: string, region: Regions): Promise<{
     }
 }
 
-/**
- * Fetches a PUUID by Riot ID (gameName and tagLine) and region group.
- * Uses cache for performance.
- */
 export async function getPUUIDByRiotId(gameName: string, tagLine: string, region: AccountAPIRegionGroups): Promise<string> {
     const cacheKey = `${gameName.trim().toLowerCase()}#${tagLine.trim().toLowerCase()}`;
     if (puuidCache.has(cacheKey)) {
@@ -60,10 +52,6 @@ export async function getPUUIDByRiotId(gameName: string, tagLine: string, region
     }
 }
 
-/**
- * Fetches match history for a summoner by PUUID and region group.
- * Returns success, data, and error fields.
- */
 export async function getMatchHistory(puuid: string, region: AccountAPIRegionGroups, start: number = 0, count: number = 20): Promise<{
     success: boolean,
     data?: object,
@@ -79,10 +67,6 @@ export async function getMatchHistory(puuid: string, region: AccountAPIRegionGro
     }
 }
 
-/**
- * Fetches match details by match ID and region group.
- * Returns success, data, and error fields.
- */
 export async function getMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
     success: boolean,
     data?: object,
@@ -175,10 +159,6 @@ export async function resolveLeagueIdentity(options: {
 }
 
 // TFT: Teamfight Tactics
-/**
- * Fetches TFT match history for a summoner by PUUID and region group.
- * Returns success, data, and error fields.
- */
 export async function getTftMatchHistory(puuid: string, region: AccountAPIRegionGroups, start: number = 0, count: number = 20): Promise<{
     success: boolean,
     data?: object,
@@ -194,10 +174,6 @@ export async function getTftMatchHistory(puuid: string, region: AccountAPIRegion
     }
 }
 
-/**
- * Fetches TFT match details by match ID and region group.
- * Returns success, data, and error fields.
- */
 export async function getTftMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
     success: boolean,
     data?: object,

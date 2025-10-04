@@ -1,4 +1,3 @@
-// filepath: F:\Coding\discord-bot\packages\common\src\testing\mocks\modelMock.ts
 import { vi } from 'vitest';
 import type {
   BirthdayConfig,
@@ -171,7 +170,6 @@ export function setupModelMocks(): void {
   vi.mock('../../models', async (importOriginal: () => Promise<typeof import('../../models/index.js')>) => {
     const actualModels = await importOriginal();
 
-    // Create mock versions of all the Sequelize models
     const mockModels = {
       BirthdayConfig: {
         findAll: vi.fn().mockResolvedValue([]),

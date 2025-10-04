@@ -1,4 +1,3 @@
-// Re-export just the Discord utilities we need
 import {
   exchangeCodeForToken,
   fetchDiscordUser,

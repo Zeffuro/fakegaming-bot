@@ -14,7 +14,6 @@ export function useYouTubeConfigs(guildId: string | string[]) {
       setLoading(true);
       const allConfigs = await api.getYouTubeConfigs();
 
-      // Filter configs for current guild and cast to Sequelize types
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YoutubeVideoConfig[];
       setConfigs(guildConfigs);
     } catch (err: any) {
@@ -50,7 +49,6 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
-  // Match the expected signature: (config: T) => Promise<boolean>
   const updateConfig = async (config: YoutubeVideoConfig) => {
     try {
       setSaving(true);
@@ -61,7 +59,6 @@ export function useYouTubeConfigs(guildId: string | string[]) {
         customMessage: config.customMessage
       };
 
-      // For now, we'll use a workaround since the update endpoint might not exist
       await api.deleteYouTubeChannel(config.id.toString());
       await api.createYouTubeChannel(payload as youtube_post_Request);
       await fetchConfigs();
@@ -74,7 +71,6 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
-  // Match the expected signature: (config: T) => Promise<boolean>
   const deleteConfig = async (config: YoutubeVideoConfig) => {
     try {
       setSaving(true);

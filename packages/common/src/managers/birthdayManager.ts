@@ -1,9 +1,6 @@
 import {BaseManager} from './baseManager.js';
 import {BirthdayConfig} from '../models/birthday-config.js';
 
-/**
- * Manages birthday records for users in guilds.
- */
 export class BirthdayManager extends BaseManager<BirthdayConfig> {
     constructor() {
         super(BirthdayConfig);

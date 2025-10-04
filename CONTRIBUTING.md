@@ -6,7 +6,7 @@ Thanks for your interest in contributing! Please follow these guidelines to get 
 
 ## Monorepo Structure
 
-This project is a monorepo managed with npm workspaces. It contains multiple packages:
+This project is a monorepo managed with **pnpm workspaces**. It contains multiple packages:
 
 - `packages/api` — Express REST API for external integrations
 - `packages/bot` — The Discord bot (commands, services, integrations)
@@ -20,29 +20,32 @@ This project is a monorepo managed with npm workspaces. It contains multiple pac
 
 ## Getting Started
 
-> **Note:** Using [pnpm](https://pnpm.io/) is recommended on Windows or in monorepo setups, as it avoids deeply nested
-`node_modules` trees.  
-> Both `npm` and `pnpm` are supported; all workspace scripts work with either.  
-> If you use pnpm and commit changes, please commit the `pnpm-lock.yaml` alongside your changes.
+> **Package Manager:**  
+> This project **requires [pnpm](https://pnpm.io/)** for monorepo workspace management.  
+> pnpm is mandatory due to workspace dependencies and to avoid deep `node_modules` nesting issues on Windows.
 
 1. **Fork the repo and clone your fork**
-2. Install all dependencies for all packages:
+2. **Install pnpm** if you don't have it:
    ```bash
-   npm install
+   npm install -g pnpm
    ```
-3. Copy the root `.env.example` to `.env` in the root of the repository:
+3. **Install all dependencies** for all packages:
+   ```bash
+   pnpm install
+   ```
+4. Copy the root `.env.example` to `.env` in the root of the repository:
    ```bash
    cp .env.example .env
    ```
    Edit `.env` and fill in your credentials. See comments in `.env.example` for details.
-4. Start the bot in development from the root:
+5. Start the bot in development from the root:
    ```bash
-   npm run start:bot:dev
+   pnpm start:bot:dev
    ```
    Or, from the bot package:
    ```bash
    cd packages/bot
-   npm run start:dev
+   pnpm start:dev
    ```
 
 ### Using Docker Compose (Optional)
@@ -60,17 +63,184 @@ This project is a monorepo managed with npm workspaces. It contains multiple pac
 
 ---
 
+## Local Development Setup
+
+**1. Install dependencies**
+
+From the repository root, run:
+
+```bash
+pnpm install
+```
+
+
+**2. Set up environment variables**
+
+For **local development**, copy `.env.example` to `.env.development` in each package:
+
+```bash
+cp packages/bot/.env.example packages/bot/.env.development
+cp packages/api/.env.example packages/api/.env.development
+cp packages/dashboard/.env.example packages/dashboard/.env.development
+```
+
+Then edit each `.env.development` file with your **development credentials**:
+- Use SQLite for the database (set `DATABASE_PROVIDER=sqlite`, no `DATABASE_URL` needed)
+- Use development Discord tokens/IDs
+- Use test API keys for third-party services
+
+For **production or live data testing**, create `.env` files instead:
+
+```bash
+cp packages/bot/.env.example packages/bot/.env
+cp packages/api/.env.example packages/api/.env
+cp packages/dashboard/.env.example packages/dashboard/.env
+```
+
+**Environment File Loading:**
+- `start:dev` scripts set `NODE_ENV=development` → loads `.env.development`
+- `start` scripts set `NODE_ENV=production` → loads `.env`
+- Falls back to `.env` if the environment-specific file doesn't exist
+
+**3. Build the common package**
+
+The bot, API, and dashboard all depend on `@zeffuro/fakegaming-common`. Build it first:
+
+```bash
+pnpm --filter @zeffuro/fakegaming-common run build
+```
+
+**4. Run services locally**
+
+From the repository root:
+
+```bash
+# Start the bot in development mode
+pnpm start:bot:dev
+
+# Start the API in development mode
+pnpm start:api:dev
+
+# Start the dashboard in development mode
+pnpm start:dashboard:dev
+```
+
+These commands use `tsx` for TypeScript execution without compilation and hot-reload.
+
+---
+
+## Docker Compose Setup
+
+For **containerized deployment** (production-like environment):
+
+### Production Deployment
+
+**1. Set up the root `.env` file**
+
+```bash
+cp .env.example .env
+```
+
+Edit the root `.env` file with database credentials and volume paths.
+
+**2. Set up service `.env` files**
+
+```bash
+cp packages/bot/.env.example packages/bot/.env
+cp packages/api/.env.example packages/api/.env
+cp packages/dashboard/.env.example packages/dashboard/.env
+```
+
+Edit each service's `.env` file with production credentials.
+
+**3. Start services**
+
+```bash
+docker-compose up -d
+```
+
+- Uses pre-built images from Docker Hub (`zeffuro/fakegaming-*:latest`)
+- The root `.env` file is used for Docker Compose variables (database credentials, volume mappings)
+- Each service's `.env` file is loaded for service-specific configuration
+- `DATABASE_URL` is automatically constructed and injected from root `.env` variables
+- Runs with PostgreSQL database
+
+**4. Stop services**
+
+```bash
+docker-compose down
+```
+
+---
+
+### Local Docker Testing
+
+For **testing Dockerized builds locally** with development credentials:
+
+**1. Set up `.env.development` files** (if not already done for local dev):
+
+```bash
+cp packages/bot/.env.example packages/bot/.env.development
+cp packages/api/.env.example packages/api/.env.development
+cp packages/dashboard/.env.example packages/dashboard/.env.development
+```
+
+Edit each `.env.development` file with development credentials.
+
+**2. Build and start services**
+
+```bash
+docker-compose -f docker-compose.local.yml up --build -d
+```
+
+**What this does:**
+- ✅ Builds Docker images from source (not from Docker Hub)
+- ✅ Uses `.env.development` files (development credentials)
+- ✅ Uses SQLite database (no PostgreSQL container)
+- ✅ Exposes API on port 3001 and Dashboard on port 3000
+- ✅ Perfect for testing Dockerfiles before pushing to production
+
+**3. Access services**
+
+- Dashboard: http://localhost:3000
+- API: http://localhost:3001/api
+
+**4. Rebuild after code changes**
+
+```bash
+docker-compose -f docker-compose.local.yml up --build -d
+```
+
+**5. Stop services**
+
+```bash
+docker-compose -f docker-compose.local.yml down
+```
+
+---
+
 ## Code Style
 
 - Use TypeScript for all source files.
 - Prefer ES modules (`import/export`).
 - Use 4-space indentation.
-- Write JSDoc comments for exported functions/classes.
+- Write TSDoc comments for exported functions/classes.
+- **TypeScript & ESLint:** See [TYPESCRIPT.md](../TYPESCRIPT.md) for compiler options and linting rules.
 - Lint all packages with:
   ```bash
   npm run lint
   ```
   Or run `npm run lint` in a specific package directory.
+
+### Important Code Conventions
+
+- **Unused variables:** Prefix with `_` to avoid linting errors (e.g., `_unusedParam`)
+- **Import extensions:** Always use `.js` extension for imports, even for `.ts` files
+- **ES modules:** Use `import`/`export`, not `require`/`module.exports`
+- **Strict types:** No implicit `any`, handle `null`/`undefined` explicitly
+- **Optional chaining:** Prefer `user?.name` over `user && user.name`
+
+See [TYPESCRIPT.md](../TYPESCRIPT.md) for detailed TypeScript configuration and best practices.
 
 ---
 
@@ -129,12 +299,12 @@ Unit tests use [Vitest](https://vitest.dev/).
 
 - Run all tests for all packages:
   ```bash
-  npm test
+  pnpm test
   ```
 - Or, run tests in a specific package:
   ```bash
   cd packages/bot
-  npm test
+  pnpm test
   ```
 - Test files are located in `src/modules/*/__tests__/` and `src/services/__tests__/` (for the bot), and similar locations in
   other packages.

@@ -24,11 +24,6 @@ const data = new SlashCommandBuilder()
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 
-/**
- * Executes the add-twitch-stream command, adding a Twitch stream for notifications in a Discord channel.
- * Checks admin permissions, validates the Twitch user, prevents duplicates, and adds the stream for notifications.
- * Replies with a confirmation or error message.
- */
 async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
 

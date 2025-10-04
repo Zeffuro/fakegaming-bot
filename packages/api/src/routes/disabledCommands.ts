@@ -81,18 +81,19 @@ router.get('/check', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
     const { guildId, commandName } = req.body;
     if (!guildId || !commandName) {
         return res.status(400).json({ error: 'guildId and commandName required' });
     }
 
-    // Permission check is now handled by the requireGuildAdmin middleware
-
-    const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
-    // Audit log
-    console.log(`[AUDIT] User ${discordId} disabled command '${commandName}' for guild ${guildId} at ${new Date().toISOString()}`);
-    res.status(201).json(created);
+    try {
+        await getConfigManager().disabledCommandManager.upsert({ commandName, guildId });
+        const config = await getConfigManager().disabledCommandManager.getOnePlain({ commandName, guildId });
+        res.status(201).json(config);
+    } catch (error) {
+        console.error('Error disabling command:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 /**
@@ -127,16 +128,13 @@ router.delete('/:id', jwtAuth, async (req, res) => {
         return res.status(404).json({ error: 'Config not found' });
     }
 
-    // Check permissions using our helper
     const accessResult = await checkUserGuildAccess(req, res, config.guildId);
     if (!accessResult.authorized) {
-        // Response already sent by checkUserGuildAccess
         return;
     }
 
     await getConfigManager().disabledCommandManager.remove({id});
 
-    // Audit log
     console.log(`[AUDIT] User ${discordId} enabled command '${config.commandName}' for guild ${config.guildId} at ${new Date().toISOString()}`);
     res.json({success: true});
 });

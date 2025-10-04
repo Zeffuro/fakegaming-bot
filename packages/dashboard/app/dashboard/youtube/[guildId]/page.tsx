@@ -45,7 +45,7 @@ export default function GuildYouTubePage() {
       error={error}
       moduleTitle="YouTube Notifications"
       moduleIcon={<YouTube color="error" />}
-      moduleColor="#FF0000" // YouTube red
+      moduleColor="#FF0000"
       moduleName="YouTube"
       channelNameField="youtubeChannelId"
       channelNameLabel="Channel ID"

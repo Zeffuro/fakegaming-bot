@@ -18,18 +18,11 @@ const appApiClient = new ApiClient({authProvider: appAuthProvider});
 
 const liveStatus: Record<string, boolean> = {};
 
-/**
- * Verifies if a Twitch user exists by username.
- * Returns true if found, false otherwise.
- */
 export async function verifyTwitchUser(username: string): Promise<boolean> {
     const user = await appApiClient.users.getUserByName(username);
     return user !== null;
 }
 
-/**
- * Subscribes to all configured Twitch streams and announces when they go live.
- */
 export async function subscribeAllStreams(client: Client) {
     const streams = await getConfigManager().twitchManager.getAllPlain();
     console.debug('[TwitchService] Streams:', streams);
@@ -49,7 +42,6 @@ export async function subscribeAllStreams(client: Client) {
             console.debug(`[TwitchService] Stream data for user ${user.id}:`, streamData);
             const isLive = streamData !== null;
 
-            // Only announce if live and not already announced
             if (isLive && !liveStatus[user.id]) {
                 liveStatus[user.id] = true;
                 const channel = client.channels.cache.get(stream.discordChannelId);

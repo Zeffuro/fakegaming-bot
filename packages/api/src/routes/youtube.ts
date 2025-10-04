@@ -77,7 +77,6 @@ router.get('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
     }
 
     try {
-        // Permission check is now handled by the requireGuildAdmin middleware
         const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
         res.json(config);
     } catch (error) {
@@ -182,14 +181,7 @@ router.post('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
     }
 
     try {
-        // Permission check is now handled by the requireGuildAdmin middleware
-
-        // Add or update channel config
         await getConfigManager().youtubeManager.upsert({ youtubeChannelId, discordChannelId, guildId, customMessage });
-
-        // Log the action
-        const { discordId } = (req as AuthenticatedRequest).user;
-        console.log(`[AUDIT] User ${discordId} set YouTube channel config for guild ${guildId} at ${new Date().toISOString()}`);
 
         res.status(201).json({ success: true });
     } catch (error) {
@@ -234,17 +226,13 @@ router.delete('/:id', jwtAuth, async (req, res) => {
             return res.status(404).json({ error: 'YouTube configuration not found' });
         }
 
-        // Check guild admin permission using the guildId from the config
         const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
         if (!authResult.authorized) {
-            // Response already sent by checkUserGuildAccess
             return;
         }
 
-        // Delete the configuration
         await getConfigManager().youtubeManager.remove({ id });
 
-        // Log the action
         const { discordId } = (req as AuthenticatedRequest).user;
         console.log(`[AUDIT] User ${discordId} deleted YouTube config ID ${id} at ${new Date().toISOString()}`);
 

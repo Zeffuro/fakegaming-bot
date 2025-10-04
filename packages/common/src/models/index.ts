@@ -1,4 +1,3 @@
-// Export all model types and interfaces
 export * from './user-config.js';
 export * from './league-config.js';
 export * from './server-config.js';
@@ -11,4 +10,3 @@ export * from './patch-note-config.js';
 export * from './patch-subscription-config.js';
 export * from './disabled-command-config.js';
 export * from './cache-config.js';
-

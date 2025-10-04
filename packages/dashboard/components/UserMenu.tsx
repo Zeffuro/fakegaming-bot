@@ -29,7 +29,6 @@ export default function UserMenu() {
   };
 
   const handleLogout = () => {
-    // Use the logout endpoint instead of directly clearing the cookie
     window.location.href = "/api/auth/logout";
     handleClose();
   };

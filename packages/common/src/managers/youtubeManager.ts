@@ -1,9 +1,6 @@
 import {BaseManager} from './baseManager.js';
 import {YoutubeVideoConfig} from '../models/youtube-video-config.js';
 
-/**
- * Manages YouTube video channel configuration records.
- */
 export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
     constructor() {
         super(YoutubeVideoConfig);

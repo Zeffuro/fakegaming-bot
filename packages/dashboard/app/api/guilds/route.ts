@@ -9,7 +9,6 @@ import type { APIGuild } from "discord-api-types/v10";
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 
 export async function GET(req: NextRequest) {
-    // Authenticate user
     const authResult = await authenticateUser(req);
     if (!authResult.success) {
         return NextResponse.redirect(new URL("/", req.url));
@@ -17,7 +16,6 @@ export async function GET(req: NextRequest) {
     const user = authResult.user!;
 
     try {
-        // Fetch bot's guilds with improved cache management
         const botGuilds = await getCachedData(
             CACHE_KEYS.botGuilds(),
             async () => {
@@ -36,21 +34,16 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Failed to fetch bot guilds" }, { status: 500 });
         }
 
-        // If user is admin, return all bot guilds
         if (isDashboardAdmin(user.discordId)) {
             return NextResponse.json({guilds: botGuilds, isAdmin: true});
         }
 
-        // Fetch user's guilds with improved cache management
         const userGuilds = await getCachedData(
             CACHE_KEYS.userGuilds(user.discordId),
             async () => {
-                // Get user's Discord access token from Redis using getCachedData
                 const userAccessToken = await getCachedData(
                     CACHE_KEYS.userAccessToken(user.discordId),
                     async () => {
-                        // This should never happen since we'd need the token to be already in cache
-                        // But we need to provide a fetchFn for getCachedData
                         console.error("[Discord User] Trying to fetch non-existent access token for user", user.discordId);
                         throw new Error("User access token not found in cache");
                     },
@@ -62,9 +55,7 @@ export async function GET(req: NextRequest) {
                     throw new Error("User access token missing");
                 }
 
-                // Fetch fresh guild data from Discord API
                 const guilds = await getDiscordGuilds(userAccessToken as string, "Bearer");
-                // Return only necessary data to reduce cache size
                 return guilds.map((g: APIGuild): MinimalGuildData => ({
                     id: g.id,
                     permissions: g.permissions,
@@ -78,7 +69,6 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({guilds: []});
         }
 
-        // Filter: shared guilds where user has admin perms
         const sharedGuilds = botGuilds.filter((botGuild: APIGuild) =>
             userGuilds.some((userGuild: MinimalGuildData) =>
                 userGuild.id === botGuild.id && isGuildAdmin([userGuild], userGuild.id)

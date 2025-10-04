@@ -2,9 +2,6 @@ import {BaseManager} from './baseManager.js';
 import {QuoteConfig} from '../models/quote-config.js';
 import {Op} from 'sequelize';
 
-/**
- * Manages quote records for guilds and authors.
- */
 export class QuoteManager extends BaseManager<QuoteConfig> {
     constructor() {
         super(QuoteConfig);

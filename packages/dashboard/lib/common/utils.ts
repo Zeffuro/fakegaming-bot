@@ -1,4 +1,3 @@
-// Re-export just the permission utilities and other utilities we need
 import {
   isGuildAdmin,
   checkGuildAccess,

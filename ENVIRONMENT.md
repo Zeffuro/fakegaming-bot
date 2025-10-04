@@ -1,7 +1,35 @@
 # Environment Variables & Docker Setup
 
-This monorepo uses dedicated Dockerfiles and `.env` files for each service. Docker Compose is configured to load the
-correct `.env` file and use the correct Dockerfile for each service automatically.
+This monorepo uses dedicated Dockerfiles and `.env` files for each service. The environment setup differs between local development and Docker Compose deployment.
+
+## Environment File Strategy
+
+### Local Development (No Docker)
+- **File:** `.env.development` in each package
+- **Loaded by:** `NODE_ENV=development` (set by `start:dev` scripts)
+- **Purpose:** Development credentials, SQLite database, test API keys
+- **Database:** SQLite (no DATABASE_URL needed)
+
+### Local Development (With Docker)
+- **File:** `.env.development` in each package
+- **Docker Compose:** `docker-compose.local.yml`
+- **Purpose:** Test Dockerized builds locally with development credentials
+- **Database:** SQLite (uses shared data volume)
+- **Builds from source** instead of using pre-built images
+
+### Production / Live Data Testing
+- **File:** `.env` in each package
+- **Loaded by:** `NODE_ENV=production` (set by `start` scripts)
+- **Purpose:** Production credentials, live database, real API keys
+- **Database:** PostgreSQL or other production database
+
+### Docker Compose (Production)
+- **Files:** Root `.env` + each package's `.env`
+- **Docker Compose:** `docker-compose.yml`
+- **Root .env:** Controls Docker Compose (database credentials, volume paths)
+- **Package .env:** Service-specific configuration (ports, API keys, etc.)
+- **Database:** PostgreSQL (DATABASE_URL injected automatically)
+- **Uses pre-built images** from Docker Hub
 
 ## Dockerfiles
 
@@ -11,78 +39,279 @@ correct `.env` file and use the correct Dockerfile for each service automaticall
 
 ## .env File Locations
 
-- **API Service:** `packages/api/.env`
-- **Bot Service:** `packages/bot/.env`
-- **Dashboard Service:** `packages/dashboard/.env`
+- **Root:** `.env` (for Docker Compose variables only)
+- **API Service:** `packages/api/.env.development` (dev) or `packages/api/.env` (prod)
+- **Bot Service:** `packages/bot/.env.development` (dev) or `packages/bot/.env` (prod)
+- **Dashboard Service:** `packages/dashboard/.env.development` (dev) or `packages/dashboard/.env` (prod)
 
 ## Key Environment Variables
 
-- **PORT:** The port each service listens on (e.g., `PORT=3001` for API, `PORT=3000` for dashboard)
-- **PUBLIC_URL:** The public URL for each service (e.g., `PUBLIC_URL=http://localhost:3001/api` for API)
+### Root .env (Docker Compose Only)
+```bash
+# PostgreSQL credentials for Docker Compose
+POSTGRES_USER=fakegaming
+POSTGRES_PASSWORD=your_secure_password
+POSTGRES_DB=fakegaming
+POSTGRES_PORT=5432
 
-## Volume Mappings
+# Docker volume mappings
+POSTGRES_DATA_PATH=./data/postgres  # PostgreSQL data
+BOT_DATA_PATH=./data/bot           # Bot assets and SQLite backups
+```
 
-- **API Data:** `${API_DATA_PATH}` (see `.env.example`)
-- **API Code:** `${API_CODE_PATH}`
-- **Bot Data:** `${BOT_DATA_PATH}`
-- **Bot Code:** `${BOT_CODE_PATH}`
-- **Dashboard Code:** `${DASHBOARD_CODE_PATH}`
-- **Postgres Data:** `${POSTGRES_DATA_PATH}`
+### Service .env Files
 
-## Docker Compose Integration
+Each service requires its own `.env.development` (for local dev) or `.env` (for production/Docker):
 
-Each service in `docker-compose.yml` uses its own Dockerfile and `.env` file, and passes `PORT` and `PUBLIC_URL` to the
-container environment:
+#### packages/bot/.env.development (example)
+```bash
+# Database - SQLite for local development
+DATA_ROOT=./data
+DATABASE_PROVIDER=sqlite
+# DATABASE_URL not needed for SQLite
+
+# Discord
+DISCORD_BOT_TOKEN=your_dev_bot_token
+CLIENT_ID=your_dev_client_id
+GUILD_ID=your_test_guild_id
+
+# API Keys (use test keys for dev)
+RIOT_LEAGUE_API_KEY=your_riot_api_key
+TWITCH_CLIENT_ID=your_twitch_client_id
+TWITCH_CLIENT_SECRET=your_twitch_secret
+YOUTUBE_API_KEY=your_youtube_api_key
+OPENWEATHER_API_KEY=your_weather_api_key
+```
+
+#### packages/api/.env.development (example)
+```bash
+# Server configuration
+PORT=3001
+PUBLIC_URL=http://localhost:3001/api
+
+# Database - SQLite for local development
+DATABASE_PROVIDER=sqlite
+# DATABASE_URL not needed for SQLite
+
+# JWT configuration
+JWT_SECRET=your_development_secret
+JWT_AUDIENCE=fakegaming-dashboard
+
+# Dashboard OAuth
+DASHBOARD_CLIENT_ID=dashboard
+DASHBOARD_CLIENT_SECRET=your_dashboard_secret
+
+# Optional: Redis (not required for development)
+# REDIS_URL=redis://localhost:6379
+```
+
+#### packages/dashboard/.env.development (example)
+```bash
+# Server configuration
+PORT=3000
+PUBLIC_URL=http://localhost:3000
+
+# Discord OAuth
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+DISCORD_BOT_TOKEN=your_bot_token
+
+# API connection
+API_URL=http://localhost:3001/api
+
+# JWT configuration (must match API)
+JWT_SECRET=your_development_secret
+JWT_AUDIENCE=fakegaming-dashboard
+
+# Dashboard OAuth (must match API)
+DASHBOARD_CLIENT_ID=dashboard
+DASHBOARD_CLIENT_SECRET=your_dashboard_secret
+
+# Admin Discord user IDs (comma-separated)
+DASHBOARD_ADMINS=123456789012345678,987654321098765432
+
+# Optional: Redis (not required for development)
+# REDIS_URL=redis://localhost:6379
+```
+
+## Docker Compose Configuration
+
+The `docker-compose.yml` uses **pre-built images** for production deployment:
 
 ```yaml
 services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
+
+  bot:
+    image: zeffuro/fakegaming-bot:latest
+    env_file:
+      - ./packages/bot/.env
+    environment:
+      # DATABASE_URL constructed from root .env variables
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    volumes:
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
+
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    image: zeffuro/fakegaming-api:latest
     env_file:
       - ./packages/api/.env
     environment:
-      PORT: ${PORT}
-      PUBLIC_URL: ${PUBLIC_URL}
-      # ...other variables...
+      # DATABASE_URL constructed from root .env variables
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
 
   dashboard:
-    build:
-      context: .
-      dockerfile: Dockerfile.dashboard
+    image: zeffuro/fakegaming-dashboard:latest
     env_file:
       - ./packages/dashboard/.env
-    environment:
-      PORT: ${PORT}
-      PUBLIC_URL: ${PUBLIC_URL}
-      # ...other variables...
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
 ```
+
+**Important:** `DATABASE_URL` is automatically constructed from root `.env` variables and injected into containers, overriding any DATABASE_URL in service `.env` files.
 
 ## Setup Instructions
 
-1. Copy the `.env.example` file in each package to `.env`:
-    - `cp packages/api/.env.example packages/api/.env`
-    - `cp packages/bot/.env.example packages/bot/.env`
-    - `cp packages/dashboard/.env.example packages/dashboard/.env`
-2. Fill in the required values in each `.env` file, including `PORT` and `PUBLIC_URL`.
-3. Run `docker-compose up` to start the services. Each service will use its own Dockerfile and environment variables.
+### For Local Development
 
-## Local Development vs Docker Compose
+1. **Copy `.env.example` to `.env.development`** in each package:
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env.development
+   cp packages/api/.env.example packages/api/.env.development
+   cp packages/dashboard/.env.example packages/dashboard/.env.development
+   ```
 
-- For local development, set `DATABASE_URL` and other connection strings in each service’s `.env` file.
-- When running with Docker Compose, these variables are set automatically from the root `.env` file and will override
-  local values in the container.
-- To set up your environment for local development:
-    1. Copy `.env.example` to `.env` in each package:
-        - `cp packages/api/.env.example packages/api/.env`
-        - `cp packages/bot/.env.example packages/bot/.env`
-        - `cp packages/dashboard/.env.example packages/dashboard/.env`
-    2. Fill in the required values, including `DATABASE_URL` for local use.
-    3. For Docker Compose, you do not need to set `DATABASE_URL` in service `.env` files; it is set automatically.
+2. **Edit each `.env.development` file:**
+   - Set `DATABASE_PROVIDER=sqlite` (no DATABASE_URL needed)
+   - Add development Discord tokens and test API keys
+   - Use `localhost` URLs for service connections
 
-## Notes
+3. **Install dependencies and run:**
+   ```bash
+   pnpm install
+   pnpm start:bot:dev     # Loads .env.development
+   pnpm start:api:dev     # Loads .env.development
+   pnpm start:dashboard:dev  # Loads .env.development
+   ```
 
-- Do **not** commit your `.env` files to git. They are ignored by `.gitignore`.
-- If you add a new service, create a corresponding Dockerfile and `.env` file, and update `docker-compose.yml`.
-- For secrets and host-specific paths, use the `.env` files and never hardcode them in source code.
+### For Production / Live Data Testing
+
+1. **Copy `.env.example` to `.env`** in each package:
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env
+   cp packages/api/.env.example packages/api/.env
+   cp packages/dashboard/.env.example packages/dashboard/.env
+   ```
+
+2. **Edit each `.env` file:**
+   - Set `DATABASE_PROVIDER=postgres` and add `DATABASE_URL`
+   - Add production Discord tokens and real API keys
+   - Use production URLs
+
+3. **Build and run:**
+   ```bash
+   pnpm build
+   pnpm start:bot      # Loads .env
+   pnpm start:api      # Loads .env
+   pnpm start:dashboard   # Loads .env
+   ```
+
+### For Docker Compose (Production)
+
+**Use this for production deployment with pre-built images from Docker Hub:**
+
+1. **Copy root `.env.example` to `.env`:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit root `.env`** with database credentials and volume paths.
+
+3. **Copy and edit service `.env` files** (production credentials):
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env
+   cp packages/api/.env.example packages/api/.env
+   cp packages/dashboard/.env.example packages/dashboard/.env
+   ```
+   
+4. **Start Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+**Notes:**
+- Uses pre-built images (`zeffuro/fakegaming-*:latest`) from Docker Hub
+- `DATABASE_URL` is automatically set from root `.env` variables
+- You do NOT need to set `DATABASE_URL` in service `.env` files (it will be overridden)
+- Volume paths for data persistence are configured in the root `.env`
+- Runs with PostgreSQL database
+- Use `-d` flag to run in detached mode (background)
+
+**Stop services:**
+```bash
+docker-compose down
+```
+
+---
+
+### For Local Docker Testing (Development)
+
+**Use this to test Dockerized builds locally with development credentials:**
+
+1. **Copy `.env.example` to `.env.development`** in each package (if not already done):
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env.development
+   cp packages/api/.env.example packages/api/.env.development
+   cp packages/dashboard/.env.example packages/dashboard/.env.development
+   ```
+
+2. **Edit each `.env.development` file** with development credentials (SQLite, test API keys).
+
+3. **Build and start services with the local compose file:**
+   ```bash
+   docker-compose -f docker-compose.local.yml up --build -d
+   ```
+
+**What makes this different:**
+- ✅ **Builds from source** (uses `build:` instead of `image:`)
+- ✅ **Uses `.env.development` files** (development credentials)
+- ✅ **No PostgreSQL** (uses SQLite via shared volume)
+- ✅ **Exposes ports** (API on 3001, Dashboard on 3000)
+- ✅ **Perfect for testing Docker builds** before pushing images
+
+**Access services:**
+- Dashboard: http://localhost:3000
+- API: http://localhost:3001/api
+
+**Stop services:**
+```bash
+docker-compose -f docker-compose.local.yml down
+```
+
+**Rebuild after code changes:**
+```bash
+docker-compose -f docker-compose.local.yml up --build -d
+```
+
+---
+
+### Comparison: docker-compose.yml vs docker-compose.local.yml
+
+| Feature | `docker-compose.yml` (Production) | `docker-compose.local.yml` (Local Testing) |
+|---------|-----------------------------------|---------------------------------------------|
+| **Purpose** | Production deployment | Local Docker testing |
+| **Images** | Pre-built from Docker Hub | Built from source |
+| **Database** | PostgreSQL (included) | SQLite (via volume) |
+| **Environment** | `.env` files | `.env.development` files |
+| **Ports Exposed** | Dashboard only (3000) | API (3001) + Dashboard (3000) |
+| **Use Case** | Deploy to server | Test Dockerfiles locally |
+| **Command** | `docker-compose up -d` | `docker-compose -f docker-compose.local.yml up --build -d` |
+
+---

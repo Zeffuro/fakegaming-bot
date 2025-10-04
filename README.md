@@ -25,7 +25,7 @@ containing multiple packages.
 
 ## Monorepo Structure
 
-This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces) to manage multiple packages:
+This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage multiple packages:
 
 - **packages/api** — Express REST API for external integrations and bot operations
 - **packages/bot** — The Discord bot (commands, services, integrations)
@@ -40,19 +40,14 @@ This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/w
 
 ## Getting Started
 
-> **Windows & Monorepo Users:**  
-> It’s recommended to use [pnpm](https://pnpm.io/) instead of npm to avoid very deep `node_modules` folders, which can
-> cause issues with GitKraken, Windows Explorer, or certain tools.  
-> All scripts (`install`, `run build`, `run lint`, `test`, etc.) work with both npm and pnpm.  
-> This project includes both `package-lock.json` (npm) and `pnpm-lock.yaml` (pnpm) for reproducible installs. Use the
-> package manager of your choice, but if you add new dependencies, please ensure both lockfiles are updated or let us
-> know
-> which one you used.
+> **Package Manager:**  
+> This project **requires [pnpm](https://pnpm.io/)** for monorepo workspace management.  
+> Install with: `npm install -g pnpm`
 
 ### Prerequisites
 
 - Node.js (v22+ recommended)
-- npm (v8+)
+- **pnpm** (install with `npm install -g pnpm` or see [pnpm installation](https://pnpm.io/installation))
 - (Optional) Docker & Docker Compose for containerized development/production
 
 ### Installation
@@ -60,69 +55,133 @@ This repository uses [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/w
 Install all dependencies for all packages:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Environment Variables
 
-- Copy the root `.env.example` to `.env` in the root of the repository:
-  ```bash
-  cp .env.example .env
-  ```
-- The root `.env` file is used for all services (bot, dashboard, database, etc.).
-- Edit the `.env` file and fill in your credentials and configuration. See comments in `.env.example` for details.
-- If a package requires additional environment variables, see its README or `.env.example` in its directory (if
-  present).
+**For Local Development:**
+
+1. Copy `.env.example` to `.env.development` in each package:
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env.development
+   cp packages/api/.env.example packages/api/.env.development
+   cp packages/dashboard/.env.example packages/dashboard/.env.development
+   ```
+
+2. Edit each `.env.development` file with your **development credentials**:
+   - Use **SQLite** for the database (no DATABASE_URL needed)
+   - Use development Discord tokens/IDs
+   - Use test API keys
+
+**For Production/Live Data Testing:**
+
+1. Copy `.env.example` to `.env` in each package:
+   ```bash
+   cp packages/bot/.env.example packages/bot/.env
+   cp packages/api/.env.example packages/api/.env
+   cp packages/dashboard/.env.example packages/dashboard/.env
+   ```
+
+2. Edit each `.env` file with your **production credentials**
+
+**For Docker Compose:**
+
+1. Copy the root `.env.example` to `.env` in the repository root:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Copy each package's `.env.example` to `.env` (production credentials)
+
+3. Fill in database credentials in the root `.env` (Docker Compose will inject DATABASE_URL automatically)
+
+**Environment File Priority:**
+- Development scripts (`start:dev`) → Loads `.env.development` (via `NODE_ENV=development`)
+- Production scripts (`start`) → Loads `.env` (via `NODE_ENV=production`)
+- If environment-specific file is missing, falls back to `.env`
 
 ---
 
 ## Running & Development
 
-### Running with Docker Compose
+### Running with Docker Compose (Production)
 
-You can run the bot and its dependencies using Docker Compose:
+You can run the bot and its dependencies using Docker Compose with pre-built images:
 
 ```bash
-docker-compose up --build
+docker-compose up -d
 ```
 
-- This will start the bot, database, and any other defined services.
-- The root `.env` file is used for environment variables.
-- Data and database volumes are mapped as defined in `docker-compose.yml` and `.env`.
+- This will start the bot, PostgreSQL database, API, and dashboard services.
+- Uses pre-built images from Docker Hub (`zeffuro/fakegaming-*:latest`).
+- The root `.env` file controls Docker Compose variables (database credentials, volume paths).
+- Each service's `.env` file is loaded for service-specific configuration.
 - To stop and remove containers:
   ```bash
   docker-compose down
   ```
-- For production, review and adjust the `docker-compose.yml` and environment variables as needed.
 
-### Running the Bot (Development)
+### Running with Docker Compose (Local Testing)
 
-From the repo root:
+To test Dockerized builds locally with development credentials:
 
 ```bash
-npm run start:bot:dev
+docker-compose -f docker-compose.local.yml up --build -d
 ```
 
-Or, from the bot package:
+- This builds images from source instead of pulling from Docker Hub.
+- Uses `.env.development` files for each service (development credentials).
+- No PostgreSQL (uses SQLite via shared volume).
+- Exposes API on port 3001 and Dashboard on port 3000.
+- Perfect for testing Docker builds before deployment.
+- Access: Dashboard at http://localhost:3000, API at http://localhost:3001/api
 
+To rebuild after code changes:
 ```bash
-cd packages/bot
-npm run start:dev
+docker-compose -f docker-compose.local.yml up --build -d
 ```
 
-### Running the Bot (Production)
-
-From the repo root:
-
+To stop:
 ```bash
-npm run start:bot
+docker-compose -f docker-compose.local.yml down
 ```
 
-Or, from the bot package:
+### Running Locally (Development Mode)
 
+**Start the bot:**
 ```bash
-cd packages/bot
-npm start
+pnpm start:bot:dev
+```
+
+**Start the API:**
+```bash
+pnpm start:api:dev
+```
+
+**Start the dashboard:**
+```bash
+pnpm start:dashboard:dev
+```
+
+These commands:
+- Set `NODE_ENV=development` (loads `.env.development`)
+- Use `tsx` for TypeScript execution without compilation
+- Enable hot-reload for rapid development
+- No Docker required
+
+### Running Locally (Production Mode)
+
+First build all packages:
+```bash
+pnpm build
+```
+
+Then start services:
+```bash
+pnpm start:bot    # Uses .env, runs compiled dist/index.js
+pnpm start:api    # Uses .env, runs compiled dist/index.js
+pnpm start:dashboard  # Uses .env, runs Next.js production server
 ```
 
 ---
@@ -131,15 +190,15 @@ npm start
 
 - **Build all packages:**
   ```bash
-  npm run build
+  pnpm build
   ```
 - **Lint all packages:**
   ```bash
-  npm run lint
+  pnpm lint
   ```
 - **Test all packages:**
   ```bash
-  npm test
+  pnpm test
   ```
 - You can also run these scripts in each package directory for more granular control.
 
@@ -154,10 +213,12 @@ npm start
     - Create a new migration file in `migrations/` (see existing files for naming conventions, e.g.,
       `YYYYMMDD-description.ts`).
     - Migrations should be written in TypeScript and follow the project's migration conventions.
+    - Both `up` and `down` functions are required for rollback capability.
+    - See [MIGRATIONS.md](./MIGRATIONS.md) for detailed migration guide with examples.
 - **Running migrations:**
-    - Use the provided migration scripts or commands (see `scripts/` or package.json scripts) to apply migrations to
-      your database.
-    - Ensure your database is up to date before running the bot.
+    - Migrations run automatically when the bot or API starts.
+    - The system uses Umzug to track which migrations have been applied.
+    - See [MIGRATIONS.md](./MIGRATIONS.md) for manual execution and troubleshooting.
 
 ---
 
@@ -210,6 +271,12 @@ This project uses **GitHub Actions** for continuous integration:
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for code style, how to add commands or preloaders, PR process, and more. Pull
 requests and issues are welcome!
+
+See also:
+- [MIGRATIONS.md](./MIGRATIONS.md) - Database migration guide
+- [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript & ESLint configuration
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture decisions and patterns
+- [ENVIRONMENT.md](./ENVIRONMENT.md) - Environment setup guide
 
 ---
 

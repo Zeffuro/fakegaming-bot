@@ -25,12 +25,6 @@ const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
-
-/**
- * Executes the league-history command, replying with a recent match history image for a summoner.
- * Handles errors and provides feedback if match history cannot be fetched.
- * Replies with an image attachment showing recent matches.
- */
 async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 

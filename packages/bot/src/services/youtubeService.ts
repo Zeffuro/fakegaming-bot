@@ -13,7 +13,7 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 
 const apiKey = process.env.YOUTUBE_API_KEY!;
 const _liveStatus: Record<string, boolean> = {};
-void _liveStatus; // Prevent ESLint unused variable error
+void _liveStatus;
 
 const parser = new Parser({
     customFields: {
@@ -32,10 +32,6 @@ const parser = new Parser({
     }
 });
 
-/**
- * Gets the YouTube channel ID for a given identifier (channel ID, handle, or username).
- * Returns null if not found.
- */
 export async function getYoutubeChannelId(identifier: string): Promise<string | null> {
     const isChannelId = /^UC[\w-]{22}$/.test(identifier);
     const isHandle = identifier.startsWith('@');
@@ -50,11 +46,9 @@ export async function getYoutubeChannelId(identifier: string): Promise<string | 
             return null;
         }
     } else if (isHandle) {
-        // Use the 'forHandle' parameter for handles
         const handle = identifier.substring(1);
         url = `${url}/channels?part=id&forHandle=${encodeURIComponent(handle)}&key=${apiKey}`;
     } else {
-        // Assume it's a legacy username
         url = `${url}/channels?part=id&forUsername=${encodeURIComponent(identifier)}&key=${apiKey}`;
     }
 
@@ -71,10 +65,6 @@ export async function getYoutubeChannelId(identifier: string): Promise<string | 
     }
 }
 
-/**
- * Fetches the RSS feed items for a YouTube channel by channel ID.
- * Returns null if no items are found.
- */
 export async function getYoutubeChannelFeed(channelId: string) {
     const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
     try {
@@ -93,9 +83,6 @@ export async function getYoutubeChannelFeed(channelId: string) {
     }
 }
 
-/**
- * Checks for new videos on all configured YouTube channels and announces them in Discord.
- */
 export async function checkAndAnnounceNewVideos(client: Client) {
     const channels: Array<{
         youtubeChannelId: string;
@@ -121,17 +108,13 @@ export async function checkAndAnnounceNewVideos(client: Client) {
         if (ytChannel.lastVideoId) {
             const idx = feedItems.findIndex(item => item['yt:videoId'] === ytChannel.lastVideoId);
             if (idx === 0) {
-                // lastVideoId matches the latest video, nothing new
                 newVideos = [];
             } else if (idx > 0) {
-                // Announce all videos before lastVideoId (i.e., newer videos)
                 newVideos = feedItems.slice(0, idx).reverse();
             } else {
-                // lastVideoId not found, announce only the latest video
                 newVideos = [feedItems[0]];
             }
         } else {
-            // No lastVideoId, announce only the latest video
             newVideos = [feedItems[0]];
         }
         console.debug(`[YouTubeService] New videos for channel ${ytChannel.youtubeChannelId}:`, newVideos);

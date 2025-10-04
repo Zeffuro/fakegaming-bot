@@ -8,7 +8,6 @@ import type { AuthenticatedRequest } from '../types/express.js';
 
 /**
  * Helper to check if a user has admin permissions for a guild
- * This handles the common pattern of fetching guild data from cache and checking permissions
  */
 export async function checkUserGuildAccess(
     req: Request,
@@ -22,7 +21,6 @@ export async function checkUserGuildAccess(
         return { authorized: false };
     }
 
-    // Get user guilds from cache
     const guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
     if (!guilds) {
         console.error(`[API] Cache miss for user guilds ${discordId}`);
@@ -33,19 +31,16 @@ export async function checkUserGuildAccess(
         return { authorized: false };
     }
 
-    // Check if user has admin permissions for this guild
     if (!isGuildAdmin(guilds, guildId)) {
         res.status(403).json({ error: 'Not authorized for this guild' });
         return { authorized: false };
     }
 
-    // User is authorized
     return { authorized: true, guilds };
 }
 
 /**
  * Middleware that requires admin permission for a guild specified in the request
- * The guild ID is expected in req.params.guildId or req.query.guildId or req.body.guildId
  */
 export function requireGuildAdmin(req: Request, res: Response, next: NextFunction): void {
     const guildId = req.params.guildId || req.query.guildId as string || req.body.guildId;
@@ -55,7 +50,6 @@ export function requireGuildAdmin(req: Request, res: Response, next: NextFunctio
             if (result.authorized) {
                 next();
             }
-            // If not authorized, response is already sent by the checkUserGuildAccess function
         })
         .catch(err => {
             console.error('[Auth] Error checking guild access:', err);

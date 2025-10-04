@@ -71,7 +71,6 @@ router.get('/exists', jwtAuth, requireGuildAdmin, async (req: any, res: any) => 
     }
 
     try {
-        // Permission check is now handled by the requireGuildAdmin middleware
         const exists = await getConfigManager().twitchManager.streamExists(twitchUsername, discordChannelId, guildId);
         res.json({ exists });
     } catch (error) {
@@ -146,12 +145,8 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     }
 
     try {
-        // Permission check is now handled by the requireGuildAdmin middleware
-
-        // Add or update stream config
         await getConfigManager().twitchManager.upsert({ twitchUsername, discordChannelId, guildId, customMessage });
 
-        // Log the action
         const { discordId } = (req as AuthenticatedRequest).user;
         console.log(`[AUDIT] User ${discordId} set Twitch stream config for guild ${guildId} at ${new Date().toISOString()}`);
 
@@ -198,17 +193,13 @@ router.delete('/:id', jwtAuth, async (req, res) => {
             return res.status(404).json({ error: 'Twitch stream configuration not found' });
         }
 
-        // Check guild admin permission using the guildId from the config
         const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
         if (!authResult.authorized) {
-            // Response already sent by checkUserGuildAccess
             return;
         }
 
-        // Delete the configuration
         await getConfigManager().twitchManager.remove({ id });
 
-        // Log the action
         const { discordId } = (req as AuthenticatedRequest).user;
         console.log(`[AUDIT] User ${discordId} deleted Twitch stream config ID ${id} at ${new Date().toISOString()}`);
 

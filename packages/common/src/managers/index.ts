@@ -1,4 +1,3 @@
-// Export all manager classes and interfaces
 export * from './baseManager.js';
 export * from './userManager.js';
 export * from './serverManager.js';

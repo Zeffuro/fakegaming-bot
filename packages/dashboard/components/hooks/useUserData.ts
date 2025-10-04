@@ -28,21 +28,18 @@ export function useUserData() {
         return;
       }
 
-      // API failed - try to extract user data from JWT cookie
       try {
         console.log("Falling back to JWT token for user data");
 
-        // Get JWT from cookie
         const cookies = document.cookie.split(';').map(c => c.trim());
         const jwtCookie = cookies.find(c => c.startsWith('jwt='));
 
         if (jwtCookie) {
-          const token = jwtCookie.substring(4); // Remove 'jwt=' prefix
+          const token = jwtCookie.substring(4);
 
           const decoded = jwt.decode(token) as any;
 
           if (decoded) {
-            // Map the JWT claims to user object
             setUser({
               id: decoded.discordId,
               username: decoded.username,

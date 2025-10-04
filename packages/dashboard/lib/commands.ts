@@ -9,6 +9,4 @@ export const BOT_COMMANDS: BotCommand[] = [
     { name: "ping", description: "Check bot latency" },
     { name: "quote", description: "Get a random quote" },
     { name: "remind", description: "Set a reminder" },
-    // Add more commands as needed
 ];
-

@@ -35,13 +35,11 @@ export class ConfigManager {
         await getSequelize(useTest).authenticate()
             .then(() => {
                 console.log('Database connection successful.');
-                // Start your app logic here
             })
             .catch((err) => {
                 console.error('Database connection failed:', err);
                 process.exit(1);
             });
-        //await sequelize.authenticate();
         await runMigrations(getSequelize(useTest));
         await getSequelize(useTest).sync();
     }

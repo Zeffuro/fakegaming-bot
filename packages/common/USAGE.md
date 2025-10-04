@@ -15,14 +15,11 @@ pnpm add @zeffuro/fakegaming-common
 ### Full Package Import
 
 ```typescript
-import { Models, Managers, Core, Discord, initSequelize } from '@zeffuro/fakegaming-common';
+import { Models, Managers, Core, Discord, getSequelize } from '@zeffuro/fakegaming-common';
 
-// Initialize database connection
-await initSequelize({
-  database: 'mydb',
-  dialect: 'sqlite',
-  storage: './data/mydb.sqlite'
-});
+// Initialize database connection (singleton pattern)
+const sequelize = getSequelize(); // Returns existing instance or creates new one
+await sequelize.authenticate(); // Test connection
 
 // Use models and managers
 const userManager = new Managers.UserManager();
@@ -41,10 +38,10 @@ import { UserConfig } from '@zeffuro/fakegaming-common/models';
 import { UserManager } from '@zeffuro/fakegaming-common/managers';
 
 // Import only core utilities
-import { getDataRoot } from '@zeffuro/fakegaming-common/core';
+import { bootstrapEnv, PROJECT_ROOT } from '@zeffuro/fakegaming-common/core';
 
 // Import only Discord utilities
-import { exchangeCode } from '@zeffuro/fakegaming-common/discord';
+import { exchangeCodeForToken, getDiscordGuilds } from '@zeffuro/fakegaming-common/discord';
 
 // Import only cache utilities
 import { getCacheManager } from '@zeffuro/fakegaming-common/utils/cache';
@@ -106,9 +103,10 @@ You can use the Core utilities to set up your environment:
 import { Core } from '@zeffuro/fakegaming-common';
 
 // Load environment variables from .env files
-await Core.bootstrapEnv();
+Core.bootstrapEnv();
 
-// Get project and data directories
-const dataRoot = Core.getDataRoot();
-const projectRoot = Core.getProjectRoot();
+// Get project root (constant, not a function)
+const projectRoot = Core.PROJECT_ROOT;
 ```
+
+**Note:** The common package uses a singleton pattern for database connections. Call `getSequelize()` to get the initialized instance. The connection is configured via environment variables (`DATABASE_PROVIDER`, `DATABASE_URL`, `DATA_ROOT`).

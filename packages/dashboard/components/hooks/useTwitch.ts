@@ -14,7 +14,6 @@ export function useTwitchConfigs(guildId: string | string[]) {
       setLoading(true);
       const allConfigs = await api.getTwitchConfigs();
 
-      // Filter configs for current guild and cast to Sequelize types
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as TwitchStreamConfig[];
       setConfigs(guildConfigs);
     } catch (err: any) {
@@ -50,7 +49,6 @@ export function useTwitchConfigs(guildId: string | string[]) {
     }
   };
 
-  // Match the expected signature: (config: T) => Promise<boolean>
   const updateConfig = async (config: TwitchStreamConfig) => {
     try {
       setSaving(true);
@@ -61,7 +59,6 @@ export function useTwitchConfigs(guildId: string | string[]) {
         customMessage: config.customMessage
       };
 
-      // For now, we'll use a workaround since the update endpoint might not exist
       await api.deleteTwitchStream(config.id.toString());
       await api.createTwitchStream(payload as twitch_post_Request);
       await fetchConfigs();
@@ -74,7 +71,6 @@ export function useTwitchConfigs(guildId: string | string[]) {
     }
   };
 
-  // Match the expected signature: (config: T) => Promise<boolean>
   const deleteConfig = async (config: TwitchStreamConfig) => {
     try {
       setSaving(true);

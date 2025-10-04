@@ -75,14 +75,7 @@ router.get('/:id', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
-
-    // No need to check guild permissions since reminders are sent to user DMs
     const created = await getConfigManager().reminderManager.addPlain(req.body);
-
-    // Audit log
-    console.log(`[AUDIT] User ${discordId} created reminder at ${new Date().toISOString()}`);
-
     res.status(201).json(created);
 });
 
@@ -110,16 +103,13 @@ router.delete('/:id', jwtAuth, async (req, res) => {
 
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
 
-    // Get the reminder first to check if it exists
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
     if (!reminder) {
         return res.status(404).json({error: 'Reminder not found'});
     }
 
-    // No need to check guild permissions since reminders are sent to user DMs
     await getConfigManager().reminderManager.removeReminder({id});
 
-    // Audit log
     console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
 
     res.json({success: true});

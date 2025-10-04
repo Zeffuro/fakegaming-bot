@@ -2,9 +2,6 @@ import {BaseManager} from './baseManager.js';
 import {UserConfig} from '../models/user-config.js';
 import {LeagueConfig} from "../models/league-config.js";
 
-/**
- * Manages user configuration records and user-specific settings.
- */
 export class UserManager extends BaseManager<UserConfig> {
     constructor() {
         super(UserConfig);

@@ -24,11 +24,6 @@ const data = new SlashCommandBuilder()
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 
-/**
- * Executes the add-youtube-channel command, adding a YouTube channel for video notifications in a Discord channel.
- * Checks admin permissions, validates the YouTube channel, prevents duplicates, and adds the channel for notifications.
- * Replies with a confirmation or error message.
- */
 async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
 

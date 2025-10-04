@@ -1,8 +1,5 @@
 /**
  * Redis cache implementation with lazy loading
- *
- * This file provides low-level Redis caching functionality.
- * It uses lazy loading to only initialize Redis when needed.
  */
 import type { Redis, RedisOptions } from 'ioredis';
 
@@ -10,20 +7,13 @@ let redis: Redis | null = null;
 let redisReady = false;
 let connectingPromise: Promise<void> | null = null;
 
-/**
- * Cache connection configuration
- */
 export interface CacheConfig {
-  /** Redis URL (e.g. redis://localhost:6379) */
   url?: string;
-  /** Redis connection options */
   options?: RedisOptions;
 }
 
 /**
- * Initializes Redis connection with the provided URL
- * @param config - Redis configuration or connection URL
- * @returns Promise that resolves when Redis is ready
+ * Initializes Redis connection with the provided configuration
  */
 export async function initRedis(config: string | CacheConfig): Promise<void> {
   const url = typeof config === 'string' ? config : config.url || '';
@@ -36,18 +26,13 @@ export async function initRedis(config: string | CacheConfig): Promise<void> {
 
   if (!redis) {
     try {
-      // Use dynamic import with a type assertion to handle different module formats
       const ioredisModule = await import('ioredis');
 
-      // Get the Redis constructor - handle both ESM and CommonJS module formats
-      // For ESM, the constructor might be the default export
-      // For CommonJS, it might be the module itself
       const RedisConstructor = (ioredisModule.default || ioredisModule) as unknown as {
         new (url: string, options?: RedisOptions): Redis;
         new (options: RedisOptions): Redis;
       };
 
-      // Create Redis instance with the appropriate configuration
       if (url) {
         if (options) {
           redis = new RedisConstructor(url, options);
@@ -78,10 +63,6 @@ export async function initRedis(config: string | CacheConfig): Promise<void> {
   return connectingPromise!;
 }
 
-/**
- * Ensures Redis is connected before performing operations
- * @param config - Redis configuration or connection URL
- */
 export async function ensureRedis(config?: string | CacheConfig): Promise<void> {
   const redisConfig = config || process.env.REDIS_URL || '';
   if (!redisConfig) return;
@@ -94,11 +75,6 @@ export async function ensureRedis(config?: string | CacheConfig): Promise<void> 
   }
 }
 
-/**
- * Gets a value from Redis cache
- * @param key - Cache key
- * @returns Parsed value from cache or null if not found
- */
 export async function cacheGet<T>(key: string): Promise<T | null> {
   await ensureRedis();
   if (!redisReady) return null;
@@ -112,12 +88,6 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   }
 }
 
-/**
- * Sets a value in Redis cache with expiration
- * @param key - Cache key
- * @param value - Value to cache (will be JSON stringified)
- * @param ttlMs - Time to live in milliseconds
- */
 export async function cacheSet(key: string, value: any, ttlMs: number): Promise<void> {
   await ensureRedis();
   if (!redisReady) return;
@@ -129,10 +99,6 @@ export async function cacheSet(key: string, value: any, ttlMs: number): Promise<
   }
 }
 
-/**
- * Deletes a value from Redis cache
- * @param key - Cache key to delete
- */
 export async function cacheDel(key: string): Promise<void> {
   await ensureRedis();
   if (!redisReady) return;
@@ -144,9 +110,6 @@ export async function cacheDel(key: string): Promise<void> {
   }
 }
 
-/**
- * Closes Redis connection
- */
 export async function closeRedis(): Promise<void> {
   if (redis) {
     await redis.quit();

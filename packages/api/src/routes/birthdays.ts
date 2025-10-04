@@ -97,7 +97,6 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     }
     await getConfigManager().birthdayManager.set(birthdayFields, 'userId');
 
-    // Audit log
     console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
 
     res.status(201).json({success: true});
@@ -127,15 +126,11 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  *         description: Success
  */
 router.delete('/:userId/:guildId', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.params;
 
     if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
 
     await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
-
-    // Audit log
-    console.log(`[AUDIT] User ${discordId} removed birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
 
     res.json({success: true});
 });

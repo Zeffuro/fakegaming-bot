@@ -9,14 +9,12 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ guildId: string }> }) {
     const { guildId } = await params;
 
-    // Authenticate user
     const authResult = await authenticateUser(req);
     if (!authResult.success) {
         return NextResponse.json({ error: authResult.error }, { status: authResult.statusCode || 401 });
     }
     const user = authResult.user!;
 
-    // Check guild access
     const guildAccess = await checkGuildAccess(user, guildId);
     if (!guildAccess.hasAccess) {
         return NextResponse.json(
@@ -26,7 +24,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
     }
 
     try {
-        // Use improved cache management for channels
         const channels = await defaultCacheManager.getCachedData<APIChannel[]>(
             CACHE_KEYS.guildChannels(guildId),
             async () => {

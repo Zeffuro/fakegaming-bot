@@ -66,19 +66,16 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    // Fetch user with league relation
     let user = await getConfigManager().userManager.getUserWithLeague(userId);
 
     if (user) {
         if (user.league) {
-            // Update existing LeagueConfig
             await user.league.update({
                 summonerName: identity.summoner,
                 region: identity.region,
                 puuid: identity.puuid
             });
         } else {
-            // Create new LeagueConfig
             await LeagueConfig.create({
                 discordId: userId,
                 summonerName: identity.summoner,
@@ -87,7 +84,6 @@ async function execute(interaction: ChatInputCommandInteraction) {
             });
         }
     } else {
-        // Create UserConfig and LeagueConfig
         user = await getConfigManager().userManager.add({discordId: userId});
         await LeagueConfig.create({
             discordId: userId,

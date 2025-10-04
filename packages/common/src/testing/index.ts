@@ -1,4 +1,3 @@
-// Export all discord mocks
 export {
   createMockUser,
   createMockChannel,
@@ -15,7 +14,6 @@ export {
   withDiscordMocks
 } from './mocks/discordMock.js';
 
-// Export cache mocks
 export {
   mockCacheGet,
   mockCacheSet,
@@ -25,7 +23,6 @@ export {
   withCacheMocks
 } from './mocks/cacheMock.js';
 
-// Export manager mocks
 export {
   createMockBaseManager,
   createMockBirthdayManager,
@@ -42,7 +39,6 @@ export {
   getActiveMockConfigManager
 } from './mocks/managerMock.js';
 
-// Export model mocks
 export {
   createMockBirthday,
   createMockReminder,
@@ -57,7 +53,6 @@ export {
   setupModelMocks
 } from './mocks/modelMock.js';
 
-// Export test utilities
 export {
   setupTest,
   resetMocks,
@@ -66,7 +61,6 @@ export {
   type TestSetupOptions
 } from './utils/testUtils.js';
 
-// Export JWT test utilities
 export {
   signTestJwt,
   verifyTestJwt

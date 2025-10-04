@@ -17,7 +17,6 @@ import { useStreamingForm, StreamingConfig } from "@/components/hooks/useStreami
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 
 interface StreamingConfigPageProps<T extends StreamingConfig> {
-  // Required props
   guildId: string;
   guild: any;
   configs: T[];
@@ -32,13 +31,11 @@ interface StreamingConfigPageProps<T extends StreamingConfig> {
   channelNameLabel: string;
   channelNamePlaceholder: string;
 
-  // Handlers
   onSetError: (error: string | null) => void;
   onAdd: (config: Omit<T, 'id' | 'guildId'>) => Promise<boolean>;
   onUpdate: (config: T) => Promise<boolean>;
   onDelete: (config: T) => Promise<boolean>;
 
-  // Render props
   renderChip?: (config: T) => {
     label: string;
     color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
@@ -66,10 +63,8 @@ export default function StreamingConfigPage<T extends StreamingConfig>({
   onDelete,
   renderChip
 }: StreamingConfigPageProps<T>) {
-  // Get guild channels
   const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId);
 
-  // Form management
   const {
     addDialogOpen,
     setAddDialogOpen,
@@ -87,7 +82,6 @@ export default function StreamingConfigPage<T extends StreamingConfig>({
     guildId: guildId as string
   });
 
-  // Handler for editing config fields
   const handleEditConfigChange = (field: string, value: any) => {
     if (!editingConfig) return;
 
