@@ -1,3 +1,4 @@
+/*
 import {db} from '../packages/bot/src/config/db.ts';
 import {getSequelize} from '@zeffuro/fakegaming-common/dist/sequelize.js';
 import {Op} from 'sequelize';
@@ -117,3 +118,4 @@ migrateLowdbToSequelize().catch(err => {
     console.error('Migration failed:', err);
     process.exit(1);
 });
+ */

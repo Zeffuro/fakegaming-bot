@@ -1,10 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import {pathToFileURL, fileURLToPath} from 'url';
+import {PROJECT_ROOT} from '@zeffuro/fakegaming-common/core';
 
-// __dirname is dist/scripts/ when running built JS
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../packages/bot/src/modules');
+const modulesPath = path.join(PROJECT_ROOT, './packages/bot/src/modules');
 
 function findCommandDirs(modulesPath: string): string[] {
     if (!fs.existsSync(modulesPath)) {
@@ -68,7 +67,7 @@ async function main() {
     const table = generateTable(commands);
 
     // README is at project root, so go up two levels from dist/scripts/
-    const readmePath = path.join(__dirname, '../../README.md');
+    const readmePath = path.join(PROJECT_ROOT, './README.md');
     let readme: string;
     try {
         readme = fs.readFileSync(readmePath, 'utf8');

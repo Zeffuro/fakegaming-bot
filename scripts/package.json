@@ -1,3 +1,8 @@
 {
-  "type": "module"
+  "name": "@zeffuro/fakegaming-scripts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@zeffuro/fakegaming-common": "workspace:*"
+  }
 }

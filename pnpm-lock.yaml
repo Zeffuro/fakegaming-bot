@@ -377,6 +377,12 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.6.2)(tsx@4.20.6)
 
+  scripts:
+    dependencies:
+      '@zeffuro/fakegaming-common':
+        specifier: workspace:*
+        version: link:../packages/common
+
 packages:
 
   '@ampproject/remapping@2.3.0':
