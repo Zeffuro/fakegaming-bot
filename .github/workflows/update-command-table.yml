@@ -16,28 +16,13 @@ permissions:
 
 jobs:
   update-command-table:
+    uses: ./.github/workflows/setup-node-and-build.yml
+
+  generate-pr:
+    needs: update-command-table
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-
-      - name: Enable Corepack and install pnpm
-        run: corepack enable && corepack prepare pnpm@latest --activate
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Rebuild sqlite3 native bindings
-        run: pnpm rebuild sqlite3
-
-      - name: Build all packages
-        run: pnpm -r run build
+      - uses: actions/checkout@v5
 
       - name: Generate README command table
         run: pnpm tsx scripts/generate-command-table.ts
