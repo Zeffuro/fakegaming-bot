@@ -3,8 +3,10 @@ import path from 'path';
 import { pathToFileURL } from 'url';
 import { PROJECT_ROOT } from '@zeffuro/fakegaming-common/core';
 
-// Adjust this to either 'src' for TS or 'dist' for compiled JS
-const modulesPath = path.join(PROJECT_ROOT, 'packages/bot/src/modules');
+const modulesPath =
+    fs.existsSync(path.join(PROJECT_ROOT, 'packages/bot/src/modules'))
+        ? path.join(PROJECT_ROOT, 'packages/bot/src/modules')
+        : path.join(PROJECT_ROOT, 'packages/bot/dist/modules');
 
 function findCommandDirs(modulesPath: string): string[] {
     if (!fs.existsSync(modulesPath)) {
