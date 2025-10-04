@@ -22,9 +22,6 @@ jobs:
       - name: Enable Corepack and install pnpm
         run: corepack enable && corepack prepare pnpm@latest --activate
 
-      - name: Rebuild sqlite3 native bindings
-        run: pnpm rebuild sqlite3
-
       - name: Cache Next.js build
         uses: actions/cache@v4
         with:
@@ -35,6 +32,9 @@ jobs:
 
       - name: Install dependencies (ignore scripts)
         run: pnpm install --ignore-scripts
+
+      - name: Rebuild sqlite3 native bindings
+        run: pnpm rebuild sqlite3
 
       - name: Build all packages
         run: pnpm -r run build
