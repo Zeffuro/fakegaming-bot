@@ -1,0 +1,53 @@
+name: 'Setup Node.js, pnpm, and Install Dependencies'
+description: 'Sets up Node.js, enables pnpm via Corepack, caches dependencies, and installs with native module support'
+
+inputs:
+  install-deps:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  build-natives:
+    description: 'Whether to rebuild native modules (canvas, sqlite3)'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: '22'
+
+    - name: Enable Corepack and install pnpm
+      shell: bash
+      run: corepack enable && corepack prepare pnpm@latest --activate
+
+    - name: Cache dependencies and Next.js build
+      uses: actions/cache@v4
+      with:
+        path: |
+          **/node_modules
+          packages/dashboard/.next/cache
+        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-
+
+    - name: Install native build dependencies
+      if: inputs.build-natives == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev pkg-config python3 make g++
+
+    - name: Install dependencies
+      if: inputs.install-deps == 'true'
+      shell: bash
+      run: pnpm install --frozen-lockfile --ignore-scripts
+
+    - name: Rebuild native modules
+      if: inputs.build-natives == 'true'
+      shell: bash
+      run: |
+        pnpm rebuild canvas || true
+        pnpm rebuild sqlite3 || true

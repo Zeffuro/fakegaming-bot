@@ -16,13 +16,18 @@ permissions:
 
 jobs:
   update-command-table:
-    uses: ./.github/workflows/setup-node-and-build.yml
-
-  generate-pr:
-    needs: update-command-table
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+
+      - name: Setup Node.js, pnpm, and dependencies
+        uses: ./.github/actions/setup-node-pnpm
+        with:
+          install-deps: 'true'
+          build-natives: 'true'
+
+      - name: Build all packages
+        run: pnpm -r run build
 
       - name: Generate README command table
         run: pnpm tsx scripts/generate-command-table.ts
