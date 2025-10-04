@@ -8,18 +8,18 @@
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/next": "^9.0.0",
-    "@types/node": "^24.5.2",
+    "@types/node": "^24.6.2",
     "@types/node-fetch": "^2.6.13",
-    "@types/react": "^19.1.14",
+    "@types/react": "^19.2.0",
     "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
-    "@typescript-eslint/eslint-plugin": "^8.44.1",
-    "@typescript-eslint/parser": "^8.44.1",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
     "canvas": "^3.2.0",
     "depcheck": "^1.4.7",
     "dotenv-cli": "^10.0.0",
-    "eslint": "^9.36.0",
+    "eslint": "^9.37.0",
     "glob": "^11.0.3",
     "globals": "^16.4.0",
     "jsonwebtoken": "^9.0.2",
@@ -27,7 +27,7 @@
     "rimraf": "^6.0.1",
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "scripts": {
     "build": "pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "cross-env": "^10.0.0",
+    "cross-env": "^10.1.0",
     "express-jwt": "^8.5.1",
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
@@ -54,6 +54,6 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   }
 }
