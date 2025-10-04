@@ -1,5 +1,5 @@
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {verifyTwitchUser} from '../../../services/twitchService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
@@ -35,8 +35,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const twitchUsername = interaction.options.getString('username', true);
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
+    const guildId = interaction.guildId!;
 
-    if (await getConfigManager().twitchManager.streamExists(twitchUsername, discordChannel.id)) {
+    if (await getConfigManager().twitchManager.streamExists(twitchUsername, discordChannel.id, guildId)) {
         await interaction.reply({
             content: `Twitch stream \`${twitchUsername}\` is already configured for notifications in this channel.`,
             flags: MessageFlags.Ephemeral
@@ -55,6 +56,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await getConfigManager().twitchManager.add({
         twitchUsername,
         discordChannelId: discordChannel.id,
+        guildId: guildId,
         customMessage,
     });
 

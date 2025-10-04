@@ -9,20 +9,16 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
         super(YoutubeVideoConfig);
     }
 
-    // Removed the addVideoChannel method
-    // async addVideoChannel(config: Partial<YoutubeVideoConfig>) {
-    //     await this.add(config);
-    // }
-
-    async getVideoChannel({youtubeChannelId, discordChannelId}: {
+    async getVideoChannel({youtubeChannelId, discordChannelId, guildId}: {
         youtubeChannelId: string,
-        discordChannelId: string
+        discordChannelId: string,
+        guildId: string
     }): Promise<YoutubeVideoConfig | null> {
-        return (await this.getOne({youtubeChannelId, discordChannelId}))?.get() ?? null;
+        return (await this.getOne({youtubeChannelId, discordChannelId, guildId}))?.get() ?? null;
     }
 
-    // Simplified to use the new upsert method in BaseManager
     async setVideoChannel(channel: Partial<YoutubeVideoConfig>) {
+        if (!channel.guildId) throw new Error('guildId is required');
         await this.upsert(channel);
     }
 }

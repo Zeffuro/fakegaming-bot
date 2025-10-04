@@ -1,5 +1,7 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
+import {jwtAuth} from '../middleware/auth.js';
+import {checkUserGuildAccess} from '../utils/authHelpers.js';
 
 const router = Router();
 
@@ -36,6 +38,8 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Server config
@@ -46,9 +50,21 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/:serverId', async (req, res) => {
-    const server = await getConfigManager().serverManager.getServer(req.params.serverId);
+router.get('/:serverId', jwtAuth, async (req, res) => {
+    const { serverId } = req.params;
+    if (!serverId) return res.status(400).json({ error: 'Missing serverId parameter' });
+
+    // First check if server exists
+    const server = await getConfigManager().serverManager.getServer(serverId);
     if (!server) return res.status(404).json({error: 'Server not found'});
+
+    // Then check user's access to this server/guild
+    const accessResult = await checkUserGuildAccess(req, res, serverId);
+    if (!accessResult.authorized) {
+        // Response already sent by checkUserGuildAccess
+        return;
+    }
+
     res.json(server);
 });
 

@@ -1,33 +1,57 @@
-import {useEffect, useState} from "react";
+import { useState, useEffect } from "react";
+
+interface Guild {
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
+  member_count?: number;
+}
+
+interface DashboardData {
+  guilds: Guild[];
+  isAdmin: boolean;
+}
 
 export function useDashboardData() {
-    const [user, setUser] = useState<any>(null);
-    const [guilds, setGuilds] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isAdmin, setIsAdmin] = useState(false);
+  const [data, setData] = useState<DashboardData>({ guilds: [], isAdmin: false });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        async function fetchData() {
-            setLoading(true);
-            const userRes = await fetch("/api/auth/me", {method: "PUT"});
-            if (userRes.ok) {
-                const userData = await userRes.json();
-                setUser(userData.user);
-                const guildRes = await fetch("/api/guilds");
-                if (guildRes.ok) {
-                    const guildData = await guildRes.json();
-                    setGuilds(guildData.guilds);
-                    setIsAdmin(guildData.isAdmin);
-                }
-            } else {
-                window.location.href = "/";
-                return;
-            }
-            setLoading(false);
-        }
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/guilds', {
+        credentials: 'include'
+      });
 
-        fetchData();
-    }, []);
+      if (!response.ok) {
+        throw new Error('Failed to fetch guilds');
+      }
 
-    return {user, guilds, loading, isAdmin};
+      const result = await response.json();
+      setData({
+        guilds: result.guilds || [],
+        isAdmin: result.isAdmin || false
+      });
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching dashboard data:', err);
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return {
+    ...data,
+    loading,
+    error,
+    refetch: fetchData
+  };
 }

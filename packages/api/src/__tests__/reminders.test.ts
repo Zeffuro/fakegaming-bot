@@ -1,7 +1,8 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 
 const testReminder = {
     id: 'reminder-1',
@@ -23,7 +24,7 @@ beforeEach(async () => {
 describe('Reminders API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all reminders', async () => {
         const res = await request(app).get('/api/reminders').set('Authorization', `Bearer ${token}`);

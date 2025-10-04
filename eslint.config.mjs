@@ -7,12 +7,15 @@ export default [
     {
         ignores: ["dist/**", "node_modules/**"],
     },
+    // Configuration for TypeScript files, using a more flexible parser setup
     {
         files: ["**/*.ts", "**/*.tsx"],
         languageOptions: {
             parser,
             parserOptions: {
-                project: "./tsconfig.json",
+                // More forgiving project configuration
+                project: true,
+                tsconfigRootDir: process.cwd(),
             },
         },
         plugins: {
@@ -26,6 +29,26 @@ export default [
                     varsIgnorePattern: "^_",
                 },
             ],
+        },
+    },
+    // Separate configuration for declaration files
+    {
+        files: ["**/*.d.ts"],
+        languageOptions: {
+            parser,
+            parserOptions: {
+                // For declaration files, use a more relaxed configuration
+                project: null,
+            },
+        },
+        plugins: {
+            "@typescript-eslint": eslintPlugin,
+        },
+        // Disable certain rules for declaration files
+        rules: {
+            "@typescript-eslint/no-explicit-any": "off",
+            "@typescript-eslint/no-unused-vars": "off",
+            "@typescript-eslint/ban-types": "off",
         },
     },
     {

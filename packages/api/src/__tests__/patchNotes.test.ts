@@ -1,7 +1,9 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { getSequelize } from '@zeffuro/fakegaming-common';
 
 const testPatch = {
     game: 'testgame1',
@@ -13,7 +15,7 @@ beforeEach(async () => {
     // Clean up patch notes table before each test
     await configManager.patchNotesManager.forceTruncate();
     // Debug: print table schema and indexes
-    const sequelize = configManager.patchNotesManager.getSequelize();
+    const sequelize = getSequelize(true);
     if (sequelize) {
         const [schema] = await sequelize.query('PRAGMA table_info(PatchNoteConfigs);');
         const [indexes] = await sequelize.query('PRAGMA index_list(PatchNoteConfigs);');
@@ -28,7 +30,7 @@ beforeEach(async () => {
 describe('PatchNotes API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all patch notes', async () => {
         const res = await request(app).get('/api/patchNotes').set('Authorization', `Bearer ${token}`);
@@ -41,7 +43,7 @@ describe('PatchNotes API', () => {
         expect(res.body.game).toBe(testPatch.game);
     });
     it('should upsert (add/update) a patch note', async () => {
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).post('/api/patchNotes').set('Authorization', `Bearer ${token}`).send({
             game: testPatch.game, // Use the same game as the initial patch
             version: '2.0.0',

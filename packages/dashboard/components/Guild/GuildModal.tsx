@@ -1,8 +1,11 @@
 import React from "react";
 import {Box, Typography, Button, Modal} from "@mui/material";
+import { useRouter } from "next/navigation";
 import GuildAvatar from "./GuildAvatar";
 
 export default function GuildModal({guild, open, onClose}: { guild: any, open: boolean, onClose: () => void }) {
+  const router = useRouter();
+
     return (
         <Modal open={open} onClose={onClose}>
             <Box sx={{
@@ -33,6 +36,18 @@ export default function GuildModal({guild, open, onClose}: { guild: any, open: b
                             sx={{mt: 2}}
                         >
                             Close
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                                router.push(`/dashboard/commands/${guild.id}`);
+                                onClose();
+                            }}
+                            disabled={!guild}
+                            sx={{mt: 2, ml: 1}}
+                        >
+                            Manage Commands
                         </Button>
                     </>
                 )}

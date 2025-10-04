@@ -6,7 +6,7 @@ import {
     User,
     AutocompleteInteraction
 } from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {months} from "../../../constants/months.js";
 import {requireAdmin} from "../../../utils/permissions.js";
 
@@ -40,6 +40,17 @@ const data = new SlashCommandBuilder()
             .setRequired(false)
     );
 
+/**
+ * Validates if a date is valid
+ */
+function isValidDate(day: number, month: number, year?: number): boolean {
+    // Use a reasonable year for validation if not provided
+    const testYear = year ?? 2000;
+    const date = new Date(testYear, month - 1, day);
+
+    // Check if the date object represents the same day/month we tried to create
+    return date.getDate() === day && date.getMonth() === month - 1;
+}
 
 /**
  * Executes the set-birthday command, allowing a user or admin to set a birthday and announcement channel.
@@ -62,6 +73,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const monthObj = months.find(month => month.name.toLowerCase() === monthName.toLowerCase());
     if (!monthObj || day < 1 || day > 31) {
         await interaction.reply({content: 'Invalid day or month.', flags: MessageFlags.Ephemeral});
+        return;
+    }
+
+    if (!isValidDate(day, monthObj.value, year)) {
+        await interaction.reply({content: 'Invalid date. Please check the day and month combination.', flags: MessageFlags.Ephemeral});
         return;
     }
 
@@ -107,7 +123,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
  * @param interaction - The Discord AutocompleteInteraction object containing focused value.
  * @returns {Promise<void>} Resolves when the suggestions are sent.
  */
-async function autocomplete(interaction: AutocompleteInteraction) {
+async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
     const focusedValue = interaction.options.getFocused();
     const choices = months
         .filter(month => month.name.toLowerCase().startsWith(focusedValue.toLowerCase()))

@@ -5,7 +5,7 @@ import {
     AutocompleteInteraction,
     PermissionFlagsBits
 } from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {requireAdmin} from "../../../utils/permissions.js";
 import {gameAutocomplete} from "../shared/gameAutocomplete.js";
 import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
@@ -31,8 +31,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
     const game = interaction.options.getString('game', true);
     const channel = interaction.options.getChannel('channel', true);
+    const guildId = interaction.guildId!;
 
-    await getConfigManager().patchSubscriptionManager.subscribe(game, channel.id);
+    await getConfigManager().patchSubscriptionManager.subscribe(game, channel.id, guildId);
 
     const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (latestPatch) {

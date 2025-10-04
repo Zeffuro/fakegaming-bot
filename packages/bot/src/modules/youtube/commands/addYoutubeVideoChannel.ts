@@ -1,5 +1,5 @@
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import {requireAdmin} from '../../../utils/permissions.js';
 
@@ -35,6 +35,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const youtubeUsername = interaction.options.getString('username', true);
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
+    const guildId = interaction.guildId!;
 
     const youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
     if (!youtubeChannelId) {
@@ -47,7 +48,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const existing = await getConfigManager().youtubeManager.getVideoChannel({
         youtubeChannelId,
-        discordChannelId: discordChannel.id
+        discordChannelId: discordChannel.id,
+        guildId
     });
 
     if (existing) {
@@ -61,6 +63,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await getConfigManager().youtubeManager.add({
         youtubeChannelId,
         discordChannelId: discordChannel.id,
+        guildId: guildId,
         lastVideoId: undefined,
         customMessage,
     });

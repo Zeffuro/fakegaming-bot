@@ -1,11 +1,13 @@
+import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {configManager} from '../jest.setup.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { configManager } from '../vitest.setup.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 
 const testTwitch = {
     twitchUsername: 'teststreamer',
-    discordChannelId: 'testchannel1'
+    discordChannelId: 'testchannel1',
+    guildId: 'testguild1'
 };
 
 beforeEach(async () => {
@@ -17,7 +19,7 @@ beforeEach(async () => {
 describe('Twitch API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should list all twitch configs', async () => {
         const res = await request(app).get('/api/twitch').set('Authorization', `Bearer ${token}`);
@@ -39,20 +41,21 @@ describe('Twitch API', () => {
     it('should add a new twitch config', async () => {
         const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({
             twitchUsername: 'anotherstreamer',
-            discordChannelId: 'testchannel2'
+            discordChannelId: 'testchannel2',
+            guildId: 'testguild2'
         });
         expect(res.status).toBe(201);
-        expect(res.body.twitchUsername).toBe('anotherstreamer');
+        expect(res.body.success).toBe(true);
     });
     it('should check if a stream exists', async () => {
         const res = await request(app).get('/api/twitch/exists').set('Authorization', `Bearer ${token}`)
-            .query({username: testTwitch.twitchUsername, channelId: testTwitch.discordChannelId});
+            .query({twitchUsername: testTwitch.twitchUsername, discordChannelId: testTwitch.discordChannelId, guildId: testTwitch.guildId});
         expect(res.status).toBe(200);
         expect(res.body.exists).toBe(true);
     });
     it('should return false for non-existent stream', async () => {
         const res = await request(app).get('/api/twitch/exists').set('Authorization', `Bearer ${token}`)
-            .query({username: 'nonexistent', channelId: 'nonexistent'});
+            .query({twitchUsername: 'nonexistent', discordChannelId: 'nonexistent', guildId: 'testguild1'});
         expect(res.status).toBe(200);
         expect(res.body.exists).toBe(false);
     });

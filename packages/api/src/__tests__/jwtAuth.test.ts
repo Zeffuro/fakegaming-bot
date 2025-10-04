@@ -1,11 +1,12 @@
+import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 import jwt from 'jsonwebtoken';
 
 describe('JWT Authentication', () => {
     it('should allow access with a valid JWT', async () => {
-        const token = signTestJwt();
+        const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app)
             .post('/api/quotes')
             .set('Authorization', `Bearer ${token}`)
@@ -50,4 +51,3 @@ describe('JWT Authentication', () => {
         expect(res.status).toBe(401);
     });
 });
-

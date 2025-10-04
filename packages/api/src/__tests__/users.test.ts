@@ -1,6 +1,7 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import {signTestJwt} from '../testUtils/jwt.js';
+import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
 
 const testUser = {
     discordId: 'testuser1',
@@ -11,7 +12,7 @@ const testUser = {
 describe('Users API', () => {
     let token: string;
     beforeAll(() => {
-        token = signTestJwt();
+        token = signTestJwt({ discordId: 'testuser' });
     });
     it('should create or update a user', async () => {
         const res = await request(app).post('/api/users').set('Authorization', `Bearer ${token}`).send(testUser);

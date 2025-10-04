@@ -1,77 +1,93 @@
 import {NextRequest, NextResponse} from "next/server";
-import jwt from "jsonwebtoken";
+import { getDiscordGuilds } from "@/lib/common/discord";
+import { MinimalGuildData } from "@/lib/common/models";
+import { isGuildAdmin } from "@/lib/common/utils";
+import { CACHE_KEYS, CACHE_TTL, getCachedData } from "@/lib/common/cache";
+import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
+import type { APIGuild } from "discord-api-types/v10";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
-const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-const DASHBOARD_ADMINS = (process.env.DASHBOARD_ADMINS || "").split(",").map(id => id.trim()).filter(Boolean);
-
-// Helper: fetch guilds from Discord API
-async function fetchGuilds(endpoint: string, token: string) {
-    const res = await fetch(`https://discord.com/api/v10${endpoint}`, {
-        headers: {Authorization: `Bot ${token}`},
-    });
-    if (!res.ok) {
-        const errorBody = await res.text();
-        console.error(`Discord API error for ${endpoint}: status ${res.status}, body:`, errorBody);
-        return [];
-    }
-    return await res.json();
-}
+const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 
 export async function GET(req: NextRequest) {
-    // Get JWT from cookie
-    const jwtToken = req.cookies.get("jwt")?.value;
-    if (!jwtToken) {
-        // Redirect to root if not authenticated
+    // Authenticate user
+    const authResult = await authenticateUser(req);
+    if (!authResult.success) {
         return NextResponse.redirect(new URL("/", req.url));
     }
-    let user;
+    const user = authResult.user!;
+
     try {
-        user = jwt.verify(jwtToken, JWT_SECRET) as { id: string };
-    } catch {
-        // Redirect to root if token is invalid
-        return NextResponse.redirect(new URL("/", req.url));
-    }
+        // Fetch bot's guilds with improved cache management
+        const botGuilds = await getCachedData(
+            CACHE_KEYS.botGuilds(),
+            async () => {
+                if (!BOT_TOKEN) {
+                    console.error("[Discord Bot] DISCORD_BOT_TOKEN is not set!");
+                    throw new Error("Bot token not configured");
+                }
+                console.log("[Discord Bot] Using bot token:", BOT_TOKEN ? BOT_TOKEN.slice(0, 8) + "...(masked)" : "EMPTY");
 
-    // Fetch bot's guilds
-    if (!BOT_TOKEN) {
-        console.error("DISCORD_BOT_TOKEN is not set in environment");
-        return NextResponse.json({error: "Bot token not configured"}, {status: 500});
-    }
+                return await getDiscordGuilds(BOT_TOKEN, "Bot");
+            },
+            CACHE_TTL.BOT_GUILDS
+        );
 
-    let botGuilds = [];
-    try {
-        botGuilds = await fetchGuilds("/users/@me/guilds", BOT_TOKEN);
-    } catch (err) {
-        console.error("Error fetching bot guilds:", err);
-        return NextResponse.json({error: "Failed to fetch bot guilds"}, {status: 500});
-    }
-
-    // If user is in admin array, return all bot guilds
-    if (DASHBOARD_ADMINS.includes(user.id)) {
-        return NextResponse.json({guilds: botGuilds, isAdmin: true});
-    }
-
-    // Fetch user's guilds (if you want to support this, you must store user's Discord access token in a cookie)
-    let userGuilds = [];
-    try {
-        const userAccessToken = req.cookies.get("discord_access_token")?.value || "";
-        if (userAccessToken) {
-            userGuilds = await fetchGuilds("/users/@me/guilds", userAccessToken);
+        if (!botGuilds) {
+            return NextResponse.json({ error: "Failed to fetch bot guilds" }, { status: 500 });
         }
-    } catch (err) {
-        console.error("Error fetching user guilds:", err);
-    }
-    if (!userGuilds.length) {
-        return NextResponse.json({guilds: []});
-    }
 
-    // Filter: shared guilds or user has admin perms (0x8)
-    const sharedGuilds = botGuilds.filter((botGuild: any) =>
-        userGuilds.some((userGuild: any) =>
-            userGuild.id === botGuild.id && (userGuild.owner || (userGuild.permissions & 0x8))
-        )
-    );
+        // If user is admin, return all bot guilds
+        if (isDashboardAdmin(user.discordId)) {
+            return NextResponse.json({guilds: botGuilds, isAdmin: true});
+        }
 
-    return NextResponse.json({guilds: sharedGuilds, isAdmin: false});
+        // Fetch user's guilds with improved cache management
+        const userGuilds = await getCachedData(
+            CACHE_KEYS.userGuilds(user.discordId),
+            async () => {
+                // Get user's Discord access token from Redis using getCachedData
+                const userAccessToken = await getCachedData(
+                    CACHE_KEYS.userAccessToken(user.discordId),
+                    async () => {
+                        // This should never happen since we'd need the token to be already in cache
+                        // But we need to provide a fetchFn for getCachedData
+                        console.error("[Discord User] Trying to fetch non-existent access token for user", user.discordId);
+                        throw new Error("User access token not found in cache");
+                    },
+                    CACHE_TTL.ACCESS_TOKEN
+                );
+
+                if (!userAccessToken) {
+                    console.error("[Discord User] No access token found in Redis for user", user.discordId);
+                    throw new Error("User access token missing");
+                }
+
+                // Fetch fresh guild data from Discord API
+                const guilds = await getDiscordGuilds(userAccessToken as string, "Bearer");
+                // Return only necessary data to reduce cache size
+                return guilds.map((g: APIGuild): MinimalGuildData => ({
+                    id: g.id,
+                    permissions: g.permissions,
+                    owner: g.owner
+                }));
+            },
+            CACHE_TTL.USER_GUILDS
+        );
+
+        if (!userGuilds || !userGuilds.length) {
+            return NextResponse.json({guilds: []});
+        }
+
+        // Filter: shared guilds where user has admin perms
+        const sharedGuilds = botGuilds.filter((botGuild: APIGuild) =>
+            userGuilds.some((userGuild: MinimalGuildData) =>
+                userGuild.id === botGuild.id && isGuildAdmin([userGuild], userGuild.id)
+            )
+        );
+
+        return NextResponse.json({guilds: sharedGuilds, isAdmin: false});
+    } catch (error: any) {
+        console.error("[Guilds API] Error:", error);
+        return NextResponse.json({ error: error.message || "Failed to process guild data" }, { status: 500 });
+    }
 }

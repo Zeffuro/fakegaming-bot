@@ -1,19 +1,10 @@
-import {bootstrapEnv, getConfigManager} from '@zeffuro/fakegaming-common';
-
+import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
 bootstrapEnv(import.meta.url);
+
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
+import {ensureRedis} from '@zeffuro/fakegaming-common';
 import app, {swaggerSpec, swaggerUi} from './app.js';
-import {sequelizeModelToOpenAPISchema} from './utils/sequelize-to-openapi.js';
-import {
-    BirthdayConfig,
-    PatchNoteConfig,
-    PatchSubscriptionConfig,
-    QuoteConfig,
-    ReminderConfig,
-    ServerConfig,
-    TwitchStreamConfig,
-    UserConfig,
-    YoutubeVideoConfig
-} from '@zeffuro/fakegaming-common';
+import {injectOpenApiSchemas} from "./utils/openapi-inject-schemas.js";
 
 const port = process.env.PORT || 3001;
 
@@ -21,19 +12,9 @@ const port = process.env.PORT || 3001;
 async function startServer() {
     try {
         await getConfigManager().init();
+        await ensureRedis(process.env.REDIS_URL || '');
         // Inject OpenAPI schemas after DB init
-        (swaggerSpec as any).components = (swaggerSpec as any).components || {};
-        (swaggerSpec as any).components.schemas = {
-            BirthdayConfig: sequelizeModelToOpenAPISchema(BirthdayConfig),
-            PatchNoteConfig: sequelizeModelToOpenAPISchema(PatchNoteConfig),
-            PatchSubscriptionConfig: sequelizeModelToOpenAPISchema(PatchSubscriptionConfig),
-            QuoteConfig: sequelizeModelToOpenAPISchema(QuoteConfig),
-            ReminderConfig: sequelizeModelToOpenAPISchema(ReminderConfig),
-            ServerConfig: sequelizeModelToOpenAPISchema(ServerConfig),
-            TwitchStreamConfig: sequelizeModelToOpenAPISchema(TwitchStreamConfig),
-            UserConfig: sequelizeModelToOpenAPISchema(UserConfig),
-            YoutubeVideoConfig: sequelizeModelToOpenAPISchema(YoutubeVideoConfig),
-        };
+        injectOpenApiSchemas(swaggerSpec);
         console.log('OpenAPI schemas injected:', Object.keys((swaggerSpec as any).components.schemas));
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
         app.listen(port, () => {

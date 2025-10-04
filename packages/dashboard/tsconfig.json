@@ -32,6 +32,9 @@
     "components",
     "lib",
     "util",
+    "scripts",
+    "src",
+    "types",
     ".next/types/**/*.ts",
     "src/__tests__/**/*"
   ],

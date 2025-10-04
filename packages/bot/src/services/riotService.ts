@@ -1,7 +1,7 @@
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {RiotApi, LolApi, TftApi} from 'twisted';
 import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
-import {LeagueConfig} from "@zeffuro/fakegaming-common";
+import {LeagueConfig} from "@zeffuro/fakegaming-common/models";
 
 const puuidCache = new Map<string, string>();
 

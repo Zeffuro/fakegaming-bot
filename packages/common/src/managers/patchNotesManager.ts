@@ -49,11 +49,11 @@ export class PatchSubscriptionManager extends BaseManager<PatchSubscriptionConfi
         super(PatchSubscriptionConfig);
     }
 
-    async subscribe(game: string, channelId: string) {
-        await this.findOrCreate({where: {game, channelId}});
+    async subscribe(game: string, channelId: string, guildId: string) {
+        await this.findOrCreate({where: {game, channelId, guildId}});
     }
 
     async upsertSubscription(sub: Partial<PatchSubscriptionConfig>) {
-        await this.model.upsert(sub, {conflictFields: ['game', 'channelId']});
+        await this.model.upsert(sub, {conflictFields: ['game', 'channelId', 'guildId']});
     }
 }

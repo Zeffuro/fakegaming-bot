@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
@@ -48,7 +48,9 @@ router.get('/', async (req, res) => {
  *         description: Not found
  */
 router.get('/:game', async (req, res) => {
-    const note = await getConfigManager().patchNotesManager.getLatestPatch(req.params.game);
+    const { game } = req.params;
+    if (!game) return res.status(400).json({ error: 'Missing game parameter' });
+    const note = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (!note) return res.status(404).json({error: 'Patch note not found'});
     res.json(note);
 });
@@ -70,7 +72,15 @@ router.get('/:game', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    await getConfigManager().patchNotesManager.setLatestPatch(req.body);
+    if (!req.body || !req.body.game || (!req.body.patchVersion && !req.body.version)) {
+        return res.status(400).json({ error: 'Missing required patch note fields' });
+    }
+    // Support both 'version' and 'patchVersion' fields
+    const patchData = {
+        ...req.body,
+        patchVersion: req.body.patchVersion || req.body.version
+    };
+    await getConfigManager().patchNotesManager.setLatestPatch(patchData);
     res.status(201).json({success: true});
 });
 

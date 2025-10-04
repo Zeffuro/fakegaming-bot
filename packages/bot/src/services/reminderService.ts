@@ -1,5 +1,5 @@
 import {Client, EmbedBuilder} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {formatElapsed, parseTimespan} from '../utils/timeUtils.js';
 
 /**

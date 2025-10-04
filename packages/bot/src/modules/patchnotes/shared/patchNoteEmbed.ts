@@ -1,5 +1,5 @@
 import {EmbedBuilder} from 'discord.js';
-import {PatchNoteConfig} from '@zeffuro/fakegaming-common/dist/models/patch-note-config.js';
+import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import {truncateDescription} from '../../../utils/generalUtils.js';
 import {parseDateSafe} from "../../../utils/timeUtils.js";
 

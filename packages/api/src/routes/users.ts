@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
 
 const router = Router();
@@ -48,7 +48,9 @@ router.get('/', async (req, res) => {
  *         description: Not found
  */
 router.get('/:discordId', async (req, res) => {
-    const user = await getConfigManager().userManager.getUser({discordId: req.params.discordId});
+    const { discordId } = req.params;
+    if (!discordId) return res.status(400).json({ error: 'Missing discordId parameter' });
+    const user = await getConfigManager().userManager.getUser({discordId});
     if (!user) return res.status(404).json({error: 'User not found'});
     res.json(user);
 });

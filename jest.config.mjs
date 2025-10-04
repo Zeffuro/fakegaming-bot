@@ -1,5 +1,4 @@
 export default {
-    preset: 'ts-jest/presets/default-esm',
     testEnvironment: 'node',
     extensionsToTreatAsEsm: ['.ts'],
     moduleFileExtensions: ['ts', 'js', 'json'],
@@ -8,15 +7,13 @@ export default {
         '<rootDir>/packages/common/src',
         '<rootDir>/packages/dashboard/src'
     ],
+    transform: {
+        "^.+\\.(t|j)sx?$": ["@swc/jest"],
+    },
+    transformIgnorePatterns: [
+        "/node_modules/(?!@zeffuro/fakegaming-common/)"
+    ],
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
-    },
-    transform: {
-        '^.+\\.m?[tj]sx?$': [
-            'ts-jest',
-            {
-                useESM: true,
-            },
-        ],
     },
 };
