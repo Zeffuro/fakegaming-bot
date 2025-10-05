@@ -2,6 +2,7 @@ import {Router} from 'express';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { NotFoundError } from '@zeffuro/fakegaming-common';
 
 const router = Router();
 
@@ -51,9 +52,15 @@ router.get('/', async (_, res) => {
 router.get('/:id', async (req, res) => {
     const { id } = req.params;
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) return res.status(404).json({error: 'Reminder not found'});
-    res.json(reminder);
+    try {
+        const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
+        res.json(reminder);
+    } catch (error) {
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: 'Reminder not found' });
+        }
+        return res.status(500).json({ error: 'Failed to fetch reminder' });
+    }
 });
 
 /**
@@ -75,8 +82,25 @@ router.get('/:id', async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    const created = await getConfigManager().reminderManager.addPlain(req.body);
-    res.status(201).json(created);
+    const { id, guildId, userId, text, date } = req.body;
+    if (typeof id !== 'string' || typeof guildId !== 'string' || typeof userId !== 'string' || typeof text !== 'string' || typeof date !== 'string') {
+        return res.status(400).json({ error: 'All fields must be strings' });
+    }
+    if (!id || !guildId || !userId || !text || !date) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    try {
+        const created = await getConfigManager().reminderManager.addPlain(req.body);
+        res.status(201).json(created);
+    } catch (err: any) {
+        if (err?.code === 'SQLITE_CONSTRAINT' || err?.message?.includes('duplicate')) {
+            return res.status(409).json({ error: 'Duplicate reminder' });
+        }
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 /**
@@ -100,19 +124,21 @@ router.post('/', jwtAuth, async (req, res) => {
 router.delete('/:id', jwtAuth, async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
-
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) {
-        return res.status(404).json({error: 'Reminder not found'});
+    try {
+        const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
+        if (!reminder) {
+            return res.status(404).json({error: 'Reminder not found'});
+        }
+        await getConfigManager().reminderManager.removeReminder({id});
+        console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
+        res.json({success: true});
+    } catch (err: any) {
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    await getConfigManager().reminderManager.removeReminder({id});
-
-    console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
-
-    res.json({success: true});
 });
 
 export default router;

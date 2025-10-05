@@ -8,6 +8,7 @@ import {
     WhereOptions,
     Attributes,
 } from 'sequelize';
+import { NotFoundError } from '../utils/apiErrorHelpers.js';
 
 export class BaseManager<T extends Model> {
     protected model: ModelCtor<T>;
@@ -73,8 +74,32 @@ export class BaseManager<T extends Model> {
     }
 
     async upsert(item: CreationAttributes<T>): Promise<boolean> {
-        const [, created] = await this.model.upsert(item);
-        return created || false;
+        // For SQLite compatibility, we use findOrCreate + update pattern
+        // Extract primary key fields from model
+        const pkAttributes = this.model.primaryKeyAttributes;
+
+        // Build where clause with primary key values from item
+        const where: any = {};
+        for (const pkField of pkAttributes) {
+            const value = (item as any)[pkField];
+            if (value !== undefined) {
+                where[pkField] = value;
+            }
+        }
+
+        // If we have primary key values, check if record exists
+        if (Object.keys(where).length > 0) {
+            const existing = await this.model.findOne({ where });
+            if (existing) {
+                // Record exists - update it
+                await existing.update(item);
+                return false; // false means updated, not created
+            }
+        }
+
+        // Record doesn't exist - create it
+        await this.model.create(item);
+        return true; // true means created
     }
 
     async findOrCreate(config: {
@@ -86,7 +111,7 @@ export class BaseManager<T extends Model> {
     }
 
     async exists(where: WhereOptions<Attributes<T>>): Promise<boolean> {
-        const result = await this.model.findOne({where, attributes: ['id']});
+        const result = await this.model.findOne({where});
         return !!result;
     }
 
@@ -101,7 +126,10 @@ export class BaseManager<T extends Model> {
 
     async findByPkPlain(id: string | number): Promise<T | null> {
         const row = await this.model.findByPk(id, {raw: true});
-        return row ? {...row} : null;
+        if (!row) {
+            throw new NotFoundError('Item not found');
+        }
+        return {...row};
     }
 
     async update(
@@ -122,6 +150,12 @@ export class BaseManager<T extends Model> {
     }
 
     async remove(where: WhereOptions<Attributes<T>>): Promise<number> {
-        return await this.model.destroy({where} as DestroyOptions<Attributes<T>>);
+        const deleted = await this.model.destroy({where} as DestroyOptions<Attributes<T>>);
+        const isBulkDelete = !where || Object.keys(where).length === 0;
+        if (!isBulkDelete && deleted === 0) {
+            console.error('[ERROR] BaseManager.remove NotFoundError for where:', where);
+            throw new NotFoundError('Item not found');
+        }
+        return deleted;
     }
 }

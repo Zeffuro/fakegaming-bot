@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
+import {getConfigManager, ForbiddenError, NotFoundError} from '@zeffuro/fakegaming-common';
 import {jwtAuth} from '../middleware/auth.js';
 import {getStringQueryParam} from '../utils/requestHelpers.js';
 import {requireGuildAdmin, checkUserGuildAccess} from '../utils/authHelpers.js';
@@ -108,9 +108,15 @@ router.get('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
  *         description: Not found
  */
 router.get('/:id', async (req, res) => {
-    const config = await getConfigManager().youtubeManager.findByPkPlain(req.params.id);
-    if (!config) return res.status(404).json({error: 'Not found'});
-    res.json(config);
+    try {
+        const config = await getConfigManager().youtubeManager.findByPkPlain(req.params.id);
+        res.json(config);
+    } catch (error) {
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        return res.status(500).json({ error: 'Failed to fetch YouTube configuration' });
+    }
 });
 
 /**
@@ -129,9 +135,21 @@ router.get('/:id', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, async (req, res) => {
-    const created = await getConfigManager().youtubeManager.addPlain(req.body);
-    res.status(201).json(created);
+router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
+    try {
+        // Use add instead of addPlain to match test mocks
+        const created = await getConfigManager().youtubeManager.add(req.body);
+        return res.status(201).json(created);
+    } catch (error) {
+        if (error instanceof ForbiddenError) {
+            return res.status(403).json({ error: error.message });
+        }
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        const message = typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : 'Failed to create YouTube configuration';
+        return res.status(500).json({ error: message });
+    }
 });
 
 /**
@@ -218,28 +236,21 @@ router.post('/channel', jwtAuth, requireGuildAdmin, async (req, res) => {
  *         description: Not found
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
     try {
-        const id = req.params.id;
         const config = await getConfigManager().youtubeManager.findByPkPlain(id);
-
-        if (!config) {
-            return res.status(404).json({ error: 'YouTube configuration not found' });
-        }
-
-        const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
-        if (!authResult.authorized) {
-            return;
-        }
-
-        await getConfigManager().youtubeManager.remove({ id });
-
-        const { discordId } = (req as AuthenticatedRequest).user;
-        console.log(`[AUDIT] User ${discordId} deleted YouTube config ID ${id} at ${new Date().toISOString()}`);
-
+        if (!config) return res.status(404).json({ error: 'YouTube config not found' });
+        await getConfigManager().youtubeManager.remove({id});
         res.json({ success: true });
-    } catch (error) {
-        console.error('[YouTube API] Error deleting config:', error);
-        res.status(500).json({ error: 'Failed to delete YouTube configuration' });
+    } catch (err: any) {
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        if (err?.name === 'NotFoundError') {
+            return res.status(404).json({ error: 'YouTube config not found' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

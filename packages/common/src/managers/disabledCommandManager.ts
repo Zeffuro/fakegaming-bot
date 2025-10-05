@@ -10,7 +10,7 @@ export class DisabledCommandManager extends BaseManager<DisabledCommandConfig> {
         return !!(await this.getOne({guildId, commandName}));
     }
 
-    async getById(id: string): Promise<DisabledCommandConfig | undefined> {
+    async getById(id: string | number): Promise<DisabledCommandConfig | undefined> {
         const result = await this.getOne({ id });
         return result === null ? undefined : result;
     }

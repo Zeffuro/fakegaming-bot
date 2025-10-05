@@ -1,0 +1,36 @@
+# Codecov Configuration
+# https://docs.codecov.com/docs/codecov-yaml
+
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+        informational: false
+    patch:
+      default:
+        target: 80%
+        threshold: 5%
+        informational: false
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - "**/__tests__/**"
+  - "**/vitest.config.ts"
+  - "**/vitest.setup.ts"
+  - "**/*.d.ts"
+  - "**/types/**"
+  - "scripts/**"
+  - "migrations/**"
+  - "**/dist/**"
+  - "**/node_modules/**"
+

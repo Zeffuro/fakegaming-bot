@@ -1,7 +1,12 @@
-import {Table, Column, Model, DataType} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement} from 'sequelize-typescript';
 
 @Table
 export class TwitchStreamConfig extends Model {
+    @PrimaryKey
+    @AutoIncrement
+    @Column(DataType.INTEGER)
+    declare id: number;
+
     @Column(DataType.STRING)
     declare twitchUsername: string;
 

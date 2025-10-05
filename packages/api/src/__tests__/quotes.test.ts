@@ -93,4 +93,69 @@ describe('Quotes API', () => {
         const res = await request(app).get('/api/quotes/nonexistentid').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
+    it('should return 401 for GET /api/quotes without JWT', async () => {
+        const res = await request(app).get('/api/quotes');
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for POST /api/quotes without JWT', async () => {
+        const res = await request(app)
+            .post('/api/quotes')
+            .send({id: 'test-quote-4', guildId: 'testguild4', authorId: 'author4', submitterId: 'submitter4', quote: 'quote4', timestamp: Date.now()});
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for DELETE /api/quotes/:id without JWT', async () => {
+        const res = await request(app)
+            .delete(`/api/quotes/${quoteId}`);
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 404 when deleting non-existent quote', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .delete('/api/quotes/nonexistent')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('should handle duplicate add gracefully', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res1 = await request(app)
+            .post('/api/quotes')
+            .set('Authorization', `Bearer ${token}`)
+            .send(testQuote);
+        expect([201, 409]).toContain(res1.status);
+    });
+
+    it('should return 400 for invalid input types', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .post('/api/quotes')
+            .set('Authorization', `Bearer ${token}`)
+            .send({id: 123, guildId: null, authorId: null, submitterId: null, quote: null, timestamp: 'invalid'});
+        expect([400, 500]).toContain(res.status);
+    });
+
+    it('should return 500 for DB error on POST /api/quotes', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Simulate DB error by mocking addPlain
+        const origAdd = configManager.quoteManager.addPlain;
+        configManager.quoteManager.addPlain = async () => { throw new Error('DB error'); };
+        const res = await request(app)
+            .post('/api/quotes')
+            .set('Authorization', `Bearer ${token}`)
+            .send({id: 'test-quote-5', guildId: 'testguild5', authorId: 'author5', submitterId: 'submitter5', quote: 'quote5', timestamp: Date.now()});
+        expect(res.status).toBe(500);
+        configManager.quoteManager.addPlain = origAdd;
+    });
+
+    it('should return 400 for missing search params', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .get('/api/quotes/search')
+            .set('Authorization', `Bearer ${token}`)
+            .query({});
+        expect(res.status).toBe(400);
+    });
 });

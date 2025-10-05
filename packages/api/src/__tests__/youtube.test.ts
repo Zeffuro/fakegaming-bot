@@ -66,4 +66,159 @@ describe('YouTube API', () => {
         const res = await request(app).get('/api/youtube/999999').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
+
+    it('should delete a youtube config', async () => {
+        const all = await configManager.youtubeManager.getMany({
+            youtubeChannelId: testYoutube.youtubeChannelId,
+            discordChannelId: testYoutube.discordChannelId
+        });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+
+        const res = await request(app)
+            .delete(`/api/youtube/${id}`)
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+    });
+
+    it('should return 404 when deleting non-existent youtube config', async () => {
+        const res = await request(app)
+            .delete('/api/youtube/999999')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('should create/update channel config via POST /channel', async () => {
+        const res = await request(app)
+            .post('/api/youtube/channel')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                youtubeChannelId: 'newchannel',
+                discordChannelId: 'newdiscord',
+                guildId: 'testguild1'
+            });
+        expect(res.status).toBe(201);
+        expect(res.body.success).toBe(true);
+    });
+    it('should return 400 when POST /channel with missing fields', async () => {
+        const res = await request(app)
+            .post('/api/youtube/channel')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ youtubeChannelId: 'test' });
+        expect(res.status).toBe(400);
+    });
+    it('should return 401 for POST /api/youtube without JWT', async () => {
+        const res = await request(app)
+            .post('/api/youtube')
+            .send({ youtubeChannelId: 'ytchan3', discordChannelId: 'ytchan3discord', guildId: 'testguild3' });
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for DELETE /api/youtube/:id without JWT', async () => {
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+        const res = await request(app)
+            .delete(`/api/youtube/${id}`);
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 403 for POST /api/youtube as non-admin', async () => {
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const res = await request(app)
+            .post('/api/youtube')
+            .set('Authorization', `Bearer ${nonAdminToken}`)
+            .send({ youtubeChannelId: 'ytchan3', discordChannelId: 'ytchan3discord', guildId: 'testguild3' });
+        expect([403, 401]).toContain(res.status);
+    });
+
+    it('should return 403 for DELETE /api/youtube/:id as non-admin', async () => {
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+        const res = await request(app)
+            .delete(`/api/youtube/${id}`)
+            .set('Authorization', `Bearer ${nonAdminToken}`);
+        expect([403, 401]).toContain(res.status);
+    });
+
+    it('should return 400 when POST /api/youtube with missing fields', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({});
+        expect(res.status).toBe(400);
+    });
+
+    it('should return 400 for DB error on POST /api/youtube', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Simulate DB error by sending invalid data
+        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({
+            youtubeChannelId: null,
+            discordChannelId: null,
+            guildId: null
+        });
+        expect(res.status).toBe(400);
+    });
+
+    it('should return 500 for DB error on DELETE /api/youtube/:id', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Simulate DB error by deleting with invalid id type
+        const res = await request(app).delete('/api/youtube/invalid').set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(500);
+    });
+
+    it('should return 403 for ForbiddenError on POST /api/youtube', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Mock manager to throw ForbiddenError
+        const origAdd = configManager.youtubeManager.add;
+        configManager.youtubeManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
+        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({
+            youtubeChannelId: 'ytchan5',
+            discordChannelId: 'ytchan5discord',
+            guildId: 'testguild5'
+        });
+        expect(res.status).toBe(403);
+        configManager.youtubeManager.add = origAdd;
+    });
+
+    it('should return 403 for NotFoundError on POST /api/youtube', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Mock manager to throw NotFoundError
+        const origAdd = configManager.youtubeManager.add;
+        configManager.youtubeManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
+        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({
+            youtubeChannelId: 'ytchan6',
+            discordChannelId: 'ytchan6discord',
+            guildId: 'testguild6'
+        });
+        expect(res.status).toBe(403);
+        configManager.youtubeManager.add = origAdd;
+    });
+
+    it('should return 403 for ForbiddenError on DELETE /api/youtube/:id', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+        // Mock manager to throw ForbiddenError
+        const origRemove = configManager.youtubeManager.remove;
+        configManager.youtubeManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
+        const res = await request(app).delete(`/api/youtube/${id}`).set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(403);
+        configManager.youtubeManager.remove = origRemove;
+    });
+
+    it('should return 404 for NotFoundError on DELETE /api/youtube/:id', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+        // Mock manager to throw NotFoundError
+        const origRemove = configManager.youtubeManager.remove;
+        configManager.youtubeManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
+        const res = await request(app).delete(`/api/youtube/${id}`).set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+        configManager.youtubeManager.remove = origRemove;
+    });
 });

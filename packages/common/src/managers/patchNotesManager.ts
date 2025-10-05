@@ -54,6 +54,18 @@ export class PatchSubscriptionManager extends BaseManager<PatchSubscriptionConfi
     }
 
     async upsertSubscription(sub: Partial<PatchSubscriptionConfig>) {
-        await this.model.upsert(sub, {conflictFields: ['game', 'channelId', 'guildId']});
+        // Use manual upsert for SQLite compatibility
+        const existing = await this.model.findOne({
+            where: {
+                game: sub.game,
+                channelId: sub.channelId
+            }
+        });
+
+        if (existing) {
+            await existing.update(sub);
+        } else {
+            await this.model.create(sub);
+        }
     }
 }

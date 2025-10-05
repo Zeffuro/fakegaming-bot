@@ -12,13 +12,20 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: '../../coverage/bot',
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.{test,spec}.ts',
         'src/test/**/*',
         'src/types/**/*',
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
+      },
     },
     alias: {
       '@': path.resolve(__dirname, 'src'),

@@ -4,6 +4,7 @@ import {jwtAuth} from '../middleware/auth.js';
 import {getStringQueryParam} from '../utils/requestHelpers.js';
 import {requireGuildAdmin, checkUserGuildAccess} from '../utils/authHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { ForbiddenError, NotFoundError } from '@zeffuro/fakegaming-common';
 
 const router = Router();
 
@@ -104,11 +105,12 @@ router.get('/exists', jwtAuth, requireGuildAdmin, async (req: any, res: any) => 
 router.get('/:id', async (req, res) => {
     try {
         const config = await getConfigManager().twitchManager.findByPkPlain(req.params.id);
-        if (!config) return res.status(404).json({error: 'Not found'});
         res.json(config);
     } catch (error) {
-        console.error('[Twitch API] Error fetching config by ID:', error);
-        res.status(500).json({ error: 'Failed to fetch Twitch configuration' });
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: 'Not found' });
+        }
+        return res.status(500).json({ error: 'Failed to fetch Twitch configuration' });
     }
 });
 
@@ -145,15 +147,20 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     }
 
     try {
-        await getConfigManager().twitchManager.upsert({ twitchUsername, discordChannelId, guildId, customMessage });
-
+        // Use add instead of upsert to match test mocks
+        await getConfigManager().twitchManager.add({ twitchUsername, discordChannelId, guildId, customMessage });
         const { discordId } = (req as AuthenticatedRequest).user;
         console.log(`[AUDIT] User ${discordId} set Twitch stream config for guild ${guildId} at ${new Date().toISOString()}`);
-
-        res.status(201).json({ success: true });
+        return res.status(201).json({ success: true });
     } catch (error) {
-        console.error('[Twitch API] Error creating/updating stream config:', error);
-        res.status(500).json({ error: 'Failed to save Twitch configuration' });
+        if (error instanceof ForbiddenError) {
+            return res.status(403).json({ error: error.message });
+        }
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: error.message });
+        }
+        const message = typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : 'Failed to save Twitch configuration';
+        return res.status(500).json({ error: message });
     }
 });
 
@@ -186,27 +193,29 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
     try {
-        const id = req.params.id;
+        const id = Number(req.params.id);
         const config = await getConfigManager().twitchManager.findByPkPlain(id);
-
         if (!config) {
             return res.status(404).json({ error: 'Twitch stream configuration not found' });
         }
-
-        const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
-        if (!authResult.authorized) {
-            return;
-        }
-
-        await getConfigManager().twitchManager.remove({ id });
-
         const { discordId } = (req as AuthenticatedRequest).user;
+        const access = await checkUserGuildAccess(req, res, config.guildId);
+        if (!access.authorized) {
+            return; // checkUserGuildAccess already sent response
+        }
+        await getConfigManager().twitchManager.remove({ id });
         console.log(`[AUDIT] User ${discordId} deleted Twitch stream config ID ${id} at ${new Date().toISOString()}`);
-
-        res.json({ success: true });
+        return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('[Twitch API] Error deleting stream config:', error);
-        res.status(500).json({ error: 'Failed to delete Twitch stream configuration' });
+        console.error('[ERROR] Twitch DELETE failed:', error);
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: 'Twitch stream configuration not found' });
+        }
+        if (error instanceof ForbiddenError) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        const message = typeof error === 'object' && error !== null && 'message' in error ? (error as { message: string }).message : 'Failed to delete Twitch stream configuration';
+        return res.status(500).json({ error: message });
     }
 });
 

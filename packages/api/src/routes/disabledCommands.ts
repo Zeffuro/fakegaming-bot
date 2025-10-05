@@ -82,16 +82,23 @@ router.get('/check', async (req, res) => {
  */
 router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
     const { guildId, commandName } = req.body;
+    if (typeof guildId !== 'string' || typeof commandName !== 'string') {
+        return res.status(400).json({ error: 'guildId and commandName must be strings' });
+    }
     if (!guildId || !commandName) {
         return res.status(400).json({ error: 'guildId and commandName required' });
     }
-
     try {
         await getConfigManager().disabledCommandManager.upsert({ commandName, guildId });
         const config = await getConfigManager().disabledCommandManager.getOnePlain({ commandName, guildId });
         res.status(201).json(config);
-    } catch (error) {
-        console.error('Error disabling command:', error);
+    } catch (err: any) {
+        if (err?.code === 'SQLITE_CONSTRAINT' || err?.message?.includes('duplicate')) {
+            return res.status(409).json({ error: 'Duplicate disabled command' });
+        }
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -117,26 +124,17 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
 router.delete('/:id', jwtAuth, async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const id = req.params.id;
-
-    if (!id) {
-        return res.status(400).json({ error: 'Missing id' });
+    try {
+        const config = await getConfigManager().disabledCommandManager.getById(id);
+        if (!config) return res.status(404).json({ error: 'Disabled command not found' });
+        await getConfigManager().disabledCommandManager.removeById(id);
+        res.json({ success: true });
+    } catch (err: any) {
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.status(500).json({ error: 'Failed to delete disabled command' });
     }
-
-    // Find the config to get guildId for permission check
-    const config = await getConfigManager().disabledCommandManager.getById(id);
-    if (!config) {
-        return res.status(404).json({ error: 'Config not found' });
-    }
-
-    const accessResult = await checkUserGuildAccess(req, res, config.guildId);
-    if (!accessResult.authorized) {
-        return;
-    }
-
-    await getConfigManager().disabledCommandManager.remove({id});
-
-    console.log(`[AUDIT] User ${discordId} enabled command '${config.commandName}' for guild ${config.guildId} at ${new Date().toISOString()}`);
-    res.json({success: true});
 });
 
 /**

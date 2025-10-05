@@ -24,10 +24,7 @@ export async function checkUserGuildAccess(
     const guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
     if (!guilds) {
         console.error(`[API] Cache miss for user guilds ${discordId}`);
-        res.status(503).json({
-            error: 'Redis unavailable or guilds not cached for user',
-            detail: 'Please try refreshing your dashboard to re-fetch guild data'
-        });
+        res.status(403).json({ error: 'Not authorized for this guild' });
         return { authorized: false };
     }
 

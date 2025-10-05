@@ -92,3 +92,6 @@ export const getCachedData = defaultCacheManager.getCachedData.bind(defaultCache
 export type { MinimalGuildData } from './discord/types.js';
 
 export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from './utils/permissionUtils.js';
+export { ForbiddenError, NotFoundError } from './utils/apiErrorHelpers.js';
+
+export * from './utils/apiErrorHelpers.js';

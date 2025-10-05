@@ -3,6 +3,7 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {jwtAuth} from '../middleware/auth.js';
 import {checkUserGuildAccess} from '../utils/authHelpers.js';
 import { getStringQueryParam } from '../utils/requestHelpers.js';
+import { NotFoundError } from '@zeffuro/fakegaming-common';
 
 const router = Router();
 
@@ -73,7 +74,6 @@ router.get('/search', jwtAuth, async (req, res) => {
         });
         res.json(quotes);
     } catch (err) {
-        console.error('Error in /quotes/search:', err);
         res.status(500).json({error: 'Internal server error'});
     }
 });
@@ -176,19 +176,31 @@ router.get('/guild/:guildId/author/:authorId', jwtAuth, async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, async (req, res) => {
-    const { guildId } = req.body;
-
+    const { guildId, id, authorId, submitterId, text } = req.body;
+    if (typeof guildId !== 'string' || typeof id !== 'string' || typeof authorId !== 'string' || typeof submitterId !== 'string' || typeof text !== 'string') {
+        return res.status(400).json({ error: 'All fields must be strings' });
+    }
+    if (!guildId || !id || !authorId || !submitterId || !text) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
     if (guildId) {
         const accessResult = await checkUserGuildAccess(req, res, guildId);
         if (!accessResult.authorized) {
             return;
         }
     }
-
-    const created = await getConfigManager().quoteManager.addPlain(req.body);
-
-
-    res.status(201).json(created);
+    try {
+        const created = await getConfigManager().quoteManager.addPlain(req.body);
+        res.status(201).json(created);
+    } catch (err: any) {
+        if (err?.code === 'SQLITE_CONSTRAINT' || err?.message?.includes('duplicate')) {
+            return res.status(409).json({ error: 'Duplicate quote' });
+        }
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 /**
@@ -213,24 +225,26 @@ router.post('/', jwtAuth, async (req, res) => {
  */
 router.delete('/:id', jwtAuth, async (req, res) => {
     const { id } = req.params;
-
     if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
-    if (!quote) {
-        return res.status(404).json({error: 'Quote not found'});
-    }
-
-    if (quote.guildId) {
-        const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
-        if (!accessResult.authorized) {
-            return;
+    try {
+        const quote = await getConfigManager().quoteManager.findByPkPlain(id);
+        if (!quote) {
+            return res.status(404).json({error: 'Quote not found'});
         }
+        if (quote.guildId) {
+            const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
+            if (!accessResult.authorized) {
+                return;
+            }
+        }
+        await getConfigManager().quoteManager.remove({id});
+        res.json({success: true});
+    } catch (err: any) {
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        res.status(500).json({ error: 'Internal server error' });
     }
-
-    await getConfigManager().quoteManager.remove({id});
-
-    res.json({success: true});
 });
 
 /**
@@ -256,11 +270,15 @@ router.delete('/:id', jwtAuth, async (req, res) => {
  *         description: Quote not found
  */
 router.get('/:id', async (req, res) => {
-    const { id } = req.params;
-    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
-    if (!quote) return res.status(404).json({error: 'Quote not found'});
-    res.json(quote);
+    try {
+        const quote = await getConfigManager().quoteManager.findByPkPlain(req.params.id);
+        res.json(quote);
+    } catch (error) {
+        if (error instanceof NotFoundError) {
+            return res.status(404).json({ error: 'Quote not found' });
+        }
+        return res.status(500).json({ error: 'Failed to fetch quote' });
+    }
 });
 
 export default router;

@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { pathToFileURL, fileURLToPath } from 'url';
-// __dirname is dist/scripts/ when running built JS
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const modulesPath = path.join(__dirname, '../packages/bot/src/modules');
+import { pathToFileURL } from 'url';
+import { PROJECT_ROOT } from '@zeffuro/fakegaming-common/core';
+const modulesPath = fs.existsSync(path.join(PROJECT_ROOT, 'packages/bot/src/modules'))
+    ? path.join(PROJECT_ROOT, 'packages/bot/src/modules')
+    : path.join(PROJECT_ROOT, 'packages/bot/dist/modules');
 function findCommandDirs(modulesPath) {
     if (!fs.existsSync(modulesPath)) {
         console.error(`ERROR: modules directory not found at ${modulesPath}`);
@@ -16,7 +17,11 @@ function findCommandDirs(modulesPath) {
     for (const folder of moduleFolders) {
         const commandsPath = path.join(modulesPath, folder, 'commands');
         if (fs.existsSync(commandsPath)) {
+            console.log(`Found commands folder: ${commandsPath}`);
             commandDirs.push(commandsPath);
+        }
+        else {
+            console.log(`No commands folder in: ${folder}`);
         }
     }
     return commandDirs;
@@ -24,7 +29,11 @@ function findCommandDirs(modulesPath) {
 async function loadCommands(commandDirs) {
     const commands = [];
     for (const dir of commandDirs) {
-        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js'));
+        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') || f.endsWith('.ts'));
+        if (files.length === 0) {
+            console.log(`No command files in: ${dir}`);
+            continue;
+        }
         for (const file of files) {
             const cmdPath = path.join(dir, file);
             try {
@@ -36,6 +45,10 @@ async function loadCommands(commandDirs) {
                         description: cmd.data.description,
                         permissions: cmd.permissions || 'All users'
                     });
+                    console.log(`Loaded command: ${cmd.data.name} from ${cmdPath}`);
+                }
+                else {
+                    console.warn(`Skipping ${cmdPath}: missing data.name or data.description`);
                 }
             }
             catch (e) {
@@ -53,6 +66,7 @@ function generateTable(commands) {
     return table;
 }
 async function main() {
+    console.log(`Scanning modulesPath: ${modulesPath}`);
     const commandDirs = findCommandDirs(modulesPath);
     const commands = await loadCommands(commandDirs);
     if (commands.length === 0) {
@@ -62,8 +76,8 @@ async function main() {
         console.log(`Found ${commands.length} commands in ${commandDirs.length} directories.`);
     }
     const table = generateTable(commands);
-    // README is at project root, so go up two levels from dist/scripts/
-    const readmePath = path.join(__dirname, '../../README.md');
+    // README is at project root
+    const readmePath = path.join(PROJECT_ROOT, 'README.md');
     let readme;
     try {
         readme = fs.readFileSync(readmePath, 'utf8');

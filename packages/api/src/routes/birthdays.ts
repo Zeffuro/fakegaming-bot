@@ -95,11 +95,19 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
         if (month !== undefined) birthdayFields.month = month;
         if (day !== undefined) birthdayFields.day = day;
     }
-    await getConfigManager().birthdayManager.set(birthdayFields, 'userId');
-
-    console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
-
-    res.status(201).json({success: true});
+    try {
+        await getConfigManager().birthdayManager.set(birthdayFields, 'userId');
+        console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
+        res.status(201).json({success: true});
+    } catch (err: any) {
+        if (err?.code === 'SQLITE_CONSTRAINT' || err?.message?.includes('duplicate')) {
+            return res.status(409).json({error: 'Duplicate birthday'});
+        }
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({error: 'Forbidden'});
+        }
+        res.status(500).json({error: 'Failed to set birthday'});
+    }
 });
 
 /**
@@ -127,12 +135,18 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  */
 router.delete('/:userId/:guildId', jwtAuth, requireGuildAdmin, async (req, res) => {
     const { userId, guildId } = req.params;
-
     if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
-
-    await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
-
-    res.json({success: true});
+    try {
+        const birthday = await getConfigManager().birthdayManager.getBirthday({userId, guildId});
+        if (!birthday) return res.status(404).json({error: 'Birthday not found'});
+        await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
+        res.json({success: true});
+    } catch (err: any) {
+        if (err?.name === 'ForbiddenError') {
+            return res.status(403).json({error: 'Forbidden'});
+        }
+        res.status(500).json({error: 'Failed to delete birthday'});
+    }
 });
 
 export default router;

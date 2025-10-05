@@ -78,4 +78,61 @@ describe('Birthdays API', () => {
         const res = await request(app).get('/api/birthdays/nonexistentuser/nonexistentguild').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
+
+    it('should return 401 for GET /api/birthdays without JWT', async () => {
+        const res = await request(app).get('/api/birthdays');
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for POST /api/birthdays without JWT', async () => {
+        const res = await request(app)
+            .post('/api/birthdays')
+            .send({userId: 'birthdayuser4', guildId: 'birthdayguild4', date: '2001-01-01', channelId: 'testchannel4'});
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for DELETE /api/birthdays/:userId/:guildId without JWT', async () => {
+        const res = await request(app)
+            .delete(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 404 when deleting non-existent birthday', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .delete('/api/birthdays/nonexistentuser/nonexistentguild')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('should handle duplicate add gracefully', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res1 = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send(testBirthday);
+        expect([201, 409]).toContain(res1.status);
+    });
+
+    it('should return 400 for invalid input types', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send({userId: 123, guildId: null, date: null, channelId: null});
+        expect([400, 500]).toContain(res.status);
+    });
+
+    it('should return 500 for DB error on POST /api/birthdays', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Simulate DB error by mocking set
+        const origSet = configManager.birthdayManager.set;
+        configManager.birthdayManager.set = async () => { throw new Error('DB error'); };
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send({userId: 'birthdayuser5', guildId: 'birthdayguild5', date: '2002-02-02', channelId: 'testchannel5'});
+        expect(res.status).toBe(500);
+        configManager.birthdayManager.set = origSet;
+    });
 });

@@ -1,6 +1,7 @@
 # fakegaming-bot Monorepo
 
 [![Build Status](https://github.com/Zeffuro/fakegaming-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Zeffuro/fakegaming-bot/actions)
+[![codecov](https://codecov.io/gh/Zeffuro/fakegaming-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/Zeffuro/fakegaming-bot)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E=22.0.0-brightgreen)](https://nodejs.org/)
 [![ESLint](https://img.shields.io/badge/code_style-eslint-blue.svg)](https://eslint.org/)
@@ -207,6 +208,7 @@ pnpm start:dashboard  # Uses .env, runs Next.js production server
 ## Database & Migrations
 
 - **Database models** are defined in `packages/common` (typically in `packages/common/src/models/`).
+- **Database schema:** See [SCHEMA.md](./SCHEMA.md) for a complete Entity Relationship Diagram and detailed documentation of all tables.
 - **Schema changes:** Any change to the database schema (adding/removing fields, tables, etc.) requires a new migration
   script in the `migrations/` directory.
 - **Writing migrations:**
@@ -315,7 +317,7 @@ A: No, this bot is used privately. There is no public instance or official suppo
 A: See the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on adding commands, features, and database changes.
 
 **Q: Where are the database models?**
-A: All models are in `packages/common` (see the Database & Migrations section above).
+A: All models are in `packages/common`. See [SCHEMA.md](./SCHEMA.md) for a complete database schema diagram and documentation.
 
 **Q: How do I report bugs or request features?**
 A: Use GitHub Issues. See the Reporting Issues section in [CONTRIBUTING.md](./CONTRIBUTING.md).

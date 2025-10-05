@@ -13,6 +13,11 @@ node_modules/
 # Next.js build output
 .next/
 
+# Test coverage (all packages report to root)
+coverage/
+**/coverage/
+.nyc_output/
+
 # Environment variables
 packages/api/.env
 packages/api/.env.development
