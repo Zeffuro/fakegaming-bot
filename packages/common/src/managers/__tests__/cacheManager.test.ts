@@ -6,7 +6,7 @@ describe('CacheManager', () => {
     const cacheManager = configManager.cacheManager;
 
     beforeEach(async () => {
-        await cacheManager.remove({});
+        await cacheManager.removeAll();
     });
 
     describe('basic operations', () => {

@@ -9,8 +9,8 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "next build",
-    "prebuild": "pnpm run generate:api-aliases",
-    "prepare": "pnpm run generate:api-aliases",
+    "prebuild": "pnpm run generate:api-types",
+    "prepare": "pnpm run generate:api-types",
     "generate:api-aliases": "pnpm tsx scripts/generateApiAliases.ts",
     "start": "next start",
     "start:dev": "pnpm --filter @zeffuro/fakegaming-bot-api export:openapi && pnpm generate:api-types && next dev",
@@ -23,8 +23,8 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/material": "^7.3.4",
     "@mui/icons-material": "^7.3.4",
+    "@mui/material": "^7.3.4",
     "@zeffuro/fakegaming-common": "workspace:*",
     "better-auth": "^1.3.26",
     "cross-env": "^10.1.0",
@@ -45,6 +45,7 @@
     "@typescript-eslint/parser": "^8.45.0",
     "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.37.0",
+    "jsdom": "^27.0.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   }

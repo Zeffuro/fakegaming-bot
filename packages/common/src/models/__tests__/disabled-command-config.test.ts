@@ -4,7 +4,7 @@ import { DisabledCommandConfig } from '../disabled-command-config.js';
 
 describe('DisabledCommandConfig Model', () => {
   beforeEach(async () => {
-    await configManager.disabledCommandManager.remove({});
+    await configManager.disabledCommandManager.removeAll();
   });
 
   it('should create a disabled command entry', async () => {

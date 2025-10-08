@@ -16,7 +16,7 @@ let reminderId: string;
 
 beforeEach(async () => {
     // Clean up reminders table before each test
-    await configManager.reminderManager.remove({});
+    await configManager.reminderManager.removeAll();
     const created = await configManager.reminderManager.addPlain(testReminder);
     reminderId = created.id;
 });

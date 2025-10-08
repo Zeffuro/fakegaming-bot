@@ -4,7 +4,7 @@ import { YoutubeVideoConfig } from '../youtube-video-config.js';
 
 describe('YoutubeVideoConfig Model', () => {
   beforeEach(async () => {
-    await configManager.youtubeManager.remove({});
+    await configManager.youtubeManager.removeAll();
   });
 
   it('should create a youtube config with required fields', async () => {

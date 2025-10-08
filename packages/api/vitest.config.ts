@@ -39,6 +39,7 @@ export default defineConfig({
     },
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@zeffuro/fakegaming-bot-api': path.resolve(__dirname, 'src/index.ts'),
     },
   },
 });

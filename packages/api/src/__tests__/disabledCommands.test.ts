@@ -12,7 +12,7 @@ const testConfig = {
 let disabledId: number;
 
 beforeEach(async () => {
-    await configManager.disabledCommandManager.remove({});
+    await configManager.disabledCommandManager.removeAll();
     const created = await configManager.disabledCommandManager.addPlain(testConfig);
     disabledId = created.id;
 });

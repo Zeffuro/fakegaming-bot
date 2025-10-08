@@ -1,10 +1,20 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
-import {requireGuildAdmin} from '../utils/authHelpers.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import { validateParams, validateBodyForModel } from '@zeffuro/fakegaming-common';
+import { BirthdayConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { UniqueConstraintError } from 'sequelize';
 
-const router = Router();
+const router = createBaseRouter();
+
+// ✨ Single source of truth - params via zod; body via model lazily
+const userGuildParamSchema = z.object({
+    userId: z.string().min(1),
+    guildId: z.string().min(1)
+});
 
 /**
  * @openapi
@@ -22,7 +32,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/BirthdayConfig'
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
     const birthdays = await getConfigManager().birthdayManager.getAllPlain();
     res.json(birthdays);
 });
@@ -47,18 +57,13 @@ router.get('/', async (req, res) => {
  *     responses:
  *       200:
  *         description: Birthday config
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/BirthdayConfig'
  *       404:
  *         description: Not found
  */
-router.get('/:userId/:guildId', async (req, res) => {
+router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
-    if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
-    const birthday = await getConfigManager().birthdayManager.getBirthday({ userId, guildId });
-    if (!birthday) return res.status(404).json({error: 'Birthday not found'});
+    const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
+    if (!birthday) throw { status: 404, message: 'Birthday not found' };
     res.json(birthday);
 });
 
@@ -80,33 +85,19 @@ router.get('/:userId/:guildId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig, 'create'), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
-    const {userId, guildId, date, day, month, year, channelId} = req.body;
-    if (!userId || !guildId || (!date && (day === undefined || month === undefined || year === undefined))) {
-        return res.status(400).json({ error: 'Missing required birthday fields' });
-    }
-    let birthdayFields: any = {userId, guildId, channelId};
-    if (date) {
-        const [y, m, d] = date.split('-').map(Number);
-        birthdayFields = {...birthdayFields, year: y, month: m, day: d};
-    } else {
-        if (year !== undefined) birthdayFields.year = year;
-        if (month !== undefined) birthdayFields.month = month;
-        if (day !== undefined) birthdayFields.day = day;
-    }
+    const { userId, guildId } = req.body;
     try {
-        await getConfigManager().birthdayManager.set(birthdayFields, 'userId');
-        console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId} at ${new Date().toISOString()}`);
-        res.status(201).json({success: true});
-    } catch (err: any) {
-        if (err?.code === 'SQLITE_CONSTRAINT' || err?.message?.includes('duplicate')) {
-            return res.status(409).json({error: 'Duplicate birthday'});
+        await getConfigManager().birthdayManager.addPlain(req.body);
+        console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId}`);
+        res.status(201).json({ success: true });
+    } catch (error) {
+        if (error instanceof UniqueConstraintError) {
+            res.status(409).json({ error: 'Birthday already exists for this user in this guild' });
+        } else {
+            throw error;
         }
-        if (err?.name === 'ForbiddenError') {
-            return res.status(403).json({error: 'Forbidden'});
-        }
-        res.status(500).json({error: 'Failed to set birthday'});
     }
 });
 
@@ -133,20 +124,14 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  *       200:
  *         description: Success
  */
-router.delete('/:userId/:guildId', jwtAuth, requireGuildAdmin, async (req, res) => {
+router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
-    if (!userId || !guildId) return res.status(400).json({ error: 'Missing userId or guildId parameter' });
-    try {
-        const birthday = await getConfigManager().birthdayManager.getBirthday({userId, guildId});
-        if (!birthday) return res.status(404).json({error: 'Birthday not found'});
-        await getConfigManager().birthdayManager.removeBirthday({userId, guildId});
-        res.json({success: true});
-    } catch (err: any) {
-        if (err?.name === 'ForbiddenError') {
-            return res.status(403).json({error: 'Forbidden'});
-        }
-        res.status(500).json({error: 'Failed to delete birthday'});
-    }
+    const existing = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
+    if (!existing) return res.status(404).json({ error: 'Birthday not found' });
+    const access = await checkUserGuildAccess(req, res, guildId);
+    if (!access.authorized) return;
+    await getConfigManager().birthdayManager.removeBirthday(userId, guildId);
+    res.json({ success: true });
 });
 
-export default router;
+export { router };

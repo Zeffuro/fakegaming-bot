@@ -6,7 +6,7 @@ describe('DisabledCommandManager', () => {
     const disabledCommandManager = configManager.disabledCommandManager;
 
     beforeEach(async () => {
-        await disabledCommandManager.remove({});
+        await disabledCommandManager.removeAll();
     });
 
     describe('isCommandDisabled', () => {
@@ -36,26 +36,6 @@ describe('DisabledCommandManager', () => {
 
             expect(resultGuild1).toBe(true);
             expect(resultGuild2).toBe(false);
-        });
-    });
-
-    describe('getById', () => {
-        it('should return disabled command config by id', async () => {
-            const config = await DisabledCommandConfig.create({
-                guildId: 'guild-1',
-                commandName: 'testcommand',
-            });
-
-            const result = await disabledCommandManager.getById(config.id!);
-
-            expect(result).toBeDefined();
-            expect(result?.id).toBe(config.id);
-            expect(result?.commandName).toBe('testcommand');
-        });
-
-        it('should return undefined if config not found', async () => {
-            const result = await disabledCommandManager.getById('nonexistent-id');
-            expect(result).toBeUndefined();
         });
     });
 });

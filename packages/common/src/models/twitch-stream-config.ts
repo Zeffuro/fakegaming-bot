@@ -1,4 +1,4 @@
-import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement, Default} from 'sequelize-typescript';
 
 @Table
 export class TwitchStreamConfig extends Model {
@@ -18,4 +18,8 @@ export class TwitchStreamConfig extends Model {
 
     @Column(DataType.STRING)
     declare guildId: string;
+
+    @Default(false)
+    @Column(DataType.BOOLEAN)
+    declare isLive: boolean;
 }

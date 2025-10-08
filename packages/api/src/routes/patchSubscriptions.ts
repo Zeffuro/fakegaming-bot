@@ -1,9 +1,14 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
-import {requireGuildAdmin} from '../utils/authHelpers.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { PatchSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
 
-const router = Router();
+const router = createBaseRouter();
+
+// ✨ Single source of truth - params via zod; body via model lazily
+const idParamSchema = z.object({ id: z.coerce.number() });
 
 /**
  * @openapi
@@ -14,23 +19,42 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of patch subscriptions
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/PatchSubscriptionConfig'
  */
-router.get('/', async (req, res) => {
-    const subs = await getConfigManager().patchSubscriptionManager.getAllPlain();
-    res.json(subs);
+router.get('/', async (_req, res) => {
+    const subscriptions = await getConfigManager().patchSubscriptionManager.getAllPlain();
+    res.json(subscriptions);
+});
+
+/**
+ * @openapi
+ * /patchSubscriptions/{id}:
+ *   get:
+ *     summary: Get a patch subscription by id
+ *     tags: [PatchSubscriptions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Patch subscription config
+ *       404:
+ *         description: Not found
+ */
+router.get('/:id', validateParams(idParamSchema), async (req, res) => {
+    const { id } = req.params;
+    const subscription = await getConfigManager().patchSubscriptionManager.findByPkPlain(Number(id));
+    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+    res.json(subscription);
 });
 
 /**
  * @openapi
  * /patchSubscriptions:
  *   post:
- *     summary: Subscribe to a game/channel
+ *     summary: Add a new patch subscription
  *     tags: [PatchSubscriptions]
  *     security:
  *       - bearerAuth: []
@@ -44,18 +68,16 @@ router.get('/', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const { game, channelId, guildId } = req.body;
-    if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
-    await getConfigManager().patchSubscriptionManager.subscribe(game, channelId, guildId);
-    res.status(201).json({success: true});
+router.post('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create'), async (req, res) => {
+    await getConfigManager().patchSubscriptionManager.addPlain(req.body);
+    res.status(201).json({ success: true });
 });
 
 /**
  * @openapi
  * /patchSubscriptions:
  *   put:
- *     summary: Upsert (add or update) a patch subscription
+ *     summary: Upsert a patch subscription
  *     tags: [PatchSubscriptions]
  *     security:
  *       - bearerAuth: []
@@ -69,18 +91,33 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  *       200:
  *         description: Success
  */
-router.put('/', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const { game, channelId, guildId } = req.body;
-    if (!game || !channelId || !guildId) return res.status(400).json({ error: 'Missing game, channelId, or guildId' });
-
-    try {
-        // Use subscribe instead of upsertSubscription to avoid SQLite constraint issues
-        await getConfigManager().patchSubscriptionManager.subscribe(game, channelId, guildId);
-        res.json({success: true});
-    } catch (error) {
-        console.error('[PatchSubscriptions API] Error upserting subscription:', error);
-        res.status(500).json({ error: 'Failed to upsert patch subscription' });
-    }
+router.put('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create'), async (req, res) => {
+    await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
+    res.json({ success: true });
 });
 
-export default router;
+/**
+ * @openapi
+ * /patchSubscriptions/{id}:
+ *   delete:
+ *     summary: Delete a patch subscription by id
+ *     tags: [PatchSubscriptions]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+    const { id } = req.params;
+    await getConfigManager().patchSubscriptionManager.removeByPk(Number(id));
+    res.json({ success: true });
+});
+
+export { router };

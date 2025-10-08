@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import authRouter from '../routes/auth.js';
+import { router as authRouter } from '../routes/auth.js';
 
 // Mock the common package functions
 vi.mock('@zeffuro/fakegaming-common/discord', () => ({

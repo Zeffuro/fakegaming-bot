@@ -57,10 +57,7 @@ describe('quotes command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify getQuotesByAuthor was called with the correct parameters
-        expect(getQuotesByAuthorSpy).toHaveBeenCalledWith({
-            guildId: '135381928284343204',
-            authorId: '234567890123456789'
-        });
+        expect(getQuotesByAuthorSpy).toHaveBeenCalledWith('135381928284343204', '234567890123456789');
 
         // Verify the interaction reply contains both quotes
         expect(interaction.reply).toHaveBeenCalledWith(

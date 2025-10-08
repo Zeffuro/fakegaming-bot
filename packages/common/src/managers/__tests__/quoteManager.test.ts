@@ -6,7 +6,7 @@ describe('QuoteManager', () => {
     const quoteManager = configManager.quoteManager;
 
     beforeEach(async () => {
-        await quoteManager.remove({});
+        await quoteManager.removeAll();
     });
 
     describe('getQuotesByGuild', () => {
@@ -38,14 +38,14 @@ describe('QuoteManager', () => {
                 timestamp: Date.now(),
             });
 
-            const quotes = await quoteManager.getQuotesByGuild({ guildId: 'guild-1' });
+            const quotes = await quoteManager.getQuotesByGuild('guild-1');
 
             expect(quotes).toHaveLength(2);
             expect(quotes.every(q => q.guildId === 'guild-1')).toBe(true);
         });
 
         it('should return empty array if guild has no quotes', async () => {
-            const quotes = await quoteManager.getQuotesByGuild({ guildId: 'no-quotes' });
+            const quotes = await quoteManager.getQuotesByGuild('no-quotes');
             expect(quotes).toEqual([]);
         });
     });
@@ -79,10 +79,7 @@ describe('QuoteManager', () => {
                 timestamp: Date.now(),
             });
 
-            const quotes = await quoteManager.getQuotesByAuthor({
-                guildId: 'guild-1',
-                authorId: 'author-1',
-            });
+            const quotes = await quoteManager.getQuotesByAuthor('guild-1', 'author-1');
 
             expect(quotes).toHaveLength(2);
             expect(quotes.every(q => q.authorId === 'author-1')).toBe(true);
@@ -118,10 +115,7 @@ describe('QuoteManager', () => {
                 timestamp: Date.now(),
             });
 
-            const quotes = await quoteManager.searchQuotes({
-                guildId: 'guild-1',
-                text: 'fox',
-            });
+            const quotes = await quoteManager.searchQuotes('guild-1', 'fox');
 
             expect(quotes).toHaveLength(2);
             expect(quotes.every(q => q.quote.toLowerCase().includes('fox'))).toBe(true);
@@ -137,10 +131,7 @@ describe('QuoteManager', () => {
                 timestamp: Date.now(),
             });
 
-            const quotes = await quoteManager.searchQuotes({
-                guildId: 'guild-1',
-                text: 'nonexistent',
-            });
+            const quotes = await quoteManager.searchQuotes('guild-1', 'nonexistent');
 
             expect(quotes).toEqual([]);
         });
@@ -155,10 +146,7 @@ describe('QuoteManager', () => {
                 timestamp: Date.now(),
             });
 
-            const quotes = await quoteManager.searchQuotes({
-                guildId: 'guild-1',
-                text: 'quick',
-            });
+            const quotes = await quoteManager.searchQuotes('guild-1', 'quick');
 
             expect(quotes).toHaveLength(1);
         });

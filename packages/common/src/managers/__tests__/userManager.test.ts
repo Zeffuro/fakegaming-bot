@@ -7,7 +7,7 @@ describe('UserManager', () => {
     const userManager = configManager.userManager;
 
     beforeEach(async () => {
-        await userManager.remove({});
+        await userManager.removeAll();
         await LeagueConfig.destroy({ where: {} });
     });
 
@@ -32,7 +32,7 @@ describe('UserManager', () => {
 
     describe('getUserWithLeague', () => {
         it('should return user with league data', async () => {
-            const user = await UserConfig.create({
+            await UserConfig.create({
                 discordId: 'user-with-league',
                 timezone: 'America/New_York',
             });

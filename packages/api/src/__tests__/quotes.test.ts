@@ -17,7 +17,7 @@ const testQuote = {
 
 beforeEach(async () => {
     // Clean up quotes table before each test
-    await configManager.quoteManager.remove({});
+    await configManager.quoteManager.removeAll();
     const created = await configManager.quoteManager.addPlain(testQuote);
     quoteId = created.id;
 });
@@ -141,13 +141,16 @@ describe('Quotes API', () => {
         const token = signTestJwt({ discordId: 'testuser' });
         // Simulate DB error by mocking addPlain
         const origAdd = configManager.quoteManager.addPlain;
-        configManager.quoteManager.addPlain = async () => { throw new Error('DB error'); };
-        const res = await request(app)
-            .post('/api/quotes')
-            .set('Authorization', `Bearer ${token}`)
-            .send({id: 'test-quote-5', guildId: 'testguild5', authorId: 'author5', submitterId: 'submitter5', quote: 'quote5', timestamp: Date.now()});
-        expect(res.status).toBe(500);
-        configManager.quoteManager.addPlain = origAdd;
+        try {
+            configManager.quoteManager.addPlain = async () => { throw new Error('DB error'); };
+            const res = await request(app)
+                .post('/api/quotes')
+                .set('Authorization', `Bearer ${token}`)
+                .send({id: 'test-quote-5', guildId: 'testguild1', authorId: 'author5', submitterId: 'submitter5', quote: 'quote5', timestamp: Date.now()});
+            expect(res.status).toBe(500);
+        } finally {
+            configManager.quoteManager.addPlain = origAdd;
+        }
     });
 
     it('should return 400 for missing search params', async () => {

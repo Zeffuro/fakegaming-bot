@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsc",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "start:dev": "cross-env NODE_ENV=development tsx src/index.ts",
-    "prod:dev": "cross-env NODE_ENV=production tsx src/index.ts",
+    "start:dev": "cross-env NODE_ENV=development node --import tsx src/index.ts",
+    "prod:dev": "cross-env NODE_ENV=production node --import tsx src/index.ts",
     "lint": "eslint src --ext .ts --config ../../eslint.config.mjs",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
@@ -31,7 +31,8 @@
     "sequelize-typescript": "^2.1.6",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

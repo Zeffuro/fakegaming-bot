@@ -1,14 +1,7 @@
-import {
-    SlashCommandBuilder,
-    ChatInputCommandInteraction,
-    ChannelType,
-    MessageFlags,
-    User,
-    AutocompleteInteraction
-} from 'discord.js';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {months} from "../../../constants/months.js";
-import {requireAdmin} from "../../../utils/permissions.js";
+import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, MessageFlags, AutocompleteInteraction } from 'discord.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { months } from '../../../constants/months.js';
+import { requireAdmin } from '../../../utils/permissions.js';
 
 const data = new SlashCommandBuilder()
     .setName('set-birthday')
@@ -34,125 +27,69 @@ const data = new SlashCommandBuilder()
             .setDescription('Channel to post your birthday message (defaults to current channel)')
             .addChannelTypes(ChannelType.GuildText)
             .setRequired(false)
-    ).addUserOption(option =>
+    )
+    .addUserOption(option =>
         option.setName('user')
             .setDescription('User to set birthday for (admins only)')
             .setRequired(false)
     );
 
-/**
- * Validates if a date is valid
- */
 function isValidDate(day: number, month: number, year?: number): boolean {
-    // Use a reasonable year for validation if not provided
     const testYear = year ?? 2000;
     const date = new Date(testYear, month - 1, day);
-
-    // Check if the date object represents the same day/month we tried to create
     return date.getDate() === day && date.getMonth() === month - 1;
 }
 
-/**
- * Executes the set-birthday command, allowing a user or admin to set a birthday and announcement channel.
- * Replies with a confirmation or error message.
- */
 async function execute(interaction: ChatInputCommandInteraction) {
     const day = interaction.options.getInteger('day', true);
     const monthName = interaction.options.getString('month', true);
     const year = interaction.options.getInteger('year', false) ?? undefined;
     const channel = interaction.options.getChannel('channel', false) ?? interaction.channel;
     const targetUser = interaction.options.getUser('user', false);
-    const guildId = interaction.guildId ?? "";
+    const guildId = interaction.guildId!;
 
-    let userId: string = interaction.user.id;
+    let userId = interaction.user.id;
     if (targetUser) {
         if (!await requireAdmin(interaction)) return;
         userId = targetUser.id;
     }
 
-    const monthObj = months.find(month => month.name.toLowerCase() === monthName.toLowerCase());
-    if (!monthObj || day < 1 || day > 31) {
-        await interaction.reply({content: 'Invalid day or month.', flags: MessageFlags.Ephemeral});
+    const monthObj = months.find(m => m.name.toLowerCase() === monthName.toLowerCase());
+    if (!monthObj || !isValidDate(day, monthObj.value, year)) {
+        await interaction.reply({ content: 'Invalid day or month.', flags: MessageFlags.Ephemeral });
         return;
     }
 
-    if (!isValidDate(day, monthObj.value, year)) {
-        await interaction.reply({content: 'Invalid date. Please check the day and month combination.', flags: MessageFlags.Ephemeral});
-        return;
-    }
-
-    if (!channel) {
-        await interaction.reply({
-            content: 'Could not determine a channel to set the birthday in.',
-            flags: MessageFlags.Ephemeral
-        });
-        return;
-    }
-
-    const alreadySet = await getConfigManager().birthdayManager.hasBirthday({
-        userId,
-        guildId: guildId,
-    });
-
+    const alreadySet = await getConfigManager().birthdayManager.hasBirthday(userId, guildId);
     if (alreadySet) {
         await interaction.reply({
-            content: `${targetUser ? `<@${targetUser.id}>` : "You"} already have a birthday set in this channel.`,
+            content: `${targetUser ? `<@${userId}>` : "You"} already have a birthday set in this channel.`,
             flags: MessageFlags.Ephemeral
         });
         return;
     }
 
     await getConfigManager().birthdayManager.add({
-        userId: userId,
+        userId,
         day,
         month: monthObj.value,
         year,
-        guildId: guildId,
-        channelId: channel.id,
+        guildId,
+        channelId: channel!.id
     });
 
     await interaction.reply({
-        content: getBirthdayResponse(targetUser, day, monthObj.value, year),
+        content: `${targetUser ? `<@${userId}>'s` : "Your"} birthday reminder is set!`,
         flags: MessageFlags.Ephemeral
     });
 }
 
-/**
- * Provides autocomplete suggestions for the month option.
- *
- * @param interaction - The Discord AutocompleteInteraction object containing focused value.
- * @returns {Promise<void>} Resolves when the suggestions are sent.
- */
-async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
+async function autocomplete(interaction: AutocompleteInteraction) {
     const focusedValue = interaction.options.getFocused();
     const choices = months
-        .filter(month => month.name.toLowerCase().startsWith(focusedValue.toLowerCase()))
-        .map(month => ({name: month.name, value: month.name}));
+        .filter(m => m.name.toLowerCase().startsWith(focusedValue.toLowerCase()))
+        .map(m => ({ name: m.name, value: m.name }));
     await interaction.respond(choices.slice(0, 25));
 }
 
-function getBirthdayResponse(targetUser: User | null, day: number, month: number, year?: number): string {
-    const now = new Date();
-    const nextBirthday = new Date(now.getFullYear(), month - 1, day);
-
-    // If today is the birthday, don't increment the year
-    if (
-        nextBirthday.getDate() === now.getDate() &&
-        nextBirthday.getMonth() === now.getMonth()
-    ) {
-        // today is birthday
-    } else if (nextBirthday < now) {
-        nextBirthday.setFullYear(now.getFullYear() + 1);
-    }
-
-    const daysUntil = Math.ceil((nextBirthday.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    const age = year ? nextBirthday.getFullYear() - year : undefined;
-    const formattedDate = `${nextBirthday.getDate()} ${months[month - 1].name} ${nextBirthday.getFullYear()}`;
-
-    return `${targetUser ? `<@${targetUser.id}>'s` : "Your"} birthday reminder is set!${age ? ` Turning ${age} soon` : ""}. Only ${daysUntil === 0 ? "today" : `${daysUntil} days left until ${formattedDate}`} 🎉`;
-}
-
-const testOnly = false;
-
-// noinspection JSUnusedGlobalSymbols
-export default {data, execute, autocomplete, testOnly};
+export default { data, execute, autocomplete, testOnly: false };

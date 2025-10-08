@@ -11,7 +11,7 @@ const testYoutube = {
 };
 
 beforeEach(async () => {
-    await configManager.youtubeManager.remove({});
+    await configManager.youtubeManager.removeAll();
     await configManager.youtubeManager.add(testYoutube);
 });
 

@@ -1,8 +1,14 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { PatchNoteConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
 
-const router = Router();
+const router = createBaseRouter();
+
+// ✨ Single source of truth - params via zod; body via model lazily
+const gameParamSchema = z.object({ game: z.string().min(1) });
 
 /**
  * @openapi
@@ -20,7 +26,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/PatchNoteConfig'
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
     const notes = await getConfigManager().patchNotesManager.getAllPlain();
     res.json(notes);
 });
@@ -47,11 +53,10 @@ router.get('/', async (req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/:game', async (req, res) => {
+router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
     const { game } = req.params;
-    if (!game) return res.status(400).json({ error: 'Missing game parameter' });
     const note = await getConfigManager().patchNotesManager.getLatestPatch(game);
-    if (!note) return res.status(404).json({error: 'Patch note not found'});
+    if (!note) return res.status(404).json({ error: 'Patch note not found' });
     res.json(note);
 });
 
@@ -61,6 +66,8 @@ router.get('/:game', async (req, res) => {
  *   post:
  *     summary: Upsert (add or update) a patch note
  *     tags: [PatchNotes]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -71,17 +78,10 @@ router.get('/:game', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, async (req, res) => {
-    if (!req.body || !req.body.game || (!req.body.patchVersion && !req.body.version)) {
-        return res.status(400).json({ error: 'Missing required patch note fields' });
-    }
-    // Support both 'version' and 'patchVersion' fields
-    const patchData = {
-        ...req.body,
-        patchVersion: req.body.patchVersion || req.body.version
-    };
-    await getConfigManager().patchNotesManager.setLatestPatch(patchData);
-    res.status(201).json({success: true});
+router.post('/', jwtAuth, validateBodyForModel(PatchNoteConfig, 'create'), async (req, res) => {
+    // req.body is now fully validated and type-safe based on the model!
+    await getConfigManager().patchNotesManager.setLatestPatch(req.body);
+    res.status(201).json({ success: true });
 });
 
-export default router;
+export { router };

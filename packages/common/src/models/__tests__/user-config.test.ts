@@ -5,7 +5,7 @@ import { UserConfig } from '../user-config.js';
 describe('UserConfig Model', () => {
   beforeEach(async () => {
     // Clean up before each test
-    await configManager.userManager.remove({});
+    await configManager.userManager.removeAll();
   });
 
   it('should create a user with required fields', async () => {

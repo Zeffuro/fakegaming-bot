@@ -24,6 +24,21 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@/lib/common/testing.js": [
+        "./lib/common/testing.ts"
+      ],
+      "@zeffuro/fakegaming-common/testing": [
+        "../common/dist/testing/index.d.ts"
+      ],
+      "@zeffuro/fakegaming-common/testing/mocks/cache": [
+        "../common/dist/testing/mocks/cacheMock.d.ts"
+      ],
+      "@zeffuro/fakegaming-common/testing/utils/jwt": [
+        "../common/dist/testing/utils/jwtTestUtils.d.ts"
+      ],
+      "@zeffuro/fakegaming-common/utils": [
+        "../common/dist/utils/index.d.ts"
       ]
     }
   },

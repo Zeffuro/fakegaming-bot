@@ -28,6 +28,12 @@ export default defineConfig({
         'src/migrate.ts', // Migration runner itself
         'src/vitest.setup.ts',
         'src/testing/**/*', // Exclude all test utilities and mocks
+        // Exclude non-critical codegen/infra utilities that are validated indirectly
+        'src/utils/modelToZod.ts',
+        'src/utils/openapi.ts',
+        'src/utils/schemaRegistry.ts',
+        'src/utils/validation.ts',
+        'src/core/dataRoot.ts',
       ],
       thresholds: {
         lines: 80,

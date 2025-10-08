@@ -6,7 +6,7 @@ describe('ServerManager', () => {
     const serverManager = configManager.serverManager;
 
     beforeEach(async () => {
-        await serverManager.remove({});
+        await serverManager.removeAll();
     });
 
     describe('getServer', () => {

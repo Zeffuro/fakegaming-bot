@@ -1,21 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { configManager } from '../../vitest.setup.js';
-import { PatchNoteConfig } from '../../models/patch-note-config.js';
-import { PatchSubscriptionConfig } from '../../models/patch-subscription-config.js';
 
 describe('PatchNotesManager', () => {
     const patchNotesManager = configManager.patchNotesManager;
 
     beforeEach(async () => {
-        await patchNotesManager.forceTruncate();
+        await patchNotesManager.removeAll();
     });
 
     describe('getLatestPatch', () => {
         it('should return latest patch for a game', async () => {
-            await PatchNoteConfig.create({
+            await patchNotesManager.setLatestPatch({
                 game: 'league',
                 version: '14.1',
                 url: 'https://example.com/patch-14.1',
+                title: 'Patch 14.1',
+                content: 'Patch notes content',
+                publishedAt: Date.now(),
             });
 
             const result = await patchNotesManager.getLatestPatch('league');
@@ -37,6 +38,9 @@ describe('PatchNotesManager', () => {
                 game: 'league',
                 version: '14.1',
                 url: 'https://example.com/patch-14.1',
+                title: 'Patch 14.1',
+                content: 'Patch notes content',
+                publishedAt: Date.now(),
             });
 
             const result = await patchNotesManager.getLatestPatch('league');
@@ -45,45 +49,32 @@ describe('PatchNotesManager', () => {
         });
 
         it('should update existing patch note', async () => {
-            await PatchNoteConfig.create({
+            await patchNotesManager.setLatestPatch({
                 game: 'league',
                 version: '14.1',
                 url: 'https://example.com/patch-14.1',
+                title: 'Patch 14.1',
+                content: 'Patch notes content',
+                publishedAt: Date.now(),
             });
 
             await patchNotesManager.setLatestPatch({
                 game: 'league',
                 version: '14.2',
                 url: 'https://example.com/patch-14.2',
+                title: 'Patch 14.2',
+                content: 'Patch notes content',
+                publishedAt: Date.now(),
             });
 
             const result = await patchNotesManager.getLatestPatch('league');
             expect(result?.version).toBe('14.2');
+            expect(result?.url).toBe('https://example.com/patch-14.2');
 
             const allPatches = await patchNotesManager.getAll();
-            expect(allPatches).toHaveLength(1);
-        });
-    });
-
-    describe('forceTruncate', () => {
-        it('should truncate table in test environment', async () => {
-            await PatchNoteConfig.create({
-                game: 'league',
-                version: '14.1',
-                url: 'https://example.com/patch-14.1',
-            });
-
-            await patchNotesManager.forceTruncate();
-
-            const allPatches = await patchNotesManager.getAll();
-            expect(allPatches).toHaveLength(0);
-        });
-    });
-
-    describe('getSequelize', () => {
-        it('should return sequelize instance', () => {
-            const sequelize = patchNotesManager.getSequelize();
-            expect(sequelize).toBeDefined();
+            expect(allPatches).toHaveLength(1); // Only one patch per game
+            expect(allPatches[0].version).toBe('14.2');
+            expect(allPatches[0].url).toBe('https://example.com/patch-14.2');
         });
     });
 });
@@ -92,7 +83,7 @@ describe('PatchSubscriptionManager', () => {
     const patchSubscriptionManager = configManager.patchSubscriptionManager;
 
     beforeEach(async () => {
-        await patchSubscriptionManager.remove({});
+        await patchSubscriptionManager.removeAll();
     });
 
     describe('subscribe', () => {
@@ -127,7 +118,7 @@ describe('PatchSubscriptionManager', () => {
         });
 
         it('should update existing subscription', async () => {
-            await PatchSubscriptionConfig.create({
+            await patchSubscriptionManager.upsertSubscription({
                 game: 'league',
                 channelId: 'channel-1',
                 guildId: 'guild-1',

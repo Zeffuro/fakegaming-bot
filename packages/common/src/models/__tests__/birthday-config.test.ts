@@ -4,7 +4,7 @@ import { BirthdayConfig } from '../birthday-config.js';
 
 describe('BirthdayConfig Model', () => {
     beforeEach(async () => {
-        await configManager.birthdayManager.remove({});
+        await configManager.birthdayManager.removeAll();
     });
 
     it('should create a birthday with all required fields', async () => {

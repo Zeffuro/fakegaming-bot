@@ -4,7 +4,7 @@ import { PatchSubscriptionConfig } from '../patch-subscription-config.js';
 
 describe('PatchSubscriptionConfig Model', () => {
   beforeEach(async () => {
-    await configManager.patchSubscriptionManager.remove({});
+    await configManager.patchSubscriptionManager.removeAll();
   });
 
   it('should create a patch subscription with required fields', async () => {

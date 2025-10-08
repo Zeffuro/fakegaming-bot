@@ -12,7 +12,7 @@ const testTwitch = {
 
 beforeEach(async () => {
     // Clean up twitch table before each test
-    await configManager.twitchManager.remove({});
+    await configManager.twitchManager.removeAll();
     await configManager.twitchManager.add(testTwitch);
 });
 

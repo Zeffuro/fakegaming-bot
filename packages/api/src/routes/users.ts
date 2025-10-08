@@ -1,8 +1,14 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { UserConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
 
-const router = Router();
+const router = createBaseRouter();
+
+// ✨ Single source of truth - schema resolved lazily via model
+const discordIdParamSchema = z.object({ discordId: z.string().min(1) });
 
 /**
  * @openapi
@@ -13,14 +19,8 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of users
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/UserConfig'
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
     const users = await getConfigManager().userManager.getAllPlain();
     res.json(users);
 });
@@ -40,18 +40,13 @@ router.get('/', async (req, res) => {
  *     responses:
  *       200:
  *         description: User config
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/UserConfig'
  *       404:
  *         description: Not found
  */
-router.get('/:discordId', async (req, res) => {
+router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;
-    if (!discordId) return res.status(400).json({ error: 'Missing discordId parameter' });
-    const user = await getConfigManager().userManager.getUser({discordId});
-    if (!user) return res.status(404).json({error: 'User not found'});
+    const user = await getConfigManager().userManager.findByPkPlain(discordId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
 });
 
@@ -59,8 +54,10 @@ router.get('/:discordId', async (req, res) => {
  * @openapi
  * /users:
  *   post:
- *     summary: Create or update a user
+ *     summary: Create a new user
  *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -71,16 +68,16 @@ router.get('/:discordId', async (req, res) => {
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, async (req, res) => {
-    await getConfigManager().userManager.setUser(req.body);
-    res.status(201).json({success: true});
+router.post('/', jwtAuth, validateBodyForModel(UserConfig, 'create'), async (req, res) => {
+    await getConfigManager().userManager.addPlain(req.body);
+    res.status(201).json({ success: true });
 });
 
 /**
  * @openapi
- * /users/{discordId}/timezone:
+ * /users/{discordId}:
  *   put:
- *     summary: Set a user's timezone
+ *     summary: Update a user by Discord ID
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -88,29 +85,60 @@ router.post('/', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               timezone:
- *                 type: string
+ *             $ref: '#/components/schemas/UserConfig'
  *     responses:
  *       200:
- *         description: Success
+ *         description: Updated
  */
-router.put('/:discordId/timezone', jwtAuth, async (req, res) => {
-    await getConfigManager().userManager.setTimezone({discordId: req.params.discordId, timezone: req.body.timezone});
-    res.json({success: true});
+router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBodyForModel(UserConfig, 'update'), async (req, res) => {
+    const { discordId } = req.params;
+    const user = await getConfigManager().userManager.findByPkPlain(discordId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    await getConfigManager().userManager.updatePlain(req.body, { discordId });
+    const updated = await getConfigManager().userManager.findByPkPlain(discordId);
+    res.json(updated);
+});
+
+// Endpoint to set timezone
+router.put('/:discordId/timezone', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
+    const { discordId } = req.params;
+    const bodySchema = z.object({ timezone: z.string().min(1) });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid timezone' });
+
+    const user = await getConfigManager().userManager.getOnePlain({ discordId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await getConfigManager().userManager.updatePlain({ timezone: parsed.data.timezone } as any, { discordId });
+    res.json({ success: true });
+});
+
+// Endpoint to set default reminder timespan
+router.put('/:discordId/defaultReminderTimeSpan', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
+    const { discordId } = req.params;
+    const bodySchema = z.object({ timespan: z.string().min(1) });
+    const parsed = bodySchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: 'Invalid timespan' });
+
+    const user = await getConfigManager().userManager.getOnePlain({ discordId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    await getConfigManager().userManager.updatePlain({ defaultReminderTimeSpan: parsed.data.timespan } as any, { discordId });
+    res.json({ success: true });
 });
 
 /**
  * @openapi
- * /users/{discordId}/defaultReminderTimeSpan:
- *   put:
- *     summary: Set a user's default reminder timespan
+ * /users/{discordId}:
+ *   delete:
+ *     summary: Delete a user by Discord ID
  *     tags: [Users]
  *     parameters:
  *       - in: path
@@ -118,25 +146,16 @@ router.put('/:discordId/timezone', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               timespan:
- *                 type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Success
  */
-router.put('/:discordId/defaultReminderTimeSpan', jwtAuth, async (req, res) => {
-    await getConfigManager().userManager.setDefaultReminderTimeSpan({
-        discordId: req.params.discordId,
-        timespan: req.body.timespan
-    });
-    res.json({success: true});
+router.delete('/:discordId', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
+    const { discordId } = req.params;
+    await getConfigManager().userManager.removeByPk(discordId);
+    res.json({ success: true });
 });
 
-export default router;
+export { router };

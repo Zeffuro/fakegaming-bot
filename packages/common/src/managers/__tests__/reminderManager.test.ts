@@ -6,7 +6,7 @@ describe('ReminderManager', () => {
     const reminderManager = configManager.reminderManager;
 
     beforeEach(async () => {
-        await reminderManager.remove({});
+        await reminderManager.removeAll();
     });
 
     describe('getRemindersByUser', () => {
@@ -35,14 +35,14 @@ describe('ReminderManager', () => {
                 timestamp: Date.now(),
             });
 
-            const reminders = await reminderManager.getRemindersByUser({ userId: 'user-1' });
+            const reminders = await reminderManager.getRemindersByUser('user-1');
 
             expect(reminders).toHaveLength(2);
             expect(reminders.every(r => r.userId === 'user-1')).toBe(true);
         });
 
         it('should return empty array if user has no reminders', async () => {
-            const reminders = await reminderManager.getRemindersByUser({ userId: 'no-reminders' });
+            const reminders = await reminderManager.getRemindersByUser('no-reminders');
             expect(reminders).toEqual([]);
         });
     });
@@ -57,10 +57,11 @@ describe('ReminderManager', () => {
                 timestamp: Date.now(),
             });
 
-            await reminderManager.removeReminder({ id: reminder.id! });
+            await reminderManager.removeReminder(reminder.id!);
 
-            const result = await reminderManager.findByPk(reminder.id!);
-            expect(result).toBeNull();
+            await expect(async () => {
+                await reminderManager.findByPk(reminder.id!);
+            }).rejects.toThrow('Item not found');
         });
     });
 });

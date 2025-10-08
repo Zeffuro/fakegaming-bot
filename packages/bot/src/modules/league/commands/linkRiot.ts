@@ -84,7 +84,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             });
         }
     } else {
-        user = await getConfigManager().userManager.add({discordId: userId});
+        await getConfigManager().userManager.add({ discordId: userId });
         await LeagueConfig.create({
             discordId: userId,
             summonerName: identity.summoner,

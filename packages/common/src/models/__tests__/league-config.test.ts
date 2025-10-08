@@ -5,7 +5,7 @@ import { UserConfig } from '../user-config.js';
 
 describe('LeagueConfig Model', () => {
   beforeEach(async () => {
-    await configManager.userManager.remove({});
+    await configManager.userManager.removeAll();
   });
 
   it('should create a league config linked to a user', async () => {

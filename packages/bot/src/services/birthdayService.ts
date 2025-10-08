@@ -2,32 +2,20 @@ import {Client, TextChannel} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 
 export async function checkAndAnnounceBirthdays(client: Client, today: Date = new Date()) {
-    const day = today.getDate();
-    const month = today.getMonth() + 1; // months are 0-indexed
-
     const birthdays = await getConfigManager().birthdayManager.getAllPlain();
+    const currentYear = today.getFullYear();
 
-    for (const birthday of birthdays) {
-        let isBirthday = birthday.day === day && birthday.month === month;
-        // Special case: announce Feb 29 birthdays on Feb 28 in non-leap years
-        if (!isBirthday && birthday.day === 29 && birthday.month === 2) {
-            const isLeapYear = (year: number) => (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0));
-            if (month === 2 && day === 28 && !isLeapYear(today.getFullYear())) {
-                isBirthday = true;
+    for (const b of birthdays) {
+        if (!getConfigManager().birthdayManager.isBirthdayToday(b, today)) continue;
+
+        try {
+            const channel = await client.channels.fetch(b.channelId);
+            if (channel?.isTextBased()) {
+                const ageText = b.year ? ` (turning ${currentYear - b.year})` : "";
+                await (channel as TextChannel).send(`🎉 Happy birthday <@${b.userId}>${ageText}!`);
             }
-        }
-        if (isBirthday) {
-            try {
-                const channel = await client.channels.fetch(birthday.channelId);
-                if (channel && channel.isTextBased()) {
-                    const ageText = birthday.year ? ` (turning ${today.getFullYear() - birthday.year})` : "";
-                    await (channel as TextChannel).send(
-                        `🎉 Happy birthday <@${birthday.userId}>${ageText}!`
-                    );
-                }
-            } catch (err) {
-                console.error(`Failed to send birthday message for user ${birthday.userId}:`, err);
-            }
+        } catch (err) {
+            console.error(`Failed to send birthday message for user ${b.userId}:`, err);
         }
     }
 }

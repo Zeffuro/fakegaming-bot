@@ -4,7 +4,7 @@ import { TwitchStreamConfig } from '../twitch-stream-config.js';
 
 describe('TwitchStreamConfig Model', () => {
   beforeEach(async () => {
-    await configManager.twitchManager.remove({});
+    await configManager.twitchManager.removeAll();
   });
 
   it('should create a twitch stream config with required fields', async () => {

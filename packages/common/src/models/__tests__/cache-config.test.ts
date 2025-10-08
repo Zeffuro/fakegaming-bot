@@ -4,7 +4,7 @@ import { CacheConfig } from '../cache-config.js';
 
 describe('CacheConfig Model', () => {
   beforeEach(async () => {
-    await configManager.cacheManager.remove({});
+    await configManager.cacheManager.removeAll();
   });
 
   it('should create a cache entry with all fields', async () => {

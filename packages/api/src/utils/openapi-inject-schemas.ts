@@ -11,22 +11,22 @@ import {
     UserConfig,
     YoutubeVideoConfig
 } from "@zeffuro/fakegaming-common/models";
-import { sequelizeModelToOpenAPISchema } from "./sequelize-to-openapi.js";
+import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
 
 export function injectOpenApiSchemas(swaggerSpec: any) {
     swaggerSpec.components = swaggerSpec.components || {};
     swaggerSpec.components.schemas = {
-        BirthdayConfig: sequelizeModelToOpenAPISchema(BirthdayConfig),
-        CacheConfig: sequelizeModelToOpenAPISchema(CacheConfig),
-        DisabledCommandConfig: sequelizeModelToOpenAPISchema(DisabledCommandConfig),
-        PatchNoteConfig: sequelizeModelToOpenAPISchema(PatchNoteConfig),
-        PatchSubscriptionConfig: sequelizeModelToOpenAPISchema(PatchSubscriptionConfig),
-        QuoteConfig: sequelizeModelToOpenAPISchema(QuoteConfig),
-        ReminderConfig: sequelizeModelToOpenAPISchema(ReminderConfig),
-        ServerConfig: sequelizeModelToOpenAPISchema(ServerConfig),
-        TwitchStreamConfig: sequelizeModelToOpenAPISchema(TwitchStreamConfig),
-        UserConfig: sequelizeModelToOpenAPISchema(UserConfig),
-        YoutubeVideoConfig: sequelizeModelToOpenAPISchema(YoutubeVideoConfig),
+        BirthdayConfig: modelToOpenApiSchema(BirthdayConfig, { mode: 'full' }),
+        CacheConfig: modelToOpenApiSchema(CacheConfig, { mode: 'full' }),
+        DisabledCommandConfig: modelToOpenApiSchema(DisabledCommandConfig, { mode: 'full' }),
+        PatchNoteConfig: modelToOpenApiSchema(PatchNoteConfig, { mode: 'full' }),
+        PatchSubscriptionConfig: modelToOpenApiSchema(PatchSubscriptionConfig, { mode: 'full' }),
+        QuoteConfig: modelToOpenApiSchema(QuoteConfig, { mode: 'full' }),
+        ReminderConfig: modelToOpenApiSchema(ReminderConfig, { mode: 'full' }),
+        ServerConfig: modelToOpenApiSchema(ServerConfig, { mode: 'full' }),
+        TwitchStreamConfig: modelToOpenApiSchema(TwitchStreamConfig, { mode: 'full' }),
+        UserConfig: modelToOpenApiSchema(UserConfig, { mode: 'full' }),
+        YoutubeVideoConfig: modelToOpenApiSchema(YoutubeVideoConfig, { mode: 'full' }),
     };
     return swaggerSpec;
 }

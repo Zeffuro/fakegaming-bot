@@ -6,7 +6,7 @@ import { Op } from 'sequelize';
 describe('ReminderConfig Model', () => {
   beforeEach(async () => {
     // Clean up before each test
-    await configManager.reminderManager.remove({});
+    await configManager.reminderManager.removeAll();
   });
 
   it('should create a reminder with required fields', async () => {

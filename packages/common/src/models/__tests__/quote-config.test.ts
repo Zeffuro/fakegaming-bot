@@ -5,7 +5,7 @@ import { QuoteConfig } from '../quote-config.js';
 describe('QuoteConfig Model', () => {
   beforeEach(async () => {
     // Clean up before each test
-    await configManager.quoteManager.remove({});
+    await configManager.quoteManager.removeAll();
   });
 
   it('should create a quote with all fields', async () => {

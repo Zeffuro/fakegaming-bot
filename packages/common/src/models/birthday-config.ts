@@ -1,8 +1,9 @@
-import {Table, Column, Model, DataType, PrimaryKey} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey, Unique} from 'sequelize-typescript';
 
 @Table
 export class BirthdayConfig extends Model {
     @PrimaryKey
+    @Unique('unique_user_guild_birthday')
     @Column(DataType.STRING)
     declare userId: string;
 
@@ -15,6 +16,7 @@ export class BirthdayConfig extends Model {
     @Column(DataType.INTEGER)
     declare year?: number;
 
+    @Unique('unique_user_guild_birthday')
     @Column(DataType.STRING)
     declare guildId: string;
 

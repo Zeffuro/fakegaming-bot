@@ -31,18 +31,18 @@ export type birthdays_get_Response200 = paths["/birthdays"]["get"]["responses"][
 export type birthdays_post_Request = paths["/birthdays"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
- * Response for [GET /birthdays/{userId}/{guildId} 200]
- *
- * @see paths["/birthdays/{userId}/{guildId}"]["get"]["responses"]["200"]["content"]["application/json"]
- */
-export type birthdays_userId_guildId_get_Response200 = paths["/birthdays/{userId}/{guildId}"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
  * Response for [GET /disabledCommands 200]
  *
  * @see paths["/disabledCommands"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type disabledCommands_get_Response200 = paths["/disabledCommands"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [POST /disabledCommands 201]
+ *
+ * @see paths["/disabledCommands"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type disabledCommands_post_Response201 = paths["/disabledCommands"]["post"]["responses"]["201"]["content"]["application/json"];
 
 /**
  * Request body for [POST /disabledCommands]
@@ -59,11 +59,18 @@ export type disabledCommands_post_Request = paths["/disabledCommands"]["post"]["
 export type disabledCommands_check_get_Response200 = paths["/disabledCommands/check"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
- * Response for [GET /disabledCommands/guild/{guildId} 200]
+ * Response for [GET /disabledCommands/{id} 200]
  *
- * @see paths["/disabledCommands/guild/{guildId}"]["get"]["responses"]["200"]["content"]["application/json"]
+ * @see paths["/disabledCommands/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
  */
-export type disabledCommands_guild_guildId_get_Response200 = paths["/disabledCommands/guild/{guildId}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type disabledCommands_id_get_Response200 = paths["/disabledCommands/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [DELETE /disabledCommands/{id} 200]
+ *
+ * @see paths["/disabledCommands/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type disabledCommands_id_delete_Response200 = paths["/disabledCommands/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
 
 /**
  * Response for [GET /patchNotes 200]
@@ -85,13 +92,6 @@ export type patchNotes_post_Request = paths["/patchNotes"]["post"]["requestBody"
  * @see paths["/patchNotes/{game}"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type patchNotes_game_get_Response200 = paths["/patchNotes/{game}"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
- * Response for [GET /patchSubscriptions 200]
- *
- * @see paths["/patchSubscriptions"]["get"]["responses"]["200"]["content"]["application/json"]
- */
-export type patchSubscriptions_get_Response200 = paths["/patchSubscriptions"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
  * Request body for [POST /patchSubscriptions]
@@ -143,13 +143,6 @@ export type quotes_guild_guildId_get_Response200 = paths["/quotes/guild/{guildId
 export type quotes_guild_guildId_author_authorId_get_Response200 = paths["/quotes/guild/{guildId}/author/{authorId}"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
- * Response for [GET /quotes/{id} 200]
- *
- * @see paths["/quotes/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
- */
-export type quotes_id_get_Response200 = paths["/quotes/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
  * Response for [GET /reminders 200]
  *
  * @see paths["/reminders"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -171,18 +164,18 @@ export type reminders_post_Request = paths["/reminders"]["post"]["requestBody"][
 export type reminders_id_get_Response200 = paths["/reminders/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
- * Response for [GET /servers 200]
+ * Request body for [POST /servers]
  *
- * @see paths["/servers"]["get"]["responses"]["200"]["content"]["application/json"]
+ * @see paths["/servers"]["post"]["requestBody"]["content"]["application/json"]
  */
-export type servers_get_Response200 = paths["/servers"]["get"]["responses"]["200"]["content"]["application/json"];
+export type servers_post_Request = paths["/servers"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
- * Response for [GET /servers/{serverId} 200]
+ * Request body for [PUT /servers/{serverId}]
  *
- * @see paths["/servers/{serverId}"]["get"]["responses"]["200"]["content"]["application/json"]
+ * @see paths["/servers/{serverId}"]["put"]["requestBody"]["content"]["application/json"]
  */
-export type servers_serverId_get_Response200 = paths["/servers/{serverId}"]["get"]["responses"]["200"]["content"]["application/json"];
+export type servers_serverId_put_Request = paths["/servers/{serverId}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
  * Response for [GET /twitch 200]
@@ -206,11 +199,32 @@ export type twitch_post_Response201 = paths["/twitch"]["post"]["responses"]["201
 export type twitch_post_Request = paths["/twitch"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
+ * Response for [GET /twitch/exists 200]
+ *
+ * @see paths["/twitch/exists"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type twitch_exists_get_Response200 = paths["/twitch/exists"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /twitch/{id} 200]
  *
  * @see paths["/twitch/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type twitch_id_get_Response200 = paths["/twitch/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [PUT /twitch/{id} 200]
+ *
+ * @see paths["/twitch/{id}"]["put"]["responses"]["200"]["content"]["application/json"]
+ */
+export type twitch_id_put_Response200 = paths["/twitch/{id}"]["put"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [PUT /twitch/{id}]
+ *
+ * @see paths["/twitch/{id}"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type twitch_id_put_Request = paths["/twitch/{id}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
  * Response for [DELETE /twitch/{id} 200]
@@ -220,13 +234,6 @@ export type twitch_id_get_Response200 = paths["/twitch/{id}"]["get"]["responses"
 export type twitch_id_delete_Response200 = paths["/twitch/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
 
 /**
- * Response for [GET /users 200]
- *
- * @see paths["/users"]["get"]["responses"]["200"]["content"]["application/json"]
- */
-export type users_get_Response200 = paths["/users"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
  * Request body for [POST /users]
  *
  * @see paths["/users"]["post"]["requestBody"]["content"]["application/json"]
@@ -234,25 +241,11 @@ export type users_get_Response200 = paths["/users"]["get"]["responses"]["200"]["
 export type users_post_Request = paths["/users"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
- * Response for [GET /users/{discordId} 200]
+ * Request body for [PUT /users/{discordId}]
  *
- * @see paths["/users/{discordId}"]["get"]["responses"]["200"]["content"]["application/json"]
+ * @see paths["/users/{discordId}"]["put"]["requestBody"]["content"]["application/json"]
  */
-export type users_discordId_get_Response200 = paths["/users/{discordId}"]["get"]["responses"]["200"]["content"]["application/json"];
-
-/**
- * Request body for [PUT /users/{discordId}/timezone]
- *
- * @see paths["/users/{discordId}/timezone"]["put"]["requestBody"]["content"]["application/json"]
- */
-export type users_discordId_timezone_put_Request = paths["/users/{discordId}/timezone"]["put"]["requestBody"]["content"]["application/json"];
-
-/**
- * Request body for [PUT /users/{discordId}/defaultReminderTimeSpan]
- *
- * @see paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"]
- */
-export type users_discordId_defaultReminderTimeSpan_put_Request = paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"];
+export type users_discordId_put_Request = paths["/users/{discordId}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
  * Response for [GET /youtube 200]
@@ -262,11 +255,25 @@ export type users_discordId_defaultReminderTimeSpan_put_Request = paths["/users/
 export type youtube_get_Response200 = paths["/youtube"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [POST /youtube 201]
+ *
+ * @see paths["/youtube"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type youtube_post_Response201 = paths["/youtube"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
  * Request body for [POST /youtube]
  *
  * @see paths["/youtube"]["post"]["requestBody"]["content"]["application/json"]
  */
 export type youtube_post_Request = paths["/youtube"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [PUT /youtube 200]
+ *
+ * @see paths["/youtube"]["put"]["responses"]["200"]["content"]["application/json"]
+ */
+export type youtube_put_Response200 = paths["/youtube"]["put"]["responses"]["200"]["content"]["application/json"];
 
 /**
  * Request body for [PUT /youtube]
@@ -283,6 +290,13 @@ export type youtube_put_Request = paths["/youtube"]["put"]["requestBody"]["conte
 export type youtube_channel_get_Response200 = paths["/youtube/channel"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [POST /youtube/channel 201]
+ *
+ * @see paths["/youtube/channel"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type youtube_channel_post_Response201 = paths["/youtube/channel"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
  * Request body for [POST /youtube/channel]
  *
  * @see paths["/youtube/channel"]["post"]["requestBody"]["content"]["application/json"]
@@ -295,6 +309,20 @@ export type youtube_channel_post_Request = paths["/youtube/channel"]["post"]["re
  * @see paths["/youtube/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type youtube_id_get_Response200 = paths["/youtube/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [PUT /youtube/{id} 200]
+ *
+ * @see paths["/youtube/{id}"]["put"]["responses"]["200"]["content"]["application/json"]
+ */
+export type youtube_id_put_Response200 = paths["/youtube/{id}"]["put"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [PUT /youtube/{id}]
+ *
+ * @see paths["/youtube/{id}"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type youtube_id_put_Request = paths["/youtube/{id}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
  * Response for [DELETE /youtube/{id} 200]

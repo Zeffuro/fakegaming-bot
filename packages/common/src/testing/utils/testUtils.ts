@@ -40,12 +40,12 @@ export async function setupTest(options: TestSetupOptions = {}): Promise<void> {
         setupDiscordMocks();
     }
 
-    if (setupManagers) {
-        setupManagerMocks(managerOverrides);
-    }
-
     if (setupModels) {
         setupModelMocks();
+    }
+
+    if (setupManagers) {
+        setupManagerMocks(managerOverrides);
     }
 
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -77,13 +77,6 @@ export async function setupCommandTest(commandPath: string, options: TestSetupOp
 
     const configManager = getActiveMockConfigManager();
 
-    vi.doMock('@zeffuro/fakegaming-common/managers', () => {
-        return {
-            configManager,
-            getConfigManager: vi.fn(() => configManager),
-        };
-    });
-
     let commandModule;
     try {
         const jsPath = commandPath.replace(/\.ts$/, '.js');
@@ -102,6 +95,26 @@ export async function setupCommandTest(commandPath: string, options: TestSetupOp
     return {
         command,
         interaction,
+        client,
+        configManager
+    };
+}
+
+/**
+ * Create a test context for service testing (e.g., birthdayService)
+ *
+ * @param options Configuration options for test setup
+ * @returns Test context with mocked client and config manager
+ */
+export async function setupServiceTest(options: TestSetupOptions & {
+    client?: Record<string, any>;
+} = {}) {
+    await setupTest(options);
+
+    const client = createMockClient(options.client || {});
+    const configManager = getActiveMockConfigManager();
+
+    return {
         client,
         configManager
     };

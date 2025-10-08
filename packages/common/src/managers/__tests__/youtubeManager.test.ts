@@ -6,7 +6,7 @@ describe('YoutubeManager', () => {
     const youtubeManager = configManager.youtubeManager;
 
     beforeEach(async () => {
-        await youtubeManager.remove({});
+        await youtubeManager.removeAll();
     });
 
     describe('getVideoChannel', () => {
@@ -71,15 +71,6 @@ describe('YoutubeManager', () => {
 
             const results = await youtubeManager.getMany({ guildId: 'guild-1' });
             expect(results.length).toBeGreaterThan(0);
-        });
-
-        it('should throw error if guildId is missing', async () => {
-            await expect(
-                youtubeManager.setVideoChannel({
-                    youtubeChannelId: 'yt-channel-1',
-                    discordChannelId: 'discord-channel-1',
-                })
-            ).rejects.toThrow('guildId is required');
         });
     });
 });

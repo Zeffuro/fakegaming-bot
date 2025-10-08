@@ -2,7 +2,6 @@ import * as Models from './models/index.js';
 import * as Managers from './managers/index.js';
 import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
-//import * as Testing from './testing/index.js';
 
 import { getSequelize } from './sequelize.js';
 
@@ -86,7 +85,6 @@ export {
   type CacheManager
 };
 
-// For backward compatibility, export getCachedData function
 export const getCachedData = defaultCacheManager.getCachedData.bind(defaultCacheManager);
 
 export type { MinimalGuildData } from './discord/types.js';
@@ -95,3 +93,26 @@ export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from
 export { ForbiddenError, NotFoundError } from './utils/apiErrorHelpers.js';
 
 export * from './utils/apiErrorHelpers.js';
+
+export {
+    modelToZodSchema,
+    createSchemaFromModel,
+    updateSchemaFromModel,
+    type InferSchema
+} from './utils/modelToZod.js';
+
+export {
+    schemaRegistry
+} from './utils/schemaRegistry.js';
+
+export {
+    validateBody,
+    validateBodyForModel,
+    validateQuery,
+    validateParams
+} from './utils/validation.js';
+
+export {
+    modelToOpenApiSchema,
+    zodSchemaToOpenApiSchema
+} from './utils/openapi.js';

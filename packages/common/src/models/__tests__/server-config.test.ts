@@ -4,7 +4,7 @@ import { ServerConfig } from '../server-config.js';
 
 describe('ServerConfig Model', () => {
   beforeEach(async () => {
-    await configManager.serverManager.remove({});
+    await configManager.serverManager.removeAll();
   });
 
   it('should create a server config with required fields', async () => {

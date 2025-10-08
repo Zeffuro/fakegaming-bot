@@ -14,6 +14,5 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-    // Close the database connection after all tests
     await closeSequelize();
 });

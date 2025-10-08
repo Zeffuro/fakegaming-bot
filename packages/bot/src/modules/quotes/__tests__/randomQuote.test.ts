@@ -52,9 +52,7 @@ describe('randomQuote command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify getQuotesByGuild was called with the correct parameters
-        expect(getQuotesByGuildSpy).toHaveBeenCalledWith({
-            guildId: '135381928284343204'
-        });
+        expect(getQuotesByGuildSpy).toHaveBeenCalledWith('135381928284343204');
 
         // With Math.random mocked to 0.5, it should pick the 1st quote (index 1)
         // Since Math.floor(0.5 * 2) = 1
@@ -90,9 +88,7 @@ describe('randomQuote command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify getQuotesByGuild was called with the correct parameters
-        expect(getQuotesByGuildSpy).toHaveBeenCalledWith({
-            guildId: '135381928284343204'
-        });
+        expect(getQuotesByGuildSpy).toHaveBeenCalledWith('135381928284343204');
 
         // Verify the interaction reply shows the "no quotes" message
         expect(interaction.reply).toHaveBeenCalledWith('No quotes found for this server.');

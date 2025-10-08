@@ -145,9 +145,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["BirthdayConfig"];
-                    };
+                    content?: never;
                 };
                 /** @description Not found */
                 404: {
@@ -194,10 +192,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all disabled commands */
+        /** List disabled commands (optionally filtered by guild) */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    guildId?: string;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -216,7 +216,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a disabled command */
+        /** Add a new disabled command */
         post: {
             parameters: {
                 query?: never;
@@ -235,7 +235,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["DisabledCommandConfig"];
+                    };
                 };
             };
         };
@@ -265,7 +267,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Disabled status */
+                /** @description Command disabled status */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -275,6 +277,13 @@ export interface paths {
                             disabled?: boolean;
                         };
                     };
+                };
+                /** @description Missing or invalid query parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -293,16 +302,45 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get a disabled command by id */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disabled command config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DisabledCommandConfig"];
+                    };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         post?: never;
-        /** Remove a disabled command by id */
+        /** Delete a disabled command by id */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    id: number;
                 };
                 cookie?: never;
             };
@@ -313,48 +351,14 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
-                };
-            };
-        };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/disabledCommands/guild/{guildId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List all disabled commands for a specific guild */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    guildId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description List of disabled commands for the guild */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
                     content: {
-                        "application/json": components["schemas"]["DisabledCommandConfig"][];
+                        "application/json": {
+                            success?: boolean;
+                        };
                     };
                 };
             };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -485,13 +489,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["PatchSubscriptionConfig"][];
-                    };
+                    content?: never;
                 };
             };
         };
-        /** Upsert (add or update) a patch subscription */
+        /** Upsert a patch subscription */
         put: {
             parameters: {
                 query?: never;
@@ -514,7 +516,7 @@ export interface paths {
                 };
             };
         };
-        /** Subscribe to a game/channel */
+        /** Add a new patch subscription */
         post: {
             parameters: {
                 query?: never;
@@ -538,6 +540,69 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patchSubscriptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a patch subscription by id */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Patch subscription config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a patch subscription by id */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -736,16 +801,14 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description A quote object */
+                /** @description Quote config */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["QuoteConfig"];
-                    };
+                    content?: never;
                 };
-                /** @description Quote not found */
+                /** @description Not found */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -934,14 +997,34 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ServerConfig"][];
-                    };
+                    content?: never;
                 };
             };
         };
         put?: never;
-        post?: never;
+        /** Create a new server */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServerConfig"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -955,7 +1038,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a server by serverId */
+        /** Get a server by ID */
         get: {
             parameters: {
                 query?: never;
@@ -972,9 +1055,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["ServerConfig"];
-                    };
+                    content?: never;
                 };
                 /** @description Not found */
                 404: {
@@ -985,9 +1066,53 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Update a server by ID */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    serverId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["ServerConfig"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         post?: never;
-        delete?: never;
+        /** Delete a server by ID */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    serverId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -1010,7 +1135,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of Twitch configs */
+                /** @description List of Twitch stream configs */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1022,7 +1147,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a new Twitch stream config */
+        /** Create a new Twitch stream config */
         post: {
             parameters: {
                 query?: never;
@@ -1062,12 +1187,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Check if a Twitch stream exists for a Discord channel */
+        /** Check if a Twitch stream config exists */
         get: {
             parameters: {
                 query: {
-                    username: string;
-                    channelId: string;
+                    twitchUsername: string;
+                    discordChannelId: string;
                     guildId: string;
                 };
                 header?: never;
@@ -1076,12 +1201,16 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description Existence result */
+                /** @description Config existence status */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            exists?: boolean;
+                        };
+                    };
                 };
             };
         };
@@ -1100,19 +1229,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a Twitch config by primary key */
+        /** Get a Twitch stream config by id */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    id: number;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description Twitch config */
+                /** @description Twitch stream config */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1130,15 +1259,41 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Update a Twitch stream config by id */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwitchStreamConfig"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwitchStreamConfig"];
+                    };
+                };
+            };
+        };
         post?: never;
-        /** Delete a Twitch stream configuration */
+        /** Delete a Twitch stream config by id */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    id: number;
                 };
                 cookie?: never;
             };
@@ -1154,13 +1309,6 @@ export interface paths {
                             success?: boolean;
                         };
                     };
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
             };
         };
@@ -1191,14 +1339,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["UserConfig"][];
-                    };
+                    content?: never;
                 };
             };
         };
         put?: never;
-        /** Create or update a user */
+        /** Create a new user */
         post: {
             parameters: {
                 query?: never;
@@ -1251,9 +1397,7 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content: {
-                        "application/json": components["schemas"]["UserConfig"];
-                    };
+                    content?: never;
                 };
                 /** @description Not found */
                 404: {
@@ -1264,23 +1408,7 @@ export interface paths {
                 };
             };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/{discordId}/timezone": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Set a user's timezone */
+        /** Update a user by Discord ID */
         put: {
             parameters: {
                 query?: never;
@@ -1292,13 +1420,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        timezone?: string;
-                    };
+                    "application/json": components["schemas"]["UserConfig"];
                 };
             };
             responses: {
-                /** @description Success */
+                /** @description Updated */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1308,22 +1434,8 @@ export interface paths {
             };
         };
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/users/{discordId}/defaultReminderTimeSpan": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Set a user's default reminder timespan */
-        put: {
+        /** Delete a user by Discord ID */
+        delete: {
             parameters: {
                 query?: never;
                 header?: never;
@@ -1332,13 +1444,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        timespan?: string;
-                    };
-                };
-            };
+            requestBody?: never;
             responses: {
                 /** @description Success */
                 200: {
@@ -1349,8 +1455,6 @@ export interface paths {
                 };
             };
         };
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1363,7 +1467,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all YouTube channel configs */
+        /** List all YouTube video configs */
         get: {
             parameters: {
                 query?: never;
@@ -1373,7 +1477,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of YouTube configs */
+                /** @description List of YouTube video configs */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1384,7 +1488,7 @@ export interface paths {
                 };
             };
         };
-        /** Upsert (add or update) a YouTube config */
+        /** Upsert a YouTube video config by channel */
         put: {
             parameters: {
                 query?: never;
@@ -1394,7 +1498,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["YoutubeVideoConfig"];
+                    "application/json": {
+                        youtubeChannelId?: string;
+                        discordChannelId?: string;
+                        guildId?: string;
+                    };
                 };
             };
             responses: {
@@ -1403,11 +1511,22 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
+                /** @description Missing or invalid fields */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content?: never;
                 };
             };
         };
-        /** Add a new YouTube config */
+        /** Create a new YouTube video config */
         post: {
             parameters: {
                 query?: never;
@@ -1426,7 +1545,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
                 };
             };
         };
@@ -1443,7 +1566,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a YouTube config by youtubeChannelId and discordChannelId */
+        /** Get a YouTube video config by channel */
         get: {
             parameters: {
                 query: {
@@ -1457,7 +1580,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description YouTube config */
+                /** @description YouTube video config */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1465,6 +1588,13 @@ export interface paths {
                     content: {
                         "application/json": components["schemas"]["YoutubeVideoConfig"];
                     };
+                };
+                /** @description Missing or invalid query parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
                 /** @description Not found */
                 404: {
@@ -1476,7 +1606,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Add a new YouTube channel config */
+        /** Create or update a YouTube video config by channel */
         post: {
             parameters: {
                 query?: never;
@@ -1486,12 +1616,24 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["YoutubeVideoConfig"];
+                    "application/json": unknown;
                 };
             };
             responses: {
                 /** @description Created */
                 201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                            created?: boolean;
+                        };
+                    };
+                };
+                /** @description Missing or invalid fields */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1512,19 +1654,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get a YouTube config by primary key */
+        /** Get a YouTube video config by id */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    id: number;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description YouTube config */
+                /** @description YouTube video config */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -1542,15 +1684,41 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /** Update a YouTube video config by id */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["YoutubeVideoConfig"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["YoutubeVideoConfig"];
+                    };
+                };
+            };
+        };
         post?: never;
-        /** Delete a YouTube channel configuration */
+        /** Delete a YouTube video config by id */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    id: string;
+                    id: number;
                 };
                 cookie?: never;
             };
@@ -1566,13 +1734,6 @@ export interface paths {
                             success?: boolean;
                         };
                     };
-                };
-                /** @description Not found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
             };
         };
@@ -1601,10 +1762,10 @@ export interface components {
             updatedAt: string;
         };
         CacheConfig: {
-            /** Format: int64 */
-            id: number;
-            guildId?: string;
-            commandName?: string;
+            key: string;
+            value?: string;
+            /** Format: date-time */
+            expires?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1694,6 +1855,7 @@ export interface components {
             discordChannelId?: string;
             customMessage?: string;
             guildId?: string;
+            isLive?: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

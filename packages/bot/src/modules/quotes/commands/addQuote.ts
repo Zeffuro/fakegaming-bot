@@ -26,8 +26,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const submitter = interaction.user;
     const guildId = interaction.guildId!;
 
-    await getConfigManager().quoteManager.add({
-        id: uuidv4(),
+    const { created } = await getConfigManager().quoteManager.upsertQuote({
+        id: uuidv4(),       // generate new id if new quote
         guildId,
         quote: quoteText,
         authorId: author.id,
@@ -35,7 +35,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
         timestamp: Date.now(),
     });
 
-    await interaction.reply(`Quote added for ${author.tag}: "${quoteText}"`);
+    await interaction.reply(
+        created
+            ? `Quote added for ${author.tag}: "${quoteText}"`
+            : `Quote updated for ${author.tag}: "${quoteText}"`
+    );
 }
 
 const testOnly = false;

@@ -4,7 +4,7 @@ import { PatchNoteConfig } from '../patch-note-config.js';
 
 describe('PatchNoteConfig Model', () => {
   beforeEach(async () => {
-    await configManager.patchNotesManager.remove({});
+    await configManager.patchNotesManager.removeAll();
   });
 
   it('should create a patch note with required fields', async () => {
