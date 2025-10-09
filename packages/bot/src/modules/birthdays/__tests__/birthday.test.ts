@@ -42,10 +42,7 @@ describe('birthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify getBirthday was called with correct parameters
-        expect(getBirthdaySpy).toHaveBeenCalledWith({
-            userId: '123456789012345678',
-            guildId: '135381928284343204'
-        });
+        expect(getBirthdaySpy).toHaveBeenCalledWith('123456789012345678', '135381928284343204');
 
         // Verify the interaction reply
         expect(interaction.reply).toHaveBeenCalledWith(
@@ -93,10 +90,7 @@ describe('birthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify getBirthday was called with the target user's ID
-        expect(getBirthdaySpy).toHaveBeenCalledWith({
-            userId: targetUserId,
-            guildId: '135381928284343204'
-        });
+        expect(getBirthdaySpy).toHaveBeenCalledWith(targetUserId, '135381928284343204');
 
         // Verify the interaction reply
         expect(interaction.reply).toHaveBeenCalledWith(
@@ -172,10 +166,7 @@ describe('birthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify getBirthday was called with the target user's ID
-        expect(getBirthdaySpy).toHaveBeenCalledWith({
-            userId: targetUserId,
-            guildId: '135381928284343204'
-        });
+        expect(getBirthdaySpy).toHaveBeenCalledWith(targetUserId, '135381928284343204');
 
         // Verify the interaction reply shows "not set" message for target user
         expect(interaction.reply).toHaveBeenCalledWith(

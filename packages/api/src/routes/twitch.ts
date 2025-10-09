@@ -1,11 +1,20 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common';
-import {jwtAuth} from '../middleware/auth.js';
-import {getStringQueryParam} from '../utils/requestHelpers.js';
-import {requireGuildAdmin, checkUserGuildAccess} from '../utils/authHelpers.js';
-import type { AuthenticatedRequest } from '../types/express.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { TwitchStreamConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
+import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 
-const router = Router();
+// Schemas
+const idParamSchema = z.object({ id: z.coerce.number().int() });
+const existsQuerySchema = z.object({
+    twitchUsername: z.string().min(1),
+    discordChannelId: z.string().min(1),
+    guildId: z.string().min(1)
+});
+
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -15,7 +24,7 @@ const router = Router();
  *     tags: [Twitch]
  *     responses:
  *       200:
- *         description: List of Twitch configs
+ *         description: List of Twitch stream configs
  *         content:
  *           application/json:
  *             schema:
@@ -23,30 +32,27 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/TwitchStreamConfig'
  */
-router.get('/', async (req, res) => {
-    try {
-        const configs = await getConfigManager().twitchManager.getAllPlain();
-        res.json(configs);
-    } catch (error) {
-        console.error('[Twitch API] Error fetching all configs:', error);
-        res.status(500).json({ error: 'Failed to fetch Twitch configurations' });
-    }
+router.get('/', async (_req, res) => {
+    const streams = await getConfigManager().twitchManager.getAllPlain();
+    res.json(streams);
 });
 
 /**
  * @openapi
  * /twitch/exists:
  *   get:
- *     summary: Check if a Twitch stream exists for a Discord channel
+ *     summary: Check if a Twitch stream config exists
  *     tags: [Twitch]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: username
+ *         name: twitchUsername
  *         required: true
  *         schema:
  *           type: string
  *       - in: query
- *         name: channelId
+ *         name: discordChannelId
  *         required: true
  *         schema:
  *           type: string
@@ -55,45 +61,42 @@ router.get('/', async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Existence result
+ *         description: Config existence status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *       400:
+ *         description: Query validation failed
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/exists', jwtAuth, requireGuildAdmin, async (req: any, res: any) => {
-    const twitchUsername = getStringQueryParam(req.query, 'twitchUsername');
-    const discordChannelId = getStringQueryParam(req.query, 'discordChannelId');
-    const guildId = getStringQueryParam(req.query, 'guildId');
-
-    if (!twitchUsername || !discordChannelId || !guildId) {
-        return res.status(400).json({ error: 'Missing required query parameters' });
-    }
-
-    try {
-        const exists = await getConfigManager().twitchManager.streamExists(twitchUsername, discordChannelId, guildId);
-        res.json({ exists });
-    } catch (error) {
-        console.error('[Twitch API] Error checking if stream exists:', error);
-        res.status(500).json({ error: 'Failed to check if stream exists' });
-    }
+router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
+    const { twitchUsername, discordChannelId, guildId } = req.query as z.infer<typeof existsQuerySchema>;
+    const exists = await getConfigManager().twitchManager.exists({ twitchUsername, discordChannelId, guildId });
+    res.json({ exists });
 });
 
 /**
  * @openapi
  * /twitch/{id}:
  *   get:
- *     summary: Get a Twitch config by primary key
+ *     summary: Get a Twitch stream config by id
  *     tags: [Twitch]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
  *     responses:
  *       200:
- *         description: Twitch config
+ *         description: Twitch stream config
  *         content:
  *           application/json:
  *             schema:
@@ -101,22 +104,18 @@ router.get('/exists', jwtAuth, requireGuildAdmin, async (req: any, res: any) => 
  *       404:
  *         description: Not found
  */
-router.get('/:id', async (req, res) => {
-    try {
-        const config = await getConfigManager().twitchManager.findByPkPlain(req.params.id);
-        if (!config) return res.status(404).json({error: 'Not found'});
-        res.json(config);
-    } catch (error) {
-        console.error('[Twitch API] Error fetching config by ID:', error);
-        res.status(500).json({ error: 'Failed to fetch Twitch configuration' });
-    }
+router.get('/:id', validateParams(idParamSchema), async (req, res) => {
+    const { id } = req.params;
+    const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
+    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    res.json(stream);
 });
 
 /**
  * @openapi
  * /twitch:
  *   post:
- *     summary: Add a new Twitch stream config
+ *     summary: Create a new Twitch stream config
  *     tags: [Twitch]
  *     security:
  *       - bearerAuth: []
@@ -136,39 +135,73 @@ router.get('/:id', async (req, res) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — requires guild admin
  */
-router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const { twitchUsername, discordChannelId, guildId, customMessage } = req.body;
-
-    if (!twitchUsername || !discordChannelId || !guildId) {
-        return res.status(400).json({ error: 'Missing required parameters' });
-    }
-
-    try {
-        await getConfigManager().twitchManager.upsert({ twitchUsername, discordChannelId, guildId, customMessage });
-
-        const { discordId } = (req as AuthenticatedRequest).user;
-        console.log(`[AUDIT] User ${discordId} set Twitch stream config for guild ${guildId} at ${new Date().toISOString()}`);
-
-        res.status(201).json({ success: true });
-    } catch (error) {
-        console.error('[Twitch API] Error creating/updating stream config:', error);
-        res.status(500).json({ error: 'Failed to save Twitch configuration' });
-    }
+router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamConfig, 'create'), async (req, res) => {
+    await getConfigManager().twitchManager.addPlain(req.body);
+    res.status(201).json({ success: true });
 });
 
 /**
  * @openapi
  * /twitch/{id}:
- *   delete:
- *     summary: Delete a Twitch stream configuration
+ *   put:
+ *     summary: Update a Twitch stream config by id
  *     tags: [Twitch]
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
- *           type: string
+ *           type: integer
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/TwitchStreamConfig'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TwitchStreamConfig'
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
+ */
+router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(TwitchStreamConfig, 'update'), async (req, res) => {
+    const { id } = req.params;
+    const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
+    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    await getConfigManager().twitchManager.updatePlain(req.body, { id: Number(id) });
+    const updated = await getConfigManager().twitchManager.findByPkPlain(Number(id));
+    res.json(updated);
+});
+
+/**
+ * @openapi
+ * /twitch/{id}:
+ *   delete:
+ *     summary: Delete a Twitch stream config by id
+ *     tags: [Twitch]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -181,33 +214,24 @@ router.post('/', jwtAuth, requireGuildAdmin, async (req, res) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  *       404:
  *         description: Not found
  */
-router.delete('/:id', jwtAuth, async (req, res) => {
-    try {
-        const id = req.params.id;
-        const config = await getConfigManager().twitchManager.findByPkPlain(id);
-
-        if (!config) {
-            return res.status(404).json({ error: 'Twitch stream configuration not found' });
-        }
-
-        const authResult = await checkUserGuildAccess(req, res, (config as any).guildId);
-        if (!authResult.authorized) {
-            return;
-        }
-
-        await getConfigManager().twitchManager.remove({ id });
-
-        const { discordId } = (req as AuthenticatedRequest).user;
-        console.log(`[AUDIT] User ${discordId} deleted Twitch stream config ID ${id} at ${new Date().toISOString()}`);
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('[Twitch API] Error deleting stream config:', error);
-        res.status(500).json({ error: 'Failed to delete Twitch stream configuration' });
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+    const { id } = req.params;
+    const numericId = Number(id);
+    const stream = await getConfigManager().twitchManager.findByPkPlain(numericId);
+    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    if (stream.guildId) {
+        const access = await checkUserGuildAccess(req, res, stream.guildId);
+        if (!access.authorized) return;
     }
+    await getConfigManager().twitchManager.removeByPk(numericId);
+    res.json({ success: true });
 });
 
-export default router;
+export { router };

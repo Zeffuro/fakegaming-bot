@@ -33,10 +33,7 @@ describe('removeBirthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify removeBirthday was called with correct parameters
-        expect(removeBirthdaySpy).toHaveBeenCalledWith({
-            userId: '123456789012345678',
-            guildId: '135381928284343204'
-        });
+        expect(removeBirthdaySpy).toHaveBeenCalledWith('123456789012345678', '135381928284343204');
 
         // Verify the interaction reply
         expect(interaction.reply).toHaveBeenCalledWith(
@@ -86,10 +83,7 @@ describe('removeBirthday command', () => {
         expect(requireAdminSpy).toHaveBeenCalledWith(interaction);
 
         // Verify removeBirthday was called with the target user's ID
-        expect(removeBirthdaySpy).toHaveBeenCalledWith({
-            userId: targetUserId,
-            guildId: '135381928284343204'
-        });
+        expect(removeBirthdaySpy).toHaveBeenCalledWith(targetUserId, '135381928284343204');
 
         // Verify the interaction reply mentions the target user
         expect(interaction.reply).toHaveBeenCalledWith(

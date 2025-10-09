@@ -13,16 +13,33 @@ export default defineConfig({
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      reportsDirectory: '../../coverage/api',
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.{test,spec}.ts',
         'src/test/**/*',
         'src/types/**/*',
+        'src/**/*.d.ts',
+        'src/**/types.ts',
+        'src/index.ts', // Entry point
+        'src/**/index.ts',
+        'src/**/*.js',
+        'src/vitest.setup.ts',
+        'src/__tests__/**/*', // Test helpers
+        'src/utils/openapi-inject-schemas.ts', // Build-time utility
+        'src/utils/sequelize-to-openapi.ts', // Build-time utility
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+        statements: 80,
+      },
     },
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      '@zeffuro/fakegaming-bot-api': path.resolve(__dirname, 'src/index.ts'),
     },
   },
 });

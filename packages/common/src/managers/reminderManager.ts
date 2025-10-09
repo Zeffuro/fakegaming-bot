@@ -6,11 +6,23 @@ export class ReminderManager extends BaseManager<ReminderConfig> {
         super(ReminderConfig);
     }
 
-    async getRemindersByUser({userId}: { userId: string }): Promise<ReminderConfig[]> {
-        return (await this.getMany({userId})).map(r => r.get());
+    /** Get all reminders as plain objects */
+    async getAllPlain() {
+        return this.getAll({ raw: true });
     }
 
-    async removeReminder({id}: { id: string }) {
-        await this.remove({id});
+    /** Get all reminders for a user as plain objects */
+    async getRemindersByUser(userId: string) {
+        return this.getMany({ userId }, { raw: true });
+    }
+
+    /** Remove a reminder by id */
+    async removeReminder(id: string) {
+        await this.remove({ id });
+    }
+
+    /** Add a new reminder */
+    async addReminder(data: Partial<ReminderConfig> & { id: string }) {
+        return this.add(data, { raw: true });
     }
 }

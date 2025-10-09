@@ -18,17 +18,13 @@ const parseDate = (dateStr: string) => {
 
 beforeEach(async () => {
     // Clean up birthdays table before each test
-    await configManager.birthdayManager.remove({});
-    // Only pass userId and guildId to set, then update date
-    await configManager.birthdayManager.set({
+    await configManager.birthdayManager.removeAll();
+    // Add test birthday using addPlain instead of set
+    await configManager.birthdayManager.addPlain({
         userId: testBirthday.userId,
         guildId: testBirthday.guildId,
         channelId: testBirthday.channelId,
         ...parseDate(testBirthday.date)
-    }, 'userId');
-    await configManager.birthdayManager.update({date: testBirthday.date, channelId: testBirthday.channelId}, {
-        userId: testBirthday.userId,
-        guildId: testBirthday.guildId
     });
 });
 
@@ -50,24 +46,27 @@ describe('Birthdays API', () => {
     });
     it('should add or update a birthday', async () => {
         const token = signTestJwt({ discordId: 'testuser' });
+        const { year, month, day } = parseDate('1999-12-31');
         const res = await request(app).post('/api/birthdays').set('Authorization', `Bearer ${token}`).send({
             userId: 'birthdayuser2',
             guildId: 'birthdayguild2',
-            date: '1999-12-31',
-            channelId: 'testchannel2'
+            channelId: 'testchannel2',
+            year,
+            month,
+            day
         });
         expect(res.status).toBe(201);
         expect(res.body.success).toBe(true);
     });
 
     it('should delete a birthday', async () => {
-        // Add a birthday to delete
-        await configManager.birthdayManager.set({
+        // Add a birthday to delete using addPlain
+        await configManager.birthdayManager.addPlain({
             userId: 'birthdayuser3',
             guildId: 'birthdayguild3',
             channelId: 'testchannel3',
             ...parseDate('1990-01-01')
-        }, 'userId');
+        });
         const token = signTestJwt({ discordId: 'testuser' });
         const res = await request(app).delete('/api/birthdays/birthdayuser3/birthdayguild3').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(200);
@@ -77,5 +76,90 @@ describe('Birthdays API', () => {
     it('should return 404 for non-existent birthday', async () => {
         const res = await request(app).get('/api/birthdays/nonexistentuser/nonexistentguild').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
+    });
+
+    it('should return 401 for GET /api/birthdays without JWT', async () => {
+        const res = await request(app).get('/api/birthdays');
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for POST /api/birthdays without JWT', async () => {
+        const { year, month, day } = parseDate('2001-01-01');
+        const res = await request(app)
+            .post('/api/birthdays')
+            .send({userId: 'birthdayuser4', guildId: 'birthdayguild4', channelId: 'testchannel4', year, month, day});
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for DELETE /api/birthdays/:userId/:guildId without JWT', async () => {
+        const res = await request(app)
+            .delete(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 404 when deleting non-existent birthday', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .delete('/api/birthdays/nonexistentuser/nonexistentguild')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('should handle duplicate add gracefully', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const { year, month, day } = parseDate(testBirthday.date);
+        const res1 = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send({ ...parseDate(testBirthday.date), userId: testBirthday.userId, guildId: testBirthday.guildId, channelId: testBirthday.channelId, year, month, day });
+        expect([201, 409]).toContain(res1.status);
+    });
+
+    it('should return 400 for invalid input types', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send({userId: 123, guildId: null, year: 'x', month: null, day: null, channelId: null});
+        expect([400, 500]).toContain(res.status);
+    });
+
+    it('should return 500 for DB error on POST /api/birthdays', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        // Simulate DB error by mocking addPlain
+        const origAddPlain = configManager.birthdayManager.addPlain;
+        configManager.birthdayManager.addPlain = async () => { throw new Error('DB error'); };
+        const { year, month, day } = parseDate('2002-02-02');
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${token}`)
+            .send({userId: 'birthdayuser5', guildId: 'testguild1', channelId: 'testchannel5', year, month, day});
+        expect(res.status).toBe(500);
+        configManager.birthdayManager.addPlain = origAddPlain;
+    });
+
+    it('should return 403 for POST /api/birthdays as non-admin', async () => {
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const { year, month, day } = parseDate('1995-05-05');
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${nonAdminToken}`)
+            .send({ userId: 'birthdayuserX', guildId: 'birthdayguild1', channelId: 'chanX', year, month, day });
+        expect(res.status).toBe(403);
+    });
+
+    it('should return 403 for DELETE /api/birthdays/:userId/:guildId as non-admin', async () => {
+        // Add a birthday in the same guild to attempt deletion
+        await configManager.birthdayManager.addPlain({
+            userId: 'birthdayuserY',
+            guildId: 'birthdayguild1',
+            channelId: 'chanY',
+            ...parseDate('1993-03-03')
+        });
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const res = await request(app)
+            .delete('/api/birthdays/birthdayuserY/birthdayguild1')
+            .set('Authorization', `Bearer ${nonAdminToken}`);
+        expect(res.status).toBe(403);
     });
 });

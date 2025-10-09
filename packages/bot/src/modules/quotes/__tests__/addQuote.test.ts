@@ -16,15 +16,16 @@ describe('addQuote command', () => {
     });
 
     it('adds a quote for a specified user', async () => {
-        // Create mock for quote manager's add method
-        const addSpy = vi.fn().mockResolvedValue({
+        // Create mock for quote manager's upsertQuote method
+        const quoteData = {
             id: 'mock-uuid-1234',
             guildId: '135381928284343204',
             quote: 'This is a test quote',
             authorId: '234567890123456789',
             submitterId: '123456789012345678',
             timestamp: expect.any(Number)
-        });
+        };
+        const addSpy = vi.fn().mockResolvedValue({ created: true, ...quoteData });
 
         // Create mock users
         const mockAuthor = {
@@ -57,7 +58,7 @@ describe('addQuote command', () => {
                 },
                 managerOverrides: {
                     quoteManager: {
-                        add: addSpy
+                        upsertQuote: addSpy
                     }
                 }
             }
@@ -66,7 +67,7 @@ describe('addQuote command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify quote manager's add method was called with the correct parameters
+        // Verify quote manager's upsertQuote method was called with the correct parameters
         expect(addSpy).toHaveBeenCalledWith({
             id: 'mock-uuid-1234',
             guildId: '135381928284343204',

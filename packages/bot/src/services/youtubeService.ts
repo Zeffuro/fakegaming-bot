@@ -84,55 +84,34 @@ export async function getYoutubeChannelFeed(channelId: string) {
 }
 
 export async function checkAndAnnounceNewVideos(client: Client) {
-    const channels: Array<{
-        youtubeChannelId: string;
-        discordChannelId: string;
-        lastVideoId?: string;
-        customMessage?: string
-    }> = await getConfigManager().youtubeManager.getAllPlain();
-    console.debug('[YouTubeService] Channels:', channels);
-    if (!channels || !Array.isArray(channels) || channels.length === 0) {
-        console.debug('[YouTubeService] No channels to process');
-        return;
-    }
+    const youtubeManager = getConfigManager().youtubeManager;
+    const channels = await youtubeManager.getAllChannels();
+
+    if (!channels || channels.length === 0) return;
+
     await Promise.all(channels.map(async (ytChannel) => {
-        if (!ytChannel || !ytChannel.youtubeChannelId || !ytChannel.discordChannelId) return;
+        if (!ytChannel.youtubeChannelId || !ytChannel.discordChannelId) return;
+
         const feedItems = await getYoutubeChannelFeed(ytChannel.youtubeChannelId);
-        console.debug(`[YouTubeService] Feed items for channel ${ytChannel.youtubeChannelId}:`, feedItems);
-        if (!feedItems || !Array.isArray(feedItems) || feedItems.length === 0) {
-            console.debug(`[YouTubeService] No feed items for channel ${ytChannel.youtubeChannelId}`);
-            return;
-        }
+        if (!feedItems || feedItems.length === 0) return;
 
         let newVideos: typeof feedItems = [];
         if (ytChannel.lastVideoId) {
             const idx = feedItems.findIndex(item => item['yt:videoId'] === ytChannel.lastVideoId);
-            if (idx === 0) {
-                newVideos = [];
-            } else if (idx > 0) {
-                newVideos = feedItems.slice(0, idx).reverse();
-            } else {
-                newVideos = [feedItems[0]];
-            }
+            newVideos = idx === 0 ? [] : idx > 0 ? feedItems.slice(0, idx).reverse() : [feedItems[0]];
         } else {
             newVideos = [feedItems[0]];
         }
-        console.debug(`[YouTubeService] New videos for channel ${ytChannel.youtubeChannelId}:`, newVideos);
+
         if (newVideos.length === 0) return;
 
         const discordChannel = client.channels.cache.get(ytChannel.discordChannelId);
         if (
             discordChannel &&
             (discordChannel.type === ChannelType.GuildText ||
-                discordChannel.type === ChannelType.GuildAnnouncement ||
-                discordChannel.type === ChannelType.PublicThread ||
-                discordChannel.type === ChannelType.PrivateThread)
+                discordChannel.type === ChannelType.GuildAnnouncement)
         ) {
             for (const video of newVideos) {
-                const mediaGroup = video.mediaGroup || {};
-                const thumbnailUrl = mediaGroup['media:thumbnail']?.[0]?.$.url
-                    || video.mediaThumbnail?.$.url
-                    || null;
                 const embed = new EmbedBuilder()
                     .setColor(0xff0000)
                     .setTitle(video.title ?? null)
@@ -141,21 +120,24 @@ export async function checkAndAnnounceNewVideos(client: Client) {
                         name: video.author ?? 'Unknown',
                         url: `https://youtube.com/channel/${ytChannel.youtubeChannelId}`
                     })
-                    .setImage(thumbnailUrl)
+                    .setImage(video.mediaThumbnail?.$.url ?? null)
                     .setTimestamp(new Date(video.published ?? Date.now()));
+
                 const watchButton = new ButtonBuilder()
                     .setLabel('Watch Video')
                     .setStyle(ButtonStyle.Link)
                     .setURL(video.link ?? 'https://youtube.com');
+
                 const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
                 const message = ytChannel.customMessage
                     ? ytChannel.customMessage.replace('{title}', video.title ?? 'New Video') + '\n' + video.link
                     : `Hey @everyone, new video from ${video.author}: ${video.link}`;
-                console.debug(`[YouTubeService] Sending message for video ${video['yt:videoId']} to channel ${ytChannel.discordChannelId}`);
-                await (discordChannel as TextChannel).send({content: message, embeds: [embed], components: [row]});
+
+                await (discordChannel as TextChannel).send({ content: message, embeds: [embed], components: [row] });
             }
+
             ytChannel.lastVideoId = newVideos[0]['yt:videoId'];
-            await getConfigManager().youtubeManager.setVideoChannel(ytChannel);
+            await ytChannel.save();
         }
     }));
 }

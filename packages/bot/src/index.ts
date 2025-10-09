@@ -13,6 +13,8 @@ import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';
 import {deployCommands} from "./deploy-commands.js";
+import { loadApplicationEmojiCache, syncApplicationEmojisFromDir } from './core/applicationEmojiManager.js';
+import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -30,6 +32,19 @@ const {__dirname} = bootstrapEnv(import.meta.url);
             process.exit(1);
         }
         await getConfigManager().init();
+
+        // Load or sync application emojis (bot emoji store) from a hardcoded assets path
+        try {
+            const assetsDir = path.join(__dirname, '..', 'assets', 'application-emojis');
+            await syncApplicationEmojisFromDir(assetsDir, Object.values(tierEmojiNames));
+        } catch (e) {
+            console.warn('Application emoji initialization failed (non-fatal). Falling back to cache load.', e);
+            try {
+                await loadApplicationEmojiCache();
+            } catch {
+                // ignore
+            }
+        }
 
         await preloadAllModules();
 

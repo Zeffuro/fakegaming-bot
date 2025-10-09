@@ -7,15 +7,14 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/jsonwebtoken": "^9.0.10",
-    "@types/next": "^9.0.0",
-    "@types/node": "^24.6.2",
+    "@types/node": "^24.7.0",
     "@types/node-fetch": "^2.6.13",
-    "@types/react": "^19.2.0",
+    "@types/react": "^19.2.2",
     "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
-    "@typescript-eslint/eslint-plugin": "^8.45.0",
-    "@typescript-eslint/parser": "^8.45.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
     "canvas": "^3.2.0",
     "depcheck": "^1.4.7",
     "dotenv-cli": "^10.0.0",
@@ -30,9 +29,12 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "build": "pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
+    "build": "pnpm --filter @zeffuro/fakegaming-common run build && pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
+    "test:coverage": "pnpm -r run test:coverage",
+    "test:coverage:view": "pnpm run test:coverage && node -e \"require('child_process').exec(process.platform === 'win32' ? 'start coverage/index.html' : process.platform === 'darwin' ? 'open coverage/index.html' : 'xdg-open coverage/index.html')\"",
+    "typecheck": "pnpm -r run --if-present typecheck",
     "start:api": "pnpm --filter @zeffuro/fakegaming-bot-api run start",
     "start:api:dev": "pnpm --filter @zeffuro/fakegaming-bot-api run start:dev",
     "start:bot": "pnpm --filter @zeffuro/fakegaming-bot run start",
@@ -40,7 +42,7 @@
     "start:dashboard": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start",
     "start:dashboard:dev": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start:dev",
     "clean": "node scripts/clean.js",
-    "fulltest": "pnpm run clean && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test",
+    "fulltest": "pnpm run clean && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test:coverage",
     "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard ."
   },
   "dependencies": {
@@ -53,7 +55,6 @@
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }

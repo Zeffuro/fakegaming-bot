@@ -1,8 +1,7 @@
+import { BaseManager } from '../../managers/baseManager.js';
+import { ConfigManager } from '../../managers/configManager.js';
 import { vi } from 'vitest';
 
-/**
- * Type for manager method mock implementations
- */
 type ManagerMethodMocks = {
     [key: string]: ReturnType<typeof vi.fn>;
 };
@@ -10,170 +9,130 @@ type ManagerMethodMocks = {
 let activeMockConfigManager: any;
 
 /**
- * Creates a mock manager based on the BaseManager class
- *
- * @param methods Object containing mock implementations for manager methods
- * @returns Mock manager with specified methods
+ * Dynamically creates a mock manager by:
+ * 1. Auto-mocking all BaseManager methods
+ * 2. Auto-detecting and mocking custom methods from the real manager class
+ * 3. Applying user overrides
  */
-export function createMockBaseManager<_T = any>(methods: ManagerMethodMocks = {}): any {
-    // Base methods that are common to all managers
-    const baseMethods = {
-        getAllPlain: vi.fn().mockResolvedValue([]),
-        getById: vi.fn().mockResolvedValue(null),
-        add: vi.fn().mockImplementation((data) => Promise.resolve({ ...data, id: 'mock-id-123' })),
-        update: vi.fn().mockResolvedValue(true),
-        remove: vi.fn().mockResolvedValue(true),
-        findOne: vi.fn().mockResolvedValue(null),
-        findAll: vi.fn().mockResolvedValue([]),
-    };
+function createDynamicMockManager<T extends BaseManager<any>>(
+    ManagerClass: new () => T,
+    defaultOverrides: ManagerMethodMocks = {},
+    userOverrides: ManagerMethodMocks = {}
+): any {
+    const mockManager: ManagerMethodMocks = {};
 
-    // Combine base methods with provided custom methods
+    // 1. Mock all BaseManager methods
+    const baseMethodNames = Object.getOwnPropertyNames(BaseManager.prototype)
+        .filter(name => name !== 'constructor' && typeof (BaseManager.prototype as any)[name] === 'function');
+
+    for (const name of baseMethodNames) {
+        mockManager[name] = vi.fn();
+    }
+
+    // 2. Auto-detect custom methods from the specific manager class
+    const customMethodNames = Object.getOwnPropertyNames(ManagerClass.prototype)
+        .filter(name => {
+            if (name === 'constructor') return false;
+            const isBaseMethod = baseMethodNames.includes(name);
+            return !isBaseMethod && typeof (ManagerClass.prototype as any)[name] === 'function';
+        });
+
+    for (const name of customMethodNames) {
+        mockManager[name] = vi.fn();
+    }
+
+    // 3. Apply default mocks and user overrides
     return {
-        ...baseMethods,
-        ...methods,
+        ...mockManager,
+        ...defaultOverrides,
+        ...userOverrides,
     };
 }
 
 /**
- * Creates a mock birthday manager
+ * Registry of default mock implementations for specific manager methods
+ * This allows consistent defaults while keeping the system dynamic
  */
-export function createMockBirthdayManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        getBirthday: vi.fn().mockResolvedValue(null),
-        hasBirthday: vi.fn().mockResolvedValue(false),
-        removeBirthday: vi.fn().mockResolvedValue(true),
-        ...methods,
-    });
+const DEFAULT_MANAGER_MOCKS: Record<string, ManagerMethodMocks> = {
+    birthdayManager: {
+        getAllPlain: vi.fn().mockResolvedValue([]),
+        isBirthdayToday: vi.fn().mockReturnValue(false),
+    },
+    reminderManager: {
+        getAllPlain: vi.fn().mockResolvedValue([]),
+    },
+    twitchManager: {
+        getAllStreams: vi.fn().mockResolvedValue([]),
+    },
+    youtubeManager: {
+        getAllChannels: vi.fn().mockResolvedValue([]),
+    },
+    quoteManager: {
+        getQuotesByGuild: vi.fn().mockResolvedValue([]),
+    },
+    patchNotesManager: {
+        getAll: vi.fn().mockResolvedValue([]),
+    },
+    patchSubscriptionManager: {
+        getSubscriptionsForGame: vi.fn().mockResolvedValue([]),
+    },
+};
+
+/**
+ * Creates a complete mock ConfigManager by dynamically discovering all managers
+ * from the real ConfigManager class and creating mocks for each
+ */
+export function createMockConfigManager(managerOverrides: Record<string, ManagerMethodMocks> = {}): ConfigManager {
+    const realConfigManager = new ConfigManager();
+    const mockConfig: any = {};
+
+    // Dynamically discover all manager properties from ConfigManager
+    for (const key of Object.keys(realConfigManager)) {
+        const manager = (realConfigManager as any)[key];
+
+        // Only process actual manager instances
+        if (manager && typeof manager === 'object' && manager.constructor) {
+            const ManagerClass = manager.constructor;
+            const defaultMocks = DEFAULT_MANAGER_MOCKS[key] || {};
+            const userMocks = managerOverrides[key] || {};
+
+            mockConfig[key] = createDynamicMockManager(ManagerClass, defaultMocks, userMocks);
+        }
+    }
+
+    activeMockConfigManager = mockConfig;
+    return mockConfig as ConfigManager;
 }
 
 /**
- * Creates a mock reminder manager
+ * Setup mocks for the entire fakegaming-common/managers package
  */
-export function createMockReminderManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        removeReminder: vi.fn().mockResolvedValue(true),
-        setTimezone: vi.fn().mockResolvedValue(true),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock twitch manager
- */
-export function createMockTwitchManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        streamExists: vi.fn().mockResolvedValue(false),
-        getAll: vi.fn().mockReturnValue([]),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock youtube manager
- */
-export function createMockYoutubeManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        getVideoChannel: vi.fn().mockResolvedValue(null),
-        setVideoChannel: vi.fn().mockResolvedValue(true),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock quote manager
- */
-export function createMockQuoteManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        getQuote: vi.fn().mockResolvedValue(null),
-        getQuotesByAuthor: vi.fn().mockReturnValue([]),
-        getQuotesByGuild: vi.fn().mockReturnValue([]),
-        searchQuotes: vi.fn().mockReturnValue([]),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock patch notes manager
- */
-export function createMockPatchManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        getLatestPatch: vi.fn().mockReturnValue({
-            game: 'Test Game',
-            title: 'Test Patch',
-            content: 'Test Content',
-            url: 'https://example.com/patch',
-            date: new Date()
-        }),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock patch subscription manager
- */
-export function createMockPatchSubscriptionManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        subscribe: vi.fn().mockResolvedValue({ id: 'sub123' }),
-        unsubscribe: vi.fn().mockResolvedValue(true),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock user manager
- */
-export function createMockUserManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        getUserWithLeague: vi.fn().mockResolvedValue(null),
-        setTimezone: vi.fn().mockResolvedValue(true),
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock league manager
- */
-export function createMockLeagueManager(methods: ManagerMethodMocks = {}) {
-    return createMockBaseManager({
-        ...methods,
-    });
-}
-
-/**
- * Creates a mock config manager with all managers initialized
- */
-export function createMockConfigManager(managerOverrides: Record<string, ManagerMethodMocks> = {}) {
-    const manager = {
-        birthdayManager: createMockBirthdayManager(managerOverrides.birthdayManager),
-        reminderManager: createMockReminderManager(managerOverrides.reminderManager),
-        twitchManager: createMockTwitchManager(managerOverrides.twitchManager),
-        youtubeManager: createMockYoutubeManager(managerOverrides.youtubeManager),
-        quoteManager: createMockQuoteManager(managerOverrides.quoteManager),
-        leagueManager: createMockLeagueManager(managerOverrides.leagueManager),
-        patchManager: createMockPatchManager(managerOverrides.patchManager),
-        patchNotesManager: createMockPatchManager(managerOverrides.patchNotesManager),
-        userManager: createMockUserManager(managerOverrides.userManager),
-        patchSubscriptionManager: createMockPatchSubscriptionManager(managerOverrides.patchSubscriptionManager)
-    };
-
-    activeMockConfigManager = manager;
-    return manager;
-}
-
-/**
- * Setup mocks for the entire fakegaming-common package
- */
-export function setupManagerMocks(configManagerOverrides: Record<string, ManagerMethodMocks> = {}): void {
+export async function setupManagerMocks(configManagerOverrides: Record<string, ManagerMethodMocks> = {}): Promise<void> {
     const mockConfigManager = createMockConfigManager(configManagerOverrides);
 
-    vi.mock('@zeffuro/fakegaming-common/managers', () => {
-        return {
-            configManager: mockConfigManager,
-            getConfigManager: vi.fn(() => mockConfigManager),
-        };
-    });
+    vi.doMock('@zeffuro/fakegaming-common/managers', () => ({
+        configManager: mockConfigManager,
+        getConfigManager: vi.fn(() => mockConfigManager),
+    }));
 }
 
-export function getActiveMockConfigManager() {
+/**
+ * Get the currently active mock config manager
+ */
+export function getActiveMockConfigManager(): ConfigManager {
+    if (!activeMockConfigManager) {
+        throw new Error('No active mock config manager. Did you call setupServiceTest or createMockConfigManager?');
+    }
     return activeMockConfigManager;
+}
+
+/**
+ * Helper to create a mock for a specific manager type
+ * Useful when you need a standalone manager mock
+ */
+export function createMockManager<T extends BaseManager<any>>(
+    ManagerClass: new () => T,
+    overrides: ManagerMethodMocks = {}
+): T {
+    return createDynamicMockManager(ManagerClass, {}, overrides) as T;
 }

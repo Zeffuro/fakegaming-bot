@@ -7,16 +7,16 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const guildId = interaction.guildId!;
-    const quotes = await getConfigManager().quoteManager.getQuotesByGuild({guildId});
-    if (!quotes || quotes.length === 0) {
+    const quotes = await getConfigManager().quoteManager.getQuotesByGuild(guildId);
+
+    if (!quotes.length) {
         await interaction.reply('No quotes found for this server.');
         return;
     }
+
     const random = quotes[Math.floor(Math.random() * quotes.length)];
     const date = new Date(random.timestamp).toLocaleString();
-    await interaction.reply(
-        `> ${random.quote}\n— <@${random.authorId}> (${date})`
-    );
+    await interaction.reply(`> ${random.quote}\n— <@${random.authorId}> (${date})`);
 }
 
 const testOnly = false;

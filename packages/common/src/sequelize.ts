@@ -56,3 +56,14 @@ export function getSequelize(useTest = false): Sequelize {
 
     return sequelize;
 }
+
+/**
+ * Close the database connection and reset the singleton
+ * Used primarily in tests to clean up after test suites
+ */
+export async function closeSequelize(): Promise<void> {
+    if (sequelize) {
+        await sequelize.close();
+        sequelize = undefined;
+    }
+}

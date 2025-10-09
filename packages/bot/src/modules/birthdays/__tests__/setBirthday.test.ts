@@ -54,10 +54,7 @@ describe('setBirthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // 4. Verify the birthdayManager.hasBirthday was called first
-        expect(hasBirthdaySpy).toHaveBeenCalledWith({
-            userId: '123456789012345678',
-            guildId: '135381928284343204',
-        });
+        expect(hasBirthdaySpy).toHaveBeenCalledWith('123456789012345678', '135381928284343204');
 
         // 5. Verify the birthdayManager.add was called with correct parameters
         expect(addSpy).toHaveBeenCalledWith(

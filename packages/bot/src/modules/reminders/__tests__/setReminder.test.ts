@@ -29,7 +29,7 @@ describe('setReminder command', () => {
         // Setup parseTimespan to return a valid number for this test
         vi.mocked(parseTimespan).mockReturnValue(3600000); // 1 hour in ms
 
-        // Create mock for reminder manager's add method
+        // Create mock for reminder manager's addReminder method
         const addSpy = vi.fn().mockResolvedValue({
             id: 'mock-uuid-1234',
             userId: '123456789012345678',
@@ -60,7 +60,7 @@ describe('setReminder command', () => {
                 },
                 managerOverrides: {
                     reminderManager: {
-                        add: addSpy
+                        addReminder: addSpy
                     }
                 }
             }
@@ -69,13 +69,13 @@ describe('setReminder command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify reminder manager's add method was called with the correct parameters
+        // Verify reminder manager's addReminder method was called with the correct parameters
         expect(addSpy).toHaveBeenCalledWith({
             id: 'mock-uuid-1234',
             userId: '123456789012345678',
             message: 'Remember to check the test results',
             timespan: '1h',
-            timestamp: 1633030800000 // October 1, 2021 + 1 hour
+            timestamp: 1633030800000
         });
 
         // Verify the interaction reply

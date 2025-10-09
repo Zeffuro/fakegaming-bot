@@ -181,7 +181,7 @@ Background services in `packages/bot/src/services/`:
 ```
 services/
 ├── patchfetchers/     # Game-specific patch note fetchers
-├── patchNotesService.ts
+├── patchNotesService.test.ts
 ├── scheduledReminderService.ts
 └── birthdayService.ts
 ```

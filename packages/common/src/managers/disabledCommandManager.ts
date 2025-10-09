@@ -9,9 +9,4 @@ export class DisabledCommandManager extends BaseManager<DisabledCommandConfig> {
     async isCommandDisabled(guildId: string, commandName: string): Promise<boolean> {
         return !!(await this.getOne({guildId, commandName}));
     }
-
-    async getById(id: string): Promise<DisabledCommandConfig | undefined> {
-        const result = await this.getOne({ id });
-        return result === null ? undefined : result;
-    }
 }

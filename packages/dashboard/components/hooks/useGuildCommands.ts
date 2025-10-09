@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { disabledCommands_guild_guildId_get_Response200, disabledCommands_post_Request } from "@/types/apiResponses";
+import { disabledCommands_get_Response200, disabledCommands_post_Request } from "@/types/apiResponses";
 
 export function useGuildCommands(guildId: string) {
   const [disabledCommands, setDisabledCommands] = useState<string[]>([]);
@@ -13,7 +13,7 @@ export function useGuildCommands(guildId: string) {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(await res.text());
-      const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
+      const data: disabledCommands_get_Response200 = await res.json();
       setDisabledCommands(data.map(c => c.commandName).filter((name): name is string => !!name));
     } catch (err: any) {
       setError(err.message || "Failed to fetch disabled commands");
@@ -47,10 +47,10 @@ export function useGuildCommands(guildId: string) {
         credentials: 'include',
       });
       if (!res.ok) throw new Error(await res.text());
-      const data: disabledCommands_guild_guildId_get_Response200 = await res.json();
+      const data: disabledCommands_get_Response200 = await res.json();
       const config = data.find(c => c.commandName === commandName);
       if (config && config.id) {
-        const delRes = await fetch(`/api/external/disabledCommands?id=${config.id}`, { method: "DELETE", credentials: 'include' });
+        const delRes = await fetch(`/api/external/disabledCommands/${config.id}`, { method: "DELETE", credentials: 'include' });
         if (!delRes.ok) throw new Error(await delRes.text());
       }
       await fetchDisabledCommands();

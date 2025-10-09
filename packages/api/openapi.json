@@ -62,15 +62,15 @@
       "CacheConfig": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "guildId": {
+          "key": {
             "type": "string"
           },
-          "commandName": {
+          "value": {
             "type": "string"
+          },
+          "expires": {
+            "type": "string",
+            "format": "date-time"
           },
           "createdAt": {
             "type": "string",
@@ -82,7 +82,7 @@
           }
         },
         "required": [
-          "id",
+          "key",
           "createdAt",
           "updatedAt"
         ]
@@ -321,6 +321,9 @@
           "guildId": {
             "type": "string"
           },
+          "isLive": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -417,6 +420,7 @@
         "tags": [
           "Auth"
         ],
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -462,28 +466,20 @@
                           "type": "string"
                         }
                       }
-                    },
-                    "guilds": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "icon": {
-                            "type": "string"
-                          }
-                        }
-                      }
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Invalid Discord OAuth code"
+          },
+          "500": {
+            "description": "Failed to authenticate with Discord"
           }
         }
       }
@@ -533,6 +529,15 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
@@ -563,14 +568,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Birthday config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/BirthdayConfig"
-                }
-              }
-            }
+            "description": "Birthday config"
           },
           "404": {
             "description": "Not found"
@@ -608,15 +606,34 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
     },
     "/disabledCommands": {
       "get": {
-        "summary": "List all disabled commands",
+        "summary": "List disabled commands (optionally filtered by guild)",
         "tags": [
           "DisabledCommands"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -635,7 +652,7 @@
         }
       },
       "post": {
-        "summary": "Add a disabled command",
+        "summary": "Add a new disabled command",
         "tags": [
           "DisabledCommands"
         ],
@@ -656,7 +673,20 @@
         },
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisabledCommandConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -685,9 +715,14 @@
             }
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Disabled status",
+            "description": "Command disabled status",
             "content": {
               "application/json": {
                 "schema": {
@@ -700,13 +735,19 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
     },
     "/disabledCommands/{id}": {
-      "delete": {
-        "summary": "Remove a disabled command by id",
+      "get": {
+        "summary": "Get a disabled command by id",
         "tags": [
           "DisabledCommands"
         ],
@@ -716,7 +757,38 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disabled command config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisabledCommandConfig"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a disabled command by id",
+        "tags": [
+          "DisabledCommands"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -727,40 +799,25 @@
         ],
         "responses": {
           "200": {
-            "description": "Success"
-          }
-        }
-      }
-    },
-    "/disabledCommands/guild/{guildId}": {
-      "get": {
-        "summary": "List all disabled commands for a specific guild",
-        "tags": [
-          "DisabledCommands"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "guildId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of disabled commands for the guild",
+            "description": "Success",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DisabledCommandConfig"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
                   }
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -792,6 +849,11 @@
         "tags": [
           "PatchNotes"
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -805,6 +867,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -850,22 +918,12 @@
         ],
         "responses": {
           "200": {
-            "description": "List of patch subscriptions",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PatchSubscriptionConfig"
-                  }
-                }
-              }
-            }
+            "description": "List of patch subscriptions"
           }
         }
       },
       "post": {
-        "summary": "Subscribe to a game/channel",
+        "summary": "Add a new patch subscription",
         "tags": [
           "PatchSubscriptions"
         ],
@@ -887,11 +945,17 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
       "put": {
-        "summary": "Upsert (add or update) a patch subscription",
+        "summary": "Upsert a patch subscription",
         "tags": [
           "PatchSubscriptions"
         ],
@@ -913,6 +977,70 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/patchSubscriptions/{id}": {
+      "get": {
+        "summary": "Get a patch subscription by id",
+        "tags": [
+          "PatchSubscriptions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patch subscription config"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a patch subscription by id",
+        "tags": [
+          "PatchSubscriptions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -962,6 +1090,15 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1008,6 +1145,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1046,6 +1192,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1092,11 +1244,41 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
     },
     "/quotes/{id}": {
+      "get": {
+        "summary": "Get a quote by id",
+        "tags": [
+          "Quotes"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quote config"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
       "delete": {
         "summary": "Delete a quote by id",
         "tags": [
@@ -1121,39 +1303,14 @@
           "200": {
             "description": "Success"
           },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      },
-      "get": {
-        "summary": "Get a quote by id",
-        "tags": [
-          "Quotes"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "A quote object",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QuoteConfig"
-                }
-              }
-            }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           },
           "404": {
-            "description": "Quote not found"
+            "description": "Not found"
           }
         }
       }
@@ -1203,6 +1360,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1262,6 +1425,12 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -1274,24 +1443,115 @@
         ],
         "responses": {
           "200": {
-            "description": "List of servers",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ServerConfig"
-                  }
-                }
+            "description": "List of servers"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new server",
+        "tags": [
+          "Servers"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerConfig"
               }
             }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
     },
     "/servers/{serverId}": {
       "get": {
-        "summary": "Get a server by serverId",
+        "summary": "Get a server by ID",
+        "tags": [
+          "Servers"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serverId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server config"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a server by ID",
+        "tags": [
+          "Servers"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "serverId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServerConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a server by ID",
         "tags": [
           "Servers"
         ],
@@ -1312,17 +1572,10 @@
         ],
         "responses": {
           "200": {
-            "description": "Server config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ServerConfig"
-                }
-              }
-            }
+            "description": "Success"
           },
-          "404": {
-            "description": "Not found"
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1335,7 +1588,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of Twitch configs",
+            "description": "List of Twitch stream configs",
             "content": {
               "application/json": {
                 "schema": {
@@ -1350,7 +1603,7 @@
         }
       },
       "post": {
-        "summary": "Add a new Twitch stream config",
+        "summary": "Create a new Twitch stream config",
         "tags": [
           "Twitch"
         ],
@@ -1384,20 +1637,34 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
     },
     "/twitch/exists": {
       "get": {
-        "summary": "Check if a Twitch stream exists for a Discord channel",
+        "summary": "Check if a Twitch stream config exists",
         "tags": [
           "Twitch"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
         "parameters": [
           {
             "in": "query",
-            "name": "username",
+            "name": "twitchUsername",
             "required": true,
             "schema": {
               "type": "string"
@@ -1405,7 +1672,7 @@
           },
           {
             "in": "query",
-            "name": "channelId",
+            "name": "discordChannelId",
             "required": true,
             "schema": {
               "type": "string"
@@ -1420,21 +1687,34 @@
             }
           }
         ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
         "responses": {
           "200": {
-            "description": "Existence result"
+            "description": "Config existence status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "exists": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
     },
     "/twitch/{id}": {
       "get": {
-        "summary": "Get a Twitch config by primary key",
+        "summary": "Get a Twitch stream config by id",
         "tags": [
           "Twitch"
         ],
@@ -1444,13 +1724,13 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Twitch config",
+            "description": "Twitch stream config",
             "content": {
               "application/json": {
                 "schema": {
@@ -1464,8 +1744,8 @@
           }
         }
       },
-      "delete": {
-        "summary": "Delete a Twitch stream configuration",
+      "put": {
+        "summary": "Update a Twitch stream config by id",
         "tags": [
           "Twitch"
         ],
@@ -1475,7 +1755,59 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwitchStreamConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwitchStreamConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Twitch stream config by id",
+        "tags": [
+          "Twitch"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
             }
           }
         ],
@@ -1500,6 +1832,12 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          },
           "404": {
             "description": "Not found"
           }
@@ -1514,24 +1852,19 @@
         ],
         "responses": {
           "200": {
-            "description": "List of users",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/UserConfig"
-                  }
-                }
-              }
-            }
+            "description": "List of users"
           }
         }
       },
       "post": {
-        "summary": "Create or update a user",
+        "summary": "Create a new user",
         "tags": [
           "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1546,6 +1879,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1568,24 +1907,15 @@
         ],
         "responses": {
           "200": {
-            "description": "User config",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserConfig"
-                }
-              }
-            }
+            "description": "User config"
           },
           "404": {
             "description": "Not found"
           }
         }
-      }
-    },
-    "/users/{discordId}/timezone": {
+      },
       "put": {
-        "summary": "Set a user's timezone",
+        "summary": "Update a user by Discord ID",
         "tags": [
           "Users"
         ],
@@ -1597,6 +1927,87 @@
             "schema": {
               "type": "string"
             }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserConfig"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a user by Discord ID",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/users/{discordId}/timezone": {
+      "put": {
+        "summary": "Set timezone for a user",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1617,13 +2028,22 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
     },
     "/users/{discordId}/defaultReminderTimeSpan": {
       "put": {
-        "summary": "Set a user's default reminder timespan",
+        "summary": "Set default reminder timespan for a user",
         "tags": [
           "Users"
         ],
@@ -1635,6 +2055,11 @@
             "schema": {
               "type": "string"
             }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
           }
         ],
         "requestBody": {
@@ -1655,19 +2080,28 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
     },
     "/youtube": {
       "get": {
-        "summary": "List all YouTube channel configs",
+        "summary": "List all YouTube video configs",
         "tags": [
           "YouTube"
         ],
         "responses": {
           "200": {
-            "description": "List of YouTube configs",
+            "description": "List of YouTube video configs",
             "content": {
               "application/json": {
                 "schema": {
@@ -1682,9 +2116,14 @@
         }
       },
       "post": {
-        "summary": "Add a new YouTube config",
+        "summary": "Create a new YouTube video config",
         "tags": [
           "YouTube"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1698,35 +2137,93 @@
         },
         "responses": {
           "201": {
-            "description": "Created"
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       },
       "put": {
-        "summary": "Upsert (add or update) a YouTube config",
+        "summary": "Upsert a YouTube video config by channel",
         "tags": [
           "YouTube"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/YoutubeVideoConfig"
+                "type": "object",
+                "properties": {
+                  "youtubeChannelId": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "guildId": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Success"
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
     },
     "/youtube/channel": {
       "get": {
-        "summary": "Get a YouTube config by youtubeChannelId and discordChannelId",
+        "summary": "Get a YouTube video config by channel",
         "tags": [
           "YouTube"
         ],
@@ -1763,7 +2260,104 @@
         ],
         "responses": {
           "200": {
-            "description": "YouTube config",
+            "description": "YouTube video config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YoutubeVideoConfig"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create or update a YouTube video config by channel",
+        "tags": [
+          "YouTube"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "youtubeChannelId": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "guildId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "created": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/youtube/{id}": {
+      "get": {
+        "summary": "Get a YouTube video config by id",
+        "tags": [
+          "YouTube"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "YouTube video config",
             "content": {
               "application/json": {
                 "schema": {
@@ -1777,10 +2371,20 @@
           }
         }
       },
-      "post": {
-        "summary": "Add a new YouTube channel config",
+      "put": {
+        "summary": "Update a YouTube video config by id",
         "tags": [
           "YouTube"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "security": [
           {
@@ -1798,31 +2402,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Created"
-          }
-        }
-      }
-    },
-    "/youtube/{id}": {
-      "get": {
-        "summary": "Get a YouTube config by primary key",
-        "tags": [
-          "YouTube"
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
           "200": {
-            "description": "YouTube config",
+            "description": "Updated",
             "content": {
               "application/json": {
                 "schema": {
@@ -1831,13 +2412,19 @@
               }
             }
           },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
           "404": {
             "description": "Not found"
           }
         }
       },
       "delete": {
-        "summary": "Delete a YouTube channel configuration",
+        "summary": "Delete a YouTube video config by id",
         "tags": [
           "YouTube"
         ],
@@ -1847,7 +2434,7 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "string"
+              "type": "integer"
             }
           }
         ],
@@ -1871,6 +2458,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           },
           "404": {
             "description": "Not found"

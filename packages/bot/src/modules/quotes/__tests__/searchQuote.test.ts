@@ -56,10 +56,7 @@ describe('searchQuote command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify searchQuotes was called with the correct parameters
-        expect(searchQuotesSpy).toHaveBeenCalledWith({
-            guildId: '135381928284343204',
-            text: searchText
-        });
+        expect(searchQuotesSpy).toHaveBeenCalledWith('135381928284343204', searchText);
 
         // Verify the interaction reply contains all matching quotes
         expect(interaction.reply).toHaveBeenCalledWith(
@@ -100,10 +97,7 @@ describe('searchQuote command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify searchQuotes was called with the correct parameters
-        expect(searchQuotesSpy).toHaveBeenCalledWith({
-            guildId: '135381928284343204',
-            text: searchText
-        });
+        expect(searchQuotesSpy).toHaveBeenCalledWith('135381928284343204', searchText);
 
         // Verify the interaction reply shows the "no quotes" message
         expect(interaction.reply).toHaveBeenCalledWith('No quotes found matching your search.');

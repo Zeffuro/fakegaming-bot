@@ -6,16 +6,36 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
         super(YoutubeVideoConfig);
     }
 
-    async getVideoChannel({youtubeChannelId, discordChannelId, guildId}: {
-        youtubeChannelId: string,
-        discordChannelId: string,
-        guildId: string
-    }): Promise<YoutubeVideoConfig | null> {
-        return (await this.getOne({youtubeChannelId, discordChannelId, guildId}))?.get() ?? null;
+    /** Get all YouTube channel configurations (plain objects for services) */
+    async getAllChannels() {
+        return await this.model.findAll();
     }
 
-    async setVideoChannel(channel: Partial<YoutubeVideoConfig>) {
-        if (!channel.guildId) throw new Error('guildId is required');
-        await this.upsert(channel);
+    /** Get one YouTube channel config */
+    async getVideoChannel(where: {
+        youtubeChannelId: string;
+        discordChannelId: string;
+        guildId: string;
+    }) {
+        return this.getOne(where, { raw: true });
+    }
+
+    /** Set or update YouTube channel configuration */
+    async setVideoChannel(data: Partial<YoutubeVideoConfig> & {
+        youtubeChannelId: string;
+        discordChannelId: string;
+        guildId: string;
+    }) {
+        const created = await this.upsert(data, ['youtubeChannelId', 'discordChannelId', 'guildId']);
+        const record = await this.getOne(
+            { youtubeChannelId: data.youtubeChannelId, discordChannelId: data.discordChannelId, guildId: data.guildId },
+            { raw: true }
+        );
+        return { record, created };
+    }
+
+    /** Remove a YouTube channel configuration */
+    async removeVideoChannel(youtubeChannelId: string, discordChannelId: string, guildId: string) {
+        await this.remove({ youtubeChannelId, discordChannelId, guildId });
     }
 }

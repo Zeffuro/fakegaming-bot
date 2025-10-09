@@ -136,6 +136,12 @@ export function createMockGuild(overrides: Partial<Guild> = {}): Guild {
             cache: new Map(),
             everyone: { id: 'everyone-role-id' },
         },
+        // Minimal emojis cache to support getTierEmoji lookups
+        emojis: {
+            cache: {
+                find: vi.fn((_predicate: (e: { name?: string }) => boolean) => undefined)
+            }
+        } as unknown as Guild['emojis'],
         toString: () => guildId,
         valueOf: () => guildId,
         ...overrides

@@ -1,9 +1,25 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
-import {checkUserGuildAccess} from '../utils/authHelpers.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import { z } from 'zod';
 
-const router = Router();
+// Zod schemas
+const serverIdParamSchema = z.object({ serverId: z.string().min(1) });
+const serverCreateSchema = z.object({
+    serverId: z.string().min(1),
+    name: z.string().min(1).optional(),
+    prefix: z.string().min(1).optional()
+});
+const serverUpdateSchema = z
+    .object({
+        name: z.string().min(1).optional(),
+        prefix: z.string().min(1).optional()
+    })
+    .refine((v) => Object.keys(v).length > 0, { message: 'At least one field must be provided' });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -14,14 +30,8 @@ const router = Router();
  *     responses:
  *       200:
  *         description: List of servers
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/ServerConfig'
  */
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
     const servers = await getConfigManager().serverManager.getAllPlain();
     res.json(servers);
 });
@@ -30,7 +40,98 @@ router.get('/', async (req, res) => {
  * @openapi
  * /servers/{serverId}:
  *   get:
- *     summary: Get a server by serverId
+ *     summary: Get a server by ID
+ *     tags: [Servers]
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Server config
+ *       404:
+ *         description: Not found
+ */
+router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) => {
+    const { serverId } = req.params;
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    res.json(server);
+});
+
+/**
+ * @openapi
+ * /servers:
+ *   post:
+ *     summary: Create a new server
+ *     tags: [Servers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ServerConfig'
+ *     responses:
+ *       201:
+ *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => {
+    const created = await getConfigManager().serverManager.addPlain(req.body);
+    res.status(201).json(created);
+});
+
+/**
+ * @openapi
+ * /servers/{serverId}:
+ *   put:
+ *     summary: Update a server by ID
+ *     tags: [Servers]
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ServerConfig'
+ *     responses:
+ *       200:
+ *         description: Updated
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
+ */
+router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateSchema), async (req, res) => {
+    const { serverId } = req.params;
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    await getConfigManager().serverManager.updatePlain(req.body, { serverId });
+    const updated = await getConfigManager().serverManager.findByPkPlain(serverId);
+    res.json(updated);
+});
+
+/**
+ * @openapi
+ * /servers/{serverId}:
+ *   delete:
+ *     summary: Delete a server by ID
  *     tags: [Servers]
  *     parameters:
  *       - in: path
@@ -42,27 +143,14 @@ router.get('/', async (req, res) => {
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Server config
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ServerConfig'
- *       404:
- *         description: Not found
+ *         description: Success
+ *       401:
+ *         description: Unauthorized
  */
-router.get('/:serverId', jwtAuth, async (req, res) => {
+router.delete('/:serverId', jwtAuth, validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;
-    if (!serverId) return res.status(400).json({ error: 'Missing serverId parameter' });
-
-    const server = await getConfigManager().serverManager.getServer(serverId);
-    if (!server) return res.status(404).json({error: 'Server not found'});
-
-    const accessResult = await checkUserGuildAccess(req, res, serverId);
-    if (!accessResult.authorized) {
-        return;
-    }
-
-    res.json(server);
+    await getConfigManager().serverManager.removeByPk(serverId);
+    res.json({ success: true });
 });
 
-export default router;
+export { router };

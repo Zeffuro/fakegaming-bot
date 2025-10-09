@@ -1,15 +1,14 @@
-import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey} from 'sequelize-typescript';
 
 @Table
 export class CacheConfig extends Model {
     @PrimaryKey
-    @AutoIncrement
-    @Column(DataType.INTEGER)
-    declare id: number;
-
     @Column(DataType.STRING)
-    declare guildId: string;
+    declare key: string;
 
-    @Column(DataType.STRING)
-    declare commandName: string;
+    @Column(DataType.TEXT)
+    declare value: string;
+
+    @Column(DataType.DATE)
+    declare expires: Date;
 }

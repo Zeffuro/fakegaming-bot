@@ -1,9 +1,17 @@
-import {Router} from 'express';
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {jwtAuth} from '../middleware/auth.js';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { jwtAuth } from '../middleware/auth.js';
+import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { ReminderConfig } from '@zeffuro/fakegaming-common/models';
+import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { UniqueConstraintError } from 'sequelize';
 
-const router = Router();
+// Zod schemas
+const idParamSchema = z.object({ id: z.string().min(1) });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -21,7 +29,7 @@ const router = Router();
  *               items:
  *                 $ref: '#/components/schemas/ReminderConfig'
  */
-router.get('/', async (_, res) => {
+router.get('/', async (_req, res) => {
     const reminders = await getConfigManager().reminderManager.getAllPlain();
     res.json(reminders);
 });
@@ -48,11 +56,10 @@ router.get('/', async (_, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) return res.status(404).json({error: 'Reminder not found'});
+    if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
     res.json(reminder);
 });
 
@@ -73,10 +80,22 @@ router.get('/:id', async (req, res) => {
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/', jwtAuth, async (req, res) => {
-    const created = await getConfigManager().reminderManager.addPlain(req.body);
-    res.status(201).json(created);
+router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async (req, res) => {
+    try {
+        const created = await getConfigManager().reminderManager.addPlain(req.body);
+        res.status(201).json(created);
+    } catch (error) {
+        if (error instanceof UniqueConstraintError) {
+            res.status(409).json({ error: 'Reminder with this ID already exists' });
+        } else {
+            throw error;
+        }
+    }
 });
 
 /**
@@ -96,23 +115,19 @@ router.post('/', jwtAuth, async (req, res) => {
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
  */
-router.delete('/:id', jwtAuth, async (req, res) => {
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
-
-    if (!id) return res.status(400).json({ error: 'Missing id parameter' });
-
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) {
-        return res.status(404).json({error: 'Reminder not found'});
-    }
-
-    await getConfigManager().reminderManager.removeReminder({id});
-
+    if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
+    await getConfigManager().reminderManager.removeByPk(id);
     console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
-
-    res.json({success: true});
+    res.json({ success: true });
 });
 
-export default router;
+export { router };

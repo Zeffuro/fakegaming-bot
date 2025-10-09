@@ -3,27 +3,40 @@ bootstrapEnv(import.meta.url);
 
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {ensureRedis} from '@zeffuro/fakegaming-common';
-import app, {swaggerSpec, swaggerUi} from './app.js';
-import {injectOpenApiSchemas} from "./utils/openapi-inject-schemas.js";
+import app, { swaggerSpec, swaggerUi } from './app.js';
+import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
+import { pathToFileURL } from 'url';
+import path from 'path';
 
 const port = process.env.PORT || 3001;
 
-// Remove all app setup code, keep only the server start logic
-async function startServer() {
+// Only perform heavy initialization when running directly (not during tests)
+const isDirectRun = (() => {
     try {
+        const entry = process.argv[1];
+        if (!entry) return false;
+        return pathToFileURL(path.resolve(entry)).href === import.meta.url;
+    } catch {
+        return false;
+    }
+})();
+
+if (isDirectRun) {
+    const start = async () => {
         await getConfigManager().init();
         await ensureRedis(process.env.REDIS_URL || '');
-        // Inject OpenAPI schemas after DB init
         injectOpenApiSchemas(swaggerSpec);
-        console.log('OpenAPI schemas injected:', Object.keys((swaggerSpec as any).components.schemas));
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
         app.listen(port, () => {
             console.log(`API server running on port ${port}\nYou can access the API documentation at http://localhost:${port}/api-docs`);
         });
-    } catch (err) {
-        console.error('Failed to initialize database:', err);
+    };
+    // Fire and forget
+    start().catch((err) => {
+        console.error('Failed to start server', err);
         process.exit(1);
-    }
+    });
 }
 
-startServer();
+// Export the app for tests (setupApiRouteTest expects default export)
+export default app;

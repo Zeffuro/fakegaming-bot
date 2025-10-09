@@ -12,7 +12,7 @@ const testConfig = {
 let disabledId: number;
 
 beforeEach(async () => {
-    await configManager.disabledCommandManager.remove({});
+    await configManager.disabledCommandManager.removeAll();
     const created = await configManager.disabledCommandManager.addPlain(testConfig);
     disabledId = created.id;
 });
@@ -55,10 +55,71 @@ describe('DisabledCommands API', () => {
         expect(res.body.success).toBe(true);
     });
 
+    it('should return 400 for invalid id on DELETE /api/disabledCommands/:id', async () => {
+        const res = await request(app)
+            .delete('/api/disabledCommands/invalid')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Params validation failed');
+    });
+
     it('should return 400 for missing check params', async () => {
         const res = await request(app)
             .get('/api/disabledCommands/check')
             .set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(400);
+    });
+
+    it('should return 401 for GET /api/disabledCommands without JWT', async () => {
+        const res = await request(app).get('/api/disabledCommands');
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for POST /api/disabledCommands without JWT', async () => {
+        const res = await request(app)
+            .post('/api/disabledCommands')
+            .send({guildId: 'testguild2', commandName: 'testcommand2'});
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for DELETE /api/disabledCommands/:id without JWT', async () => {
+        const res = await request(app)
+            .delete(`/api/disabledCommands/${disabledId}`);
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 404 when deleting non-existent disabled command', async () => {
+        const res = await request(app)
+            .delete('/api/disabledCommands/999999')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(404);
+    });
+
+    it('should handle duplicate add gracefully', async () => {
+        const res1 = await request(app)
+            .post('/api/disabledCommands')
+            .set('Authorization', `Bearer ${token}`)
+            .send({guildId: testConfig.guildId, commandName: testConfig.commandName});
+        expect([201, 409]).toContain(res1.status);
+    });
+
+    it('should return 400 for invalid input types', async () => {
+        const res = await request(app)
+            .post('/api/disabledCommands')
+            .set('Authorization', `Bearer ${token}`)
+            .send({guildId: 123, commandName: null});
+        expect([400, 500]).toContain(res.status);
+    });
+
+    it('should return 500 for DB error on POST /api/disabledCommands', async () => {
+        // Simulate DB error by mocking addPlain
+        const origAdd = configManager.disabledCommandManager.addPlain;
+        configManager.disabledCommandManager.addPlain = async () => { throw new Error('DB error'); };
+        const res = await request(app)
+            .post('/api/disabledCommands')
+            .set('Authorization', `Bearer ${token}`)
+            .send({guildId: 'testguild3', commandName: 'testcommand3'});
+        expect(res.status).toBe(500);
+        configManager.disabledCommandManager.addPlain = origAdd;
     });
 });

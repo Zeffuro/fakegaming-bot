@@ -1,9 +1,9 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
-import {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js'; // Import LeagueEntryDTO
+import type {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
-import {tierEmojis} from '../constants/leagueTierEmojis.js';
+import {getTierEmoji} from '../constants/leagueTierEmojis.js';
 
 const data = new SlashCommandBuilder()
     .setName('league-stats')
@@ -43,14 +43,20 @@ async function execute(interaction: ChatInputCommandInteraction) {
     try {
         const summonerResult = await getSummoner(identity.puuid, identity.region);
         if (!summonerResult.success || !summonerResult.data) {
-            await interaction.editReply(`Failed to fetch summoner: ${summonerResult.error}`);
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('League Stats')
+                .setDescription(`Failed to fetch summoner: ${summonerResult.error}`);
+            await interaction.editReply({embeds: [errorEmbed]});
             return;
         }
         const summonerData = summonerResult.data as { profileIconId?: number; summonerLevel?: number };
 
         const leagueResult = await getSummonerDetails(identity.puuid, identity.region);
         if (!leagueResult.success || !leagueResult.data) {
-            await interaction.editReply(`Failed to fetch ranked stats: ${leagueResult.error}`);
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('League Stats')
+                .setDescription(`Failed to fetch ranked stats: ${leagueResult.error}`);
+            await interaction.editReply({embeds: [errorEmbed]});
             return;
         }
         const leagueEntries = leagueResult.data as LeagueEntryDTO[];
@@ -64,12 +70,13 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
         if (Array.isArray(leagueEntries) && leagueEntries.length > 0) {
             leagueEntries.forEach((entry: LeagueEntryDTO) => {
-                const emoji = tierEmojis[entry.tier] || '';
-                let value = `**${entry.tier} ${entry.rank}** ${emoji} (${entry.leaguePoints} LP)\nWins: ${entry.wins}, Losses: ${entry.losses}`;
-                if (entry.miniSeries) {
-                    value += `\nPromos: ${entry.miniSeries.progress} (${entry.miniSeries.wins}W/${entry.miniSeries.losses}L, Target: ${entry.miniSeries.target})`;
+                const emoji = getTierEmoji(interaction.guild, (entry as any).tier as string);
+                let value = `**${(entry as any).tier} ${(entry as any).rank}** ${emoji} (${(entry as any).leaguePoints} LP)\nWins: ${(entry as any).wins}, Losses: ${(entry as any).losses}`;
+                if ((entry as any).miniSeries) {
+                    const ms = (entry as any).miniSeries as { progress?: string; wins?: number; losses?: number; target?: number };
+                    value += `\nPromos: ${ms.progress ?? ''} (${ms.wins ?? 0}W/${ms.losses ?? 0}L, Target: ${ms.target ?? 0})`;
                 }
-                embed.addFields({name: entry.queueType, value, inline: false});
+                embed.addFields({name: (entry as any).queueType as string, value, inline: false});
             });
         } else {
             embed.addFields({name: 'Ranked', value: 'No ranked data found.', inline: false});
@@ -77,7 +84,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
         await interaction.editReply({embeds: [embed]});
     } catch {
-        await interaction.editReply('Failed to fetch stats. Please check the Riot ID and region.');
+        const errorEmbed = new EmbedBuilder()
+            .setTitle('League Stats')
+            .setDescription('Failed to fetch stats. Please check the Riot ID and region.');
+        await interaction.editReply({embeds: [errorEmbed]});
     }
 }
 

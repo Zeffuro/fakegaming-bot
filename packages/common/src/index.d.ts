@@ -76,5 +76,39 @@ export {
 // Sequelize exports
 export { sequelize, initSequelize } from './sequelize.js';
 
-// Cache manager exports
-export * from './utils/cacheManager.js';
+// Runtime validation and schema helpers
+export {
+    modelToZodSchema,
+    createSchemaFromModel,
+    updateSchemaFromModel,
+    type InferSchema
+} from './utils/modelToZod.js';
+
+export { schemaRegistry } from './utils/schemaRegistry.js';
+
+export {
+    validateBody,
+    validateBodyForModel,
+    validateQuery,
+    validateParams
+} from './utils/validation.js';
+
+// Error helpers and permissions
+export { ForbiddenError, NotFoundError } from './utils/apiErrorHelpers.js';
+export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from './utils/permissionUtils.js';
+
+// Cache utility surface matching index.ts
+export {
+    cacheGet,
+    cacheSet,
+    cacheDel,
+    ensureRedis,
+    CACHE_KEYS,
+    CACHE_TTL,
+    getCacheManager,
+    defaultCacheManager,
+    type CacheManager
+} from './utils/cacheManager.js';
+
+// Sequelize getter matching index.ts
+export { getSequelize } from './sequelize.js';
