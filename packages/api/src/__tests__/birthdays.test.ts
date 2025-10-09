@@ -137,4 +137,29 @@ describe('Birthdays API', () => {
         expect(res.status).toBe(500);
         configManager.birthdayManager.addPlain = origAddPlain;
     });
+
+    it('should return 403 for POST /api/birthdays as non-admin', async () => {
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const { year, month, day } = parseDate('1995-05-05');
+        const res = await request(app)
+            .post('/api/birthdays')
+            .set('Authorization', `Bearer ${nonAdminToken}`)
+            .send({ userId: 'birthdayuserX', guildId: 'birthdayguild1', channelId: 'chanX', year, month, day });
+        expect(res.status).toBe(403);
+    });
+
+    it('should return 403 for DELETE /api/birthdays/:userId/:guildId as non-admin', async () => {
+        // Add a birthday in the same guild to attempt deletion
+        await configManager.birthdayManager.addPlain({
+            userId: 'birthdayuserY',
+            guildId: 'birthdayguild1',
+            channelId: 'chanY',
+            ...parseDate('1993-03-03')
+        });
+        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const res = await request(app)
+            .delete('/api/birthdays/birthdayuserY/birthdayguild1')
+            .set('Authorization', `Bearer ${nonAdminToken}`);
+        expect(res.status).toBe(403);
+    });
 });

@@ -59,6 +59,8 @@ router.get('/', async (_req, res) => {
  *         required: true
  *         schema:
  *           type: string
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: YouTube video config
@@ -67,12 +69,14 @@ router.get('/', async (_req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/YoutubeVideoConfig'
  *       400:
- *         description: Missing or invalid query parameters
+ *         description: Query validation failed
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */
 router.get('/channel', jwtAuth, validateQuery(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.query as unknown as { youtubeChannelId: string; discordChannelId: string; guildId: string };
+    const { youtubeChannelId, discordChannelId, guildId } = req.query as z.infer<typeof channelSchema>;
     const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     if (!config) return res.status(404).json({ error: 'YouTube video config not found' });
     res.json(config);
@@ -131,6 +135,12 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — requires guild admin
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoConfig, 'create'), async (req, res, next) => {
     try {
@@ -179,10 +189,12 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *                 created:
  *                   type: boolean
  *       400:
- *         description: Missing or invalid fields
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.body as { youtubeChannelId: string; discordChannelId: string; guildId: string };
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
     const { created } = await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(201).json({ success: true, created });
 });
@@ -219,10 +231,14 @@ router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) =
  *                 success:
  *                   type: boolean
  *       400:
- *         description: Missing or invalid fields
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — requires guild admin
  */
 router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.body as { youtubeChannelId: string; discordChannelId: string; guildId: string };
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
     await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(200).json({ success: true });
 });
@@ -254,6 +270,12 @@ router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/YoutubeVideoConfig'
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(YoutubeVideoConfig, 'update'), async (req, res) => {
     const { id } = req.params;
@@ -288,6 +310,10 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *               properties:
  *                 success:
  *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  *       404:
  *         description: Not found
  */

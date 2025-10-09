@@ -39,7 +39,7 @@ const router = createBaseRouter();
  *                 $ref: '#/components/schemas/DisabledCommandConfig'
  */
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
-    const guildId = (req.query as Record<string, unknown>).guildId as string | undefined;
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const disabledCommands = guildId
         ? await getConfigManager().disabledCommandManager.getManyPlain({ guildId })
         : await getConfigManager().disabledCommandManager.getAllPlain();
@@ -76,10 +76,12 @@ router.get('/', validateQuery(listQuerySchema), async (req, res) => {
  *                 disabled:
  *                   type: boolean
  *       400:
- *         description: Missing or invalid query parameters
+ *         description: Query validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) => {
-    const { guildId, commandName } = req.query as unknown as { guildId: string; commandName: string };
+    const { guildId, commandName } = req.query as z.infer<typeof checkQuerySchema>;
     const exists = await getConfigManager().disabledCommandManager.exists({ guildId, commandName });
     res.json({ disabled: exists });
 });
@@ -134,6 +136,10 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/DisabledCommandConfig'
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/', jwtAuth, validateBodyForModel(DisabledCommandConfig, 'create'), async (req, res) => {
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
@@ -164,6 +170,8 @@ router.post('/', jwtAuth, validateBodyForModel(DisabledCommandConfig, 'create'),
  *               properties:
  *                 success:
  *                   type: boolean
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */

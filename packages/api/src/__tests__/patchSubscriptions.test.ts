@@ -49,6 +49,30 @@ describe('PatchSubscriptions API', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({});
         expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Body validation failed');
+    });
+
+    it('should return 400 when PUT /api/patchSubscriptions with missing fields', async () => {
+        const res = await request(app)
+            .put('/api/patchSubscriptions')
+            .set('Authorization', `Bearer ${token}`)
+            .send({});
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Body validation failed');
+    });
+
+    it('should return 401 for POST /api/patchSubscriptions without JWT', async () => {
+        const res = await request(app)
+            .post('/api/patchSubscriptions')
+            .send({ game: 'g', channelId: 'c', guildId: 'guild' });
+        expect(res.status).toBe(401);
+    });
+
+    it('should return 401 for PUT /api/patchSubscriptions without JWT', async () => {
+        const res = await request(app)
+            .put('/api/patchSubscriptions')
+            .send({ game: 'g', channelId: 'c', guildId: 'guild' });
+        expect(res.status).toBe(401);
     });
 
     it('should return 401 for DELETE /api/patchSubscriptions/:id without JWT', async () => {

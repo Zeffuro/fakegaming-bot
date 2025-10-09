@@ -88,4 +88,22 @@ describe('Users API', () => {
         expect(res.status).toBe(400);
         expect(res.body.error).toBe('Body validation failed');
     });
+
+    // 401 unauthorized coverage
+    it('should return 401 for GET /api/users without JWT', async () => {
+        const res = await request(app).get('/api/users');
+        expect(res.status).toBe(401);
+    });
+    it('should return 401 for POST /api/users without JWT', async () => {
+        const res = await request(app).post('/api/users').send(testUser);
+        expect(res.status).toBe(401);
+    });
+    it('should return 401 for PUT /api/users/:discordId without JWT', async () => {
+        const res = await request(app).put(`/api/users/${testUser.discordId}`).send({ timezone: 'UTC' });
+        expect(res.status).toBe(401);
+    });
+    it('should return 401 for DELETE /api/users/:discordId without JWT', async () => {
+        const res = await request(app).delete(`/api/users/${testUser.discordId}`);
+        expect(res.status).toBe(401);
+    });
 });

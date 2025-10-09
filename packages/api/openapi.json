@@ -420,6 +420,7 @@
         "tags": [
           "Auth"
         ],
+        "security": [],
         "requestBody": {
           "required": true,
           "content": {
@@ -465,28 +466,20 @@
                           "type": "string"
                         }
                       }
-                    },
-                    "guilds": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "string"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "icon": {
-                            "type": "string"
-                          }
-                        }
-                      }
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Invalid Discord OAuth code"
+          },
+          "500": {
+            "description": "Failed to authenticate with Discord"
           }
         }
       }
@@ -536,6 +529,15 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
@@ -605,6 +607,12 @@
           "200": {
             "description": "Success"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          },
           "404": {
             "description": "Not found"
           }
@@ -673,6 +681,12 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -723,7 +737,10 @@
             }
           },
           "400": {
-            "description": "Missing or invalid query parameters"
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -796,6 +813,9 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "404": {
             "description": "Not found"
           }
@@ -847,6 +867,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -919,6 +945,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       },
@@ -945,6 +977,12 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -998,6 +1036,9 @@
           "200": {
             "description": "Success"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "404": {
             "description": "Not found"
           }
@@ -1049,6 +1090,15 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1095,6 +1145,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1133,6 +1192,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1179,6 +1244,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           }
         }
       }
@@ -1232,6 +1303,12 @@
           "200": {
             "description": "Success"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          },
           "404": {
             "description": "Not found"
           }
@@ -1283,6 +1360,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1343,6 +1426,9 @@
           "200": {
             "description": "Success"
           },
+          "401": {
+            "description": "Unauthorized"
+          },
           "404": {
             "description": "Not found"
           }
@@ -1384,6 +1470,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1446,6 +1538,15 @@
         "responses": {
           "200": {
             "description": "Updated"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       },
@@ -1472,6 +1573,9 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1533,6 +1637,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
@@ -1591,7 +1704,10 @@
             }
           },
           "400": {
-            "description": "Missing or invalid query parameters"
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1668,6 +1784,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       },
@@ -1706,6 +1831,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           },
           "404": {
             "description": "Not found"
@@ -1748,6 +1879,12 @@
         "responses": {
           "201": {
             "description": "Created"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1811,6 +1948,12 @@
           "200": {
             "description": "Updated"
           },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
           "404": {
             "description": "Not found"
           }
@@ -1839,6 +1982,9 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -1882,6 +2028,12 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           },
           "404": {
             "description": "Not found"
@@ -1928,6 +2080,12 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           },
           "404": {
             "description": "Not found"
@@ -1992,6 +2150,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       },
@@ -2043,7 +2210,13 @@
             }
           },
           "400": {
-            "description": "Missing or invalid fields"
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — requires guild admin"
           }
         }
       }
@@ -2080,6 +2253,11 @@
             }
           }
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "YouTube video config",
@@ -2092,7 +2270,10 @@
             }
           },
           "400": {
-            "description": "Missing or invalid query parameters"
+            "description": "Query validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           },
           "404": {
             "description": "Not found"
@@ -2150,7 +2331,10 @@
             }
           },
           "400": {
-            "description": "Missing or invalid fields"
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
           }
         }
       }
@@ -2227,6 +2411,15 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Body validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       },
@@ -2265,6 +2458,12 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
           },
           "404": {
             "description": "Not found"

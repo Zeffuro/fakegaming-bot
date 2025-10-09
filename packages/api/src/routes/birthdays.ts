@@ -85,6 +85,12 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — requires guild admin
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig, 'create'), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
@@ -124,6 +130,10 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  *       404:
  *         description: Not found
  */

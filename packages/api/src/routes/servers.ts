@@ -78,6 +78,10 @@ router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) =
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => {
     const created = await getConfigManager().serverManager.addPlain(req.body);
@@ -107,6 +111,12 @@ router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => 
  *     responses:
  *       200:
  *         description: Updated
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
  */
 router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateSchema), async (req, res) => {
     const { serverId } = req.params;
@@ -134,6 +144,8 @@ router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateB
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
  */
 router.delete('/:serverId', jwtAuth, validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;

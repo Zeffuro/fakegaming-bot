@@ -1,12 +1,16 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
-import { PatchSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
+import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
+const patchSubscriptionBodySchema = z.object({
+    game: z.string().min(1),
+    channelId: z.string().min(1),
+    guildId: z.string().min(1),
+});
 
 // Router
 const router = createBaseRouter();
@@ -68,8 +72,12 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.addPlain(req.body);
     res.status(201).json({ success: true });
 });
@@ -91,8 +99,12 @@ router.post('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create'
  *     responses:
  *       200:
  *         description: Success
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
-router.put('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create'), async (req, res) => {
+router.put('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
     res.json({ success: true });
 });
@@ -114,6 +126,8 @@ router.put('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create')
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */

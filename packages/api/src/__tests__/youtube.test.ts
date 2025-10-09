@@ -62,6 +62,12 @@ describe('YouTube API', () => {
         expect(res.status).toBe(200);
         expect(res.body.youtubeChannelId).toBe('ytchan1');
     });
+    it('should return 401 for GET /api/youtube/channel without JWT', async () => {
+        const res = await request(app)
+            .get('/api/youtube/channel')
+            .query({ youtubeChannelId: 'ytchan1', discordChannelId: 'ytchan1discord', guildId: 'testguild1' });
+        expect(res.status).toBe(401);
+    });
     it('should return 400 for GET /api/youtube/channel with missing query', async () => {
         const res = await request(app)
             .get('/api/youtube/channel')

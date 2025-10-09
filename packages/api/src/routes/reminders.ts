@@ -80,6 +80,10 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async (req, res) => {
     try {
@@ -111,6 +115,8 @@ router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async 
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */

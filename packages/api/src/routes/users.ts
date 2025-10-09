@@ -17,6 +17,8 @@ const userUpdateSchema = z
         defaultReminderTimeSpan: z.string().min(1).optional()
     })
     .refine((v) => Object.keys(v).length > 0, { message: 'At least one field must be provided' });
+const timezoneBodySchema = z.object({ timezone: z.string().min(1) });
+const defaultTimespanBodySchema = z.object({ timespan: z.string().min(1) });
 
 // Router
 const router = createBaseRouter();
@@ -78,6 +80,10 @@ router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res)
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
     await getConfigManager().userManager.addPlain(req.body);
@@ -107,6 +113,10 @@ router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
  *     responses:
  *       200:
  *         description: Updated
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */
@@ -145,6 +155,10 @@ router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validat
  *     responses:
  *       200:
  *         description: Success
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */
@@ -152,13 +166,13 @@ router.put(
     '/:discordId/timezone',
     jwtAuth,
     validateParams(discordIdParamSchema),
-    validateBody(z.object({ timezone: z.string().min(1) })),
+    validateBody(timezoneBodySchema),
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const { timezone } = req.body as { timezone: string };
+        const { timezone } = req.body as z.infer<typeof timezoneBodySchema>;
         await getConfigManager().userManager.updatePlain({ timezone }, { discordId });
         res.json({ success: true });
     }
@@ -190,6 +204,10 @@ router.put(
  *     responses:
  *       200:
  *         description: Success
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
  *       404:
  *         description: Not found
  */
@@ -197,13 +215,13 @@ router.put(
     '/:discordId/defaultReminderTimeSpan',
     jwtAuth,
     validateParams(discordIdParamSchema),
-    validateBody(z.object({ timespan: z.string().min(1) })),
+    validateBody(defaultTimespanBodySchema),
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        const { timespan } = req.body as { timespan: string };
+        const { timespan } = req.body as z.infer<typeof defaultTimespanBodySchema>;
         await getConfigManager().userManager.updatePlain(
             { defaultReminderTimeSpan: timespan },
             { discordId }
@@ -229,6 +247,8 @@ router.put(
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
  */
 router.delete('/:discordId', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;

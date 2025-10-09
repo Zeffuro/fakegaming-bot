@@ -53,6 +53,12 @@ describe('Twitch API', () => {
         expect(res.status).toBe(200);
         expect(res.body.exists).toBe(true);
     });
+    it('should return 401 for GET /api/twitch/exists without JWT', async () => {
+        const res = await request(app)
+            .get('/api/twitch/exists')
+            .query({ twitchUsername: 'x', discordChannelId: 'y', guildId: 'z' });
+        expect(res.status).toBe(401);
+    });
     it('should return 400 for GET /api/twitch/exists with missing query', async () => {
         const res = await request(app)
             .get('/api/twitch/exists')

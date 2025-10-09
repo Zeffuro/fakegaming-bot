@@ -71,12 +71,18 @@ router.get('/', async (_req, res) => {
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
+ *       400:
+ *         description: Query validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  */
 router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
-    const { guildId, text } = req.query;
-    const accessResult = await checkUserGuildAccess(req, res, guildId as string);
+    const { guildId, text } = req.query as z.infer<typeof searchQuerySchema>;
+    const accessResult = await checkUserGuildAccess(req, res, guildId);
     if (!accessResult.authorized) return;
-    const quotes = await getConfigManager().quoteManager.searchQuotes(guildId as string, text as string);
+    const quotes = await getConfigManager().quoteManager.searchQuotes(guildId, text);
     res.json(quotes);
 });
 
@@ -103,6 +109,10 @@ router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  */
 router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async (req, res) => {
     const { guildId } = req.params;
@@ -140,6 +150,10 @@ router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  */
 router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuthorParamSchema), async (req, res) => {
     const { guildId, authorId } = req.params;
@@ -191,6 +205,12 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *     responses:
  *       201:
  *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  */
 router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (req, res) => {
     const { guildId } = req.body;
@@ -227,6 +247,10 @@ router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (re
  *     responses:
  *       200:
  *         description: Success
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  *       404:
  *         description: Not found
  */

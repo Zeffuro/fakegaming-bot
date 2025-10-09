@@ -20,6 +20,7 @@ const router = createBaseRouter();
  *   post:
  *     summary: Login and get a JWT token
  *     tags: [Auth]
+ *     security: []
  *     requestBody:
  *       required: true
  *       content:
@@ -52,17 +53,12 @@ const router = createBaseRouter();
  *                       type: string
  *                     avatar:
  *                       type: string
- *                 guilds:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                       name:
- *                         type: string
- *                       icon:
- *                         type: string
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Invalid Discord OAuth code
+ *       500:
+ *         description: Failed to authenticate with Discord
  */
 router.post('/login', validateBody(loginBodySchema), async (req, res) => {
     const { code } = req.body as { code: string };

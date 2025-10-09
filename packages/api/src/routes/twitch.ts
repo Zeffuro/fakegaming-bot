@@ -72,10 +72,12 @@ router.get('/', async (_req, res) => {
  *                 exists:
  *                   type: boolean
  *       400:
- *         description: Missing or invalid query parameters
+ *         description: Query validation failed
+ *       401:
+ *         description: Unauthorized
  */
 router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
-    const { twitchUsername, discordChannelId, guildId } = req.query as unknown as { twitchUsername: string; discordChannelId: string; guildId: string };
+    const { twitchUsername, discordChannelId, guildId } = req.query as z.infer<typeof existsQuerySchema>;
     const exists = await getConfigManager().twitchManager.exists({ twitchUsername, discordChannelId, guildId });
     res.json({ exists });
 });
@@ -133,6 +135,12 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — requires guild admin
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamConfig, 'create'), async (req, res) => {
     await getConfigManager().twitchManager.addPlain(req.body);
@@ -166,6 +174,12 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamCo
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/TwitchStreamConfig'
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not found
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(TwitchStreamConfig, 'update'), async (req, res) => {
     const { id } = req.params;
@@ -200,6 +214,10 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *               properties:
  *                 success:
  *                   type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden — insufficient guild access
  *       404:
  *         description: Not found
  */
