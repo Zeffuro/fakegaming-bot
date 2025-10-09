@@ -1,7 +1,7 @@
 import {z} from 'zod';
 import type {Model, ModelCtor} from 'sequelize-typescript';
 import {schemaRegistry} from './schemaRegistry.js';
-import {generateSchema} from '@anatine/zod-openapi';
+import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
 function mapSequelizeTypeToOpenAPI(type: any): { type: string; format?: string } {
     const typeName = type?.constructor?.name || '';
@@ -46,10 +46,19 @@ function deriveOpenApiFromSequelize<T extends Model>(model: ModelCtor<T>): Recor
 }
 
 /**
- * Convert a Zod schema to an OpenAPI 3.0 SchemaObject using @anatine/zod-openapi.
+ * Convert a Zod schema to an OpenAPI 3.0 SchemaObject using @asteasolutions/zod-to-openapi.
  */
 export function zodSchemaToOpenApiSchema<T extends z.ZodTypeAny>(schema: T): Record<string, unknown> {
-    return generateSchema(schema) as unknown as Record<string, unknown>;
+    const registry = new OpenAPIRegistry();
+    const componentName = 'InlineSchema';
+    registry.register(componentName, schema);
+    const generator = new OpenApiGeneratorV3(registry.definitions);
+    const doc = generator.generateDocument({
+        openapi: '3.0.3',
+        info: { title: 'inline', version: '1.0.0' },
+    });
+    const schemas = doc.components?.schemas as Record<string, unknown> | undefined;
+    return (schemas && schemas[componentName] ? schemas[componentName] : { type: 'object', properties: {} }) as Record<string, unknown>;
 }
 
 /**

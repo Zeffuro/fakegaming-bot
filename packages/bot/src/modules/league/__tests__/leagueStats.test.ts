@@ -158,9 +158,12 @@ describe('leagueStats command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify error response
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            'Failed to fetch summoner: Rate limit exceeded'
-        );
+        // Verify error response now uses an embed object
+        expect(interaction.editReply).toHaveBeenCalled();
+        const arg = (interaction.editReply as any).mock.calls[0][0];
+        expect(typeof arg).toBe('object');
+        expect(Array.isArray(arg.embeds)).toBe(true);
+        const desc = arg.embeds?.[0]?.data?.description ?? arg.embeds?.[0]?.description ?? '';
+        expect(String(desc)).toContain('Failed to fetch summoner: Rate limit exceeded');
     });
 });

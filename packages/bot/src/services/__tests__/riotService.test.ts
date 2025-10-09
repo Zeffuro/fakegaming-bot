@@ -219,33 +219,26 @@ describe('riotService', () => {
             expect(result.puuid).toBe('config-puuid');
         });
 
-        it('should fetch PUUID for summoner name without tagline', async () => {
-            mockGetByPUUID.mockResolvedValue({
-                response: {
-                    puuid: 'fetched-puuid',
-                    name: 'TestUser',
-                    summonerLevel: 100,
-                },
-            });
+        it('should throw when summoner name is provided without tagline', async () => {
+            await expect(
+                resolveLeagueIdentity({
+                    summoner: 'TestUser',
+                    region: 'euw1' as any,
+                })
+            ).rejects.toThrow('Riot ID must include a tagline');
+        });
+
+        it('should resolve when Riot ID with tagline is provided', async () => {
+            // Given a Riot ID with tagline, we should call Account.getByRiotId and resolve PUUID
+            mockGetByRiotId.mockResolvedValue({ response: { puuid: 'resolved-puuid' } });
 
             const result = await resolveLeagueIdentity({
-                summoner: 'TestUser',
+                summoner: 'TestUser#EUW',
                 region: 'euw1' as any,
             });
 
-            expect(result.puuid).toBe('fetched-puuid');
-        });
-
-        it('should throw error when summoner and region are missing', async () => {
-            await expect(resolveLeagueIdentity({})).rejects.toThrow('Missing summoner or region');
-        });
-
-        it('should throw error when PUUID cannot be resolved', async () => {
-            mockGetByPUUID.mockResolvedValue({ response: { invalid: 'data' } });
-
-            await expect(
-                resolveLeagueIdentity({ summoner: 'TestUser', region: 'euw1' as any })
-            ).rejects.toThrow();
+            expect(result.puuid).toBe('resolved-puuid');
+            expect(mockGetByRiotId).toHaveBeenCalled();
         });
     });
 

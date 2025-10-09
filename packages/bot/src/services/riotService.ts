@@ -1,9 +1,70 @@
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {RiotApi, LolApi, TftApi} from 'twisted';
-import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI} from 'twisted/dist/constants/regions.js';
+import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI, RegionGroups} from 'twisted/dist/constants/regions.js';
 import {LeagueConfig} from "@zeffuro/fakegaming-common/models";
 
 const puuidCache = new Map<string, string>();
+
+function getLeagueApiKey(): string {
+    // Prefer dedicated LEAGUE key; fall back to DEV key if missing for local/dev convenience
+    return process.env.RIOT_LEAGUE_API_KEY || process.env.RIOT_DEV_API_KEY || '';
+}
+
+// Safe conversion from region to account API region group with fallback mapping
+function safeAccountRegionGroup(region: Regions | string): AccountAPIRegionGroups {
+    try {
+        return regionToRegionGroupForAccountAPI(region as Regions);
+    } catch {
+        const r = String(region).toLowerCase();
+        const fallback: Record<string, AccountAPIRegionGroups> = {
+            // Americas routing for these platforms
+            'na1': RegionGroups.AMERICAS,
+            'br1': RegionGroups.AMERICAS,
+            'la1': RegionGroups.AMERICAS,
+            'la2': RegionGroups.AMERICAS,
+            'oc1': RegionGroups.AMERICAS,
+            // Europe routing
+            'euw1': RegionGroups.EUROPE,
+            'eun1': RegionGroups.EUROPE,
+            'tr1': RegionGroups.EUROPE,
+            'ru': RegionGroups.EUROPE,
+            'me1': RegionGroups.EUROPE,
+            // Asia routing
+            'jp1': RegionGroups.ASIA,
+            'kr': RegionGroups.ASIA,
+            // SEA platforms use ASIA for Account API routing
+            'sg2': RegionGroups.ASIA,
+            'tw2': RegionGroups.ASIA,
+            'vn2': RegionGroups.ASIA,
+            // PBE maps to AMERICAS
+            'pbe1': RegionGroups.AMERICAS
+        };
+        const group = fallback[r];
+        if (!group) {
+            throw new Error(`Unsupported region: ${region}`);
+        }
+        return group;
+    }
+}
+
+function normalizeRiotError(_err: unknown): string {
+    const err = _err as unknown;
+    if (typeof err === 'string') return err;
+    if (err instanceof Error && err.message) return err.message;
+    // Try to extract Riot error payload
+    if (err && typeof err === 'object' && 'status' in err) {
+        const status = (err as { status?: { status_code?: number; message?: string } }).status;
+        if (status && (status.status_code || status.message)) {
+            const code = status.status_code ? String(status.status_code) : '';
+            return `${code}${code ? ' ' : ''}${status.message ?? 'Error'}`.trim();
+        }
+    }
+    return 'Unknown error';
+}
+
+function isRiotErrorPayload(data: unknown): data is { status: { status_code?: number; message?: string } } {
+    return !!(data && typeof data === 'object' && 'status' in (data as Record<string, unknown>));
+}
 
 export async function getSummoner(puuid: string, region: Regions): Promise<{
     success: boolean,
@@ -11,21 +72,21 @@ export async function getSummoner(puuid: string, region: Regions): Promise<{
     error?: string
 }> {
     try {
-        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const lolApi = new LolApi({key: getLeagueApiKey()});
         const result = await lolApi.Summoner.getByPUUID(puuid, region as Regions);
-        const data = result?.response ?? result;
-        // Require all expected properties for a valid summoner
-        if (!data || typeof data !== 'object' || !('puuid' in data && 'name' in data && 'summonerLevel' in data)) {
+        const data = (result as unknown as { response?: unknown })?.response ?? result;
+        if (isRiotErrorPayload(data)) {
+            const status = data.status;
+            const code = status.status_code ? String(status.status_code) : '';
+            return {success: false, error: `${code}${code ? ' ' : ''}${status.message ?? 'Error'}`.trim()};
+        }
+        // Require minimal expected properties for a valid summoner
+        if (!data || typeof data !== 'object' || !('puuid' in data && 'summonerLevel' in data)) {
             return {success: false, error: 'Malformed summoner data'};
         }
         return {success: true, data};
     } catch (error: unknown) {
-        let errorMessage = 'Failed to fetch summoner';
-        if (typeof error === 'string') {
-            errorMessage = error;
-        } else if (error instanceof Error && error.message) {
-            errorMessage = error.message;
-        }
+        let errorMessage = normalizeRiotError(error);
         // Check for 'not found' (substring, case-insensitive) before 'fail'
         if (errorMessage && errorMessage.toLowerCase().includes('not found')) {
             return {success: false, error: 'not found'};
@@ -43,7 +104,7 @@ export async function getPUUIDByRiotId(gameName: string, tagLine: string, region
         return puuidCache.get(cacheKey)!;
     }
     try {
-        const riotApi = new RiotApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const riotApi = new RiotApi({key: getLeagueApiKey()});
         const {response} = await riotApi.Account.getByRiotId(gameName, tagLine, region);
         puuidCache.set(cacheKey, response.puuid);
         return response.puuid;
@@ -58,11 +119,11 @@ export async function getMatchHistory(puuid: string, region: AccountAPIRegionGro
     error?: string
 }> {
     try {
-        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const lolApi = new LolApi({key: getLeagueApiKey()});
         const {response} = await lolApi.MatchV5.list(puuid, region, {start, count});
         return {success: true, data: response};
     } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch match history';
+        const errorMessage = normalizeRiotError(error);
         return {success: false, error: errorMessage};
     }
 }
@@ -73,11 +134,11 @@ export async function getMatchDetails(matchId: string, region: AccountAPIRegionG
     error?: string
 }> {
     try {
-        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const lolApi = new LolApi({key: getLeagueApiKey()});
         const {response} = await lolApi.MatchV5.get(matchId, region);
         return {success: true, data: response};
     } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch match details';
+        const errorMessage = normalizeRiotError(error);
         return {success: false, error: errorMessage};
     }
 }
@@ -92,11 +153,11 @@ export async function getSummonerDetails(puuid: string, region: Regions): Promis
     error?: string
 }> {
     try {
-        const lolApi = new LolApi({key: process.env.RIOT_LEAGUE_API_KEY});
+        const lolApi = new LolApi({key: getLeagueApiKey()});
         const {response} = await lolApi.League.byPUUID(puuid, region);
         return {success: true, data: response};
     } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch summoner details';
+        const errorMessage = normalizeRiotError(error);
         return {success: false, error: errorMessage};
     }
 }
@@ -137,17 +198,11 @@ export async function resolveLeagueIdentity(options: {
             [gameName, tagLine] = summoner.split('#');
         }
         if (tagLine) {
-            const accountRegion = regionToRegionGroupForAccountAPI(region);
+            const accountRegion = safeAccountRegionGroup(region);
             puuid = await getPUUIDByRiotId(gameName, tagLine, accountRegion);
         } else {
-            const summonerData = await getSummoner(gameName, region);
-            if (!summonerData.success) {
-                throw new Error(summonerData.error || 'Failed to fetch summoner');
-            }
-            puuid = (summonerData.data && (summonerData.data as { puuid?: string }).puuid) || undefined;
-            if (!puuid) {
-                throw new Error('Failed to fetch summoner PUUID');
-            }
+            // We require Riot ID with tagline for unlinked users, since name-only lookup is not supported in our Twisted version
+            throw new Error('Riot ID must include a tagline (e.g., Name#EUW) or link your account first');
         }
     }
 
