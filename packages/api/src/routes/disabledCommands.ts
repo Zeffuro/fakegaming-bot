@@ -1,19 +1,20 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { DisabledCommandConfig } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params/query via zod; body via model schema lazily
-const idParamSchema = z.object({ id: z.coerce.number() });
+// Zod schemas
+const idParamSchema = z.object({ id: z.coerce.number().int() });
 const checkQuerySchema = z.object({
     guildId: z.string().min(1),
     commandName: z.string().min(1)
 });
 const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -37,12 +38,8 @@ const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
  *               items:
  *                 $ref: '#/components/schemas/DisabledCommandConfig'
  */
-router.get('/', async (req, res) => {
-    const parsed = listQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Invalid query' });
-    }
-    const guildId = parsed.data.guildId;
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const guildId = (req.query as Record<string, unknown>).guildId as string | undefined;
     const disabledCommands = guildId
         ? await getConfigManager().disabledCommandManager.getManyPlain({ guildId })
         : await getConfigManager().disabledCommandManager.getAllPlain();
@@ -81,12 +78,8 @@ router.get('/', async (req, res) => {
  *       400:
  *         description: Missing or invalid query parameters
  */
-router.get('/check', jwtAuth, async (req, res) => {
-    const parsed = checkQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Missing or invalid query parameters' });
-    }
-    const { guildId, commandName } = parsed.data;
+router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) => {
+    const { guildId, commandName } = req.query as unknown as { guildId: string; commandName: string };
     const exists = await getConfigManager().disabledCommandManager.exists({ guildId, commandName });
     res.json({ disabled: exists });
 });
@@ -171,10 +164,15 @@ router.post('/', jwtAuth, validateBodyForModel(DisabledCommandConfig, 'create'),
  *               properties:
  *                 success:
  *                   type: boolean
+ *       404:
+ *         description: Not found
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    await getConfigManager().disabledCommandManager.removeByPk(Number(id));
+    const numericId = Number(id);
+    const existing = await getConfigManager().disabledCommandManager.findByPkPlain(numericId);
+    if (!existing) return res.status(404).json({ error: 'Disabled command not found' });
+    await getConfigManager().disabledCommandManager.removeByPk(numericId);
     res.json({ success: true });
 });
 

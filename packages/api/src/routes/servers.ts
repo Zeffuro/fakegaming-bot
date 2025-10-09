@@ -1,14 +1,25 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
-import { ServerConfig } from '@zeffuro/fakegaming-common/models';
+import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params via zod; body via model on demand
+// Zod schemas
 const serverIdParamSchema = z.object({ serverId: z.string().min(1) });
+const serverCreateSchema = z.object({
+    serverId: z.string().min(1),
+    name: z.string().min(1).optional(),
+    prefix: z.string().min(1).optional()
+});
+const serverUpdateSchema = z
+    .object({
+        name: z.string().min(1).optional(),
+        prefix: z.string().min(1).optional()
+    })
+    .refine((v) => Object.keys(v).length > 0, { message: 'At least one field must be provided' });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -68,7 +79,7 @@ router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) =
  *       201:
  *         description: Created
  */
-router.post('/', jwtAuth, validateBodyForModel(ServerConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => {
     const created = await getConfigManager().serverManager.addPlain(req.body);
     res.status(201).json(created);
 });
@@ -97,7 +108,7 @@ router.post('/', jwtAuth, validateBodyForModel(ServerConfig, 'create'), async (r
  *       200:
  *         description: Updated
  */
-router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBodyForModel(ServerConfig, 'update'), async (req, res) => {
+router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateSchema), async (req, res) => {
     const { serverId } = req.params;
     const server = await getConfigManager().serverManager.findByPkPlain(serverId);
     if (!server) return res.status(404).json({ error: 'Server not found' });

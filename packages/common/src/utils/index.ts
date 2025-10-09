@@ -7,3 +7,4 @@ export * from './modelToZod.js';
 export * from './schemaRegistry.js';
 export * from './validation.js';
 export * from './openapi.js';
+export * from './typeUtils.js';

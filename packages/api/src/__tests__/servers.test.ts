@@ -36,4 +36,22 @@ describe('Servers API', () => {
         const res = await request(app).get('/api/servers/nonexistentserver').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
+
+    it('should return 400 when POST /api/servers with missing fields', async () => {
+        const res = await request(app)
+            .post('/api/servers')
+            .set('Authorization', `Bearer ${token}`)
+            .send({});
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Body validation failed');
+    });
+
+    it('should return 400 when PUT /api/servers/:serverId with invalid body', async () => {
+        const res = await request(app)
+            .put(`/api/servers/${testServer.serverId}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ prefix: 123 });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Body validation failed');
+    });
 });

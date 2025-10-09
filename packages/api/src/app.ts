@@ -1,5 +1,5 @@
 import express from 'express';
-import apiRouter from './routes/index.js';
+import { router as apiRouter } from './routes/index.js';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';

@@ -1,19 +1,20 @@
-import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { validateBodyForModel, validateParams, validateQuery, validateBody } from '@zeffuro/fakegaming-common';
 import { YoutubeVideoConfig } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
+import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 
-const router = createBaseRouter();
-
-const idParamSchema = z.object({ id: z.coerce.number() });
+// Schemas
+const idParamSchema = z.object({ id: z.coerce.number().int() });
 const channelSchema = z.object({
     youtubeChannelId: z.string().min(1),
     discordChannelId: z.string().min(1),
     guildId: z.string().min(1)
 });
+
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -70,12 +71,8 @@ router.get('/', async (_req, res) => {
  *       404:
  *         description: Not found
  */
-router.get('/channel', jwtAuth, async (req, res) => {
-    const parsed = channelSchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Missing or invalid query parameters' });
-    }
-    const { youtubeChannelId, discordChannelId, guildId } = parsed.data;
+router.get('/channel', jwtAuth, validateQuery(channelSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.query as unknown as { youtubeChannelId: string; discordChannelId: string; guildId: string };
     const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     if (!config) return res.status(404).json({ error: 'YouTube video config not found' });
     res.json(config);
@@ -137,10 +134,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoConfig, 'create'), async (req, res, next) => {
     try {
-        const created = await getConfigManager().youtubeManager.addPlain(req.body as any);
+        const created = await getConfigManager().youtubeManager.addPlain(req.body);
         res.status(201).json(created);
     } catch (err) {
-        // For tests expecting 403 on NotFoundError during POST, downgrade NotFound to Forbidden
         const { NotFoundError, ForbiddenError } = await import('@zeffuro/fakegaming-common');
         if (err instanceof NotFoundError) {
             return next(new ForbiddenError((err as Error).message));
@@ -162,9 +158,14 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *       content:
  *         application/json:
  *           schema:
- *             youtubeChannelId: string
- *             discordChannelId: string
- *             guildId: string
+ *             type: object
+ *             properties:
+ *               youtubeChannelId:
+ *                 type: string
+ *               discordChannelId:
+ *                 type: string
+ *               guildId:
+ *                 type: string
  *     responses:
  *       201:
  *         description: Created
@@ -180,12 +181,8 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *       400:
  *         description: Missing or invalid fields
  */
-router.post('/channel', jwtAuth, async (req, res) => {
-    const parsed = channelSchema.safeParse(req.body);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Missing or invalid fields' });
-    }
-    const { youtubeChannelId, discordChannelId, guildId } = parsed.data;
+router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as { youtubeChannelId: string; discordChannelId: string; guildId: string };
     const { created } = await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(201).json({ success: true, created });
 });
@@ -224,12 +221,8 @@ router.post('/channel', jwtAuth, async (req, res) => {
  *       400:
  *         description: Missing or invalid fields
  */
-router.put('/', jwtAuth, requireGuildAdmin, async (req, res) => {
-    const parsed = channelSchema.safeParse(req.body);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Missing or invalid fields' });
-    }
-    const { youtubeChannelId, discordChannelId, guildId } = parsed.data;
+router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as { youtubeChannelId: string; discordChannelId: string; guildId: string };
     await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(200).json({ success: true });
 });
@@ -295,13 +288,11 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *               properties:
  *                 success:
  *                   type: boolean
+ *       404:
+ *         description: Not found
  */
-router.delete('/:id', jwtAuth, async (req, res, next) => {
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    if (!/^\d+$/.test(id)) {
-        // Simulate DB error for invalid id type as tests expect 500
-        return next(new Error('Database error'));
-    }
     const numericId = Number(id);
     const video = await getConfigManager().youtubeManager.findByPkPlain(numericId);
     if (!video) return res.status(404).json({ error: 'YouTube video config not found' });
@@ -309,7 +300,7 @@ router.delete('/:id', jwtAuth, async (req, res, next) => {
         const access = await checkUserGuildAccess(req, res, video.guildId);
         if (!access.authorized) return;
     }
-    await getConfigManager().youtubeManager.remove({ id: numericId } as any);
+    await getConfigManager().youtubeManager.removeByPk(numericId);
     res.json({ success: true });
 });
 

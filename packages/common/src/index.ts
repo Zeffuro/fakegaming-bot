@@ -2,11 +2,13 @@ import * as Models from './models/index.js';
 import * as Managers from './managers/index.js';
 import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
+import { z } from 'zod';
 
 import { getSequelize } from './sequelize.js';
 
 import { cacheGet, cacheSet, cacheDel, ensureRedis } from './cache.js';
 import { CACHE_KEYS, CACHE_TTL, getCacheManager, defaultCacheManager, type CacheManager } from './utils/cacheManager.js';
+import { schemaRegistry } from './utils/schemaRegistry.js';
 
 export {
   Models
@@ -116,3 +118,15 @@ export {
     modelToOpenApiSchema,
     zodSchemaToOpenApiSchema
 } from './utils/openapi.js';
+
+export { asValidated } from './utils/typeUtils.js';
+
+// Register custom create schema overrides (executed on module import)
+const patchSubscriptionCreateSchema = z.object({
+    game: z.string().min(1),
+    channelId: z.string().min(1),
+    guildId: z.string().min(1),
+    lastAnnouncedAt: z.number().int().optional()
+}).strict();
+
+schemaRegistry.registerCustom(Models.PatchSubscriptionConfig, 'create', patchSubscriptionCreateSchema);

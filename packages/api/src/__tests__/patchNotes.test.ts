@@ -52,4 +52,20 @@ describe('PatchNotes API', () => {
         const res = await request(app).get('/api/patchNotes/nonexistentgame').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
     });
+    it('should return 400 when POST /api/patchNotes with missing fields', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .post('/api/patchNotes')
+            .set('Authorization', `Bearer ${token}`)
+            .send({});
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBeTypeOf('string');
+    });
+
+    it('should return 401 for POST /api/patchNotes without JWT', async () => {
+        const res = await request(app)
+            .post('/api/patchNotes')
+            .send({ game: 'g', title: 't', content: 'c', url: 'u', publishedAt: Date.now(), version: 'v' });
+        expect(res.status).toBe(401);
+    });
 });

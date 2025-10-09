@@ -15,7 +15,7 @@ export function validateBody<T extends z.ZodTypeAny>(schema: T) {
         } catch (error) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
-                    error: 'Validation failed',
+                    error: 'Body validation failed',
                     details: error.issues.map(e => ({
                         path: e.path.join('.'),
                         message: e.message,
@@ -45,7 +45,7 @@ export function validateBodyForModel<T extends Model>(model: ModelCtor<T>, type:
         } catch (error) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
-                    error: 'Validation failed',
+                    error: 'Body validation failed',
                     details: error.issues.map(e => ({
                         path: e.path.join('.'),
                         message: e.message,
@@ -68,8 +68,8 @@ export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
             // Don't reassign req.query directly - it's read-only in Express
             // Cast validated to a record type to satisfy TypeScript
             if (validated && typeof validated === 'object') {
-                Object.keys(validated as Record<string, any>).forEach(key => {
-                    (req.query as any)[key] = (validated as any)[key];
+                Object.keys(validated as Record<string, unknown>).forEach(key => {
+                    (req.query as Record<string, unknown>)[key] = (validated as Record<string, unknown>)[key];
                 });
             }
             next();
@@ -96,12 +96,12 @@ export function validateParams<T extends z.ZodTypeAny>(schema: T) {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const validated = await schema.parseAsync(req.params);
-            req.params = validated as any;
+            req.params = validated as unknown as Request['params'];
             next();
         } catch (error) {
             if (error instanceof z.ZodError) {
                 res.status(400).json({
-                    error: 'Parameter validation failed',
+                    error: 'Params validation failed',
                     details: error.issues.map(e => ({
                         path: e.path.join('.'),
                         message: e.message,

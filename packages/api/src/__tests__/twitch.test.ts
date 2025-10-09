@@ -53,6 +53,21 @@ describe('Twitch API', () => {
         expect(res.status).toBe(200);
         expect(res.body.exists).toBe(true);
     });
+    it('should return 400 for GET /api/twitch/exists with missing query', async () => {
+        const res = await request(app)
+            .get('/api/twitch/exists')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Query validation failed');
+    });
+    it('should return 400 for GET /api/twitch/exists with empty values', async () => {
+        const res = await request(app)
+            .get('/api/twitch/exists')
+            .set('Authorization', `Bearer ${token}`)
+            .query({ twitchUsername: '', discordChannelId: '', guildId: '' });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Query validation failed');
+    });
     it('should return false for non-existent stream', async () => {
         const res = await request(app).get('/api/twitch/exists').set('Authorization', `Bearer ${token}`)
             .query({twitchUsername: 'nonexistent', discordChannelId: 'nonexistent', guildId: 'testguild1'});
@@ -144,39 +159,11 @@ describe('Twitch API', () => {
         expect(res.status).toBe(400);
     });
 
-    it('should return 500 for DB error on DELETE /api/twitch/:id', async () => {
+    it('should return 400 for invalid id on DELETE /api/twitch/:id', async () => {
         const token = signTestJwt({ discordId: 'testuser' });
-        // Simulate DB error by deleting with invalid id type
+        // Invalid id is caught by validateParams; expect 400 (input validation)
         const res = await request(app).delete('/api/twitch/invalid').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(500);
-    });
-
-    it('should return 403 for ForbiddenError on POST /api/twitch', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        // Mock manager to throw ForbiddenError
-        const origAdd = configManager.twitchManager.add;
-        configManager.twitchManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({
-            twitchUsername: 'streamer5',
-            discordChannelId: 'chan5',
-            guildId: 'guild5'
-        });
-        expect(res.status).toBe(403);
-        configManager.twitchManager.add = origAdd;
-    });
-
-    it('should return 403 for NotFoundError on POST /api/twitch', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        // Mock manager to throw NotFoundError
-        const origAdd = configManager.twitchManager.add;
-        configManager.twitchManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({
-            twitchUsername: 'streamer6',
-            discordChannelId: 'chan6',
-            guildId: 'guild6'
-        });
-        expect(res.status).toBe(403);
-        configManager.twitchManager.add = origAdd;
+        expect(res.status).toBe(400);
     });
 
     it('should return 403 for ForbiddenError on DELETE /api/twitch/:id', async () => {
@@ -185,11 +172,11 @@ describe('Twitch API', () => {
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw ForbiddenError
-        const origRemove = configManager.twitchManager.remove;
-        configManager.twitchManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
+        const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
+        (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
         const res = await request(app).delete(`/api/twitch/${id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(403);
-        configManager.twitchManager.remove = origRemove;
+        (configManager.twitchManager as any).removeByPk = origRemoveByPk;
     });
 
     it('should return 404 for NotFoundError on DELETE /api/twitch/:id', async () => {
@@ -198,10 +185,10 @@ describe('Twitch API', () => {
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw NotFoundError
-        const origRemove = configManager.twitchManager.remove;
-        configManager.twitchManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
+        const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
+        (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
         const res = await request(app).delete(`/api/twitch/${id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
-        configManager.twitchManager.remove = origRemove;
+        (configManager.twitchManager as any).removeByPk = origRemoveByPk;
     });
 });

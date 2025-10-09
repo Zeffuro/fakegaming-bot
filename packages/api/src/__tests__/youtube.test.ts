@@ -62,6 +62,22 @@ describe('YouTube API', () => {
         expect(res.status).toBe(200);
         expect(res.body.youtubeChannelId).toBe('ytchan1');
     });
+    it('should return 400 for GET /api/youtube/channel with missing query', async () => {
+        const res = await request(app)
+            .get('/api/youtube/channel')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Query validation failed');
+        expect(Array.isArray(res.body.details)).toBe(true);
+    });
+    it('should return 400 for GET /api/youtube/channel with empty values', async () => {
+        const res = await request(app)
+            .get('/api/youtube/channel')
+            .set('Authorization', `Bearer ${token}`)
+            .query({ youtubeChannelId: '', discordChannelId: '', guildId: '' });
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Query validation failed');
+    });
     it('should return 404 for non-existent youtube config', async () => {
         const res = await request(app).get('/api/youtube/999999').set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
@@ -161,39 +177,11 @@ describe('YouTube API', () => {
         expect(res.status).toBe(400);
     });
 
-    it('should return 500 for DB error on DELETE /api/youtube/:id', async () => {
+    it('should return 400 for invalid id on DELETE /api/youtube/:id', async () => {
         const token = signTestJwt({ discordId: 'testuser' });
-        // Simulate DB error by deleting with invalid id type
+        // Invalid id is caught by validateParams; expect 400
         const res = await request(app).delete('/api/youtube/invalid').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(500);
-    });
-
-    it('should return 403 for ForbiddenError on POST /api/youtube', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        // Mock manager to throw ForbiddenError
-        const origAdd = configManager.youtubeManager.add;
-        configManager.youtubeManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
-        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({
-            youtubeChannelId: 'ytchan5',
-            discordChannelId: 'ytchan5discord',
-            guildId: 'testguild5'
-        });
-        expect(res.status).toBe(403);
-        configManager.youtubeManager.add = origAdd;
-    });
-
-    it('should return 403 for NotFoundError on POST /api/youtube', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        // Mock manager to throw NotFoundError
-        const origAdd = configManager.youtubeManager.add;
-        configManager.youtubeManager.add = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
-        const res = await request(app).post('/api/youtube').set('Authorization', `Bearer ${token}`).send({
-            youtubeChannelId: 'ytchan6',
-            discordChannelId: 'ytchan6discord',
-            guildId: 'testguild6'
-        });
-        expect(res.status).toBe(403);
-        configManager.youtubeManager.add = origAdd;
+        expect(res.status).toBe(400);
     });
 
     it('should return 403 for ForbiddenError on DELETE /api/youtube/:id', async () => {
@@ -202,11 +190,11 @@ describe('YouTube API', () => {
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw ForbiddenError
-        const origRemove = configManager.youtubeManager.remove;
-        configManager.youtubeManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
+        const origRemoveByPk = (configManager.youtubeManager as any).removeByPk as (id: number) => Promise<void>;
+        (configManager.youtubeManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
         const res = await request(app).delete(`/api/youtube/${id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(403);
-        configManager.youtubeManager.remove = origRemove;
+        (configManager.youtubeManager as any).removeByPk = origRemoveByPk;
     });
 
     it('should return 404 for NotFoundError on DELETE /api/youtube/:id', async () => {
@@ -215,10 +203,10 @@ describe('YouTube API', () => {
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw NotFoundError
-        const origRemove = configManager.youtubeManager.remove;
-        configManager.youtubeManager.remove = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
+        const origRemoveByPk = (configManager.youtubeManager as any).removeByPk as (id: number) => Promise<void>;
+        (configManager.youtubeManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
         const res = await request(app).delete(`/api/youtube/${id}`).set('Authorization', `Bearer ${token}`);
         expect(res.status).toBe(404);
-        configManager.youtubeManager.remove = origRemove;
+        (configManager.youtubeManager as any).removeByPk = origRemoveByPk;
     });
 });

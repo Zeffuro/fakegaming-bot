@@ -178,6 +178,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         options?: never;
@@ -356,6 +363,13 @@ export interface paths {
                             success?: boolean;
                         };
                     };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -596,6 +610,13 @@ export interface paths {
             responses: {
                 /** @description Success */
                 200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -968,6 +989,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         options?: never;
@@ -1212,6 +1240,13 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Missing or invalid query parameters */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         put?: never;
@@ -1309,6 +1344,13 @@ export interface paths {
                             success?: boolean;
                         };
                     };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -1431,6 +1473,13 @@ export interface paths {
                     };
                     content?: never;
                 };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         post?: never;
@@ -1455,6 +1504,104 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{discordId}/timezone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set timezone for a user */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        timezone?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{discordId}/defaultReminderTimeSpan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set default reminder timespan for a user */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        timespan?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1616,7 +1763,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": unknown;
+                    "application/json": {
+                        youtubeChannelId?: string;
+                        discordChannelId?: string;
+                        guildId?: string;
+                    };
                 };
             };
             responses: {
@@ -1734,6 +1885,13 @@ export interface paths {
                             success?: boolean;
                         };
                     };
+                };
+                /** @description Not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };

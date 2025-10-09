@@ -1,14 +1,15 @@
-import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
 import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
 import { PatchSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
-import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
 
+// Zod schemas
+const idParamSchema = z.object({ id: z.coerce.number().int() });
+
+// Router
 const router = createBaseRouter();
-
-// ✨ Single source of truth - params via zod; body via model lazily
-const idParamSchema = z.object({ id: z.coerce.number() });
 
 /**
  * @openapi
@@ -113,10 +114,15 @@ router.put('/', jwtAuth, validateBodyForModel(PatchSubscriptionConfig, 'create')
  *     responses:
  *       200:
  *         description: Success
+ *       404:
+ *         description: Not found
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    await getConfigManager().patchSubscriptionManager.removeByPk(Number(id));
+    const numericId = Number(id);
+    const existing = await getConfigManager().patchSubscriptionManager.findByPkPlain(numericId);
+    if (!existing) return res.status(404).json({ error: 'Subscription not found' });
+    await getConfigManager().patchSubscriptionManager.removeByPk(numericId);
     res.json({ success: true });
 });
 

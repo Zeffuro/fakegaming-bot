@@ -47,6 +47,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts,.d.ts --config ../../eslint.config.mjs",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
@@ -54,7 +55,7 @@
   },
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.8",
-    "discord.js": "^14.3.1",
+    "discord.js": "^14.22.1",
     "dotenv": "^17.2.3",
     "dotenv-expand": "^12.0.3",
     "ioredis": "^5.8.0",

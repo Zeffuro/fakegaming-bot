@@ -1,20 +1,20 @@
-import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
+import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { TwitchStreamConfig } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
+import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - schemas derived lazily via model
-const idParamSchema = z.object({ id: z.coerce.number() });
+// Schemas
+const idParamSchema = z.object({ id: z.coerce.number().int() });
 const existsQuerySchema = z.object({
     twitchUsername: z.string().min(1),
     discordChannelId: z.string().min(1),
     guildId: z.string().min(1)
 });
+
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -71,13 +71,11 @@ router.get('/', async (_req, res) => {
  *               properties:
  *                 exists:
  *                   type: boolean
+ *       400:
+ *         description: Missing or invalid query parameters
  */
-router.get('/exists', jwtAuth, async (req, res) => {
-    const parsed = existsQuerySchema.safeParse(req.query);
-    if (!parsed.success) {
-        return res.status(400).json({ error: 'Missing or invalid query parameters' });
-    }
-    const { twitchUsername, discordChannelId, guildId } = parsed.data;
+router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
+    const { twitchUsername, discordChannelId, guildId } = req.query as unknown as { twitchUsername: string; discordChannelId: string; guildId: string };
     const exists = await getConfigManager().twitchManager.exists({ twitchUsername, discordChannelId, guildId });
     res.json({ exists });
 });
@@ -202,12 +200,11 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *               properties:
  *                 success:
  *                   type: boolean
+ *       404:
+ *         description: Not found
  */
-router.delete('/:id', jwtAuth, async (req, res, next) => {
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    if (!/^\d+$/.test(id)) {
-        return next(new Error('Database error'));
-    }
     const numericId = Number(id);
     const stream = await getConfigManager().twitchManager.findByPkPlain(numericId);
     if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
@@ -215,7 +212,7 @@ router.delete('/:id', jwtAuth, async (req, res, next) => {
         const access = await checkUserGuildAccess(req, res, stream.guildId);
         if (!access.authorized) return;
     }
-    await getConfigManager().twitchManager.remove({ id: numericId } as any);
+    await getConfigManager().twitchManager.removeByPk(numericId);
     res.json({ success: true });
 });
 

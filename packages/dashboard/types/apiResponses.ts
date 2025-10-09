@@ -248,6 +248,20 @@ export type users_post_Request = paths["/users"]["post"]["requestBody"]["content
 export type users_discordId_put_Request = paths["/users/{discordId}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
+ * Request body for [PUT /users/{discordId}/timezone]
+ *
+ * @see paths["/users/{discordId}/timezone"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type users_discordId_timezone_put_Request = paths["/users/{discordId}/timezone"]["put"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Request body for [PUT /users/{discordId}/defaultReminderTimeSpan]
+ *
+ * @see paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type users_discordId_defaultReminderTimeSpan_put_Request = paths["/users/{discordId}/defaultReminderTimeSpan"]["put"]["requestBody"]["content"]["application/json"];
+
+/**
  * Response for [GET /youtube 200]
  *
  * @see paths["/youtube"]["get"]["responses"]["200"]["content"]["application/json"]

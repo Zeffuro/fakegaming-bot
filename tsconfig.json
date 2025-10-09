@@ -15,6 +15,7 @@
     "packages/bot/src",
     "packages/common/src",
     "packages/dashboard/**/*",
+    "packages/api/src",
     "scripts"
   ]
 }

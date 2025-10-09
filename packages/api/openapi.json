@@ -604,6 +604,9 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -792,6 +795,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -991,6 +997,9 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -1333,6 +1342,9 @@
         "responses": {
           "200": {
             "description": "Success"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -1577,6 +1589,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Missing or invalid query parameters"
           }
         }
       }
@@ -1691,6 +1706,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -1792,6 +1810,9 @@
         "responses": {
           "200": {
             "description": "Updated"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       },
@@ -1818,6 +1839,98 @@
         "responses": {
           "200": {
             "description": "Success"
+          }
+        }
+      }
+    },
+    "/users/{discordId}/timezone": {
+      "put": {
+        "summary": "Set timezone for a user",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timezone": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/users/{discordId}/defaultReminderTimeSpan": {
+      "put": {
+        "summary": "Set default reminder timespan for a user",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "timespan": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }
@@ -2001,9 +2114,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "youtubeChannelId": "string",
-                "discordChannelId": "string",
-                "guildId": "string"
+                "type": "object",
+                "properties": {
+                  "youtubeChannelId": {
+                    "type": "string"
+                  },
+                  "discordChannelId": {
+                    "type": "string"
+                  },
+                  "guildId": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -2143,6 +2265,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not found"
           }
         }
       }

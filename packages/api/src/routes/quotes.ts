@@ -7,9 +7,7 @@ import { QuoteConfig } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
 import { UniqueConstraintError } from 'sequelize';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params & query via zod; body via model at request time
+// Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
 const guildIdParamSchema = z.object({ guildId: z.string().min(1) });
 const guildAuthorParamSchema = z.object({
@@ -20,6 +18,9 @@ const searchQuerySchema = z.object({
     guildId: z.string().min(1),
     text: z.string().min(1)
 });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi

@@ -35,7 +35,7 @@
     "test": "pnpm -r run test",
     "test:coverage": "pnpm -r run test:coverage",
     "test:coverage:view": "pnpm run test:coverage && node -e \"require('child_process').exec(process.platform === 'win32' ? 'start coverage/index.html' : process.platform === 'darwin' ? 'open coverage/index.html' : 'xdg-open coverage/index.html')\"",
-    "typecheck": "pnpm -r run typecheck --if-present",
+    "typecheck": "pnpm -r run --if-present typecheck",
     "start:api": "pnpm --filter @zeffuro/fakegaming-bot-api run start",
     "start:api:dev": "pnpm --filter @zeffuro/fakegaming-bot-api run start:dev",
     "start:bot": "pnpm --filter @zeffuro/fakegaming-bot run start",
@@ -56,7 +56,6 @@
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "ts-node": "^10.9.2"
   }
 }

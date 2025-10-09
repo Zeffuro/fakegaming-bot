@@ -1,14 +1,15 @@
-import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
 import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
 import { PatchNoteConfig } from '@zeffuro/fakegaming-common/models';
-import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params via zod; body via model lazily
+// Zod schemas
 const gameParamSchema = z.object({ game: z.string().min(1) });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -79,7 +80,6 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  *         description: Created
  */
 router.post('/', jwtAuth, validateBodyForModel(PatchNoteConfig, 'create'), async (req, res) => {
-    // req.body is now fully validated and type-safe based on the model!
     await getConfigManager().patchNotesManager.setLatestPatch(req.body);
     res.status(201).json({ success: true });
 });

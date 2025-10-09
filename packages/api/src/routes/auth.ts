@@ -1,8 +1,18 @@
-import {Router} from 'express';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { exchangeCodeForToken, fetchDiscordUser, issueJwt } from '@zeffuro/fakegaming-common/discord';
+import { z } from 'zod';
+import { validateBody } from '@zeffuro/fakegaming-common';
 
-const router = Router();
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
+// Constants
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'fakegaming-dashboard';
+
+// Schemas
+const loginBodySchema = z.object({
+    code: z.string().min(1)
+});
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -54,11 +64,8 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
  *                       icon:
  *                         type: string
  */
-router.post('/login', async (req, res) => {
-    const { code } = req.body;
-    if (!code) {
-        return res.status(400).json({ error: 'Missing Discord OAuth code' });
-    }
+router.post('/login', validateBody(loginBodySchema), async (req, res) => {
+    const { code } = req.body as { code: string };
     try {
         const tokenData = await exchangeCodeForToken(
             code,
@@ -66,12 +73,11 @@ router.post('/login', async (req, res) => {
             process.env.DISCORD_CLIENT_SECRET!,
             process.env.DISCORD_REDIRECT_URI!
         );
-        const accessToken = tokenData.access_token;
+        const accessToken = tokenData.access_token as string | undefined;
         if (!accessToken) {
             return res.status(401).json({ error: 'Invalid Discord OAuth code' });
         }
         const user = await fetchDiscordUser(accessToken);
-        // TODO: Add guilds to redis cache?
         const jwtToken = issueJwt(user, process.env.JWT_SECRET!, JWT_AUDIENCE);
         res.json({ token: jwtToken, user });
     } catch (err) {

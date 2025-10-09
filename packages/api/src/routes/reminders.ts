@@ -7,10 +7,11 @@ import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params via zod; body via model on demand
+// Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -110,13 +111,15 @@ router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async 
  *     responses:
  *       200:
  *         description: Success
+ *       404:
+ *         description: Not found
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
     if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
-    await getConfigManager().reminderManager.removeReminder(id);
+    await getConfigManager().reminderManager.removeByPk(id);
     console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
     res.json({ success: true });
 });

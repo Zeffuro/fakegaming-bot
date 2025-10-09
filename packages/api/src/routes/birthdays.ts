@@ -8,13 +8,14 @@ import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
 
-const router = createBaseRouter();
-
-// ✨ Single source of truth - params via zod; body via model lazily
+// Zod schemas
 const userGuildParamSchema = z.object({
     userId: z.string().min(1),
     guildId: z.string().min(1)
 });
+
+// Router
+const router = createBaseRouter();
 
 /**
  * @openapi
@@ -63,7 +64,7 @@ router.get('/', async (_req, res) => {
 router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
     const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
-    if (!birthday) throw { status: 404, message: 'Birthday not found' };
+    if (!birthday) return res.status(404).json({ error: 'Birthday not found' });
     res.json(birthday);
 });
 
@@ -123,6 +124,8 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
  *     responses:
  *       200:
  *         description: Success
+ *       404:
+ *         description: Not found
  */
 router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;

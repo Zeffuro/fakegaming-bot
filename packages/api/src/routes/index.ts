@@ -10,7 +10,7 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const isProd =
     process.env.NODE_ENV === 'production' ||
     currentDir.endsWith('/dist/routes') ||
-    currentDir.includes('\dist\\routes');
+    currentDir.includes('\\dist\\routes');
 const routesDir = currentDir; // this file lives in src/routes (dev) or dist/routes (prod)
 const targetExt = isProd ? '.js' : '.ts';
 
@@ -58,4 +58,4 @@ for (const file of routeFiles) {
     router.use(routePath, routeHandler);
 }
 
-export default router;
+export { router };

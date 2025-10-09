@@ -55,6 +55,14 @@ describe('DisabledCommands API', () => {
         expect(res.body.success).toBe(true);
     });
 
+    it('should return 400 for invalid id on DELETE /api/disabledCommands/:id', async () => {
+        const res = await request(app)
+            .delete('/api/disabledCommands/invalid')
+            .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(400);
+        expect(res.body.error).toBe('Params validation failed');
+    });
+
     it('should return 400 for missing check params', async () => {
         const res = await request(app)
             .get('/api/disabledCommands/check')

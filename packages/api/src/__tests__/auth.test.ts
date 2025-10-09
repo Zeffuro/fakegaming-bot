@@ -37,7 +37,8 @@ describe('POST /auth/login', () => {
             .send({});
 
         expect(response.status).toBe(400);
-        expect(response.body.error).toBe('Missing Discord OAuth code');
+        expect(response.body.error).toBe('Body validation failed');
+        expect(Array.isArray(response.body.details)).toBe(true);
     });
 
     it('should return 401 if access token is missing', async () => {

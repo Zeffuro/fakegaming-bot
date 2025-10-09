@@ -14,6 +14,7 @@
     "generate:api-aliases": "pnpm tsx scripts/generateApiAliases.ts",
     "start": "next start",
     "start:dev": "pnpm --filter @zeffuro/fakegaming-bot-api export:openapi && pnpm generate:api-types && next dev",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint app --ext .ts --config ../../eslint.config.mjs",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
