@@ -31,7 +31,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/api/lcov.info,./coverage/bot/lcov.info,./coverage/common/lcov.info
+          files: ./coverage/api/lcov.info,./coverage/bot/lcov.info,./coverage/common/lcov.info ./coverage/dashboard/lcov.info
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: true
