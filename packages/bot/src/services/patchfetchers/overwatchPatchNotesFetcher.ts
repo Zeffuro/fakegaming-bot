@@ -1,7 +1,7 @@
 import {BasePatchNotesFetcher} from './basePatchNotesFetcher.js';
 import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import * as cheerio from 'cheerio';
-import {parseDateToISO} from "../../utils/timeUtils.js";
+import {parseDateToISO} from '@zeffuro/fakegaming-common/utils';
 
 /**
  * Extracts the date portion from an Overwatch patch note title.

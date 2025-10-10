@@ -9,8 +9,7 @@ This API follows a layered architecture:
 - **Routes** (`src/routes/`) - Express route handlers, validation, and HTTP concerns
 - **Middleware** (`src/middleware/`) - Authentication, error handling, and request processing
 - **Utils** (`src/utils/`) - Helper functions and shared utilities
-- **DTOs** (from `@zeffuro/fakegaming-common/dto`) - Type-safe data transfer objects
-- **Managers** (from `@zeffuro/fakegaming-common/managers`) - Data access layer
+- **Shared models/managers** (from `@zeffuro/fakegaming-common`) - Data layer and schemas
 
 ## Testing
 
@@ -20,16 +19,17 @@ The API package uses a comprehensive testing setup built on Vitest and the share
 
 #### Key Testing Utilities
 
-**`setupApiTest(options)`** - Sets up all necessary mocks and environment for API testing
-**`setupApiRouteTest(options)`** - Creates a complete test context with app factory
-**`createTestApp(router, basePath)`** - Creates minimal Express app for isolated route testing
-**`signTestJwt(payload)`** - Generates valid JWT tokens for authenticated requests
+- `setupApiTest(options)` — Sets up all necessary mocks and environment for API testing
+- `setupApiRouteTest(options)` — Creates a complete test context with app factory
+- `createTestApp(router, basePath)` — Creates minimal Express app for isolated route testing
+- `signTestJwt(payload)` — Generates valid JWT tokens for authenticated requests
 
 #### Example Test Pattern
 
 ```typescript
 import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
+import type { Express } from 'express';
 import {
     setupApiRouteTest,
     signTestJwt,
@@ -75,30 +75,60 @@ pnpm test:watch
 pnpm test:coverage
 ```
 
-## DTOs and Validation
+## Validation
 
-All API endpoints should use DTOs from `@zeffuro/fakegaming-common/dto` for type safety:
+All API endpoints use shared Zod-based validation middleware from `@zeffuro/fakegaming-common`:
+
+- `validateParams(schema)` — Validates path params; returns 400 with Zod issues on failure
+- `validateQuery(schema)` — Validates query params; returns 400 with Zod issues on failure
+- `validateBody(schema)` — Validates request body with a provided Zod schema; returns 400 on failure
+- `validateBodyForModel(Model, mode)` — Validates body using a schema derived from a Sequelize model via the schema registry (`mode`: `create` | `update` | `full`)
+
+Example using explicit Zod schema:
 
 ```typescript
-import type { CreateQuoteDTO } from '@zeffuro/fakegaming-common';
-import { validateCreateQuote } from '@zeffuro/fakegaming-common';
+import { z } from 'zod';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { validateBody, validateQuery, validateParams } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 
-router.post('/quotes', async (req, res) => {
-    // Validate request body
-    const quoteData = validateCreateQuote(req.body);
-    
-    // Use with manager
-    const quote = await configManager.quoteManager.addPlain(quoteData);
-    
-    res.json(quote);
+const router = createBaseRouter();
+
+const createQuoteSchema = z.object({
+    guildId: z.string().min(1),
+    authorId: z.string().min(1),
+    quote: z.string().min(1)
 });
+
+/**
+ * @openapi
+ * /quotes:
+ *   post:
+ *     summary: Create a quote
+ *     tags: [Quotes]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/QuoteCreate'
+ *     responses:
+ *       201:
+ *         description: Created
+ *       400:
+ *         description: Body validation failed
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/', validateBody(createQuoteSchema), async (req, res) => {
+    const created = await getConfigManager().quoteManager.addPlain(req.body);
+    res.status(201).json(created);
+});
+
+export { router };
 ```
 
-Available validators:
-- `validateCreateQuote(data)` - Validates quote creation
-- `validateCreatePatchNote(data)` - Validates patch note creation
-- `validateCreateBirthday(data)` - Validates birthday creation
-- And more...
+For model-derived validation, prefer `validateBodyForModel(Model, 'create' | 'update')`.
 
 ## OpenAPI / Swagger
 
@@ -111,14 +141,14 @@ pnpm run export:openapi
 ```
 
 This creates `openapi.json` which is used by:
-1. **Dashboard** - Generates TypeScript types via `generateApiAliases.ts`
-2. **Documentation** - Available at `/api/docs` when running the server
+1. Dashboard — Generates TypeScript types via `openapi-typescript` and `scripts/generateApiAliases.ts`
+2. Documentation — Available at `/api/docs` when running the server
 
 ### Swagger UI
 
 When the server is running, visit:
 ```
-http://localhost:4000/api/docs
+http://localhost:3001/api/docs  (or http://localhost:<PORT>/api/docs)
 ```
 
 ## Routes
@@ -145,13 +175,15 @@ All routes are auto-discovered from `src/routes/` directory.
 2. Use `createBaseRouter()` for automatic error handling
 3. Export router as named export: `export { router }`
 4. Add OpenAPI documentation comments
-5. Use DTOs and validation from common package
+5. Use shared validation middleware from `@zeffuro/fakegaming-common`
 
 Example:
 
 ```typescript
+import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { validateCreateMyFeature } from '@zeffuro/fakegaming-common';
+import { validateBody } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 
 const router = createBaseRouter();
 
@@ -166,12 +198,16 @@ const router = createBaseRouter();
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/MyFeatureConfig'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
  */
-router.post('/', async (req, res) => {
-    const data = validateCreateMyFeature(req.body);
-    const result = await getConfigManager().myFeatureManager.addPlain(data);
-    res.json(result);
+const createMyFeatureSchema = z.object({ name: z.string().min(1) });
+
+router.post('/', validateBody(createMyFeatureSchema), async (req, res) => {
+    const result = await getConfigManager().myFeatureManager.addPlain(req.body);
+    res.status(201).json(result);
 });
 
 export { router };
@@ -181,11 +217,11 @@ export { router };
 
 The API uses centralized error handling via `errorHandler` middleware:
 
-- **ValidationError** → 400 Bad Request
-- **NotFoundError** → 404 Not Found
-- **ForbiddenError** → 403 Forbidden
-- **JWT Errors** → 401 Unauthorized
-- **Unhandled Errors** → 500 Internal Server Error
+- Validation errors (Zod) → 400 Bad Request with `error` and `details[]`
+- NotFound → 404 Not Found
+- Forbidden → 403 Forbidden
+- JWT errors → 401 Unauthorized
+- Unhandled errors → 500 Internal Server Error
 
 All route handlers wrapped by `createBaseRouter()` automatically forward errors to the error handler.
 
@@ -218,10 +254,10 @@ pnpm lint
 
 ## Best Practices
 
-1. **Use DTOs** - Always validate input with DTOs from common package
-2. **Named Exports** - Export routers as `export { router }`
-3. **Error Handling** - Use `createBaseRouter()` for automatic error propagation
-4. **Testing** - Use shared test utilities from `@zeffuro/fakegaming-common/testing`
-5. **Documentation** - Add OpenAPI comments to all endpoints
-6. **No Business Logic** - Keep routes thin, delegate to services or managers
-7. **Type Safety** - Use strict TypeScript, no implicit `any`
+1. Use shared validators — `validateBody`, `validateQuery`, `validateParams`, and `validateBodyForModel`
+2. Named exports — Export routers as `export { router }`
+3. Error handling — Use `createBaseRouter()` for automatic error propagation
+4. Testing — Use shared test utilities from `@zeffuro/fakegaming-common/testing`
+5. Documentation — Add OpenAPI comments to all endpoints
+6. Keep routes thin — Delegate to managers/services for business logic
+7. Type safety — Use strict TypeScript, no implicit `any`

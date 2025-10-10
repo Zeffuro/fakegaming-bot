@@ -9,7 +9,7 @@ The API testing infrastructure provides:
 - **Automatic mocking** of ConfigManager and all managers
 - **JWT token generation** for authenticated requests
 - **Express app factories** for isolated route testing
-- **DTO validation utilities** for type-safe request/response handling
+- **Shared Zod validation middleware** for consistent runtime validation
 - **Supertest integration** for HTTP request testing
 
 ## Quick Start
@@ -48,7 +48,7 @@ describe('Quotes API', () => {
             .set('Authorization', `Bearer ${token}`);
 
         expect(res.status).toBe(200);
-        expect(res.body).toHaveLength(1);
+        expect(Array.isArray(res.body)).toBe(true);
     });
 });
 ```
@@ -90,7 +90,7 @@ Creates a complete test context for testing API routes with supertest.
 import { setupApiRouteTest } from '@zeffuro/fakegaming-common/testing';
 
 const { createApp, configManager } = await setupApiRouteTest({
-    appFactory: async (cm) => {
+    appFactory: async (_cm) => {
         // Custom app factory if needed
         const express = await import('express');
         const app = express.default();
@@ -247,53 +247,70 @@ expect(status).toHaveBeenCalledWith(200);
 expect(json).toHaveBeenCalledWith({ success: true });
 ```
 
-## DTOs and Validation
+## Validation (Zod + middleware)
 
-### Using DTOs in Routes
+### Using shared validators in routes
 
 ```typescript
-import type { CreateQuoteDTO } from '@zeffuro/fakegaming-common';
-import { validateCreateQuote } from '@zeffuro/fakegaming-common';
+import { z } from 'zod';
+import { validateBody } from '@zeffuro/fakegaming-common';
 
-router.post('/quotes', async (req, res) => {
-    // Validate and get typed data
-    const quoteData = validateCreateQuote(req.body);
-    
-    // quoteData is now typed as CreateQuoteDTO
-    const quote = await configManager.quoteManager.addPlain(quoteData);
-    
-    res.json(quote);
+const createQuoteSchema = z.object({
+    guildId: z.string().min(1),
+    authorId: z.string().min(1),
+    quote: z.string().min(1)
+});
+
+router.post('/quotes', validateBody(createQuoteSchema), async (req, res) => {
+    const quote = await configManager.quoteManager.addPlain(req.body);
+    res.status(201).json(quote);
 });
 ```
 
-### Testing Validation
+### Testing validation
+
+Standardized error shape on validation failure:
+
+```json
+{
+  "error": "Body validation failed",
+  "details": [
+    { "path": "field", "message": "..." }
+  ]
+}
+```
+
+Example tests:
 
 ```typescript
-it('should validate quote data', async () => {
+it('should return 400 on invalid body', async () => {
     const res = await request(app)
         .post('/api/quotes')
         .set('Authorization', `Bearer ${token}`)
-        .send({
-            // Missing required field 'addedBy'
-            guildId: 'guild123',
-            quote: 'Test quote'
-        });
+        .send({ guildId: '', authorId: 'u', quote: '' });
 
     expect(res.status).toBe(400);
-    expect(res.body.error).toContain('addedBy is required');
+    expect(res.body.error).toBe('Body validation failed');
+    expect(Array.isArray(res.body.details)).toBe(true);
 });
 
-it('should reject invalid data types', async () => {
+it('should return 400 on invalid query', async () => {
     const res = await request(app)
-        .post('/api/quotes')
+        .get('/api/quotes/search')
         .set('Authorization', `Bearer ${token}`)
-        .send({
-            guildId: 123, // Should be string
-            quote: 'Test',
-            addedBy: 'user123'
-        });
+        .query({ q: '' });
 
     expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Query validation failed');
+});
+
+it('should return 400 on invalid params', async () => {
+    const res = await request(app)
+        .get('/api/quotes/not-an-int')
+        .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Params validation failed');
 });
 ```
 
@@ -358,7 +375,7 @@ describe('Full API Integration', () => {
         const createRes = await request(app)
             .post('/api/quotes')
             .set('Authorization', `Bearer ${token}`)
-            .send({ guildId: 'guild1', quote: 'Test', addedBy: 'user123' });
+            .send({ guildId: 'guild1', quote: 'Test', authorId: 'user123' });
 
         expect(createRes.status).toBe(201);
 
@@ -423,15 +440,15 @@ describe('JWT Auth Middleware', () => {
 
 ## Best Practices
 
-### 1. Use DTOs for Type Safety
+### 1. Prefer shared validators over ad-hoc parsing
 
 ```typescript
 // ✅ Good
-import type { CreateQuoteDTO } from '@zeffuro/fakegaming-common';
-const data: CreateQuoteDTO = { ... };
+router.post('/', validateBody(schema), handler);
 
-// ❌ Bad
-const data: any = { ... };
+// ❌ Avoid
+const parsed = schema.safeParse(req.body);
+if (!parsed.success) return res.status(400).json({ error: '...' });
 ```
 
 ### 2. Mock at the Manager Level
@@ -451,7 +468,7 @@ vi.mock('sequelize');
 const quote = createMockQuote({ id: 1, quote: 'Test' });
 
 // ❌ Bad
-const quote = { id: 1, guildId: 'g', quote: 'Test', addedBy: 'u', addedAt: 123 };
+const quote = { id: 1, guildId: 'g', quote: 'Test', authorId: 'u', addedAt: 123 } as any;
 ```
 
 ### 4. Test Both Success and Error Cases
@@ -477,7 +494,7 @@ const setupQuoteTest = async () => {
 
 beforeEach(async () => {
     const context = await setupQuoteTest();
-    app = context.app;
+    app = context.app as any;
 });
 ```
 
@@ -552,4 +569,3 @@ const token = signTestJwt({ discordId: 'user123' });
 ## Examples
 
 See `packages/api/src/__tests__/examples/` for complete working examples.
-

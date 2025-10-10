@@ -1,7 +1,7 @@
 import {EmbedBuilder} from 'discord.js';
 import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import {truncateDescription} from '../../../utils/generalUtils.js';
-import {parseDateSafe} from "../../../utils/timeUtils.js";
+import {parseDateSafe} from '@zeffuro/fakegaming-common/utils';
 import {CreationAttributes} from 'sequelize';
 
 export function buildPatchNoteEmbed(note: PatchNoteConfig | CreationAttributes<PatchNoteConfig>): EmbedBuilder {

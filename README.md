@@ -39,6 +39,17 @@ This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage
 
 ---
 
+## Documentation
+
+- Architecture and patterns: `ARCHITECTURE.md`
+- Engineering guides:
+  - TypeScript & ESLint conventions: `TYPESCRIPT.md`
+  - Testing strategy and helpers: `TESTING.md`
+  - Environment and Docker setup: `ENVIRONMENT.md`
+  - Database schema and migrations: `SCHEMA.md` and `MIGRATIONS.md`
+
+---
+
 ## Getting Started
 
 > **Package Manager:**  
@@ -187,6 +198,22 @@ pnpm start:dashboard  # Uses .env, runs Next.js production server
 
 ---
 
+## OpenAPI & Dashboard Types
+
+The API exports an OpenAPI spec that the dashboard consumes to generate TypeScript types.
+
+- Export the API spec:
+```cmd
+pnpm --filter @zeffuro/fakegaming-bot-api run export:openapi
+```
+- Regenerate dashboard API types:
+```cmd
+pnpm --filter @zeffuro/fakegaming-bot-dashboard run generate:api-types
+pnpm --filter @zeffuro/fakegaming-bot-dashboard run typecheck
+```
+
+---
+
 ## Building, Linting, and Testing
 
 - **Build all packages:**
@@ -197,11 +224,30 @@ pnpm start:dashboard  # Uses .env, runs Next.js production server
   ```bash
   pnpm lint
   ```
+- **Typecheck all packages:**
+  ```bash
+  pnpm typecheck
+  ```
 - **Test all packages:**
   ```bash
   pnpm test
   ```
+- **Test with coverage:**
+  ```bash
+  pnpm test:coverage
+  ```
 - You can also run these scripts in each package directory for more granular control.
+
+---
+
+## Validation & Error Handling Standards
+
+- All API routes use shared Zod-based validators from `@zeffuro/fakegaming-common`:
+  - `validateParams(schema)` — path params (400 on invalid)
+  - `validateQuery(schema)` — query params (400 on invalid)
+  - `validateBody(schema | model, mode?)` or `validateBodyForModel(Model, 'create'|'update')` — request bodies (400 on invalid)
+- Auth uses JWT; protected routes return 401 when token is missing/invalid and 403 for insufficient permissions.
+- DELETE/GET-by-id endpoints consistently return 404 when resource is not found.
 
 ---
 
@@ -229,9 +275,9 @@ pnpm start:dashboard  # Uses .env, runs Next.js production server
 This project uses **GitHub Actions** for continuous integration:
 
 - **Builds, lints, and tests** all packages on every pull request and push to `main`.
-- **Checks migrations** and code formatting.
+- **Uploads coverage to Codecov** for `api`, `bot`, `common`, and `dashboard` packages.
 - Ensures all code passes before merging.
-- See the [CI workflow](https://github.com/Zeffuro/fakegaming-bot/actions) for details.
+- See the CI workflow in `.github/workflows/ci.yml`.
 
 ---
 

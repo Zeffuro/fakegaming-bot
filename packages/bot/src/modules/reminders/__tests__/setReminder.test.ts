@@ -3,15 +3,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { v4 as _uuidv4 } from 'uuid';
-import { parseTimespan } from "../../../utils/timeUtils.js";
+import { parseTimespan } from '@zeffuro/fakegaming-common/utils';
 
 // Mock the uuid library
 vi.mock('uuid', () => ({
     v4: vi.fn().mockReturnValue('mock-uuid-1234')
 }));
 
-// Mock the timeUtils module
-vi.mock('../../../utils/timeUtils.js', () => ({
+// Mock the shared time utils module
+vi.mock('@zeffuro/fakegaming-common/utils', () => ({
     parseTimespan: vi.fn()
 }));
 

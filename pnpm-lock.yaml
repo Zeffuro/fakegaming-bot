@@ -275,6 +275,9 @@ importers:
       ioredis:
         specifier: ^5.8.1
         version: 5.8.1
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       sequelize:
         specifier: ^6.37.7
         version: 6.37.7(pg-hstore@2.3.4)(pg@8.16.3)(sqlite3@5.1.7)
@@ -291,6 +294,9 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
     devDependencies:
+      '@types/ms':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@vitest/coverage-v8':
         specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@24.7.1)(jsdom@27.0.0(canvas@3.2.0)(postcss@8.5.6))(tsx@4.20.6)(yaml@2.8.1))

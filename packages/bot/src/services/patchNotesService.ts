@@ -2,15 +2,7 @@ import {Client, ChannelType, TextChannel} from 'discord.js';
 import {getConfigManager, PatchNotesManager} from '@zeffuro/fakegaming-common/managers';
 import {loadPatchNoteFetchers} from '../loaders/loadPatchNoteFetchers.js';
 import {buildPatchNoteEmbed} from "../modules/patchnotes/shared/patchNoteEmbed.js";
-
-/**
- * Helper to normalize timestamps to milliseconds for robust comparison
- */
-const toMillis = (v: number | Date | null | undefined): number => {
-    if (v instanceof Date) return v.getTime();
-    if (typeof v === 'number') return v;
-    return 0;
-};
+import { toMillis } from '@zeffuro/fakegaming-common/utils';
 
 /**
  * Scans all games for new patch notes and updates them if newer.
@@ -41,8 +33,8 @@ export async function announceNewPatchNotes(client: Client) {
             .patchSubscriptionManager.getSubscriptionsForGame(note.game);
 
         for (const sub of subscriptions) {
-            const noteTime = toMillis(note.publishedAt);
-            const subTime = toMillis(sub.lastAnnouncedAt);
+            const noteTime = toMillis(note.publishedAt as unknown as number | string | bigint | Date | null | undefined);
+            const subTime = toMillis(sub.lastAnnouncedAt as unknown as number | string | bigint | Date | null | undefined);
 
             if (!subTime || noteTime > subTime) {
                 const channel = client.channels.cache.get(sub.channelId) as TextChannel | undefined;
@@ -50,8 +42,8 @@ export async function announceNewPatchNotes(client: Client) {
                     const embed = buildPatchNoteEmbed(note);
                     await channel.send({ embeds: [embed] });
 
-                    // Update last announced
-                    sub.lastAnnouncedAt = note.publishedAt;
+                    // Update last announced on the existing instance using a Date (tests expect Date)
+                    sub.lastAnnouncedAt = new Date(noteTime) as unknown as typeof sub.lastAnnouncedAt;
                     await getConfigManager().patchSubscriptionManager.upsert(sub);
                 }
             }

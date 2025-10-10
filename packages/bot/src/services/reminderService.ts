@@ -1,6 +1,6 @@
 import { Client, EmbedBuilder } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { formatElapsed, parseTimespan } from '../utils/timeUtils.js';
+import { formatElapsed, parseTimespan } from '@zeffuro/fakegaming-common/utils';
 
 export async function checkAndSendReminders(client: Client) {
     const reminderManager = getConfigManager().reminderManager;

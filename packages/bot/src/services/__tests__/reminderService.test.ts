@@ -3,7 +3,7 @@ import { setupServiceTest, createMockUser, createMockReminder } from '@zeffuro/f
 import { User } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
-vi.mock('../../utils/timeUtils.js', () => ({
+vi.mock('@zeffuro/fakegaming-common/utils', () => ({
     formatElapsed: vi.fn((_ms: number) => '2 hours ago'),
     parseTimespan: vi.fn((_timespan: string) => 7200000), // 2 hours in ms
 }));

@@ -15,11 +15,12 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const random = quotes[Math.floor(Math.random() * quotes.length)];
-    const date = new Date(random.timestamp).toLocaleString();
-    await interaction.reply(`> ${random.quote}\n— <@${random.authorId}> (${date})`);
+    const tsRaw = (random as { timestamp: number | string | null | undefined }).timestamp;
+    const ts = typeof tsRaw === 'string' ? Number(tsRaw) : tsRaw ?? 0;
+    const dateStr = Number.isFinite(ts) && ts > 0 ? new Date(ts).toLocaleString() : 'Unknown date';
+    await interaction.reply(`> ${random.quote}\n— <@${random.authorId}> (${dateStr})`);
 }
 
 const testOnly = false;
 
 export default {data, execute, testOnly};
-

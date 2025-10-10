@@ -24,7 +24,12 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const formatted = quotes.map(quote => `> ${quote.quote}\n— <@${quote.authorId}> (${new Date(quote.timestamp).toLocaleString()})`).join('\n\n');
+    const formatted = quotes.map(quote => {
+        const tsRaw = (quote as { timestamp: number | string | null | undefined }).timestamp;
+        const ts = typeof tsRaw === 'string' ? Number(tsRaw) : tsRaw ?? 0;
+        const dateStr = Number.isFinite(ts) && ts > 0 ? new Date(ts).toLocaleString() : 'Unknown date';
+        return `> ${quote.quote}\n— <@${quote.authorId}> (${dateStr})`;
+    }).join('\n\n');
     await interaction.reply(`Quotes matching "${text}":\n${formatted}`);
 }
 
