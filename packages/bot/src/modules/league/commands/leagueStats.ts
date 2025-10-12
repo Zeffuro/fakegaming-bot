@@ -2,28 +2,14 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'di
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import type {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js';
-import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {getTierEmoji} from '../constants/leagueTierEmojis.js';
+import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
 
-const data = new SlashCommandBuilder()
-    .setName('league-stats')
-    .setDescription('Get League of Legends stats for a summoner or linked user')
-    .addStringOption(option =>
-        option.setName('summoner')
-            .setDescription('Riot ID (e.g. Zeffuro#EUW)')
-            .setRequired(false)
-    )
-    .addStringOption(option =>
-        option.setName('region')
-            .setDescription('Region')
-            .setRequired(false)
-            .addChoices(...leagueRegionChoices)
-    )
-    .addUserOption(option =>
-        option.setName('user')
-            .setDescription('Discord user')
-            .setRequired(false)
-    );
+const data = buildCommonLeagueOptions(
+    new SlashCommandBuilder()
+        .setName('league-stats')
+        .setDescription('Get League of Legends stats for a summoner or linked user')
+);
 
 /**
  * Executes the league-stats command, replying with a Discord embed of League stats for a summoner or linked user.

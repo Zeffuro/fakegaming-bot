@@ -11,7 +11,8 @@ export {
   createMockModalSubmitInteraction,
   createMockSend,
   setupDiscordMocks,
-  withDiscordMocks
+  withDiscordMocks,
+  createMockAutocompleteInteraction
 } from './mocks/discordMock.js';
 
 export {
@@ -80,3 +81,17 @@ export {
     type AppFactoryDependencies,
     type RouterFactoryDependencies
 } from './factories/apiTestFactory.js';
+
+export * from './utils/assertions.js';
+
+export { withFetchMock } from './mocks/fetchMock.js';
+
+// Shared API test client helper
+export {
+    givenAuthenticatedClient,
+    type AuthClient,
+    type GivenAuthClientOptions
+} from './utils/apiClient.js';
+
+// Canvas mocks
+export { createMockCanvasContext2D, type Canvas2DMock } from './mocks/canvasMock.js';

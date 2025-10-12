@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type MockedFunction } from 'vitest';
 import { ChannelType, TextChannel } from 'discord.js';
-import { setupServiceTest, createMockTextChannel } from '@zeffuro/fakegaming-common/testing';
+import { setupServiceTest, createMockTextChannel, expectSendHasEmbed } from '@zeffuro/fakegaming-common/testing';
 import { buildPatchNoteEmbed } from '../../modules/patchnotes/shared/patchNoteEmbed.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
@@ -9,7 +9,9 @@ vi.mock('../../modules/patchnotes/shared/patchNoteEmbed.js', () => ({
 }));
 
 const { mockFetchLatestPatchNote, mockLoadPatchNoteFetchers } = vi.hoisted(() => {
-    const mockFetchLatestPatchNote = vi.fn(async () => ({
+    type Patch = { id: string; title: string; version: string; publishedAt: Date };
+    type FetchLatestPatch = () => Promise<Patch | null>;
+    const mockFetchLatestPatchNote: MockedFunction<FetchLatestPatch> = vi.fn(async () => ({
         id: 'patch1',
         title: 'Version 1.0',
         version: '1.0',
@@ -85,7 +87,7 @@ describe('patchNotesService', () => {
         await announceNewPatchNotes(client);
 
         expect(buildPatchNoteEmbed).toHaveBeenCalledWith(expect.objectContaining({ id: '1' }));
-        expect(mockChannel.send).toHaveBeenCalledWith({ embeds: [expect.any(Object)] });
+        expectSendHasEmbed(mockChannel);
         expect(configManager.patchSubscriptionManager.upsert).toHaveBeenCalledWith(
             expect.objectContaining({ lastAnnouncedAt: testNote.publishedAt }),
         );
@@ -139,5 +141,19 @@ describe('patchNotesService', () => {
                 title: 'Version 1.0',
             }),
         );
+    });
+
+    it('should not update if no new patch notes are found', async () => {
+        vi.spyOn(configManager.patchNotesManager, 'getLatestPatch').mockResolvedValue({
+            game: 'fakegame',
+            title: 'Version 0.9',
+            publishedAt: new Date('2025-10-05'),
+        } as any);
+
+        mockFetchLatestPatchNote.mockResolvedValue(null);
+
+        await scanAndUpdatePatchNotes(configManager.patchNotesManager);
+
+        expect(configManager.patchNotesManager.setLatestPatch).not.toHaveBeenCalled();
     });
 });

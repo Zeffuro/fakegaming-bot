@@ -1,64 +1,31 @@
-import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {verifyTwitchUser} from '../../../services/twitchService.js';
-import {requireAdmin} from '../../../utils/permissions.js';
+import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
+import { twitchCommandConfig } from '../config.js';
 
-const data = new SlashCommandBuilder()
-    .setName('add-twitch-stream')
-    .setDescription('Add a Twitch stream for notifications')
-    .addStringOption(option =>
-        option.setName('username')
-            .setDescription('Twitch username')
-            .setRequired(true)
-    )
-    .addChannelOption(option =>
-        option.setName('channel')
-            .setDescription('Discord channel for notifications')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName('message')
-            .setDescription('Custom notification message (optional)')
-            .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-
-
-async function execute(interaction: ChatInputCommandInteraction) {
-    if (!(await requireAdmin(interaction))) return;
-
-    const twitchUsername = interaction.options.getString('username', true);
-    const discordChannel = interaction.options.getChannel('channel', true);
-    const customMessage = interaction.options.getString('message', false) ?? undefined;
-    const guildId = interaction.guildId!;
-
-    if (await getConfigManager().twitchManager.streamExists(twitchUsername, discordChannel.id, guildId)) {
-        await interaction.reply({
-            content: `Twitch stream \`${twitchUsername}\` is already configured for notifications in this channel.`,
-            flags: MessageFlags.Ephemeral
+const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
+    commandName: twitchCommandConfig.commandName,
+    description: twitchCommandConfig.description,
+    usernameOptionDescription: twitchCommandConfig.usernameOptionDescription,
+    resolveOrVerify: async (username) => {
+        const exists = await verifyTwitchUser(username);
+        return exists ? { ok: true, id: undefined } : { ok: false };
+    },
+    checkExistingPre: async ({ username, discordChannelId, guildId }) => {
+        return getConfigManager().twitchManager.streamExists(username, discordChannelId, guildId);
+    },
+    addSubscription: async ({ username, externalId: _externalId, discordChannelId, guildId, customMessage }) => {
+        await getConfigManager().twitchManager.add({
+            twitchUsername: username,
+            discordChannelId,
+            guildId,
+            customMessage,
         });
-        return;
-    }
-
-    if (!(await verifyTwitchUser(twitchUsername))) {
-        await interaction.reply({
-            content: `Twitch user \`${twitchUsername}\` does not exist.`,
-            flags: MessageFlags.Ephemeral
-        });
-        return;
-    }
-
-    await getConfigManager().twitchManager.add({
-        twitchUsername,
-        discordChannelId: discordChannel.id,
-        guildId: guildId,
-        customMessage,
-    });
-
-    await interaction.reply(`Twitch stream \`${twitchUsername}\` added for notifications in <#${discordChannel.id}>.`);
-}
-
-const testOnly = false;
+    },
+    successMessage: twitchCommandConfig.successMessage,
+    alreadyConfiguredMessage: twitchCommandConfig.alreadyConfiguredMessage,
+    notFoundMessage: twitchCommandConfig.notFoundMessage,
+});
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

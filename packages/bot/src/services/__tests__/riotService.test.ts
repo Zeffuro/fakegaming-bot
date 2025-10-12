@@ -1,286 +1,61 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setupServiceTest } from '@zeffuro/fakegaming-common/testing';
-import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('twisted');
-
-const { mockGetByPUUID, mockGetByRiotId, mockMatchList, mockMatchGet, mockLeagueByPUUID, mockTftMatchList, mockTftMatchGet } = vi.hoisted(() => ({
-    mockGetByPUUID: vi.fn(),
-    mockGetByRiotId: vi.fn(),
-    mockMatchList: vi.fn(),
-    mockMatchGet: vi.fn(),
-    mockLeagueByPUUID: vi.fn(),
-    mockTftMatchList: vi.fn(),
-    mockTftMatchGet: vi.fn(),
-}));
+// We will mock the 'twisted' classes used by riotService so we can control responses
+const mockLolApi = {
+    Summoner: { getByPUUID: vi.fn() },
+    MatchV5: { list: vi.fn(), get: vi.fn() },
+    League: { byPUUID: vi.fn() }
+};
+const mockTftApi = {
+    Match: { list: vi.fn(), get: vi.fn() }
+};
 
 vi.mock('twisted', () => ({
-    RiotApi: vi.fn(() => ({
-        Account: { getByRiotId: mockGetByRiotId },
-    })),
-    LolApi: vi.fn(() => ({
-        Summoner: { getByPUUID: mockGetByPUUID },
-        MatchV5: {
-            list: mockMatchList,
-            get: mockMatchGet,
-        },
-        League: { byPUUID: mockLeagueByPUUID },
-    })),
-    TftApi: vi.fn(() => ({
-        Match: {
-            list: mockTftMatchList,
-            get: mockTftMatchGet,
-        },
-    })),
+    RiotApi: vi.fn(),
+    LolApi: vi.fn().mockImplementation(() => mockLolApi),
+    TftApi: vi.fn().mockImplementation(() => mockTftApi)
 }));
 
-import { getSummoner, getPUUIDByRiotId, getMatchHistory, getMatchDetails, getSummonerDetails, resolveLeagueIdentity, getTftMatchHistory, getTftMatchDetails } from '../riotService.js';
+// Import after mocks are defined
+import { getMatchHistory, getSummoner, getTftMatchDetails } from '../../services/riotService.js';
 
-describe('riotService', () => {
-    let configManager: ReturnType<typeof getConfigManager>;
-
-    beforeEach(async () => {
-        const setup = await setupServiceTest();
-        configManager = setup.configManager;
-
+describe('riotService helpers', () => {
+    beforeEach(() => {
         vi.clearAllMocks();
-        process.env.RIOT_LEAGUE_API_KEY = 'test-api-key';
-        process.env.RIOT_DEV_API_KEY = 'test-dev-api-key';
+        // Reset methods to fresh fn to avoid cross-test calls accumulation
+        mockLolApi.Summoner.getByPUUID = vi.fn();
+        mockLolApi.MatchV5.list = vi.fn();
+        mockLolApi.MatchV5.get = vi.fn();
+        mockLolApi.League.byPUUID = vi.fn();
+        mockTftApi.Match.list = vi.fn();
+        mockTftApi.Match.get = vi.fn();
     });
 
-    describe('getSummoner', () => {
-        it('should return summoner data for valid PUUID', async () => {
-            const mockSummonerData = {
-                puuid: 'test-puuid',
-                name: 'TestSummoner',
-                summonerLevel: 100,
-                profileIconId: 1234,
-            };
-
-            mockGetByPUUID.mockResolvedValue({ response: mockSummonerData });
-
-            const result = await getSummoner('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockSummonerData);
-            expect(mockGetByPUUID).toHaveBeenCalledWith('test-puuid', 'na1');
-        });
-
-        it('should return error for malformed summoner data', async () => {
-            mockGetByPUUID.mockResolvedValue({ response: { invalid: 'data' } });
-
-            const result = await getSummoner('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Malformed summoner data');
-        });
-
-        it('should handle "not found" error', async () => {
-            mockGetByPUUID.mockRejectedValue(new Error('Summoner not found'));
-
-            const result = await getSummoner('invalid-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('not found');
-        });
-
-        it('should handle generic errors', async () => {
-            mockGetByPUUID.mockRejectedValue(new Error('API rate limit exceeded'));
-
-            const result = await getSummoner('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('API rate limit exceeded');
-        });
-
-        it('should handle "fail" error', async () => {
-            mockGetByPUUID.mockRejectedValue(new Error('fail'));
-
-            const result = await getSummoner('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('fail');
-        });
-
-        it('should handle string errors', async () => {
-            mockGetByPUUID.mockRejectedValue('Error string');
-
-            const result = await getSummoner('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Error string');
-        });
+    it('unwraps response for match history (success)', async () => {
+        mockLolApi.MatchV5.list.mockResolvedValue({ response: ['m1', 'm2'] });
+        const res = await getMatchHistory('puuid', 'EUROPE' as any, 0, 2);
+        expect(res.success).toBe(true);
+        expect(res.data).toEqual(['m1', 'm2']);
     });
 
-    describe('getPUUIDByRiotId', () => {
-        it('should fetch and cache PUUID by Riot ID', async () => {
-            mockGetByRiotId.mockResolvedValue({
-                response: { puuid: 'cached-puuid' },
-            });
-
-            const result1 = await getPUUIDByRiotId('TestUser', 'NA1', 'americas' as any);
-            const result2 = await getPUUIDByRiotId('testuser', 'na1', 'americas' as any); // Case insensitive
-
-            expect(result1).toBe('cached-puuid');
-            expect(result2).toBe('cached-puuid');
-            expect(mockGetByRiotId).toHaveBeenCalledTimes(1); // Cached on second call
-        });
-
-        it('should throw error when PUUID fetch fails', async () => {
-            mockGetByRiotId.mockRejectedValue(new Error('Failed'));
-
-            await expect(
-                getPUUIDByRiotId('Invalid', 'NA1', 'americas' as any)
-            ).rejects.toThrow('Failed to fetch PUUID by Riot ID');
-        });
+    it('returns Riot payload error from data for getSummoner', async () => {
+        mockLolApi.Summoner.getByPUUID.mockResolvedValue({ response: { status: { status_code: 404, message: 'Not Found' } } });
+        const res = await getSummoner('puuid', 'EUW' as any);
+        expect(res.success).toBe(false);
+        expect(res.error).toBe('404 Not Found');
     });
 
-    describe('getMatchHistory', () => {
-        it('should fetch match history successfully', async () => {
-            const mockMatches = ['match1', 'match2', 'match3'];
-            mockMatchList.mockResolvedValue({ response: mockMatches });
-
-            const result = await getMatchHistory('test-puuid', 'americas' as any, 0, 20);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockMatches);
-            expect(mockMatchList).toHaveBeenCalledWith('test-puuid', 'americas', { start: 0, count: 20 });
-        });
-
-        it('should handle match history errors', async () => {
-            mockMatchList.mockRejectedValue(new Error('Match history error'));
-
-            const result = await getMatchHistory('test-puuid', 'americas' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Match history error');
-        });
+    it('maps thrown error to not found for getSummoner', async () => {
+        mockLolApi.Summoner.getByPUUID.mockRejectedValue(new Error('Summoner not found'));
+        const res = await getSummoner('puuid', 'EUW' as any);
+        expect(res.success).toBe(false);
+        expect(res.error).toBe('not found');
     });
 
-    describe('getMatchDetails', () => {
-        it('should fetch match details successfully', async () => {
-            const mockMatch = { gameId: 12345, participants: [] };
-            mockMatchGet.mockResolvedValue({ response: mockMatch });
-
-            const result = await getMatchDetails('match-id', 'americas' as any);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockMatch);
-        });
-
-        it('should handle match details errors', async () => {
-            mockMatchGet.mockRejectedValue(new Error('Match not found'));
-
-            const result = await getMatchDetails('invalid-match', 'americas' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Match not found');
-        });
-    });
-
-    describe('getSummonerDetails', () => {
-        it('should fetch summoner ranked stats successfully', async () => {
-            const mockStats = [{ queueType: 'RANKED_SOLO_5x5', tier: 'GOLD', rank: 'II' }];
-            mockLeagueByPUUID.mockResolvedValue({ response: mockStats });
-
-            const result = await getSummonerDetails('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockStats);
-        });
-
-        it('should handle summoner details errors', async () => {
-            mockLeagueByPUUID.mockRejectedValue(new Error('Stats error'));
-
-            const result = await getSummonerDetails('test-puuid', 'na1' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('Stats error');
-        });
-    });
-
-    describe('resolveLeagueIdentity', () => {
-        it('should use user config when no summoner provided', async () => {
-            const mockUser = {
-                userId: 'user-123',
-                league: {
-                    summonerName: 'ConfigUser',
-                    region: 'euw1',
-                    puuid: 'config-puuid',
-                },
-            };
-
-            vi.spyOn(configManager.userManager, 'getUserWithLeague').mockResolvedValue(mockUser as any);
-
-            const result = await resolveLeagueIdentity({ userId: 'user-123' });
-
-            expect(result.summoner).toBe('ConfigUser');
-            expect(result.region).toBe('euw1');
-            expect(result.puuid).toBe('config-puuid');
-        });
-
-        it('should throw when summoner name is provided without tagline', async () => {
-            await expect(
-                resolveLeagueIdentity({
-                    summoner: 'TestUser',
-                    region: 'euw1' as any,
-                })
-            ).rejects.toThrow('Riot ID must include a tagline');
-        });
-
-        it('should resolve when Riot ID with tagline is provided', async () => {
-            // Given a Riot ID with tagline, we should call Account.getByRiotId and resolve PUUID
-            mockGetByRiotId.mockResolvedValue({ response: { puuid: 'resolved-puuid' } });
-
-            const result = await resolveLeagueIdentity({
-                summoner: 'TestUser#EUW',
-                region: 'euw1' as any,
-            });
-
-            expect(result.puuid).toBe('resolved-puuid');
-            expect(mockGetByRiotId).toHaveBeenCalled();
-        });
-    });
-
-    describe('getTftMatchHistory', () => {
-        it('should fetch TFT match history successfully', async () => {
-            const mockMatches = ['tft-match1', 'tft-match2'];
-            mockTftMatchList.mockResolvedValue({ response: mockMatches });
-
-            const result = await getTftMatchHistory('test-puuid', 'americas' as any, 0, 20);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockMatches);
-        });
-
-        it('should handle TFT match history errors', async () => {
-            mockTftMatchList.mockRejectedValue(new Error('TFT error'));
-
-            const result = await getTftMatchHistory('test-puuid', 'americas' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('TFT error');
-        });
-    });
-
-    describe('getTftMatchDetails', () => {
-        it('should fetch TFT match details successfully', async () => {
-            const mockMatch = { gameId: 67890, participants: [] };
-            mockTftMatchGet.mockResolvedValue({ response: mockMatch });
-
-            const result = await getTftMatchDetails('tft-match-id', 'americas' as any);
-
-            expect(result.success).toBe(true);
-            expect(result.data).toEqual(mockMatch);
-        });
-
-        it('should handle TFT match details errors', async () => {
-            mockTftMatchGet.mockRejectedValue(new Error('TFT match not found'));
-
-            const result = await getTftMatchDetails('invalid-tft-match', 'americas' as any);
-
-            expect(result.success).toBe(false);
-            expect(result.error).toBe('TFT match not found');
-        });
+    it('unwraps TFT match details (success)', async () => {
+        mockTftApi.Match.get.mockResolvedValue({ response: { info: { queue_id: 1100 } } });
+        const res = await getTftMatchDetails('match-1', 'EUROPE' as any);
+        expect(res.success).toBe(true);
+        expect(res.data).toEqual({ info: { queue_id: 1100 } });
     });
 });

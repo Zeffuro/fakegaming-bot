@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getAugmentData } from '../leagueAugmentDataCache.js';
-import * as typedAssetCache from '../../../../utils/typedAssetCache.js';
+import { mockGetTypedAssetResolved, expectGetTypedAssetCalledWithPrefix } from './helpers.js';
 
 vi.mock('../../../../utils/typedAssetCache.js');
 
@@ -16,21 +16,20 @@ describe('leagueAugmentDataCache', () => {
                 { id: 2, name: 'Augment 2' },
             ];
 
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue(mockData);
+            await mockGetTypedAssetResolved(mockData);
 
             const result = await getAugmentData();
 
             expect(result).toEqual(mockData);
-            expect(typedAssetCache.getTypedAsset).toHaveBeenCalledWith(
+            await expectGetTypedAssetCalledWithPrefix(
                 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/cherry-augments.json',
                 'cherry-augments.json',
-                'augmentdata',
-                expect.any(Object)
+                'augmentdata'
             );
         });
 
         it('should handle empty augment data', async () => {
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue([]);
+            await mockGetTypedAssetResolved([]);
 
             const result = await getAugmentData();
 
@@ -38,4 +37,3 @@ describe('leagueAugmentDataCache', () => {
         });
     });
 });
-

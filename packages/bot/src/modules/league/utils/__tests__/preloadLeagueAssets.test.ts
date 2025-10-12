@@ -12,6 +12,15 @@ vi.mock('../../cache/leaguePerksDataCache.js');
 vi.mock('../../cache/leaguePerkStylesDataCache.js');
 vi.mock('../../cache/leagueSummonerSpellDataCache.js');
 
+// --- local DRY helpers ---
+function mockAllCachesResolved() {
+    vi.mocked(augmentCache.getAugmentData).mockResolvedValue({} as any);
+    vi.mocked(itemCache.getItemData).mockResolvedValue({} as any);
+    vi.mocked(perksCache.getPerksData).mockResolvedValue({} as any);
+    vi.mocked(perkStylesCache.getPerkStylesData).mockResolvedValue({} as any);
+    vi.mocked(summonerSpellCache.getSummonerSpellData).mockResolvedValue({} as any);
+}
+
 describe('preloadLeagueAssets', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -19,11 +28,7 @@ describe('preloadLeagueAssets', () => {
     });
 
     it('should preload all League assets', async () => {
-        vi.mocked(augmentCache.getAugmentData).mockResolvedValue({} as any);
-        vi.mocked(itemCache.getItemData).mockResolvedValue({} as any);
-        vi.mocked(perksCache.getPerksData).mockResolvedValue({} as any);
-        vi.mocked(perkStylesCache.getPerkStylesData).mockResolvedValue({} as any);
-        vi.mocked(summonerSpellCache.getSummonerSpellData).mockResolvedValue({} as any);
+        mockAllCachesResolved();
 
         await preloadLeagueAssets();
 
@@ -35,11 +40,7 @@ describe('preloadLeagueAssets', () => {
     });
 
     it('should log success message after preloading', async () => {
-        vi.mocked(augmentCache.getAugmentData).mockResolvedValue({} as any);
-        vi.mocked(itemCache.getItemData).mockResolvedValue({} as any);
-        vi.mocked(perksCache.getPerksData).mockResolvedValue({} as any);
-        vi.mocked(perkStylesCache.getPerkStylesData).mockResolvedValue({} as any);
-        vi.mocked(summonerSpellCache.getSummonerSpellData).mockResolvedValue({} as any);
+        mockAllCachesResolved();
 
         await preloadLeagueAssets();
 
@@ -74,4 +75,3 @@ describe('preloadLeagueAssets', () => {
         expect(duration).toBeLessThan(200); // Allow some overhead
     });
 });
-

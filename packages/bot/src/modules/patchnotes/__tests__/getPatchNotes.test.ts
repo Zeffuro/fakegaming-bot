@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyText, expectReplyHasEmbedsArray, createMockAutocompleteInteraction } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { loadPatchNoteFetchers } from '../../../loaders/loadPatchNoteFetchers.js';
 import { buildPatchNoteEmbed } from '../shared/patchNoteEmbed.js';
@@ -15,6 +15,27 @@ vi.mock('../shared/patchNoteEmbed.js', () => ({
         return new EmbedBuilder();
     })
 }));
+
+// --- local helpers (DRY) ---
+const assertEmbedReply = (interaction: any) => {
+    expectReplyHasEmbedsArray(interaction);
+};
+
+async function setupWithManagerOverride(opts: {
+    cmd: string;
+    game: string;
+    getLatestPatchSpy: ReturnType<typeof vi.fn>;
+}) {
+    const { cmd, game, getLatestPatchSpy } = opts;
+    return setupCommandTest(cmd, {
+        interaction: { stringOptions: { game } },
+        managerOverrides: { patchNotesManager: { getLatestPatch: getLatestPatchSpy } },
+    });
+}
+
+const assertTextReply = (interaction: any, text: string) => {
+    expectReplyText(interaction, text);
+};
 
 describe('getPatchNotes command', () => {
     beforeEach(() => {
@@ -37,21 +58,11 @@ describe('getPatchNotes command', () => {
         const getLatestPatchSpy = vi.fn().mockResolvedValue(mockPatchNote);
 
         // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/getPatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('LeagueOfLegends')
-                    }
-                },
-                managerOverrides: {
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        const { command, interaction } = await setupWithManagerOverride({
+            cmd: 'modules/patchnotes/commands/getPatchNotes.js',
+            game: 'LeagueOfLegends',
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
@@ -62,13 +73,8 @@ describe('getPatchNotes command', () => {
         // Verify buildPatchNoteEmbed was called with the patch data
         expect(buildPatchNoteEmbed).toHaveBeenCalledWith(mockPatchNote);
 
-        // Verify interaction.reply was called
-        expect(interaction.reply).toHaveBeenCalled();
-
-        // Verify the interaction reply includes an embeds array
-        const replyCall = (interaction.reply as any).mock.calls[0][0];
-        expect(replyCall).toHaveProperty('embeds');
-        expect(Array.isArray(replyCall.embeds)).toBe(true);
+        // Verify interaction.reply was called with an embed
+        assertEmbedReply(interaction);
     });
 
     it('fetches patch notes from fetcher when not available in the database', async () => {
@@ -94,21 +100,11 @@ describe('getPatchNotes command', () => {
         (loadPatchNoteFetchers as Mock).mockResolvedValue([mockFetcher]);
 
         // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/getPatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Valorant')
-                    }
-                },
-                managerOverrides: {
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        const { command, interaction } = await setupWithManagerOverride({
+            cmd: 'modules/patchnotes/commands/getPatchNotes.js',
+            game: 'Valorant',
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
@@ -125,13 +121,8 @@ describe('getPatchNotes command', () => {
         // Verify buildPatchNoteEmbed was called with the fetched patch data
         expect(buildPatchNoteEmbed).toHaveBeenCalledWith(mockFetchedPatchNote);
 
-        // Verify interaction.reply was called
-        expect(interaction.reply).toHaveBeenCalled();
-
-        // Verify the interaction reply includes an embeds array
-        const replyCall = (interaction.reply as any).mock.calls[0][0];
-        expect(replyCall).toHaveProperty('embeds');
-        expect(Array.isArray(replyCall.embeds)).toBe(true);
+        // Verify interaction.reply was called with an embed
+        assertEmbedReply(interaction);
     });
 
     it('reports when no fetcher is found for the game', async () => {
@@ -145,21 +136,11 @@ describe('getPatchNotes command', () => {
         ]);
 
         // Setup the test environment with a game that has no fetcher
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/getPatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Fortnite')
-                    }
-                },
-                managerOverrides: {
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        const { command, interaction } = await setupWithManagerOverride({
+            cmd: 'modules/patchnotes/commands/getPatchNotes.js',
+            game: 'Fortnite',
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
@@ -171,9 +152,7 @@ describe('getPatchNotes command', () => {
         expect(loadPatchNoteFetchers).toHaveBeenCalled();
 
         // Verify the interaction reply contains the error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('No patch notes fetcher found for `Fortnite`')
-        );
+        assertTextReply(interaction, 'No patch notes fetcher found for `Fortnite`.');
     });
 
     it('reports when no patch notes are found by the fetcher', async () => {
@@ -190,32 +169,23 @@ describe('getPatchNotes command', () => {
         (loadPatchNoteFetchers as Mock).mockResolvedValue([mockFetcher]);
 
         // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/getPatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Overwatch')
-                    }
-                },
-                managerOverrides: {
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        const { command, interaction } = await setupWithManagerOverride({
+            cmd: 'modules/patchnotes/commands/getPatchNotes.js',
+            game: 'Overwatch',
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify the fetcher was called
-        expect(mockFetcher.fetchLatestPatchNote).toHaveBeenCalled();
+        // Verify getLatestPatch was called with the correct game
+        expect(getLatestPatchSpy).toHaveBeenCalledWith('Overwatch');
+
+        // Verify loadPatchNoteFetchers was called
+        expect(loadPatchNoteFetchers).toHaveBeenCalled();
 
         // Verify the interaction reply contains the error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('No patch notes found for `Overwatch`')
-        );
+        assertTextReply(interaction, 'No patch notes found for `Overwatch`.');
     });
 
     // Test for autocomplete function
@@ -234,8 +204,8 @@ describe('getPatchNotes command', () => {
             {}
         );
 
-        // Mock autocomplete interaction
-        const mockAutocompleteInteraction = { /* minimal mock */ };
+        // Mock autocomplete interaction using shared helper
+        const mockAutocompleteInteraction = createMockAutocompleteInteraction({ focused: '' });
 
         // Call the autocomplete function
         await command.autocomplete(mockAutocompleteInteraction as any);

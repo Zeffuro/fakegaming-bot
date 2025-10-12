@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import request from 'supertest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { givenAuthenticatedClient } from './helpers/client.js';
 
 const now = Date.now();
 const testPatch = {
@@ -20,24 +20,21 @@ beforeEach(async () => {
 });
 
 describe('PatchNotes API', () => {
-    let token: string;
-    beforeAll(() => {
-        token = signTestJwt({ discordId: 'testuser' });
-    });
+    const client = givenAuthenticatedClient(app);
+
     it('should list all patch notes', async () => {
-        const res = await request(app).get('/api/patchNotes').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get('/api/patchNotes');
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
     it('should get the latest patch note for a game', async () => {
-        const res = await request(app).get(`/api/patchNotes/${testPatch.game}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get(`/api/patchNotes/${testPatch.game}`);
+        expectOk(res);
         expect(res.body.game).toBe(testPatch.game);
         expect(res.body.title).toBe(testPatch.title);
     });
     it('should upsert (add/update) a patch note', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app).post('/api/patchNotes').set('Authorization', `Bearer ${token}`).send({
+        const res = await client.post('/api/patchNotes', {
             game: testPatch.game, // Use the same game as the initial patch
             title: 'Major update',
             content: 'Major update notes',
@@ -45,27 +42,31 @@ describe('PatchNotes API', () => {
             publishedAt: now + 1,
             version: '2.0.0'
         });
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body.success).toBe(true);
     });
     it('should return 404 for non-existent patch note', async () => {
-        const res = await request(app).get('/api/patchNotes/nonexistentgame').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.get('/api/patchNotes/nonexistentgame');
+        expectNotFound(res);
     });
     it('should return 400 when POST /api/patchNotes with missing fields', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app)
-            .post('/api/patchNotes')
-            .set('Authorization', `Bearer ${token}`)
-            .send({});
-        expect(res.status).toBe(400);
+        const res = await client.post('/api/patchNotes', {} as any);
+        expectBadRequest(res);
         expect(res.body.error).toBeTypeOf('string');
     });
 
     it('should return 401 for POST /api/patchNotes without JWT', async () => {
-        const res = await request(app)
+        const res = await client.raw
             .post('/api/patchNotes')
             .send({ game: 'g', title: 't', content: 'c', url: 'u', publishedAt: Date.now(), version: 'v' });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
+    });
+
+    it('should list supported games', async () => {
+        const res = await client.get('/api/patchNotes/supportedGames');
+        expectOk(res);
+        expect(Array.isArray(res.body)).toBe(true);
+        // Should contain at least one common title
+        expect(res.body.length).toBeGreaterThan(0);
     });
 });

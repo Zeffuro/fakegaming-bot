@@ -1,81 +1,83 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { api, API_ENDPOINTS } from '@/lib/api-client.js';
+import { describe, it, expect } from 'vitest';
+import { api, API_ENDPOINTS } from '@/lib/api-client';
+import { withFetchMock } from '@zeffuro/fakegaming-common/testing';
 
-const globalAny: any = globalThis as any;
+const { mockOkJsonOnce, mockErrorJsonOnce, expectFetchCalledWith, getFetchMock } = withFetchMock();
 
 describe('api-client', () => {
-    beforeEach(() => {
-        globalAny.fetch = vi.fn();
-    });
-
-    afterEach(() => {
-        vi.restoreAllMocks();
-        delete globalAny.fetch;
-    });
-
     it('getTwitchConfigs performs GET and returns data', async () => {
         const payload = { items: [{ id: '1' }] };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => payload });
+        mockOkJsonOnce(payload);
         const result = await api.getTwitchConfigs();
-        expect(globalAny.fetch).toHaveBeenCalledWith(API_ENDPOINTS.TWITCH, expect.objectContaining({ method: 'GET' }));
+        expectFetchCalledWith(API_ENDPOINTS.TWITCH, { method: 'GET' });
         expect(result).toEqual(payload);
     });
 
     it('createTwitchStream performs POST with body', async () => {
         const payload = { id: 'abc', name: 'stream' };
         const response = { id: 'abc' };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => response });
+        mockOkJsonOnce(response);
         const result = await api.createTwitchStream(payload as any);
-        expect(globalAny.fetch).toHaveBeenCalledWith(
-            API_ENDPOINTS.TWITCH,
-            expect.objectContaining({ method: 'POST', body: JSON.stringify(payload) })
-        );
+        expectFetchCalledWith(API_ENDPOINTS.TWITCH, { method: 'POST', body: JSON.stringify(payload) });
         expect(result).toEqual(response);
     });
 
     it('deleteTwitchStream performs DELETE', async () => {
         const response = { success: true };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => response });
+        mockOkJsonOnce(response);
         const result = await api.deleteTwitchStream('123');
-        expect(globalAny.fetch).toHaveBeenCalledWith(`${API_ENDPOINTS.TWITCH}/123`, expect.objectContaining({ method: 'DELETE' }));
+        expectFetchCalledWith(`${API_ENDPOINTS.TWITCH}/123`, { method: 'DELETE' });
         expect(result).toEqual(response);
     });
 
     it('getYouTubeConfigs performs GET', async () => {
         const payload = { items: [] };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => payload });
+        mockOkJsonOnce(payload);
         const result = await api.getYouTubeConfigs();
-        expect(globalAny.fetch).toHaveBeenCalledWith(API_ENDPOINTS.YOUTUBE, expect.objectContaining({ method: 'GET' }));
+        expectFetchCalledWith(API_ENDPOINTS.YOUTUBE, { method: 'GET' });
         expect(result).toEqual(payload);
     });
 
     it('createYouTubeChannel performs POST', async () => {
         const payload = { channelId: 'cid' };
         const response = { success: true };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => response });
+        mockOkJsonOnce(response);
         const result = await api.createYouTubeChannel(payload as any);
-        expect(globalAny.fetch).toHaveBeenCalledWith(
-            API_ENDPOINTS.YOUTUBE,
-            expect.objectContaining({ method: 'POST', body: JSON.stringify(payload) })
-        );
+        expectFetchCalledWith(API_ENDPOINTS.YOUTUBE, { method: 'POST', body: JSON.stringify(payload) });
         expect(result).toEqual(response);
     });
 
     it('deleteYouTubeChannel performs DELETE', async () => {
         const response = { success: true };
-        globalAny.fetch.mockResolvedValueOnce({ ok: true, json: async () => response });
+        mockOkJsonOnce(response);
         const result = await api.deleteYouTubeChannel('abc');
-        expect(globalAny.fetch).toHaveBeenCalledWith(`${API_ENDPOINTS.YOUTUBE}/abc`, expect.objectContaining({ method: 'DELETE' }));
+        expectFetchCalledWith(`${API_ENDPOINTS.YOUTUBE}/abc`, { method: 'DELETE' });
         expect(result).toEqual(response);
     });
 
+    it('getSupportedGames performs GET and returns string[]', async () => {
+        const payload = ['League of Legends', 'Valorant'];
+        mockOkJsonOnce(payload);
+        const result = await api.getSupportedGames();
+        expectFetchCalledWith(`${API_ENDPOINTS.PATCH_NOTES}/supportedGames`, { method: 'GET' });
+        expect(result).toEqual(payload);
+    });
+
+    it('getLatestPatchNote performs GET and returns patch note object', async () => {
+        const payload = { game: 'League of Legends', version: '14.19', publishedAt: Date.now() };
+        mockOkJsonOnce(payload);
+        const result = await api.getLatestPatchNote('League of Legends');
+        expectFetchCalledWith(`${API_ENDPOINTS.PATCH_NOTES}/League%20of%20Legends`, { method: 'GET' });
+        expect(result).toEqual(payload);
+    });
+
     it('apiRequest throws with server error payload message', async () => {
-        globalAny.fetch.mockResolvedValueOnce({ ok: false, status: 400, json: async () => ({ error: 'Bad stuff' }) });
+        mockErrorJsonOnce(400, { error: 'Bad stuff' });
         await expect(api.getYouTubeConfigs()).rejects.toThrow('Bad stuff');
     });
 
     it('apiRequest throws with generic message if no json', async () => {
-        globalAny.fetch.mockResolvedValueOnce({ ok: false, status: 500, json: async () => { throw new Error('no json'); } });
+        getFetchMock().mockResolvedValueOnce({ ok: false, status: 500, json: async () => { throw new Error('no json'); } });
         await expect(api.getTwitchConfigs()).rejects.toThrow('API request failed with status: 500');
     });
 });

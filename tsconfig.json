@@ -9,7 +9,15 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "experimentalDecorators": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "packages/dashboard/*"
+      ],
+      "@/lib/common/testing.js": [
+        "packages/dashboard/lib/common/testing.ts"
+      ]
+    }
   },
   "include": [
     "packages/bot/src",

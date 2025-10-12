@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getPerkStylesData } from '../leaguePerkStylesDataCache.js';
-import * as typedAssetCache from '../../../../utils/typedAssetCache.js';
+import { mockGetTypedAssetResolved, expectGetTypedAssetCalledWithPrefix } from './helpers.js';
 
 vi.mock('../../../../utils/typedAssetCache.js');
 
@@ -18,21 +18,20 @@ describe('leaguePerkStylesDataCache', () => {
                 ],
             };
 
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue(mockData);
+            await mockGetTypedAssetResolved(mockData);
 
             const result = await getPerkStylesData();
 
             expect(result).toEqual(mockData);
-            expect(typedAssetCache.getTypedAsset).toHaveBeenCalledWith(
+            await expectGetTypedAssetCalledWithPrefix(
                 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perkstyles.json',
                 'perkstyles.json',
-                'perkstylesdata',
-                expect.any(Object)
+                'perkstylesdata'
             );
         });
 
         it('should handle empty perk styles data', async () => {
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue({ styles: [] });
+            await mockGetTypedAssetResolved({ styles: [] });
 
             const result = await getPerkStylesData();
 
@@ -40,4 +39,3 @@ describe('leaguePerkStylesDataCache', () => {
         });
     });
 });
-

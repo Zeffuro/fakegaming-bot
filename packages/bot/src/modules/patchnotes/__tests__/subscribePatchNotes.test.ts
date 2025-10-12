@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyText, expectReplyTextContains, expectReplyHasEmbedsArray, createMockAutocompleteInteraction, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
-// Import the type only to satisfy ESLint
-import type { MessageFlags } from 'discord.js';
-
-// Dummy type usage to satisfy ESLint
-type _TestType = MessageFlags;
 
 // Mock the patch note embed builder
 vi.mock('../shared/patchNoteEmbed.js', () => ({
@@ -23,6 +18,86 @@ import { requireAdmin } from '../../../utils/permissions.js';
 
 // Add Mock type definition
 type Mock = MockedFunction<typeof requireAdmin>;
+
+// --- local helpers (DRY) ---
+function assertSubscribedWithEmbed(opts: {
+    interaction: any;
+    game: string;
+    channelId: string;
+    guildId: string;
+    subscribeSpy: ReturnType<typeof vi.fn>;
+    getLatestPatchSpy: ReturnType<typeof vi.fn>;
+    patch: any;
+}) {
+    const { interaction, game, channelId, guildId, subscribeSpy, getLatestPatchSpy, patch } = opts;
+    expect(requireAdmin).toHaveBeenCalledWith(interaction);
+    expect(subscribeSpy).toHaveBeenCalledWith(game, channelId, guildId);
+    expect(getLatestPatchSpy).toHaveBeenCalledWith(game);
+    expect(buildPatchNoteEmbed).toHaveBeenCalledWith(patch);
+    expectReplyTextContains(interaction, `Subscribed <#${channelId}> to patch notes for \`${game}\`.`);
+    expectReplyHasEmbedsArray(interaction);
+}
+
+function assertSubscribedNoEmbed(opts: {
+    interaction: any;
+    game: string;
+    channelId: string;
+    guildId: string;
+    subscribeSpy: ReturnType<typeof vi.fn>;
+}) {
+    const { interaction, game, channelId, guildId, subscribeSpy } = opts;
+    expect(subscribeSpy).toHaveBeenCalledWith(game, channelId, guildId);
+    expectReplyText(
+        interaction,
+        `Subscribed <#${channelId}> to patch notes for \`${game}\`.`
+    );
+    expect(buildPatchNoteEmbed).not.toHaveBeenCalled();
+}
+
+function assertSubscribeDenied(opts: {
+    interaction: any;
+    subscribeSpy: ReturnType<typeof vi.fn>;
+    getLatestPatchSpy: ReturnType<typeof vi.fn>;
+}) {
+    const { interaction, subscribeSpy, getLatestPatchSpy } = opts;
+    expect(requireAdmin).toHaveBeenCalledWith(interaction);
+    expect(subscribeSpy).not.toHaveBeenCalled();
+    expect(getLatestPatchSpy).not.toHaveBeenCalled();
+    expectReplyTextContains(interaction, 'You do not have permission to subscribe channels');
+    expectEphemeralReply(interaction);
+}
+
+/**
+ * DRY setup for subscribePatchNotes tests
+ */
+async function setupSubscribeTest(opts: {
+    game: string;
+    channelId: string;
+    guildId: string;
+    subscribeSpy: ReturnType<typeof vi.fn>;
+    getLatestPatchSpy: ReturnType<typeof vi.fn>;
+}) {
+    const { game, channelId, guildId, subscribeSpy, getLatestPatchSpy } = opts;
+    const { command, interaction } = await setupCommandTest(
+        'modules/patchnotes/commands/subscribePatchNotes.js',
+        {
+            interaction: {
+                stringOptions: { game },
+                channelOptions: { channel: channelId },
+                guildId
+            },
+            managerOverrides: {
+                patchSubscriptionManager: {
+                    subscribe: subscribeSpy
+                },
+                patchNotesManager: {
+                    getLatestPatch: getLatestPatchSpy
+                }
+            }
+        }
+    );
+    return { command, interaction };
+}
 
 describe('subscribePatchNotes command', () => {
     beforeEach(() => {
@@ -50,62 +125,32 @@ describe('subscribePatchNotes command', () => {
         // Create spy for patch notes manager
         const getLatestPatchSpy = vi.fn().mockResolvedValue(mockPatchNote);
 
-        // Setup mock channel
-        const mockChannel = {
-            id: '929533532185956352',
-            type: 0, // TextChannel
-            name: 'test-channel'
-        };
+        // Setup mock channel id
+        const channelId = '929533532185956352';
+        const guildId = '135381928284343204';
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/subscribePatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('LeagueOfLegends'),
-                        getChannel: vi.fn().mockReturnValue(mockChannel)
-                    },
-                    guildId: '135381928284343204'
-                },
-                managerOverrides: {
-                    patchSubscriptionManager: {
-                        subscribe: subscribeSpy
-                    },
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        // Setup the test environment (DRY)
+        const { command, interaction } = await setupSubscribeTest({
+            game: 'LeagueOfLegends',
+            channelId,
+            guildId,
+            subscribeSpy,
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify requireAdmin was called
-        expect(requireAdmin).toHaveBeenCalledWith(interaction);
-
-        // Verify subscribe was called with the correct parameters
-        expect(subscribeSpy).toHaveBeenCalledWith(
-            'LeagueOfLegends',
-            '929533532185956352',
-            '135381928284343204'
-        );
-
-        // Verify getLatestPatch was called with the correct game
-        expect(getLatestPatchSpy).toHaveBeenCalledWith('LeagueOfLegends');
-
-        // Verify buildPatchNoteEmbed was called with the patch data
-        expect(buildPatchNoteEmbed).toHaveBeenCalledWith(mockPatchNote);
-
-        // Verify interaction.reply was called
-
-        // Verify the interaction reply includes content and embeds
-        const replyCall = (interaction.reply as any).mock.calls[0][0];
-        expect(replyCall).toHaveProperty('content');
-        expect(replyCall.content).toContain(`Subscribed <#${mockChannel.id}> to patch notes for \`LeagueOfLegends\``);
-        expect(replyCall).toHaveProperty('embeds');
-        expect(Array.isArray(replyCall.embeds)).toBe(true);
+        // Assertions (DRY helper)
+        assertSubscribedWithEmbed({
+            interaction,
+            game: 'LeagueOfLegends',
+            channelId,
+            guildId,
+            subscribeSpy,
+            getLatestPatchSpy,
+            patch: mockPatchNote,
+        });
     });
 
     it('subscribes a channel to patch notes without showing latest patch when not available', async () => {
@@ -118,96 +163,59 @@ describe('subscribePatchNotes command', () => {
         // Create spy for patch notes manager - no patch notes available
         const getLatestPatchSpy = vi.fn().mockResolvedValue(null);
 
-        // Setup mock channel
-        const mockChannel = {
-            id: '929533532185956352',
-            type: 0, // TextChannel
-            name: 'test-channel'
-        };
+        const channelId = '929533532185956352';
+        const guildId = '135381928284343204';
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/subscribePatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Valorant'),
-                        getChannel: vi.fn().mockReturnValue(mockChannel)
-                    },
-                    guildId: '135381928284343204'
-                },
-                managerOverrides: {
-                    patchSubscriptionManager: {
-                        subscribe: subscribeSpy
-                    },
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        // Setup the test environment (DRY)
+        const { command, interaction } = await setupSubscribeTest({
+            game: 'Valorant',
+            channelId,
+            guildId,
+            subscribeSpy,
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify subscribe was called with the correct parameters
-        expect(subscribeSpy).toHaveBeenCalledWith(
-            'Valorant',
-            '929533532185956352',
-            '135381928284343204'
-        );
-
-        // Verify the interaction reply includes only the success message (no embed)
-        expect(interaction.reply).toHaveBeenCalledWith(
-            `Subscribed <#${mockChannel.id}> to patch notes for \`Valorant\`.`
-        );
-
-        // Verify buildPatchNoteEmbed was NOT called
-        expect(buildPatchNoteEmbed).not.toHaveBeenCalled();
+        // Assertions (DRY helper)
+        assertSubscribedNoEmbed({
+            interaction,
+            game: 'Valorant',
+            channelId,
+            guildId,
+            subscribeSpy,
+        });
     });
 
     it('prevents non-admin users from subscribing channels', async () => {
         // Mock the requireAdmin function to return false (user is not admin)
-        (requireAdmin as Mock).mockResolvedValue(false);
+        (requireAdmin as Mock).mockImplementation(async (interactionArg: any) => {
+            await interactionArg.reply({ content: 'You do not have permission to subscribe channels', flags: 64 });
+            return false;
+        });
 
         // Create spies that should NOT be called
         const subscribeSpy = vi.fn();
         const getLatestPatchSpy = vi.fn();
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/patchnotes/commands/subscribePatchNotes.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('LeagueOfLegends'),
-                        getChannel: vi.fn().mockReturnValue({ id: '929533532185956352' })
-                    },
-                    guildId: '135381928284343204'
-                },
-                managerOverrides: {
-                    patchSubscriptionManager: {
-                        subscribe: subscribeSpy
-                    },
-                    patchNotesManager: {
-                        getLatestPatch: getLatestPatchSpy
-                    }
-                }
-            }
-        );
+        const channelId = '929533532185956352';
+        const guildId = '135381928284343204';
+
+        // Setup the test environment (DRY)
+        const { command, interaction } = await setupSubscribeTest({
+            game: 'LeagueOfLegends',
+            channelId,
+            guildId,
+            subscribeSpy,
+            getLatestPatchSpy,
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify requireAdmin was called
-        expect(requireAdmin).toHaveBeenCalledWith(interaction);
-
-        // Verify that none of the manager functions were called
-        expect(subscribeSpy).not.toHaveBeenCalled();
-        expect(getLatestPatchSpy).not.toHaveBeenCalled();
-
-        // Verify the interaction reply was NOT called
-        expect(interaction.reply).not.toHaveBeenCalled();
+        // Assertions (DRY helper)
+        assertSubscribeDenied({ interaction, subscribeSpy, getLatestPatchSpy });
     });
 
     // Test for autocomplete function
@@ -226,8 +234,8 @@ describe('subscribePatchNotes command', () => {
             {}
         );
 
-        // Mock autocomplete interaction
-        const mockAutocompleteInteraction = { /* minimal mock */ };
+        // Mock autocomplete interaction using shared helper
+        const mockAutocompleteInteraction = createMockAutocompleteInteraction({ focused: '' });
 
         // Call the autocomplete function
         await command.autocomplete(mockAutocompleteInteraction as any);

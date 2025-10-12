@@ -119,7 +119,7 @@ export const configManager = getConfigManager();
 beforeAll(async () => {
     // Ensure database is initialized
     await configManager.init(true);
-});
+}, 30000);
 
 // Clean up after all tests
 afterAll(async () => {

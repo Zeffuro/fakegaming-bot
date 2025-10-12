@@ -1,12 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
-// Import the type only to satisfy ESLint
-import type { AttachmentBuilder } from 'discord.js';
 import { Regions } from 'twisted/dist/constants/regions.js';
-
-// Dummy type usage to satisfy ESLint
-type _TestType = AttachmentBuilder;
+import { makeHistoryTestHelpers } from './helpers/historyTestHelpers.js';
 
 // Mock the riotService module
 vi.mock('../../../services/riotService.js', () => ({
@@ -49,143 +44,64 @@ describe('tftHistory command', () => {
         vi.resetModules();
     });
 
+    const H = makeHistoryTestHelpers({
+        commandPath: 'modules/league/commands/tftHistory.js',
+        attachmentName: 'tft-history.png',
+        serviceKeys: { history: 'getTftMatchHistory', details: 'getTftMatchDetails' }
+    });
+
     it('displays TFT match history successfully', async () => {
-        // Mock getLeagueIdentityFromInteraction to return a valid identity
-        const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
-        vi.mocked(getLeagueIdentityFromInteraction).mockResolvedValue({
-            summoner: 'TestSummoner',
-            region: 'EUW' as Regions,
-            puuid: 'test-puuid-12345'
-        });
+        await H.mockIdentity('EUW' as Regions, 'test-puuid-12345', 'TestSummoner');
+        await H.mockHistory(['tft-match-1', 'tft-match-2', 'tft-match-3']);
+        await H.mockDetails({ info: { tft_game_type: 'standard', participants: [] } });
 
-        // Mock getTftMatchHistory to return match IDs
-        const { getTftMatchHistory } = await import('../../../services/riotService.js');
-        vi.mocked(getTftMatchHistory).mockResolvedValue({
-            success: true,
-            data: ['tft-match-1', 'tft-match-2', 'tft-match-3']
-        });
-
-        // Mock getTftMatchDetails to return match data
-        const { getTftMatchDetails } = await import('../../../services/riotService.js');
-        const mockMatchData = {
-            info: {
-                tft_game_type: 'standard',
-                participants: []
-            }
-        };
-        vi.mocked(getTftMatchDetails).mockResolvedValue({
-            success: true,
-            data: mockMatchData
-        });
-
-        // Import and mock generateTftHistoryImage
+        // Import and ensure generateTftHistoryImage resolves
         const { generateTftHistoryImage } = await import('../image/tftHistoryImage.js');
         vi.mocked(generateTftHistoryImage).mockResolvedValue(Buffer.from('fake-tft-image-data'));
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/league/commands/tftHistory.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: vi.fn().mockResolvedValue(undefined)
-                }
-            }
-        );
+        const { command, interaction } = await H.setupCmd();
 
-        // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify getLeagueIdentityFromInteraction was called
+        const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
         expect(getLeagueIdentityFromInteraction).toHaveBeenCalledWith(interaction);
 
         // Verify regionToRegionGroupForAccountAPI was called with the region
         const { regionToRegionGroupForAccountAPI } = await import('twisted/dist/constants/regions.js');
         expect(regionToRegionGroupForAccountAPI).toHaveBeenCalledWith('EUW');
 
-        // Verify getTftMatchHistory was called with the correct parameters
+        // Verify service calls
+        const { getTftMatchHistory, getTftMatchDetails } = await import('../../../services/riotService.js');
         expect(getTftMatchHistory).toHaveBeenCalledWith('test-puuid-12345', 'EUROPE', 0, 5);
-
-        // Verify getTftMatchDetails was called for each match ID
         expect(getTftMatchDetails).toHaveBeenCalledTimes(3);
         expect(getTftMatchDetails).toHaveBeenCalledWith('tft-match-1', 'EUROPE');
         expect(getTftMatchDetails).toHaveBeenCalledWith('tft-match-2', 'EUROPE');
         expect(getTftMatchDetails).toHaveBeenCalledWith('tft-match-3', 'EUROPE');
 
-        // Verify generateTftHistoryImage was called with the matches and identity
-        expect(generateTftHistoryImage).toHaveBeenCalledWith(
-            [mockMatchData, mockMatchData, mockMatchData],
-            {
-                summoner: 'TestSummoner',
-                region: 'EUW',
-                puuid: 'test-puuid-12345'
-            }
-        );
-
-        // Verify the response with the image attachment
-        expect(interaction.editReply).toHaveBeenCalled();
+        // Verify the response with the image attachment and content
+        H.expectAttachment(interaction, 'Recent TFT matches for');
     });
 
     it('handles missing identity information', async () => {
-        // Mock getLeagueIdentityFromInteraction to throw an error
         const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
         vi.mocked(getLeagueIdentityFromInteraction).mockRejectedValue(
             new Error('Missing summoner or region')
         );
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/league/commands/tftHistory.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: vi.fn().mockResolvedValue(undefined)
-                }
-            }
-        );
-
-        // Execute the command
+        const { command, interaction } = await H.setupCmd();
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify error response
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            'Please provide a summoner name and region, or link your account first.'
-        );
+        H.expectErrorText(interaction, 'Please provide a summoner name and region');
     });
 
     it('handles failure to fetch TFT match history', async () => {
-        // Mock getLeagueIdentityFromInteraction to return a valid identity
-        const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
-        vi.mocked(getLeagueIdentityFromInteraction).mockResolvedValue({
-            summoner: 'TestSummoner',
-            region: 'EUW' as Regions,
-            puuid: 'test-puuid-12345'
-        });
+        await H.mockIdentity('EUW' as Regions, 'test-puuid-12345', 'TestSummoner');
+        await H.mockHistory({ success: false, error: 'Rate limit exceeded' } as any);
 
-        // Mock getTftMatchHistory to return an error
-        const { getTftMatchHistory } = await import('../../../services/riotService.js');
-        vi.mocked(getTftMatchHistory).mockResolvedValue({
-            success: false,
-            error: 'Rate limit exceeded'
-        });
-
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/league/commands/tftHistory.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: vi.fn().mockResolvedValue(undefined)
-                }
-            }
-        );
-
-        // Execute the command
+        const { command, interaction } = await H.setupCmd();
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // Verify error response
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            'Failed to fetch TFT match history: Rate limit exceeded'
-        );
+        H.expectErrorText(interaction, 'Failed to fetch TFT match history');
     });
 });

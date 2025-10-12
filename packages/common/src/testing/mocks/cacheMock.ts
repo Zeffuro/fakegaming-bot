@@ -2,16 +2,23 @@ import { vi, beforeEach, afterEach } from 'vitest';
 import type { MinimalGuildData } from '../../discord/types.js';
 
 /**
+ * Default mocked user guilds used in tests
+ */
+function getDefaultUserGuilds(): MinimalGuildData[] {
+    return [
+        { id: 'guild1', owner: true, permissions: '8' },
+        { id: 'guild2', owner: false, permissions: '0' }
+    ];
+}
+
+/**
  * Mock implementation for cacheGet during tests
  */
 export const mockCacheGet = vi.fn<(key: string) => Promise<any>>()
     .mockImplementation(async (key: string) => {
         // Return admin access for any user guilds key by default
         if (/^user:.+:guilds$/.test(key)) {
-            const guilds: MinimalGuildData[] = [
-                { id: 'guild1', owner: true, permissions: '8' },
-                { id: 'guild2', owner: false, permissions: '0' }
-            ];
+            const guilds: MinimalGuildData[] = getDefaultUserGuilds();
             return guilds;
         }
         return null;
@@ -58,10 +65,7 @@ export function setupCacheMocks(): void {
 export function resetCacheMocks(): void {
     mockCacheGet.mockReset().mockImplementation(async (key: string) => {
         if (/^user:.+:guilds$/.test(key)) {
-            const guilds: MinimalGuildData[] = [
-                { id: 'guild1', owner: true, permissions: '8' },
-                { id: 'guild2', owner: false, permissions: '0' }
-            ];
+            const guilds: MinimalGuildData[] = getDefaultUserGuilds();
             return guilds;
         }
         return null;

@@ -2,6 +2,8 @@
 
 This guide explains how to write effective tests for the fakegaming-bot monorepo using Vitest and our shared testing utilities.
 
+Note: For the full catalog of shared test helpers and examples, see `packages/common/src/testing/README.md`. New helpers include embed assertions: `expectReplyHasEmbedsArray`, `expectReplyHasEmbed`, `expectEditReplyHasEmbed`, and `expectSendHasEmbed`.
+
 ## Table of Contents
 
 1. [Philosophy](#philosophy)
@@ -194,160 +196,15 @@ it('should call API', async () => {
 
 ## Shared Testing Utilities
 
-All shared utilities are in `@zeffuro/fakegaming-common/testing`.
+All shared utilities are in `@zeffuro/fakegaming-common/testing`. See `packages/common/src/testing/README.md` for details and examples.
 
-### Setup Functions
+Commonly used helpers:
 
-#### `setupServiceTest(options?)`
-
-Sets up a complete test environment for service tests.
-
-```typescript
-const { client, configManager } = await setupServiceTest({
-    client: { /* Discord client overrides */ },
-    managerOverrides: {
-        birthdayManager: {
-            getAllPlain: vi.fn().mockResolvedValue([]),
-        },
-    },
-});
-```
-
-**Returns**:
-- `client`: Mocked Discord.js Client
-- `configManager`: Mocked ConfigManager with all managers
-
-**✨ New in v2:** Manager mocks are now **fully dynamic**! All manager methods are auto-discovered from the real manager classes. You only need to override specific methods you're testing.
-
-#### `setupCommandTest(commandPath, options?)`
-
-Sets up environment for command tests.
-
-```typescript
-const { command, interaction, client, configManager } = await setupCommandTest(
-    'modules/quotes/commands/quote-add.js',
-    {
-        interaction: { guildId: 'test-guild' },
-    }
-);
-```
-
-### Manager Mocks (Dynamic System) ⭐ NEW
-
-#### `createMockConfigManager(overrides?)`
-
-Creates a complete mock ConfigManager by **automatically discovering** all managers from the real ConfigManager class.
-
-```typescript
-const configManager = createMockConfigManager({
-    birthdayManager: {
-        // Only override what you need - all other methods auto-mocked!
-        getAllPlain: vi.fn().mockResolvedValue([mockBirthday]),
-    },
-});
-```
-
-**How it works:**
-1. Inspects the real `ConfigManager` class
-2. Discovers all manager properties (birthdayManager, reminderManager, etc.)
-3. For each manager, auto-discovers all custom methods via reflection
-4. Auto-mocks all `BaseManager` methods
-5. Applies your overrides
-
-**Adding a new manager:** Just add it to `ConfigManager` - the mock system discovers it automatically!
-
-```typescript
-// In ConfigManager
-export class ConfigManager {
-    // ...existing managers...
-    settingsManager = new SettingsManager(); // ✅ Automatically mocked!
-}
-```
-
-#### `createMockManager<T>(ManagerClass, overrides?)`
-
-Create a standalone mock for a specific manager type:
-
-```typescript
-import { BirthdayManager } from '@zeffuro/fakegaming-common/managers';
-
-const mockBirthdayManager = createMockManager(BirthdayManager, {
-    getAllPlain: vi.fn().mockResolvedValue([]),
-});
-```
-
-### Discord Mocks
-
-#### `createMockClient(overrides?)`
-
-```typescript
-const client = createMockClient({
-    users: {
-        fetch: vi.fn(async (id) => mockUser),
-    },
-    channels: {
-        fetch: vi.fn(async (id) => mockChannel),
-        cache: new Map(), // For cache.get() / cache.set()
-    },
-});
-```
-
-#### `createMockTextChannel(overrides?)`
-
-Full Discord TextChannel mock with all properties:
-
-```typescript
-const channel = createMockTextChannel({
-    id: 'channel-123',
-    send: vi.fn(async (msg) => ({ id: 'msg-123' })),
-});
-```
-
-#### `createMockChannelWithSend(overrides?)` ⭐ NEW
-
-**Simplified channel mock** for service tests that only need send functionality:
-
-```typescript
-const channel = createMockChannelWithSend({
-    id: 'channel-456',
-});
-
-await channel.send({ content: 'Hello!' });
-expect(channel.send).toHaveBeenCalled();
-```
-
-**When to use:**
-- ✅ Service tests (birthdayService, reminderService, etc.)
-- ❌ Command tests → Use `createMockTextChannel()` for full features
-
-#### `createMockUserWithDM(overrides?)` ⭐ NEW
-
-**Simplified user mock** for testing DM functionality:
-
-```typescript
-const user = createMockUserWithDM({ id: 'user-123' });
-
-await user.send({ embeds: [embed] });
-expect(user.send).toHaveBeenCalledWith({ embeds: expect.any(Array) });
-```
-
-### Service Test Helpers ⭐ NEW
-
-#### `createTestDate(dateString)`
-
-```typescript
-const testDate = createTestDate('2025-10-06');
-await checkBirthdays(client, testDate);
-```
-
-#### `advanceTime(ms)` / `resetTime()`
-
-```typescript
-vi.useFakeTimers();
-advanceTime(3600000); // Advance 1 hour
-// ... test time-dependent code
-resetTime();
-```
+- Setup Functions: `setupServiceTest`, `setupCommandTest`, `withAllMocks`
+- Discord Mocks: `createMockClient`, `createMockCommandInteraction`, `createMockTextChannel`, `createMockUser`
+- Reply/Edit Helpers: `expectEphemeralReply`, `expectReplyText`, `expectReplyTextContains`, `expectEditReplyContainsText`, `expectEditReplyWithAttachment`
+- Embed Assertions (new): `expectReplyHasEmbedsArray`, `expectReplyHasEmbed`, `expectEditReplyHasEmbed`, `expectSendHasEmbed`
+- API Helpers: `setupApiTest`, `givenAuthenticatedClient`
 
 ---
 
@@ -407,36 +264,6 @@ describe('birthdayService', () => {
 
         expect(client.channels.fetch).not.toHaveBeenCalled();
     });
-});
-```
-
-### Example: Reminder Service with Error Handling
-
-```typescript
-it('should continue processing after send failure', async () => {
-    const now = Date.now();
-    const mockUser1 = createMockUserWithDM({ id: 'user-1' });
-    const mockUser2 = createMockUserWithDM({ id: 'user-2' });
-    
-    mockUser1.send.mockRejectedValue(new Error('DM blocked'));
-
-    const reminders = [
-        createMockReminder({ id: 'r1', userId: 'user-1', timestamp: now - 1000 }),
-        createMockReminder({ id: 'r2', userId: 'user-2', timestamp: now - 1000 }),
-    ];
-
-    vi.spyOn(configManager.reminderManager, 'getAllPlain').mockResolvedValue(reminders);
-    vi.spyOn(client.users, 'fetch')
-        .mockResolvedValueOnce(mockUser1 as any)
-        .mockResolvedValueOnce(mockUser2 as any);
-    vi.spyOn(configManager.reminderManager, 'removeReminder').mockResolvedValue(true);
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await checkAndSendReminders(client);
-
-    expect(mockUser2.send).toHaveBeenCalled();
-    expect(configManager.reminderManager.removeReminder).toHaveBeenCalledWith('r1');
-    expect(configManager.reminderManager.removeReminder).toHaveBeenCalledWith('r2');
 });
 ```
 
@@ -574,23 +401,29 @@ it('should handle paginated results', async () => {
 ### Pattern 5: Verifying Embed Content
 
 ```typescript
-it('should send embed with correct data', async () => {
-    const mockChannel = createMockChannelWithSend();
+import { expectReplyHasEmbed, expectEditReplyHasEmbed, expectSendHasEmbed } from '@zeffuro/fakegaming-common/testing';
 
-    await sendPatchNote(client, patchNote);
-
-    expect(mockChannel.send).toHaveBeenCalledWith({
-        embeds: [
-            expect.objectContaining({
-                data: expect.objectContaining({
-                    title: expect.stringContaining('Version 1.0'),
-                    description: expect.any(String),
-                }),
-            }),
-        ],
-    });
+// 1) Assert that a reply had an embed with specific title/description
+expectReplyHasEmbed(interaction, {
+    titleContains: 'Results',
+    descriptionContains: 'query: hello',
 });
+
+// 2) Assert that an editReply included an embed with a matching field
+expectEditReplyHasEmbed(interaction, {
+    field: {
+        nameEquals: 'KDA',
+        valueContains: '12/3/7',
+    },
+});
+
+// 3) Assert that a channel/user send() payload had any embed at all
+expectSendHasEmbed(mockChannel);
 ```
+
+Notes:
+- The helpers support both `EmbedBuilder` and plain objects (`{ title, description, fields }`).
+- Use `expectReplyHasEmbedsArray(interaction, { min: 2 })` when the presence of multiple embeds matters more than specific content.
 
 ---
 

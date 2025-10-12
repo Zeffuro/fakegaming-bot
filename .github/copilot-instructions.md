@@ -5,7 +5,7 @@ Follow these rules when generating code for this project:
 - **TypeScript:** Use strict types. No implicit `any`. Handle `null`/`undefined` explicitly. Avoid code that won't compile with `"strict": true`.
 - **Compilation Targets:** Most packages use `"target": "ESNext"` and `"module": "NodeNext"`. Use modern JS features and ES modules only. For `packages/dashboard`, use `"module": "esnext"`, `"moduleResolution": "node"`, and assume DOM/JSX features.
 - **Unused Variables:** Prefix any unused arguments or variables with `_` to avoid lint errors.
-- **ES Modules:** Always use `.js` extension for local imports, even when importing `.ts` files. Use `import/export`; never use CommonJS (`require`, `module.exports`).
+- **ES Modules:** Always use `.js` extension for local imports, even when importing `.ts` files. Use `import/export`; never use CommonJS (`require`, `module.exports`), (dashboard is an exception to this since it uses next.js).
 - **Exports:** Use named exports only. Do not use `export default`.
 - **Command Chaining (Shell Only):** When suggesting shell/terminal commands, use `;` to chain multiple commands. **Do not use `&&`**, as it may fail with Copilot's run_in_terminal.
 - **Async Code:** Use `async`/`await` for asynchronous logic. Do not use callbacks or `.then()` chaining.

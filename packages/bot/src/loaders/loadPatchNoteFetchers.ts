@@ -7,9 +7,15 @@ import {bootstrapEnv} from "@zeffuro/fakegaming-common/core";
 const {__dirname} = bootstrapEnv(import.meta.url);
 
 /**
- * Dynamically loads all patch note fetchers from the patchfetchers directory.
+ * Function signature for dynamic imports, overridable in tests.
  */
-export async function loadPatchNoteFetchers(): Promise<BasePatchNotesFetcher[]> {
+export type DynamicImporter = (moduleUrl: string) => Promise<Record<string, unknown>>;
+
+/**
+ * Dynamically loads all patch note fetchers from the patchfetchers directory.
+ * Accepts an optional dynamic importer to aid testing without real dynamic imports.
+ */
+export async function loadPatchNoteFetchers(importer?: DynamicImporter): Promise<BasePatchNotesFetcher[]> {
     const fetchersDir = path.join(__dirname, '..', 'services', 'patchfetchers');
 
     const files = fs.readdirSync(fetchersDir)
@@ -20,16 +26,17 @@ export async function loadPatchNoteFetchers(): Promise<BasePatchNotesFetcher[]> 
         .map(file => pathToFileURL(path.join(fetchersDir, file)).href);
 
     const fetchers: BasePatchNotesFetcher[] = [];
+    const dynamicImport: DynamicImporter = importer ?? (async (url: string) => import(url));
 
     for (const fileUrl of files) {
         try {
-            const module = await import(fileUrl);
-            let FetcherClass = null;
+            const module = await dynamicImport(fileUrl);
+            let FetcherClass: (new () => BasePatchNotesFetcher) | null = null;
 
             for (const key in module) {
-                const exported = module[key];
-                if (typeof exported === 'function' && exported.prototype?.getPatchNotesUrl) {
-                    FetcherClass = exported;
+                const exported = (module as Record<string, unknown>)[key];
+                if (typeof exported === 'function' && (exported as any).prototype?.getPatchNotesUrl) {
+                    FetcherClass = exported as unknown as new () => BasePatchNotesFetcher;
                     break;
                 }
             }

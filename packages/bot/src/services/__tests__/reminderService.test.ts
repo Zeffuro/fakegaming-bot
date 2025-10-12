@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setupServiceTest, createMockUser, createMockReminder } from '@zeffuro/fakegaming-common/testing';
+import { setupServiceTest, createMockUser, createMockReminder, expectSendHasEmbed } from '@zeffuro/fakegaming-common/testing';
 import { User } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
@@ -40,14 +40,7 @@ describe('reminderService', () => {
         await checkAndSendReminders(client);
 
         expect(client.users.fetch).toHaveBeenCalledWith('user-123');
-        expect(mockUser.send).toHaveBeenCalledWith({
-            embeds: [expect.objectContaining({
-                data: expect.objectContaining({
-                    title: '⏰ Reminder',
-                    description: 'Test reminder message',
-                }),
-            })],
-        });
+        expectSendHasEmbed(mockUser, { titleEquals: '⏰ Reminder', descriptionEquals: 'Test reminder message' });
         expect(configManager.reminderManager.removeReminder).toHaveBeenCalledWith('reminder-1');
     });
 

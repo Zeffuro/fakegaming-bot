@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { TwitchStreamConfig } from "@/lib/common/models";
+import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 import type { twitch_post_Request } from "@/types/apiResponses";
 

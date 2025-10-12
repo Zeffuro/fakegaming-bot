@@ -121,6 +121,8 @@ export {
 
 export { asValidated } from './utils/typeUtils.js';
 
+export { SUPPORTED_GAMES } from './utils/supportedGames.js';
+
 // Register custom create schema overrides (executed on module import)
 const patchSubscriptionCreateSchema = z.object({
     game: z.string().min(1),

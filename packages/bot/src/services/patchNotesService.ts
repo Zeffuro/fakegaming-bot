@@ -42,7 +42,6 @@ export async function announceNewPatchNotes(client: Client) {
                     const embed = buildPatchNoteEmbed(note);
                     await channel.send({ embeds: [embed] });
 
-                    // Update last announced on the existing instance using a Date (tests expect Date)
                     sub.lastAnnouncedAt = new Date(noteTime) as unknown as typeof sub.lastAnnouncedAt;
                     await getConfigManager().patchSubscriptionManager.upsert(sub);
                 }

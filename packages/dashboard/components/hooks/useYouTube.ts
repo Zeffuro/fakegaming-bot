@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { YoutubeVideoConfig } from "@/lib/common/models";
+import type { YoutubeVideoConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 import type { youtube_post_Request } from "@/types/apiResponses";
 

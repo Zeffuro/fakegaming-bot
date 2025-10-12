@@ -32,6 +32,9 @@ stack.env
 .env
 .env.development
 
+# Reports
+/report
+
 # Logs
 *.log
 

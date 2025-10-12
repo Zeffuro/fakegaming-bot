@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import request from 'supertest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testBirthday = {
     userId: 'birthdayuser1',
@@ -29,25 +29,24 @@ beforeEach(async () => {
 });
 
 describe('Birthdays API', () => {
-    let token: string;
-    beforeAll(() => {
-        token = signTestJwt({ discordId: 'testuser' });
-    });
+    const client = givenAuthenticatedClient(app);
+
     it('should list all birthdays', async () => {
-        const res = await request(app).get('/api/birthdays').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get('/api/birthdays');
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
+
     it('should get a birthday by userId and guildId', async () => {
-        const res = await request(app).get(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
+        expectOk(res);
         expect(res.body.userId).toBe(testBirthday.userId);
         expect(res.body.guildId).toBe(testBirthday.guildId);
     });
+
     it('should add or update a birthday', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         const { year, month, day } = parseDate('1999-12-31');
-        const res = await request(app).post('/api/birthdays').set('Authorization', `Bearer ${token}`).send({
+        const res = await client.post('/api/birthdays', {
             userId: 'birthdayuser2',
             guildId: 'birthdayguild2',
             channelId: 'testchannel2',
@@ -55,7 +54,7 @@ describe('Birthdays API', () => {
             month,
             day
         });
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body.success).toBe(true);
     });
 
@@ -67,85 +66,67 @@ describe('Birthdays API', () => {
             channelId: 'testchannel3',
             ...parseDate('1990-01-01')
         });
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app).delete('/api/birthdays/birthdayuser3/birthdayguild3').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.delete('/api/birthdays/birthdayuser3/birthdayguild3');
+        expectOk(res);
         expect(res.body.success).toBe(true);
     });
 
     it('should return 404 for non-existent birthday', async () => {
-        const res = await request(app).get('/api/birthdays/nonexistentuser/nonexistentguild').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.get('/api/birthdays/nonexistentuser/nonexistentguild');
+        expectNotFound(res);
     });
 
     it('should return 401 for GET /api/birthdays without JWT', async () => {
-        const res = await request(app).get('/api/birthdays');
-        expect(res.status).toBe(401);
+        const res = await client.raw.get('/api/birthdays');
+        expectUnauthorized(res);
     });
 
     it('should return 401 for POST /api/birthdays without JWT', async () => {
         const { year, month, day } = parseDate('2001-01-01');
-        const res = await request(app)
+        const res = await client.raw
             .post('/api/birthdays')
             .send({userId: 'birthdayuser4', guildId: 'birthdayguild4', channelId: 'testchannel4', year, month, day});
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 401 for DELETE /api/birthdays/:userId/:guildId without JWT', async () => {
-        const res = await request(app)
+        const res = await client.raw
             .delete(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 404 when deleting non-existent birthday', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app)
-            .delete('/api/birthdays/nonexistentuser/nonexistentguild')
-            .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.delete('/api/birthdays/nonexistentuser/nonexistentguild');
+        expectNotFound(res);
     });
 
     it('should handle duplicate add gracefully', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         const { year, month, day } = parseDate(testBirthday.date);
-        const res1 = await request(app)
-            .post('/api/birthdays')
-            .set('Authorization', `Bearer ${token}`)
-            .send({ ...parseDate(testBirthday.date), userId: testBirthday.userId, guildId: testBirthday.guildId, channelId: testBirthday.channelId, year, month, day });
+        const res1 = await client.post('/api/birthdays', { ...parseDate(testBirthday.date), userId: testBirthday.userId, guildId: testBirthday.guildId, channelId: testBirthday.channelId, year, month, day });
         expect([201, 409]).toContain(res1.status);
     });
 
     it('should return 400 for invalid input types', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app)
-            .post('/api/birthdays')
-            .set('Authorization', `Bearer ${token}`)
-            .send({userId: 123, guildId: null, year: 'x', month: null, day: null, channelId: null});
+        const res = await client.post('/api/birthdays', {userId: 123 as any, guildId: null as any, year: 'x' as any, month: null as any, day: null as any, channelId: null as any});
+        // Depending on validation, this might be 400 or 500
         expect([400, 500]).toContain(res.status);
     });
 
     it('should return 500 for DB error on POST /api/birthdays', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         // Simulate DB error by mocking addPlain
         const origAddPlain = configManager.birthdayManager.addPlain;
         configManager.birthdayManager.addPlain = async () => { throw new Error('DB error'); };
         const { year, month, day } = parseDate('2002-02-02');
-        const res = await request(app)
-            .post('/api/birthdays')
-            .set('Authorization', `Bearer ${token}`)
-            .send({userId: 'birthdayuser5', guildId: 'testguild1', channelId: 'testchannel5', year, month, day});
+        const res = await client.post('/api/birthdays', {userId: 'birthdayuser5', guildId: 'testguild1', channelId: 'testchannel5', year, month, day});
         expect(res.status).toBe(500);
         configManager.birthdayManager.addPlain = origAddPlain;
     });
 
     it('should return 403 for POST /api/birthdays as non-admin', async () => {
-        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
+        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
         const { year, month, day } = parseDate('1995-05-05');
-        const res = await request(app)
-            .post('/api/birthdays')
-            .set('Authorization', `Bearer ${nonAdminToken}`)
-            .send({ userId: 'birthdayuserX', guildId: 'birthdayguild1', channelId: 'chanX', year, month, day });
-        expect(res.status).toBe(403);
+        const res = await nonAdmin.post('/api/birthdays', { userId: 'birthdayuserX', guildId: 'birthdayguild1', channelId: 'chanX', year, month, day });
+        expectForbidden(res);
     });
 
     it('should return 403 for DELETE /api/birthdays/:userId/:guildId as non-admin', async () => {
@@ -156,10 +137,8 @@ describe('Birthdays API', () => {
             channelId: 'chanY',
             ...parseDate('1993-03-03')
         });
-        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
-        const res = await request(app)
-            .delete('/api/birthdays/birthdayuserY/birthdayguild1')
-            .set('Authorization', `Bearer ${nonAdminToken}`);
-        expect(res.status).toBe(403);
+        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
+        const res = await nonAdmin.delete('/api/birthdays/birthdayuserY/birthdayguild1');
+        expectForbidden(res);
     });
 });

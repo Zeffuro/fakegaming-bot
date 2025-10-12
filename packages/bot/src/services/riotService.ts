@@ -66,36 +66,84 @@ function isRiotErrorPayload(data: unknown): data is { status: { status_code?: nu
     return !!(data && typeof data === 'object' && 'status' in (data as Record<string, unknown>));
 }
 
+// --- New DRY helpers for unwrapping and calling Riot APIs ---
+function unwrapResponse<T>(result: unknown): T {
+    const maybe = (result as { response?: unknown })?.response;
+    return (maybe ?? result) as T;
+}
+
+function errorFromDataIfAny(data: unknown): string | undefined {
+    if (isRiotErrorPayload(data)) {
+        const status = (data as { status: { status_code?: number; message?: string } }).status;
+        const code = status.status_code ? String(status.status_code) : '';
+        return `${code}${code ? ' ' : ''}${status.message ?? 'Error'}`.trim();
+    }
+    return undefined;
+}
+
+async function callLol<T>(
+    run: (api: LolApi) => Promise<unknown>,
+    options?: {
+        validate?: (data: unknown) => string | undefined;
+        transformError?: (message: string) => string;
+    }
+): Promise<{ success: boolean; data?: T; error?: string }> {
+    try {
+        const api = new LolApi({ key: getLeagueApiKey() });
+        const raw = await run(api);
+        const data = unwrapResponse<T>(raw);
+        const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
+        if (dataError) return { success: false, error: dataError };
+        return { success: true, data };
+    } catch (error: unknown) {
+        const base = normalizeRiotError(error);
+        const msg = options?.transformError ? options.transformError(base) : base;
+        return { success: false, error: msg };
+    }
+}
+
+async function callTft<T>(
+    run: (api: TftApi) => Promise<unknown>,
+    options?: {
+        validate?: (data: unknown) => string | undefined;
+        transformError?: (message: string) => string;
+    }
+): Promise<{ success: boolean; data?: T; error?: string }> {
+    try {
+        const api = new TftApi({ key: process.env.RIOT_DEV_API_KEY });
+        const raw = await run(api);
+        const data = unwrapResponse<T>(raw);
+        const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
+        if (dataError) return { success: false, error: dataError };
+        return { success: true, data };
+    } catch (error: unknown) {
+        const base = normalizeRiotError(error);
+        const msg = options?.transformError ? options.transformError(base) : base;
+        return { success: false, error: msg };
+    }
+}
+
 export async function getSummoner(puuid: string, region: Regions): Promise<{
     success: boolean,
     data?: object,
     error?: string
 }> {
-    try {
-        const lolApi = new LolApi({key: getLeagueApiKey()});
-        const result = await lolApi.Summoner.getByPUUID(puuid, region as Regions);
-        const data = (result as unknown as { response?: unknown })?.response ?? result;
-        if (isRiotErrorPayload(data)) {
-            const status = data.status;
-            const code = status.status_code ? String(status.status_code) : '';
-            return {success: false, error: `${code}${code ? ' ' : ''}${status.message ?? 'Error'}`.trim()};
-        }
-        // Require minimal expected properties for a valid summoner
+    const validateSummoner = (data: unknown): string | undefined => {
         if (!data || typeof data !== 'object' || !('puuid' in data && 'summonerLevel' in data)) {
-            return {success: false, error: 'Malformed summoner data'};
+            return 'Malformed summoner data';
         }
-        return {success: true, data};
-    } catch (error: unknown) {
-        let errorMessage = normalizeRiotError(error);
-        // Check for 'not found' (substring, case-insensitive) before 'fail'
-        if (errorMessage && errorMessage.toLowerCase().includes('not found')) {
-            return {success: false, error: 'not found'};
-        }
-        if (errorMessage && errorMessage.trim().toLowerCase() === 'fail') {
-            return {success: false, error: 'fail'};
-        }
-        return {success: false, error: errorMessage};
-    }
+        return undefined;
+    };
+    const transformError = (message: string): string => {
+        const lower = message.toLowerCase();
+        if (lower.includes('not found')) return 'not found';
+        if (lower.trim() === 'fail') return 'fail';
+        return message;
+    };
+    return callLol<object>(
+        async (api) => api.Summoner.getByPUUID(puuid, region as Regions),
+        { validate: validateSummoner, transformError }
+    );
 }
 
 export async function getPUUIDByRiotId(gameName: string, tagLine: string, region: AccountAPIRegionGroups): Promise<string> {
@@ -118,14 +166,7 @@ export async function getMatchHistory(puuid: string, region: AccountAPIRegionGro
     data?: object,
     error?: string
 }> {
-    try {
-        const lolApi = new LolApi({key: getLeagueApiKey()});
-        const {response} = await lolApi.MatchV5.list(puuid, region, {start, count});
-        return {success: true, data: response};
-    } catch (error: unknown) {
-        const errorMessage = normalizeRiotError(error);
-        return {success: false, error: errorMessage};
-    }
+    return callLol<object>(async (api) => api.MatchV5.list(puuid, region, { start, count }));
 }
 
 export async function getMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
@@ -133,14 +174,7 @@ export async function getMatchDetails(matchId: string, region: AccountAPIRegionG
     data?: object,
     error?: string
 }> {
-    try {
-        const lolApi = new LolApi({key: getLeagueApiKey()});
-        const {response} = await lolApi.MatchV5.get(matchId, region);
-        return {success: true, data: response};
-    } catch (error: unknown) {
-        const errorMessage = normalizeRiotError(error);
-        return {success: false, error: errorMessage};
-    }
+    return callLol<object>(async (api) => api.MatchV5.get(matchId, region));
 }
 
 /**
@@ -152,14 +186,7 @@ export async function getSummonerDetails(puuid: string, region: Regions): Promis
     data?: object,
     error?: string
 }> {
-    try {
-        const lolApi = new LolApi({key: getLeagueApiKey()});
-        const {response} = await lolApi.League.byPUUID(puuid, region);
-        return {success: true, data: response};
-    } catch (error: unknown) {
-        const errorMessage = normalizeRiotError(error);
-        return {success: false, error: errorMessage};
-    }
+    return callLol<object>(async (api) => api.League.byPUUID(puuid, region));
 }
 
 /**
@@ -219,14 +246,7 @@ export async function getTftMatchHistory(puuid: string, region: AccountAPIRegion
     data?: object,
     error?: string
 }> {
-    try {
-        const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
-        const {response} = await tftApi.Match.list(puuid, region, {start, count});
-        return {success: true, data: response};
-    } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch TFT match history';
-        return {success: false, error: errorMessage};
-    }
+    return callTft<object>(async (api) => api.Match.list(puuid, region, { start, count }));
 }
 
 export async function getTftMatchDetails(matchId: string, region: AccountAPIRegionGroups): Promise<{
@@ -234,12 +254,5 @@ export async function getTftMatchDetails(matchId: string, region: AccountAPIRegi
     data?: object,
     error?: string
 }> {
-    try {
-        const tftApi = new TftApi({key: process.env.RIOT_DEV_API_KEY});
-        const {response} = await tftApi.Match.get(matchId, region);
-        return {success: true, data: response};
-    } catch (error: unknown) {
-        const errorMessage = (error instanceof Error && error.message) ? error.message : 'Failed to fetch TFT match details';
-        return {success: false, error: errorMessage};
-    }
+    return callTft<object>(async (api) => api.Match.get(matchId, region));
 }

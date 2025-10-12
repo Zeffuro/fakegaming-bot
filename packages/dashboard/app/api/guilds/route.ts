@@ -1,8 +1,5 @@
 import {NextRequest, NextResponse} from "next/server";
-import { getDiscordGuilds } from "@/lib/common/discord";
-import { MinimalGuildData } from "@/lib/common/models";
-import { isGuildAdmin } from "@/lib/common/utils";
-import { CACHE_KEYS, CACHE_TTL, getCachedData } from "@/lib/common/cache";
+import { getDiscordGuilds, type MinimalGuildData, isGuildAdmin, CACHE_KEYS, CACHE_TTL, getCachedData } from "@zeffuro/fakegaming-common";
 import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
 import type { APIGuild } from "discord-api-types/v10";
 

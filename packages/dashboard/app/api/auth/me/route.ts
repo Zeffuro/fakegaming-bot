@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJwt } from "@/lib/common/discord";
+import { verifyJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE } from "@/lib/env";
 
 export async function PUT(req: NextRequest) {

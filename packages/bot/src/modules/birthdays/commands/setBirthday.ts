@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, MessageF
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { months } from '../../../constants/months.js';
 import { requireAdmin } from '../../../utils/permissions.js';
+import { subjectForUser, subjectNominative } from '../shared/messages.js';
 
 const data = new SlashCommandBuilder()
     .setName('set-birthday')
@@ -63,7 +64,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const alreadySet = await getConfigManager().birthdayManager.hasBirthday(userId, guildId);
     if (alreadySet) {
         await interaction.reply({
-            content: `${targetUser ? `<@${userId}>` : "You"} already have a birthday set in this channel.`,
+            content: `${subjectNominative(targetUser ? userId : null)} already have a birthday set in this channel.`,
             flags: MessageFlags.Ephemeral
         });
         return;
@@ -79,7 +80,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     await interaction.reply({
-        content: `${targetUser ? `<@${userId}>'s` : "Your"} birthday reminder is set!`,
+        content: `${subjectForUser(targetUser ? userId : null)} birthday reminder is set!`,
         flags: MessageFlags.Ephemeral
     });
 }

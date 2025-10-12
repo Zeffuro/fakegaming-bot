@@ -28,6 +28,7 @@ interface ConfigCardProps {
   onDelete: () => void;
   saving?: boolean;
   darkMode?: boolean;
+  showEdit?: boolean;
 }
 
 export default function ConfigCard({
@@ -39,7 +40,8 @@ export default function ConfigCard({
   onEdit,
   onDelete,
   saving = false,
-  darkMode = true
+  darkMode = true,
+  showEdit = true,
 }: ConfigCardProps) {
   return (
     <Card
@@ -104,19 +106,21 @@ export default function ConfigCard({
         )}
       </CardContent>
       <CardActions sx={{ justifyContent: 'space-between', px: 2, pb: 2 }}>
-        <Button
-          size="small"
-          startIcon={<Edit />}
-          onClick={onEdit}
-          sx={{
-            color: darkMode ? 'grey.300' : 'primary.main',
-            '&:hover': {
-              bgcolor: darkMode ? 'grey.700' : 'primary.light'
-            }
-          }}
-        >
-          Edit
-        </Button>
+        {showEdit && (
+          <Button
+            size="small"
+            startIcon={<Edit />}
+            onClick={onEdit}
+            sx={{
+              color: darkMode ? 'grey.300' : 'primary.main',
+              '&:hover': {
+                bgcolor: darkMode ? 'grey.700' : 'primary.light'
+              }
+            }}
+          >
+            Edit
+          </Button>
+        )}
         <IconButton
           color="error"
           size="small"

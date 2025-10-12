@@ -3,6 +3,7 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
+import { SUPPORTED_GAMES } from '@zeffuro/fakegaming-common';
 
 // Zod schemas
 const gameParamSchema = z.object({ game: z.string().min(1) });
@@ -37,6 +38,26 @@ const router = createBaseRouter();
 router.get('/', async (_req, res) => {
     const notes = await getConfigManager().patchNotesManager.getAllPlain();
     res.json(notes);
+});
+
+/**
+ * @openapi
+ * /patchNotes/supportedGames:
+ *   get:
+ *     summary: List supported games for patch notes
+ *     tags: [PatchNotes]
+ *     responses:
+ *       200:
+ *         description: An array of supported game names
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ */
+router.get('/supportedGames', (_req, res) => {
+    res.json(SUPPORTED_GAMES);
 });
 
 /**

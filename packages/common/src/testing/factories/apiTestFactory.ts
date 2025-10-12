@@ -80,29 +80,33 @@ export async function createAuthenticatedTestApp(
     if (protectedPaths.length > 0 || publicPaths.length > 0) {
         // Import jwtAuth from API package if available
         try {
-            // @ts-expect-error - API package import will be available at runtime in API tests
-            const { jwtAuth } = await import('@zeffuro/fakegaming-bot-api/middleware/auth');
+            // Build module id dynamically to avoid Vite import-analysis in non-API environments
+            const moduleId = ['@zeffuro', '/fakegaming-bot-api/middleware/auth'].join('');
+            const mod: any = await import(moduleId as string);
+            const jwtAuth = mod?.jwtAuth as (req: any, res: any, next: any) => void;
 
-            app.use(basePath, (req, res, next) => {
-                // Check if path should be public
-                const isPublic = publicPaths.some(path => req.path.startsWith(path));
-                if (isPublic) {
-                    return next();
-                }
+            if (typeof jwtAuth === 'function') {
+                app.use(basePath, (req, res, next) => {
+                    // Check if path should be public
+                    const isPublic = publicPaths.some(path => req.path.startsWith(path));
+                    if (isPublic) {
+                        return next();
+                    }
 
-                // Check if path should be protected
-                const isProtected = protectedPaths.length === 0 ||
-                    protectedPaths.some(path => req.path.startsWith(path));
+                    // Check if path should be protected
+                    const isProtected = protectedPaths.length === 0 ||
+                        protectedPaths.some(path => req.path.startsWith(path));
 
-                if (isProtected) {
-                    return jwtAuth(req, res, next);
-                }
+                    if (isProtected) {
+                        return jwtAuth(req, res, next);
+                    }
 
-                next();
-            });
+                    next();
+                });
+            }
         } catch {
             // If API package not available, skip auth middleware
-            console.warn('JWT auth middleware not available - tests will run without authentication');
+            // Tests that need auth should run within API package
         }
     }
 

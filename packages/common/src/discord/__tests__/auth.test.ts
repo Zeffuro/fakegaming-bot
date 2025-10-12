@@ -14,6 +14,17 @@ import {
 
 global.fetch = vi.fn();
 
+// --- local helpers (DRY) ---
+function mockRateLimitThenSuccess<T>(payload: T) {
+    vi.mocked(global.fetch)
+        .mockResolvedValueOnce({ status: 429, json: vi.fn().mockResolvedValue({ retry_after: 0.001 }) } as any)
+        .mockResolvedValueOnce({ status: 200, ok: true, json: vi.fn().mockResolvedValue(payload) } as any);
+}
+
+function mockFailure(status: number, message: string) {
+    vi.mocked(global.fetch).mockResolvedValueOnce({ status, ok: false, text: vi.fn().mockResolvedValue(message) } as any);
+}
+
 describe('exchangeCodeForToken', () => {
     it('should exchange code for token', async () => {
         vi.mocked(global.fetch).mockResolvedValueOnce({
@@ -40,14 +51,12 @@ describe('fetchDiscordUser', () => {
         expect(result).toEqual({ id: '123' });
     });
     it('should retry on rate limit and succeed', async () => {
-        vi.mocked(global.fetch)
-            .mockResolvedValueOnce({ status: 429, json: vi.fn().mockResolvedValue({ retry_after: 0.001 }) } as any)
-            .mockResolvedValueOnce({ status: 200, ok: true, json: vi.fn().mockResolvedValue({ id: '123' }) } as any);
+        mockRateLimitThenSuccess({ id: '123' });
         const result = await fetchDiscordUser('token');
         expect(result).toEqual({ id: '123' });
     });
     it('should throw on failed request', async () => {
-        vi.mocked(global.fetch).mockResolvedValueOnce({ status: 400, ok: false, text: vi.fn().mockResolvedValue('fail') } as any);
+        mockFailure(400, 'fail');
         await expect(fetchDiscordUser('token')).rejects.toThrow('fail');
     });
 });
@@ -64,14 +73,12 @@ describe('getDiscordGuilds', () => {
         expect(result).toEqual([{ id: 'guild' }]);
     });
     it('should retry on rate limit and succeed', async () => {
-        vi.mocked(global.fetch)
-            .mockResolvedValueOnce({ status: 429, json: vi.fn().mockResolvedValue({ retry_after: 0.001 }) } as any)
-            .mockResolvedValueOnce({ status: 200, ok: true, json: vi.fn().mockResolvedValue([{ id: 'guild' }]) } as any);
+        mockRateLimitThenSuccess([{ id: 'guild' }]);
         const result = await getDiscordGuilds('token');
         expect(result).toEqual([{ id: 'guild' }]);
     });
     it('should throw on failed request', async () => {
-        vi.mocked(global.fetch).mockResolvedValueOnce({ status: 400, ok: false, text: vi.fn().mockResolvedValue('fail') } as any);
+        mockFailure(400, 'fail');
         await expect(getDiscordGuilds('token')).rejects.toThrow('fail');
     });
 });
@@ -153,23 +160,13 @@ describe('getDiscordGuildChannels', () => {
     });
 
     it('should retry on rate limit and succeed', async () => {
-        vi.mocked(global.fetch)
-            .mockResolvedValueOnce({ status: 429, json: vi.fn().mockResolvedValue({ retry_after: 0.001 }) } as any)
-            .mockResolvedValueOnce({
-                status: 200,
-                ok: true,
-                json: vi.fn().mockResolvedValue([{ id: '1', type: 0, name: 'text' }])
-            } as any);
+        mockRateLimitThenSuccess([{ id: '1', type: 0, name: 'text' }]);
         const result = await getDiscordGuildChannels('guild123', 'bot-token');
         expect(result).toEqual([{ id: '1', type: 0, name: 'text' }]);
     });
 
     it('should throw on failed request', async () => {
-        vi.mocked(global.fetch).mockResolvedValueOnce({
-            status: 403,
-            ok: false,
-            text: vi.fn().mockResolvedValue('Forbidden')
-        } as any);
+        mockFailure(403, 'Forbidden');
         await expect(getDiscordGuildChannels('guild123', 'bot-token')).rejects.toThrow('Forbidden');
     });
 

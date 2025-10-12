@@ -6,14 +6,10 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-    // Ensure Vite resolves aliases for all modules (including node_modules)
+    // Ensure Vite resolves aliases for local modules
     resolve: {
         alias: {
             '@': path.resolve(__dirname),
-            '@/lib/common/testing.js': path.resolve(__dirname, 'lib/common/testing.ts'),
-            '@zeffuro/fakegaming-common/testing/mocks/cache': path.resolve(__dirname, '../common/dist/testing/mocks/cacheMock.js'),
-            '@zeffuro/fakegaming-common/testing/utils/jwt': path.resolve(__dirname, '../common/dist/testing/utils/jwtTestUtils.js'),
-            '@zeffuro/fakegaming-common/utils': path.resolve(__dirname, '../common/dist/utils/index.js'),
             '@zeffuro/fakegaming-bot-api': path.resolve(__dirname, 'test-stubs/fakegaming-bot-api.ts'),
             '@zeffuro/fakegaming-bot-api/middleware/auth': path.resolve(__dirname, 'test-stubs/api-middleware-auth.ts'),
             'express': path.resolve(__dirname, 'test-stubs/express.ts'),
@@ -23,6 +19,7 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         include: ['lib/**/*.{test,spec}.{ts,tsx}'],
+        setupFiles: ['lib/test-setup.ts'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html', 'lcov'],
@@ -50,10 +47,6 @@ export default defineConfig({
         },
         alias: {
             '@': path.resolve(__dirname),
-            '@/lib/common/testing.js': path.resolve(__dirname, 'lib/common/testing.ts'),
-            '@zeffuro/fakegaming-common/testing/mocks/cache': path.resolve(__dirname, '../common/dist/testing/mocks/cacheMock.js'),
-            '@zeffuro/fakegaming-common/testing/utils/jwt': path.resolve(__dirname, '../common/dist/testing/utils/jwtTestUtils.js'),
-            '@zeffuro/fakegaming-common/utils': path.resolve(__dirname, '../common/dist/utils/index.js'),
             '@zeffuro/fakegaming-bot-api': path.resolve(__dirname, 'test-stubs/fakegaming-bot-api.ts'),
             '@zeffuro/fakegaming-bot-api/middleware/auth': path.resolve(__dirname, 'test-stubs/api-middleware-auth.ts'),
             'express': path.resolve(__dirname, 'test-stubs/express.ts'),

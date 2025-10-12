@@ -3,6 +3,7 @@ import { getLeagueIdentityFromInteraction, getRegionCodeFromName } from '../leag
 import { ChatInputCommandInteraction } from 'discord.js';
 import { Regions } from 'twisted/dist/constants/regions.js';
 import * as riotService from '../../../../services/riotService.js';
+import { createMockCommandInteraction } from '@zeffuro/fakegaming-common/testing';
 
 vi.mock('../../../../services/riotService.js');
 
@@ -36,19 +37,16 @@ describe('leagueUtils', () => {
             const mockIdentity = { summonerName: 'TestPlayer', region: Regions.AMERICA_NORTH };
             vi.mocked(riotService.resolveLeagueIdentity).mockResolvedValue(mockIdentity as any);
 
-            const interaction = {
-                options: {
-                    getString: vi.fn((key: string) => {
-                        if (key === 'riot-id') return 'Player#NA1';
-                        if (key === 'region') return 'North America';
-                        return null;
-                    }),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+            const interaction = createMockCommandInteraction({
                 user: { id: 'user123' },
-            } as unknown as ChatInputCommandInteraction;
+                stringOptions: {
+                    'riot-id': 'Player#NA1',
+                    'region': 'North America',
+                },
+                userOptions: {}
+            });
 
-            const result = await getLeagueIdentityFromInteraction(interaction);
+            const result = await getLeagueIdentityFromInteraction(interaction as unknown as ChatInputCommandInteraction);
 
             expect(riotService.resolveLeagueIdentity).toHaveBeenCalledWith({
                 summoner: 'Player#NA1',
@@ -62,19 +60,16 @@ describe('leagueUtils', () => {
             const mockIdentity = { summonerName: 'TestSummoner', region: Regions.EU_WEST };
             vi.mocked(riotService.resolveLeagueIdentity).mockResolvedValue(mockIdentity as any);
 
-            const interaction = {
-                options: {
-                    getString: vi.fn((key: string) => {
-                        if (key === 'summoner') return 'TestSummoner';
-                        if (key === 'region') return 'Europe West';
-                        return null;
-                    }),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+            const interaction = createMockCommandInteraction({
                 user: { id: 'user456' },
-            } as unknown as ChatInputCommandInteraction;
+                stringOptions: {
+                    'summoner': 'TestSummoner',
+                    'region': 'Europe West',
+                },
+                userOptions: {}
+            });
 
-            const result = await getLeagueIdentityFromInteraction(interaction);
+            const result = await getLeagueIdentityFromInteraction(interaction as unknown as ChatInputCommandInteraction);
 
             expect(riotService.resolveLeagueIdentity).toHaveBeenCalledWith({
                 summoner: 'TestSummoner',
@@ -88,16 +83,13 @@ describe('leagueUtils', () => {
             const mockIdentity = { summonerName: 'TargetPlayer', region: Regions.KOREA };
             vi.mocked(riotService.resolveLeagueIdentity).mockResolvedValue(mockIdentity as any);
 
-            const targetUser = { id: 'target789' };
-            const interaction = {
-                options: {
-                    getString: vi.fn().mockReturnValue(null),
-                    getUser: vi.fn().mockReturnValue(targetUser),
-                },
+            const interaction = createMockCommandInteraction({
                 user: { id: 'user123' },
-            } as unknown as ChatInputCommandInteraction;
+                stringOptions: {},
+                userOptions: { 'user': 'target789' },
+            });
 
-            const result = await getLeagueIdentityFromInteraction(interaction);
+            const result = await getLeagueIdentityFromInteraction(interaction as unknown as ChatInputCommandInteraction);
 
             expect(riotService.resolveLeagueIdentity).toHaveBeenCalledWith({
                 summoner: undefined,
@@ -111,15 +103,13 @@ describe('leagueUtils', () => {
             const mockIdentity = { summonerName: 'DefaultPlayer', region: Regions.AMERICA_NORTH };
             vi.mocked(riotService.resolveLeagueIdentity).mockResolvedValue(mockIdentity as any);
 
-            const interaction = {
-                options: {
-                    getString: vi.fn().mockReturnValue(null),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+            const interaction = createMockCommandInteraction({
                 user: { id: 'user999' },
-            } as unknown as ChatInputCommandInteraction;
+                stringOptions: {},
+                userOptions: {},
+            });
 
-            const result = await getLeagueIdentityFromInteraction(interaction);
+            const result = await getLeagueIdentityFromInteraction(interaction as unknown as ChatInputCommandInteraction);
 
             expect(riotService.resolveLeagueIdentity).toHaveBeenCalledWith({
                 summoner: undefined,

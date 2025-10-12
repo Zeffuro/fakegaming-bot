@@ -1,72 +1,37 @@
-import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
-import {requireAdmin} from '../../../utils/permissions.js';
+import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
+import { youtubeCommandConfig } from '../config.js';
 
-const data = new SlashCommandBuilder()
-    .setName('add-youtube-channel')
-    .setDescription('Add a Youtube Channel for new video notifications')
-    .addStringOption(option =>
-        option.setName('username')
-            .setDescription('Youtube username')
-            .setRequired(true)
-    )
-    .addChannelOption(option =>
-        option.setName('channel')
-            .setDescription('Discord channel for notifications')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName('message')
-            .setDescription('Custom notification message (optional)')
-            .setRequired(false)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-
-
-async function execute(interaction: ChatInputCommandInteraction) {
-    if (!(await requireAdmin(interaction))) return;
-
-    const youtubeUsername = interaction.options.getString('username', true);
-    const discordChannel = interaction.options.getChannel('channel', true);
-    const customMessage = interaction.options.getString('message', false) ?? undefined;
-    const guildId = interaction.guildId!;
-
-    const youtubeChannelId = await getYoutubeChannelId(youtubeUsername);
-    if (!youtubeChannelId) {
-        await interaction.reply({
-            content: `Youtube channel \`${youtubeUsername}\` does not exist.`,
-            flags: MessageFlags.Ephemeral
+const { data, execute, testOnly } = createSubscriptionCommand<string>({
+    commandName: youtubeCommandConfig.commandName,
+    description: youtubeCommandConfig.description,
+    usernameOptionDescription: youtubeCommandConfig.usernameOptionDescription,
+    resolveOrVerify: async (username) => {
+        const youtubeChannelId = await getYoutubeChannelId(username);
+        return youtubeChannelId ? { ok: true, id: youtubeChannelId } : { ok: false };
+    },
+    checkExistingPost: async ({ username: _username, externalId, discordChannelId, guildId }) => {
+        const existing = await getConfigManager().youtubeManager.getVideoChannel({
+            youtubeChannelId: externalId,
+            discordChannelId,
+            guildId,
         });
-        return;
-    }
-
-    const existing = await getConfigManager().youtubeManager.getVideoChannel({
-        youtubeChannelId,
-        discordChannelId: discordChannel.id,
-        guildId
-    });
-
-    if (existing) {
-        await interaction.reply({
-            content: `Youtube channel \`${youtubeUsername}\` is already configured for video notifications in this channel.`,
-            flags: MessageFlags.Ephemeral
+        return Boolean(existing);
+    },
+    addSubscription: async ({ username: _username, externalId, discordChannelId, guildId, customMessage }) => {
+        await getConfigManager().youtubeManager.add({
+            youtubeChannelId: externalId,
+            discordChannelId,
+            guildId,
+            lastVideoId: undefined,
+            customMessage,
         });
-        return;
-    }
-
-    await getConfigManager().youtubeManager.add({
-        youtubeChannelId,
-        discordChannelId: discordChannel.id,
-        guildId: guildId,
-        lastVideoId: undefined,
-        customMessage,
-    });
-
-    await interaction.reply(`Youtube channel \`${youtubeUsername}\` added for video notifications in #${discordChannel.id}.`);
-}
-
-const testOnly = false;
+    },
+    successMessage: youtubeCommandConfig.successMessage,
+    alreadyConfiguredMessage: youtubeCommandConfig.alreadyConfiguredMessage,
+    notFoundMessage: youtubeCommandConfig.notFoundMessage,
+});
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

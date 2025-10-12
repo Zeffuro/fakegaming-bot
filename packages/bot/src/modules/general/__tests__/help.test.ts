@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectEphemeralReply, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction, Collection } from 'discord.js';
 
 describe('help command', () => {
@@ -46,30 +46,12 @@ describe('help command', () => {
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
 
-        // Verify the interaction reply contains all command names and descriptions
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/\*\*Available Commands:\*\*/),
-                flags: expect.anything()
-            })
-        );
-
-        // Check that all command names and descriptions are included
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/\/help.+List all available commands and their descriptions/),
-            })
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/\/test-command1.+This is test command 1/),
-            })
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/\/test-command2.+This is test command 2/),
-            })
-        );
+        // Verify ephemeral reply and contents
+        expectEphemeralReply(interaction);
+        expectReplyTextContains(interaction, '**Available Commands:**');
+        expectReplyTextContains(interaction, '/help');
+        expectReplyTextContains(interaction, '/test-command1');
+        expectReplyTextContains(interaction, '/test-command2');
     });
 
     it('sorts commands alphabetically', async () => {
@@ -109,11 +91,9 @@ describe('help command', () => {
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
 
-        // Create a spy to capture the reply content
-        const replySpy = interaction.reply as unknown as Mock;
-        const replyContent = replySpy.mock.calls[0][0].content;
-
-        // Check that 'apple' appears before 'middle', which appears before 'zebra'
+        // Extract the reply content and assert order
+        const replyPayload = (interaction.reply as unknown as Mock).mock.calls[0][0] as { content: string };
+        const replyContent = replyPayload.content;
         const appleIndex = replyContent.indexOf('/apple');
         const middleIndex = replyContent.indexOf('/middle');
         const zebraIndex = replyContent.indexOf('/zebra');

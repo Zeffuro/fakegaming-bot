@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest, createMockBirthday } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, createMockBirthday, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction } from 'discord.js';
 
 describe('setBirthday command', () => {
@@ -8,6 +8,22 @@ describe('setBirthday command', () => {
         vi.resetAllMocks();
         vi.resetModules();
     });
+
+    // Local helpers to reduce repetition
+    async function setupSetBirthdayCmd(overrides?: Record<string, unknown>) {
+        return setupCommandTest(
+            'modules/birthdays/commands/setBirthday.js',
+            overrides ?? {}
+        );
+    }
+
+    function expectReplyContains(interaction: unknown, substr: string) {
+        expectReplyTextContains(interaction, substr);
+    }
+
+    function expectEphemeral(interaction: unknown) {
+        expectEphemeralReply(interaction);
+    }
 
     it('sets a birthday for a user', async () => {
         // 1. Create the mock spy function with its return value directly.
@@ -26,29 +42,26 @@ describe('setBirthday command', () => {
         const hasBirthdaySpy = vi.fn().mockResolvedValue(false);
 
         // 2. Setup the test environment and pass the direct spy reference via managerOverrides
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/setBirthday.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        month: 'January'
-                    },
-                    integerOptions: {
-                        day: 5,
-                        year: 1990
-                    },
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204',
-                    channelId: '929533532185956352'
+        const { command, interaction } = await setupSetBirthdayCmd({
+            interaction: {
+                stringOptions: {
+                    month: 'January'
                 },
-                managerOverrides: {
-                    birthdayManager: {
-                        add: addSpy,
-                        hasBirthday: hasBirthdaySpy
-                    }
+                integerOptions: {
+                    day: 5,
+                    year: 1990
+                },
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204',
+                channelId: '929533532185956352'
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    add: addSpy,
+                    hasBirthday: hasBirthdaySpy
                 }
             }
-        );
+        });
 
         // 3. Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
@@ -68,43 +81,33 @@ describe('setBirthday command', () => {
             })
         );
 
-        // Verify the interaction reply
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('birthday reminder is set')
-            })
-        );
+        // Verify the interaction reply (content and ephemeral)
+        expectReplyContains(interaction, 'birthday reminder is set');
+        expectEphemeral(interaction);
     });
 
     it('replies with error for invalid date', async () => {
         // Setup the test with invalid date parameters
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/setBirthday.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        month: 'February'
-                    },
-                    integerOptions: {
-                        day: 31,
-                        year: 1990
-                    },
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204'
-                }
+        const { command, interaction } = await setupSetBirthdayCmd({
+            interaction: {
+                stringOptions: {
+                    month: 'February'
+                },
+                integerOptions: {
+                    day: 31,
+                    year: 1990
+                },
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204'
             }
-        );
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
 
-        // Verify error message was sent
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('Invalid'),
-                flags: expect.anything(),
-            })
-        );
+        // Verify error message was sent (content and ephemeral)
+        expectReplyContains(interaction, 'Invalid');
+        expectEphemeral(interaction);
     });
 
     it('replies with error when birthday already set', async () => {
@@ -112,29 +115,26 @@ describe('setBirthday command', () => {
         const hasBirthdaySpy = vi.fn().mockResolvedValue(true);
         const addSpy = vi.fn(); // Should not be called
 
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/setBirthday.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        month: 'January'
-                    },
-                    integerOptions: {
-                        day: 5,
-                        year: 1990
-                    },
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204',
-                    channelId: '929533532185956352'
+        const { command, interaction } = await setupSetBirthdayCmd({
+            interaction: {
+                stringOptions: {
+                    month: 'January'
                 },
-                managerOverrides: {
-                    birthdayManager: {
-                        add: addSpy,
-                        hasBirthday: hasBirthdaySpy
-                    }
+                integerOptions: {
+                    day: 5,
+                    year: 1990
+                },
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204',
+                channelId: '929533532185956352'
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    add: addSpy,
+                    hasBirthday: hasBirthdaySpy
                 }
             }
-        );
+        });
 
         await command.execute(interaction as unknown as CommandInteraction);
 
@@ -144,12 +144,8 @@ describe('setBirthday command', () => {
         // Verify add was NOT called
         expect(addSpy).not.toHaveBeenCalled();
 
-        // Verify error message was sent
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('already have a birthday set'),
-                flags: expect.anything(),
-            })
-        );
+        // Verify error message was sent (content and ephemeral)
+        expectReplyContains(interaction, 'already have a birthday set');
+        expectEphemeral(interaction);
     });
 });

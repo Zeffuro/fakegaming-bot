@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { requireAdmin } from '../../../utils/permissions.js';
+import { subjectForUser } from '../shared/messages.js';
 
 const data = new SlashCommandBuilder()
     .setName('remove-birthday')
@@ -24,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await getConfigManager().birthdayManager.removeBirthday(userId, guildId);
 
     await interaction.reply({
-        content: `${targetUser ? `<@${userId}>'s` : "Your"} birthday has been removed.`,
+        content: `${subjectForUser(targetUser ? userId : null)} birthday has been removed.`,
         flags: MessageFlags.Ephemeral
     });
 }

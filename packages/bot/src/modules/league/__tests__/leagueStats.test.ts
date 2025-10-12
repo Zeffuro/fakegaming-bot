@@ -1,6 +1,5 @@
-// filepath: f:\Coding\discord-bot\packages\bot\src\modules\league\__tests__\leagueStats.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectEditReplyContainsText, expectEditReplyHasEmbed } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { Regions } from 'twisted/dist/constants/regions.js';
 
@@ -66,18 +65,10 @@ describe('leagueStats command', () => {
             data: rankedEntries
         });
 
-        // Mock the editReply function to capture what's being sent
-        const editReplySpy = vi.fn();
-
-        // Setup the test environment
+        // Setup the test environment with default interaction
         const { command, interaction } = await setupCommandTest(
             'modules/league/commands/leagueStats.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: editReplySpy
-                }
-            }
+            {}
         );
 
         // Execute the command
@@ -92,15 +83,8 @@ describe('leagueStats command', () => {
         // Verify getSummonerDetails was called with correct parameters
         expect(getSummonerDetails).toHaveBeenCalledWith('test-puuid-12345', 'EUW');
 
-        // Verify editReply was called (instead of checking EmbedBuilder directly)
-        expect(editReplySpy).toHaveBeenCalled();
-
-        // Verify that an object with embeds was passed to editReply
-        const callArg = editReplySpy.mock.calls[0][0];
-        expect(callArg).toBeDefined();
-        expect(typeof callArg).toBe('object');
-        expect(Array.isArray(callArg.embeds)).toBe(true);
-        expect(callArg.embeds.length).toBeGreaterThan(0);
+        // Verify editReply was called with embeds payload
+        expectEditReplyHasEmbed(interaction);
     });
 
     it('handles missing identity information', async () => {
@@ -108,24 +92,17 @@ describe('leagueStats command', () => {
         const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
         vi.mocked(getLeagueIdentityFromInteraction).mockRejectedValue(new Error('Missing summoner or region'));
 
-        // Setup the test environment
+        // Setup the test environment with default interaction
         const { command, interaction } = await setupCommandTest(
             'modules/league/commands/leagueStats.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: vi.fn().mockResolvedValue(undefined)
-                }
-            }
+            {}
         );
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify error response
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            'Please provide a Riot ID and region, or link your account first.'
-        );
+        expectEditReplyContainsText(interaction, 'Please provide a Riot ID and region');
     });
 
     it('handles failure to fetch summoner data', async () => {
@@ -144,26 +121,16 @@ describe('leagueStats command', () => {
             error: 'Rate limit exceeded'
         });
 
-        // Setup the test environment
+        // Setup the test environment with default interaction
         const { command, interaction } = await setupCommandTest(
             'modules/league/commands/leagueStats.js',
-            {
-                interaction: {
-                    deferReply: vi.fn().mockResolvedValue(undefined),
-                    editReply: vi.fn().mockResolvedValue(undefined)
-                }
-            }
+            {}
         );
 
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify error response now uses an embed object
-        expect(interaction.editReply).toHaveBeenCalled();
-        const arg = (interaction.editReply as any).mock.calls[0][0];
-        expect(typeof arg).toBe('object');
-        expect(Array.isArray(arg.embeds)).toBe(true);
-        const desc = arg.embeds?.[0]?.data?.description ?? arg.embeds?.[0]?.description ?? '';
-        expect(String(desc)).toContain('Failed to fetch summoner: Rate limit exceeded');
+        expectEditReplyContainsText(interaction, 'Failed to fetch summoner: Rate limit exceeded');
     });
 });

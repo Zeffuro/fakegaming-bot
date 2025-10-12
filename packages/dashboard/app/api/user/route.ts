@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUser } from "@/lib/auth/authUtils";
-import { CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@/lib/common/cache";
+import { CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@zeffuro/fakegaming-common";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@/lib/env";
 

@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
-import request from 'supertest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testTwitch = {
     twitchUsername: 'teststreamer',
@@ -17,13 +17,11 @@ beforeEach(async () => {
 });
 
 describe('Twitch API', () => {
-    let token: string;
-    beforeAll(() => {
-        token = signTestJwt({ discordId: 'testuser' });
-    });
+    const client = givenAuthenticatedClient(app);
+
     it('should list all twitch configs', async () => {
-        const res = await request(app).get('/api/twitch').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get('/api/twitch');
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
     it('should get a twitch config by id', async () => {
@@ -34,55 +32,51 @@ describe('Twitch API', () => {
         });
         const id = all[0]?.id;
         expect(id).toBeDefined();
-        const res = await request(app).get(`/api/twitch/${id}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.get(`/api/twitch/${id}`);
+        expectOk(res);
         expect(res.body.twitchUsername).toBe(testTwitch.twitchUsername);
     });
     it('should add a new twitch config', async () => {
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({
+        const res = await client.post('/api/twitch', {
             twitchUsername: 'anotherstreamer',
             discordChannelId: 'testchannel2',
             guildId: 'testguild2'
         });
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body.success).toBe(true);
     });
     it('should check if a stream exists', async () => {
-        const res = await request(app).get('/api/twitch/exists').set('Authorization', `Bearer ${token}`)
+        const res = await client.get('/api/twitch/exists')
             .query({twitchUsername: testTwitch.twitchUsername, discordChannelId: testTwitch.discordChannelId, guildId: testTwitch.guildId});
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.exists).toBe(true);
     });
     it('should return 401 for GET /api/twitch/exists without JWT', async () => {
-        const res = await request(app)
+        const res = await client.raw
             .get('/api/twitch/exists')
             .query({ twitchUsername: 'x', discordChannelId: 'y', guildId: 'z' });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
     it('should return 400 for GET /api/twitch/exists with missing query', async () => {
-        const res = await request(app)
-            .get('/api/twitch/exists')
-            .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(400);
+        const res = await client.get('/api/twitch/exists');
+        expectBadRequest(res);
         expect(res.body.error).toBe('Query validation failed');
     });
     it('should return 400 for GET /api/twitch/exists with empty values', async () => {
-        const res = await request(app)
-            .get('/api/twitch/exists')
-            .set('Authorization', `Bearer ${token}`)
+        const res = await client.get('/api/twitch/exists')
             .query({ twitchUsername: '', discordChannelId: '', guildId: '' });
-        expect(res.status).toBe(400);
+        expectBadRequest(res);
         expect(res.body.error).toBe('Query validation failed');
     });
     it('should return false for non-existent stream', async () => {
-        const res = await request(app).get('/api/twitch/exists').set('Authorization', `Bearer ${token}`)
+        const res = await client.get('/api/twitch/exists')
             .query({twitchUsername: 'nonexistent', discordChannelId: 'nonexistent', guildId: 'testguild1'});
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.exists).toBe(false);
     });
     it('should return 404 for non-existent twitch config', async () => {
-        const res = await request(app).get('/api/twitch/999999').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.get('/api/twitch/999999');
+        expectNotFound(res);
     });
 
     it('should delete a twitch config', async () => {
@@ -93,37 +87,33 @@ describe('Twitch API', () => {
         const id = all[0]?.id;
         expect(id).toBeDefined();
 
-        const res = await request(app)
-            .delete(`/api/twitch/${id}`)
-            .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        const res = await client.delete(`/api/twitch/${id}`);
+        expectOk(res);
         expect(res.body.success).toBe(true);
     });
 
     it('should return 404 when deleting non-existent twitch config', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app).delete('/api/twitch/999999').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.delete('/api/twitch/999999');
+        expectNotFound(res);
     });
 
     it('should return 400 when POST /api/twitch with missing fields', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({});
-        expect(res.status).toBe(400);
+        const res = await client.post('/api/twitch', {} as any);
+        expectBadRequest(res);
     });
 
     it('should return 401 for POST /api/twitch without JWT', async () => {
-        const res = await request(app).post('/api/twitch').send({
+        const res = await client.raw.post('/api/twitch').send({
             twitchUsername: 'anotherstreamer',
             discordChannelId: 'testchannel2',
             guildId: 'testguild2'
         });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 403 for POST /api/twitch as non-admin', async () => {
-        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${nonAdminToken}`).send({
+        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
+        const res = await nonAdmin.post('/api/twitch', {
             twitchUsername: 'anotherstreamer',
             discordChannelId: 'testchannel2',
             guildId: 'testguild2'
@@ -138,8 +128,8 @@ describe('Twitch API', () => {
         });
         const id = all[0]?.id;
         expect(id).toBeDefined();
-        const res = await request(app).delete(`/api/twitch/${id}`);
-        expect(res.status).toBe(401);
+        const res = await client.raw.delete(`/api/twitch/${id}`);
+        expectUnauthorized(res);
     });
 
     it('should return 403 for DELETE /api/twitch/:id as non-admin', async () => {
@@ -149,52 +139,48 @@ describe('Twitch API', () => {
         });
         const id = all[0]?.id;
         expect(id).toBeDefined();
-        const nonAdminToken = signTestJwt({ discordId: 'nonadminuser' });
-        const res = await request(app).delete(`/api/twitch/${id}`).set('Authorization', `Bearer ${nonAdminToken}`);
+        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
+        const res = await nonAdmin.delete(`/api/twitch/${id}`);
         expect([403, 401]).toContain(res.status);
     });
 
     it('should return 400 for DB error on POST /api/twitch', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         // Simulate DB error by sending invalid data
-        const res = await request(app).post('/api/twitch').set('Authorization', `Bearer ${token}`).send({
-            twitchUsername: null,
-            discordChannelId: null,
-            guildId: null
+        const res = await client.post('/api/twitch', {
+            twitchUsername: null as any,
+            discordChannelId: null as any,
+            guildId: null as any
         });
-        expect(res.status).toBe(400);
+        expectBadRequest(res);
     });
 
     it('should return 400 for invalid id on DELETE /api/twitch/:id', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         // Invalid id is caught by validateParams; expect 400 (input validation)
-        const res = await request(app).delete('/api/twitch/invalid').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(400);
+        const res = await client.delete('/api/twitch/invalid');
+        expectBadRequest(res);
     });
 
     it('should return 403 for ForbiddenError on DELETE /api/twitch/:id', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         const all = await configManager.twitchManager.getMany({ twitchUsername: testTwitch.twitchUsername });
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw ForbiddenError
         const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
         (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
-        const res = await request(app).delete(`/api/twitch/${id}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(403);
+        const res = await client.delete(`/api/twitch/${id}`);
+        expectForbidden(res);
         (configManager.twitchManager as any).removeByPk = origRemoveByPk;
     });
 
     it('should return 404 for NotFoundError on DELETE /api/twitch/:id', async () => {
-        const token = signTestJwt({ discordId: 'testuser' });
         const all = await configManager.twitchManager.getMany({ twitchUsername: testTwitch.twitchUsername });
         const id = all[0]?.id;
         expect(id).toBeDefined();
         // Mock manager to throw NotFoundError
         const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
         (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };
-        const res = await request(app).delete(`/api/twitch/${id}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        const res = await client.delete(`/api/twitch/${id}`);
+        expectNotFound(res);
         (configManager.twitchManager as any).removeByPk = origRemoveByPk;
     });
 });

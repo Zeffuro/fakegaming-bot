@@ -166,8 +166,7 @@ export default function GuildDashboard() {
       description: "Manage game patch note notifications and subscriptions.",
       icon: <SpeakerNotes />,
       status: "beta",
-      href: `/dashboard/patch-notes/${guildId}`,
-      disabled: true
+      href: `/dashboard/patch-notes/${guildId}`
     },
     {
       title: "Analytics",

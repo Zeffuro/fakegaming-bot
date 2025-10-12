@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, MockedFunction, Mock } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyText, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { getCurrentWeather, getShortTermForecast } from '../../../services/weatherService.js';
 
@@ -8,6 +8,21 @@ vi.mock('../../../services/weatherService.js', () => ({
     getCurrentWeather: vi.fn(),
     getShortTermForecast: vi.fn()
 }));
+
+// Local helper to DRY setup + execute for the weather command
+async function setupAndRunWeather(location: string) {
+    const { command, interaction } = await setupCommandTest(
+        'modules/general/commands/weather.js',
+        {
+            interaction: {
+                stringOptions: { location }
+            }
+        }
+    );
+
+    await command.execute(interaction as unknown as ChatInputCommandInteraction);
+    return { interaction };
+}
 
 describe('weather command', () => {
     beforeEach(() => {
@@ -29,47 +44,24 @@ describe('weather command', () => {
         });
 
         (getShortTermForecast as MockedFunction<typeof getShortTermForecast>).mockResolvedValue([
-            { emoji: '☀️', time: '12:00', description: 'clear sky', main: 'Clear', temp: 16.5, rain: '' },
-            { emoji: '⛅', time: '15:00', description: 'few clouds', main: 'Clouds', temp: 17.0, rain: '' },
-            { emoji: '🌧️', time: '18:00', description: 'light rain', main: 'Rain', temp: 15.2, rain: '0.5mm' },
-            { emoji: '🌧️', time: '21:00', description: 'moderate rain', main: 'Rain', temp: 13.8, rain: '2.1mm' }
+            { emoji: '\u2600\ufe0f', time: '12:00', description: 'clear sky', main: 'Clear', temp: 16.5, rain: '' },
+            { emoji: '\u26c5', time: '15:00', description: 'few clouds', main: 'Clouds', temp: 17.0, rain: '' },
+            { emoji: '\ud83c\udf27\ufe0f', time: '18:00', description: 'light rain', main: 'Rain', temp: 15.2, rain: '0.5mm' },
+            { emoji: '\ud83c\udf27\ufe0f', time: '21:00', description: 'moderate rain', main: 'Rain', temp: 13.8, rain: '2.1mm' }
         ]);
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/weather.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Rotterdam,NL')
-                    }
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        const { interaction } = await setupAndRunWeather('Rotterdam,NL');
 
         // Verify the weather services were called with the right location
         expect(getCurrentWeather).toHaveBeenCalledWith('Rotterdam,NL');
         expect(getShortTermForecast).toHaveBeenCalledWith('Rotterdam,NL', 4);
 
         // Verify the interaction reply contains the expected weather information
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('🌤️ Weather for Rotterdam, NL')
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('Current: Clear sky')
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('Temperature: 15.5°C (feels like 14.2°C)')
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('Short-term forecast:')
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringContaining('☀️ 12:00: Clear sky | 16.5°C')
-        );
+        expectReplyTextContains(interaction, '\ud83c\udf24\ufe0f Weather for Rotterdam, NL');
+        expectReplyTextContains(interaction, 'Current: Clear sky');
+        expectReplyTextContains(interaction, 'Temperature: 15.5\u00b0C (feels like 14.2\u00b0C)');
+        expectReplyTextContains(interaction, 'Short-term forecast:');
+        expectReplyTextContains(interaction, '\u2600\ufe0f 12:00: Clear sky | 16.5\u00b0C');
     });
 
     it('handles location not found error gracefully', async () => {
@@ -79,25 +71,10 @@ describe('weather command', () => {
         (notFoundError as any).response = { status: 404 };
         (getCurrentWeather as Mock).mockRejectedValue(notFoundError);
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/weather.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('NonExistentCity')
-                    }
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        const { interaction } = await setupAndRunWeather('NonExistentCity');
 
         // Verify the error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            'Could not fetch weather data. Please check the location and try again.'
-        );
+        expectReplyText(interaction, 'Could not fetch weather data. Please check the location and try again.');
     });
 
     it('handles missing API key error', async () => {
@@ -106,25 +83,10 @@ describe('weather command', () => {
             new Error('Weather API key not configured or invalid')
         );
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/weather.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Rotterdam,NL')
-                    }
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        const { interaction } = await setupAndRunWeather('Rotterdam,NL');
 
         // Verify the API key error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            'Weather API key is not configured.'
-        );
+        expectReplyText(interaction, 'Weather API key is not configured.');
     });
 
     it('handles general errors gracefully', async () => {
@@ -133,25 +95,10 @@ describe('weather command', () => {
             new Error('General service error')
         );
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/weather.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Rotterdam,NL')
-                    }
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        const { interaction } = await setupAndRunWeather('Rotterdam,NL');
 
         // Verify the general error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            'An error occurred while fetching weather data.'
-        );
+        expectReplyText(interaction, 'An error occurred while fetching weather data.');
     });
 
     it('handles network errors from Axios', async () => {
@@ -161,24 +108,9 @@ describe('weather command', () => {
         (networkError as any).response = undefined;
         (getCurrentWeather as Mock).mockRejectedValue(networkError);
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/weather.js',
-            {
-                interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('Rotterdam,NL')
-                    }
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        const { interaction } = await setupAndRunWeather('Rotterdam,NL');
 
         // Verify the general error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            'An error occurred while fetching weather data.'
-        );
+        expectReplyText(interaction, 'An error occurred while fetching weather data.');
     });
 });

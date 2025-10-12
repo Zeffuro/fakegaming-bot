@@ -2,6 +2,40 @@ import jwt from "jsonwebtoken";
 
 const DEFAULT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
 
+/**
+ * Small sleep helper for retry waits
+ */
+async function sleep(ms: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch JSON with retry on Discord 429 responses.
+ */
+export async function retryFetchJson<T>(params: {
+    url: string;
+    init?: RequestInit;
+    maxAttempts?: number;
+    rateLimitExhaustedMessage: string;
+}): Promise<T> {
+    const { url, init, maxAttempts = 3, rateLimitExhaustedMessage } = params;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const res = await fetch(url, init);
+        if (res.status === 429) {
+            const errorBody = (await res.json().catch(() => ({}))) as { retry_after?: number } | Record<string, unknown>;
+            const retryAfterSeconds = typeof (errorBody as any).retry_after === 'number' ? Number((errorBody as any).retry_after) : undefined;
+            const waitMs = retryAfterSeconds !== undefined ? retryAfterSeconds * 1000 : 1000;
+            await sleep(waitMs);
+            continue;
+        }
+        if (!res.ok) {
+            throw new Error(await res.text());
+        }
+        return (await res.json()) as T;
+    }
+    throw new Error(rateLimitExhaustedMessage);
+}
+
 export async function exchangeCodeForToken(code: string, clientId: string, clientSecret: string, redirectUri: string) {
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
         method: "POST",
@@ -18,41 +52,23 @@ export async function exchangeCodeForToken(code: string, clientId: string, clien
 }
 
 export async function fetchDiscordUser(accessToken: string) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-        const userRes = await fetch("https://discord.com/api/users/@me", {
-            headers: {Authorization: `Bearer ${accessToken}`},
-        });
-        if (userRes.status === 429) {
-            const errorBody = await userRes.json();
-            const retryAfter = errorBody.retry_after ? Number(errorBody.retry_after) * 1000 : 1000;
-            await new Promise(resolve => setTimeout(resolve, retryAfter));
-            continue;
-        }
-        if (!userRes.ok) {
-            throw new Error(await userRes.text());
-        }
-        return await userRes.json();
-    }
-    throw new Error("Discord rate limit exceeded for /users/@me");
+    return retryFetchJson<any>({
+        url: "https://discord.com/api/users/@me",
+        init: {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for /users/@me",
+    });
 }
 
 export async function getDiscordGuilds(accessToken: string, tokenType: "Bearer" | "Bot" = "Bearer") {
-    for (let attempt = 0; attempt < 3; attempt++) {
-        const guildsRes = await fetch("https://discord.com/api/users/@me/guilds", {
+    return retryFetchJson<any>({
+        url: "https://discord.com/api/users/@me/guilds",
+        init: {
             headers: { Authorization: `${tokenType} ${accessToken}` },
-        });
-        if (guildsRes.status === 429) {
-            const errorBody = await guildsRes.json();
-            const retryAfter = errorBody.retry_after ? Number(errorBody.retry_after) * 1000 : 1000;
-            await new Promise(resolve => setTimeout(resolve, retryAfter));
-            continue;
-        }
-        if (!guildsRes.ok) {
-            throw new Error(await guildsRes.text());
-        }
-        return await guildsRes.json();
-    }
-    throw new Error("Discord rate limit exceeded for /users/@me/guilds");
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for /users/@me/guilds",
+    });
 }
 
 export function getDiscordOAuthUrl(discordClientId: string, discordRedirectUri: string) {
@@ -77,21 +93,12 @@ export function verifyJwt(token: string, jwtSecret: string, audience: string = D
 }
 
 export async function getDiscordGuildChannels(guildId: string, botToken: string) {
-    for (let attempt = 0; attempt < 3; attempt++) {
-        const channelsRes = await fetch(`https://discord.com/api/guilds/${guildId}/channels`, {
+    const channels = await retryFetchJson<any[]>({
+        url: `https://discord.com/api/guilds/${guildId}/channels`,
+        init: {
             headers: { Authorization: `Bot ${botToken}` },
-        });
-        if (channelsRes.status === 429) {
-            const errorBody = await channelsRes.json();
-            const retryAfter = errorBody.retry_after ? Number(errorBody.retry_after) * 1000 : 1000;
-            await new Promise(resolve => setTimeout(resolve, retryAfter));
-            continue;
-        }
-        if (!channelsRes.ok) {
-            throw new Error(await channelsRes.text());
-        }
-        const channels = await channelsRes.json();
-        return channels.filter((channel: any) => channel.type === 0 || channel.type === 5);
-    }
-    throw new Error("Discord rate limit exceeded for guild channels");
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for guild channels",
+    });
+    return channels.filter((channel: any) => channel.type === 0 || channel.type === 5);
 }

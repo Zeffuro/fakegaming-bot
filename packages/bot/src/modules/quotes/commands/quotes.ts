@@ -1,5 +1,6 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
+import { formatQuotesBlock } from '../shared/formatQuotes.js';
 
 const data = new SlashCommandBuilder()
     .setName('quotes')
@@ -24,12 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    const formatted = quotes.map(quote => {
-        const tsRaw = (quote as { timestamp: number | string | null | undefined }).timestamp;
-        const ts = typeof tsRaw === 'string' ? Number(tsRaw) : tsRaw ?? 0;
-        const dateStr = Number.isFinite(ts) && ts > 0 ? new Date(ts).toLocaleString() : 'Unknown date';
-        return `> ${quote.quote}\n— <@${quote.authorId}> (${dateStr})`;
-    }).join('\n\n');
+    const formatted = formatQuotesBlock(quotes as Array<{ quote: string; authorId: string; timestamp?: number | string | null | undefined }>);
     await interaction.reply(`Quotes for ${user.tag}:\n${formatted}`);
 }
 

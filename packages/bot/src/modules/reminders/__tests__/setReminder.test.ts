@@ -1,7 +1,6 @@
-// filepath: f:\Coding\discord-bot\packages\bot\src\modules\reminders\__tests__\setReminder.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
-import { ChatInputCommandInteraction, MessageFlags } from 'discord.js';
+import { setupCommandTest, expectEphemeralReply, expectReplyText } from '@zeffuro/fakegaming-common/testing';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { v4 as _uuidv4 } from 'uuid';
 import { parseTimespan } from '@zeffuro/fakegaming-common/utils';
 
@@ -49,13 +48,7 @@ describe('setReminder command', () => {
             'modules/reminders/commands/setReminder.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn().mockImplementation(name => {
-                            if (name === 'timespan') return '1h';
-                            if (name === 'message') return 'Remember to check the test results';
-                            return null;
-                        })
-                    },
+                    stringOptions: { timespan: '1h', message: 'Remember to check the test results' },
                     user: mockUser
                 },
                 managerOverrides: {
@@ -78,11 +71,8 @@ describe('setReminder command', () => {
             timestamp: 1633030800000
         });
 
-        // Verify the interaction reply
-        expect(interaction.reply).toHaveBeenCalledWith({
-            content: expect.stringContaining('⏰ I\'ll remind you in 1h: "Remember to check the test results"'),
-            flags: MessageFlags.Ephemeral
-        });
+        // Verify the interaction reply (ephemeral)
+        expectEphemeralReply(interaction, { contains: '⏰ I\'ll remind you in 1h: "Remember to check the test results"' });
     });
 
     it('handles invalid timespan format', async () => {
@@ -100,13 +90,7 @@ describe('setReminder command', () => {
             'modules/reminders/commands/setReminder.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn().mockImplementation(name => {
-                            if (name === 'timespan') return 'invalid';
-                            if (name === 'message') return 'Remember to check the test results';
-                            return null;
-                        })
-                    },
+                    stringOptions: { timespan: 'invalid', message: 'Remember to check the test results' },
                     user: mockUser
                 }
             }
@@ -116,7 +100,8 @@ describe('setReminder command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify the interaction reply for error
-        expect(interaction.reply).toHaveBeenCalledWith(
+        expectReplyText(
+            interaction,
             'Invalid timespan format. Use e.g., 1h, 30m, 2h30m, 90s.'
         );
     });

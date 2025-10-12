@@ -1,6 +1,5 @@
-// filepath: f:\Coding\discord-bot\packages\bot\src\modules\reminders\__tests__\setTimezone.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyText } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 
 // Mock the timezoneUtils module
@@ -46,12 +45,7 @@ describe('setTimezone command', () => {
             'modules/reminders/commands/setTimezone.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn().mockImplementation(name => {
-                            if (name === 'timezone') return 'Europe/Berlin';
-                            return null;
-                        })
-                    },
+                    stringOptions: { timezone: 'Europe/Berlin' },
                     user: mockUser
                 },
                 managerOverrides: {
@@ -72,7 +66,8 @@ describe('setTimezone command', () => {
         });
 
         // Verify the interaction reply
-        expect(interaction.reply).toHaveBeenCalledWith(
+        expectReplyText(
+            interaction,
             'Timezone set to `Europe/Berlin`.'
         );
     });
@@ -90,9 +85,7 @@ describe('setTimezone command', () => {
             'modules/reminders/commands/setTimezone.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn().mockReturnValue('InvalidTimezone')
-                    },
+                    stringOptions: { timezone: 'InvalidTimezone' },
                     user: mockUser
                 },
                 managerOverrides: {
@@ -107,7 +100,8 @@ describe('setTimezone command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify the interaction reply for error
-        expect(interaction.reply).toHaveBeenCalledWith(
+        expectReplyText(
+            interaction,
             'Invalid timezone. Please use a valid IANA timezone (e.g., Europe/Berlin) or GMT offset.'
         );
 

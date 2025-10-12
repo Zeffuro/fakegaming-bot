@@ -26,7 +26,8 @@
     "rimraf": "^6.0.1",
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "jscpd": "^3.5.10"
   },
   "scripts": {
     "build": "pnpm --filter @zeffuro/fakegaming-common run build && pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
@@ -43,7 +44,8 @@
     "start:dashboard:dev": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start:dev",
     "clean": "node scripts/clean.js",
     "fulltest": "pnpm run clean && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test:coverage",
-    "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard ."
+    "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard .",
+    "scan:dupes": "jscpd --min-tokens 40 --reporters json,html --gitignore packages/api/src packages/bot/src packages/dashboard/app packages/common/src > duplicates.json"
   },
   "dependencies": {
     "cors": "^2.8.5",

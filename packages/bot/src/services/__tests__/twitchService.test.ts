@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { setupServiceTest, createMockTextChannel, createMockTwitchStream } from '@zeffuro/fakegaming-common/testing';
+import { setupServiceTest, createMockTextChannel, createMockTwitchStream, expectSendHasEmbed } from '@zeffuro/fakegaming-common/testing';
 import { TextChannel } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
@@ -28,6 +28,27 @@ import { verifyTwitchUser, subscribeAllStreams } from '../twitchService.js';
 describe('twitchService', () => {
     let client: Awaited<ReturnType<typeof setupServiceTest>>['client'];
     let configManager: ReturnType<typeof getConfigManager>;
+
+    // --- local helpers (DRY) ---
+    const createAndCacheChannel = (id = 'discord-channel-123') => {
+        const mockChannel = createMockTextChannel({
+            id,
+            toString: () => `<#${id}>` as `<#${string}>`,
+            valueOf: () => id,
+        } as Partial<TextChannel>);
+        client.channels.cache.set(id, mockChannel as any);
+        return mockChannel;
+    };
+
+    const mockTwurple = (user: any, stream: any) => {
+        mockGetUserByName.mockResolvedValue(user);
+        mockGetStreamByUserId.mockResolvedValue(stream);
+    };
+
+    const runSubscribeWith = async (streams: Array<any>) => {
+        vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue(streams as any);
+        await subscribeAllStreams(client);
+    };
 
     beforeEach(async () => {
         const setup = await setupServiceTest();
@@ -60,11 +81,7 @@ describe('twitchService', () => {
 
     describe('subscribeAllStreams', () => {
         it('should announce when stream goes live', async () => {
-            const mockChannel = createMockTextChannel({
-                id: 'discord-channel-123',
-                toString: () => '<#discord-channel-123>' as `<#${string}>`,
-                valueOf: () => 'discord-channel-123',
-            } as Partial<TextChannel>);
+            const mockChannel = createAndCacheChannel('discord-channel-123');
             const twitchStream = createMockTwitchStream({
                 id: 'stream-1' as any, // TwitchStreamConfig uses number for id
                 twitchUsername: 'teststreamer',
@@ -85,19 +102,10 @@ describe('twitchService', () => {
                 thumbnailUrl: 'https://example.com/thumb-{width}x{height}.jpg',
             };
 
-            mockGetUserByName.mockResolvedValue(mockTwitchUser);
-            mockGetStreamByUserId.mockResolvedValue(mockStreamData);
+            mockTwurple(mockTwitchUser, mockStreamData);
+            await runSubscribeWith([twitchStream]);
 
-            vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue([twitchStream as any]);
-            client.channels.cache.set('discord-channel-123', mockChannel as any);
-
-            await subscribeAllStreams(client);
-
-            expect(mockChannel.send).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    embeds: expect.arrayContaining([expect.any(Object)]),
-                })
-            );
+            expectSendHasEmbed(mockChannel);
             expect(twitchStream.isLive).toBe(true);
             expect(twitchStream.save).toHaveBeenCalled();
         });
@@ -111,23 +119,15 @@ describe('twitchService', () => {
 
             const mockTwitchUser = { id: 'twitch-user-123', name: 'teststreamer' };
 
-            mockGetUserByName.mockResolvedValue(mockTwitchUser);
-            mockGetStreamByUserId.mockResolvedValue(null); // Stream is offline
-
-            vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue([twitchStream as any]);
-
-            await subscribeAllStreams(client);
+            mockTwurple(mockTwitchUser, null); // Stream is offline
+            await runSubscribeWith([twitchStream]);
 
             expect(twitchStream.isLive).toBe(false);
             expect(twitchStream.save).toHaveBeenCalled();
         });
 
         it('should not announce if stream is already marked as live', async () => {
-            const mockChannel = createMockTextChannel({
-                id: 'discord-channel-123',
-                toString: () => '<#discord-channel-123>' as `<#${string}>`,
-                valueOf: () => 'discord-channel-123',
-            } as Partial<TextChannel>);
+            const mockChannel = createAndCacheChannel('discord-channel-123');
             const twitchStream = createMockTwitchStream({
                 id: 'stream-3' as any, // TwitchStreamConfig uses number for id
                 twitchUsername: 'teststreamer',
@@ -138,23 +138,14 @@ describe('twitchService', () => {
             const mockTwitchUser = { id: 'twitch-user-123', name: 'teststreamer' };
             const mockStreamData = { id: 'stream-123', title: 'Test Stream', viewers: 100 };
 
-            mockGetUserByName.mockResolvedValue(mockTwitchUser);
-            mockGetStreamByUserId.mockResolvedValue(mockStreamData);
-
-            vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue([twitchStream as any]);
-            client.channels.cache.set('discord-channel-123', mockChannel as any);
-
-            await subscribeAllStreams(client);
+            mockTwurple(mockTwitchUser, mockStreamData);
+            await runSubscribeWith([twitchStream]);
 
             expect(mockChannel.send).not.toHaveBeenCalled();
         });
 
         it('should use custom message if provided', async () => {
-            const mockChannel = createMockTextChannel({
-                id: 'discord-channel-123',
-                toString: () => '<#discord-channel-123>' as `<#${string}>`,
-                valueOf: () => 'discord-channel-123',
-            } as Partial<TextChannel>);
+            const mockChannel = createAndCacheChannel('discord-channel-123');
             const twitchStream = createMockTwitchStream({
                 id: 'stream-4' as any, // TwitchStreamConfig uses number for id
                 twitchUsername: 'teststreamer',
@@ -171,13 +162,8 @@ describe('twitchService', () => {
             };
             const mockStreamData = { id: 'stream-123', title: 'Test Stream', viewers: 100 };
 
-            mockGetUserByName.mockResolvedValue(mockTwitchUser);
-            mockGetStreamByUserId.mockResolvedValue(mockStreamData);
-
-            vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue([twitchStream as any]);
-            client.channels.cache.set('discord-channel-123', mockChannel as any);
-
-            await subscribeAllStreams(client);
+            mockTwurple(mockTwitchUser, mockStreamData);
+            await runSubscribeWith([twitchStream]);
 
             expect(mockChannel.send).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -211,9 +197,7 @@ describe('twitchService', () => {
 
             mockGetUserByName.mockResolvedValue(null);
 
-            vi.spyOn(configManager.twitchManager, 'getAllStreams').mockResolvedValue([twitchStream as any]);
-
-            await subscribeAllStreams(client);
+            await runSubscribeWith([twitchStream]);
 
             expect(mockGetStreamByUserId).not.toHaveBeenCalled();
         });

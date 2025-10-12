@@ -1,8 +1,7 @@
 import { NextRequest } from "next/server";
 import jwt from "jsonwebtoken";
-import { MinimalGuildData } from "@/lib/common/models";
-import { isGuildAdmin as commonIsGuildAdmin } from "@/lib/common/utils";
-import { defaultCacheManager, CACHE_KEYS } from "@/lib/common/cache";
+import type { MinimalGuildData } from "@zeffuro/fakegaming-common";
+import { isGuildAdmin as commonIsGuildAdmin, defaultCacheManager, CACHE_KEYS } from "@zeffuro/fakegaming-common";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 const DASHBOARD_ADMINS = (process.env.DASHBOARD_ADMINS || "").split(",").map(id => id.trim()).filter(Boolean);

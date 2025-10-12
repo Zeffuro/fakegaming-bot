@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
 
 describe('poll command', () => {
@@ -20,13 +20,10 @@ describe('poll command', () => {
             'modules/general/commands/poll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn((name, _required) => {
-                            if (name === 'question') return 'Test poll question?';
-                            if (name === 'option1') return 'Option One';
-                            if (name === 'option2') return 'Option Two';
-                            return null;
-                        })
+                    stringOptions: {
+                        question: 'Test poll question?',
+                        option1: 'Option One',
+                        option2: 'Option Two'
                     },
                     fetchReply: vi.fn().mockResolvedValue(mockMessage)
                 }
@@ -37,21 +34,9 @@ describe('poll command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify the interaction reply contains the question and options
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/📊 Test poll question\?/)
-            })
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/1️⃣ Option One/)
-            })
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/2️⃣ Option Two/)
-            })
-        );
+        expectReplyTextContains(interaction, '📊 Test poll question?');
+        expectReplyTextContains(interaction, '1️⃣ Option One');
+        expectReplyTextContains(interaction, '2️⃣ Option Two');
 
         // Verify fetchReply was called to get the message for adding reactions
         expect(interaction.fetchReply).toHaveBeenCalled();
@@ -74,16 +59,13 @@ describe('poll command', () => {
             'modules/general/commands/poll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn((name, _required) => {
-                            if (name === 'question') return 'Test poll with many options?';
-                            if (name === 'option1') return 'Option One';
-                            if (name === 'option2') return 'Option Two';
-                            if (name === 'option3') return 'Option Three';
-                            if (name === 'option4') return 'Option Four';
-                            if (name === 'option5') return 'Option Five';
-                            return null;
-                        })
+                    stringOptions: {
+                        question: 'Test poll with many options?',
+                        option1: 'Option One',
+                        option2: 'Option Two',
+                        option3: 'Option Three',
+                        option4: 'Option Four',
+                        option5: 'Option Five'
                     },
                     fetchReply: vi.fn().mockResolvedValue(mockMessage)
                 }
@@ -94,23 +76,9 @@ describe('poll command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Verify the interaction reply contains all options
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringMatching(/📊 Test poll with many options\?/)
-            })
-        );
-
-        // Check all five options are included
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('1️⃣ Option One')
-            })
-        );
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('5️⃣ Option Five')
-            })
-        );
+        expectReplyTextContains(interaction, '📊 Test poll with many options?');
+        expectReplyTextContains(interaction, '1️⃣ Option One');
+        expectReplyTextContains(interaction, '5️⃣ Option Five');
 
         // Verify all 5 reactions were added
         expect(mockMessage.react).toHaveBeenCalledTimes(5);
@@ -131,14 +99,11 @@ describe('poll command', () => {
             'modules/general/commands/poll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn((name, _required) => {
-                            if (name === 'question') return 'Test poll with error?';
-                            if (name === 'option1') return 'Option One';
-                            if (name === 'option2') return 'Option Two';
-                            if (name === 'option3') return 'Option Three';
-                            return null;
-                        })
+                    stringOptions: {
+                        question: 'Test poll with error?',
+                        option1: 'Option One',
+                        option2: 'Option Two',
+                        option3: 'Option Three'
                     },
                     fetchReply: vi.fn().mockResolvedValue(mockMessage)
                 }
@@ -151,7 +116,7 @@ describe('poll command', () => {
         ).resolves.not.toThrow();
 
         // Verify the poll was still created
-        expect(interaction.reply).toHaveBeenCalled();
+        expect((interaction.reply as any).mock.calls.length).toBeGreaterThan(0);
 
         // Verify all 3 react methods were called despite the error
         expect(mockMessage.react).toHaveBeenCalledTimes(3);

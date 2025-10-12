@@ -1,76 +1,27 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, AttachmentBuilder} from 'discord.js';
+import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getTftMatchHistory, getTftMatchDetails} from '../../../services/riotService.js';
-import {leagueRegionChoices} from '../constants/leagueRegions.js';
-import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
-import {regionToRegionGroupForAccountAPI} from "twisted/dist/constants/regions.js";
 import {generateTftHistoryImage} from '../image/tftHistoryImage.js';
+import { runHistoryCommand } from '../shared/historyCommon.js';
+import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
 
-const data = new SlashCommandBuilder()
-    .setName('tft-history')
-    .setDescription('Get recent Teamfight Tactics match history for a summoner')
-    .addStringOption(option =>
-        option.setName('summoner')
-            .setDescription('Summoner name or Riot ID (e.g. Zeffuro#EUW)')
-            .setRequired(false)
-    )
-    .addStringOption(option =>
-        option.setName('region')
-            .setDescription('Region')
-            .setRequired(false)
-            .addChoices(...leagueRegionChoices)
-    )
-    .addUserOption(option =>
-        option.setName('user')
-            .setDescription('Discord user')
-            .setRequired(false)
-    );
+const data = buildCommonLeagueOptions(
+    new SlashCommandBuilder()
+        .setName('tft-history')
+        .setDescription('Get recent Teamfight Tactics match history for a summoner')
+);
 
 /**
  * Executes the tft-history command, replying with a recent TFT match history image for a summoner.
- * Handles errors and provides feedback if match history cannot be fetched.
- * Replies with an image attachment showing recent TFT matches.
  */
 async function execute(interaction: ChatInputCommandInteraction) {
-    await interaction.deferReply();
-
-    let identity;
-    try {
-        identity = await getLeagueIdentityFromInteraction(interaction);
-    } catch {
-        await interaction.editReply('Please provide a summoner name and region, or link your account first.');
-        return;
-    }
-
-    const regionGroup = regionToRegionGroupForAccountAPI(identity.region);
-    const matchHistoryResult = await getTftMatchHistory(identity.puuid, regionGroup, 0, 5);
-    if (!matchHistoryResult.success) {
-        await interaction.editReply(`Failed to fetch TFT match history: ${matchHistoryResult.error}`);
-        return;
-    }
-    const matchIds = matchHistoryResult.data;
-
-    if (!Array.isArray(matchIds) || matchIds.length === 0) {
-        await interaction.editReply('No match history found.');
-        return;
-    }
-
-    const matches = [];
-    for (const matchId of matchIds) {
-        const matchResult = await getTftMatchDetails(matchId, regionGroup);
-        if (!matchResult.success) {
-            await interaction.editReply(`Failed to fetch details for match ${matchId}: ${matchResult.error}`);
-            return;
-        }
-        matches.push(matchResult.data);
-    }
-    const validMatches = matches.filter((m): m is import('twisted/dist/models-dto/matches/tft-matches/match-tft.dto.js').MatchTFTDTO => !!m);
-
-    const buffer = await generateTftHistoryImage(validMatches, identity);
-    const attachment = new AttachmentBuilder(buffer, {name: 'tft-history.png'});
-
-    await interaction.editReply({
-        content: `Recent TFT matches for ${identity.summoner} [${identity.region}]`,
-        files: [attachment]
+    await runHistoryCommand(interaction, {
+        fetchHistory: getTftMatchHistory,
+        fetchDetails: getTftMatchDetails,
+        generateImage: generateTftHistoryImage,
+        contentPrefix: 'Recent TFT matches',
+        historyErrorPrefix: 'Failed to fetch TFT match history',
+        detailsErrorPrefix: 'Failed to fetch details for match',
+        count: 5,
     });
 }
 

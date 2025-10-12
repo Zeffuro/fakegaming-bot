@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDiscordGuildChannels } from "@/lib/common/discord";
-import { CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@/lib/common/cache";
+import { getDiscordGuildChannels, CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@zeffuro/fakegaming-common";
 import { authenticateUser, checkGuildAccess } from "@/lib/auth/authUtils";
 import type { APIChannel } from "discord-api-types/v10";
 

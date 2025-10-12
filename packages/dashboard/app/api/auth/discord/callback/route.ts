@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {getBaseUrl} from "@/lib/util/getBaseUrl";
-import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt } from "@/lib/common/discord";
-import { MinimalGuildData } from "@/lib/common/models";
-import { defaultCacheManager, CACHE_KEYS, CACHE_TTL } from "@/lib/common/cache";
+import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE } from "@/lib/env";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 

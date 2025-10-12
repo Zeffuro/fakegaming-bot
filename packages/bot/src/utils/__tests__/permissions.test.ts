@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { requireAdmin } from '../permissions.js';
-import { ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags } from 'discord.js';
+import { ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
+import { expectEphemeralReply, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
 
 describe('permissions', () => {
     describe('requireAdmin', () => {
@@ -31,10 +32,8 @@ describe('permissions', () => {
 
             expect(result).toBe(false);
             expect(interaction.memberPermissions?.has).toHaveBeenCalledWith(PermissionFlagsBits.Administrator);
-            expect(interaction.reply).toHaveBeenCalledWith({
-                content: 'Only admins can use this command.',
-                flags: MessageFlags.Ephemeral,
-            });
+            expectReplyTextContains(interaction, 'Only admins can use this command.');
+            expectEphemeralReply(interaction);
         });
 
         it('should return false when memberPermissions is null', async () => {
@@ -46,10 +45,8 @@ describe('permissions', () => {
             const result = await requireAdmin(interaction);
 
             expect(result).toBe(false);
-            expect(interaction.reply).toHaveBeenCalledWith({
-                content: 'Only admins can use this command.',
-                flags: MessageFlags.Ephemeral,
-            });
+            expectReplyTextContains(interaction, 'Only admins can use this command.');
+            expectEphemeralReply(interaction);
         });
     });
 });

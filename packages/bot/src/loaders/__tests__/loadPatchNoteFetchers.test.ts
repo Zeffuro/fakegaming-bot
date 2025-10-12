@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { loadPatchNoteFetchers } from '../loadPatchNoteFetchers.js';
+import { loadPatchNoteFetchers, type DynamicImporter } from '../loadPatchNoteFetchers.js';
 import fs from 'fs';
 
 vi.mock('fs');
@@ -9,6 +9,20 @@ describe('loadPatchNoteFetchers', () => {
         vi.clearAllMocks();
     });
 
+    function createStubImporter(_filesToExportName?: Record<string, string>): DynamicImporter {
+        return async (_url: string) => {
+            // Always return a module object with at least one class-like export that has getPatchNotesUrl
+            // The loader inspects prototype.getPatchNotesUrl to detect fetcher classes.
+            class StubFetcher {
+                getPatchNotesUrl(): string { return 'https://example.com/patch'; }
+            }
+            return {
+                // The key name is irrelevant; loader scans values
+                StubFetcher,
+            } as unknown as Record<string, unknown>;
+        };
+    }
+
     it('should load all patch note fetchers', async () => {
         vi.mocked(fs.readdirSync).mockReturnValue([
             'basePatchNotesFetcher.ts',
@@ -17,9 +31,11 @@ describe('loadPatchNoteFetchers', () => {
             'overwatchPatchNotesFetcher.ts',
         ] as any);
 
-        const fetchers = await loadPatchNoteFetchers();
+        const fetchers = await loadPatchNoteFetchers(createStubImporter());
 
-        expect(fetchers).toBeInstanceOf(Array);
+        expect(Array.isArray(fetchers)).toBe(true);
+        // 3 concrete fetchers, base excluded
+        expect(fetchers.length).toBe(3);
         expect(fs.readdirSync).toHaveBeenCalled();
     });
 
@@ -29,15 +45,16 @@ describe('loadPatchNoteFetchers', () => {
             'leaguePatchNotesFetcher.ts',
         ] as any);
 
-        const fetchers = await loadPatchNoteFetchers();
+        const fetchers = await loadPatchNoteFetchers(createStubImporter());
 
-        expect(fetchers).toBeInstanceOf(Array);
+        expect(Array.isArray(fetchers)).toBe(true);
+        expect(fetchers.length).toBe(1);
     });
 
     it('should handle empty directory', async () => {
         vi.mocked(fs.readdirSync).mockReturnValue([] as any);
 
-        const fetchers = await loadPatchNoteFetchers();
+        const fetchers = await loadPatchNoteFetchers(createStubImporter());
 
         expect(fetchers).toEqual([]);
     });
@@ -50,9 +67,10 @@ describe('loadPatchNoteFetchers', () => {
             'leaguePatchNotesFetcher.ts',
         ] as any);
 
-        await loadPatchNoteFetchers();
+        const fetchers = await loadPatchNoteFetchers(createStubImporter());
 
+        // Only one .*(Fetcher).ts other than base
+        expect(fetchers.length).toBe(1);
         expect(fs.readdirSync).toHaveBeenCalled();
     });
 });
-

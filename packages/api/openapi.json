@@ -877,6 +877,29 @@
         }
       }
     },
+    "/patchNotes/supportedGames": {
+      "get": {
+        "summary": "List supported games for patch notes",
+        "tags": [
+          "PatchNotes"
+        ],
+        "responses": {
+          "200": {
+            "description": "An array of supported game names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/patchNotes/{game}": {
       "get": {
         "summary": "Get the latest patch note for a game",

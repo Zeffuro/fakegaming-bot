@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getItemData } from '../leagueItemDataCache.js';
-import * as typedAssetCache from '../../../../utils/typedAssetCache.js';
+import { mockGetTypedAssetResolved, expectGetTypedAssetCalledWithPrefix } from './helpers.js';
 
 vi.mock('../../../../utils/typedAssetCache.js');
 
@@ -16,21 +16,20 @@ describe('leagueItemDataCache', () => {
                 { id: 3031, name: 'Infinity Edge' },
             ];
 
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue(mockData);
+            await mockGetTypedAssetResolved(mockData);
 
             const result = await getItemData();
 
             expect(result).toEqual(mockData);
-            expect(typedAssetCache.getTypedAsset).toHaveBeenCalledWith(
+            await expectGetTypedAssetCalledWithPrefix(
                 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json',
                 'items.json',
-                'itemdata',
-                expect.any(Object)
+                'itemdata'
             );
         });
 
         it('should handle empty item data', async () => {
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue([]);
+            await mockGetTypedAssetResolved([]);
 
             const result = await getItemData();
 
@@ -38,4 +37,3 @@ describe('leagueItemDataCache', () => {
         });
     });
 });
-

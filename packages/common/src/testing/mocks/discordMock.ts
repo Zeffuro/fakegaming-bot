@@ -12,7 +12,8 @@ import {
     ModalSubmitInteraction,
     MessagePayload,
     MessageCreateOptions,
-    InteractionType
+    InteractionType,
+    AutocompleteInteraction
 } from 'discord.js';
 import type {
     Client
@@ -30,6 +31,23 @@ function channelMention(id: string): `<#${string}>` {
  */
 function userMention(id: string): `<@${string}>` {
     return `<@${id}>` as `<@${string}>`;
+}
+
+/**
+ * Shared base properties for mock channels
+ */
+function baseChannelProps(channelId: string) {
+    return {
+        id: channelId,
+        type: 0,
+        send: vi.fn(async () => createMockMessage()),
+        messages: {
+            fetch: vi.fn(async () => createMockMessage()),
+            cache: new Map(),
+        },
+        toString: () => channelMention(channelId),
+        valueOf: () => channelId,
+    };
 }
 
 /**
@@ -65,15 +83,7 @@ export function createMockChannel(overrides: Partial<Channel> = {}): Channel {
     const channelId = overrides.id || '929533532185956352';
 
     return {
-        id: channelId,
-        type: 0,
-        send: vi.fn(async () => createMockMessage()),
-        messages: {
-            fetch: vi.fn(async () => createMockMessage()),
-            cache: new Map(),
-        },
-        toString: () => channelMention(channelId),
-        valueOf: () => channelId,
+        ...baseChannelProps(channelId),
         ...overrides
     } as unknown as Channel;
 }
@@ -84,20 +94,8 @@ export function createMockChannel(overrides: Partial<Channel> = {}): Channel {
 export function createMockTextChannel(overrides: Partial<TextChannel> = {}): TextChannel {
     const channelId = overrides.id || '929533532185956352';
 
-    const baseChannelProps = {
-        id: channelId,
-        type: 0,
-        send: vi.fn(async () => createMockMessage()),
-        messages: {
-            fetch: vi.fn(async () => createMockMessage()),
-            cache: new Map(),
-        },
-        toString: () => channelMention(channelId),
-        valueOf: () => channelId,
-    };
-
     return {
-        ...baseChannelProps,
+        ...baseChannelProps(channelId),
         name: 'test-channel',
         guild: createMockGuild(overrides.guild),
         permissionsFor: vi.fn(() => {
@@ -128,8 +126,7 @@ export function createMockGuild(overrides: Partial<Guild> = {}): Guild {
         members: {
             cache: new Map(),
             fetch: vi.fn(async (userId: string) => {
-                const member = createMockGuildMember({ id: userId });
-                return member;
+                return createMockGuildMember({ id: userId });
             }),
         },
         roles: {
@@ -155,18 +152,11 @@ export function createMockGuildMember(overrides: Record<string, any> = {}): Guil
     const userId = overrides.id || '123456789012345678';
     const guildId = overrides.guildId || '135381928284343204';
 
-    const user = {
+    const user = createMockUser({
         id: userId,
-        username: 'testuser',
-        discriminator: '0001',
-        tag: 'testuser#0001',
-        displayAvatarURL: vi.fn(() => 'https://example.com/avatar.png'),
-        bot: false,
-        system: false,
-        flags: { bitfield: 0n },
         toString: () => userMention(userId),
         valueOf: () => userId,
-    };
+    });
 
     return {
         id: userId,
@@ -283,6 +273,15 @@ export function createMockCommandInteraction(overrides: Record<string, any> = {}
         ...cleanOverrides
     } = overrides;
 
+    // Helper to resolve required flags consistently
+    function resolveOption<T>(value: T | null | undefined, required: boolean | undefined, name: string, kind: string): T | null {
+        if (value !== undefined && value !== null) return value as T;
+        if (required) {
+            throw new Error(`[MockInteraction] Required ${kind} option '${name}' is missing`);
+        }
+        return null;
+    }
+
     return {
         id: interactionId,
         type: InteractionType.ApplicationCommand,
@@ -306,25 +305,40 @@ export function createMockCommandInteraction(overrides: Record<string, any> = {}
         }),
         commandName: 'test-command',
         options: {
-            getString: vi.fn((name: string) => stringOptions[name] || null),
-            getUser: vi.fn((name: string) => {
-                if (!userOptions[name]) return null;
-                return createMockUser({
-                    id: userOptions[name],
-                    toString: () => userMention(userOptions[name]),
-                    valueOf: () => userOptions[name]
-                });
+            getString: vi.fn((name: string, required?: boolean) => {
+                const val = stringOptions[name] ?? null;
+                return resolveOption<string>(val, required, name, 'string');
             }),
-            getChannel: vi.fn((name: string) => {
-                if (!channelOptions[name]) return null;
-                return createMockChannel({
-                    id: channelOptions[name],
-                    toString: () => channelMention(channelOptions[name]),
-                    valueOf: () => channelOptions[name]
-                });
+            getUser: vi.fn((name: string, required?: boolean) => {
+                const id = userOptions[name];
+                if (id) {
+                    return createMockUser({
+                        id,
+                        toString: () => userMention(id),
+                        valueOf: () => id
+                    });
+                }
+                return resolveOption(null, required, name, 'user');
             }),
-            getInteger: vi.fn((name: string) => integerOptions[name] || null),
-            getBoolean: vi.fn((name: string) => booleanOptions[name] || null),
+            getChannel: vi.fn((name: string, required?: boolean) => {
+                const id = channelOptions[name];
+                if (id) {
+                    return createMockChannel({
+                        id,
+                        toString: () => channelMention(id),
+                        valueOf: () => id
+                    });
+                }
+                return resolveOption(null, required, name, 'channel');
+            }),
+            getInteger: vi.fn((name: string, required?: boolean) => {
+                const val = integerOptions[name] ?? null;
+                return resolveOption<number>(val, required, name, 'integer');
+            }),
+            getBoolean: vi.fn((name: string, required?: boolean) => {
+                const val = booleanOptions[name] ?? null;
+                return resolveOption<boolean>(val, required, name, 'boolean');
+            }),
             getSubcommand: vi.fn(() => overrides.subcommand || null),
             ...interactionOptions,
         },
@@ -383,6 +397,55 @@ export function createMockModalSubmitInteraction(overrides: Record<string, any> 
     };
 
     return modalProps as unknown as ModalSubmitInteraction;
+}
+
+/**
+ * Creates a mock Discord AutocompleteInteraction
+ */
+export function createMockAutocompleteInteraction(overrides: Record<string, any> = {}): AutocompleteInteraction {
+    const interactionId = overrides.id || '777777777777777777';
+    const guildId = overrides.guildId || '135381928284343204';
+    const channelId = overrides.channelId || '929533532185956352';
+    const userId = (overrides.user as User)?.id || '123456789012345678';
+
+    const focused: string = typeof overrides.focused === 'string' ? overrides.focused : '';
+
+    // Strip helper-only properties so they don't leak into the cast
+    const {
+        focused: _focused,
+        ...cleanOverrides
+    } = overrides;
+
+    return {
+        id: interactionId,
+        type: InteractionType.ApplicationCommandAutocomplete,
+        user: createMockUser({
+            id: userId,
+            toString: () => userMention(userId),
+            valueOf: () => userId
+        }),
+        member: createMockGuildMember({ id: userId }),
+        guild: createMockGuild({
+            id: guildId,
+            toString: () => guildId,
+            valueOf: () => guildId
+        }),
+        guildId,
+        channelId,
+        channel: createMockTextChannel({
+            id: channelId,
+            toString: () => channelMention(channelId),
+            valueOf: () => channelId
+        }),
+        commandName: cleanOverrides.commandName || 'test-command',
+        options: {
+            getFocused: vi.fn(() => focused),
+            ...(cleanOverrides.options || {})
+        },
+        respond: vi.fn(async () => undefined),
+        valueOf: () => interactionId,
+        ...cleanOverrides
+    } as unknown as AutocompleteInteraction;
 }
 
 /**

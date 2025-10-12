@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { bootstrapEnv } from "../lib/common/core";
+import { bootstrapEnv } from "@zeffuro/fakegaming-common";
 
 const { __dirname } = bootstrapEnv(import.meta.url);
 
@@ -39,7 +39,7 @@ for (const [route, verbs] of Object.entries(openApi.paths)) {
                         ` */`
                     );
                     const aliasName =
-                        route.replace(/[\/{}]/g, "_")
+                        route.replace(/[\\/{}]/g, "_")
                             .replace(/_{2,}/g, "_")
                             .replace(/^_+|_+$/g, "")
                             .replace(/[^A-Za-z0-9_]/g, "") +
@@ -66,7 +66,7 @@ for (const [route, verbs] of Object.entries(openApi.paths)) {
                 ` */`
             );
             const aliasName =
-                route.replace(/[\/{}]/g, "_")
+                route.replace(/[\\/{}]/g, "_")
                     .replace(/_{2,}/g, "_")
                     .replace(/^_+|_+$/g, "")
                     .replace(/[^A-Za-z0-9_]/g, "") +

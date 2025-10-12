@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { setupModelMocks, setupCommandTest } from "@zeffuro/fakegaming-common/testing";
-import { ChatInputCommandInteraction, MessageFlags } from "discord.js";
+import { setupModelMocks, setupCommandTest, expectEphemeralReply, createMockCommandInteraction, expectEditReplyContainsText } from "@zeffuro/fakegaming-common/testing";
+import { ChatInputCommandInteraction } from "discord.js";
 import { Regions } from "twisted/dist/constants/regions.js";
 
 // Ensure DB/model mocks are ready
@@ -41,8 +41,8 @@ describe("linkRiot command", () => {
             puuid: "test-puuid-12345",
         });
 
-        const { LeagueConfig: _LeagueConfig } = await import("@zeffuro/fakegaming-common/models");
-        const createSpy = vi.spyOn(_LeagueConfig, "create").mockResolvedValue({
+        const modelsModule = await import("@zeffuro/fakegaming-common/models");
+        const createSpy = vi.spyOn(modelsModule.LeagueConfig, "create").mockResolvedValue({
             discordId: "123456789012345678",
             summonerName: "TestSummoner",
             region: "EUW",
@@ -53,16 +53,9 @@ describe("linkRiot command", () => {
 
         const { command, interaction } = await setupCommandTest("modules/league/commands/linkRiot.js", {
             interaction: {
-                options: {
-                    getString: vi.fn((name) =>
-                        name === "riot-id" ? "TestSummoner#EUW" : name === "region" ? "EU_WEST" : null
-                    ),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+                stringOptions: { "riot-id": "TestSummoner#EUW", region: "EU_WEST" },
                 user: { id: "123456789012345678" },
-                guild: { members: { fetch: vi.fn().mockResolvedValue(null) } },
-                deferReply: vi.fn(),
-                editReply: vi.fn(),
+                // defer/edit are provided by the builder by default
             },
             managerOverrides: {
                 userManager: { getUserWithLeague: getUserWithLeagueSpy },
@@ -83,9 +76,7 @@ describe("linkRiot command", () => {
             region: "EUW",
             puuid: "test-puuid-12345",
         });
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            "Linked <@123456789012345678> to Riot ID: TestSummoner [EUW]"
-        );
+        expectEditReplyContainsText(interaction, "Linked <@123456789012345678> to Riot ID: TestSummoner [EUW]");
     });
 
     it("updates an existing LeagueConfig entry", async () => {
@@ -96,13 +87,11 @@ describe("linkRiot command", () => {
             puuid: "new-puuid-67890",
         });
 
-        const { LeagueConfig: _LeagueConfig } = await import("@zeffuro/fakegaming-common/models");
-        const updateSpy = vi.fn().mockResolvedValue([1]);
-
         const { getConfigManager } = await import("@zeffuro/fakegaming-common/managers");
         const userManager = getConfigManager().userManager;
 
         // Return a mock user with a league object that has an update method
+        const updateSpy = vi.fn().mockResolvedValue([1]);
         const getUserWithLeagueSpy = vi
             .spyOn(userManager, "getUserWithLeague")
             .mockResolvedValue({
@@ -111,16 +100,8 @@ describe("linkRiot command", () => {
 
         const { command, interaction } = await setupCommandTest("modules/league/commands/linkRiot.js", {
             interaction: {
-                options: {
-                    getString: vi.fn((name) =>
-                        name === "riot-id" ? "NewSummoner#NA" : name === "region" ? "AMERICA_NORTH" : null
-                    ),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+                stringOptions: { "riot-id": "NewSummoner#NA", region: "AMERICA_NORTH" },
                 user: { id: "123456789012345678" },
-                guild: { members: { fetch: vi.fn().mockResolvedValue(null) } },
-                deferReply: vi.fn(),
-                editReply: vi.fn(),
             },
         });
 
@@ -134,9 +115,7 @@ describe("linkRiot command", () => {
                 puuid: "new-puuid-67890",
             }
         );
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            "Linked <@123456789012345678> to Riot ID: NewSummoner [NA]"
-        );
+        expectEditReplyContainsText(interaction, "Linked <@123456789012345678> to Riot ID: NewSummoner [NA]");
     });
 
     it("allows admins to link another user", async () => {
@@ -180,19 +159,10 @@ describe("linkRiot command", () => {
         const commandModule = await import("../commands/linkRiot.js");
         const command = commandModule.default;
 
-        // Create interaction mock
-        const interaction = {
-            options: {
-                getString: vi.fn((name: string) => {
-                    if (name === "riot-id") return "TestSummoner#EUW";
-                    if (name === "region") return "EU_WEST";
-                    return null;
-                }),
-                getUser: vi.fn((name: string) => {
-                    if (name === "user") return { id: "987654321098765432" };
-                    return null;
-                }),
-            },
+        // Create interaction via builder with targeted overrides
+        const interaction = createMockCommandInteraction({
+            stringOptions: { "riot-id": "TestSummoner#EUW", region: "EU_WEST" },
+            userOptions: { user: "987654321098765432" },
             user: { id: "123456789012345678" },
             guild: {
                 members: {
@@ -200,18 +170,15 @@ describe("linkRiot command", () => {
                         if (userId === "123456789012345678") {
                             return Promise.resolve({
                                 permissions: {
-                                    has: vi.fn(() => true)
-                                }
+                                    has: vi.fn(() => true),
+                                },
                             });
                         }
                         return Promise.resolve(null);
                     }),
                 },
             },
-            deferReply: vi.fn().mockResolvedValue(undefined),
-            editReply: vi.fn().mockResolvedValue(undefined),
-            reply: vi.fn().mockResolvedValue(undefined),
-        } as unknown as ChatInputCommandInteraction;
+        }) as unknown as ChatInputCommandInteraction;
 
         // Execute the command
         await command.execute(interaction);
@@ -231,9 +198,7 @@ describe("linkRiot command", () => {
             region: "EUW",
             puuid: "test-puuid-12345",
         });
-        expect(interaction.editReply).toHaveBeenCalledWith(
-            "Linked <@987654321098765432> to Riot ID: TestSummoner [EUW]"
-        );
+        expectEditReplyContainsText(interaction, "Linked <@987654321098765432> to Riot ID: TestSummoner [EUW]");
     });
 
     it("blocks non-admins from linking other users", async () => {
@@ -241,24 +206,16 @@ describe("linkRiot command", () => {
 
         const { command, interaction } = await setupCommandTest("modules/league/commands/linkRiot.js", {
             interaction: {
-                options: {
-                    getString: vi.fn(),
-                    getUser: vi.fn().mockReturnValue({ id: "987654321098765432" }),
-                },
+                userOptions: { user: "987654321098765432" },
                 user: { id: "123456789012345678" },
-                guild: {
-                    members: { fetch: vi.fn().mockResolvedValue({ permissions: { has: () => false } }) },
-                },
+                guild: { members: { fetch: vi.fn().mockResolvedValue({ permissions: { has: () => false } }) } },
                 reply: vi.fn(),
             },
         });
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        expect(interaction.reply).toHaveBeenCalledWith({
-            content: "You need admin permissions to link for another user.",
-            flags: MessageFlags.Ephemeral,
-        });
+        expectEphemeralReply(interaction, { equals: "You need admin permissions to link for another user." });
         expect(resolveLeagueIdentity).not.toHaveBeenCalled();
     });
 
@@ -268,20 +225,17 @@ describe("linkRiot command", () => {
 
         const { command, interaction } = await setupCommandTest("modules/league/commands/linkRiot.js", {
             interaction: {
-                options: {
-                    getString: vi.fn(() => "InvalidSummoner#INVALID"),
-                    getUser: vi.fn().mockReturnValue(null),
-                },
+                stringOptions: { "riot-id": "InvalidSummoner#INVALID" },
                 user: { id: "123456789012345678" },
                 guild: { members: { fetch: vi.fn().mockResolvedValue(null) } },
-                deferReply: vi.fn(),
-                editReply: vi.fn(),
+                // defer/edit provided by builder
             },
         });
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        expect(interaction.editReply).toHaveBeenCalledWith(
+        expectEditReplyContainsText(
+            interaction,
             "Failed to resolve Riot Account. Please check the Riot ID and region."
         );
     });

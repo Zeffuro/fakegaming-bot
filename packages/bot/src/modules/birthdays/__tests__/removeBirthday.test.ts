@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction } from 'discord.js';
 
 describe('removeBirthday command', () => {
@@ -9,25 +9,38 @@ describe('removeBirthday command', () => {
         vi.resetModules();
     });
 
+    // Local helpers
+    async function setupRemoveBirthdayCmd(overrides?: Record<string, unknown>) {
+        return setupCommandTest(
+            'modules/birthdays/commands/removeBirthday.js',
+            overrides ?? {}
+        );
+    }
+
+    function expectReplyContains(interaction: unknown, substr: string) {
+        expectReplyTextContains(interaction, substr);
+    }
+
+    function expectEphemeral(interaction: unknown) {
+        expectEphemeralReply(interaction);
+    }
+
     it('removes user\'s own birthday', async () => {
         // Create a mock for removeBirthday
         const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
 
         // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/removeBirthday.js',
-            {
-                interaction: {
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204'
-                },
-                managerOverrides: {
-                    birthdayManager: {
-                        removeBirthday: removeBirthdaySpy
-                    }
+        const { command, interaction } = await setupRemoveBirthdayCmd({
+            interaction: {
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204'
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    removeBirthday: removeBirthdaySpy
                 }
             }
-        );
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
@@ -35,13 +48,9 @@ describe('removeBirthday command', () => {
         // Verify removeBirthday was called with correct parameters
         expect(removeBirthdaySpy).toHaveBeenCalledWith('123456789012345678', '135381928284343204');
 
-        // Verify the interaction reply
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining('Your birthday has been removed'),
-                flags: expect.anything()
-            })
-        );
+        // Verify the interaction reply (content and ephemeral)
+        expectReplyContains(interaction, 'Your birthday has been removed');
+        expectEphemeral(interaction);
     });
 
     it('allows admin to remove another user\'s birthday', async () => {
@@ -58,23 +67,20 @@ describe('removeBirthday command', () => {
         }));
 
         // Setup the test environment with target user option
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/removeBirthday.js',
-            {
-                interaction: {
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204',
-                    options: {
-                        getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
-                    }
-                },
-                managerOverrides: {
-                    birthdayManager: {
-                        removeBirthday: removeBirthdaySpy
-                    }
+        const { command, interaction } = await setupRemoveBirthdayCmd({
+            interaction: {
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204',
+                options: {
+                    getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
+                }
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    removeBirthday: removeBirthdaySpy
                 }
             }
-        );
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);
@@ -85,13 +91,9 @@ describe('removeBirthday command', () => {
         // Verify removeBirthday was called with the target user's ID
         expect(removeBirthdaySpy).toHaveBeenCalledWith(targetUserId, '135381928284343204');
 
-        // Verify the interaction reply mentions the target user
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.objectContaining({
-                content: expect.stringContaining(`<@${targetUserId}>'s birthday has been removed`),
-                flags: expect.anything()
-            })
-        );
+        // Verify the interaction reply mentions the target user and is ephemeral
+        expectReplyContains(interaction, `<@${targetUserId}>'s birthday has been removed`);
+        expectEphemeral(interaction);
     });
 
     it('prevents non-admin from removing another user\'s birthday', async () => {
@@ -108,23 +110,20 @@ describe('removeBirthday command', () => {
         }));
 
         // Setup the test environment with target user option
-        const { command, interaction } = await setupCommandTest(
-            'modules/birthdays/commands/removeBirthday.js',
-            {
-                interaction: {
-                    user: { id: '123456789012345678' },
-                    guildId: '135381928284343204',
-                    options: {
-                        getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
-                    }
-                },
-                managerOverrides: {
-                    birthdayManager: {
-                        removeBirthday: removeBirthdaySpy
-                    }
+        const { command, interaction } = await setupRemoveBirthdayCmd({
+            interaction: {
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204',
+                options: {
+                    getUser: vi.fn((name) => name === 'user' ? { id: targetUserId } : null)
+                }
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    removeBirthday: removeBirthdaySpy
                 }
             }
-        );
+        });
 
         // Execute the command
         await command.execute(interaction as unknown as CommandInteraction);

@@ -87,6 +87,13 @@ export type patchNotes_get_Response200 = paths["/patchNotes"]["get"]["responses"
 export type patchNotes_post_Request = paths["/patchNotes"]["post"]["requestBody"]["content"]["application/json"];
 
 /**
+ * Response for [GET /patchNotes/supportedGames 200]
+ *
+ * @see paths["/patchNotes/supportedGames"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type patchNotes_supportedGames_get_Response200 = paths["/patchNotes/supportedGames"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /patchNotes/{game} 200]
  *
  * @see paths["/patchNotes/{game}"]["get"]["responses"]["200"]["content"]["application/json"]

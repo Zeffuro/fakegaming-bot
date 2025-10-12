@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getSummonerSpellData } from '../leagueSummonerSpellDataCache.js';
-import * as typedAssetCache from '../../../../utils/typedAssetCache.js';
+import { mockGetTypedAssetResolved, expectGetTypedAssetCalledWithPrefix } from './helpers.js';
 
 vi.mock('../../../../utils/typedAssetCache.js');
 
@@ -16,21 +16,20 @@ describe('leagueSummonerSpellDataCache', () => {
                 { id: 14, name: 'Ignite' },
             ];
 
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue(mockData);
+            await mockGetTypedAssetResolved(mockData);
 
             const result = await getSummonerSpellData();
 
             expect(result).toEqual(mockData);
-            expect(typedAssetCache.getTypedAsset).toHaveBeenCalledWith(
+            await expectGetTypedAssetCalledWithPrefix(
                 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json',
                 'summoner-spells.json',
-                'summonerspelldata',
-                expect.any(Object)
+                'summonerspelldata'
             );
         });
 
         it('should handle empty summoner spell data', async () => {
-            vi.mocked(typedAssetCache.getTypedAsset).mockResolvedValue([]);
+            await mockGetTypedAssetResolved([]);
 
             const result = await getSummonerSpellData();
 

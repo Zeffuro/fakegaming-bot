@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { describe, it, vi, beforeEach } from 'vitest';
+import { setupCommandTest, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
 
 describe('roll command', () => {
@@ -21,9 +21,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => null) // No dice input provided
-                    }
+                    // no stringOptions means getString('dice') returns null
                 }
             }
         );
@@ -32,9 +30,7 @@ describe('roll command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // With Math.random mocked to return 0.5, a 1d6 roll would be 4 (0.5 * 6 + 1, rounded down)
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/🎲 You rolled a \*\*4\*\* \(1d6\)/)
-        );
+        expectReplyTextContains(interaction, '🎲 You rolled a **4** (1d6)');
     });
 
     it('handles standard dice notation (e.g., 3d8)', async () => {
@@ -43,9 +39,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => '3d8') // Roll 3d8
-                    }
+                    stringOptions: { dice: '3d8' }
                 }
             }
         );
@@ -53,14 +47,8 @@ describe('roll command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // With Math.random mocked:
-        // First roll: 0.5 * 8 + 1 = 5
-        // Second roll: 0.1 * 8 + 1 = 1.8 ≈ 1
-        // Third roll: 0.9 * 8 + 1 = 8.2 ≈ 8
-        // Total: 5 + 1 + 8 = 14
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/🎲 You rolled: 5, 1, 8 \(Total: \*\*14\*\*\) \[3d8\]/)
-        );
+        // With Math.random mocked, total should be 14 with rolls 5,1,8
+        expectReplyTextContains(interaction, '🎲 You rolled: 5, 1, 8 (Total: **14**) [3d8]');
     });
 
     it('handles maximum number input (e.g., 100)', async () => {
@@ -69,9 +57,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => '100') // Random number between 1-100
-                    }
+                    stringOptions: { dice: '100' }
                 }
             }
         );
@@ -79,10 +65,8 @@ describe('roll command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // With Math.random = 0.5, the result should be 51 (0.5 * 100 + 1, rounded down)
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/🎲 You rolled a \*\*51\*\* \(1-100\)/)
-        );
+        // With Math.random = 0.5, the result should be 51
+        expectReplyTextContains(interaction, '🎲 You rolled a **51** (1-100)');
     });
 
     it('rejects dice with too many dice or sides', async () => {
@@ -91,9 +75,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => '50d2000') // Too many dice and sides
-                    }
+                    stringOptions: { dice: '50d2000' }
                 }
             }
         );
@@ -102,9 +84,7 @@ describe('roll command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Should reject with an error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/Please use a reasonable dice notation/)
-        );
+        expectReplyTextContains(interaction, 'Please use a reasonable dice notation');
     });
 
     it('handles invalid input gracefully', async () => {
@@ -113,9 +93,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => 'not-a-dice') // Invalid input
-                    }
+                    stringOptions: { dice: 'not-a-dice' }
                 }
             }
         );
@@ -124,9 +102,7 @@ describe('roll command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         // Should show an error message
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/Invalid input/)
-        );
+        expectReplyTextContains(interaction, 'Invalid input');
     });
 
     it('handles shorthand dice notation (e.g., d20)', async () => {
@@ -135,9 +111,7 @@ describe('roll command', () => {
             'modules/general/commands/roll.js',
             {
                 interaction: {
-                    options: {
-                        getString: vi.fn(() => 'd20') // Shorthand for 1d20
-                    }
+                    stringOptions: { dice: 'd20' }
                 }
             }
         );
@@ -145,9 +119,7 @@ describe('roll command', () => {
         // Execute the command
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        // With Math.random = 0.5, the result should be 11 (0.5 * 20 + 1, rounded down)
-        expect(interaction.reply).toHaveBeenCalledWith(
-            expect.stringMatching(/🎲 You rolled: 11 \(Total: \*\*11\*\*\) \[1d20\]/)
-        );
+        // With Math.random = 0.5, the result should be 11
+        expectReplyTextContains(interaction, '🎲 You rolled: 11 (Total: **11**) [1d20]');
     });
 });

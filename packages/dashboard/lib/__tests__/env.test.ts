@@ -4,7 +4,7 @@ const OLD_ENV = { ...process.env };
 
 async function importEnv() {
     vi.resetModules();
-    return await import('@/lib/env.js');
+    return await import('@/lib/env');
 }
 
 describe('env constants', () => {
@@ -53,4 +53,3 @@ describe('env constants', () => {
         expect(mod.API_URL).toBe('http://api:3001/');
     });
 });
-

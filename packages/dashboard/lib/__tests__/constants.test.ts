@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isGuildAdmin, DISCORD_PERMISSION_ADMINISTRATOR } from '@/lib/constants.js';
+import { isGuildAdmin, DISCORD_PERMISSION_ADMINISTRATOR } from '@/lib/constants';
 
 describe('constants.isGuildAdmin', () => {
     it('returns true when user is guild owner', () => {
@@ -22,4 +22,3 @@ describe('constants.isGuildAdmin', () => {
         expect(isGuildAdmin(guilds as any, 'missing')).toBe(false);
     });
 });
-
