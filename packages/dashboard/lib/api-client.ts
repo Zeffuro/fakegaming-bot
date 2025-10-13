@@ -8,7 +8,8 @@ import type {
   patchNotes_game_get_Response200,
   patchNotes_supportedGames_get_Response200,
   patchSubscriptions_post_Request,
-  patchSubscriptions_put_Request
+  patchSubscriptions_put_Request,
+  discord_guilds_guildId_members_search_get_Response200
 } from "@/types/apiResponses";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 
@@ -159,5 +160,11 @@ export const api = {
 
   // Discord resolve API
   resolveUsers: (guildId: string, ids: string[]) =>
-    apiRequest<ResolveUsersResponse>(`${API_ENDPOINTS.DISCORD}/users/resolve`, { method: 'POST', body: { guildId, ids } })
+    apiRequest<ResolveUsersResponse>(`${API_ENDPOINTS.DISCORD}/users/resolve`, { method: 'POST', body: { guildId, ids } }),
+
+  // Discord member search (autocomplete)
+  searchGuildMembers: (guildId: string, query: string, limit: number = 25) =>
+    apiRequest<discord_guilds_guildId_members_search_get_Response200>(
+      `${API_ENDPOINTS.DISCORD}/guilds/${encodeURIComponent(guildId)}/members/search?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(String(limit))}`
+    )
 };

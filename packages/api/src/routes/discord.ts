@@ -117,7 +117,7 @@ router.post('/users/resolve', jwtAuth, common.validateBody(resolveUsersBodySchem
                     avatar: fetched.avatar ?? null
                 };
                 await cache.set(common.CACHE_KEYS.userProfile(id), profile, common.CACHE_TTL.USER_PROFILE);
-            } catch (_err) {
+            } catch {
                 // Could not fetch profile; record as missed and continue
                 users.push({ id, username: undefined, global_name: null, discriminator: null, avatar: null, nick: null });
                 missed.push(id);
@@ -241,7 +241,12 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
         return res.status(429).json({ error: 'Too many requests' });
     }
 
-    const q = query.trim();
+    // Normalize query to reduce number of unique cache keys and keep Discord search effective
+    const q = query
+        .trim()
+        .replace(/\s+/g, ' ')        // collapse internal whitespace
+        .toLowerCase()                // case-insensitive for cache and Discord search
+        .slice(0, 24);                // cap length to avoid overly granular keys
     const limNumRaw = Number(limit ?? '25');
     const lim = Number.isFinite(limNumRaw) ? Math.max(1, Math.min(25, Math.floor(limNumRaw))) : 25;
 
@@ -259,6 +264,12 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
         return maybe ? maybe(guildId, q, lim) : _localGuildMemberSearchCacheKey(guildId, q, lim);
     }
     function getMemberSearchTtlMs(): number {
+        // Prefer explicit env override if present (milliseconds)
+        const envTtlRaw = process.env.API_MEMBER_SEARCH_TTL_MS;
+        if (envTtlRaw) {
+            const n = Number(envTtlRaw);
+            if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+        }
         const maybeTtl = (common.CACHE_TTL as any).MEMBER_SEARCH as number | undefined;
         return typeof maybeTtl === 'number' ? maybeTtl : _LOCAL_MEMBER_SEARCH_TTL_MS;
     }
@@ -291,7 +302,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
                 return res.json(mapped);
             }
             // If empty, fall through to fallback below
-        } catch (_err) {
+        } catch {
             // fall through to fallback
         }
     }
@@ -300,7 +311,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     const quotes = await common.getConfigManager().quoteManager.getQuotesByGuild(guildId);
     const candidateIds = Array.from(new Set((quotes || []).flatMap((q) => [q.authorId, q.submitterId]).filter(Boolean)));
 
-    const lowered = q.toLowerCase();
+    const lowered = q; // already lower-cased above
     const matched: Array<{ id: string; username?: string; global_name?: string | null; discriminator?: string | null; avatar?: string | null; nick?: string | null }> = [];
     for (const id of candidateIds) {
         if (matched.length >= lim) break;
