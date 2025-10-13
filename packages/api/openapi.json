@@ -20,6 +20,33 @@
       }
     },
     "schemas": {
+      "DiscordMemberMinimal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "global_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "discriminator": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatar": {
+            "type": "string",
+            "nullable": true
+          },
+          "nick": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "BirthdayConfig": {
         "type": "object",
         "properties": {
@@ -818,6 +845,149 @@
           },
           "404": {
             "description": "Not found"
+          }
+        }
+      }
+    },
+    "/discord/users/resolve": {
+      "post": {
+        "summary": "Resolve minimal user profiles and guild nicknames",
+        "description": "Given a guildId and up to 50 user IDs, returns minimal user profiles\nwith optional cached guild nickname where available. Profiles are cached\nin the server-side cache. Any IDs that could not be resolved are listed\nunder `missed`.\n",
+        "tags": [
+          "Discord"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "guildId",
+                  "ids"
+                ],
+                "properties": {
+                  "guildId": {
+                    "type": "string"
+                  },
+                  "ids": {
+                    "type": "array",
+                    "maxItems": 50,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved users and list of missed IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DiscordMemberMinimal"
+                      }
+                    },
+                    "missed": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          }
+        }
+      }
+    },
+    "/discord/guilds/{guildId}/members/search": {
+      "get": {
+        "summary": "Search guild members by query (autocomplete)",
+        "tags": [
+          "Discord"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of minimal guild members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiscordMemberMinimal"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden — insufficient guild access"
+          },
+          "429": {
+            "description": "Too many requests"
           }
         }
       }

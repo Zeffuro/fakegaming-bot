@@ -3,7 +3,7 @@ import type {Model, ModelCtor} from 'sequelize-typescript';
 import {schemaRegistry} from './schemaRegistry.js';
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
-function mapSequelizeTypeToOpenAPI(type: any): { type: string; format?: string } {
+export function mapSequelizeTypeToOpenAPI(type: any): { type: string; format?: string } {
     const typeName = type?.constructor?.name || '';
     switch (typeName) {
         case 'STRING':

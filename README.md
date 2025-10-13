@@ -386,3 +386,13 @@ To invite the bot to your Discord server, use the following links (replace `[cli
 ---
 
 Maintained by [@Zeffuro](https://github.com/Zeffuro)
+
+## Privacy: Discord user resolution (Dashboard Quotes)
+
+The dashboard quotes page resolves Discord user IDs (authors/submitters) to minimal display info using the bot token:
+- Cached in Redis up to 24h under `user:{id}:profile` (id, username, global_name, discriminator, avatar)
+- Optional guild nickname cached up to 24h under `user:{id}:nick:{guildId}`
+- Only guild admins can request resolutions for IDs that already appear in that guild’s quotes
+- No data is persisted in SQL; cache may be cleared safely at any time
+
+Server env required for this feature: `DISCORD_BOT_TOKEN`, `JWT_SECRET`, `JWT_AUDIENCE`, and Redis configuration.

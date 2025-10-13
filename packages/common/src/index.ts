@@ -68,7 +68,10 @@ export {
   getDiscordOAuthUrl,
   issueJwt,
   verifyJwt,
-  getDiscordGuildChannels
+  getDiscordGuildChannels,
+  getDiscordUserById,
+  getDiscordGuildMember,
+  getDiscordGuildMembersSearch
 } from './discord/index.js';
 
 export {
@@ -90,7 +93,7 @@ export {
 export const getCachedData = defaultCacheManager.getCachedData.bind(defaultCacheManager);
 
 export type { MinimalGuildData } from './discord/types.js';
-
+export type { DiscordUserProfile, DiscordGuildMemberMinimal } from './discord/types.js';
 export { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from './utils/permissionUtils.js';
 export { ForbiddenError, NotFoundError } from './utils/apiErrorHelpers.js';
 
@@ -116,7 +119,8 @@ export {
 
 export {
     modelToOpenApiSchema,
-    zodSchemaToOpenApiSchema
+    zodSchemaToOpenApiSchema,
+    mapSequelizeTypeToOpenAPI
 } from './utils/openapi.js';
 
 export { asValidated } from './utils/typeUtils.js';
@@ -132,3 +136,15 @@ const patchSubscriptionCreateSchema = z.object({
 }).strict();
 
 schemaRegistry.registerCustom(Models.PatchSubscriptionConfig, 'create', patchSubscriptionCreateSchema);
+
+// Add a custom create schema for QuoteConfig to allow server-generated id and JWT-derived submitterId
+const quoteCreateSchema = z.object({
+    id: z.string().min(1).optional(),
+    guildId: z.string().min(1),
+    quote: z.string().min(1),
+    authorId: z.string().min(1),
+    submitterId: z.string().min(1).optional(),
+    timestamp: z.number().int()
+}).strict();
+
+schemaRegistry.registerCustom(Models.QuoteConfig, 'create', quoteCreateSchema);

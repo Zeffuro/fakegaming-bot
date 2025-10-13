@@ -11,7 +11,8 @@ export const CACHE_TTL = {
   USER_GUILDS: 60 * 60 * 1000,          // 1 hour
   GUILD_CHANNELS: 30 * 60 * 1000,       // 30 minutes
   ACCESS_TOKEN: 3600 * 1000,            // 1 hour
-  BOT_GUILDS: 15 * 60 * 1000            // 15 minutes
+  BOT_GUILDS: 15 * 60 * 1000,           // 15 minutes
+  MEMBER_SEARCH: 5 * 60 * 1000          // 5 minutes
 };
 
 export const CACHE_KEYS = {
@@ -19,7 +20,9 @@ export const CACHE_KEYS = {
   userGuilds: (userId: string) => `user:${userId}:guilds`,
   userAccessToken: (userId: string) => `user:${userId}:access_token`,
   guildChannels: (guildId: string) => `guild:${guildId}:channels`,
-  botGuilds: () => 'bot_guilds'
+  botGuilds: () => 'bot_guilds',
+  userGuildNick: (userId: string, guildId: string) => `user:${userId}:nick:${guildId}`,
+  guildMemberSearch: (guildId: string, query: string, limit: number) => `guild:${guildId}:member_search:${encodeURIComponent(query.toLowerCase())}:limit:${limit}`
 };
 
 export interface CacheManager {

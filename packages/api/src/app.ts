@@ -4,7 +4,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import cors from 'cors';
-import { PROJECT_ROOT } from '@zeffuro/fakegaming-common/core';
+import { PROJECT_ROOT } from '@zeffuro/fakegaming-common';
 import { jwtAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { fileURLToPath } from 'url';

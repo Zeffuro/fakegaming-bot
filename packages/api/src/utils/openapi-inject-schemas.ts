@@ -15,7 +15,11 @@ import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
 
 export function injectOpenApiSchemas(swaggerSpec: any) {
     swaggerSpec.components = swaggerSpec.components || {};
+    const existing = swaggerSpec.components.schemas || {};
     swaggerSpec.components.schemas = {
+        // Preserve any schemas already discovered by swagger-jsdoc in route annotations
+        ...existing,
+        // Merge in model schemas
         BirthdayConfig: modelToOpenApiSchema(BirthdayConfig, { mode: 'full' }),
         CacheConfig: modelToOpenApiSchema(CacheConfig, { mode: 'full' }),
         DisabledCommandConfig: modelToOpenApiSchema(DisabledCommandConfig, { mode: 'full' }),

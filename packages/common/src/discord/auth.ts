@@ -102,3 +102,39 @@ export async function getDiscordGuildChannels(guildId: string, botToken: string)
     });
     return channels.filter((channel: any) => channel.type === 0 || channel.type === 5);
 }
+
+export async function getDiscordUserById(userId: string, botToken: string) {
+    return retryFetchJson<any>({
+        url: `https://discord.com/api/users/${userId}`,
+        init: {
+            headers: { Authorization: `Bot ${botToken}` },
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for /users/{id}",
+    });
+}
+
+export async function getDiscordGuildMember(guildId: string, userId: string, botToken: string) {
+    return retryFetchJson<any>({
+        url: `https://discord.com/api/guilds/${guildId}/members/${userId}`,
+        init: {
+            headers: { Authorization: `Bot ${botToken}` },
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for guild member",
+    });
+}
+
+/**
+ * Search guild members by query (requires GUILD_MEMBERS intent)
+ */
+export async function getDiscordGuildMembersSearch(params: { guildId: string; query: string; botToken: string; limit?: number; }): Promise<any[]> {
+    const { guildId, query, botToken, limit = 25 } = params;
+    const q = encodeURIComponent(query);
+    const url = `https://discord.com/api/guilds/${guildId}/members/search?query=${q}&limit=${limit}`;
+    return retryFetchJson<any[]>({
+        url,
+        init: {
+            headers: { Authorization: `Bot ${botToken}` },
+        },
+        rateLimitExhaustedMessage: "Discord rate limit exceeded for guild member search",
+    });
+}

@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from 'fs';
 import path from 'path';
 import { Router } from 'express';
-import { pathToFileURL, fileURLToPath } from 'url';
+import { fileURLToPath } from 'url';
 
 const router = Router();
 
@@ -50,9 +50,9 @@ for (const file of routeFiles) {
             .replace(/\\/g, '/')
             .replace(/\/index$/, '') || '/';
 
-    // Dynamic import - convert Windows path to file:// URL for ESM compatibility
-    const moduleUrl = pathToFileURL(file).href;
-    const routeModule = await import(moduleUrl);
+    // Dynamic import using a relative specifier so Vitest/Vite can transform and mock dependencies
+    const relativeSpecifier = './' + path.posix.relative(routesDir.replace(/\\/g, '/'), file.replace(/\\/g, '/'));
+    const routeModule = await import(relativeSpecifier);
     const routeHandler = (routeModule.router || routeModule.default) as Router;
 
     router.use(routePath, routeHandler);

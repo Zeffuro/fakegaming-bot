@@ -161,4 +161,23 @@ describe('Quotes API', () => {
             .query({});
         expect(res.status).toBe(400);
     });
+
+    it('should generate id and derive submitterId from JWT when omitted', async () => {
+        const token = signTestJwt({ discordId: 'testuser' });
+        const res = await request(app)
+            .post('/api/quotes')
+            .set('Authorization', `Bearer ${token}`)
+            .send({
+                // no id
+                guildId: 'testguild1',
+                authorId: 'author-n1',
+                // no submitterId
+                quote: 'Quote without client id',
+                timestamp: Date.now()
+            });
+        expect(res.status).toBe(201);
+        expect(typeof res.body.id).toBe('string');
+        expect(res.body.id.length).toBeGreaterThan(0);
+        expect(res.body.submitterId).toBe('testuser');
+    });
 });

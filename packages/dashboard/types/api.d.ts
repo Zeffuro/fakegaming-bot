@@ -457,6 +457,149 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/discord/users/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve minimal user profiles and guild nicknames
+         * @description Given a guildId and up to 50 user IDs, returns minimal user profiles
+         *     with optional cached guild nickname where available. Profiles are cached
+         *     in the server-side cache. Any IDs that could not be resolved are listed
+         *     under `missed`.
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        guildId: string;
+                        ids: string[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Resolved users and list of missed IDs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            users?: components["schemas"]["DiscordMemberMinimal"][];
+                            missed?: string[];
+                        };
+                    };
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden — insufficient guild access */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discord/guilds/{guildId}/members/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search guild members by query (autocomplete) */
+        get: {
+            parameters: {
+                query: {
+                    query: string;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of minimal guild members */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["DiscordMemberMinimal"][];
+                    };
+                };
+                /** @description Validation failed */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Forbidden — insufficient guild access */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Too many requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/patchNotes": {
         parameters: {
             query?: never;
@@ -2425,6 +2568,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        DiscordMemberMinimal: {
+            id?: string;
+            username?: string;
+            global_name?: string | null;
+            discriminator?: string | null;
+            avatar?: string | null;
+            nick?: string | null;
+        };
         BirthdayConfig: {
             userId: string;
             /** Format: int64 */

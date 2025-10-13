@@ -6,6 +6,7 @@ import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fa
 import { QuoteConfig } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
 import { UniqueConstraintError } from 'sequelize';
+import { randomUUID } from 'node:crypto';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
@@ -213,13 +214,29 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         description: Forbidden — insufficient guild access
  */
 router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (req, res) => {
-    const { guildId } = req.body;
+    const body = req.body as Partial<QuoteConfig>;
+    const { guildId } = body as { guildId?: string };
     if (guildId) {
         const accessResult = await checkUserGuildAccess(req, res, guildId);
         if (!accessResult.authorized) return;
     }
+
     try {
-        const created = await getConfigManager().quoteManager.addPlain(req.body);
+        // Derive submitterId from JWT; ignore client-provided field
+        const jwtUser = (req as any).user as { discordId?: string } | undefined;
+        const submitterId = jwtUser?.discordId ?? undefined;
+        const id = (body as any).id && String((body as any).id).length > 0 ? String((body as any).id) : randomUUID();
+
+        const payload = {
+            id,
+            guildId: String((body as any).guildId ?? ''),
+            quote: String((body as any).quote ?? ''),
+            authorId: String((body as any).authorId ?? ''),
+            submitterId: submitterId ?? String((body as any).submitterId ?? ''),
+            timestamp: Number((body as any).timestamp)
+        } as unknown as QuoteConfig;
+
+        const created = await getConfigManager().quoteManager.addPlain(payload as any);
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {

@@ -112,3 +112,10 @@ export {
 
 // Sequelize getter matching index.ts
 export { getSequelize } from './sequelize.js';
+
+// OpenAPI utilities
+export {
+    modelToOpenApiSchema,
+    zodSchemaToOpenApiSchema,
+    mapSequelizeTypeToOpenAPI
+} from './utils/openapi.js';

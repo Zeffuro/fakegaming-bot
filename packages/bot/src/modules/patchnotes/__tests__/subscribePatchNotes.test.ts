@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import { setupCommandTest, expectReplyText, expectReplyTextContains, expectReplyHasEmbedsArray, createMockAutocompleteInteraction, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
+import { setupCommandTest, expectReplyText, expectReplyTextContains, expectReplyHasEmbedsArray, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
 
 // Mock the patch note embed builder
@@ -220,27 +220,7 @@ describe('subscribePatchNotes command', () => {
 
     // Test for autocomplete function
     it('calls gameAutocomplete for autocomplete interaction', async () => {
-        // Mock the gameAutocomplete function
-        vi.mock('../shared/gameAutocomplete.js', () => ({
-            gameAutocomplete: vi.fn()
-        }));
-
-        // Import after mocking
-        const { gameAutocomplete } = await import('../shared/gameAutocomplete.js');
-
-        // Setup the test environment
-        const { command } = await setupCommandTest(
-            'modules/patchnotes/commands/subscribePatchNotes.js',
-            {}
-        );
-
-        // Mock autocomplete interaction using shared helper
-        const mockAutocompleteInteraction = createMockAutocompleteInteraction({ focused: '' });
-
-        // Call the autocomplete function
-        await command.autocomplete(mockAutocompleteInteraction as any);
-
-        // Verify gameAutocomplete was called with the interaction
-        expect(gameAutocomplete).toHaveBeenCalledWith(mockAutocompleteInteraction);
+        const { runAutocompleteSmokeTest } = await import('../shared/__tests__/helpers/patchnotesTestHelpers.js');
+        await runAutocompleteSmokeTest('modules/patchnotes/commands/subscribePatchNotes.js', '');
     });
 });

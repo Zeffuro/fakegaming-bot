@@ -73,6 +73,27 @@ export type disabledCommands_id_get_Response200 = paths["/disabledCommands/{id}"
 export type disabledCommands_id_delete_Response200 = paths["/disabledCommands/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [POST /discord/users/resolve 200]
+ *
+ * @see paths["/discord/users/resolve"]["post"]["responses"]["200"]["content"]["application/json"]
+ */
+export type discord_users_resolve_post_Response200 = paths["/discord/users/resolve"]["post"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /discord/users/resolve]
+ *
+ * @see paths["/discord/users/resolve"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type discord_users_resolve_post_Request = paths["/discord/users/resolve"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [GET /discord/guilds/{guildId}/members/search 200]
+ *
+ * @see paths["/discord/guilds/{guildId}/members/search"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type discord_guilds_guildId_members_search_get_Response200 = paths["/discord/guilds/{guildId}/members/search"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /patchNotes 200]
  *
  * @see paths["/patchNotes"]["get"]["responses"]["200"]["content"]["application/json"]

@@ -1,8 +1,6 @@
-import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
+import {bootstrapEnv, getConfigManager, ensureRedis} from '@zeffuro/fakegaming-common';
 bootstrapEnv(import.meta.url);
 
-import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {ensureRedis} from '@zeffuro/fakegaming-common';
 import app, { swaggerSpec, swaggerUi } from './app.js';
 import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
 import { pathToFileURL } from 'url';

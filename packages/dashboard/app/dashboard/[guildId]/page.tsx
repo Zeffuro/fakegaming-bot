@@ -21,7 +21,8 @@ import {
   Block,
   SpeakerNotes,
   Timeline,
-  LiveTv
+  LiveTv,
+  FormatQuote
 } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useRouter } from "next/navigation";
@@ -133,6 +134,13 @@ export default function GuildDashboard() {
   }
 
   const modules: ModuleCardProps[] = [
+    {
+      title: "Quotes Management",
+      description: "View, add, search, and delete quotes stored for your server.",
+      icon: <FormatQuote />,
+      status: "active",
+      href: `/dashboard/quotes/${guildId}`
+    },
     {
       title: "YouTube Notifications",
       description: "Configure YouTube channels to automatically post notifications when new videos are uploaded.",

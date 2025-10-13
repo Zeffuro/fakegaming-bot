@@ -24,7 +24,11 @@ export const API_ENDPOINTS = {
   PATCH_NOTES: '/api/external/patchNotes',
   PATCH_SUBSCRIPTIONS: '/api/external/patchSubscriptions',
 
-  // Other endpoints can be added here as needed
+  // Quotes
+  QUOTES: '/api/external/quotes',
+
+  // Discord helpers
+  DISCORD: '/api/external/discord'
 };
 
 // Type for API options
@@ -69,6 +73,12 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
   }
 
   return await response.json();
+}
+
+// Types local to this client for endpoints not in generated types
+export interface ResolveUsersResponse {
+  users: Array<{ id: string; username?: string; global_name?: string | null; discriminator?: string | null; avatar?: string | null; nickname?: string | null }>;
+  missed: string[];
 }
 
 // Typed API methods using apiResponses.ts types
@@ -133,4 +143,21 @@ export const api = {
       `${API_ENDPOINTS.PATCH_SUBSCRIPTIONS}/${id}`,
       { method: 'DELETE' }
     ),
+
+  // Quotes APIs
+  getQuotesByGuild: (guildId: string) =>
+    apiRequest<any[]>(`${API_ENDPOINTS.QUOTES}/guild/${encodeURIComponent(guildId)}`),
+
+  searchQuotes: (guildId: string, text: string) =>
+    apiRequest<any[]>(`${API_ENDPOINTS.QUOTES}/search?guildId=${encodeURIComponent(guildId)}&text=${encodeURIComponent(text)}`),
+
+  createQuote: (data: any) =>
+    apiRequest<any>(API_ENDPOINTS.QUOTES, { method: 'POST', body: data }),
+
+  deleteQuote: (id: string) =>
+    apiRequest<{ success: boolean }>(`${API_ENDPOINTS.QUOTES}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Discord resolve API
+  resolveUsers: (guildId: string, ids: string[]) =>
+    apiRequest<ResolveUsersResponse>(`${API_ENDPOINTS.DISCORD}/users/resolve`, { method: 'POST', body: { guildId, ids } })
 };
