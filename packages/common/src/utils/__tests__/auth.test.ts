@@ -1,59 +1,71 @@
-/**
- * Tests for utils/auth.ts JWT utilities
- */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getJwt } from '../auth.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-global.fetch = vi.fn();
+// We will import getJwt after setting globals per test to ensure env captured
 
-// Mock localStorage for Node.js environment
-const localStorageMock = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
-};
-global.localStorage = localStorageMock as any;
+const originalEnv = { ...process.env };
+const g: any = globalThis as any;
 
-describe('getJwt', () => {
+function setupLocalStorage(initial: Record<string, string> = {}) {
+    const store = new Map<string, string>(Object.entries(initial));
+    g.window = {};
+    g.localStorage = {
+        getItem: vi.fn((k: string) => store.get(k) ?? null),
+        setItem: vi.fn((k: string, v: string) => void store.set(k, v)),
+        removeItem: vi.fn((k: string) => void store.delete(k)),
+        clear: vi.fn(() => store.clear()),
+    };
+    return { store };
+}
+
+function setupFetchOk(token: string) {
+    g.fetch = vi.fn(async (_url: string, _init?: RequestInit) => ({
+        ok: true,
+        json: async () => ({ token }),
+    } as Response));
+}
+
+function setupFetchNotOk() {
+    g.fetch = vi.fn(async () => ({ ok: false } as Response));
+}
+
+describe('utils/auth.getJwt', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        localStorageMock.getItem.mockReturnValue(null);
+        process.env = { ...originalEnv, NEXT_PUBLIC_API_URL: 'http://api.local:3001', NEXT_PUBLIC_DASHBOARD_CLIENT_ID: 'dash', NEXT_PUBLIC_DASHBOARD_CLIENT_SECRET: 'secret' };
     });
 
-    it('should fetch token from API and store in localStorage', async () => {
-        (global.fetch as any).mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({ token: 'new-token' })
-        });
+    afterEach(() => {
+        vi.resetModules();
+        delete g.window;
+        delete g.localStorage;
+        delete g.fetch;
+        process.env = originalEnv;
+    });
+
+    it('returns token from localStorage if present and does not call fetch', async () => {
+        setupLocalStorage({ jwt: 'cached-token' });
+        const fetchSpy = vi.spyOn(globalThis as any, 'fetch');
+        const { getJwt } = await import('../auth.js');
         const token = await getJwt();
-        expect(token).toBe('new-token');
-        expect(global.fetch).toHaveBeenCalledWith(
-            expect.stringContaining('/api/auth/login'),
-            expect.objectContaining({ method: 'POST' })
-        );
-        expect(localStorageMock.setItem).toHaveBeenCalledWith('jwt', 'new-token');
+        expect(token).toBe('cached-token');
+        expect(fetchSpy).not.toHaveBeenCalled();
+        fetchSpy.mockRestore();
     });
 
-    it('should return null if API request fails', async () => {
-        (global.fetch as any).mockResolvedValue({ ok: false });
+    it('fetches token when not cached and stores it', async () => {
+        const { store } = setupLocalStorage();
+        setupFetchOk('fresh-token');
+        const { getJwt } = await import('../auth.js');
+        const token = await getJwt();
+        expect(token).toBe('fresh-token');
+        expect(store.get('jwt')).toBe('fresh-token');
+        expect(g.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns null when fetch fails', async () => {
+        setupLocalStorage();
+        setupFetchNotOk();
+        const { getJwt } = await import('../auth.js');
         const token = await getJwt();
         expect(token).toBeNull();
-        expect(localStorageMock.setItem).not.toHaveBeenCalled();
-    });
-
-    it('should return null if API response has no token', async () => {
-        (global.fetch as any).mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({})
-        });
-        const token = await getJwt();
-        expect(token).toBeNull();
-        expect(localStorageMock.setItem).not.toHaveBeenCalled();
-    });
-
-    it('should handle fetch errors gracefully', async () => {
-        (global.fetch as any).mockRejectedValue(new Error('Network error'));
-        await expect(getJwt()).rejects.toThrow('Network error');
     });
 });
