@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {getBaseUrl} from "@/lib/util/getBaseUrl";
 import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
-import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE } from "@/lib/env";
+import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 
 export async function GET(req: NextRequest) {
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         tokenData.expires_in ? tokenData.expires_in * 1000 : CACHE_TTL.ACCESS_TOKEN
     );
 
-    const jwtToken = issueJwt(user, JWT_SECRET, JWT_AUDIENCE);
+    const jwtToken = issueJwt(user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
 
     const response = NextResponse.redirect(new URL("/dashboard", getBaseUrl(req)));
     response.cookies.set("jwt", jwtToken, {
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         path: "/",
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: 24 * 60 * 60, // 1 day to match token expiration
     });
     return response;
 }

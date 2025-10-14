@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateUser } from "@/lib/auth/authUtils";
-import { CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@zeffuro/fakegaming-common";
-import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "@/lib/env";
+import { CACHE_KEYS, CACHE_TTL, defaultCacheManager, verifyJwt } from "@zeffuro/fakegaming-common";
+import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
     const authResult = await authenticateUser(req);
@@ -25,7 +24,7 @@ export async function GET(req: NextRequest) {
                 }
 
                 try {
-                    const decoded = jwt.verify(jwtToken, JWT_SECRET) as any;
+                    const decoded = verifyJwt(jwtToken, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER) as any;
 
                     return {
                         id: decoded.discordId,

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import jwt from "jsonwebtoken";
 
 interface User {
   id: string;
@@ -21,46 +20,17 @@ export function useUserData() {
         credentials: 'include'
       });
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        setError(null);
-        return;
+      if (!response.ok) {
+        throw new Error('Failed to fetch user data');
       }
 
-      try {
-        console.log("Falling back to JWT token for user data");
-
-        const cookies = document.cookie.split(';').map(c => c.trim());
-        const jwtCookie = cookies.find(c => c.startsWith('jwt='));
-
-        if (jwtCookie) {
-          const token = jwtCookie.substring(4);
-
-          const decoded = jwt.decode(token) as any;
-
-          if (decoded) {
-            setUser({
-              id: decoded.discordId,
-              username: decoded.username,
-              global_name: decoded.global_name || undefined,
-              discriminator: decoded.discriminator || undefined,
-              avatar: decoded.avatar || null
-            });
-
-            console.log("Successfully recovered user data from JWT token");
-            setError(null);
-            return;
-          }
-        }
-      } catch (jwtError) {
-        console.error("Failed to extract user data from JWT:", jwtError);
-      }
-
-      throw new Error('Failed to fetch user data');
+      const userData = await response.json();
+      setUser(userData);
+      setError(null);
     } catch (err: any) {
       console.error('Error fetching user data:', err);
       setError(err.message || 'Failed to load user data');
+      setUser(null);
     } finally {
       setLoading(false);
     }

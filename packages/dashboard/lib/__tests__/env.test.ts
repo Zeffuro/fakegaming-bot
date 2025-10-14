@@ -13,8 +13,9 @@ describe('env constants', () => {
         delete process.env.NEXT_PUBLIC_PUBLIC_URL;
         delete process.env.PUBLIC_URL;
         delete process.env.DISCORD_REDIRECT_URI;
-        delete process.env.JWT_SECRET;
-        delete process.env.JWT_AUDIENCE;
+        // Ensure required JWT env vars are present by default for non-throwing tests
+        process.env.JWT_SECRET = 'supersecret';
+        process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
         delete process.env.API_URL;
         process.env.DISCORD_CLIENT_ID = 'cid';
         process.env.DISCORD_CLIENT_SECRET = 'csecret';
@@ -36,10 +37,11 @@ describe('env constants', () => {
         expect(mod.DISCORD_REDIRECT_URI).toBe('https://site.test/api/auth/discord/callback');
     });
 
-    it('JWT defaults are applied when env missing', async () => {
-        const mod = await importEnv();
-        expect(mod.JWT_SECRET).toBe('supersecret');
-        expect(mod.JWT_AUDIENCE).toBe('fakegaming-dashboard');
+    it('throws when required JWT env missing', async () => {
+        vi.resetModules();
+        delete process.env.JWT_SECRET;
+        delete process.env.JWT_AUDIENCE;
+        await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable/);
     });
 
     it('API_URL defaults to http://localhost:3001 when env missing', async () => {

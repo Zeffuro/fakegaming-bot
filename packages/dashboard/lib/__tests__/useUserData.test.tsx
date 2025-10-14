@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { useUserData } from '@/components/hooks/useUserData';
-import jwt from 'jsonwebtoken';
 import { mountWithSnapshots, createHookProbe0 } from '../testing/reactTesting';
 import { withFetchMock } from '@zeffuro/fakegaming-common/testing';
 
@@ -41,35 +40,8 @@ describe('useUserData', () => {
         void snapshots;
     });
 
-    it('falls back to JWT cookie when /api/user is not ok', async () => {
+    it('sets error when /api/user fails', async () => {
         mockErrorJsonOnce(400, { error: 'nope' });
-        const jwtSpy = vi.spyOn(jwt, 'decode').mockReturnValue({
-            discordId: '42',
-            username: 'bob',
-            global_name: 'Bobby',
-            avatar: 'img'
-        } as any);
-        Object.defineProperty(document, 'cookie', { value: 'foo=bar; jwt=token; x=y', writable: true });
-
-        const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { onSnapshot })
-        );
-
-        const final = last();
-        expect(final?.loading).toBe(false);
-        expect(final?.error).toBeNull();
-        expect(final?.user).toEqual({ id: '42', username: 'bob', global_name: 'Bobby', discriminator: undefined, avatar: 'img' });
-        expect(final?.getUserDisplayName()).toBe('Bobby');
-        expect(final?.getUserAvatarUrl()).toBe('https://cdn.discordapp.com/avatars/42/img.png');
-
-        unmount();
-        jwtSpy.mockRestore();
-    });
-
-    it('sets error when both /api/user fails and no valid JWT', async () => {
-        mockErrorJsonOnce(400, { error: 'bad' });
-        const jwtSpy = vi.spyOn(jwt, 'decode').mockReturnValue(null as any);
-        Object.defineProperty(document, 'cookie', { value: 'foo=bar', writable: true });
 
         const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
             React.createElement(HookProbe as any, { onSnapshot })
@@ -82,6 +54,5 @@ describe('useUserData', () => {
         expect(final?.error).toBe('Failed to fetch user data');
 
         unmount();
-        jwtSpy.mockRestore();
     });
 });

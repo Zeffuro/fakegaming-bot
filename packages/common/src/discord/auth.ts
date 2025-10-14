@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 
 const DEFAULT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
+const DEFAULT_ISSUER = process.env.JWT_ISSUER || "fakegaming";
 
 /**
  * Small sleep helper for retry waits
@@ -75,7 +76,7 @@ export function getDiscordOAuthUrl(discordClientId: string, discordRedirectUri: 
     return `https://discord.com/api/oauth2/authorize?client_id=${discordClientId}&redirect_uri=${encodeURIComponent(discordRedirectUri)}&response_type=code&scope=identify%20guilds`;
 }
 
-export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAULT_AUDIENCE) {
+export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAULT_AUDIENCE, issuer: string = DEFAULT_ISSUER) {
     return jwt.sign({
         discordId: user.id,
         username: user.username,
@@ -83,13 +84,14 @@ export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAUL
         avatar: user.avatar || null,
         discriminator: user.discriminator || null
     }, jwtSecret, {
-        expiresIn: "7d",
-        audience
+        expiresIn: "1d",
+        audience,
+        issuer
     });
 }
 
-export function verifyJwt(token: string, jwtSecret: string, audience: string = DEFAULT_AUDIENCE) {
-    return jwt.verify(token, jwtSecret, { audience });
+export function verifyJwt(token: string, jwtSecret: string, audience: string = DEFAULT_AUDIENCE, issuer: string = DEFAULT_ISSUER) {
+    return jwt.verify(token, jwtSecret, { audience, issuer });
 }
 
 export async function getDiscordGuildChannels(guildId: string, botToken: string) {

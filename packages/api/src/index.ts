@@ -6,6 +6,19 @@ import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
 import { pathToFileURL } from 'url';
 import path from 'path';
 
+function requireEnv(name: string): string {
+    const val = process.env[name];
+    if (!val || val.trim() === '') {
+        // Fail fast in production and during startup if missing
+        throw new Error(`[api] Missing required environment variable: ${name}`);
+    }
+    return val;
+}
+
+// Security-critical env vars must be present
+requireEnv('JWT_SECRET');
+requireEnv('JWT_AUDIENCE');
+
 const port = process.env.PORT || 3001;
 
 // Only perform heavy initialization when running directly (not during tests)

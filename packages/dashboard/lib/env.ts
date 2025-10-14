@@ -3,6 +3,19 @@ export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
 export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
 export const DISCORD_REDIRECT_URI =
     process.env.DISCORD_REDIRECT_URI || `${PUBLIC_URL}/api/auth/discord/callback`;
-export const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
-export const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
-export const API_URL = process.env.API_URL || "http://localhost:3001".replace(/\/$/, "");
+
+function requireEnv(name: string): string {
+    const val = process.env[name];
+    if (!val || val.trim() === "") {
+        throw new Error(`[env] Missing required environment variable: ${name}`);
+    }
+    return val;
+}
+
+// Security-critical: must be set explicitly
+export const JWT_SECRET = requireEnv("JWT_SECRET");
+export const JWT_AUDIENCE = requireEnv("JWT_AUDIENCE");
+// Issuer enforced everywhere; provide sensible default if not set
+export const JWT_ISSUER = process.env.JWT_ISSUER || "fakegaming";
+
+export const API_URL = (process.env.API_URL || "http://localhost:3001");
