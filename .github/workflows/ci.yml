@@ -9,6 +9,10 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: test-secret
+      JWT_AUDIENCE: fakegaming-test
+      JWT_ISSUER: fakegaming-ci
     steps:
       - uses: actions/checkout@v5
 
@@ -17,6 +21,9 @@ jobs:
         with:
           install-deps: 'true'
           build-natives: 'true'
+
+      - name: Assert JWT envs present (fail fast)
+        run: pnpm run ci:assert-jwt
 
       - name: Build all packages
         run: pnpm -r run build

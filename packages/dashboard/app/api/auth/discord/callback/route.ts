@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {getBaseUrl} from "@/lib/util/getBaseUrl";
 import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf.js";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 
 export async function GET(req: NextRequest) {
@@ -39,12 +40,18 @@ export async function GET(req: NextRequest) {
     const jwtToken = issueJwt(user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
 
     const response = NextResponse.redirect(new URL("/dashboard", getBaseUrl(req)));
+    // Harden session cookie: HttpOnly, Secure (prod), SameSite=Strict, short maxAge (20m) with refresh strategy.
     response.cookies.set("jwt", jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         path: "/",
-        maxAge: 24 * 60 * 60, // 1 day to match token expiration
+        maxAge: 20 * 60, // 20 minutes (token itself 1d; user must refresh via activity)
     });
+
+    // Issue CSRF double-submit token cookie (not HttpOnly so client can echo via header)
+    const csrfToken = generateCsrfToken();
+    setCsrfCookie(response, csrfToken);
+
     return response;
 }

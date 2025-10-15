@@ -5,6 +5,7 @@ import app, { swaggerSpec, swaggerUi } from './app.js';
 import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
 import { pathToFileURL } from 'url';
 import path from 'path';
+import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
 
 function requireEnv(name: string): string {
     const val = process.env[name];
@@ -18,6 +19,7 @@ function requireEnv(name: string): string {
 // Security-critical env vars must be present
 requireEnv('JWT_SECRET');
 requireEnv('JWT_AUDIENCE');
+requireEnv('JWT_ISSUER');
 
 const port = process.env.PORT || 3001;
 
@@ -38,6 +40,7 @@ if (isDirectRun) {
         await ensureRedis(process.env.REDIS_URL || '');
         injectOpenApiSchemas(swaggerSpec);
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+        scheduleRateLimitCleanup();
         app.listen(port, () => {
             console.log(`API server running on port ${port}\nYou can access the API documentation at http://localhost:${port}/api-docs`);
         });

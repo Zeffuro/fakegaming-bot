@@ -15,7 +15,6 @@ function requireEnv(name: string): string {
 // Security-critical: must be set explicitly
 export const JWT_SECRET = requireEnv("JWT_SECRET");
 export const JWT_AUDIENCE = requireEnv("JWT_AUDIENCE");
-// Issuer enforced everywhere; provide sensible default if not set
-export const JWT_ISSUER = process.env.JWT_ISSUER || "fakegaming";
+export const JWT_ISSUER = requireEnv("JWT_ISSUER");
 
 export const API_URL = (process.env.API_URL || "http://localhost:3001");

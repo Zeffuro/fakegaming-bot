@@ -8,7 +8,16 @@ const nextConfig = {
     output: 'standalone',
 
     // Add webpack configuration to suppress specific warnings
-    webpack: (config, { isServer }) => {
+    webpack: (config) => {
+        // Ensure .js imports can resolve to TypeScript sources when present
+        config.resolve = config.resolve || {};
+        config.resolve.extensionAlias = {
+            // Prefer TypeScript when importing .js from TS code, but allow .js fallback
+            '.js': ['.ts', '.tsx', '.js'],
+            '.mjs': ['.mts', '.mjs'],
+            '.cjs': ['.cts', '.cjs'],
+        };
+
         // Ignore warnings about critical dependencies in sequelize and related modules
         config.ignoreWarnings = [
             // Ignore warnings from sequelize and related modules

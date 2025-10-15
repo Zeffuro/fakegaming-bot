@@ -2,9 +2,15 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { exchangeCodeForToken, fetchDiscordUser, issueJwt } from '@zeffuro/fakegaming-common/discord';
 import { z } from 'zod';
 import { validateBody } from '@zeffuro/fakegaming-common';
+import { skipCsrf } from '../middleware/csrf.js';
 
-// Constants
-const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'fakegaming-dashboard';
+function requireEnv(name: string): string {
+    const val = process.env[name];
+    if (!val || val.trim() === '') {
+        throw new Error(`[auth] Missing required environment variable: ${name}`);
+    }
+    return val;
+}
 
 // Schemas
 const loginBodySchema = z.object({
@@ -60,7 +66,7 @@ const router = createBaseRouter();
  *       500:
  *         description: Failed to authenticate with Discord
  */
-router.post('/login', validateBody(loginBodySchema), async (req, res) => {
+router.post('/login', skipCsrf, validateBody(loginBodySchema), async (req, res) => {
     const { code } = req.body as { code: string };
     try {
         const tokenData = await exchangeCodeForToken(
@@ -74,7 +80,10 @@ router.post('/login', validateBody(loginBodySchema), async (req, res) => {
             return res.status(401).json({ error: 'Invalid Discord OAuth code' });
         }
         const user = await fetchDiscordUser(accessToken);
-        const jwtToken = issueJwt(user, process.env.JWT_SECRET!, JWT_AUDIENCE);
+        const secret = requireEnv('JWT_SECRET');
+        const audience = requireEnv('JWT_AUDIENCE');
+        const issuer = requireEnv('JWT_ISSUER');
+        const jwtToken = issueJwt(user, secret, audience, issuer);
         res.json({ token: jwtToken, user });
     } catch (err) {
         console.error('Error in /auth/login:', err);

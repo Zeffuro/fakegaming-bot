@@ -134,6 +134,24 @@ DASHBOARD_ADMINS=123456789012345678,987654321098765432
 # REDIS_URL=redis://localhost:6379
 ```
 
+## JWT Environment Variables
+
+JWT is used for authentication across API and dashboard services. The following variables are required:
+
+| Variable         | Required | Description                                 | Example Value             |
+|------------------|----------|---------------------------------------------|--------------------------|
+| JWT_SECRET       | Yes      | HMAC secret for signing/verifying JWTs       | (long random string)      |
+| JWT_AUDIENCE     | Yes      | Audience claim (e.g., dashboard client)      | fakegaming-dashboard     |
+| JWT_ISSUER       | Yes      | Issuer claim (e.g., API service)             | fakegaming               |
+
+- **Production:** All variables must be set. The API and dashboard will fail to start if any are missing.
+- **Development/Test:** Safe defaults are used only in test environments. For local/dev, set these in `.env.development` for each package.
+- **Rotation:** Rotate `JWT_SECRET` periodically. When rotating, ensure all services are updated simultaneously to avoid auth failures. Document rotation events and update secrets in CI/CD and all relevant `.env` files.
+- **Algorithm:** Only HS256 is supported and enforced.
+- **Security:** Never commit secrets to version control. Use environment variables or secret managers.
+
+See also: `packages/api/src/middleware/auth.ts` for enforcement logic.
+
 ## Docker Compose Configuration
 
 The `docker-compose.yml` uses **pre-built images** for production deployment:
@@ -314,4 +332,29 @@ docker-compose -f docker-compose.local.yml up --build -d
 | **Use Case** | Deploy to server | Test Dockerfiles locally |
 | **Command** | `docker-compose up -d` | `docker-compose -f docker-compose.local.yml up --build -d` |
 
----
+#### CSRF Protection (Dashboard & API)
+Both the Dashboard (Next.js) and API (Express) use a double-submit cookie pattern via a shared core in `@zeffuro/fakegaming-common/security` for CSRF defense on mutating requests (POST/PUT/PATCH/DELETE):
+- Cookie name: `csrf` (not HttpOnly; SameSite=Lax; rotated periodically and at login/refresh).
+- Header: `x-csrf-token` must match the cookie value.
+- Safe methods (GET/HEAD/OPTIONS) bypass validation.
+- Failure responses: HTTP 403 with JSON `{ error: "CSRF", details }`.
+- Rotation: new token issued on login and JWT refresh; may rotate on other privileged actions later.
+
+Risk considerations:
+- SameSite=Lax mitigates cross-site contexts; token is random (32 bytes hex).
+- Because auth cookie `jwt` is HttpOnly + SameSite=Strict, token theft via XSS is still a concern; continue minimizing inline scripts and consider CSP.
+
+Public names exported from common:
+- `CSRF_COOKIE_NAME` = `csrf`
+- `CSRF_HEADER_NAME` = `x-csrf-token`
+
+Adapters and helpers:
+- Dashboard: `packages/dashboard/lib/security/csrf.ts` (NextResponse/NextRequest integration)
+- API: `packages/api/src/middleware/csrf.ts` (Express middleware)
+  - `enforceCsrfOnce(req,res,next)`: Ensures CSRF is enforced at most once per request and short-circuits subsequent checks.
+  - `skipCsrf(req,res,next)`: Explicitly bypass CSRF for a route (e.g., `/auth/login`).
+
+Router auto-enforcement (API):
+- Mutating routes are automatically protected by `enforceCsrfOnce` when you build routers with `createBaseRouter()` (`packages/api/src/utils/createBaseRouter.ts`).
+- To intentionally bypass CSRF for a route, include `skipCsrf` as the first middleware in that route definition (the base router orders it correctly before enforcement).
+- App-level middleware also applies `enforceCsrfOnce` after JWT auth and before rate limiting to preserve global ordering; `enforceCsrfOnce` short-circuits, so duplicate checks do not add overhead.

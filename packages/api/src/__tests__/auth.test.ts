@@ -29,6 +29,8 @@ describe('POST /auth/login', () => {
         process.env.DISCORD_CLIENT_SECRET = 'test-client-secret';
         process.env.DISCORD_REDIRECT_URI = 'http://localhost:3000/callback';
         process.env.JWT_SECRET = 'test-jwt-secret';
+        process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
+        process.env.JWT_ISSUER = 'fakegaming-test';
     });
 
     it('should return 400 if code is missing', async () => {

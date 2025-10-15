@@ -1900,6 +1900,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                429: components["responses"]["RateLimitExceeded"];
             };
         };
         put?: never;
@@ -2714,11 +2715,43 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        RateLimitError: {
+            error: {
+                /** @example RATE_LIMIT */
+                code: string;
+                /** @example Rate limit exceeded */
+                message: string;
+                retryAfterSeconds: number;
+            };
+        };
     };
-    responses: never;
+    responses: {
+        /** @description Rate limit exceeded */
+        RateLimitExceeded: {
+            headers: {
+                "X-RateLimit-Limit": components["headers"]["X-RateLimit-Limit"];
+                "X-RateLimit-Remaining": components["headers"]["X-RateLimit-Remaining"];
+                "X-RateLimit-Reset": components["headers"]["X-RateLimit-Reset"];
+                "Retry-After": components["headers"]["Retry-After"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["RateLimitError"];
+            };
+        };
+    };
     parameters: never;
     requestBodies: never;
-    headers: never;
+    headers: {
+        /** @description Maximum number of requests allowed in the current window */
+        "X-RateLimit-Limit": number;
+        /** @description Remaining requests in the current window */
+        "X-RateLimit-Remaining": number;
+        /** @description Unix epoch seconds when the current window resets */
+        "X-RateLimit-Reset": number;
+        /** @description Seconds to wait before retrying when limited */
+        "Retry-After": number;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;

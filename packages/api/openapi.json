@@ -432,6 +432,88 @@
           "createdAt",
           "updatedAt"
         ]
+      },
+      "RateLimitError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "RATE_LIMIT"
+              },
+              "message": {
+                "type": "string",
+                "example": "Rate limit exceeded"
+              },
+              "retryAfterSeconds": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryAfterSeconds"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      }
+    },
+    "headers": {
+      "X-RateLimit-Limit": {
+        "description": "Maximum number of requests allowed in the current window",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining": {
+        "description": "Remaining requests in the current window",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Reset": {
+        "description": "Unix epoch seconds when the current window resets",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Retry-After": {
+        "description": "Seconds to wait before retrying when limited",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    },
+    "responses": {
+      "RateLimitExceeded": {
+        "description": "Rate limit exceeded",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/RateLimitError"
+            }
+          }
+        }
       }
     }
   },
@@ -2046,6 +2128,20 @@
         "responses": {
           "200": {
             "description": "List of users"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitExceeded"
+          }
+        },
+        "headers": {
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
           }
         }
       },

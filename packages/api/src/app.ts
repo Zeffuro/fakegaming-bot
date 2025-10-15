@@ -9,6 +9,8 @@ import { jwtAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { fileURLToPath } from 'url';
 import { readFileSync } from 'fs';
+import { rateLimit } from './middleware/rateLimit.js';
+import { enforceCsrfOnce } from './middleware/csrf.js';
 
 const app = express();
 
@@ -26,6 +28,18 @@ app.use(cors({
 app.use('/api', (req, res, next) => {
     if (req.path.startsWith('/auth/login')) return next();
     return jwtAuth(req, res, next);
+});
+
+// Enforce CSRF on mutating routes (skip login); enforceCsrfOnce will short-circuit after first check
+app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/auth/login')) return next();
+    return enforceCsrfOnce(req, res, next);
+});
+
+// Apply rate limiting after auth and CSRF (skip login)
+app.use('/api', (req, res, next) => {
+    if (req.path.startsWith('/auth/login')) return next();
+    return rateLimit(req, res, next);
 });
 
 // Mount the API router

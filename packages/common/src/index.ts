@@ -148,3 +148,4 @@ const quoteCreateSchema = z.object({
 }).strict();
 
 schemaRegistry.registerCustom(Models.QuoteConfig, 'create', quoteCreateSchema);
+export { PostgresRateLimiter, type RateLimiter, type RateLimiterResult } from './rate-limiter.js';

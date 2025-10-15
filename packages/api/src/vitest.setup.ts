@@ -5,6 +5,7 @@ process.env.DATABASE_PROVIDER = 'sqlite';
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'testsecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
+process.env.JWT_ISSUER = 'fakegaming-test';
 
 // Mock the defaultCacheManager to use our shared in-memory test cache
 // This prevents tests from connecting to real Redis
@@ -65,9 +66,11 @@ vi.mock('@zeffuro/fakegaming-common', async () => {
     const mockCache = new InMemoryCacheManager();
     (global as any).__testCacheManager = mockCache;
 
+    // Preserve all original exports INCLUDING PostgresRateLimiter
     return {
         ...actual,
         defaultCacheManager: mockCache,
+        PostgresRateLimiter: actual.PostgresRateLimiter,
     };
 });
 

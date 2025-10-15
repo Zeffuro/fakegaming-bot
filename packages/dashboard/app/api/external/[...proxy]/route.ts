@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from "@/lib/env";
+import { enforceCsrf } from "@/lib/security/csrf.js";
 
 type RouteContext = {
     params: Promise<{
@@ -19,6 +20,13 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const { proxy } = await context.params;
     const apiPath = '/' + proxy.join('/');
     const method = req.method;
+
+    // CSRF enforcement for unsafe methods (double-submit token)
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
+        const csrfFailure = enforceCsrf(req);
+        if (csrfFailure) return csrfFailure;
+    }
+
     const jwt = getJwt(req);
 
     if (!jwt) {

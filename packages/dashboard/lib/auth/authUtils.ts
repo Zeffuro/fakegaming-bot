@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import type { MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { isGuildAdmin as commonIsGuildAdmin, defaultCacheManager, CACHE_KEYS, verifyJwt } from "@zeffuro/fakegaming-common";
-import { JWT_SECRET, JWT_AUDIENCE } from "@/lib/env";
+import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 
 const DASHBOARD_ADMINS = (process.env.DASHBOARD_ADMINS || "").split(",").map(id => id.trim()).filter(Boolean);
 
@@ -33,7 +33,7 @@ export async function authenticateUser(req: NextRequest): Promise<AuthResult> {
     }
 
     try {
-        const user = verifyJwt(jwtToken, JWT_SECRET, JWT_AUDIENCE) as { discordId: string };
+        const user = verifyJwt(jwtToken, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER) as { discordId: string };
         return { success: true, user: { discordId: user.discordId } };
     } catch {
         return { success: false, error: "Invalid token", statusCode: 401 };

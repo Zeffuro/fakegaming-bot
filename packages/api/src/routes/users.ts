@@ -32,6 +32,15 @@ const router = createBaseRouter();
  *     responses:
  *       200:
  *         description: List of users
+ *       429:
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *     headers:
+ *       X-RateLimit-Limit:
+ *         $ref: '#/components/headers/X-RateLimit-Limit'
+ *       X-RateLimit-Remaining:
+ *         $ref: '#/components/headers/X-RateLimit-Remaining'
+ *       X-RateLimit-Reset:
+ *         $ref: '#/components/headers/X-RateLimit-Reset'
  */
 router.get('/', async (_req, res) => {
     const users = await getConfigManager().userManager.getAllPlain();
