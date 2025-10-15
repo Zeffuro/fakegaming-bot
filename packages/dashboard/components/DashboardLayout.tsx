@@ -13,10 +13,17 @@ import BreadcrumbsNavigation from "./BreadcrumbsNavigation";
 import UserMenu from "./UserMenu";
 import LoadingSkeleton from "./LoadingSkeleton";
 
+interface BreadcrumbItem {
+  label: string;
+  href: string | null;
+  icon?: React.ReactNode;
+}
+
 interface DashboardLayoutProps {
   children: React.ReactNode;
   guild?: any;
   currentModule?: string | null;
+  currentTrail?: BreadcrumbItem[] | null;
   maxWidth?: "xs" | "sm" | "md" | "lg" | "xl";
   loading?: boolean;
 }
@@ -25,6 +32,7 @@ export default function DashboardLayout({
   children,
   guild,
   currentModule,
+  currentTrail,
   maxWidth = "xl",
   loading = false
 }: DashboardLayoutProps) {
@@ -44,7 +52,7 @@ export default function DashboardLayout({
               Fakegaming Bot
             </Typography>
 
-            <BreadcrumbsNavigation guild={guild} currentModule={currentModule} />
+            <BreadcrumbsNavigation guild={guild} currentModule={currentModule} currentTrail={currentTrail} />
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

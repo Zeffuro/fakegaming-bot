@@ -10,3 +10,5 @@ export * from './openapi.js';
 export * from './typeUtils.js';
 export * from './time.js';
 export * from './logger.js';
+export * from './supportedGames.js';
+export * from './template.js';

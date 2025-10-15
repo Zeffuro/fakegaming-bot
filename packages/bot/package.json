@@ -7,7 +7,7 @@
   "author": "Zeffuro",
   "license": "AGPL-3.0-only",
   "scripts": {
-    "build": "pnpm --filter @zeffuro/fakegaming-common... run build && tsc",
+    "build": "pnpm --filter @zeffuro/fakegaming-common run build && tsc",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "prod:dev": "cross-env NODE_ENV=production tsx src/index.ts",
     "start:dev": "cross-env NODE_ENV=development tsx src/index.ts",
@@ -21,6 +21,7 @@
   "dependencies": {
     "@twurple/api": "^7.4.0",
     "@twurple/auth": "^7.4.0",
+    "@twurple/common": "^7.4.0",
     "@zeffuro/fakegaming-common": "workspace:*",
     "axios": "^1.12.2",
     "canvas": "^3.2.0",

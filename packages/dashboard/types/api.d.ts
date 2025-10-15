@@ -1629,7 +1629,21 @@ export interface paths {
             };
         };
         put?: never;
-        /** Create a new Twitch stream config */
+        /**
+         * Create a new Twitch stream config
+         * @description Creates or updates a Twitch stream configuration for a guild+streamer pair.
+         *     Allowed fields in request body:
+         *     - twitchUsername (string, required)
+         *     - discordChannelId (string, required)
+         *     - guildId (string, required)
+         *     - customMessage (string, optional)
+         *     - cooldownMinutes (integer >= 0 or null, optional)
+         *     - quietHoursStart (HH:mm or null, optional)
+         *     - quietHoursEnd (HH:mm or null, optional)
+         *
+         *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
+         *
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1776,7 +1790,20 @@ export interface paths {
                 };
             };
         };
-        /** Update a Twitch stream config by id */
+        /**
+         * Update a Twitch stream config by id
+         * @description Updates a Twitch stream configuration by id. Allowed fields in request body:
+         *     - twitchUsername (string)
+         *     - discordChannelId (string)
+         *     - guildId (string)
+         *     - customMessage (string)
+         *     - cooldownMinutes (integer >= 0 or null)
+         *     - quietHoursStart (HH:mm or null)
+         *     - quietHoursEnd (HH:mm or null)
+         *
+         *     Read-only fields: isLive, lastNotifiedAt.
+         *
+         */
         put: {
             parameters: {
                 query?: never;
@@ -2216,7 +2243,15 @@ export interface paths {
                 };
             };
         };
-        /** Upsert a YouTube video config by channel */
+        /**
+         * Upsert a YouTube video config by channel
+         * @description Upserts a YouTube config based on channel identity. Allowed body fields:
+         *     - youtubeChannelId (string, required)
+         *     - discordChannelId (string, required)
+         *     - guildId (string, required)
+         *     Other fields like cooldownMinutes/quietHours should be updated via PUT /youtube/{id}.
+         *
+         */
         put: {
             parameters: {
                 query?: never;
@@ -2268,7 +2303,21 @@ export interface paths {
                 };
             };
         };
-        /** Create a new YouTube video config */
+        /**
+         * Create a new YouTube video config
+         * @description Creates a YouTube video configuration for a guild+channel pair.
+         *     Allowed fields in request body:
+         *     - youtubeChannelId (string, required)
+         *     - discordChannelId (string, required)
+         *     - guildId (string, required)
+         *     - customMessage (string, optional)
+         *     - cooldownMinutes (integer >= 0 or null, optional)
+         *     - quietHoursStart (HH:mm or null, optional)
+         *     - quietHoursEnd (HH:mm or null, optional)
+         *
+         *     Read-only fields (ignored if provided): lastVideoId, lastNotifiedAt.
+         *
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2465,7 +2514,20 @@ export interface paths {
                 };
             };
         };
-        /** Update a YouTube video config by id */
+        /**
+         * Update a YouTube video config by id
+         * @description Updates a YouTube configuration by id. Allowed fields in request body:
+         *     - youtubeChannelId (string)
+         *     - discordChannelId (string)
+         *     - guildId (string)
+         *     - customMessage (string)
+         *     - cooldownMinutes (integer >= 0 or null)
+         *     - quietHoursStart (HH:mm or null)
+         *     - quietHoursEnd (HH:mm or null)
+         *
+         *     Read-only fields: lastVideoId, lastNotifiedAt.
+         *
+         */
         put: {
             parameters: {
                 query?: never;

@@ -12,15 +12,16 @@ import { useRouter } from "next/navigation";
 interface BreadcrumbItem {
   label: string;
   href: string | null;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
 }
 
 interface BreadcrumbsNavigationProps {
   guild?: any;
   currentModule?: string | null;
+  currentTrail?: BreadcrumbItem[] | null;
 }
 
-export default function BreadcrumbsNavigation({ guild, currentModule }: BreadcrumbsNavigationProps) {
+export default function BreadcrumbsNavigation({ guild, currentModule, currentTrail }: BreadcrumbsNavigationProps) {
   const router = useRouter();
 
   const getBreadcrumbs = () => {
@@ -48,11 +49,16 @@ export default function BreadcrumbsNavigation({ guild, currentModule }: Breadcru
         )
       });
 
-      if (currentModule) {
+      if (Array.isArray(currentTrail) && currentTrail.length > 0) {
+        // Use explicit multi-level trail when provided
+        for (const item of currentTrail) {
+          breadcrumbs.push({ label: item.label, href: item.href ?? null, icon: item.icon });
+        }
+      } else if (currentModule) {
+        // Back-compat: single module breadcrumb
         breadcrumbs.push({
           label: currentModule.charAt(0).toUpperCase() + currentModule.slice(1),
-          href: null,
-          icon: null
+          href: null
         });
       }
     }

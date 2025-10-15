@@ -119,6 +119,18 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *     tags: [Twitch]
  *     security:
  *       - bearerAuth: []
+ *     description: |
+ *       Creates or updates a Twitch stream configuration for a guild+streamer pair.
+ *       Allowed fields in request body:
+ *       - twitchUsername (string, required)
+ *       - discordChannelId (string, required)
+ *       - guildId (string, required)
+ *       - customMessage (string, optional)
+ *       - cooldownMinutes (integer >= 0 or null, optional)
+ *       - quietHoursStart (HH:mm or null, optional)
+ *       - quietHoursEnd (HH:mm or null, optional)
+ *
+ *       Read-only fields (ignored if provided): isLive, lastNotifiedAt.
  *     requestBody:
  *       required: true
  *       content:
@@ -154,6 +166,17 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamCo
  *   put:
  *     summary: Update a Twitch stream config by id
  *     tags: [Twitch]
+ *     description: |
+ *       Updates a Twitch stream configuration by id. Allowed fields in request body:
+ *       - twitchUsername (string)
+ *       - discordChannelId (string)
+ *       - guildId (string)
+ *       - customMessage (string)
+ *       - cooldownMinutes (integer >= 0 or null)
+ *       - quietHoursStart (HH:mm or null)
+ *       - quietHoursEnd (HH:mm or null)
+ *
+ *       Read-only fields: isLive, lastNotifiedAt.
  *     parameters:
  *       - in: path
  *         name: id

@@ -8,7 +8,10 @@ import {
     TextField,
     Button,
     CircularProgress,
-    Autocomplete
+    Autocomplete,
+    Chip,
+    Stack,
+    Typography
 } from "@mui/material";
 import { useStreamingForm } from "@/components/hooks/useStreamingForm";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
@@ -66,17 +69,29 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     const selectedChannel = channels.find(ch => ch.id === (newConfig as any).discordChannelId) || null;
     const nameValue = (newConfig as any)[channelNameField] as string;
 
+    const tokens = moduleName === 'Twitch'
+        ? ['{streamer}', '{title}', '{game}', '{url}', '{uptime}', '{viewers}']
+        : ['{title}', '{channel}', '{url}', '{duration}', '{views}'];
+
+    const insertToken = (token: string) => {
+        const current = String((newConfig as any).customMessage ?? '');
+        const sep = current.endsWith(' ') || current.length === 0 ? '' : ' ';
+        setNewConfig({ ...(newConfig as any), customMessage: `${current}${sep}${token}` });
+    };
+
     return (
         <Dialog
             open={open}
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    bgcolor: 'grey.800',
-                    border: 1,
-                    borderColor: 'grey.700'
+            slotProps={{
+                paper: {
+                    sx: {
+                        bgcolor: 'grey.800',
+                        border: 1,
+                        borderColor: 'grey.700'
+                    }
                 }
             }}
         >
@@ -210,26 +225,43 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                     />
 
                     {showCustomMessage && (
-                        <TextField
-                            fullWidth
-                            label="Custom Message (Optional)"
-                            placeholder={moduleName === 'YouTube' ? "New video from {channel}!" : "{streamer} is now live!"}
-                            value={(newConfig as any).customMessage}
-                            onChange={(e) => handleCustomMessageChange(e.target.value)}
-                            sx={{
-                                '& .MuiInputLabel-root': { color: 'grey.300' },
-                                '& .MuiOutlinedInput-root': {
-                                    color: 'grey.100',
-                                    '& fieldset': { borderColor: 'grey.600' },
-                                    '&:hover fieldset': { borderColor: 'grey.500' },
-                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                }
-                            }}
-                            helperText="Optional custom message for notifications"
-                            slotProps={{
-                                formHelperText: { sx: { color: 'grey.400' } }
-                            }}
-                        />
+                        <>
+                            <TextField
+                                fullWidth
+                                label="Custom Message (Optional)"
+                                placeholder={moduleName === 'YouTube' ? "New video from {channel}: {title} {url}" : "{streamer} is now live! {url}"}
+                                value={(newConfig as any).customMessage}
+                                onChange={(e) => handleCustomMessageChange(e.target.value)}
+                                sx={{
+                                    '& .MuiInputLabel-root': { color: 'grey.300' },
+                                    '& .MuiOutlinedInput-root': {
+                                        color: 'grey.100',
+                                        '& fieldset': { borderColor: 'grey.600' },
+                                        '&:hover fieldset': { borderColor: 'grey.500' },
+                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                    }
+                                }}
+                                helperText={moduleName === 'YouTube'
+                                    ? 'Tokens: {title}, {channel}, {url}, {duration}, {views} — If {url} is omitted, it will be appended automatically.'
+                                    : 'Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers} — If {url} is omitted, it will be appended automatically.'}
+                                slotProps={{
+                                    formHelperText: { sx: { color: 'grey.400' } }
+                                }}
+                            />
+                            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                                <Typography variant="caption" sx={{ color: 'grey.400', mr: 1, alignSelf: 'center' }}>
+                                    Available tokens:
+                                </Typography>
+                                {tokens.map((t) => (
+                                    <Chip key={t} label={t} size="small" onClick={() => insertToken(t)} sx={{ cursor: 'pointer' }} />
+                                ))}
+                            </Stack>
+                            <Typography variant="caption" sx={{ color: 'grey.500', mt: 1, display: 'block' }}>
+                                {moduleName === 'YouTube'
+                                    ? 'Example: New video from {channel}: {title} {url}'
+                                    : '{streamer} is live: {title} {url}'}
+                            </Typography>
+                        </>
                     )}
 
                     {/* Cooldown and Quiet Hours inputs */}
@@ -243,7 +275,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                 const parsed = v === '' ? null : Number.isNaN(Number(v)) ? null : Number(v);
                                 setNewConfig({ ...(newConfig as any), cooldownMinutes: parsed });
                             }}
-                            inputProps={{ min: 0 }}
+                            slotProps={{ htmlInput: { min: 0 }, formHelperText: { sx: { color: 'grey.400' } } }}
                             sx={{
                                 '& .MuiInputLabel-root': { color: 'grey.300' },
                                 '& .MuiOutlinedInput-root': {
@@ -254,7 +286,6 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                 }
                             }}
                             helperText="Minimum minutes between notifications (optional)"
-                            slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
                         />
                         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
                             <TextField
@@ -262,7 +293,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                 type="time"
                                 value={(newConfig as any).quietHoursStart ?? ''}
                                 onChange={(e) => setNewConfig({ ...(newConfig as any), quietHoursStart: e.target.value })}
-                                inputProps={{ step: 60 }}
+                                slotProps={{ htmlInput: { step: 60 }, formHelperText: { sx: { color: 'grey.400' } } }}
                                 sx={{
                                     '& .MuiInputLabel-root': { color: 'grey.300' },
                                     '& .MuiOutlinedInput-root': {
@@ -273,14 +304,13 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                     }
                                 }}
                                 helperText="HH:mm (24h)"
-                                slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
                             />
                             <TextField
                                 label="Quiet End"
                                 type="time"
                                 value={(newConfig as any).quietHoursEnd ?? ''}
                                 onChange={(e) => setNewConfig({ ...(newConfig as any), quietHoursEnd: e.target.value })}
-                                inputProps={{ step: 60 }}
+                                slotProps={{ htmlInput: { step: 60 }, formHelperText: { sx: { color: 'grey.400' } } }}
                                 sx={{
                                     '& .MuiInputLabel-root': { color: 'grey.300' },
                                     '& .MuiOutlinedInput-root': {
@@ -291,7 +321,6 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                     }
                                 }}
                                 helperText="HH:mm (24h)"
-                                slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
                             />
                         </Box>
                     </Box>

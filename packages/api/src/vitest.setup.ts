@@ -66,12 +66,31 @@ vi.mock('@zeffuro/fakegaming-common', async () => {
     const mockCache = new InMemoryCacheManager();
     (global as any).__testCacheManager = mockCache;
 
-    // Preserve all original exports INCLUDING PostgresRateLimiter
+    // Return the full actual module, overriding only targeted fields and explicitly re-exposing
+    // certain symbols to avoid missing export issues when spreading ESM namespace objects.
     return {
-        ...actual,
+        // Explicitly re-expose commonly used namespaces and helpers
+        Discord: (actual as any).Discord,
+        validateBody: (actual as any).validateBody,
+        validateBodyForModel: (actual as any).validateBodyForModel,
+        validateQuery: (actual as any).validateQuery,
+        validateParams: (actual as any).validateParams,
+        ForbiddenError: (actual as any).ForbiddenError,
+        NotFoundError: (actual as any).NotFoundError,
+        getDiscordGuildMembersSearch: (actual as any).getDiscordGuildMembersSearch,
+        CACHE_KEYS: (actual as any).CACHE_KEYS,
+        CACHE_TTL: (actual as any).CACHE_TTL,
+        getConfigManager: (actual as any).getConfigManager,
+        getSequelize: (actual as any).getSequelize,
+        getLogger: (actual as any).getLogger,
+        incMetric: (actual as any).incMetric,
+        PROJECT_ROOT: (actual as any).PROJECT_ROOT,
+        // Also spread the rest of the exports for completeness
+        ...(actual as Record<string, unknown>),
+        // Finally, override specific exports we want to mock
         defaultCacheManager: mockCache,
-        PostgresRateLimiter: actual.PostgresRateLimiter,
-    };
+        PostgresRateLimiter: (actual as any).PostgresRateLimiter,
+    } as typeof actual & { defaultCacheManager: any };
 });
 
 // Now import from the mocked module

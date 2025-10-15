@@ -11,12 +11,10 @@ import {
   Skeleton
 } from "@mui/material";
 import { Logout, Person } from "@mui/icons-material";
-import { useRouter } from "next/navigation";
 import { useUserData } from "@/components/hooks/useUserData";
 
 export default function UserMenu() {
-  const router = useRouter();
-  const { user, loading, getUserDisplayName, getUserAvatarUrl } = useUserData();
+  const {loading, getUserDisplayName, getUserAvatarUrl } = useUserData();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 

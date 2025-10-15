@@ -1,5 +1,4 @@
 import {ApiClient, HelixStream, HelixUser} from '@twurple/api';
-import {AppTokenAuthProvider} from '@twurple/auth';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -11,13 +10,14 @@ import {
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {TwitchStreamConfig} from "@zeffuro/fakegaming-common";
 import {isWithinQuietHours} from '@zeffuro/fakegaming-common/utils';
+import { getOrCreateTwitchClient } from './twitchClient.js';
+import { getLogger } from '@zeffuro/fakegaming-common';
+import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
+import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 
-const clientId = process.env.TWITCH_CLIENT_ID!;
-const clientSecret = process.env.TWITCH_CLIENT_SECRET!;
+const log = getLogger({ name: 'twitchService' });
 
-const appAuthProvider = new AppTokenAuthProvider(clientId, clientSecret);
-const appApiClient = new ApiClient({authProvider: appAuthProvider});
-
+type LoggerLike = { info: (...args: unknown[]) => unknown; warn: (...args: unknown[]) => unknown; debug: (...args: unknown[]) => unknown; error: (...args: unknown[]) => unknown };
 
 /**
  * Verify that a Twitch user exists via Twurple API.
@@ -25,6 +25,7 @@ const appApiClient = new ApiClient({authProvider: appAuthProvider});
  * @returns True if user exists; otherwise false.
  */
 export async function verifyTwitchUser(username: string): Promise<boolean> {
+    const appApiClient: ApiClient = await getOrCreateTwitchClient();
     const user = await appApiClient.users.getUserByName(username);
     return user !== null;
 }
@@ -34,8 +35,11 @@ export async function verifyTwitchUser(username: string): Promise<boolean> {
  * respecting dedupe, per-config quiet hours, and cooldown suppression.
  * Updates isLive and lastNotifiedAt accordingly.
  * @param client Discord client used to send messages.
+ * @param opts Optional dependencies for testing (logger override)
  */
-export async function subscribeAllStreams(client: Client) {
+export async function subscribeAllStreams(client: Client, opts?: { logger?: LoggerLike }) {
+    const logger: LoggerLike = opts?.logger ?? log;
+    const appApiClient: ApiClient = await getOrCreateTwitchClient();
     const twitchManager = getConfigManager().twitchManager;
     const notifications = getConfigManager().notificationsManager;
     const streams: TwitchStreamConfig[] = await twitchManager.getAllStreams();
@@ -72,6 +76,7 @@ export async function subscribeAllStreams(client: Client) {
                         : false;
 
                     if (!alreadyNotified && !suppressedByQuiet && !suppressedByCooldown) {
+                        logger.info({ guildId: stream.guildId, twitchUsername: stream.twitchUsername, eventId }, 'Announcing Twitch live stream');
                         await announceLiveStream(client, stream, user, streamData!);
                         (stream as any).lastNotifiedAt = now;
                         await notifications.recordIfNew({
@@ -80,17 +85,20 @@ export async function subscribeAllStreams(client: Client) {
                             guildId: stream.guildId,
                             channelId: stream.discordChannelId
                         });
+                    } else {
+                        logger.debug({ alreadyNotified, suppressedByQuiet, suppressedByCooldown, eventId }, 'Suppressing Twitch live announcement');
                     }
 
                     // Mark as live regardless to avoid reprocessing spam in this session
                     stream.isLive = true;
                     await stream.save();
                 } else if (!isLive && stream.isLive) {
+                    logger.debug({ twitchUsername: stream.twitchUsername }, 'Stream offline; updating state');
                     stream.isLive = false;
                     await stream.save();
                 }
             } catch (err) {
-                console.error(`[TwitchService] Error processing stream #${idx}:`, err);
+                logger.error({ service: 'subscribeAllStreams', idx, err }, 'Error in subscribeAllStreams');
             }
         })
     );
@@ -109,6 +117,19 @@ async function announceLiveStream(client: Client, stream: TwitchStreamConfig, us
     ) {
         return;
     }
+
+    // Attempt to enrich with game name and uptime
+    let gameName: string | null = null;
+    try {
+        const game = await (streamData as any).getGame?.();
+        gameName = game?.name ?? null;
+    } catch {
+        // ignore enrichment errors
+    }
+
+    const startDate = (streamData as any).startDate as Date | undefined;
+    const uptimeMs = startDate ? (Date.now() - new Date(startDate).getTime()) : null;
+    const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatUptimeShort(uptimeMs) : null;
 
     const embed = new EmbedBuilder()
         .setColor(0x9146ff)
@@ -129,6 +150,13 @@ async function announceLiveStream(client: Client, stream: TwitchStreamConfig, us
         )
         .setTimestamp();
 
+    if (gameName) {
+        embed.addFields({ name: 'Game', value: gameName, inline: true });
+    }
+    if (uptimeStr) {
+        embed.addFields({ name: 'Uptime', value: uptimeStr, inline: true });
+    }
+
     const watchButton = new ButtonBuilder()
         .setLabel('Watch Stream')
         .setStyle(ButtonStyle.Link)
@@ -136,9 +164,24 @@ async function announceLiveStream(client: Client, stream: TwitchStreamConfig, us
 
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(watchButton);
 
-    const message =
-        stream.customMessage?.replace('{streamer}', user.displayName || user.name) ||
-        `Hey @everyone, ${user.displayName || user.name} is now live on https://twitch.tv/${user.name}!`;
+    const url = `https://twitch.tv/${user.name}`;
+    let message: string;
+    if (stream.customMessage) {
+        const tmpl = String(stream.customMessage);
+        message = renderTemplate(tmpl, {
+            streamer: user.displayName || user.name || '',
+            title: (streamData as any).title || '',
+            game: gameName || '',
+            url,
+            uptime: uptimeStr || '',
+            viewers: typeof (streamData as any).viewers === 'number' ? String((streamData as any).viewers) : '',
+        });
+        if (!tmpl.includes('{url}')) {
+            message = `${message}\n${url}`;
+        }
+    } else {
+        message = `Hey @everyone, ${user.displayName || user.name} is now live on ${url}!`;
+    }
 
     await (channel as TextChannel).send({
         content: message,

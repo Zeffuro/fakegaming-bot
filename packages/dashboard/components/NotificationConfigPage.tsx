@@ -15,6 +15,9 @@ import EditConfigDialog from "@/components/EditConfigDialog";
 import NotificationConfigList from "@/components/NotificationConfigList";
 import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useStreamingForm";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
+import Link from "next/link";
+import { Stack, ButtonGroup } from "@mui/material";
+import { LiveTv, YouTube as YouTubeIcon } from "@mui/icons-material";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -102,18 +105,71 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
         });
     };
 
+    // Multi-level breadcrumbs for a clearer path
+    const currentTrail = guild ? [
+        { label: 'Settings', href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
+        { label: 'Notifications', href: `/dashboard/settings/${encodeURIComponent(guild.id)}/notifications` },
+        { label: moduleName, href: null }
+    ] : null;
+
     return (
-        <DashboardLayout guild={guild} currentModule={moduleName.toLowerCase()} maxWidth="lg" loading={loading}>
+        <DashboardLayout guild={guild} currentModule={moduleName.toLowerCase()} currentTrail={currentTrail as any} maxWidth="lg" loading={loading}>
             {!loading && guild && (
                 <>
-                    <Box sx={{ mb: 4 }}>
-                        <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2, color: 'grey.100' }}>
-                            {moduleIcon}
-                            {moduleTitle}
-                        </Typography>
-                        <Typography variant="body1" sx={{ color: 'grey.300' }}>
-                            Configure {moduleName} {plural.toLowerCase()} to automatically post notifications.
-                        </Typography>
+                    <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Typography variant="h4" sx={{ mb: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2, color: 'grey.100' }}>
+                                {moduleIcon}
+                                {moduleTitle}
+                            </Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                            <ButtonGroup variant="outlined" sx={{ mr: 1 }}>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/twitch/${encodeURIComponent(guildId)}`}
+                                    startIcon={<LiveTv />}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: 'none',
+                                        bgcolor: moduleName === 'Twitch' ? '#9146FF' : 'grey.800',
+                                        color: moduleName === 'Twitch' ? 'white' : 'grey.300',
+                                        borderColor: 'grey.600',
+                                        '&:hover': {
+                                            bgcolor: moduleName === 'Twitch' ? '#7f37ff' : 'grey.700'
+                                        }
+                                    }}
+                                >
+                                    Twitch
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/youtube/${encodeURIComponent(guildId)}`}
+                                    startIcon={<YouTubeIcon />}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: 'none',
+                                        bgcolor: moduleName === 'YouTube' ? '#FF0000' : 'grey.800',
+                                        color: moduleName === 'YouTube' ? 'white' : 'grey.300',
+                                        borderColor: 'grey.600',
+                                        '&:hover': {
+                                            bgcolor: moduleName === 'YouTube' ? '#cc0000' : 'grey.700'
+                                        }
+                                    }}
+                                >
+                                    YouTube
+                                </Button>
+                            </ButtonGroup>
+                            <Button
+                                component={Link}
+                                href={`/dashboard/settings/${encodeURIComponent(guildId)}/notifications`}
+                                variant="outlined"
+                                size="small"
+                                sx={{ borderColor: 'grey.600', color: 'grey.300', '&:hover': { borderColor: 'grey.500', bgcolor: 'grey.700' } }}
+                            >
+                                Back to Notifications
+                            </Button>
+                        </Stack>
                     </Box>
 
                     {error && (

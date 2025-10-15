@@ -23,8 +23,9 @@ vi.mock('@zeffuro/fakegaming-common', async () => {
         error: vi.fn(),
         warn: vi.fn(),
         info: vi.fn(),
+        debug: vi.fn(),
         child: vi.fn(function (this: unknown) { return this; })
-    } as unknown as { error: (..._args: unknown[]) => void; warn: (..._args: unknown[]) => void; info: (..._args: unknown[]) => void; child: (..._args: unknown[]) => unknown };
+    } as unknown as { error: (..._args: unknown[]) => void; warn: (..._args: unknown[]) => void; info: (..._args: unknown[]) => void; debug: (..._args: unknown[]) => void; child: (..._args: unknown[]) => unknown };
 
     (globalThis as Record<string, unknown>).__TEST_LOGGER__ = testLogger;
 

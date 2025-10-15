@@ -1915,6 +1915,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Creates or updates a Twitch stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- twitchUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2052,6 +2053,7 @@
         "tags": [
           "Twitch"
         ],
+        "description": "Updates a Twitch stream configuration by id. Allowed fields in request body:\n- twitchUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
         "parameters": [
           {
             "in": "path",
@@ -2442,6 +2444,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Creates a YouTube video configuration for a guild+channel pair.\nAllowed fields in request body:\n- youtubeChannelId (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n\nRead-only fields (ignored if provided): lastVideoId, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2489,6 +2492,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Upserts a YouTube config based on channel identity. Allowed body fields:\n- youtubeChannelId (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\nOther fields like cooldownMinutes/quietHours should be updated via PUT /youtube/{id}.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2693,6 +2697,7 @@
         "tags": [
           "YouTube"
         ],
+        "description": "Updates a YouTube configuration by id. Allowed fields in request body:\n- youtubeChannelId (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n\nRead-only fields: lastVideoId, lastNotifiedAt.\n",
         "parameters": [
           {
             "in": "path",

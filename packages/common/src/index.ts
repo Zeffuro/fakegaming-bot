@@ -2,13 +2,12 @@ import * as Models from './models/index.js';
 import * as Managers from './managers/index.js';
 import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
-import { z } from 'zod';
 
 import { getSequelize } from './sequelize.js';
 
 import { cacheGet, cacheSet, cacheDel, ensureRedis } from './cache.js';
 import { CACHE_KEYS, CACHE_TTL, getCacheManager, defaultCacheManager, type CacheManager } from './utils/cacheManager.js';
-import { schemaRegistry } from './utils/schemaRegistry.js';
+import { registerSchemaOverrides } from './validation/schemaOverrides.js';
 
 export {
   Models
@@ -132,25 +131,6 @@ export { SUPPORTED_GAMES } from './utils/supportedGames.js';
 export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js';
 export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';
 
-// Register custom create schema overrides (executed on module import)
-const patchSubscriptionCreateSchema = z.object({
-    game: z.string().min(1),
-    channelId: z.string().min(1),
-    guildId: z.string().min(1),
-    lastAnnouncedAt: z.number().int().optional()
-}).strict();
-
-schemaRegistry.registerCustom(Models.PatchSubscriptionConfig, 'create', patchSubscriptionCreateSchema);
-
-// Add a custom create schema for QuoteConfig to allow server-generated id and JWT-derived submitterId
-const quoteCreateSchema = z.object({
-    id: z.string().min(1).optional(),
-    guildId: z.string().min(1),
-    quote: z.string().min(1),
-    authorId: z.string().min(1),
-    submitterId: z.string().min(1).optional(),
-    timestamp: z.number().int()
-}).strict();
-
-schemaRegistry.registerCustom(Models.QuoteConfig, 'create', quoteCreateSchema);
+// Register custom create/update schema overrides (executed on module import)
+registerSchemaOverrides();
 export { PostgresRateLimiter, type RateLimiter, type RateLimiterResult } from './rate-limiter.js';

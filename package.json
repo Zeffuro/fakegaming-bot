@@ -48,6 +48,7 @@
     "scan:dupes": "jscpd --min-tokens 40 --reporters json,html --gitignore packages/api/src packages/bot/src packages/dashboard/app packages/common/src > duplicates.json",
     "issues:summary": "tsx scripts/summarize-issues.ts",
     "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts",
+    "ci:check-env": "tsx scripts/check-env-leaks.ts",
     "seed:dev": "tsx scripts/seed-dev.ts"
   },
   "dependencies": {

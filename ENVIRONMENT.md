@@ -81,7 +81,32 @@ TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_api_key
 OPENWEATHER_API_KEY=your_weather_api_key
+
+# Twitch (optional jitter to avoid thundering herd on startup; milliseconds)
+# If omitted, a default 0–10000ms jitter is used in production; tests use 0ms.
+TWITCH_STARTUP_JITTER_MS=8000
+
+# Twitch (optional at-rest encryption for app token in DB, AES-256-GCM)
+# Provide a stable secret; its SHA-256 is used as the 32-byte key. If this
+# is set after a token has already been stored in plaintext, a new token fetch
+# will re-store it encrypted.
+TWITCH_TOKEN_ENC_KEY=change_me
+
+# Optional YouTube enrichment (adds Duration/Views to embeds); disabled by default
+YOUTUBE_ENRICH_EMBEDS=0
 ```
+
+#### Twitch Auth & Token Persistence (Bot)
+- The bot uses Twurple with an app access token (client credentials).
+- Tokens are persisted in the database via the shared `CacheConfig` table using `CacheManager` (DB-backed), not Redis.
+  - Rationale: Token writes are low volume (hourly refresh), and persistence across restarts is desired.
+  - Free/limited Redis tiers are better reserved for high-churn caches; DB-backed persistence avoids external dependency and retains tokens across restarts.
+- The provider uses exponential backoff + jitter when fetching tokens to reduce spikes and avoid thundering herd on multi-replica start.
+- Runtime keeps an in-memory token cache and only touches the DB if necessary.
+- Optional at-rest encryption:
+  - Set `TWITCH_TOKEN_ENC_KEY` to enable AES-256-GCM encryption of the stored token JSON. The SHA-256 of the provided value is used as the 32-byte key.
+  - If the key is not set, tokens are stored as plaintext JSON.
+  - If a token is stored encrypted but the key is missing at boot, the stored value is ignored and a fresh token is fetched.
 
 #### packages/api/.env.development (example)
 ```bash
@@ -384,7 +409,24 @@ Security & exposure:
 - In Docker/Compose/Kubernetes, only map the port when you need external probing. Prefer sidecar/local-network probes when possible.
 
 Docker note:
-- To access the bot health endpoints from outside the container, set BOT_HEALTH_PORT and BOT_HEALTH_HOST=0.0.0.0, and expose/map the port in your runtime environment (Compose/Kubernetes). The production docker-compose currently does not publish the bot health port; map it if needed for your monitoring.
+- To access the bot health endpoints from outside the container, set BOT_HEALTH_PORT and BOT_HEALTH_HOST=0.0.0.0, and expose/map the port in your runtime environment (Compose/Kubernetes). The production docker-compose currently does not publish the bot health port; map it if needed.
 
 ---
 
+## Secrets hygiene & CI guard
+
+To prevent accidental secret leaks and ensure consistent `.env` formatting:
+
+- `.gitignore` blocks all `.env` variants by default via `**/.env*` and explicitly allows `!**/.env.example`.
+- A CI guard script detects tracked `.env` files and warns about quoted values:
+  - Run locally or in CI: `pnpm run ci:check-env`
+  - Fails if any `.env*` (non-example) file is tracked by git.
+  - Prints non-fatal warnings if it detects values wrapped in quotes (preferred style is unquoted in dotenv files).
+
+Rotation steps when a secret is exposed:
+- Immediately rotate the following (as applicable):
+  - DISCORD_BOT_TOKEN, TWITCH_CLIENT_SECRET, YOUTUBE_API_KEY, RIOT_* keys, OPENWEATHER_API_KEY, POSTGRES_PASSWORD
+- Update DATABASE_URL and any service configs using the rotated secret.
+- Redeploy services; verify they start cleanly.
+- Purge any tracked `.env` files from git history (git rm --cached) and force-push if necessary; consider GitHub secret scanning.
+- Document the rotation in your ops notes and ensure CI/CD secrets are updated.

@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -25,16 +32,35 @@ jobs:
       - name: Assert JWT envs present (fail fast)
         run: pnpm run ci:assert-jwt
 
-      - name: Build all packages
-        run: pnpm -r run build
+      - name: Check for env leaks (informational)
+        run: pnpm run ci:check-env
+        continue-on-error: true
+
+      - name: Build all packages (orchestrated)
+        run: pnpm run build
 
       - name: Lint
         run: pnpm run lint
 
+      - name: Typecheck
+        run: pnpm run typecheck
+
       - name: Run tests with coverage
         run: pnpm -r run test:coverage
 
+      - name: Check Codecov token present
+        id: cc-token
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [ -z "${CODECOV_TOKEN}" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload coverage to Codecov
+        if: steps.cc-token.outputs.present == 'true'
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -42,6 +68,11 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: true
+
+      - name: Codecov token missing (skipping upload)
+        if: steps.cc-token.outputs.present != 'true'
+        run: echo "CODECOV_TOKEN is not set; skipping coverage upload"
+        continue-on-error: true
 
       - name: Duplication scan (informational)
         run: pnpm run scan:dupes

@@ -32,6 +32,10 @@ stack.env
 .env
 .env.development
 
+# Stronger environment ignore (all services)
+**/.env*
+!**/.env.example
+
 # Reports
 /report
 

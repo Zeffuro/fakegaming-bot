@@ -19,10 +19,9 @@ const CommandToggle: React.FC<CommandToggleProps> = ({ name, description, disabl
       checked={!disabled}
       onChange={e => onToggle(e.target.checked)}
       disabled={loading}
-      inputProps={{ "aria-label": `Enable/disable ${name}` }}
+      slotProps={{ input: { "aria-label": `Enable/disable ${name}` } }}
     />
   </Box>
 );
 
 export default CommandToggle;
-

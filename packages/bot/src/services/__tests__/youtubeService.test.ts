@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setupServiceTest, createMockTextChannel } from '@zeffuro/fakegaming-common/testing';
-import { TextChannel } from 'discord.js';
+import { TextChannel, ChannelType } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
 // Mock axios
 vi.mock('axios');
 
-const { mockAxiosGet, mockParserParseURL } = vi.hoisted(() => ({
+const { mockAxiosGet, mockParserParseURL, mockLogger } = vi.hoisted(() => ({
     mockAxiosGet: vi.fn(),
     mockParserParseURL: vi.fn(),
+    mockLogger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
 }));
 
 import axios from 'axios';
@@ -18,6 +19,11 @@ vi.mock('rss-parser', () => ({
     default: vi.fn(() => ({
         parseURL: mockParserParseURL,
     })),
+}));
+
+// Mock shared logger provider to capture error/info logs
+vi.mock('@zeffuro/fakegaming-common', () => ({
+    getLogger: vi.fn(() => mockLogger),
 }));
 
 import { getYoutubeChannelId, getYoutubeChannelFeed, checkAndAnnounceNewVideos } from '../youtubeService.js';
@@ -40,7 +46,7 @@ describe('youtubeService', () => {
     const runCheckWith = async (channels: Array<any>, feedItems: Array<any>) => {
         vi.spyOn(configManager.youtubeManager, 'getAllChannels').mockResolvedValue(channels as any);
         mockParserParseURL.mockResolvedValue({ items: feedItems });
-        await checkAndAnnounceNewVideos(client);
+        await checkAndAnnounceNewVideos(client, { logger: mockLogger as any });
     };
 
     const expectAnnouncedAndSaved = (channel: any, cfg: { lastVideoId: string | null; save: any }, expectedVideoId: string) => {
@@ -56,6 +62,7 @@ describe('youtubeService', () => {
 
         vi.clearAllMocks();
         process.env.YOUTUBE_API_KEY = 'test-api-key';
+        process.env.YOUTUBE_ENRICH_EMBEDS = '0';
     });
 
     describe('getYoutubeChannelId', () => {
@@ -114,13 +121,14 @@ describe('youtubeService', () => {
         });
 
         it('should handle API errors', async () => {
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockAxiosGet.mockRejectedValue(new Error('API error'));
 
-            const result = await getYoutubeChannelId('@error');
+            const result = await getYoutubeChannelId('@error', { logger: mockLogger as any });
             expect(result).toBeNull();
-            expect(spy).toHaveBeenCalled();
-            spy.mockRestore();
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.objectContaining({ error: expect.any(Error), identifier: '@error', isHandle: true }),
+                expect.stringContaining('Error fetching YouTube channel ID')
+            );
         });
     });
 
@@ -146,13 +154,14 @@ describe('youtubeService', () => {
         });
 
         it('should handle feed parsing errors', async () => {
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockParserParseURL.mockRejectedValue(new Error('Parse error'));
 
-            const result = await getYoutubeChannelFeed('UC1234567890123456789012');
+            const result = await getYoutubeChannelFeed('UC1234567890123456789012', { logger: mockLogger as any });
             expect(result).toBeNull();
-            expect(spy).toHaveBeenCalled();
-            spy.mockRestore();
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.objectContaining({ error: expect.any(Error), channelId: 'UC1234567890123456789012' }),
+                expect.stringContaining('Error fetching YouTube channel feed')
+            );
         });
     });
 
@@ -436,6 +445,135 @@ describe('youtubeService', () => {
             const sendArg = (channel.send as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
             const embed = sendArg.embeds[0];
             expect(embed.data.image?.url).toBe(groupThumb);
+        });
+
+        it('enriches embed with duration and views when flag enabled', async () => {
+            const channel = createAndCacheChannel('discord-channel-enrich');
+            const ytChannel = {
+                youtubeChannelId: 'UCenrich',
+                discordChannelId: 'discord-channel-enrich',
+                lastVideoId: null as string | null,
+                customMessage: null as string | null,
+                save: vi.fn(),
+            };
+            const id = 'abc123xyz';
+            const mockFeed = [
+                {
+                    'yt:videoId': id,
+                    title: 'Enriched Video',
+                    link: `https://www.youtube.com/watch?v=${id}`,
+                    author: 'Chan',
+                    published: new Date().toISOString(),
+                },
+            ];
+            process.env.YOUTUBE_ENRICH_EMBEDS = '1';
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+            mockAxiosGet.mockResolvedValue({ data: { items: [{ contentDetails: { duration: 'PT1H2M3S' }, statistics: { viewCount: '1234' } }] } });
+
+            await runCheckWith([ytChannel], mockFeed);
+
+            expect(channel.send).toHaveBeenCalledTimes(1);
+            const sendArg = (channel.send as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0];
+            const embed = sendArg.embeds[0];
+            const fields = embed.data.fields ?? [];
+            expect(fields.some((f: any) => f.name === 'Duration' && f.value.includes('1h'))).toBe(true);
+            expect(fields.some((f: any) => f.name === 'Views' && f.value === '1234')).toBe(true);
+        });
+
+        it('should announce into a thread channel (PublicThread)', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-thread');
+            // Override type to simulate a thread channel
+            (mockChannel as any).type = ChannelType.PublicThread;
+
+            const ytChannel = {
+                youtubeChannelId: 'UCthread',
+                discordChannelId: 'discord-channel-thread',
+                lastVideoId: null as string | null,
+                customMessage: null as string | null,
+                save: vi.fn(),
+            };
+
+            const mockFeed = [
+                {
+                    'yt:videoId': 'thread-video',
+                    title: 'Thread Video',
+                    link: 'https://youtube.com/watch?v=thread-video',
+                    author: 'Chan',
+                    published: new Date().toISOString(),
+                },
+            ];
+
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+
+            await runCheckWith([ytChannel], mockFeed);
+
+            expect(mockChannel.send).toHaveBeenCalledTimes(1);
+            expect(ytChannel.lastVideoId).toBe('thread-video');
+            expect(ytChannel.save).toHaveBeenCalled();
+        });
+
+        it('should announce into a thread channel (PrivateThread)', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-thread-private');
+            // Override type to simulate a private thread channel
+            (mockChannel as any).type = ChannelType.PrivateThread;
+
+            const ytChannel = {
+                youtubeChannelId: 'UCthreadPriv',
+                discordChannelId: 'discord-channel-thread-private',
+                lastVideoId: null as string | null,
+                customMessage: null as string | null,
+                save: vi.fn(),
+            };
+
+            const mockFeed = [
+                {
+                    'yt:videoId': 'thread-video-priv',
+                    title: 'Thread Video Private',
+                    link: 'https://youtube.com/watch?v=thread-video-priv',
+                    author: 'Chan',
+                    published: new Date().toISOString(),
+                },
+            ];
+
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+
+            await runCheckWith([ytChannel], mockFeed);
+
+            expect(mockChannel.send).toHaveBeenCalledTimes(1);
+            expect(ytChannel.lastVideoId).toBe('thread-video-priv');
+            expect(ytChannel.save).toHaveBeenCalled();
+        });
+
+        it('should not duplicate on flap across runs (same top video)', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-flap');
+
+            const ytChannel = {
+                youtubeChannelId: 'UCflap',
+                discordChannelId: 'discord-channel-flap',
+                lastVideoId: null as string | null,
+                customMessage: null as string | null,
+                save: vi.fn(),
+            };
+
+            const mockFeed = [
+                { 'yt:videoId': 'flap-video', title: 'Flap', link: 'https://youtube.com/watch?v=flap-video', author: 'Chan' }
+            ];
+
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+
+            // First run: should announce and set lastVideoId
+            await runCheckWith([ytChannel], mockFeed);
+            expect(mockChannel.send).toHaveBeenCalledTimes(1);
+            expect(ytChannel.lastVideoId).toBe('flap-video');
+
+            // Second run with same feed: should not announce again
+            await runCheckWith([ytChannel], mockFeed);
+            expect(mockChannel.send).toHaveBeenCalledTimes(1);
+            expect(ytChannel.lastVideoId).toBe('flap-video');
         });
     });
 });

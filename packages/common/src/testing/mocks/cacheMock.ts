@@ -1,5 +1,5 @@
-import { vi, beforeEach, afterEach } from 'vitest';
-import type { MinimalGuildData } from '../../discord/types.js';
+import {afterEach, beforeEach, vi} from 'vitest';
+import type {MinimalGuildData} from '../../discord/types.js';
 
 /**
  * Default mocked user guilds used in tests
@@ -18,8 +18,7 @@ export const mockCacheGet = vi.fn<(key: string) => Promise<any>>()
     .mockImplementation(async (key: string) => {
         // Return admin access for any user guilds key by default
         if (/^user:.+:guilds$/.test(key)) {
-            const guilds: MinimalGuildData[] = getDefaultUserGuilds();
-            return guilds;
+            return getDefaultUserGuilds();
         }
         return null;
     });
@@ -38,10 +37,14 @@ export const mockCacheDelete = vi.fn<(key: string) => Promise<void>>()
 
 /**
  * Set up mock for the common cache functions and defaultCacheManager
+ *
+ * We partially mock the module to preserve all real exports (Discord, validation,
+ * error classes, etc.) and only override the cache helpers + default cache manager.
  */
 export function setupCacheMocks(): void {
     vi.mock('@zeffuro/fakegaming-common', async (importOriginal: () => Promise<typeof import('@zeffuro/fakegaming-common')>) => {
         const actualModule = await importOriginal();
+
         const defaultCacheManager = {
             get: async <T>(key: string): Promise<T | null> => mockCacheGet(key),
             set: async <T>(_key: string, _value: T, _ttlMs: number): Promise<void> => {},
@@ -49,13 +52,16 @@ export function setupCacheMocks(): void {
             getCachedData: async <T>(_key: string, fetchFn: () => Promise<T>, _ttlMs: number): Promise<T | null> => fetchFn(),
             clearUserCache: async (_userId: string): Promise<void> => {},
         };
+
         return {
             ...actualModule,
+            // expose cache helpers
             cacheGet: mockCacheGet,
             cacheSet: mockCacheSet,
             cacheDelete: mockCacheDelete,
+            // minimal cache manager implementation
             defaultCacheManager,
-        } as typeof actualModule & { defaultCacheManager: typeof defaultCacheManager };
+        };
     });
 }
 
@@ -65,8 +71,7 @@ export function setupCacheMocks(): void {
 export function resetCacheMocks(): void {
     mockCacheGet.mockReset().mockImplementation(async (key: string) => {
         if (/^user:.+:guilds$/.test(key)) {
-            const guilds: MinimalGuildData[] = getDefaultUserGuilds();
-            return guilds;
+            return getDefaultUserGuilds();
         }
         return null;
     });

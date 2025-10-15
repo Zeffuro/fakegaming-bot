@@ -72,6 +72,20 @@ export default [
         },
         rules: {
             ...nextPlugin.configs["core-web-vitals"].rules,
+            // Flag deprecated MUI props in dashboard code to ease MUI v7 upgrades
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: "JSXAttribute[name.name='inputProps']",
+                    message:
+                        "MUI v7: 'inputProps' is deprecated. Use slotProps.htmlInput for native input attributes or slotProps.input for input component props.",
+                },
+                {
+                    selector: "JSXAttribute[name.name='InputProps']",
+                    message:
+                        "Migrate to slotProps.input instead of 'InputProps' where possible (TextField/Switch).",
+                },
+            ],
         },
     },
 ];

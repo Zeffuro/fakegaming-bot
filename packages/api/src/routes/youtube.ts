@@ -119,6 +119,18 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *     tags: [YouTube]
  *     security:
  *       - bearerAuth: []
+ *     description: |
+ *       Creates a YouTube video configuration for a guild+channel pair.
+ *       Allowed fields in request body:
+ *       - youtubeChannelId (string, required)
+ *       - discordChannelId (string, required)
+ *       - guildId (string, required)
+ *       - customMessage (string, optional)
+ *       - cooldownMinutes (integer >= 0 or null, optional)
+ *       - quietHoursStart (HH:mm or null, optional)
+ *       - quietHoursEnd (HH:mm or null, optional)
+ *
+ *       Read-only fields (ignored if provided): lastVideoId, lastNotifiedAt.
  *     requestBody:
  *       required: true
  *       content:
@@ -207,6 +219,12 @@ router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) =
  *     tags: [YouTube]
  *     security:
  *       - bearerAuth: []
+ *     description: |
+ *       Upserts a YouTube config based on channel identity. Allowed body fields:
+ *       - youtubeChannelId (string, required)
+ *       - discordChannelId (string, required)
+ *       - guildId (string, required)
+ *       Other fields like cooldownMinutes/quietHours should be updated via PUT /youtube/{id}.
  *     requestBody:
  *       required: true
  *       content:
@@ -249,6 +267,17 @@ router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (
  *   put:
  *     summary: Update a YouTube video config by id
  *     tags: [YouTube]
+ *     description: |
+ *       Updates a YouTube configuration by id. Allowed fields in request body:
+ *       - youtubeChannelId (string)
+ *       - discordChannelId (string)
+ *       - guildId (string)
+ *       - customMessage (string)
+ *       - cooldownMinutes (integer >= 0 or null)
+ *       - quietHoursStart (HH:mm or null)
+ *       - quietHoursEnd (HH:mm or null)
+ *
+ *       Read-only fields: lastVideoId, lastNotifiedAt.
  *     parameters:
  *       - in: path
  *         name: id

@@ -1,13 +1,14 @@
 "use client";
 import React from "react";
-import { Box, Typography, Alert, Grid } from "@mui/material";
+import { Box, Typography, Alert, Grid, Button } from "@mui/material";
+import Link from "next/link";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { SettingsCard } from "@/components/SettingsCard";
 import { SettingsToggleList } from "@/components/SettingsToggleList";
 
 export default function GuildSettingsPage() {
-  const { guild, guildsLoading } = useGuildFromParams();
+  const { guild, guildsLoading, guildId } = useGuildFromParams();
 
   if (!guild && !guildsLoading) {
     return (
@@ -48,6 +49,17 @@ export default function GuildSettingsPage() {
                   { label: "Event reminders", defaultChecked: false },
                   { label: "Member join/leave notifications", defaultChecked: true }
                 ]} />
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                  <Button
+                    component={Link}
+                    href={`/dashboard/settings/${encodeURIComponent(guildId as string)}/notifications`}
+                    variant="contained"
+                    color="primary"
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Open Notifications Settings
+                  </Button>
+                </Box>
               </SettingsCard>
             </Grid>
 

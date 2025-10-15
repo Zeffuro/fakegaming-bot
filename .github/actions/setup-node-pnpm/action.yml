@@ -23,15 +23,26 @@ runs:
       shell: bash
       run: corepack enable && corepack prepare pnpm@latest --activate
 
-    - name: Cache dependencies and Next.js build
+    - name: Determine pnpm store path
+      id: pnpm-store
+      shell: bash
+      run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache pnpm store
       uses: actions/cache@v4
       with:
-        path: |
-          **/node_modules
-          packages/dashboard/.next/cache
-        key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+        path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
         restore-keys: |
-          ${{ runner.os }}-pnpm-
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Cache Next.js build artifacts
+      uses: actions/cache@v4
+      with:
+        path: packages/dashboard/.next/cache
+        key: ${{ runner.os }}-next-${{ hashFiles('packages/dashboard/**', '!**/node_modules/**') }}
+        restore-keys: |
+          ${{ runner.os }}-next-
 
     - name: Install native build dependencies
       if: inputs.build-natives == 'true'
