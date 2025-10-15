@@ -9,6 +9,7 @@ import {
     WhereOptions,
 } from 'sequelize';
 import { NotFoundError } from '../utils/apiErrorHelpers.js';
+import { UniqueConstraintError } from 'sequelize';
 
 export class BaseManager<T extends Model> {
     protected model: ModelCtor<T>;
@@ -58,18 +59,17 @@ export class BaseManager<T extends Model> {
 
     // ---------- UPSERT ----------
     async upsert(item: CreationAttributes<T> | T, conflictFields?: string[]): Promise<boolean> {
-        const data = item instanceof this.model ? item.get({ plain: true }) : item;
+        const data = item instanceof this.model ? (item.get({ plain: true }) as CreationAttributes<T>) : (item as CreationAttributes<T>);
 
-        // Build the "where" clause for uniqueness
-        let conflictKeys = conflictFields?.length
+        const conflictKeys = (conflictFields && conflictFields.length > 0)
             ? conflictFields
             : this.model.primaryKeyAttributes;
 
-        if (!conflictKeys.length) {
+        if (!conflictKeys || conflictKeys.length === 0) {
             throw new Error('Cannot upsert: no conflictFields or primary keys specified.');
         }
 
-        const where: Record<string, any> = {};
+        const where: Record<string, unknown> = {};
         for (const key of conflictKeys) {
             const value = (data as any)[key];
             if (value === undefined) {
@@ -78,9 +78,24 @@ export class BaseManager<T extends Model> {
             where[key] = value;
         }
 
-        const [_, created] = await this.model.upsert(data);
+        // Manual upsert to avoid dialect nuances with composite unique keys
+        const existing = await this.model.findOne({ where } as { where: WhereOptions<Attributes<T>> });
+        if (existing) {
+            await existing.update(data as any);
+            return false; // updated
+        }
 
-        return created ?? false; // true if inserted, false if updated
+        try {
+            await this.model.create(data as any);
+            return true; // inserted
+        } catch (err: unknown) {
+            // In case of a race where another insert won, fall back to update
+            if (err instanceof UniqueConstraintError) {
+                await this.model.update(data as any, { where } as UpdateOptions<Attributes<T>>);
+                return false;
+            }
+            throw err;
+        }
     }
 
     async findOrCreate(config: {

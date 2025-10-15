@@ -35,10 +35,13 @@ export function useTwitchConfigs(guildId: string | string[]) {
         twitchUsername: configData.twitchUsername,
         discordChannelId: configData.discordChannelId,
         guildId: guildId as string,
-        customMessage: configData.customMessage
+        customMessage: configData.customMessage,
+        cooldownMinutes: (configData as any).cooldownMinutes ?? null,
+        quietHoursStart: (configData as any).quietHoursStart ? String((configData as any).quietHoursStart) : null,
+        quietHoursEnd: (configData as any).quietHoursEnd ? String((configData as any).quietHoursEnd) : null,
       };
 
-      await api.createTwitchStream(payload as twitch_post_Request);
+      await api.createTwitchStream(payload as unknown as twitch_post_Request);
       await fetchConfigs();
       return true;
     } catch (err: any) {
@@ -56,11 +59,14 @@ export function useTwitchConfigs(guildId: string | string[]) {
         twitchUsername: config.twitchUsername,
         discordChannelId: config.discordChannelId,
         guildId: guildId as string,
-        customMessage: config.customMessage
+        customMessage: config.customMessage,
+        cooldownMinutes: (config as any).cooldownMinutes ?? null,
+        quietHoursStart: (config as any).quietHoursStart ? String((config as any).quietHoursStart) : null,
+        quietHoursEnd: (config as any).quietHoursEnd ? String((config as any).quietHoursEnd) : null,
       };
 
       await api.deleteTwitchStream(config.id.toString());
-      await api.createTwitchStream(payload as twitch_post_Request);
+      await api.createTwitchStream(payload as unknown as twitch_post_Request);
       await fetchConfigs();
       return true;
     } catch (err: any) {

@@ -345,6 +345,20 @@
           "customMessage": {
             "type": "string"
           },
+          "cooldownMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quietHoursStart": {
+            "type": "string"
+          },
+          "quietHoursEnd": {
+            "type": "string"
+          },
+          "lastNotifiedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
           "guildId": {
             "type": "string"
           },
@@ -414,6 +428,20 @@
           },
           "customMessage": {
             "type": "string"
+          },
+          "cooldownMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "quietHoursStart": {
+            "type": "string"
+          },
+          "quietHoursEnd": {
+            "type": "string"
+          },
+          "lastNotifiedAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "guildId": {
             "type": "string"

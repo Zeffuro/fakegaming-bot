@@ -26,7 +26,7 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
         discordChannelId: string;
         guildId: string;
     }) {
-        const created = await this.upsert(data, ['youtubeChannelId', 'discordChannelId', 'guildId']);
+        const created = await this.upsert(data, ['guildId', 'youtubeChannelId']);
         const record = await this.getOne(
             { youtubeChannelId: data.youtubeChannelId, discordChannelId: data.discordChannelId, guildId: data.guildId },
             { raw: true }

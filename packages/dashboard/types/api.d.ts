@@ -2685,6 +2685,12 @@ export interface components {
             twitchUsername?: string;
             discordChannelId?: string;
             customMessage?: string;
+            /** Format: int64 */
+            cooldownMinutes?: number;
+            quietHoursStart?: string;
+            quietHoursEnd?: string;
+            /** Format: date-time */
+            lastNotifiedAt?: string;
             guildId?: string;
             isLive?: boolean;
             /** Format: date-time */
@@ -2709,6 +2715,12 @@ export interface components {
             discordChannelId?: string;
             lastVideoId?: string;
             customMessage?: string;
+            /** Format: int64 */
+            cooldownMinutes?: number;
+            quietHoursStart?: string;
+            quietHoursEnd?: string;
+            /** Format: date-time */
+            lastNotifiedAt?: string;
             guildId?: string;
             /** Format: date-time */
             createdAt: string;

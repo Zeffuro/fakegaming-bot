@@ -358,3 +358,33 @@ Router auto-enforcement (API):
 - Mutating routes are automatically protected by `enforceCsrfOnce` when you build routers with `createBaseRouter()` (`packages/api/src/utils/createBaseRouter.ts`).
 - To intentionally bypass CSRF for a route, include `skipCsrf` as the first middleware in that route definition (the base router orders it correctly before enforcement).
 - App-level middleware also applies `enforceCsrfOnce` after JWT auth and before rate limiting to preserve global ordering; `enforceCsrfOnce` short-circuits, so duplicate checks do not add overhead.
+
+---
+
+### Bot Health Server
+The bot exposes lightweight health endpoints via an internal HTTP server for uptime checks and orchestrators:
+- GET /healthz: returns 200 when the process is up.
+- GET /ready: returns 200 when the Discord client is ready and the database (if configured) is reachable; otherwise 503.
+
+Configuration:
+- BOT_HEALTH_PORT: Optional port to bind the bot health server. If omitted or set to 0, an ephemeral port is chosen and logged at startup.
+- BOT_HEALTH_HOST: Optional host/interface to bind. Defaults to 127.0.0.1 for safety. Use 0.0.0.0 only if you intend to expose externally.
+
+Example (packages/bot/.env or .env.development):
+```bash
+# Bind the bot health server (optional)
+BOT_HEALTH_PORT=8081
+# Bind to loopback only by default (safer); set 0.0.0.0 only if you must expose externally
+BOT_HEALTH_HOST=127.0.0.1
+```
+
+Security & exposure:
+- Binding to 127.0.0.1 keeps the endpoints accessible only from the local machine/container network namespace.
+- If you set BOT_HEALTH_HOST=0.0.0.0 and map the port, the endpoints become network-accessible. The responses do not contain secrets, but treat them as internal-only; restrict exposure via firewalling/reverse proxy IP allow-lists.
+- In Docker/Compose/Kubernetes, only map the port when you need external probing. Prefer sidecar/local-network probes when possible.
+
+Docker note:
+- To access the bot health endpoints from outside the container, set BOT_HEALTH_PORT and BOT_HEALTH_HOST=0.0.0.0, and expose/map the port in your runtime environment (Compose/Kubernetes). The production docker-compose currently does not publish the bot health port; map it if needed for your monitoring.
+
+---
+

@@ -87,6 +87,7 @@ describe('twitchService', () => {
                 twitchUsername: 'teststreamer',
                 discordChannelId: 'discord-channel-123',
                 isLive: false,
+                guildId: 'guild-1'
             });
 
             const mockTwitchUser = {
@@ -103,11 +104,17 @@ describe('twitchService', () => {
             };
 
             mockTwurple(mockTwitchUser, mockStreamData);
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+
             await runSubscribeWith([twitchStream]);
 
             expectSendHasEmbed(mockChannel);
             expect(twitchStream.isLive).toBe(true);
             expect(twitchStream.save).toHaveBeenCalled();
+            expect(configManager.notificationsManager.recordIfNew).toHaveBeenCalledWith(expect.objectContaining({
+                provider: 'twitch', eventId: 'stream-123', guildId: 'guild-1'
+            }));
         });
 
         it('should update status when stream goes offline', async () => {
@@ -152,6 +159,7 @@ describe('twitchService', () => {
                 discordChannelId: 'discord-channel-123',
                 isLive: false,
                 customMessage: 'Check out {streamer} live now!',
+                guildId: 'guild-1'
             });
 
             const mockTwitchUser = {
@@ -163,6 +171,8 @@ describe('twitchService', () => {
             const mockStreamData = { id: 'stream-123', title: 'Test Stream', viewers: 100 };
 
             mockTwurple(mockTwitchUser, mockStreamData);
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
             await runSubscribeWith([twitchStream]);
 
             expect(mockChannel.send).toHaveBeenCalledWith(
@@ -200,6 +210,84 @@ describe('twitchService', () => {
             await runSubscribeWith([twitchStream]);
 
             expect(mockGetStreamByUserId).not.toHaveBeenCalled();
+        });
+
+        it('should not announce duplicate event when already recorded', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-dup');
+            const twitchStream = createMockTwitchStream({
+                id: 'stream-7' as any,
+                twitchUsername: 'duptest',
+                discordChannelId: 'discord-channel-dup',
+                isLive: false,
+                guildId: 'guild-dup'
+            });
+
+            const mockTwitchUser = { id: 'twitch-user-dup', name: 'duptest', displayName: 'DupTest' };
+            const mockStreamData = { id: 'event-dup', title: 'Dup Stream', viewers: 10 };
+
+            mockTwurple(mockTwitchUser, mockStreamData);
+            vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(true);
+
+            await runSubscribeWith([twitchStream]);
+
+            expect(mockChannel.send).not.toHaveBeenCalled();
+            expect(twitchStream.isLive).toBe(true);
+            expect(twitchStream.save).toHaveBeenCalled();
+        });
+
+        it('should suppress during quiet hours and still set isLive/save', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-quiet');
+            const twitchStream = createMockTwitchStream({
+                id: 'stream-q1' as any,
+                twitchUsername: 'quietstreamer',
+                discordChannelId: 'discord-channel-quiet',
+                isLive: false,
+                guildId: 'guild-q',
+            });
+            (twitchStream as any).quietHoursStart = '00:00';
+            (twitchStream as any).quietHoursEnd = '00:00'; // full-day quiet per implementation
+
+            const mockTwitchUser = { id: 'twitch-user-q', name: 'quietstreamer', displayName: 'Quiet' };
+            const mockStreamData = { id: 'event-q', title: 'Quiet Stream', viewers: 1 };
+
+            mockTwurple(mockTwitchUser, mockStreamData);
+
+            await runSubscribeWith([twitchStream]);
+
+            expect(mockChannel.send).not.toHaveBeenCalled();
+            expect(twitchStream.isLive).toBe(true);
+            expect(twitchStream.save).toHaveBeenCalled();
+        });
+
+        it('should suppress due to cooldown and not record notification', async () => {
+            const mockChannel = createAndCacheChannel('discord-channel-cd');
+            const now = new Date();
+            const tenMinutesAgo = new Date(now.getTime() - 10 * 60_000);
+
+            const twitchStream = createMockTwitchStream({
+                id: 'stream-cd' as any,
+                twitchUsername: 'cooldowner',
+                discordChannelId: 'discord-channel-cd',
+                isLive: false,
+                guildId: 'guild-cd',
+            });
+            (twitchStream as any).cooldownMinutes = 60;
+            (twitchStream as any).lastNotifiedAt = tenMinutesAgo;
+
+            const mockTwitchUser = { id: 'twitch-user-cd', name: 'cooldowner', displayName: 'CD' };
+            const mockStreamData = { id: 'event-cd', title: 'CD Stream', viewers: 42 };
+
+            mockTwurple(mockTwitchUser, mockStreamData);
+            const spyHas = vi.spyOn(configManager.notificationsManager, 'has').mockResolvedValue(false);
+            const spyRecord = vi.spyOn(configManager.notificationsManager, 'recordIfNew').mockResolvedValue({ created: true, record: {} as any });
+
+            await runSubscribeWith([twitchStream]);
+
+            expect(spyHas).toHaveBeenCalledWith('twitch', 'event-cd');
+            expect(spyRecord).not.toHaveBeenCalled();
+            expect(mockChannel.send).not.toHaveBeenCalled();
+            expect(twitchStream.isLive).toBe(true);
+            expect(twitchStream.save).toHaveBeenCalled();
         });
     });
 });

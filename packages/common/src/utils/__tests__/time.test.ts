@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseTimespan, formatElapsed, parseDateToISO, parseDateSafe, toMillis } from '../time.js';
+import { parseHHmmToMinutes, isWithinQuietHours } from '../time.js';
 
 describe('utils/time', () => {
     describe('parseTimespan', () => {
@@ -119,5 +120,49 @@ describe('utils/time', () => {
             expect(toMillis(undefined)).toBe(0);
         });
     });
-});
 
+    describe('parseHHmmToMinutes', () => {
+        it('parses valid HH:mm', () => {
+            expect(parseHHmmToMinutes('00:00')).toBe(0);
+            expect(parseHHmmToMinutes('07:30')).toBe(450);
+            expect(parseHHmmToMinutes('23:59')).toBe(23 * 60 + 59);
+        });
+        it('returns null for invalid HH:mm', () => {
+            expect(parseHHmmToMinutes('24:00')).toBeNull();
+            expect(parseHHmmToMinutes('12:60')).toBeNull();
+            expect(parseHHmmToMinutes('abc')).toBeNull();
+            expect(parseHHmmToMinutes('1:2')).toBeNull();
+        });
+    });
+
+    describe('isWithinQuietHours', () => {
+        it('returns false when start or end is missing', () => {
+            const now = new Date('2025-10-10T12:00:00');
+            expect(isWithinQuietHours(null, '12:00', now)).toBe(false);
+            expect(isWithinQuietHours('12:00', null, now)).toBe(false);
+        });
+        it('full day quiet when start == end', () => {
+            const now = new Date('2025-10-10T12:00:00');
+            expect(isWithinQuietHours('00:00', '00:00', now)).toBe(true);
+        });
+        it('same-day window includes time between start and before end', () => {
+            const inside = new Date('2025-10-10T15:00:00');
+            const outside = new Date('2025-10-10T11:59:00');
+            expect(isWithinQuietHours('12:00', '18:00', inside)).toBe(true);
+            expect(isWithinQuietHours('12:00', '18:00', outside)).toBe(false);
+        });
+        it('cross-midnight window includes late-night and early-morning times', () => {
+            const late = new Date('2025-10-10T23:30:00');
+            const early = new Date('2025-10-10T06:30:00');
+            const midday = new Date('2025-10-10T12:00:00');
+            expect(isWithinQuietHours('22:00', '07:00', late)).toBe(true);
+            expect(isWithinQuietHours('22:00', '07:00', early)).toBe(true);
+            expect(isWithinQuietHours('22:00', '07:00', midday)).toBe(false);
+        });
+        it('invalid times return false', () => {
+            const now = new Date();
+            expect(isWithinQuietHours('aa:bb', '07:00', now)).toBe(false);
+            expect(isWithinQuietHours('22:00', '77:00', now)).toBe(false);
+        });
+    });
+});

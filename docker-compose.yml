@@ -23,11 +23,16 @@ services:
       - ./packages/bot/.env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER:-fakegaming}:${POSTGRES_PASSWORD:-fakegaming}@fakegaming-postgres:5432/${POSTGRES_DB:-fakegaming}}
+      # Health server (internal by default)
+      BOT_HEALTH_HOST: ${BOT_HEALTH_HOST:-127.0.0.1}
+      BOT_HEALTH_PORT: ${BOT_HEALTH_PORT:-8081}
     volumes:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
     depends_on:
       - postgres
-    # No exposed ports
+    # Expose bot health port only if needed
+    # ports:
+    #   - "${BOT_HEALTH_PORT:-8081}:${BOT_HEALTH_PORT:-8081}"
 
   # -------------------- API --------------------
   api:

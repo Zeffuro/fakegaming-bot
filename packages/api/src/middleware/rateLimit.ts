@@ -1,11 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
-import { PostgresRateLimiter, getSequelize } from '@zeffuro/fakegaming-common';
+import { PostgresRateLimiter, getSequelize, getLogger, incMetric } from '@zeffuro/fakegaming-common';
 
 // Build-time flag to skip DB initialization (e.g., during OpenAPI export)
 const SKIP = process.env.API_BUILD_MODE === 'openapi' || process.env.SKIP_DB_INIT === '1';
 
 // Lazily-initialized limiter instance for runtime use
 let _limiter: PostgresRateLimiter | undefined;
+const log = getLogger({ name: 'api:rate-limit' });
 
 function ensureLimiter(): PostgresRateLimiter {
     if (!_limiter) {
@@ -47,7 +48,8 @@ export function scheduleRateLimitCleanup() {
     const intervalMs = Number(process.env.RATE_LIMIT_CLEANUP_INTERVAL_MS || Math.min(retentionMs, 60_000));
     cleanupTimer = setInterval(() => {
         ensureLimiter().cleanup(retentionMs).catch(err => {
-            console.warn('[RateLimit] cleanup failed', err);
+            log.warn({ err }, '[RateLimit] cleanup failed');
+            incMetric('rate_limit_cleanup_error');
         });
     }, intervalMs).unref?.();
 }
@@ -56,6 +58,10 @@ function buildKey(req: Request): string {
     const userId = (req as any).user?.discordId || 'anon';
     const path = req.path.replace(/\d+/g, ':id');
     return `user:${userId}:route:${req.method}:${path}`;
+}
+
+function routeLabel(req: Request): string {
+    return `${req.method}:${req.path.replace(/\d+/g, ':id')}`;
 }
 
 export async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -73,12 +79,13 @@ export async function rateLimit(req: Request, res: Response, next: NextFunction)
         if (!result.allowed) {
             const retryAfterSeconds = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000));
             res.setHeader('Retry-After', String(retryAfterSeconds));
+            incMetric('rate_limit_denied', { route: routeLabel(req) });
             res.status(429).json({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded', retryAfterSeconds } });
             return;
         }
         next();
     } catch (err) {
-        console.error('[RateLimit] Unexpected error', err);
+        log.error({ err }, '[RateLimit] Unexpected error');
         next();
     }
 }

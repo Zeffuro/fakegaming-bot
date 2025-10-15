@@ -215,6 +215,70 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                             }}
                         />
                     )}
+
+                    {/* Cooldown and Quiet Hours inputs */}
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 2 }}>
+                        <TextField
+                            label="Cooldown (minutes)"
+                            type="number"
+                            value={(config as any).cooldownMinutes ?? ''}
+                            onChange={(e) => {
+                                const v = e.target.value;
+                                const parsed = v === '' ? null : Number.isNaN(Number(v)) ? null : Number(v);
+                                onConfigChange('cooldownMinutes', parsed);
+                            }}
+                            inputProps={{ min: 0 }}
+                            sx={{
+                                '& .MuiInputLabel-root': { color: 'grey.300' },
+                                '& .MuiOutlinedInput-root': {
+                                    color: 'grey.100',
+                                    '& fieldset': { borderColor: 'grey.600' },
+                                    '&:hover fieldset': { borderColor: 'grey.500' },
+                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                }
+                            }}
+                            helperText="Minimum minutes between notifications (optional)"
+                            slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
+                        />
+                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                            <TextField
+                                label="Quiet Start"
+                                type="time"
+                                value={(config as any).quietHoursStart ?? ''}
+                                onChange={(e) => onConfigChange('quietHoursStart', e.target.value)}
+                                inputProps={{ step: 60 }}
+                                sx={{
+                                    '& .MuiInputLabel-root': { color: 'grey.300' },
+                                    '& .MuiOutlinedInput-root': {
+                                        color: 'grey.100',
+                                        '& fieldset': { borderColor: 'grey.600' },
+                                        '&:hover fieldset': { borderColor: 'grey.500' },
+                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                    }
+                                }}
+                                helperText="HH:mm (24h)"
+                                slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
+                            />
+                            <TextField
+                                label="Quiet End"
+                                type="time"
+                                value={(config as any).quietHoursEnd ?? ''}
+                                onChange={(e) => onConfigChange('quietHoursEnd', e.target.value)}
+                                inputProps={{ step: 60 }}
+                                sx={{
+                                    '& .MuiInputLabel-root': { color: 'grey.300' },
+                                    '& .MuiOutlinedInput-root': {
+                                        color: 'grey.100',
+                                        '& fieldset': { borderColor: 'grey.600' },
+                                        '&:hover fieldset': { borderColor: 'grey.500' },
+                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
+                                    }
+                                }}
+                                helperText="HH:mm (24h)"
+                                slotProps={{ formHelperText: { sx: { color: 'grey.400' } } }}
+                            />
+                        </Box>
+                    </Box>
                 </Box>
             </DialogContent>
             <DialogActions>
@@ -240,4 +304,3 @@ export default function EditConfigDialog<T extends StreamingConfig>({
         </Dialog>
     );
 }
-

@@ -1,4 +1,4 @@
-import {bootstrapEnv, getConfigManager, ensureRedis} from '@zeffuro/fakegaming-common';
+import {bootstrapEnv, getConfigManager, ensureRedis, getLogger, startMetricsSummaryLogger} from '@zeffuro/fakegaming-common';
 bootstrapEnv(import.meta.url);
 
 import app, { swaggerSpec, swaggerUi } from './app.js';
@@ -6,6 +6,8 @@ import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
 import { pathToFileURL } from 'url';
 import path from 'path';
 import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
+
+const log = getLogger({ name: 'api' });
 
 function requireEnv(name: string): string {
     const val = process.env[name];
@@ -36,18 +38,20 @@ const isDirectRun = (() => {
 
 if (isDirectRun) {
     const start = async () => {
+        // Start periodic metrics summary logs early
+        startMetricsSummaryLogger({ service: 'api', loggerName: 'api:metrics' });
         await getConfigManager().init();
         await ensureRedis(process.env.REDIS_URL || '');
         injectOpenApiSchemas(swaggerSpec);
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
         scheduleRateLimitCleanup();
         app.listen(port, () => {
-            console.log(`API server running on port ${port}\nYou can access the API documentation at http://localhost:${port}/api-docs`);
+            log.info(`API server running on port ${port}`);
         });
     };
     // Fire and forget
     start().catch((err) => {
-        console.error('Failed to start server', err);
+        log.error({ err }, 'Failed to start server');
         process.exit(1);
     });
 }

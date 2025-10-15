@@ -12,6 +12,7 @@ import {PatchNoteConfig} from './models/patch-note-config.js';
 import {PatchSubscriptionConfig} from './models/patch-subscription-config.js';
 import {DisabledCommandConfig} from "./models/disabled-command-config.js";
 import {CacheConfig} from "./models/cache-config.js";
+import {Notification} from './models/notification.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -51,7 +52,8 @@ export function getSequelize(useTest = false): Sequelize {
         PatchNoteConfig,
         PatchSubscriptionConfig,
         DisabledCommandConfig,
-        CacheConfig
+        CacheConfig,
+        Notification
     ]);
 
     return sequelize;

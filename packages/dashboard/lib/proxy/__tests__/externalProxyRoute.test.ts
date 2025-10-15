@@ -36,10 +36,10 @@ describe('external proxy route CSRF', () => {
 
     beforeEach(async () => {
         vi.resetModules();
-        // Mock global fetch to simulate API server
-        global.fetch = vi.fn(async (_url: string, _init: any) => {
+        // Mock global fetch to simulate API server with correct signature
+        global.fetch = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
             return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-        });
+        }) as unknown as typeof fetch;
         ({ POST } = await import('../../../app/api/external/[...proxy]/route.js'));
     });
 

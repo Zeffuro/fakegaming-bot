@@ -26,7 +26,7 @@ export class TwitchManager extends BaseManager<TwitchStreamConfig> {
         discordChannelId: string;
         guildId: string;
     }) {
-        const created = await this.upsert(data);
+        const created = await this.upsert(data, ['guildId', 'twitchUsername']);
         const record = await this.getOne(
             { twitchUsername: data.twitchUsername, discordChannelId: data.discordChannelId, guildId: data.guildId },
             { raw: true }

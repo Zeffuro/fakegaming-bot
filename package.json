@@ -47,7 +47,8 @@
     "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard .",
     "scan:dupes": "jscpd --min-tokens 40 --reporters json,html --gitignore packages/api/src packages/bot/src packages/dashboard/app packages/common/src > duplicates.json",
     "issues:summary": "tsx scripts/summarize-issues.ts",
-    "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts"
+    "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts",
+    "seed:dev": "tsx scripts/seed-dev.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -58,7 +59,6 @@
     "sequelize": "^6.37.7",
     "sqlite3": "^5.1.7",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "ts-node": "^10.9.2"
   }
 }

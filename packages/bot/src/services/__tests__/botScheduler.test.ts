@@ -64,7 +64,6 @@ describe('botScheduler', () => {
     });
 
     it('should handle service errors gracefully', async () => {
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         vi.mocked(twitchService.subscribeAllStreams).mockRejectedValue(new Error('Service error'));
 
         startBotServices(mockClient);
@@ -72,9 +71,10 @@ describe('botScheduler', () => {
         // Wait for promise rejection to be handled
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(
-            expect.stringContaining('Error in subscribeAllStreams'),
-            expect.any(Error)
+        const sharedLogger = (globalThis as Record<string, unknown>).__TEST_LOGGER__ as { error: (...args: unknown[]) => void };
+        expect(sharedLogger.error).toHaveBeenCalledWith(
+            expect.objectContaining({ service: 'subscribeAllStreams', err: expect.any(Error) }),
+            expect.stringContaining('Error in subscribeAllStreams')
         );
     });
 });

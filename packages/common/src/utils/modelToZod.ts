@@ -5,7 +5,7 @@ import { Model, ModelCtor } from 'sequelize-typescript';
  * Maps Sequelize DataTypes to Zod schemas.
  * This is the core utility that maintains single source of truth.
  */
-function mapDataTypeToZod(dataType: any, isOptional: boolean): z.ZodTypeAny {
+function mapDataTypeToZod(dataType: any, isOptional: boolean, allowNull: boolean): z.ZodTypeAny {
     const typeStr = dataType?.toString() || '';
 
     let schema: z.ZodTypeAny;
@@ -25,6 +25,11 @@ function mapDataTypeToZod(dataType: any, isOptional: boolean): z.ZodTypeAny {
     } else {
         // Fallback for unknown types
         schema = z.any();
+    }
+
+    // If the column allows NULLs at the DB layer, accept nulls in validation too
+    if (allowNull) {
+        schema = schema.nullable();
     }
 
     return isOptional ? schema.optional() : schema;
@@ -65,10 +70,11 @@ export function modelToZodSchema<T extends Model>(
         }
 
         // Determine if field is optional
-        const isOptional = attr.allowNull !== false || partial || mode === 'update';
+        const allowsNull = attr.allowNull !== false; // default true in Sequelize unless specified
+        const isOptional = allowsNull || partial || mode === 'update';
 
         // Map the datatype to Zod
-        shape[key] = mapDataTypeToZod(attr.type, isOptional);
+        shape[key] = mapDataTypeToZod(attr.type, isOptional, allowsNull);
     }
 
     return z.object(shape).strict();

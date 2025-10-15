@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ForbiddenError, NotFoundError } from '@zeffuro/fakegaming-common';
+import { ForbiddenError, NotFoundError, getLogger, incMetric } from '@zeffuro/fakegaming-common';
+
+const log = getLogger({ name: 'api:error' });
 
 /**
  * Centralized API error handler for async routers.
@@ -42,6 +44,7 @@ export function errorHandler(err: any, _req: Request, res: Response, _next: Next
     }
 
     // Fallback for all other errors
-    console.error(err);
+    log.error({ err }, 'Unhandled error in API');
+    incMetric('api_error', { type: 'unhandled' });
     res.status(500).json({ error: 'Internal Server Error', message: err?.message ?? 'Unexpected error' });
 }

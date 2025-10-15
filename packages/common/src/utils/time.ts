@@ -7,15 +7,21 @@ import ms from 'ms';
 export function toMillis(v: number | string | bigint | Date | null | undefined): number {
     if (v == null) return 0;
     if (v instanceof Date) return v.getTime();
-    if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    if (typeof v === 'bigint') return Number(v);
-    if (typeof v === 'string') {
-        const n = Number(v);
-        if (Number.isFinite(n)) return n;
-        const parsed = Date.parse(v);
-        return Number.isFinite(parsed) ? parsed : 0;
+
+    switch (typeof v) {
+        case 'number':
+            return Number.isFinite(v) ? v : 0;
+        case 'bigint':
+            return Number(v);
+        case 'string': {
+            const n = Number(v);
+            if (Number.isFinite(n)) return n;
+            const parsed = Date.parse(v);
+            return Number.isFinite(parsed) ? parsed : 0;
+        }
+        default:
+            return 0;
     }
-    return 0;
 }
 
 /**
@@ -43,7 +49,7 @@ export function parseDateSafe(date: string | number | Date | undefined): Date | 
  */
 export function parseTimespan(timespan: string): number | null {
     const result = ms(timespan as unknown as ms.StringValue);
-    return typeof result === 'number' && result > 0 ? result : null;
+    return result > 0 ? result : null;
 }
 
 /**
@@ -68,4 +74,42 @@ export function parseDateToISO(input: string | Date | number | undefined): strin
     const m = `${date.getUTCMonth() + 1}`.padStart(2, '0');
     const d = `${date.getUTCDate()}`.padStart(2, '0');
     return `${y}-${m}-${d}`;
+}
+
+/**
+ * Parse a 24-hour HH:mm string to minutes since midnight (0-1439).
+ * Returns null if the input is not a valid HH:mm.
+ */
+export function parseHHmmToMinutes(hhmm: string): number | null {
+    const m = /^([0-1]\d|2[0-3]):([0-5]\d)$/.exec(hhmm);
+    if (!m) return null;
+    const hours = Number(m[1]);
+    const minutes = Number(m[2]);
+    return hours * 60 + minutes;
+}
+
+/**
+ * Determine if a given time falls within a quiet-hours window.
+ * - start and end are strings in HH:mm (24h) local time.
+ * - If both are undefined/null or invalid, returns false.
+ * - If start === end and valid, returns true (interpreted as full quiet day).
+ * - Handles windows that cross midnight (e.g., 22:00–07:30).
+ */
+export function isWithinQuietHours(
+    start: string | null | undefined,
+    end: string | null | undefined,
+    now: Date
+): boolean {
+    if (!start || !end) return false;
+    const startMin = parseHHmmToMinutes(start);
+    const endMin = parseHHmmToMinutes(end);
+    if (startMin === null || endMin === null) return false;
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+    if (startMin === endMin) return true; // full quiet day
+    if (startMin < endMin) {
+        // same-day window
+        return currentMin >= startMin && currentMin < endMin;
+    }
+    // crosses midnight
+    return currentMin >= startMin || currentMin < endMin;
 }

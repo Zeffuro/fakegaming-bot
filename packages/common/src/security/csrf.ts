@@ -1,4 +1,5 @@
-import { randomBytes } from 'node:crypto';
+// Use Web Crypto API for CSPRNG to be compatible with both browser and Node 18+/20+ environments.
+// Avoid importing Node's crypto directly so this module can be safely bundled for the browser.
 
 export const CSRF_COOKIE_NAME = 'csrf' as const;
 export const CSRF_HEADER_NAME = 'x-csrf-token' as const;
@@ -23,10 +24,30 @@ export interface ReqLike {
 }
 
 /**
+ * Convert a byte array to a lowercase hex string.
+ */
+function bytesToHex(bytes: Uint8Array): string {
+    let hex = '';
+    for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i]!
+            .toString(16)
+            .padStart(2, '0');
+        hex += b;
+    }
+    return hex;
+}
+
+/**
  * Generate a random CSRF token (hex string).
  */
 export function generateCsrfToken(): string {
-    return randomBytes(32).toString('hex');
+    const cryptoObj = (globalThis as unknown as { crypto?: Crypto }).crypto;
+    if (!cryptoObj || typeof cryptoObj.getRandomValues !== 'function') {
+        throw new Error('Secure random generator not available (crypto.getRandomValues missing)');
+    }
+    const buf = new Uint8Array(32);
+    cryptoObj.getRandomValues(buf);
+    return bytesToHex(buf);
 }
 
 /**
@@ -50,4 +71,3 @@ export function validateCsrf(req: ReqLike): { valid: boolean; error?: string } {
 
     return { valid: true };
 }
-

@@ -183,4 +183,17 @@ describe('Twitch API', () => {
         expectNotFound(res);
         (configManager.twitchManager as any).removeByPk = origRemoveByPk;
     });
+
+    it('should upsert on duplicate POST (idempotent by guildId+twitchUsername)', async () => {
+        const payload = {
+            twitchUsername: 'dupstreamer',
+            discordChannelId: 'chan-1',
+            guildId: 'testguild1'
+        };
+        const first = await client.post('/api/twitch', payload);
+        expectCreated(first);
+        const second = await client.post('/api/twitch', payload);
+        // Second call should not 500; treat as OK (updated)
+        expectOk(second);
+    });
 });

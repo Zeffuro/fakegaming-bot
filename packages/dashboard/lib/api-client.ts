@@ -12,6 +12,7 @@ import type {
   discord_guilds_guildId_members_search_get_Response200
 } from "@/types/apiResponses";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
+import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 
 // Define endpoint paths centrally
 export const API_ENDPOINTS = {
@@ -40,6 +41,17 @@ interface ApiOptions {
   credentials?: RequestCredentials;
 }
 
+function isMutating(method: string): boolean {
+  const m = method.toUpperCase();
+  return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
+}
+
+function getCookie(name: string): string | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 // Base API request function
 async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const {
@@ -49,13 +61,23 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
     credentials = 'include',
   } = options;
 
+  const mergedHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...headers,
+  };
+
+  // Inject CSRF header on mutating requests for proxy validation
+  if (isMutating(method) && !(CSRF_HEADER_NAME in mergedHeaders)) {
+    const csrf = getCookie('csrf');
+    if (csrf) {
+      mergedHeaders[CSRF_HEADER_NAME] = csrf;
+    }
+  }
+
   const requestOptions: RequestInit = {
     method,
     credentials,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
+    headers: mergedHeaders,
   };
 
   if (body) {

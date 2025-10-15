@@ -1,4 +1,3 @@
-debugger;
 import './deploy-commands.js';
 
 import {
@@ -15,20 +14,32 @@ import {preloadAllModules} from './core/preloadModules.js';
 import {deployCommands} from "./deploy-commands.js";
 import { loadApplicationEmojiCache, syncApplicationEmojisFromDir } from './core/applicationEmojiManager.js';
 import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
+import { getLogger, startMetricsSummaryLogger, incMetric } from '@zeffuro/fakegaming-common';
+import { startHealthServer } from './utils/healthServer.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
+const logger = getLogger({ name: 'bot' });
 
 (async () => {
     try {
+        // Start minimal periodic metrics summary logger
+        startMetricsSummaryLogger({ service: 'bot', loggerName: 'bot:metrics' });
+
         deployCommands().then(() => {
-            console.log("Slash commands deployed.");
+            logger.info("Slash commands deployed.");
         }).catch(err => {
-            console.error("Failed to deploy slash commands:", err);
+            logger.error({ err }, "Failed to deploy slash commands:");
         });
 
+        const healthPortEnv = process.env.BOT_HEALTH_PORT ?? '';
+        const parsedPort = Number.parseInt(healthPortEnv, 10);
+        const healthPort = Number.isFinite(parsedPort) && parsedPort >= 0 ? parsedPort : 0;
+        const healthHost = process.env.BOT_HEALTH_HOST ?? '127.0.0.1';
+        // Fire-and-forget start of health server will happen after client is created
+
         if (!process.env.DISCORD_BOT_TOKEN) {
-            console.error('DISCORD_BOT_TOKEN is not set in environment variables.');
+            logger.error('DISCORD_BOT_TOKEN is not set in environment variables.');
             process.exit(1);
         }
         await getConfigManager().init();
@@ -38,7 +49,7 @@ const {__dirname} = bootstrapEnv(import.meta.url);
             const assetsDir = path.join(__dirname, '..', 'assets', 'application-emojis');
             await syncApplicationEmojisFromDir(assetsDir, Object.values(tierEmojiNames));
         } catch (e) {
-            console.warn('Application emoji initialization failed (non-fatal). Falling back to cache load.', e);
+            logger.warn({ err: e }, 'Application emoji initialization failed (non-fatal). Falling back to cache load.');
             try {
                 await loadApplicationEmojiCache();
             } catch {
@@ -62,12 +73,15 @@ const {__dirname} = bootstrapEnv(import.meta.url);
         try {
             await loadCommands(client, modulesPath);
         } catch (err) {
-            console.error('Error loading commands:', err);
+            logger.error({ err }, 'Error loading commands:');
             process.exit(1);
         }
 
+        // Now that the client exists, bind it to the health server
+        void startHealthServer({ client, port: healthPort, host: healthHost, logger });
+
         client.once('clientReady', async () => {
-            console.log(`Logged in as ${client.user?.tag}`);
+            logger.info({ user: client.user?.tag }, `Logged in as ${client.user?.tag}`);
             startBotServices(client);
         });
 
@@ -82,10 +96,13 @@ const {__dirname} = bootstrapEnv(import.meta.url);
                 return;
             }
             if (interaction.isChatInputCommand()) {
+                incMetric('command_exec', { name: interaction.commandName });
                 try {
                     await command.execute(interaction);
+                    incMetric('command_ok', { name: interaction.commandName });
                 } catch (error) {
-                    console.error(error);
+                    incMetric('command_error', { name: interaction.commandName });
+                    logger.error({ err: error }, 'Error executing command');
                     try {
                         if (!interaction.replied && !interaction.deferred) {
                             await interaction.reply({
@@ -96,7 +113,7 @@ const {__dirname} = bootstrapEnv(import.meta.url);
                             await interaction.editReply({content: 'Error executing command.'});
                         }
                     } catch (err) {
-                        console.error('Failed to send error reply:', err);
+                        logger.error({ err }, 'Failed to send error reply:');
                     }
                 }
             }
@@ -106,23 +123,19 @@ const {__dirname} = bootstrapEnv(import.meta.url);
 
 
     } catch (e) {
-        console.error('Uncaught fatal error at entrypoint.');
-        console.error('Type:', typeof e, 'Value:', e);
+        logger.error('Uncaught fatal error at entrypoint.');
+        logger.error({ type: typeof e, value: e }, 'Error envelope');
         if (e instanceof Error) {
-            console.error('Error message:', e.message);
-            console.error('Stack:', e.stack);
+            logger.error({ message: e.message, stack: e.stack }, 'Error details');
         } else {
-            console.error('Full object:', JSON.stringify(e, null, 2));
-            // Try to log stack if available
-            if (typeof e === 'object' && e !== null) {
-                if ('message' in e) {
-                    console.error('Error message:', (e as { message: string }).message);
-                }
-                if ('stack' in e) {
-                    console.error('Stack:', (e as { stack: string }).stack);
-                }
+            try {
+                const full = JSON.stringify(e, null, 2);
+                logger.error({ full }, 'Non-error throwable');
+            } catch {
+                // ignore JSON stringify errors
             }
             // Print a stack trace for the *catch location* (not the throw location)
+
             console.trace('Catch location stack trace');
         }
         process.exit(1);

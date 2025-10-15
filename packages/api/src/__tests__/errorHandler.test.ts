@@ -57,21 +57,17 @@ describe('errorHandler', () => {
     });
 
     it('should handle unknown errors with 500 status', () => {
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const error = { message: 'Something went wrong' };
         errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith(error);
         expect(statusMock).toHaveBeenCalledWith(500);
         expect(jsonMock).toHaveBeenCalledWith({
             error: 'Internal Server Error',
             message: 'Something went wrong'
         });
-        consoleErrorSpy.mockRestore();
     });
 
     it('should use fallback message for errors without message', () => {
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const error = {};
         errorHandler(error, mockReq as Request, mockRes as Response, mockNext);
 
@@ -80,7 +76,5 @@ describe('errorHandler', () => {
             error: 'Internal Server Error',
             message: 'Unexpected error'
         });
-        consoleErrorSpy.mockRestore();
     });
 });
-

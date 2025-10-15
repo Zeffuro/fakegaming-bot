@@ -21,14 +21,18 @@ export function useStreamingForm<T extends StreamingConfig>({
   onUpdate,
   onDelete,
   channelNameField,
-  guildId
+  guildId: _guildId
 }: UseStreamingFormProps<T>) {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<T | null>(null);
   const [newConfig, setNewConfig] = useState<any>({
     [channelNameField]: '',
     discordChannelId: '',
-    customMessage: ''
+    customMessage: '',
+    // New optional suppression controls
+    cooldownMinutes: null,
+    quietHoursStart: '',
+    quietHoursEnd: ''
   });
 
   const handleAddConfig = async () => {
@@ -37,7 +41,10 @@ export function useStreamingForm<T extends StreamingConfig>({
       setNewConfig({
         [channelNameField]: '',
         discordChannelId: '',
-        customMessage: ''
+        customMessage: '',
+        cooldownMinutes: null,
+        quietHoursStart: '',
+        quietHoursEnd: ''
       });
       setAddDialogOpen(false);
     }
@@ -96,7 +103,10 @@ export function useStreamingForm<T extends StreamingConfig>({
     setNewConfig({
       [channelNameField]: '',
       discordChannelId: '',
-      customMessage: ''
+      customMessage: '',
+      cooldownMinutes: null,
+      quietHoursStart: '',
+      quietHoursEnd: ''
     });
   };
 

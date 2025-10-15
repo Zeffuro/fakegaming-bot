@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
-import { withCacheMocks, mockCacheGet } from '../../../../common/dist/testing/mocks/cacheMock.js';
+import { withCacheMocks, mockCacheGet, setupCacheMocks } from '../../../../common/dist/testing/mocks/cacheMock.js';
 import { signTestJwt } from '../../../../common/dist/testing/utils/jwtTestUtils.js';
 
 // Preserve original env and module state across tests
@@ -9,6 +9,8 @@ const OLD_ENV = { ...process.env };
 // Helper to import module fresh with current env
 async function importAuthUtils() {
     vi.resetModules();
+    // Re-apply mocks cleared by resetModules so imports use the mocked cache
+    setupCacheMocks();
     return await import('@/lib/auth/authUtils.js');
 }
 

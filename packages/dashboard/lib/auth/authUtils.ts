@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import type { MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { isGuildAdmin as commonIsGuildAdmin, defaultCacheManager, CACHE_KEYS, verifyJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";

@@ -15,6 +15,13 @@ services:
     # Use the development environment file
     env_file:
       - ./packages/bot/.env.development
+    environment:
+      # Bind inside container to all interfaces so host mapping works
+      - BOT_HEALTH_HOST=0.0.0.0
+      - BOT_HEALTH_PORT=8081
+    # Expose health port for local access
+    ports:
+      - "8081:8081"
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-bot
     restart: unless-stopped
@@ -34,7 +41,7 @@ services:
       - ./packages/api/.env.development
     # Expose the API port for local access
     ports:
-      # Map host port 8080 to container port 8080 (adjust if your API uses a different port)
+      # Map host port 3001 to container port 3001
       - "3001:3001"
     environment:
       - PUBLIC_URL=http://api:3001/api

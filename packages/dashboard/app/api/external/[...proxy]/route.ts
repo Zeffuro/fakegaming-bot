@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from "@/lib/env";
 import { enforceCsrf } from "@/lib/security/csrf.js";
+import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
 
 type RouteContext = {
     params: Promise<{
@@ -51,6 +52,14 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
     if (jwt) {
         headers['Authorization'] = jwt;
+    }
+
+    // Forward CSRF header and cookie to API after local validation succeeded
+    const csrfToken = req.cookies.get(CSRF_COOKIE_NAME)?.value || req.headers.get(CSRF_HEADER_NAME) || '';
+    if (csrfToken) {
+        headers[CSRF_HEADER_NAME] = csrfToken;
+        // Ensure API receives the csrf cookie even though fetch does not forward browser cookies by default
+        headers['Cookie'] = `${CSRF_COOKIE_NAME}=${csrfToken}`;
     }
 
     console.log(`[ProxyHandler] Proxying ${method} ${apiPath} to ${url}`);

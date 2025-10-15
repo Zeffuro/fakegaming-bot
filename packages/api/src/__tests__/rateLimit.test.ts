@@ -10,7 +10,7 @@ import { getSequelize } from '@zeffuro/fakegaming-common';
 process.env.JWT_SECRET = 'testsecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
 process.env.JWT_ISSUER = 'fakegaming-test';
-process.env.RATE_LIMIT_WINDOW_MS = '1000'; // 1s window for test
+process.env.RATE_LIMIT_WINDOW_MS = '5000'; // 5s window for stable tests
 process.env.RATE_LIMIT_DEFAULT = '3'; // allow 3
 process.env.DATABASE_PROVIDER = 'sqlite';
 

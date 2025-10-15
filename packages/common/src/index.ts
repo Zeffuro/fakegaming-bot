@@ -26,7 +26,8 @@ export {
   PatchNoteConfig,
   PatchSubscriptionConfig,
   DisabledCommandConfig,
-  CacheConfig
+  CacheConfig,
+  Notification
 } from './models/index.js';
 
 export {
@@ -45,7 +46,8 @@ export {
   ReminderManager,
   BirthdayManager,
   PatchNotesManager,
-  DisabledCommandManager
+  DisabledCommandManager,
+  NotificationsManager
 } from './managers/index.js';
 
 export {
@@ -126,6 +128,9 @@ export {
 export { asValidated } from './utils/typeUtils.js';
 
 export { SUPPORTED_GAMES } from './utils/supportedGames.js';
+
+export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js';
+export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';
 
 // Register custom create schema overrides (executed on module import)
 const patchSubscriptionCreateSchema = z.object({

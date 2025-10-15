@@ -143,8 +143,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         description: Forbidden — requires guild admin
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamConfig, 'create'), async (req, res) => {
-    await getConfigManager().twitchManager.addPlain(req.body);
-    res.status(201).json({ success: true });
+    // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
+    const created = await getConfigManager().twitchManager.upsert(req.body, ['guildId', 'twitchUsername']);
+    res.status(created ? 201 : 200).json({ success: true });
 });
 
 /**

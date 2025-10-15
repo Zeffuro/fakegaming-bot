@@ -71,6 +71,10 @@ erDiagram
         string twitchUsername "Twitch channel name"
         string discordChannelId "Discord Channel ID for notifications"
         text customMessage "Optional custom notification message"
+        int cooldownMinutes "Optional per-config cooldown in minutes"
+        string quietHoursStart "Optional quiet-hours start in HH:mm"
+        string quietHoursEnd "Optional quiet-hours end in HH:mm"
+        datetime lastNotifiedAt "Timestamp of last sent notification for cooldown"
         string guildId "Discord Guild ID"
     }
     
@@ -80,6 +84,10 @@ erDiagram
         string discordChannelId "Discord Channel ID for notifications"
         string lastVideoId "Last announced video ID"
         text customMessage "Optional custom notification message"
+        int cooldownMinutes "Optional per-config cooldown in minutes"
+        string quietHoursStart "Optional quiet-hours start in HH:mm"
+        string quietHoursEnd "Optional quiet-hours end in HH:mm"
+        datetime lastNotifiedAt "Timestamp of last sent notification for cooldown"
         string guildId "Discord Guild ID"
     }
     
@@ -253,6 +261,10 @@ Stores Twitch stream notification subscriptions.
 - `twitchUsername` (STRING) - Twitch channel username
 - `discordChannelId` (STRING) - Discord Channel ID for notifications
 - `customMessage` (TEXT, nullable) - Optional custom notification message
+- `cooldownMinutes` (INTEGER, nullable) - Per-config cooldown in minutes
+- `quietHoursStart` (STRING, nullable) - Quiet-hours start in HH:mm
+- `quietHoursEnd` (STRING, nullable) - Quiet-hours end in HH:mm
+- `lastNotifiedAt` (DATE, nullable) - Last sent notification timestamp
 - `guildId` (STRING) - Discord Guild ID
 
 **Use Cases:**
@@ -273,6 +285,10 @@ Stores YouTube channel notification subscriptions.
 - `discordChannelId` (STRING) - Discord Channel ID for notifications
 - `lastVideoId` (STRING, nullable) - Last announced video ID (to prevent duplicates)
 - `customMessage` (TEXT, nullable) - Optional custom notification message
+- `cooldownMinutes` (INTEGER, nullable) - Per-config cooldown in minutes
+- `quietHoursStart` (STRING, nullable) - Quiet-hours start in HH:mm
+- `quietHoursEnd` (STRING, nullable) - Quiet-hours end in HH:mm
+- `lastNotifiedAt` (DATE, nullable) - Last sent notification timestamp
 - `guildId` (STRING) - Discord Guild ID
 
 **Use Cases:**
@@ -435,4 +451,3 @@ pnpm test:coverage  # With coverage report
 - [Sequelize TypeScript](https://github.com/sequelize/sequelize-typescript)
 - [MIGRATIONS.md](./MIGRATIONS.md) - Migration guide
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Architecture patterns
-
