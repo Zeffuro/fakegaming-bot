@@ -3,6 +3,7 @@ import { exchangeCodeForToken, fetchDiscordUser, issueJwt } from '@zeffuro/fakeg
 import { z } from 'zod';
 import { validateBody } from '@zeffuro/fakegaming-common';
 import { skipCsrf } from '../middleware/csrf.js';
+import { getLogger } from '@zeffuro/fakegaming-common';
 
 function requireEnv(name: string): string {
     const val = process.env[name];
@@ -19,6 +20,7 @@ const loginBodySchema = z.object({
 
 // Router
 const router = createBaseRouter();
+const log = getLogger({ name: 'api:auth' });
 
 /**
  * @openapi
@@ -77,7 +79,7 @@ router.post('/login', skipCsrf, validateBody(loginBodySchema), async (req, res) 
         );
         const accessToken = tokenData.access_token as string | undefined;
         if (!accessToken) {
-            return res.status(401).json({ error: 'Invalid Discord OAuth code' });
+            return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Invalid Discord OAuth code' } });
         }
         const user = await fetchDiscordUser(accessToken);
         const secret = requireEnv('JWT_SECRET');
@@ -86,8 +88,8 @@ router.post('/login', skipCsrf, validateBody(loginBodySchema), async (req, res) 
         const jwtToken = issueJwt(user, secret, audience, issuer);
         res.json({ token: jwtToken, user });
     } catch (err) {
-        console.error('Error in /auth/login:', err);
-        res.status(500).json({ error: 'Failed to authenticate with Discord' });
+        log.error({ err }, 'Error in /auth/login');
+        res.status(500).json({ error: { code: 'INTERNAL_SERVER_ERROR', message: 'Failed to authenticate with Discord' } });
     }
 });
 

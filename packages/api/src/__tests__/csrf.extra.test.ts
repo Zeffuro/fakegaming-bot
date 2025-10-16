@@ -5,6 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { enforceCsrf, enforceCsrfOnce, skipCsrf, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '../middleware/csrf.js';
 import { generateCsrfToken } from '@zeffuro/fakegaming-common/security';
+import { expectOk, expectForbidden } from '@zeffuro/fakegaming-common/testing';
 
 describe('CSRF middleware extra branches', () => {
     let app: express.Application;
@@ -31,7 +32,7 @@ describe('CSRF middleware extra branches', () => {
 
     it('allows POST when CSRF is explicitly skipped', async () => {
         const r = await request(app).post('/login');
-        expect(r.status).toBe(200);
+        expectOk(r);
         expect(r.body.ok).toBe(true);
     });
 
@@ -41,7 +42,7 @@ describe('CSRF middleware extra branches', () => {
             .post('/twice')
             .set('Cookie', `${CSRF_COOKIE_NAME}=${token}`)
             .set(CSRF_HEADER_NAME, token);
-        expect(r.status).toBe(200);
+        expectOk(r);
         expect(r.body.ok).toBe(true);
     });
 
@@ -52,8 +53,7 @@ describe('CSRF middleware extra branches', () => {
             .post('/malformed')
             .set('Cookie', `${CSRF_COOKIE_NAME}=${malformed}`)
             .set(CSRF_HEADER_NAME, 'different');
-        expect(r.status).toBe(403);
+        expectForbidden(r);
         expect(r.body.error).toBe('CSRF');
     });
 });
-

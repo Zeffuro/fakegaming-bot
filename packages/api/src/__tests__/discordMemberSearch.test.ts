@@ -3,6 +3,7 @@ import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import * as common from '@zeffuro/fakegaming-common';
 import { clearMemberSearchRateLimitsForTest } from '../utils/memberSearchLimiter.js';
+import { expectTooManyRequests, expectErrorCode, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 const client = givenAuthenticatedClient(app, { discordId: 'testuser' });
 
@@ -28,24 +29,25 @@ describe('Discord guild member search API', () => {
         ] as any);
 
         const res1 = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'a', limit: '5' });
-        expect(res1.status).toBe(200);
+        expectOk(res1);
         expect(Array.isArray(res1.body)).toBe(true);
         expect(res1.body.length).toBe(2);
         const callsAfterFirst = spy.mock.calls.length;
 
         const res2 = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'a', limit: '5' });
-        expect(res2.status).toBe(200);
+        expectOk(res2);
         expect(spy.mock.calls.length).toBe(callsAfterFirst);
     });
 
     it('enforces simple rate limiting per user+guild', async () => {
         vi.spyOn(common.Discord, 'retryFetchJson').mockResolvedValue([] as any);
-        let lastStatus = 200;
-        for (let i = 0; i < 11; i++) {
-            const res = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'x' });
-            lastStatus = res.status;
+        // Make the first request to initialize `last`, then perform the remaining 10 requests
+        let last = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'x' });
+        for (let i = 1; i < 11; i++) {
+            last = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'x' });
         }
-        expect(lastStatus).toBe(429);
+        expectTooManyRequests(last);
+        expectErrorCode(last, 'RATE_LIMIT');
     });
 
     it('falls back to recent quote participants and cached profiles when Discord fails', async () => {
@@ -57,7 +59,7 @@ describe('Discord guild member search API', () => {
         await testCache.set(common.CACHE_KEYS.userGuildNick('300', guildId), 'Chuck', common.CACHE_TTL.USER_PROFILE);
 
         const res = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'chu' });
-        expect(res.status).toBe(200);
+        expectOk(res);
         const ids = res.body.map((m: any) => m.id);
         expect(ids).toContain('300');
     });

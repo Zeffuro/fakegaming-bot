@@ -46,7 +46,8 @@ describe('Users API', () => {
     it('should return 400 when POST /api/users with missing fields', async () => {
         const res = await client.post('/api/users', {} as any);
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
+        expect(Array.isArray(res.body.error.details)).toBe(true);
     });
 
     it('should return 400 when PUT /api/users/:discordId with missing body', async () => {
@@ -54,19 +55,19 @@ describe('Users API', () => {
         await client.post('/api/users', testUser);
         const res = await client.put(`/api/users/${testUser.discordId}`, {} as any);
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 400 when PUT /api/users/:discordId/timezone with invalid body', async () => {
         const res = await client.put(`/api/users/${testUser.discordId}/timezone`, { timezone: '' });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 400 when PUT /api/users/:discordId/defaultReminderTimeSpan with invalid body', async () => {
         const res = await client.put(`/api/users/${testUser.discordId}/defaultReminderTimeSpan`, { timespan: '' });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     // 401 unauthorized coverage

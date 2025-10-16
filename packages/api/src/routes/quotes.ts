@@ -73,11 +73,11 @@ router.get('/', async (_req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  *       400:
- *         description: Query validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
     const { guildId, text } = req.query as z.infer<typeof searchQuerySchema>;
@@ -111,9 +111,9 @@ router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async (req, res) => {
     const { guildId } = req.params;
@@ -152,9 +152,9 @@ router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuthorParamSchema), async (req, res) => {
     const { guildId, authorId } = req.params;
@@ -180,12 +180,12 @@ router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuth
  *       200:
  *         description: Quote config
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const quote = await getConfigManager().quoteManager.findByPkPlain(id);
-    if (!quote) return res.status(404).json({ error: 'Quote not found' });
+    if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     res.json(quote);
 });
 
@@ -207,11 +207,13 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  */
 router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (req, res) => {
     const body = req.body as Partial<QuoteConfig>;
@@ -240,7 +242,7 @@ router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (re
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: 'Quote with this ID already exists' });
+            res.status(409).json({ error: { code: 'CONFLICT', message: 'Quote with this ID already exists' } });
         } else {
             throw error;
         }
@@ -265,16 +267,16 @@ router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (re
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const quote = await getConfigManager().quoteManager.findByPkPlain(id);
-    if (!quote) return res.status(404).json({ error: 'Quote not found' });
+    if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     if (quote.guildId) {
         const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
         if (!accessResult.authorized) return;

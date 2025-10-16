@@ -6,6 +6,9 @@ import { defaultCacheManager, CACHE_KEYS, MinimalGuildData } from '@zeffuro/fake
 import { isGuildAdmin } from '@zeffuro/fakegaming-common';
 import type { AuthenticatedRequest } from '../types/express.js';
 
+// Prefer the shared in-memory cache used by tests, fallback to default
+const _cache = ((globalThis as any).__testCacheManager ?? defaultCacheManager) as typeof defaultCacheManager;
+
 /**
  * Helper to check if a user has admin permissions for a guild
  */
@@ -21,7 +24,8 @@ export async function checkUserGuildAccess(
         return { authorized: false };
     }
 
-    const guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
+    // Read from the test-aware cache to ensure consistency in tests
+    const guilds = await _cache.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
     if (!guilds) {
         console.error(`[API] Cache miss for user guilds ${discordId}`);
         res.status(403).json({ error: 'Not authorized for this guild' });

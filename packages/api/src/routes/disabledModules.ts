@@ -76,9 +76,9 @@ router.get('/', validateQuery(listQuerySchema), async (req, res) => {
  *                 disabled:
  *                   type: boolean
  *       400:
- *         description: Query validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) => {
     const { guildId, moduleName } = req.query as z.infer<typeof checkQuerySchema>;
@@ -106,12 +106,12 @@ router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) 
  *             schema:
  *               $ref: '#/components/schemas/DisabledModuleConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const disabledModule = await getConfigManager().disabledModuleManager.findByPkPlain(Number(id));
-    if (!disabledModule) return res.status(404).json({ error: 'Disabled module not found' });
+    if (!disabledModule) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled module not found' } });
     res.json(disabledModule);
 });
 
@@ -137,9 +137,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/DisabledModuleConfig'
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBodyForModel(DisabledModuleConfig, 'create'), async (req, res) => {
     const created = await getConfigManager().disabledModuleManager.addPlain(req.body);
@@ -171,18 +171,17 @@ router.post('/', jwtAuth, validateBodyForModel(DisabledModuleConfig, 'create'), 
  *                 success:
  *                   type: boolean
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const numericId = Number(id);
     const existing = await getConfigManager().disabledModuleManager.findByPkPlain(numericId);
-    if (!existing) return res.status(404).json({ error: 'Disabled module not found' });
+    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled module not found' } });
     await getConfigManager().disabledModuleManager.removeByPk(numericId);
     res.json({ success: true });
 });
 
 export { router };
-

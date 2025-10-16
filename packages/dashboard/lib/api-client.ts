@@ -42,6 +42,9 @@ export const API_ENDPOINTS = {
   // Disabled features
   DISABLED_MODULES: '/api/external/disabledModules',
   DISABLED_COMMANDS: '/api/external/disabledCommands',
+
+  // Jobs (proxied to API /jobs)
+  JOBS: '/api/external/jobs',
 };
 
 // Type for API options
@@ -156,6 +159,10 @@ export interface ResolveUsersResponse {
   missed: string[];
 }
 
+export interface JobsListResponse { jobs: Array<{ name: string; supportsDate: boolean; supportsForce: boolean }>; }
+export interface LastHeartbeatResponse { last: { startedAt: string; backend: string; receivedAt: string } | null }
+export interface JobRunEntry { startedAt: string; finishedAt: string; ok: boolean; meta?: Record<string, unknown>; error?: string }
+
 // Typed API methods using apiResponses.ts types
 export const api = {
   // Twitch APIs
@@ -260,4 +267,16 @@ export const api = {
 
   deleteDisabledCommand: (id: string | number) =>
     apiRequest<disabledCommands_id_delete_Response200>(`${API_ENDPOINTS.DISABLED_COMMANDS}/${id}`, { method: 'DELETE' }),
+
+  // Jobs API
+  triggerJob: (name: string, date?: string, force?: boolean) =>
+    apiRequest<{ ok: boolean; jobId: string | number }>(
+      `${API_ENDPOINTS.JOBS}/${encodeURIComponent(name)}/run`,
+      { method: 'POST', body: { ...(date ? { date } : {}), ...(typeof force === 'boolean' ? { force } : {}) } }
+    ),
+
+  getJobs: () => apiRequest<JobsListResponse>(`${API_ENDPOINTS.JOBS}`),
+  getLastHeartbeat: () => apiRequest<LastHeartbeatResponse>(`${API_ENDPOINTS.JOBS}/heartbeat/last`),
+  getJobStatus: (name: string) => apiRequest<{ runs: JobRunEntry[] }>(`${API_ENDPOINTS.JOBS}/${encodeURIComponent(name)}/status`),
+  getBirthdaysProcessedToday: () => apiRequest<{ processed: number }>(`${API_ENDPOINTS.JOBS}/birthdays/today`),
 };

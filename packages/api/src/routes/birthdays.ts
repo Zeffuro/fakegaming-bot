@@ -59,12 +59,12 @@ router.get('/', async (_req, res) => {
  *       200:
  *         description: Birthday config
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
     const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
-    if (!birthday) return res.status(404).json({ error: 'Birthday not found' });
+    if (!birthday) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
     res.json(birthday);
 });
 
@@ -86,11 +86,13 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — requires guild admin
+ *         $ref: '#/components/responses/Forbidden'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig, 'create'), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
@@ -101,7 +103,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
         res.status(201).json({ success: true });
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: 'Birthday already exists for this user in this guild' });
+            res.status(409).json({ error: { code: 'CONFLICT', message: 'Birthday already exists for this user in this guild' } });
         } else {
             throw error;
         }
@@ -131,16 +133,16 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
     const existing = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
-    if (!existing) return res.status(404).json({ error: 'Birthday not found' });
+    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
     const access = await checkUserGuildAccess(req, res, guildId);
     if (!access.authorized) return;
     await getConfigManager().birthdayManager.removeBirthday(userId, guildId);

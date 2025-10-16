@@ -29,8 +29,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(401);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: 'Unauthorized',
-            message: 'Token expired'
+            error: { code: 'UNAUTHORIZED', message: 'Token expired' }
         });
     });
 
@@ -40,8 +39,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(400);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: 'Bad Request',
-            message: 'Invalid input'
+            error: { code: 'BAD_REQUEST', message: 'Invalid input' }
         });
     });
 
@@ -51,8 +49,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(404);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: 'Not Found',
-            message: 'Resource not found'
+            error: { code: 'NOT_FOUND', message: 'Resource not found' }
         });
     });
 
@@ -62,8 +59,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(500);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: 'Internal Server Error',
-            message: 'Something went wrong'
+            error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' }
         });
     });
 
@@ -73,8 +69,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(500);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: 'Internal Server Error',
-            message: 'Unexpected error'
+            error: { code: 'INTERNAL_SERVER_ERROR', message: 'Unexpected error' }
         });
     });
 });

@@ -47,6 +47,37 @@
           }
         }
       },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "BAD_REQUEST"
+              },
+              "message": {
+                "type": "string",
+                "example": "Body validation failed"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "BirthdayConfig": {
         "type": "object",
         "properties": {
@@ -101,7 +132,9 @@
           }
         },
         "required": [
-          "key"
+          "key",
+          "value",
+          "expires"
         ]
       },
       "DisabledCommandConfig": {
@@ -537,6 +570,56 @@
       }
     },
     "responses": {
+      "BadRequest": {
+        "description": "Validation failed",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflict",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
       "RateLimitExceeded": {
         "description": "Rate limit exceeded",
         "headers": {
@@ -686,13 +769,16 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — requires guild admin"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -726,7 +812,7 @@
             "description": "Birthday config"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -763,13 +849,13 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -838,10 +924,10 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -892,10 +978,10 @@
             }
           },
           "400": {
-            "description": "Query validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -928,7 +1014,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -969,10 +1055,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1041,10 +1127,10 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -1095,10 +1181,10 @@
             }
           },
           "400": {
-            "description": "Query validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -1131,7 +1217,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -1172,10 +1258,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1244,13 +1330,13 @@
             }
           },
           "400": {
-            "description": "Validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1309,16 +1395,30 @@
             }
           },
           "400": {
-            "description": "Validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           },
           "429": {
-            "description": "Too many requests"
+            "$ref": "#/components/responses/RateLimitExceeded"
+          }
+        },
+        "headers": {
+          "X-RateLimit-Limit": {
+            "$ref": "#/components/headers/X-RateLimit-Limit"
+          },
+          "X-RateLimit-Remaining": {
+            "$ref": "#/components/headers/X-RateLimit-Remaining"
+          },
+          "X-RateLimit-Reset": {
+            "$ref": "#/components/headers/X-RateLimit-Reset"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
           }
         }
       }
@@ -1370,10 +1470,10 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -1429,7 +1529,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1471,10 +1571,10 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       },
@@ -1503,10 +1603,10 @@
             "description": "Success"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -1532,7 +1632,7 @@
             "description": "Patch subscription config"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -1561,10 +1661,10 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1616,13 +1716,16 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -1671,13 +1774,13 @@
             }
           },
           "400": {
-            "description": "Query validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1718,10 +1821,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1770,10 +1873,10 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -1799,7 +1902,7 @@
             "description": "Quote config"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -1828,13 +1931,13 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1886,10 +1989,13 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           }
         }
       }
@@ -1922,7 +2028,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -1951,10 +2057,10 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -1996,10 +2102,10 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2025,7 +2131,7 @@
             "description": "Server config"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2064,13 +2170,13 @@
             "description": "Updated"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2099,7 +2205,7 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2164,13 +2270,13 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — requires guild admin"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -2229,10 +2335,10 @@
             }
           },
           "400": {
-            "description": "Query validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2265,7 +2371,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2312,13 +2418,13 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2359,13 +2465,13 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2421,10 +2527,10 @@
             "description": "Created"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2450,7 +2556,7 @@
             "description": "User config"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2489,13 +2595,13 @@
             "description": "Updated"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2524,7 +2630,7 @@
             "description": "Success"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2570,13 +2676,13 @@
             "description": "Success"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2622,13 +2728,13 @@
             "description": "Success"
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -2693,13 +2799,13 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — requires guild admin"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       },
@@ -2752,13 +2858,13 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — requires guild admin"
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -2812,13 +2918,13 @@
             }
           },
           "400": {
-            "description": "Query validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2873,10 +2979,10 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           }
         }
       }
@@ -2909,7 +3015,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -2956,13 +3062,13 @@
             }
           },
           "400": {
-            "description": "Body validation failed"
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       },
@@ -3003,13 +3109,13 @@
             }
           },
           "401": {
-            "description": "Unauthorized"
+            "$ref": "#/components/responses/Unauthorized"
           },
           "403": {
-            "description": "Forbidden — insufficient guild access"
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
-            "description": "Not found"
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

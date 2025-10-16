@@ -6,6 +6,7 @@ import { rateLimit, limiter } from '../middleware/rateLimit.js';
 import { jwtAuth } from '../middleware/auth.js';
 import jwt from 'jsonwebtoken';
 import { getSequelize } from '@zeffuro/fakegaming-common';
+import { expectTooManyRequests, expectErrorCode, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 process.env.JWT_SECRET = 'testsecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
@@ -39,11 +40,11 @@ describe('rateLimit middleware', () => {
         const token = sign('u1');
         for (let i = 0; i < 3; i++) {
             const r = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
-            expect(r.status).toBe(200);
+            expectOk(r);
         }
         const over = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
-        expect(over.status).toBe(429);
-        expect(over.body.error.code).toBe('RATE_LIMIT');
+        expectTooManyRequests(over);
+        expectErrorCode(over, 'RATE_LIMIT');
         expect(over.headers['x-ratelimit-limit']).toBe('3');
         expect(over.headers['x-ratelimit-remaining']).toBe('0');
         expect(over.headers['retry-after']).toBeDefined();
@@ -54,14 +55,14 @@ describe('rateLimit middleware', () => {
         const t2 = sign('uB');
         for (let i = 0; i < 3; i++) {
             const r1 = await request(app).get('/api/test').set('Authorization', `Bearer ${t1}`);
-            expect(r1.status).toBe(200);
+            expectOk(r1);
         }
         // user A now blocked
         const blocked = await request(app).get('/api/test').set('Authorization', `Bearer ${t1}`);
-        expect(blocked.status).toBe(429);
+        expectTooManyRequests(blocked);
         // user B still allowed
         const r2 = await request(app).get('/api/test').set('Authorization', `Bearer ${t2}`);
-        expect(r2.status).toBe(200);
+        expectOk(r2);
     });
 
     it('fallback path engages when DB errors and enforces tiny bucket of 5', async () => {
@@ -72,11 +73,11 @@ describe('rateLimit middleware', () => {
         try {
             for (let i = 0; i < 5; i++) {
                 const r = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
-                expect(r.status).toBe(200);
+                expectOk(r);
                 expect(r.headers['x-ratelimit-limit']).toBe('5');
             }
             const blocked = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
-            expect(blocked.status).toBe(429);
+            expectTooManyRequests(blocked);
             expect(blocked.headers['x-ratelimit-limit']).toBe('5');
         } finally {
             (limiter as any).sequelize.query = originalQuery;
@@ -97,7 +98,7 @@ describe('rateLimit middleware', () => {
     it('includes rate limit headers on allowed responses', async () => {
         const token = sign('uHeaders');
         const r = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
-        expect(r.status).toBe(200);
+        expectOk(r);
         expect(r.headers['x-ratelimit-limit']).toBeDefined();
         expect(r.headers['x-ratelimit-remaining']).toBeDefined();
         expect(r.headers['x-ratelimit-reset']).toBeDefined();

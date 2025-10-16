@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testBirthday = {
@@ -118,7 +118,7 @@ describe('Birthdays API', () => {
         configManager.birthdayManager.addPlain = async () => { throw new Error('DB error'); };
         const { year, month, day } = parseDate('2002-02-02');
         const res = await client.post('/api/birthdays', {userId: 'birthdayuser5', guildId: 'testguild1', channelId: 'testchannel5', year, month, day});
-        expect(res.status).toBe(500);
+        expectInternalServerError(res);
         configManager.birthdayManager.addPlain = origAddPlain;
     });
 

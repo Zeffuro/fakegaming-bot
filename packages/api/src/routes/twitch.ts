@@ -72,9 +72,9 @@ router.get('/', async (_req, res) => {
  *                 exists:
  *                   type: boolean
  *       400:
- *         description: Query validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
     const { twitchUsername, discordChannelId, guildId } = req.query as z.infer<typeof existsQuerySchema>;
@@ -102,12 +102,12 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res
  *             schema:
  *               $ref: '#/components/schemas/TwitchStreamConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
-    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
     res.json(stream);
 });
 
@@ -148,11 +148,11 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *                 success:
  *                   type: boolean
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — requires guild admin
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamConfig, 'create'), async (req, res) => {
     // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
@@ -199,16 +199,16 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamCo
  *             schema:
  *               $ref: '#/components/schemas/TwitchStreamConfig'
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(TwitchStreamConfig, 'update'), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
-    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
     await getConfigManager().twitchManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     res.json(updated);
@@ -239,17 +239,17 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *                 success:
  *                   type: boolean
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const numericId = Number(id);
     const stream = await getConfigManager().twitchManager.findByPkPlain(numericId);
-    if (!stream) return res.status(404).json({ error: 'Twitch stream config not found' });
+    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
     if (stream.guildId) {
         const access = await checkUserGuildAccess(req, res, stream.guildId);
         if (!access.authorized) return;

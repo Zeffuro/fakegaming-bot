@@ -69,16 +69,16 @@ router.get('/', async (_req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/YoutubeVideoConfig'
  *       400:
- *         description: Query validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/channel', jwtAuth, validateQuery(channelSchema), async (req, res) => {
     const { youtubeChannelId, discordChannelId, guildId } = req.query as z.infer<typeof channelSchema>;
     const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
-    if (!config) return res.status(404).json({ error: 'YouTube video config not found' });
+    if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
     res.json(config);
 });
 
@@ -102,12 +102,12 @@ router.get('/channel', jwtAuth, validateQuery(channelSchema), async (req, res) =
  *             schema:
  *               $ref: '#/components/schemas/YoutubeVideoConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return res.status(404).json({ error: 'YouTube video config not found' });
+    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
     res.json(video);
 });
 
@@ -148,11 +148,11 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *                 success:
  *                   type: boolean
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — requires guild admin
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoConfig, 'create'), async (req, res, next) => {
     try {
@@ -201,9 +201,9 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *                 created:
  *                   type: boolean
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) => {
     const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
@@ -249,11 +249,11 @@ router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) =
  *                 success:
  *                   type: boolean
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — requires guild admin
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (req, res) => {
     const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
@@ -300,16 +300,16 @@ router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (
  *             schema:
  *               $ref: '#/components/schemas/YoutubeVideoConfig'
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(YoutubeVideoConfig, 'update'), async (req, res) => {
     const { id } = req.params;
     const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return res.status(404).json({ error: 'YouTube video config not found' });
+    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
     await getConfigManager().youtubeManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
     res.json(updated);
@@ -340,17 +340,17 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(
  *                 success:
  *                   type: boolean
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const numericId = Number(id);
     const video = await getConfigManager().youtubeManager.findByPkPlain(numericId);
-    if (!video) return res.status(404).json({ error: 'YouTube video config not found' });
+    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
     if (video.guildId) {
         const access = await checkUserGuildAccess(req, res, video.guildId);
         if (!access.authorized) return;

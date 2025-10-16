@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import {
-    Typography, Box, Alert
+    Typography, Box, Alert, Button, Stack
 } from "@mui/material";
 import GuildCard from "@/components/Guild/GuildCard";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -28,9 +28,16 @@ export default function Dashboard() {
         <DashboardLayout loading={loading}>
             {!loading && (
                 <>
-                    <Typography variant="h4" sx={{mb: 4, fontWeight: 600}}>
-                        Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
-                    </Typography>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{mb: 3}}>
+                        <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                            Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
+                        </Typography>
+                        {isAdmin && (
+                            <Button variant="contained" color="primary" onClick={() => router.push('/dashboard/admin/jobs')}>
+                                Admin Jobs
+                            </Button>
+                        )}
+                    </Stack>
                     <Box
                         sx={{
                             display: "grid",

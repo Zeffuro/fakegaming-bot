@@ -38,13 +38,13 @@ describe('Servers API', () => {
     it('should return 400 when POST /api/servers with missing fields', async () => {
         const res = await client.post('/api/servers', {});
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 400 when PUT /api/servers/:serverId with invalid body', async () => {
         const res = await client.put(`/api/servers/${testServer.serverId}`, { prefix: 123 as any });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 401 for POST /api/servers without JWT', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { signTestJwt, verifyTestJwt } from '../../../../common/dist/testing/utils/jwtTestUtils.js';
+import { signTestJwt, verifyTestJwt, expectForbidden, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 process.env.JWT_SECRET = 'supersecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
@@ -29,7 +29,7 @@ describe('auth/refresh route', () => {
         const token = signTestJwt({ discordId: '42', username: 'u' }, 'supersecret');
         const res = await POST(makeReq({ jwt: token }));
         const body = await res.json();
-        expect(res.status).toBe(403);
+        expectForbidden(res);
         expect(body.error).toBe('CSRF');
     });
 
@@ -37,7 +37,7 @@ describe('auth/refresh route', () => {
         const token = signTestJwt({ discordId: '42', username: 'u' }, 'supersecret');
         const res = await POST(makeReq({ jwt: token, csrf: 'x', headerCsrf: 'x' }));
         const body = await res.json();
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(body.refreshed).toBe(true);
         // Validate new cookie attributes present
         const setCookieHeader = (res as any).cookies.get('jwt');

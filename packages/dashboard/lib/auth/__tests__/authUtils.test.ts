@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
-import { withCacheMocks, mockCacheGet, setupCacheMocks } from '../../../../common/dist/testing/mocks/cacheMock.js';
-import { signTestJwt } from '../../../../common/dist/testing/utils/jwtTestUtils.js';
+import { withCacheMocks, mockCacheGet, setupCacheMocks, signTestJwt, expectUnauthorized, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
 
 // Preserve original env and module state across tests
 const OLD_ENV = { ...process.env };
@@ -34,7 +33,7 @@ describe('authUtils', () => {
             const req = { cookies: { get: (_name: string) => undefined } } as unknown as NextRequest;
             const res = await authenticateUser(req);
             expect(res.success).toBe(false);
-            expect(res.statusCode).toBe(401);
+            expectUnauthorized(res as any);
         });
 
         it('returns user when valid jwt cookie present', async () => {
@@ -59,7 +58,7 @@ describe('authUtils', () => {
             } as unknown as NextRequest;
             const res = await authenticateUser(req);
             expect(res.success).toBe(false);
-            expect(res.statusCode).toBe(401);
+            expectUnauthorized(res as any);
         });
     });
 
@@ -94,7 +93,7 @@ describe('authUtils', () => {
             const { checkGuildAccess } = await importAuthUtils();
             const result = await checkGuildAccess({ discordId: 'user2' }, 'guild1');
             expect(result.hasAccess).toBe(false);
-            expect(result.statusCode).toBe(503);
+            expectServiceUnavailable(result as any);
         });
     });
 });

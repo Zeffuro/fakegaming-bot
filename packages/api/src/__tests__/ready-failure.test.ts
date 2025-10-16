@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import request from 'supertest';
+import { expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
 
 // Ensure test DB provider is set; though we will mock getSequelize
 process.env.NODE_ENV = 'test';
@@ -28,8 +29,7 @@ describe('readiness endpoint failure path', () => {
 
         const app = (await import('../app.js')).default;
         const res = await request(app).get('/ready');
-        expect(res.status).toBe(503);
+        expectServiceUnavailable(res);
         expect(res.body).toEqual({ ok: false, error: { code: 'DB_UNAVAILABLE' } });
     });
 });
-

@@ -26,7 +26,9 @@ export {
   PatchSubscriptionConfig,
   DisabledCommandConfig,
   CacheConfig,
-  Notification
+  Notification,
+  DisabledModuleConfig,
+  JobRun
 } from './models/index.js';
 
 export {
@@ -134,3 +136,6 @@ export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger 
 // Register custom create/update schema overrides (executed on module import)
 registerSchemaOverrides();
 export { PostgresRateLimiter, type RateLimiter, type RateLimiterResult } from './rate-limiter.js';
+
+// Jobs interfaces
+export * from './jobs/index.js';

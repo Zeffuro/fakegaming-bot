@@ -159,6 +159,39 @@ DASHBOARD_ADMINS=123456789012345678,987654321098765432
 # REDIS_URL=redis://localhost:6379
 ```
 
+## Jobs backends (optional)
+
+Background jobs are disabled by default. Two backends are available:
+
+- Memory (local dev/testing; no Postgres required)
+  - Set `JOBS_ENABLED=1` and `JOBS_BACKEND=memory`.
+  - Works with `DATABASE_PROVIDER=sqlite`.
+  - Not durable; single-process only; good for wiring/tests.
+  - Example (Windows cmd):
+    ```cmd
+    set JOBS_ENABLED=1
+    set JOBS_BACKEND=memory
+    set DATABASE_PROVIDER=sqlite
+    pnpm --filter @zeffuro/fakegaming-bot-api run start:dev
+    ```
+
+- Postgres with pg-boss (production/live or when you have Postgres locally)
+  - Set `JOBS_ENABLED=1` with `DATABASE_PROVIDER=postgres` and a valid `DATABASE_URL`.
+  - Queue is durable and runs in the API process (for now).
+  - Example (Windows cmd):
+    ```cmd
+    set JOBS_ENABLED=1
+    set DATABASE_PROVIDER=postgres
+    set DATABASE_URL=postgres://user:pass@localhost:5432/fakegaming
+    pnpm --filter @zeffuro/fakegaming-bot-api run start:dev
+    ```
+
+Notes:
+- The initial “heartbeat” job is harmless and only logs a payload once to validate wiring.
+- As pollers (e.g., birthdays/reminders) migrate to jobs, handlers will register under the same flag. We can move the worker to the bot or a separate service later without changing callers thanks to the shared `JobQueue` interface.
+
+---
+
 ## JWT Environment Variables
 
 JWT is used for authentication across API and dashboard services. The following variables are required:
@@ -472,3 +505,27 @@ Environment variables:
 - `BOT_HEALTH_PORT` (optional): override port if needed (default documented in bot package).
 
 Production compose keeps the health port internal by default. If external probing is required, set `BOT_HEALTH_HOST=0.0.0.0` and explicitly map the port in `docker-compose.yml`.
+
+---
+
+## Jobs (pg-boss) — optional, Postgres-only
+
+Background jobs are disabled by default. A minimal pg-boss bootstrap exists in the API and can be enabled via an environment flag when using a Postgres database:
+
+- Set `JOBS_ENABLED=1`.
+- Ensure `DATABASE_PROVIDER=postgres` and `DATABASE_URL` are set.
+- On startup, the API will start pg-boss and register a simple `heartbeat` job to validate the pipeline.
+
+Notes:
+- Jobs are a work-in-progress. As we migrate pollers (e.g., birthdays/reminders), additional queues and handlers will be registered.
+- SQLite is not supported for jobs. Keep jobs disabled in local dev unless you point the API to a Postgres instance.
+- The `heartbeat` job is safe and no-op beyond a log entry.
+
+Example (Windows cmd):
+
+```
+set JOBS_ENABLED=1
+set DATABASE_PROVIDER=postgres
+set DATABASE_URL=postgres://user:pass@localhost:5432/fakegaming
+pnpm --filter @zeffuro/fakegaming-bot-api run start:dev
+```

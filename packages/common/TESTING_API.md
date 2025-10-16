@@ -22,7 +22,8 @@ import request from 'supertest';
 import {
     setupApiRouteTest,
     signTestJwt,
-    createMockQuote
+    createMockQuote,
+    expectOk
 } from '@zeffuro/fakegaming-common/testing';
 import type { Express } from 'express';
 
@@ -47,7 +48,7 @@ describe('Quotes API', () => {
             .get('/api/quotes')
             .set('Authorization', `Bearer ${token}`);
 
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
 });
@@ -96,11 +97,21 @@ const { createApp, configManager } = await setupApiRouteTest({
         const app = express.default();
         // ... configure app
         return app;
-    }
+    },
+    // Auto-seeding: by default, seeds 'testuser' as admin of 'test-guild'
+    // Customize or disable as needed:
+    // autoSeedTestUserGuild: true,
+    // seed: { userId: 'alice', guildId: 'guild-123', permissions: 0x8, owner: false, ttlMs: 5000 },
 });
 
 const app = await createApp();
 ```
+
+Auto-seeding details:
+- Enabled by default via `autoSeedTestUserGuild: true`.
+- Defaults: `userId: 'testuser'`, `guildId: 'test-guild'`, `permissions: 0x8 (Administrator)`, `owner: false`.
+- `permissions` may be number or string; coerced to string internally.
+- Disable with `autoSeedTestUserGuild: false`.
 
 **Returns:**
 - `createApp()` - Function to create Express app instance
@@ -146,16 +157,18 @@ const res = await request(app)
 ### Testing Unauthorized Access
 
 ```typescript
+import { expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
+
 it('should return 401 without token', async () => {
     const res = await request(app).get('/api/protected');
-    expect(res.status).toBe(401);
+    expectUnauthorized(res);
 });
 
 it('should return 401 with invalid token', async () => {
     const res = await request(app)
         .get('/api/protected')
         .set('Authorization', 'Bearer invalid-token');
-    expect(res.status).toBe(401);
+    expectUnauthorized(res);
 });
 ```
 

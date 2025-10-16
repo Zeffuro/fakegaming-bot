@@ -63,12 +63,12 @@ router.get('/', async (_req, res) => {
  *       200:
  *         description: User config
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
     res.json(user);
 });
 
@@ -90,9 +90,9 @@ router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res)
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
     await getConfigManager().userManager.addPlain(req.body);
@@ -123,16 +123,16 @@ router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
  *       200:
  *         description: Updated
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateSchema), async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
     await getConfigManager().userManager.updatePlain(req.body, { discordId });
     const updated = await getConfigManager().userManager.findByPkPlain(discordId);
     res.json(updated);
@@ -165,11 +165,11 @@ router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validat
  *       200:
  *         description: Success
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put(
     '/:discordId/timezone',
@@ -179,7 +179,7 @@ router.put(
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
 
         const { timezone } = req.body as z.infer<typeof timezoneBodySchema>;
         await getConfigManager().userManager.updatePlain({ timezone }, { discordId });
@@ -214,11 +214,11 @@ router.put(
  *       200:
  *         description: Success
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put(
     '/:discordId/defaultReminderTimeSpan',
@@ -228,7 +228,7 @@ router.put(
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
 
         const { timespan } = req.body as z.infer<typeof defaultTimespanBodySchema>;
         await getConfigManager().userManager.updatePlain(
@@ -257,7 +257,7 @@ router.put(
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.delete('/:discordId', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;

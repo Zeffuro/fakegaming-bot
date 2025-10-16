@@ -54,12 +54,12 @@ router.get('/', async (_req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/ReminderConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
+    if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
     res.json(reminder);
 });
 
@@ -81,9 +81,11 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  */
 router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async (req, res) => {
     try {
@@ -91,7 +93,7 @@ router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async 
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: 'Reminder with this ID already exists' });
+            res.status(409).json({ error: { code: 'CONFLICT', message: 'Reminder with this ID already exists' } });
         } else {
             throw error;
         }
@@ -116,15 +118,15 @@ router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async 
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
-    if (!reminder) return res.status(404).json({ error: 'Reminder not found' });
+    if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
     await getConfigManager().reminderManager.removeByPk(id);
     console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
     res.json({ success: true });

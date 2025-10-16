@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
 import { router as authRouter } from '../routes/auth.js';
+import { expectBadRequest, expectUnauthorized, expectErrorCode, expectOk, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
 
 // Mock the common package functions
 vi.mock('@zeffuro/fakegaming-common/discord', () => ({
@@ -38,9 +39,9 @@ describe('POST /auth/login', () => {
             .post('/auth/login')
             .send({});
 
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBe('Body validation failed');
-        expect(Array.isArray(response.body.details)).toBe(true);
+        expectBadRequest(response);
+        expect(response.body.error.message).toBe('Body validation failed');
+        expect(Array.isArray(response.body.error.details)).toBe(true);
     });
 
     it('should return 401 if access token is missing', async () => {
@@ -50,8 +51,9 @@ describe('POST /auth/login', () => {
             .post('/auth/login')
             .send({ code: 'test-code' });
 
-        expect(response.status).toBe(401);
-        expect(response.body.error).toBe('Invalid Discord OAuth code');
+        expectUnauthorized(response);
+        expect(response.body.error.message).toBe('Invalid Discord OAuth code');
+        expectErrorCode(response, 'UNAUTHORIZED');
     });
 
     it('should return JWT token and user info on successful login', async () => {
@@ -70,7 +72,7 @@ describe('POST /auth/login', () => {
             .post('/auth/login')
             .send({ code: 'test-code' });
 
-        expect(response.status).toBe(200);
+        expectOk(response);
         expect(response.body.token).toBe('jwt-token');
         expect(response.body.user).toEqual(mockUser);
         expect(exchangeCodeForToken).toHaveBeenCalledWith(
@@ -90,7 +92,8 @@ describe('POST /auth/login', () => {
             .post('/auth/login')
             .send({ code: 'test-code' });
 
-        expect(response.status).toBe(500);
-        expect(response.body.error).toBe('Failed to authenticate with Discord');
+        expectInternalServerError(response);
+        expect(response.body.error.message).toBe('Failed to authenticate with Discord');
+        expectErrorCode(response, 'INTERNAL_SERVER_ERROR');
     });
 });

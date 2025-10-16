@@ -37,7 +37,7 @@ describe('Twitch API validation (cooldown & quiet hours & protected fields)', ()
             quietHoursEnd: '07:00'
         });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Body validation failed');
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('rejects negative cooldownMinutes', async () => {

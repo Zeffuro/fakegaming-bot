@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import http from 'node:http';
 import type { Client } from 'discord.js';
 import { startHealthServer } from '../healthServer.js';
+import { expectOk, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
 
 function httpGet(url: string): Promise<{ status: number; body: string; json?: unknown }> {
     return new Promise((resolve, reject) => {
@@ -48,7 +49,7 @@ describe('bot health server', () => {
         port = started.port;
 
         const res = await httpGet(`http://127.0.0.1:${port}/healthz`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.json).toMatchObject({ status: 'ok' });
     });
 
@@ -59,7 +60,7 @@ describe('bot health server', () => {
         port = started1.port;
 
         const res1 = await httpGet(`http://127.0.0.1:${port}/ready`);
-        expect(res1.status).toBe(503);
+        expectServiceUnavailable(res1);
 
         await new Promise<void>((resolve) => server!.close(() => resolve()));
         server = null;
@@ -70,8 +71,7 @@ describe('bot health server', () => {
         port = started2.port;
 
         const res2 = await httpGet(`http://127.0.0.1:${port}/ready`);
-        expect(res2.status).toBe(200);
+        expectOk(res2);
         expect(res2.json).toMatchObject({ status: 'ok' });
     });
 });
-

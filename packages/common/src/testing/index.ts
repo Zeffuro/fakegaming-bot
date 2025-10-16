@@ -93,5 +93,8 @@ export {
     type GivenAuthClientOptions
 } from './utils/apiClient.js';
 
+// Cache seeding helpers
+export { seedUserGuilds, seedUserProfiles, seedUserGuildNick } from './utils/cacheSeed.js';
+
 // Canvas mocks
 export { createMockCanvasContext2D, type Canvas2DMock } from './mocks/canvasMock.js';

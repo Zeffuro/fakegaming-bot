@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectUnauthorized, expectNotFound, expectBadRequest, expectCreated, expectOk } from '@zeffuro/fakegaming-common/testing';
 import { configManager } from '../vitest.setup.js';
 
 describe('PatchSubscriptions API', () => {
@@ -11,7 +11,7 @@ describe('PatchSubscriptions API', () => {
     });
     it('should list all patch subscriptions', async () => {
         const res = await request(app).get('/api/patchSubscriptions').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
 
@@ -21,7 +21,7 @@ describe('PatchSubscriptions API', () => {
             channelId: 'patchsubchan2',
             guildId: 'testguild2'
         });
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body.success).toBe(true);
     });
 
@@ -31,7 +31,7 @@ describe('PatchSubscriptions API', () => {
             channelId: 'patchsubchan1',
             guildId: 'testguild1'
         });
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.success).toBe(true);
     });
 
@@ -39,8 +39,8 @@ describe('PatchSubscriptions API', () => {
         const res = await request(app)
             .get('/api/patchSubscriptions/abc')
             .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(400);
-        expect(res.body.error).toBe('Params validation failed');
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Params validation failed');
     });
 
     it('should return 400 when POST /api/patchSubscriptions with missing fields', async () => {
@@ -48,8 +48,8 @@ describe('PatchSubscriptions API', () => {
             .post('/api/patchSubscriptions')
             .set('Authorization', `Bearer ${token}`)
             .send({});
-        expect(res.status).toBe(400);
-        expect(res.body.error).toBe('Body validation failed');
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 400 when PUT /api/patchSubscriptions with missing fields', async () => {
@@ -57,28 +57,28 @@ describe('PatchSubscriptions API', () => {
             .put('/api/patchSubscriptions')
             .set('Authorization', `Bearer ${token}`)
             .send({});
-        expect(res.status).toBe(400);
-        expect(res.body.error).toBe('Body validation failed');
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Body validation failed');
     });
 
     it('should return 401 for POST /api/patchSubscriptions without JWT', async () => {
         const res = await request(app)
             .post('/api/patchSubscriptions')
             .send({ game: 'g', channelId: 'c', guildId: 'guild' });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 401 for PUT /api/patchSubscriptions without JWT', async () => {
         const res = await request(app)
             .put('/api/patchSubscriptions')
             .send({ game: 'g', channelId: 'c', guildId: 'guild' });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 401 for DELETE /api/patchSubscriptions/:id without JWT', async () => {
         const res = await request(app)
             .delete('/api/patchSubscriptions/1');
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should delete a patch subscription by id', async () => {
@@ -91,7 +91,7 @@ describe('PatchSubscriptions API', () => {
         const res = await request(app)
             .delete(`/api/patchSubscriptions/${created.id}`)
             .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.success).toBe(true);
     });
 
@@ -99,14 +99,14 @@ describe('PatchSubscriptions API', () => {
         const res = await request(app)
             .delete('/api/patchSubscriptions/999999')
             .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        expectNotFound(res);
     });
 
     it('should return 400 for invalid id on DELETE /api/patchSubscriptions/:id', async () => {
         const res = await request(app)
             .delete('/api/patchSubscriptions/invalid')
             .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(400);
-        expect(res.body.error).toBe('Params validation failed');
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Params validation failed');
     });
 });

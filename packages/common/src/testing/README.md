@@ -9,6 +9,13 @@ Key areas:
 - Reply/editReply assertions for Discord interactions.
 - API testing helpers and mocks.
 
+API route testing (DX)
+
+- `setupApiRouteTest(options?)` creates a full API test context. By default it auto-seeds admin access for a default test user so guild-scoped routes don’t 403.
+  - Defaults: `userId: 'testuser'`, `guildId: 'test-guild'`, `permissions: 0x8 (Administrator)`, `owner: false`.
+  - Customize with `seed: { userId?, guildId?, permissions?: string | number, owner?, ttlMs? }`.
+  - Disable with `autoSeedTestUserGuild: false`.
+
 Discord interaction helpers
 
 - expectEphemeralReply(interaction, { contains?, equals? })

@@ -35,8 +35,11 @@ export function makeValidator<TParsed>(
                     issues: ReadonlyArray<{ path: ReadonlyArray<string | number>; message: string }>;
                 }).issues;
                 res.status(400).json({
-                    error: `${label} validation failed`,
-                    details: formatZodError(issues),
+                    error: {
+                        code: 'VALIDATION_ERROR',
+                        message: `${label} validation failed`,
+                        details: formatZodError(issues),
+                    },
                 });
                 return;
             }

@@ -16,10 +16,30 @@ import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
 
 export function injectOpenApiSchemas(swaggerSpec: any) {
     swaggerSpec.components = swaggerSpec.components || {};
+    // Ensure bearer security scheme exists for protected routes
+    swaggerSpec.components.securitySchemes = Object.assign({}, swaggerSpec.components.securitySchemes, {
+        bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }
+    });
     const existing = swaggerSpec.components.schemas || {};
     swaggerSpec.components.schemas = {
         // Preserve any schemas already discovered by swagger-jsdoc in route annotations
         ...existing,
+        // Common error envelope used across the API
+        ErrorResponse: {
+            type: 'object',
+            properties: {
+                error: {
+                    type: 'object',
+                    properties: {
+                        code: { type: 'string', example: 'BAD_REQUEST' },
+                        message: { type: 'string', example: 'Body validation failed' },
+                        details: { type: 'array', items: { type: 'string' } }
+                    },
+                    required: ['code', 'message']
+                }
+            },
+            required: ['error']
+        },
         // Merge in model schemas
         BirthdayConfig: modelToOpenApiSchema(BirthdayConfig, { mode: 'full' }),
         CacheConfig: modelToOpenApiSchema(CacheConfig, { mode: 'full' }),
@@ -49,7 +69,7 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
             required: ['error']
         }
     };
-    // Add header components & a reusable 429 response
+    // Add header components & reusable responses
     swaggerSpec.components.headers = Object.assign({}, swaggerSpec.components.headers, {
         'X-RateLimit-Limit': { description: 'Maximum number of requests allowed in the current window', schema: { type: 'integer' } },
         'X-RateLimit-Remaining': { description: 'Remaining requests in the current window', schema: { type: 'integer' } },
@@ -57,6 +77,26 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
         'Retry-After': { description: 'Seconds to wait before retrying when limited', schema: { type: 'integer' } }
     });
     swaggerSpec.components.responses = Object.assign({}, swaggerSpec.components.responses, {
+        BadRequest: {
+            description: 'Validation failed',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        },
+        Unauthorized: {
+            description: 'Unauthorized',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        },
+        Forbidden: {
+            description: 'Forbidden',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        },
+        NotFound: {
+            description: 'Not found',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        },
+        Conflict: {
+            description: 'Conflict',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        },
         RateLimitExceeded: {
             description: 'Rate limit exceeded',
             headers: {
@@ -65,11 +105,7 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
                 'X-RateLimit-Reset': { $ref: '#/components/headers/X-RateLimit-Reset' },
                 'Retry-After': { $ref: '#/components/headers/Retry-After' }
             },
-            content: {
-                'application/json': {
-                    schema: { $ref: '#/components/schemas/RateLimitError' }
-                }
-            }
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/RateLimitError' } } }
         }
     });
     return swaggerSpec;

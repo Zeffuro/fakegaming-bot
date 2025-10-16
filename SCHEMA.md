@@ -118,6 +118,12 @@ erDiagram
         string commandName "Command to disable"
     }
     
+    DisabledModuleConfig {
+        int id PK
+        string guildId "Discord Guild ID"
+        string moduleName "Module to disable (e.g., 'fun', 'admin', 'riot')"
+    }
+    
     CacheConfig {
         string key PK "Cache key"
         text value "Cached value (JSON)"
@@ -357,7 +363,26 @@ Stores disabled commands per guild.
 
 **Use Cases:**
 - Allow guild admins to disable specific commands
-- Command handler checks this table before execution
+- Command handler checks this table before execution; if disabled, bot denies execution with an ephemeral message.
+
+---
+
+### DisabledModuleConfig
+Stores disabled modules per guild (module-level feature toggles).
+
+**Primary Key:** `id` (auto-increment)
+
+**Unique Constraint:** `(guildId, moduleName)` - One disabled record per module per guild
+
+**Fields:**
+- `id` (INTEGER, PK, auto-increment)
+- `guildId` (STRING) - Discord Guild ID
+- `moduleName` (STRING) - Module to disable (e.g., "fun", "admin", "riot")
+
+**Use Cases:**
+- Allow guild admins to disable entire modules at once
+- Command handler tags each command with `moduleName` and denies execution if the module is disabled (ephemeral response)
+- Shared dashboard page manages both disabled commands and modules at `/dashboard/commands/[guildId]`
 
 ---
 
@@ -378,6 +403,15 @@ Generic key-value cache with expiration.
 
 ---
 
+## Runtime Enforcement (Commands & Modules)
+
+- Before executing any command, the bot checks both `DisabledModuleConfig` (by `moduleName`) and `DisabledCommandConfig` (by `commandName`) for the current `guildId`.
+- If a module is disabled, all its commands are denied with an ephemeral message (module-level block).
+- If a specific command is disabled (and module is enabled), that command is denied with an ephemeral message (command-level block).
+- The dashboard provides a shared management page at `/dashboard/commands/[guildId]` to toggle both disabled modules and disabled commands.
+
+---
+
 ## Migrations
 
 All schema changes are managed through migrations in the `migrations/` directory. See [MIGRATIONS.md](./MIGRATIONS.md) for details on creating and running migrations.
@@ -387,6 +421,9 @@ All schema changes are managed through migrations in the `migrations/` directory
 - All migrations must have `up` and `down` functions
 - Migrations run automatically on bot/API startup
 - Use descriptive migration names with dates
+
+**Related Migrations:**
+- `20251016-create-disabled-module-config.ts` — Introduces `DisabledModuleConfig` with unique `(guildId, moduleName)`
 
 ---
 
@@ -406,6 +443,7 @@ All schema changes are managed through migrations in the `migrations/` directory
 - Primary keys (automatic)
 - Unique constraints on `PatchNoteConfig(game, title)`
 - Unique constraints on `PatchSubscriptionConfig(game, channelId)`
+- Unique constraints on `DisabledModuleConfig(guildId, moduleName)`
 
 **Recommended Future Indexes** (for performance):
 - `QuoteConfig.guildId` - For fast quote retrieval by guild

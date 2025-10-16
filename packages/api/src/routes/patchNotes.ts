@@ -80,12 +80,12 @@ router.get('/supportedGames', (_req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/PatchNoteConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
     const { game } = req.params;
     const note = await getConfigManager().patchNotesManager.getLatestPatch(game);
-    if (!note) return res.status(404).json({ error: 'Patch note not found' });
+    if (!note) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Patch note not found' } });
     res.json(note);
 });
 
@@ -107,9 +107,9 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(patchNoteCreateSchema), async (req, res) => {
     await getConfigManager().patchNotesManager.setLatestPatch(req.body);

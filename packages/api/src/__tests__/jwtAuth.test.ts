@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectUnauthorized, expectCreated } from '@zeffuro/fakegaming-common/testing';
 import jwt from 'jsonwebtoken';
 
 describe('JWT Authentication', () => {
@@ -18,7 +18,7 @@ describe('JWT Authentication', () => {
                 quote: 'JWT test quote',
                 timestamp: Date.now()
             });
-        expect(res.status).toBe(201);
+        expectCreated(res);
     });
 
     it('should reject access with a missing JWT', async () => {
@@ -32,7 +32,7 @@ describe('JWT Authentication', () => {
                 quote: 'JWT test quote',
                 timestamp: Date.now()
             });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should reject access with an invalid JWT', async () => {
@@ -48,6 +48,6 @@ describe('JWT Authentication', () => {
                 quote: 'JWT test quote',
                 timestamp: Date.now()
             });
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 });

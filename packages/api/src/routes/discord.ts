@@ -85,11 +85,11 @@ const resolveUsersBodySchema = z.object({
  *                   items:
  *                     type: string
  *       400:
- *         description: Validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/users/resolve', jwtAuth, common.validateBody(resolveUsersBodySchema), async (req, res) => {
     const { guildId, ids } = req.body as z.infer<typeof resolveUsersBodySchema>;
@@ -220,13 +220,22 @@ const memberSearchQuerySchema = z.object({
  *               items:
  *                 $ref: '#/components/schemas/DiscordMemberMinimal'
  *       400:
- *         description: Validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Forbidden — insufficient guild access
+ *         $ref: '#/components/responses/Forbidden'
  *       429:
- *         description: Too many requests
+ *         $ref: '#/components/responses/RateLimitExceeded'
+ *     headers:
+ *       X-RateLimit-Limit:
+ *         $ref: '#/components/headers/X-RateLimit-Limit'
+ *       X-RateLimit-Remaining:
+ *         $ref: '#/components/headers/X-RateLimit-Remaining'
+ *       X-RateLimit-Reset:
+ *         $ref: '#/components/headers/X-RateLimit-Reset'
+ *       Retry-After:
+ *         $ref: '#/components/headers/Retry-After'
  */
 router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(memberSearchParamsSchema), common.validateQuery(memberSearchQuerySchema), async (req, res) => {
     const { guildId } = req.params as z.infer<typeof memberSearchParamsSchema>;
@@ -238,7 +247,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     const user = (req as any).user as { discordId?: string } | undefined;
     const bucketKey = `${user?.discordId || 'anon'}:${guildId}:membersearch`;
     if (!allowRequest(bucketKey)) {
-        return res.status(429).json({ error: 'Too many requests' });
+        return res.status(429).json({ error: { code: 'RATE_LIMIT', message: 'Too many requests' } });
     }
 
     // Normalize query to reduce number of unique cache keys and keep Discord search effective

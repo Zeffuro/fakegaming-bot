@@ -3,6 +3,7 @@ import type { Express } from 'express';
 import type { IncomingMessage, ServerResponse } from 'http';
 import { givenAuthenticatedClient } from '../apiClient.js';
 import { verifyTestJwt } from '../jwtTestUtils.js';
+import { expectOk, expectUnauthorized } from '../assertions.js';
 
 function createHandler() {
     return (req: IncomingMessage, res: ServerResponse): void => {
@@ -26,7 +27,7 @@ describe('givenAuthenticatedClient', () => {
         const client = givenAuthenticatedClient(app, { discordId: 'myuser' });
 
         const res = await client.get('/check');
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body).toBeTypeOf('object');
         expect(res.body.auth).toBe(`Bearer ${client.token}`);
 
@@ -40,7 +41,7 @@ describe('givenAuthenticatedClient', () => {
         const client = givenAuthenticatedClient(app);
 
         const res = await client.raw.get('/check');
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
         expect(res.body.error).toBe('Unauthorized');
     });
 
@@ -50,16 +51,15 @@ describe('givenAuthenticatedClient', () => {
         const client = givenAuthenticatedClient(app);
 
         const postRes = await client.post('/check', { foo: 'bar' });
-        expect(postRes.status).toBe(200);
+        expectOk(postRes);
         expect(postRes.body.auth).toBe(`Bearer ${client.token}`);
 
         const putRes = await client.put('/check', { foo: 'baz' });
-        expect(putRes.status).toBe(200);
+        expectOk(putRes);
         expect(putRes.body.auth).toBe(`Bearer ${client.token}`);
 
         const delRes = await client.delete('/check');
-        expect(delRes.status).toBe(200);
+        expectOk(delRes);
         expect(delRes.body.auth).toBe(`Bearer ${client.token}`);
     });
 });
-

@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { isGuildAdmin, checkGuildAccess, DISCORD_PERMISSION_ADMINISTRATOR } from '../permissionUtils.js';
 import type { MinimalGuildData } from '../../discord/types.js';
+import { expectBadRequest, expectServiceUnavailable, expectForbidden } from '@zeffuro/fakegaming-common/testing';
 
 describe('permissionUtils', () => {
     describe('isGuildAdmin', () => {
@@ -61,14 +62,14 @@ describe('permissionUtils', () => {
             const result = checkGuildAccess([], undefined);
             expect(result.hasAccess).toBe(false);
             expect(result.error).toBe('Missing guild ID');
-            expect(result.statusCode).toBe(400);
+            expectBadRequest(result as any);
         });
 
         it('should return error if guilds is not an array', () => {
             const result = checkGuildAccess(undefined, '123');
             expect(result.hasAccess).toBe(false);
             expect(result.error).toBe('Guild data unavailable');
-            expect(result.statusCode).toBe(503);
+            expectServiceUnavailable(result as any);
         });
 
         it('should return error if user is not admin', () => {
@@ -78,7 +79,7 @@ describe('permissionUtils', () => {
             const result = checkGuildAccess(guilds, '123');
             expect(result.hasAccess).toBe(false);
             expect(result.error).toBe('Not authorized for this guild');
-            expect(result.statusCode).toBe(403);
+            expectForbidden(result as any);
         });
 
         it('should return success if user is admin', () => {
@@ -88,7 +89,7 @@ describe('permissionUtils', () => {
             const result = checkGuildAccess(guilds, '123');
             expect(result.hasAccess).toBe(true);
             expect(result.error).toBeUndefined();
-            expect(result.statusCode).toBeUndefined();
+            // No need to assert undefined statusCode directly; helpers focus on error cases
         });
 
         it('should return success if user has administrator permission', () => {

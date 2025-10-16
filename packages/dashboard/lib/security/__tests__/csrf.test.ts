@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { generateCsrfToken, validateCsrf, enforceCsrf } from '@/lib/security/csrf.js';
+import { expectForbidden } from '@zeffuro/fakegaming-common/testing';
 
 function mockReq(opts: { method?: string; cookieToken?: string; headerToken?: string }) {
     const { method = 'POST', cookieToken, headerToken } = opts;
@@ -42,7 +43,7 @@ describe('csrf utilities', () => {
 
     it('enforceCsrf returns response on failure', () => {
         const failResp = enforceCsrf(mockReq({ method: 'POST' }));
-        expect(failResp?.status).toBe(403);
+        expectForbidden(failResp as any);
     });
 
     it('enforceCsrf undefined on success', () => {

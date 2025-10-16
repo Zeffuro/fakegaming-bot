@@ -204,7 +204,106 @@ Commonly used helpers:
 - Discord Mocks: `createMockClient`, `createMockCommandInteraction`, `createMockTextChannel`, `createMockUser`
 - Reply/Edit Helpers: `expectEphemeralReply`, `expectReplyText`, `expectReplyTextContains`, `expectEditReplyContainsText`, `expectEditReplyWithAttachment`
 - Embed Assertions (new): `expectReplyHasEmbedsArray`, `expectReplyHasEmbed`, `expectEditReplyHasEmbed`, `expectSendHasEmbed`
-- API Helpers: `setupApiTest`, `givenAuthenticatedClient`
+- API Helpers: `setupApiTest`, `setupApiRouteTest`, `givenAuthenticatedClient`
+
+### HTTP status helpers (standardized)
+
+Use the shared status helpers instead of asserting raw codes. This keeps tests consistent across packages and enables lint enforcement.
+
+```ts
+import { expectOk, expectCreated, expectBadRequest, expectUnauthorized, expectForbidden, expectNotFound, expectConflict, expectTooManyRequests, expectInternalServerError, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
+
+// API example (supertest-like response)
+const res = await client.get('/healthz');
+expectOk(res);
+
+// Dashboard example (NextResponse)
+const resp = await POST(makeReq(/* ... */));
+expectForbidden(resp as any);
+```
+
+Notes:
+- Helpers accept any object with a status or statusCode field. Cast to any for framework-specific response objects (e.g., NextResponse) when needed.
+- Lint rule forbids expect(res.status).toBe(...) and expect(res.statusCode).toBe(...) in tests. Use helpers instead.
+
+### API route setup and auto-seeding (DX)
+
+`setupApiRouteTest` streamlines API route tests and now auto-seeds a default admin guild for a default test user to avoid 403s on guild-scoped routes.
+
+Defaults:
+
+- userId: `testuser`
+- guildId: `test-guild`
+- permissions: Administrator (0x00000008)
+- owner: `false`
+- ttlMs: `undefined` (uses cache default)
+
+Basic usage (no config needed):
+
+```
+import { setupApiRouteTest, expectOk } from '@zeffuro/fakegaming-common/testing';
+
+const { createApp } = await setupApiRouteTest();
+const app = await createApp();
+const res = await client.get('/api/guilds/test-guild/something');
+expectOk(res);
+```
+
+Customize or disable:
+
+```
+// Custom IDs / permissions
+await setupApiRouteTest({
+    seed: { userId: 'alice', guildId: 'guild-123', permissions: 0x8, owner: false, ttlMs: 5_000 },
+});
+
+// Disable entirely
+await setupApiRouteTest({ autoSeedTestUserGuild: false });
+```
+
+Notes:
+
+- Seeding uses `seedUserGuilds`, which writes to both caches when route handlers and tests use different cache instances.
+- `permissions` accepts a string or number; it is coerced to string internally to match `MinimalGuildData.permissions`.
+
+### Test cache manager and seeding utilities
+
+To prevent cache mismatch between route handlers and tests, a test-aware cache manager is available. Seeding helpers write to both caches when instances differ.
+
+Helpers:
+- `seedUserGuilds(discordId, guilds, { ttlMs? })`
+- `seedUserProfiles(profiles, { ttlMs? })`
+- `seedUserGuildNick(userId, guildId, nick, { ttlMs? })`
+
+Example: seeding guild access to avoid 403 on guild-scoped routes.
+
+```ts
+import { seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
+
+// Give user admin perms in a test guild
+await seedUserGuilds('testuser', [
+    { id: 'guild-123', permissions: 0x00000008, owner: false },
+]);
+
+// Now requests that require guild admin access should pass
+const res = await client.put('/api/guilds/guild-123/something');
+expectOk(res);
+```
+
+Example: seeding user profiles and per-guild nickname when UI or logs render identity.
+
+```ts
+import { seedUserProfiles, seedUserGuildNick } from '@zeffuro/fakegaming-common/testing';
+
+await seedUserProfiles([
+    { id: 'testuser', username: 'Alice', global_name: 'Alice G', avatar: null } as any,
+]);
+await seedUserGuildNick('testuser', 'guild-123', 'Al');
+```
+
+Notes:
+- The helpers prefer `globalThis.__testCacheManager` when present to align with server cache usage in tests; otherwise they fall back to the default cache.
+- TTL defaults to the cache’s constants; override with `{ ttlMs }` if your test needs short-lived entries.
 
 ---
 

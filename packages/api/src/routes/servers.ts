@@ -52,12 +52,12 @@ router.get('/', async (_req, res) => {
  *       200:
  *         description: Server config
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;
     const server = await getConfigManager().serverManager.findByPkPlain(serverId);
-    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
     res.json(server);
 });
 
@@ -79,9 +79,9 @@ router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) =
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => {
     const created = await getConfigManager().serverManager.addPlain(req.body);
@@ -112,16 +112,16 @@ router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => 
  *       200:
  *         description: Updated
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateSchema), async (req, res) => {
     const { serverId } = req.params;
     const server = await getConfigManager().serverManager.findByPkPlain(serverId);
-    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
     await getConfigManager().serverManager.updatePlain(req.body, { serverId });
     const updated = await getConfigManager().serverManager.findByPkPlain(serverId);
     res.json(updated);
@@ -145,7 +145,7 @@ router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateB
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.delete('/:serverId', jwtAuth, validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;

@@ -5,6 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { enforceCsrf } from '../middleware/csrf.js';
 import { generateCsrfToken, CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '@zeffuro/fakegaming-common/security';
+import { expectOk, expectForbidden } from '@zeffuro/fakegaming-common/testing';
 
 describe('CSRF middleware (Express adapter)', () => {
     let app: express.Application;
@@ -20,12 +21,12 @@ describe('CSRF middleware (Express adapter)', () => {
 
     it('allows safe (GET) without CSRF', async () => {
         const r = await request(app).get('/read');
-        expect(r.status).toBe(200);
+        expectOk(r);
     });
 
     it('rejects mutating request without tokens', async () => {
         const r = await request(app).post('/mutate');
-        expect(r.status).toBe(403);
+        expectForbidden(r);
         expect(r.body.error).toBe('CSRF');
     });
 
@@ -36,7 +37,7 @@ describe('CSRF middleware (Express adapter)', () => {
             .post('/mutate')
             .set('Cookie', `${CSRF_COOKIE_NAME}=${tokenCookie}`)
             .set(CSRF_HEADER_NAME, tokenHeader);
-        expect(r.status).toBe(403);
+        expectForbidden(r);
     });
 
     it('accepts mutating request with valid tokens', async () => {
@@ -47,7 +48,7 @@ describe('CSRF middleware (Express adapter)', () => {
             .post('/mutate')
             .set('Cookie', `${CSRF_COOKIE_NAME}=${token}`)
             .set(CSRF_HEADER_NAME, token);
-        expect(r.status).toBe(200);
+        expectOk(r);
         expect(r.body.ok).toBe(true);
     });
 });

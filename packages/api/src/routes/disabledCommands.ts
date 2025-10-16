@@ -76,9 +76,9 @@ router.get('/', validateQuery(listQuerySchema), async (req, res) => {
  *                 disabled:
  *                   type: boolean
  *       400:
- *         description: Query validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) => {
     const { guildId, commandName } = req.query as z.infer<typeof checkQuerySchema>;
@@ -106,12 +106,12 @@ router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) 
  *             schema:
  *               $ref: '#/components/schemas/DisabledCommandConfig'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const disabledCommand = await getConfigManager().disabledCommandManager.findByPkPlain(Number(id));
-    if (!disabledCommand) return res.status(404).json({ error: 'Disabled command not found' });
+    if (!disabledCommand) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
     res.json(disabledCommand);
 });
 
@@ -137,9 +137,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/DisabledCommandConfig'
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBodyForModel(DisabledCommandConfig, 'create'), async (req, res) => {
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
@@ -171,15 +171,15 @@ router.post('/', jwtAuth, validateBodyForModel(DisabledCommandConfig, 'create'),
  *                 success:
  *                   type: boolean
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const numericId = Number(id);
     const existing = await getConfigManager().disabledCommandManager.findByPkPlain(numericId);
-    if (!existing) return res.status(404).json({ error: 'Disabled command not found' });
+    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
     await getConfigManager().disabledCommandManager.removeByPk(numericId);
     res.json({ success: true });
 });

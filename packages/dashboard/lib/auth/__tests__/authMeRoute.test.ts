@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { signTestJwt } from '../../../../common/dist/testing/utils/jwtTestUtils.js';
+import { signTestJwt, expectForbidden, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 // Import after setting env
 process.env.JWT_SECRET = 'supersecret';
@@ -30,21 +30,21 @@ describe('auth/me route', () => {
         const token = signTestJwt({ discordId: '42', username: 'u' }, 'supersecret');
         const res = await PUT(makeReq({ jwt: token }));
         const body = await res.json();
-        expect(res.status).toBe(403);
+        expectForbidden(res);
         expect(body.error).toBe('CSRF');
     });
 
     it('rejects mismatched CSRF token', async () => {
         const token = signTestJwt({ discordId: '42', username: 'u' }, 'supersecret');
         const res = await PUT(makeReq({ jwt: token, csrf: 'a', headerCsrf: 'b' }));
-        expect(res.status).toBe(403);
+        expectForbidden(res);
     });
 
     it('returns user on valid token + CSRF', async () => {
         const token = signTestJwt({ discordId: '42', username: 'alice' }, 'supersecret');
         const res = await PUT(makeReq({ jwt: token, csrf: 't', headerCsrf: 't' }));
         const body = await res.json();
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(body.user.discordId).toBe('42');
         expect(body.user.username).toBe('alice');
     });

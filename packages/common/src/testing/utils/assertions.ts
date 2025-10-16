@@ -1,13 +1,65 @@
 import { expect } from 'vitest';
 
-export interface HasStatus { status: number }
+export type HasStatusLike = { status: number } | { statusCode: number };
 
-export function expectOk(res: HasStatus) { expect(res.status).toBe(200); }
-export function expectCreated(res: HasStatus) { expect(res.status).toBe(201); }
-export function expectBadRequest(res: HasStatus) { expect(res.status).toBe(400); }
-export function expectUnauthorized(res: HasStatus) { expect(res.status).toBe(401); }
-export function expectForbidden(res: HasStatus) { expect(res.status).toBe(403); }
-export function expectNotFound(res: HasStatus) { expect(res.status).toBe(404); }
+function getStatus(res: HasStatusLike): number {
+    // Prefer explicit status; fall back to statusCode for frameworks like Next.js
+    return (res as any).status ?? (res as any).statusCode;
+}
+
+export function expectOk(res: HasStatusLike) { expect(getStatus(res)).toBe(200); }
+export function expectCreated(res: HasStatusLike) { expect(getStatus(res)).toBe(201); }
+export function expectBadRequest(res: HasStatusLike) { expect(getStatus(res)).toBe(400); }
+export function expectUnauthorized(res: HasStatusLike) { expect(getStatus(res)).toBe(401); }
+export function expectForbidden(res: HasStatusLike) { expect(getStatus(res)).toBe(403); }
+export function expectNotFound(res: HasStatusLike) { expect(getStatus(res)).toBe(404); }
+export function expectConflict(res: HasStatusLike) { expect(getStatus(res)).toBe(409); }
+export function expectTooManyRequests(res: HasStatusLike) { expect(getStatus(res)).toBe(429); }
+export function expectInternalServerError(res: HasStatusLike) { expect(getStatus(res)).toBe(500); }
+export function expectServiceUnavailable(res: HasStatusLike) { expect(getStatus(res)).toBe(503); }
+
+// Helpers to assert the standardized error envelope { error: { code, message, details? } }
+interface HasBodyLike {
+    status: number;
+    body?: unknown;
+    text?: string;
+}
+
+interface ErrorEnvelope { error?: { code?: string; message?: string; details?: unknown } }
+
+function parseBody(maybe: unknown): ErrorEnvelope | undefined {
+    if (maybe && typeof maybe === 'object') return maybe as ErrorEnvelope;
+    return undefined;
+}
+
+function tryParseJson(text: string | undefined): ErrorEnvelope | undefined {
+    if (!text) return undefined;
+    try {
+        const parsed = JSON.parse(text) as unknown;
+        return parseBody(parsed);
+    } catch {
+        return undefined;
+    }
+}
+
+function getErrorEnvelope(res: HasBodyLike): { code?: string; message?: string; details?: unknown } | undefined {
+    const fromBody = parseBody(res.body)?.error;
+    if (fromBody) return fromBody;
+    return tryParseJson(res.text)?.error;
+}
+
+export function expectErrorCode(res: HasBodyLike, code: string): void {
+    const err = getErrorEnvelope(res);
+    expect(err, 'response should include an error envelope').toBeDefined();
+    expect(err?.code).toBe(code);
+}
+
+export function expectErrorMessageContains(res: HasBodyLike, substring: string): void {
+    const err = getErrorEnvelope(res);
+    expect(err, 'response should include an error envelope').toBeDefined();
+    const msg = err?.message ?? '';
+    expect(String(msg)).toContain(substring);
+}
 
 // --- Discord interaction reply assertions ---
 
@@ -157,14 +209,14 @@ export function expectEditReplyContainsText(
         expect(content).toContain(substring);
         return;
     }
-    const embeds = (payload as any)?.embeds as any[] | undefined;
-    if (Array.isArray(embeds) && embeds.length > 0) {
-        const desc = (embeds[0] as any)?.data?.description ?? (embeds[0] as any)?.description ?? '';
-        expect(String(desc)).toContain(substring);
-        return;
+    const embed = extractFirstEmbed(payload);
+    const data = getEmbedData(embed);
+    const desc = data.description;
+    if (typeof desc === 'string') {
+        expect(desc).toContain(substring);
+    } else {
+        expect(desc, 'expected description text to contain substring').toBeDefined();
     }
-    // Fallback to stringifying unknown payloads
-    expect(String(payload)).toContain(substring);
 }
 
 /**

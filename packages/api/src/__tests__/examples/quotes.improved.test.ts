@@ -7,7 +7,10 @@ import request from 'supertest';
 import {
     setupApiRouteTest,
     signTestJwt,
-    createMockQuote
+    createMockQuote,
+    expectUnauthorized,
+    expectOk,
+    seedUserGuilds
 } from '@zeffuro/fakegaming-common/testing';
 import type { Express } from 'express';
 
@@ -36,6 +39,9 @@ describe('Quotes API (Improved Pattern)', () => {
 
         // Generate test JWT
         token = signTestJwt({ discordId: 'testuser' });
+
+        // Seed guild access for the JWT user to avoid 403 in auth checks
+        await seedUserGuilds('testuser', [ { id: 'guild1', permissions: '8' } ]);
     });
 
     describe('GET /api/quotes', () => {
@@ -44,14 +50,14 @@ describe('Quotes API (Improved Pattern)', () => {
                 .get('/api/quotes')
                 .set('Authorization', `Bearer ${token}`);
 
-            expect(res.status).toBe(200);
+            expectOk(res);
             expect(res.body).toHaveLength(3);
         });
 
         it('should return 401 without authentication', async () => {
             const res = await request(app).get('/api/quotes');
 
-            expect(res.status).toBe(401);
+            expectUnauthorized(res);
         });
     });
 
@@ -61,7 +67,7 @@ describe('Quotes API (Improved Pattern)', () => {
                 .get('/api/quotes/guild/guild1')
                 .set('Authorization', `Bearer ${token}`);
 
-            expect(res.status).toBe(200);
+            expectOk(res);
             expect(res.body).toHaveLength(2);
             expect(res.body.every((q: any) => q.guildId === 'guild1')).toBe(true);
         });

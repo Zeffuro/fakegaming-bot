@@ -55,6 +55,10 @@
     "./manifest/bot-manifest": {
       "import": "./dist/manifest/bot-manifest.js",
       "types": "./dist/manifest/bot-manifest.d.ts"
+    },
+    "./jobs": {
+      "import": "./dist/jobs/index.js",
+      "types": "./dist/jobs/index.d.ts"
     }
   },
   "typesVersions": {
@@ -109,6 +113,9 @@
       ],
       "manifest/bot-manifest": [
         "dist/manifest/bot-manifest.d.ts"
+      ],
+      "jobs": [
+        "dist/jobs/index.d.ts"
       ]
     }
   },

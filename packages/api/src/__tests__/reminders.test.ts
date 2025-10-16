@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { signTestJwt } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectUnauthorized, expectNotFound, expectCreated, expectOk, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
 
 const testReminder = {
     id: 'reminder-1',
@@ -28,12 +28,12 @@ describe('Reminders API', () => {
     });
     it('should list all reminders', async () => {
         const res = await request(app).get('/api/reminders').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
     it('should get a reminder by id', async () => {
         const res = await request(app).get(`/api/reminders/${reminderId}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.id).toBe(reminderId);
     });
     it('should add a new reminder', async () => {
@@ -44,7 +44,7 @@ describe('Reminders API', () => {
             timespan: '2h',
             timestamp: Date.now() + 7200000
         });
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body.userId).toBe('reminderuser2');
     });
     it('should delete a reminder', async () => {
@@ -57,29 +57,29 @@ describe('Reminders API', () => {
             timestamp: Date.now() + 3600000
         });
         const res = await request(app).delete(`/api/reminders/${created.id}`).set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(200);
+        expectOk(res);
         expect(res.body.success).toBe(true);
     });
     it('should return 404 for non-existent reminder', async () => {
         const res = await request(app).get('/api/reminders/999999').set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        expectNotFound(res);
     });
     it('should return 401 for GET /api/reminders without JWT', async () => {
         const res = await request(app).get('/api/reminders');
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 401 for POST /api/reminders without JWT', async () => {
         const res = await request(app)
             .post('/api/reminders')
             .send({id: 'reminder-4', userId: 'user4', message: 'msg4', timespan: '1h', timestamp: Date.now()});
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 401 for DELETE /api/reminders/:id without JWT', async () => {
         const res = await request(app)
             .delete(`/api/reminders/${reminderId}`);
-        expect(res.status).toBe(401);
+        expectUnauthorized(res);
     });
 
     it('should return 404 when deleting non-existent reminder', async () => {
@@ -87,7 +87,7 @@ describe('Reminders API', () => {
         const res = await request(app)
             .delete('/api/reminders/nonexistent')
             .set('Authorization', `Bearer ${token}`);
-        expect(res.status).toBe(404);
+        expectNotFound(res);
     });
 
     it('should handle duplicate add gracefully', async () => {
@@ -96,7 +96,13 @@ describe('Reminders API', () => {
             .post('/api/reminders')
             .set('Authorization', `Bearer ${token}`)
             .send(testReminder);
-        expect([201, 409]).toContain(res1.status);
+        if (res1.status === 201) {
+            expectCreated(res1);
+        } else {
+            // 409 conflict when duplicate
+            const { expectConflict } = await import('@zeffuro/fakegaming-common/testing');
+            expectConflict(res1);
+        }
     });
 
     it('should return 400 for invalid input types', async () => {
@@ -117,7 +123,7 @@ describe('Reminders API', () => {
             .post('/api/reminders')
             .set('Authorization', `Bearer ${token}`)
             .send({id: 'reminder-5', userId: 'user5', message: 'msg5', timespan: '1h', timestamp: Date.now()});
-        expect(res.status).toBe(500);
+        expectInternalServerError(res);
         configManager.reminderManager.addPlain = origAdd;
     });
 });

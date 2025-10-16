@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { signTestJwt } from '../../../../common/dist/testing/utils/jwtTestUtils.js';
+import { signTestJwt, expectForbidden, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 process.env.JWT_SECRET = 'supersecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
@@ -46,7 +46,7 @@ describe('external proxy route CSRF', () => {
     it('rejects POST without CSRF tokens', async () => {
         const jwt = signTestJwt({ discordId: '1' }, 'supersecret');
         const res = await POST(makeReq({ method: 'POST', jwt, body: { a: 1 } }), { params: Promise.resolve({ proxy: ['test'] }) } as any);
-        expect(res.status).toBe(403);
+        expectForbidden(res);
         const body = await res.json();
         expect(body.error).toBe('CSRF');
     });
@@ -54,7 +54,7 @@ describe('external proxy route CSRF', () => {
     it('allows POST with matching CSRF tokens', async () => {
         const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
         const res = await POST(makeReq({ method: 'POST', jwt, csrf: 't123', headerCsrf: 't123', body: { a: 2 } }), { params: Promise.resolve({ proxy: ['test'] }) } as any);
-        expect(res.status).toBe(200);
+        expectOk(res);
         const body = await res.json();
         expect(body.ok).toBe(true);
     });

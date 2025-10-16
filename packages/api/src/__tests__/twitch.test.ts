@@ -60,13 +60,13 @@ describe('Twitch API', () => {
     it('should return 400 for GET /api/twitch/exists with missing query', async () => {
         const res = await client.get('/api/twitch/exists');
         expectBadRequest(res);
-        expect(res.body.error).toBe('Query validation failed');
+        expect(res.body.error.message).toBe('Query validation failed');
     });
     it('should return 400 for GET /api/twitch/exists with empty values', async () => {
         const res = await client.get('/api/twitch/exists')
             .query({ twitchUsername: '', discordChannelId: '', guildId: '' });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Query validation failed');
+        expect(res.body.error.message).toBe('Query validation failed');
     });
     it('should return false for non-existent stream', async () => {
         const res = await client.get('/api/twitch/exists')
@@ -118,7 +118,7 @@ describe('Twitch API', () => {
             discordChannelId: 'testchannel2',
             guildId: 'testguild2'
         });
-        expect([403, 401]).toContain(res.status);
+        expectForbidden(res);
     });
 
     it('should return 401 for DELETE /api/twitch/:id without JWT', async () => {
@@ -141,7 +141,7 @@ describe('Twitch API', () => {
         expect(id).toBeDefined();
         const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
         const res = await nonAdmin.delete(`/api/twitch/${id}`);
-        expect([403, 401]).toContain(res.status);
+        expectForbidden(res);
     });
 
     it('should return 400 for DB error on POST /api/twitch', async () => {

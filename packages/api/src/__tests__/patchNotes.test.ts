@@ -52,7 +52,7 @@ describe('PatchNotes API', () => {
     it('should return 400 when POST /api/patchNotes with missing fields', async () => {
         const res = await client.post('/api/patchNotes', {} as any);
         expectBadRequest(res);
-        expect(res.body.error).toBeTypeOf('string');
+        expect(typeof res.body.error.message).toBe('string');
     });
 
     it('should return 401 for POST /api/patchNotes without JWT', async () => {

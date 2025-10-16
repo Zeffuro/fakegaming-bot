@@ -67,14 +67,14 @@ describe('YouTube API', () => {
     it('should return 400 for GET /api/youtube/channel with missing query', async () => {
         const res = await client.get('/api/youtube/channel');
         expectBadRequest(res);
-        expect(res.body.error).toBe('Query validation failed');
-        expect(Array.isArray(res.body.details)).toBe(true);
+        expect(res.body.error.message).toBe('Query validation failed');
+        expect(Array.isArray(res.body.error.details)).toBe(true);
     });
     it('should return 400 for GET /api/youtube/channel with empty values', async () => {
         const res = await client.get('/api/youtube/channel')
             .query({ youtubeChannelId: '', discordChannelId: '', guildId: '' });
         expectBadRequest(res);
-        expect(res.body.error).toBe('Query validation failed');
+        expect(res.body.error.message).toBe('Query validation failed');
     });
     it('should return 404 for non-existent youtube config', async () => {
         const res = await client.get('/api/youtube/999999');
@@ -133,7 +133,7 @@ describe('YouTube API', () => {
         const res = await nonAdmin
             .post('/api/youtube')
             .send({ youtubeChannelId: 'ytchan3', discordChannelId: 'ytchan3discord', guildId: 'testguild3' });
-        expect([403, 401]).toContain(res.status);
+        expectForbidden(res);
     });
 
     it('should return 403 for DELETE /api/youtube/:id as non-admin', async () => {
@@ -142,7 +142,7 @@ describe('YouTube API', () => {
         expect(id).toBeDefined();
         const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
         const res = await nonAdmin.delete(`/api/youtube/${id}`);
-        expect([403, 401]).toContain(res.status);
+        expectForbidden(res);
     });
 
     it('should return 400 when POST /api/youtube with missing fields', async () => {

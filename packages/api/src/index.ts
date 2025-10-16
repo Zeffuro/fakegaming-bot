@@ -7,6 +7,7 @@ import {injectOpenApiSchemas} from './utils/openapi-inject-schemas.js';
 import { pathToFileURL } from 'url';
 import path from 'path';
 import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
+import { bootstrapJobs } from './jobs/bootstrap.js';
 
 const log = getLogger({ name: 'api' });
 
@@ -45,6 +46,8 @@ if (isDirectRun) {
         await ensureRedis(process.env.REDIS_URL || '');
         injectOpenApiSchemas(swaggerSpec);
         app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+        // Jobs are optional; enable with JOBS_ENABLED=1 and Postgres
+        await bootstrapJobs();
         scheduleRateLimitCleanup();
         app.listen(port, () => {
             log.info(`API server running on port ${port}`);

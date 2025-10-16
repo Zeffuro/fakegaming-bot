@@ -5,7 +5,7 @@ import globals from "globals";
 
 export default [
     {
-        ignores: ["dist/**", "node_modules/**"],
+        ignores: ["dist/**", "**/dist/**", "node_modules/**"],
     },
     // Configuration for TypeScript files, using a more flexible parser setup
     {
@@ -65,6 +65,7 @@ export default [
             "no-cond-assign": "off",
         },
     },
+    // Dashboard-specific rules
     {
         files: ["packages/dashboard/**/*.{js,jsx,ts,tsx}"],
         plugins: {
@@ -84,6 +85,79 @@ export default [
                     selector: "JSXAttribute[name.name='InputProps']",
                     message:
                         "Migrate to slotProps.input instead of 'InputProps' where possible (TextField/Switch).",
+                },
+            ],
+        },
+    },
+    // Test files: forbid direct HTTP status assertions; use shared helpers instead.
+    {
+        files: [
+            "**/__tests__/**/*.{js,jsx,ts,tsx}",
+            "**/*.test.{js,jsx,ts,tsx}",
+            "**/*.spec.{js,jsx,ts,tsx}",
+        ],
+        rules: {
+            "no-restricted-syntax": [
+                "error",
+                // Raw status on res.status
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toBe'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='status']",
+                    message:
+                        "Do not assert raw status codes (expect(res.status).toBe(…)). Use shared helpers from @zeffuro/fakegaming-common/testing (e.g., expectOk/expectForbidden/expectServiceUnavailable).",
+                },
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toEqual'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='status']",
+                    message:
+                        "Do not assert raw status codes (expect(res.status).toEqual(…)). Use shared helpers from @zeffuro/fakegaming-common/testing.",
+                },
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toStrictEqual'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='status']",
+                    message:
+                        "Do not assert raw status codes (expect(res.status).toStrictEqual(…)). Use shared helpers from @zeffuro/fakegaming-common/testing.",
+                },
+                // Raw status on res.statusCode
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toBe'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='statusCode']",
+                    message:
+                        "Do not assert raw status codes (expect(res.statusCode).toBe(…)). Use shared helpers from @zeffuro/fakegaming-common/testing.",
+                },
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toEqual'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='statusCode']",
+                    message:
+                        "Do not assert raw status codes (expect(res.statusCode).toEqual(…)). Use shared helpers from @zeffuro/fakegaming-common/testing.",
+                },
+                {
+                    selector:
+                        "CallExpression[callee.property.name='toStrictEqual'][callee.object.type='CallExpression'][callee.object.callee.name='expect'][callee.object.arguments.0.type='MemberExpression'][callee.object.arguments.0.property.name='statusCode']",
+                    message:
+                        "Do not assert raw status codes (expect(res.statusCode).toStrictEqual(…)). Use shared helpers from @zeffuro/fakegaming-common/testing.",
+                },
+                // Focused tests forbidden
+                {
+                    selector: "CallExpression[callee.type='MemberExpression'][callee.object.name='describe'][callee.property.name='only']",
+                    message: "Do not commit focused tests (describe.only). Remove .only.",
+                },
+                {
+                    selector: "CallExpression[callee.type='MemberExpression'][callee.object.name='it'][callee.property.name='only']",
+                    message: "Do not commit focused tests (it.only). Remove .only.",
+                },
+                {
+                    selector: "CallExpression[callee.type='MemberExpression'][callee.object.name='test'][callee.property.name='only']",
+                    message: "Do not commit focused tests (test.only). Remove .only.",
+                },
+            ],
+            // Enforce using the public testing entrypoint in tests
+            "no-restricted-imports": [
+                "error",
+                {
+                    patterns: [
+                        { group: ["**/common/dist/testing/**"], message: "Import testing utilities from @zeffuro/fakegaming-common/testing (public entrypoint), not deep dist paths." }
+                    ],
                 },
             ],
         },

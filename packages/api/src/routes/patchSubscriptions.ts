@@ -46,12 +46,12 @@ router.get('/', async (_req, res) => {
  *       200:
  *         description: Patch subscription config
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const subscription = await getConfigManager().patchSubscriptionManager.findByPkPlain(Number(id));
-    if (!subscription) return res.status(404).json({ error: 'Subscription not found' });
+    if (!subscription) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
     res.json(subscription);
 });
 
@@ -73,9 +73,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       201:
  *         description: Created
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.addPlain(req.body);
@@ -100,9 +100,9 @@ router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req,
  *       200:
  *         description: Success
  *       400:
- *         description: Body validation failed
+ *         $ref: '#/components/responses/BadRequest'
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  */
 router.put('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
@@ -127,15 +127,15 @@ router.put('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, 
  *       200:
  *         description: Success
  *       401:
- *         description: Unauthorized
+ *         $ref: '#/components/responses/Unauthorized'
  *       404:
- *         description: Not found
+ *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const numericId = Number(id);
     const existing = await getConfigManager().patchSubscriptionManager.findByPkPlain(numericId);
-    if (!existing) return res.status(404).json({ error: 'Subscription not found' });
+    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
     await getConfigManager().patchSubscriptionManager.removeByPk(numericId);
     res.json({ success: true });
 });

@@ -14,6 +14,7 @@ import {DisabledCommandConfig} from "./models/disabled-command-config.js";
 import {CacheConfig} from "./models/cache-config.js";
 import {Notification} from './models/notification.js';
 import {DisabledModuleConfig} from './models/disabled-module-config.js';
+import { JobRun } from './models/job-run.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -55,7 +56,8 @@ export function getSequelize(useTest = false): Sequelize {
         DisabledCommandConfig,
         CacheConfig,
         Notification,
-        DisabledModuleConfig
+        DisabledModuleConfig,
+        JobRun
     ]);
 
     return sequelize;
