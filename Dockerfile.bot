@@ -21,6 +21,8 @@ COPY packages/bot ./packages/bot
 COPY packages/common ./packages/common
 
 COPY migrations ./migrations
+# Ensure codegen and other build scripts are available during builds
+COPY scripts ./scripts
 
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive

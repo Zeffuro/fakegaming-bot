@@ -28,6 +28,10 @@ jobs:
 
       - name: Build all packages
         run: pnpm -r run build
+        env:
+          JWT_SECRET: test-secret
+          JWT_AUDIENCE: fakegaming-dashboard
+          JWT_ISSUER: fakegaming
 
       - name: Generate README command table
         run: pnpm tsx scripts/generate-command-table.ts

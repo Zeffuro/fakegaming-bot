@@ -18,8 +18,11 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY packages/dashboard ./packages/dashboard
 COPY packages/common ./packages/common
 COPY packages/api/openapi.json ./packages/api/openapi.json
-
+# Include bot sources so command manifest generation can inspect modules
+COPY packages/bot ./packages/bot
 COPY migrations ./migrations
+# Ensure codegen and other build scripts are available during builds
+COPY scripts ./scripts
 
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive --frozen-lockfile --ignore-scripts
@@ -29,6 +32,14 @@ RUN pnpm --filter @zeffuro/fakegaming-bot-dashboard run prepare
 # -------------------- BUILDER --------------------
 FROM base AS builder
 WORKDIR /app
+
+# Provide safe defaults for JWT so Next build can collect page data during image build
+ARG JWT_SECRET=test-secret
+ARG JWT_AUDIENCE=fakegaming-dashboard
+ARG JWT_ISSUER=fakegaming
+ENV JWT_SECRET=${JWT_SECRET}
+ENV JWT_AUDIENCE=${JWT_AUDIENCE}
+ENV JWT_ISSUER=${JWT_ISSUER}
 
 # Build TS/JS files
 RUN pnpm --filter @zeffuro/fakegaming-bot-dashboard run build

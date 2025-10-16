@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { PostgresRateLimiter } from '../rate-limiter.js';
 
 interface Row { key: string; window_ts: string; count: number }
@@ -115,20 +115,23 @@ describe('PostgresRateLimiter', () => {
         const win = 500;
         const limit = 3;
 
+        // Freeze time so all buckets fall into the same window and results are deterministic
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2025-01-01T00:00:00.000Z'));
+
         const a = await limiter.consume('s', 1, win, limit);
         expect(a.allowed).toBe(true);
-        // Remaining may vary due to window/bucket rounding; assert general bounds only
-        expect(a.remaining).toBeGreaterThanOrEqual(0);
-        expect(a.remaining).toBeLessThanOrEqual(limit);
+        expect(a.remaining).toBe(2);
 
         const b = await limiter.consume('s', 2, win, limit);
-        // Depending on bucket rollover, the second consume may reach or exceed the limit in-window.
-        // We only assert invariant bounds instead of exact flags.
-        expect(b.remaining).toBeGreaterThanOrEqual(0);
-        expect(b.remaining).toBeLessThanOrEqual(limit);
+        expect(b.allowed).toBe(true);
+        expect(b.remaining).toBe(0);
 
         const c = await limiter.consume('s', 1, win, limit);
         expect(c.allowed).toBe(false);
+        expect(c.remaining).toBe(0);
+
+        vi.useRealTimers();
     });
 
     it('falls back to in-memory buckets when DB errors occur', async () => {
