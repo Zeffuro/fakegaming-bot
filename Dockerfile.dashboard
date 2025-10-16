@@ -51,7 +51,8 @@ ENV NODE_ENV=production
 
 RUN mkdir -p /app/packages/dashboard
 
-COPY --from=builder /app/packages/dashboard/.next/standalone/dashboard /app/packages/dashboard
+# In Next.js standalone output for a monorepo, the app files live under .next/standalone/packages/dashboard
+COPY --from=builder /app/packages/dashboard/.next/standalone/packages/dashboard /app/packages/dashboard
 COPY --from=builder /app/packages/dashboard/.next/static /app/packages/dashboard/.next/static
 COPY --from=builder /app/packages/dashboard/public /app/packages/dashboard/public
 
