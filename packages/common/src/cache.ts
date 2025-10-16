@@ -2,10 +2,13 @@
  * Redis cache implementation with lazy loading
  */
 import type { Redis, RedisOptions } from 'ioredis';
+import { getLogger } from './utils/logger.js';
 
 let redis: Redis | null = null;
 let redisReady = false;
 let connectingPromise: Promise<void> | null = null;
+
+const log = getLogger({ name: 'common:cache' });
 
 export interface CacheConfig {
   url?: string;
@@ -20,7 +23,7 @@ export async function initRedis(config: string | CacheConfig): Promise<void> {
   const options = typeof config === 'object' ? config.options : undefined;
 
   if (!url && !options) {
-    console.log('[cache] Redis configuration empty, skipping Redis initialization');
+    log.info('[cache] Redis configuration empty, skipping Redis initialization');
     return Promise.resolve();
   }
 
@@ -46,17 +49,17 @@ export async function initRedis(config: string | CacheConfig): Promise<void> {
       connectingPromise = new Promise<void>((resolve, reject) => {
         redis!.once('ready', () => {
           redisReady = true;
-          console.log('[cache] Redis connected and ready.');
+          log.info('[cache] Redis connected and ready.');
           resolve();
         });
         redis!.once('error', (err) => {
           redisReady = false;
-          console.error('[cache] Redis error:', err);
+          log.error({ err }, '[cache] Redis error');
           reject(err);
         });
       });
     } catch (error) {
-      console.error('[cache] Failed to initialize Redis:', error);
+      log.error({ err: error }, '[cache] Failed to initialize Redis');
       throw error;
     }
   }
@@ -83,7 +86,7 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
     const val = await redis!.get(key);
     return val ? JSON.parse(val) : null;
   } catch (err) {
-    console.error('[cache] Redis GET failed for key', key, err);
+    log.error({ err, key }, '[cache] Redis GET failed');
     return null;
   }
 }
@@ -95,7 +98,7 @@ export async function cacheSet(key: string, value: any, ttlMs: number): Promise<
   try {
     await redis!.set(key, JSON.stringify(value), 'PX', ttlMs);
   } catch (err) {
-    console.error('[cache] Redis SET failed for key', key, err);
+    log.error({ err, key }, '[cache] Redis SET failed');
   }
 }
 
@@ -106,7 +109,7 @@ export async function cacheDel(key: string): Promise<void> {
   try {
     await redis!.del(key);
   } catch (err) {
-    console.error('[cache] Redis DEL failed for key', key, err);
+    log.error({ err, key }, '[cache] Redis DEL failed');
   }
 }
 

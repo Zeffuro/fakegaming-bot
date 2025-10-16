@@ -73,6 +73,48 @@ export type disabledCommands_id_get_Response200 = paths["/disabledCommands/{id}"
 export type disabledCommands_id_delete_Response200 = paths["/disabledCommands/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [GET /disabledModules 200]
+ *
+ * @see paths["/disabledModules"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type disabledModules_get_Response200 = paths["/disabledModules"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [POST /disabledModules 201]
+ *
+ * @see paths["/disabledModules"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type disabledModules_post_Response201 = paths["/disabledModules"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /disabledModules]
+ *
+ * @see paths["/disabledModules"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type disabledModules_post_Request = paths["/disabledModules"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [GET /disabledModules/check 200]
+ *
+ * @see paths["/disabledModules/check"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type disabledModules_check_get_Response200 = paths["/disabledModules/check"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /disabledModules/{id} 200]
+ *
+ * @see paths["/disabledModules/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type disabledModules_id_get_Response200 = paths["/disabledModules/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [DELETE /disabledModules/{id} 200]
+ *
+ * @see paths["/disabledModules/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type disabledModules_id_delete_Response200 = paths["/disabledModules/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [POST /discord/users/resolve 200]
  *
  * @see paths["/discord/users/resolve"]["post"]["responses"]["200"]["content"]["application/json"]

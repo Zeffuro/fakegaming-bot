@@ -18,7 +18,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "export:openapi": "pnpm tsx scripts/export-openapi.ts",
+    "export:openapi": "pnpm --filter @zeffuro/fakegaming-common run build; pnpm tsx scripts/export-openapi.ts",
     "postbuild": "pnpm run export:openapi"
   },
   "dependencies": {
@@ -47,6 +47,7 @@
     "eslint": "^9.37.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "pino-pretty": "^13.1.2"
   }
 }

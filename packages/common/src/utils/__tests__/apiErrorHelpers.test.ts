@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { handleApiError, NotFoundError, ForbiddenError } from '../apiErrorHelpers.js';
+import { handleApiError, NotFoundError, ForbiddenError, __setApiErrorLogger } from '../apiErrorHelpers.js';
+
+// Create a stable test logger with spies
+const testLogger = { error: vi.fn(), info: vi.fn(), warn: vi.fn() };
 
 describe('handleApiError', () => {
     let res: any;
@@ -11,7 +14,11 @@ describe('handleApiError', () => {
             status: vi.fn(function (this: any, code: number) { this._status = code; return this; }),
             json: vi.fn(function (this: any, payload: any) { this._json = payload; return this; })
         };
+        testLogger.error.mockClear();
+        testLogger.info.mockClear();
+        testLogger.warn.mockClear();
         vi.clearAllMocks();
+        __setApiErrorLogger(testLogger);
     });
 
     it('returns 404 for NotFoundError', () => {
@@ -39,12 +46,9 @@ describe('handleApiError', () => {
     });
 
     it('returns 500 and logs for other errors', () => {
-        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
         handleApiError(res, new Error('boom'), 'nf', 'fb', '[API]', 'oops');
         expect(res.status).toHaveBeenCalledWith(500);
         expect(res.json).toHaveBeenCalledWith({ error: 'oops' });
-        expect(spy).toHaveBeenCalled();
-        spy.mockRestore();
+        expect(testLogger.error).toHaveBeenCalled();
     });
 });
-

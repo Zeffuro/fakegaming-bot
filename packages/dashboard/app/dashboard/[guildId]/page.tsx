@@ -22,10 +22,14 @@ import {
   SpeakerNotes,
   Timeline,
   LiveTv,
-  FormatQuote
+  FormatQuote,
+  NotificationsActive
 } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useRouter } from "next/navigation";
+import { useTwitchConfigs } from "@/components/hooks/useTwitch";
+import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
+import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 
 interface ModuleCardProps {
   title: string;
@@ -34,9 +38,11 @@ interface ModuleCardProps {
   status: "active" | "inactive" | "beta";
   href: string;
   disabled?: boolean;
+  chipLabel?: string;
+  subtleMeta?: string;
 }
 
-function ModuleCard({ title, description, icon, status, href, disabled }: ModuleCardProps) {
+function ModuleCard({ title, description, icon, status, href, disabled, chipLabel, subtleMeta }: ModuleCardProps) {
   const router = useRouter();
 
   const handleClick = () => {
@@ -91,10 +97,18 @@ function ModuleCard({ title, description, icon, status, href, disabled }: Module
               sx={{ mt: 0.5 }}
             />
           </Box>
+          {chipLabel ? (
+            <Chip size="small" label={chipLabel} sx={{ ml: 1 }} />
+          ) : null}
         </Box>
         <Typography variant="body2" sx={{ color: 'grey.300' }}>
           {description}
         </Typography>
+        {subtleMeta ? (
+          <Typography variant="caption" sx={{ color: 'grey.500', display: 'block', mt: 0.5 }}>
+            {subtleMeta}
+          </Typography>
+        ) : null}
       </CardContent>
       <CardActions sx={{ pt: 0 }}>
         <Button
@@ -123,6 +137,19 @@ export default function GuildDashboard() {
   const { guilds } = useDashboardData();
   const guild = guilds.find(g => g.id === guildId);
 
+  // Load provider configs to display a combined count on the Notifications Hub card
+  const twitchApi = useTwitchConfigs(String(guildId));
+  const youtubeApi = useYouTubeConfigs(String(guildId));
+  const patchApi = usePatchSubscriptions(String(guildId));
+  const hubLoading = twitchApi.loading || youtubeApi.loading || patchApi.loading;
+  const totalConfigured = (twitchApi.configs?.length ?? 0) + (youtubeApi.configs?.length ?? 0) + (patchApi.configs?.length ?? 0);
+  const hubChip = hubLoading ? 'loading…' : `${totalConfigured} configured`;
+  const hubBreakdown = hubLoading ? 'loading…' : `Twitch ${(twitchApi.configs?.length ?? 0)} • YouTube ${(youtubeApi.configs?.length ?? 0)} • Patch Notes ${(patchApi.configs?.length ?? 0)}`;
+  // individual chips per module
+  const twitchChip = twitchApi.loading ? 'loading…' : `${twitchApi.configs?.length ?? 0} configured`;
+  const youtubeChip = youtubeApi.loading ? 'loading…' : `${youtubeApi.configs?.length ?? 0} configured`;
+  const patchChip = patchApi.loading ? 'loading…' : `${patchApi.configs?.length ?? 0} configured`;
+
   if (!guild) {
     return (
       <DashboardLayout>
@@ -135,6 +162,15 @@ export default function GuildDashboard() {
 
   const modules: ModuleCardProps[] = [
     {
+      title: "Notifications Hub",
+      description: "Open the central settings for Twitch, YouTube, and Patch Notes notifications.",
+      icon: <NotificationsActive />,
+      status: "active",
+      href: `/dashboard/settings/${guildId}/notifications`,
+      chipLabel: hubChip,
+      subtleMeta: hubBreakdown
+    },
+    {
       title: "Quotes Management",
       description: "View, add, search, and delete quotes stored for your server.",
       icon: <FormatQuote />,
@@ -146,14 +182,16 @@ export default function GuildDashboard() {
       description: "Configure YouTube channels to automatically post notifications when new videos are uploaded.",
       icon: <YouTube />,
       status: "active",
-      href: `/dashboard/youtube/${guildId}`
+      href: `/dashboard/youtube/${guildId}`,
+      chipLabel: youtubeChip
     },
     {
       title: "Twitch Integration",
       description: "Configure Twitch stream notifications and live alerts.",
       icon: <LiveTv />,
       status: "active",
-      href: `/dashboard/twitch/${guildId}`
+      href: `/dashboard/twitch/${guildId}`,
+      chipLabel: twitchChip
     },
     {
       title: "Server Settings",
@@ -174,7 +212,8 @@ export default function GuildDashboard() {
       description: "Manage game patch note notifications and subscriptions.",
       icon: <SpeakerNotes />,
       status: "beta",
-      href: `/dashboard/patch-notes/${guildId}`
+      href: `/dashboard/patch-notes/${guildId}`,
+      chipLabel: patchChip
     },
     {
       title: "Analytics",

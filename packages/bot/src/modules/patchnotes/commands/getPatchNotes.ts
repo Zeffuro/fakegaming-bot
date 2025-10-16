@@ -7,16 +7,12 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
 import {buildPatchNoteEmbed} from '../shared/patchNoteEmbed.js';
 import {gameAutocomplete} from '../shared/gameAutocomplete.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { getPatchnotes as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('get-patchnotes')
-    .setDescription('Get the latest patch notes for a game')
-    .addStringOption(option =>
-        option.setName('game')
-            .setDescription('Game to get patch notes for')
-            .setRequired(true)
-            .setAutocomplete(true)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addStringOption(option => option.setName('game').setDescription('Game to get patch notes for').setRequired(true).setAutocomplete(true))
+);
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const game = interaction.options.getString('game', true);
@@ -44,7 +40,7 @@ async function autocomplete(interaction: AutocompleteInteraction) {
     await gameAutocomplete(interaction);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly, autocomplete};

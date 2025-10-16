@@ -1,13 +1,13 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import { ChatInputCommandInteraction } from 'discord.js';
 import {getTftMatchHistory, getTftMatchDetails} from '../../../services/riotService.js';
 import {generateTftHistoryImage} from '../image/tftHistoryImage.js';
 import { runHistoryCommand } from '../shared/historyCommon.js';
 import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { tftHistory as META } from '../commands.manifest.js';
 
 const data = buildCommonLeagueOptions(
-    new SlashCommandBuilder()
-        .setName('tft-history')
-        .setDescription('Get recent Teamfight Tactics match history for a summoner')
+    createSlashCommand(META)
 );
 
 /**
@@ -25,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-const testOnly = true;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

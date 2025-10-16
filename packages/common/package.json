@@ -47,6 +47,14 @@
     "./security": {
       "import": "./dist/security/index.js",
       "types": "./dist/security/index.d.ts"
+    },
+    "./manifest": {
+      "import": "./dist/manifest/index.js",
+      "types": "./dist/manifest/index.d.ts"
+    },
+    "./manifest/bot-manifest": {
+      "import": "./dist/manifest/bot-manifest.js",
+      "types": "./dist/manifest/bot-manifest.d.ts"
     }
   },
   "typesVersions": {
@@ -95,10 +103,17 @@
       ],
       "security": [
         "dist/security/index.d.ts"
+      ],
+      "manifest": [
+        "dist/manifest/index.d.ts"
+      ],
+      "manifest/bot-manifest": [
+        "dist/manifest/bot-manifest.d.ts"
       ]
     }
   },
   "scripts": {
+    "prebuild": "tsx ../../scripts/generate-bot-manifest.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts,.d.ts --config ../../eslint.config.mjs",

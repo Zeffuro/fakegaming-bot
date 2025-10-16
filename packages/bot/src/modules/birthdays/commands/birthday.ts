@@ -1,15 +1,16 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { months } from '../../../constants/months.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { birthday as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('birthday')
-    .setDescription("Show your or another user's birthday")
-    .addUserOption(option =>
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addUserOption(option =>
         option.setName('user')
             .setDescription('User to look up (optional)')
             .setRequired(false)
-    );
+    )
+);
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user', false);
@@ -32,4 +33,4 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-export default { data, execute, testOnly: false };
+export default { data, execute, testOnly: getTestOnly(META) };

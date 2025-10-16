@@ -386,30 +386,28 @@ Router auto-enforcement (API):
 
 ---
 
-### Bot Health Server
-The bot exposes lightweight health endpoints via an internal HTTP server for uptime checks and orchestrators:
-- GET /healthz: returns 200 when the process is up.
-- GET /ready: returns 200 when the Discord client is ready and the database (if configured) is reachable; otherwise 503.
+## Logging (pino)
 
-Configuration:
-- BOT_HEALTH_PORT: Optional port to bind the bot health server. If omitted or set to 0, an ephemeral port is chosen and logged at startup.
-- BOT_HEALTH_HOST: Optional host/interface to bind. Defaults to 127.0.0.1 for safety. Use 0.0.0.0 only if you intend to expose externally.
+- Runtime logger: pino via `getLogger()` from `@zeffuro/fakegaming-common`.
+- Default: JSON logs to stdout (suitable for Docker and log aggregation).
+- Levels: set with `LOG_LEVEL` (`fatal|error|warn|info|debug|trace`). Defaults to `info` in production and `debug` in development.
+- Pretty output (development only): set `LOG_PRETTY=1` to enable a dev-only transport (`pino-pretty`). Do not use in production.
 
-Example (packages/bot/.env or .env.development):
-```bash
-# Bind the bot health server (optional)
-BOT_HEALTH_PORT=8081
-# Bind to loopback only by default (safer); set 0.0.0.0 only if you must expose externally
-BOT_HEALTH_HOST=127.0.0.1
+Examples (Windows cmd):
+
+```
+set LOG_LEVEL=debug & set LOG_PRETTY=1 & pnpm start:api:dev
+set LOG_PRETTY=1 & pnpm start:bot:dev
 ```
 
-Security & exposure:
-- Binding to 127.0.0.1 keeps the endpoints accessible only from the local machine/container network namespace.
-- If you set BOT_HEALTH_HOST=0.0.0.0 and map the port, the endpoints become network-accessible. The responses do not contain secrets, but treat them as internal-only; restrict exposure via firewalling/reverse proxy IP allow-lists.
-- In Docker/Compose/Kubernetes, only map the port when you need external probing. Prefer sidecar/local-network probes when possible.
+API request logging:
+- The API uses `pino-http` to log requests with request id, status, and latency.
+- Health endpoints `/healthz` and `/ready` are ignored to avoid noise.
+- Sensitive headers (Authorization/Cookie) are redacted by the shared logger.
 
-Docker note:
-- To access the bot health endpoints from outside the container, set BOT_HEALTH_PORT and BOT_HEALTH_HOST=0.0.0.0, and expose/map the port in your runtime environment (Compose/Kubernetes). The production docker-compose currently does not publish the bot health port; map it if needed.
+Where to view logs:
+- Local dev: terminal stdout; enable pretty mode with `LOG_PRETTY=1`.
+- Docker: `docker logs <container>` (JSON). Feed to your log stack as needed.
 
 ---
 
@@ -430,3 +428,47 @@ Rotation steps when a secret is exposed:
 - Redeploy services; verify they start cleanly.
 - Purge any tracked `.env` files from git history (git rm --cached) and force-push if necessary; consider GitHub secret scanning.
 - Document the rotation in your ops notes and ensure CI/CD secrets are updated.
+
+---
+
+## API Rate Limiting (DB-backed)
+
+The API enforces a sliding-window rate limit using a SQL table (`api_rate_limits`). There is no Redis dependency.
+
+- Storage: Postgres (production) or SQLite (local dev); same SQL shape
+- Headers on responses for limited routes:
+  - `X-RateLimit-Limit`: configured limit for the window
+  - `X-RateLimit-Remaining`: remaining requests in the current window
+  - `X-RateLimit-Reset`: UTC epoch millis when the window resets
+  - `Retry-After`: seconds until retry (only on 429)
+- Cleanup: a periodic job deletes old windows to keep the table small (see migrations & API code). You can also run the SQL from NEXT_STEPS.md appendix manually if needed.
+- Fallback: if the DB returns an error, a tiny in-memory bucket (very small burst allowance) is used briefly; a WARN is logged.
+
+Schema (see also SCHEMA.md):
+```sql
+CREATE TABLE IF NOT EXISTS api_rate_limits (
+  key         text        NOT NULL,
+  window_ts   timestamptz NOT NULL,
+  count       integer     NOT NULL,
+  PRIMARY KEY (key, window_ts)
+);
+CREATE INDEX IF NOT EXISTS ix_api_rate_limits_window ON api_rate_limits (window_ts);
+```
+
+No special environment variables are required to enable rate limiting; it is on by default in the API. Tune limits per-route in the API middleware if needed.
+
+---
+
+## Bot Health Server
+
+The bot exposes internal health endpoints for orchestration and local checks:
+
+- Endpoints: `GET /healthz` (liveness) and `GET /ready` (readiness)
+- Default bind: `127.0.0.1` (loopback only)
+- Port (local compose): exposed at `8081` in `docker-compose.local.yml` for development
+
+Environment variables:
+- `BOT_HEALTH_HOST` (optional): override bind address (e.g., `0.0.0.0` to expose externally). Leave default for local-only.
+- `BOT_HEALTH_PORT` (optional): override port if needed (default documented in bot package).
+
+Production compose keeps the health port internal by default. If external probing is required, set `BOT_HEALTH_HOST=0.0.0.0` and explicitly map the port in `docker-compose.yml`.

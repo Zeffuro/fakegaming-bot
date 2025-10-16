@@ -1,16 +1,17 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import type { ChatInputCommandInteraction } from 'discord.js';
+import { getTestOnly } from '../../../core/commandBuilder.js';
 import {getMatchHistory, getMatchDetails} from '../../../services/riotService.js';
 import {generateLeagueHistoryImage} from '../image/leagueHistoryImage.js';
 import { runHistoryCommand } from '../shared/historyCommon.js';
 import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
+import { createSlashCommand } from '../../../core/commandBuilder.js';
+import { leagueHistory as META } from '../commands.manifest.js';
 
 const data = buildCommonLeagueOptions(
-    new SlashCommandBuilder()
-        .setName('league-history')
-        .setDescription('Get recent League of Legends match history for a summoner')
+    createSlashCommand(META)
 );
 
-async function execute(interaction: ChatInputCommandInteraction) {
+async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await runHistoryCommand(interaction, {
         fetchHistory: getMatchHistory,
         fetchDetails: getMatchDetails,
@@ -22,7 +23,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

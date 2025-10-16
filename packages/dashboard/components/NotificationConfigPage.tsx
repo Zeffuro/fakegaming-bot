@@ -17,7 +17,7 @@ import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useSt
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import Link from "next/link";
 import { Stack, ButtonGroup } from "@mui/material";
-import { LiveTv, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { LiveTv, YouTube as YouTubeIcon, SpeakerNotes } from "@mui/icons-material";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -158,6 +158,23 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                                     }}
                                 >
                                     YouTube
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/patch-notes/${encodeURIComponent(guildId)}`}
+                                    startIcon={<SpeakerNotes />}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: 'none',
+                                        bgcolor: moduleName === 'Patch Notes' ? '#7C4DFF' : 'grey.800',
+                                        color: moduleName === 'Patch Notes' ? 'white' : 'grey.300',
+                                        borderColor: 'grey.600',
+                                        '&:hover': {
+                                            bgcolor: moduleName === 'Patch Notes' ? '#6b3afe' : 'grey.700'
+                                        }
+                                    }}
+                                >
+                                    Patch Notes
                                 </Button>
                             </ButtonGroup>
                             <Button

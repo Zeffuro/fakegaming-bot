@@ -1,3 +1,4 @@
+import './earlyEnv.js';
 import './deploy-commands.js';
 
 import {
@@ -96,6 +97,39 @@ const logger = getLogger({ name: 'bot' });
                 return;
             }
             if (interaction.isChatInputCommand()) {
+                // Enforce per-guild DisabledModuleConfig before executing
+                const guildId = interaction.guildId ?? '';
+                if (guildId && command.moduleName) {
+                    try {
+                        const moduleDisabled = await getConfigManager().disabledModuleManager.isModuleDisabled(guildId, command.moduleName);
+                        if (moduleDisabled) {
+                            await interaction.reply({
+                                content: `The ${command.moduleName} module is disabled for this server.`,
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+                    } catch (err) {
+                        logger.warn({ err, guildId, command: interaction.commandName, module: command.moduleName }, 'Failed to check disabled module config');
+                    }
+                }
+
+                // Enforce per-guild DisabledCommandConfig before executing
+                if (guildId) {
+                    try {
+                        const disabled = await getConfigManager().disabledCommandManager.isCommandDisabled(guildId, interaction.commandName);
+                        if (disabled) {
+                            await interaction.reply({
+                                content: 'This command is disabled for this server.',
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+                    } catch (err) {
+                        logger.warn({ err, guildId, command: interaction.commandName }, 'Failed to check disabled command config');
+                    }
+                }
+
                 incMetric('command_exec', { name: interaction.commandName });
                 try {
                     await command.execute(interaction);

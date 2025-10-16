@@ -1,15 +1,16 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
+import {weather as META} from '../commands.manifest.js';
 import {getCurrentWeather, getShortTermForecast} from '../../../services/weatherService.js';
 import axios from 'axios';
 
-const data = new SlashCommandBuilder()
-    .setName('weather')
-    .setDescription('Get the current weather and a short forecast for a specified location')
-    .addStringOption(option =>
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addStringOption(option =>
         option.setName('location')
             .setDescription('City name or city,country (e.g., Rotterdam or Rotterdam,NL)')
             .setRequired(true)
-    );
+    )
+);
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const location = interaction.options.getString('location', true);
@@ -43,7 +44,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

@@ -30,7 +30,7 @@
     "jscpd": "^3.5.10"
   },
   "scripts": {
-    "build": "pnpm --filter @zeffuro/fakegaming-common run build && pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
+    "build": "pnpm --filter @zeffuro/fakegaming-common run build && tsx scripts/generate-bot-manifest.ts && pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "test:coverage": "pnpm -r run test:coverage",
@@ -43,13 +43,18 @@
     "start:dashboard": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start",
     "start:dashboard:dev": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start:dev",
     "clean": "node scripts/clean.js",
-    "fulltest": "pnpm run clean && pnpm run lint && pnpm run typecheck && pnpm run build && pnpm run test:coverage",
+    "fulltest": "pnpm run clean && pnpm run gen:manifest && pnpm --filter @zeffuro/fakegaming-common run build && pnpm run lint && pnpm run typecheck && pnpm run validate:commands && pnpm run validate:commands:strict && pnpm run validate:impl-vs-manifest && pnpm run build && pnpm run test:coverage",
     "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard .",
     "scan:dupes": "jscpd --min-tokens 40 --reporters json,html --gitignore packages/api/src packages/bot/src packages/dashboard/app packages/common/src > duplicates.json",
     "issues:summary": "tsx scripts/summarize-issues.ts",
     "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts",
     "ci:check-env": "tsx scripts/check-env-leaks.ts",
-    "seed:dev": "tsx scripts/seed-dev.ts"
+    "seed:dev": "tsx scripts/seed-dev.ts",
+    "gen:manifest": "tsx scripts/generate-bot-manifest.ts",
+    "validate:commands": "tsx scripts/validate-command-manifests.ts",
+    "validate:commands:strict": "tsx scripts/validate-command-manifests.ts --strict",
+    "validate:impl-vs-manifest": "tsx scripts/validate-implementation-vs-manifest.ts",
+    "gen:command-table": "tsx scripts/generate-command-table.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

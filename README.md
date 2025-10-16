@@ -236,7 +236,25 @@ pnpm --filter @zeffuro/fakegaming-bot-dashboard run typecheck
   ```bash
   pnpm test:coverage
   ```
-- You can also run these scripts in each package directory for more granular control.
+
+Coverage thresholds per package:
+- Lines/Statements: 80%
+- Branches: 75%
+- Functions: 80%
+
+Notes:
+- Generated or declarative wiring files may be excluded from coverage (e.g., auto-generated bot manifest, schema override registry). Core behavior is covered by unit/integration tests.
+
+---
+
+## Cross-Cutting Concerns (Security, Limits, Observability)
+
+- CSRF: Both API (Express) and Dashboard (Next.js) enforce CSRF on mutating routes via a shared core in `@zeffuro/fakegaming-common/security`.
+- Auth: JWT (HS256) with required issuer/audience. Cookies are HttpOnly/SameSite for dashboard.
+- Rate limiting: DB-backed sliding window in API with standard headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, and `Retry-After` on 429.
+- Health/Readiness: `/healthz` and `/ready` endpoints for API and Bot. Docker compose exposes bot health locally only.
+- Logging: Pino-based structured logs (`getLogger` in common). Dev pretty logs with `LOG_PRETTY=1`. API uses `pino-http` for request logging (reqId, status, latency) and skips `/healthz` noise.
+- Metrics: Minimal in-process counters and periodic summary logs in API/Bot; Prometheus can be added later.
 
 ---
 

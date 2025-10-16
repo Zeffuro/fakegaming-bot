@@ -4,29 +4,15 @@ import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
 import {LeagueConfig} from '@zeffuro/fakegaming-common/models';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { linkRiot as META } from '../commands.manifest.js';
 
-/**
- * Slash command metadata for Discord registration.
- */
-const data = new SlashCommandBuilder()
-    .setName('link-riot')
-    .setDescription('Link your Discord account or another user to a Riot account')
-    .addStringOption(option =>
-        option.setName('riot-id')
-            .setDescription('Riot ID (e.g. Zeffuro#EUW)')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName('region')
-            .setDescription('Region')
-            .setRequired(true)
-            .addChoices(...leagueRegionChoices)
-    )
-    .addUserOption(option =>
-        option.setName('user')
-            .setDescription('Discord user to link (admin only)')
-            .setRequired(false)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b
+        .addStringOption(option => option.setName('riot-id').setDescription('Riot ID (e.g. Zeffuro#EUW)').setRequired(true))
+        .addStringOption(option => option.setName('region').setDescription('Region').setRequired(true).addChoices(...leagueRegionChoices))
+        .addUserOption(option => option.setName('user').setDescription('Discord user to link (admin only)').setRequired(false))
+);
 
 /**
  * Executes the link-riot command, linking a Discord user to a Riot account.
@@ -95,7 +81,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

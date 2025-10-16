@@ -9,7 +9,14 @@ import type {
   patchNotes_supportedGames_get_Response200,
   patchSubscriptions_post_Request,
   patchSubscriptions_put_Request,
-  discord_guilds_guildId_members_search_get_Response200
+  discord_guilds_guildId_members_search_get_Response200,
+  disabledModules_get_Response200,
+  disabledModules_post_Response201,
+  disabledModules_id_delete_Response200,
+  disabledCommands_get_Response200,
+  disabledCommands_post_Response201,
+  disabledCommands_id_delete_Response200,
+  disabledModules_post_Request,
 } from "@/types/apiResponses";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
@@ -30,7 +37,11 @@ export const API_ENDPOINTS = {
   QUOTES: '/api/external/quotes',
 
   // Discord helpers
-  DISCORD: '/api/external/discord'
+  DISCORD: '/api/external/discord',
+
+  // Disabled features
+  DISABLED_MODULES: '/api/external/disabledModules',
+  DISABLED_COMMANDS: '/api/external/disabledCommands',
 };
 
 // Type for API options
@@ -50,6 +61,28 @@ function getCookie(name: string): string | undefined {
   if (typeof document === 'undefined') return undefined;
   const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
   return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+async function tryRefreshOnce(): Promise<boolean> {
+  try {
+    const csrf = getCookie('csrf');
+    const res = await fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include',
+      headers: csrf ? { [CSRF_HEADER_NAME]: csrf } : undefined,
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined') {
+    const path = window.location.pathname + window.location.search;
+    const returnTo = path || '/dashboard';
+    window.location.href = `/api/auth/discord?returnTo=${encodeURIComponent(returnTo)}`;
+  }
 }
 
 // Base API request function
@@ -84,18 +117,37 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
     requestOptions.body = JSON.stringify(body);
   }
 
-  const response = await fetch(endpoint, requestOptions);
+  let response = await fetch(endpoint, requestOptions);
+
+  // Handle 401 Unauthorized: attempt a single refresh-then-retry
+  if (!response.ok && response.status === 401) {
+    const refreshed = await tryRefreshOnce();
+    if (refreshed) {
+      response = await fetch(endpoint, requestOptions);
+    }
+    if (!response.ok) {
+      // Still unauthorized or refresh failed — redirect to login (browser)
+      redirectToLogin();
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
     throw new Error(
-      errorData?.error ||
-      errorData?.message ||
+      (errorData as any)?.error ||
+      (errorData as any)?.message ||
       `API request failed with status: ${response.status}`
     );
   }
 
   return await response.json();
+}
+
+// Overloaded helpers for endpoints where generated request types may be too strict
+export function createDisabledModuleRequest(data: disabledModules_post_Request): Promise<disabledModules_post_Response201>;
+export function createDisabledModuleRequest(data: { guildId: string; moduleName: string }): Promise<disabledModules_post_Response201>;
+export async function createDisabledModuleRequest(data: disabledModules_post_Request | { guildId: string; moduleName: string }): Promise<disabledModules_post_Response201> {
+  return apiRequest<disabledModules_post_Response201>(API_ENDPOINTS.DISABLED_MODULES, { method: 'POST', body: data });
 }
 
 // Types local to this client for endpoints not in generated types
@@ -188,5 +240,24 @@ export const api = {
   searchGuildMembers: (guildId: string, query: string, limit: number = 25) =>
     apiRequest<discord_guilds_guildId_members_search_get_Response200>(
       `${API_ENDPOINTS.DISCORD}/guilds/${encodeURIComponent(guildId)}/members/search?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(String(limit))}`
-    )
+    ),
+
+  // Disabled Modules APIs
+  getDisabledModules: (guildId: string) =>
+    apiRequest<disabledModules_get_Response200>(`${API_ENDPOINTS.DISABLED_MODULES}?guildId=${encodeURIComponent(guildId)}`),
+
+  createDisabledModule: createDisabledModuleRequest,
+
+  deleteDisabledModule: (id: string | number) =>
+    apiRequest<disabledModules_id_delete_Response200>(`${API_ENDPOINTS.DISABLED_MODULES}/${id}`, { method: 'DELETE' }),
+
+  // Disabled Commands APIs
+  getDisabledCommands: (guildId: string) =>
+    apiRequest<disabledCommands_get_Response200>(`${API_ENDPOINTS.DISABLED_COMMANDS}?guildId=${encodeURIComponent(guildId)}`),
+
+  createDisabledCommand: (data: { guildId: string; commandName: string }) =>
+    apiRequest<disabledCommands_post_Response201>(API_ENDPOINTS.DISABLED_COMMANDS, { method: 'POST', body: data }),
+
+  deleteDisabledCommand: (id: string | number) =>
+    apiRequest<disabledCommands_id_delete_Response200>(`${API_ENDPOINTS.DISABLED_COMMANDS}/${id}`, { method: 'DELETE' }),
 };

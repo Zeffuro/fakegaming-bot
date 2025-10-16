@@ -244,6 +244,50 @@ See [TYPESCRIPT.md](../TYPESCRIPT.md) for detailed TypeScript configuration and 
 
 ---
 
+## Testing & Coverage
+
+- Test runner: Vitest per package (`vitest.config.ts` in each).
+- Run tests for all packages:
+  ```bash
+  pnpm test
+  ```
+- Run tests with coverage:
+  ```bash
+  pnpm test:coverage
+  ```
+- Coverage thresholds (enforced per package):
+  - Lines/Statements: 80%
+  - Branches: 75%
+  - Functions: 80%
+- Notes:
+  - Some generated or declarative wiring files are excluded from coverage (for example, the auto-generated bot manifest, and schema override registries). Core behavior is covered by unit and integration tests.
+  - Prefer focused unit tests for pure utilities and model logic; use API integration tests (supertest) for middleware like rate limiting and CSRF.
+
+## Import/Export & TypeScript Conventions
+
+- Use ES modules only; no CommonJS.
+- Always use `.js` extension for local imports, even for `.ts` sources.
+- Use named exports only; avoid `export default`.
+- Strict TypeScript: no implicit `any`; handle `null`/`undefined` explicitly.
+- Prefix intentionally unused variables/parameters with `_` to satisfy lint rules.
+
+## Shared Code & Generated Artifacts
+
+- Put shared types, models, and utilities in `packages/common`. If you find duplication across packages, refactor into common.
+- The bot command manifest in `packages/common/src/manifest/bot-manifest.ts` is auto-generated. Do not edit it manually; regenerate via:
+  ```bash
+  pnpm run gen:manifest
+  ```
+- Schema validation overrides are defined centrally (common/validation); avoid duplicating validation logic in services.
+
+## Security & Middleware
+
+- Auth: Use shared JWT helpers from `@zeffuro/fakegaming-common` and enforce issuer/audience. Dashboard uses HttpOnly cookies; API uses Bearer.
+- CSRF: Mutating routes must enforce CSRF using the shared core (Next adapter in Dashboard, Express middleware in API). Prefer the base router in API which auto-enforces CSRF on POST/PUT/PATCH/DELETE.
+- Rate limiting: API uses a DB-backed sliding window limiter with standard headers; integration tests assert headers and 429 behavior. Avoid duplicating limiter logic in features.
+
+---
+
 ## Adding Features & Commands
 
 - Add new Discord commands in `packages/bot/src/modules/yourmodule/`.

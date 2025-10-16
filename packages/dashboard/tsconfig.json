@@ -31,12 +31,13 @@
     "app",
     "components",
     "lib",
-    "util",
+    "next-env.d.ts",
     "scripts",
     "src",
+    "src/__tests__/**/*",
     "types",
-    ".next/types/**/*.ts",
-    "src/__tests__/**/*"
+    "util",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

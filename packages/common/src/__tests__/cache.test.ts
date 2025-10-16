@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const { mockRedisConstructor, mockRedisInstance, flags, store } = vi.hoisted(() => {
+const { mockRedisConstructor, mockRedisInstance, flags, store, loggerSpies } = vi.hoisted(() => {
     const store = new Map<string, string>();
     const flags = { throwGet: false, throwSet: false, throwDel: false };
 
@@ -32,17 +32,32 @@ const { mockRedisConstructor, mockRedisInstance, flags, store } = vi.hoisted(() 
     } as const;
 
     const mockRedisConstructor = vi.fn(() => mockRedisInstance);
-    return { mockRedisConstructor, mockRedisInstance, flags, store };
+
+    const loggerSpies = {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        child: vi.fn(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn() }))
+    };
+
+    return { mockRedisConstructor, mockRedisInstance, flags, store, loggerSpies };
 });
 
 vi.mock('ioredis', () => ({
     default: mockRedisConstructor
 }));
 
+vi.mock('../utils/logger.js', () => ({
+    getLogger: () => loggerSpies
+}));
+
 describe('initRedis', () => {
     beforeEach(() => {
         mockRedisConstructor.mockClear();
         mockRedisInstance.once.mockClear();
+        loggerSpies.info.mockClear();
+        loggerSpies.warn.mockClear();
+        loggerSpies.error.mockClear();
         vi.resetModules();
     });
 
@@ -74,11 +89,9 @@ describe('initRedis', () => {
 
     it('logs and throws if constructor fails', async () => {
         const { initRedis } = await import('../cache.js');
-        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
         mockRedisConstructor.mockImplementationOnce(() => { throw new Error('boom'); });
         await expect(initRedis('redis://localhost:6379')).rejects.toThrow('boom');
-        expect(spy).toHaveBeenCalled();
-        spy.mockRestore();
+        expect(loggerSpies.error).toHaveBeenCalled();
     });
 });
 
@@ -97,6 +110,9 @@ describe('cache operations', () => {
         mockRedisInstance.del.mockClear();
         mockRedisInstance.quit.mockClear();
         mockRedisInstance.once.mockClear();
+        loggerSpies.info.mockClear();
+        loggerSpies.warn.mockClear();
+        loggerSpies.error.mockClear();
         vi.resetModules();
     });
 
@@ -127,22 +143,19 @@ describe('cache operations', () => {
 
     it('gracefully handles GET/SET/DEL errors and logs them', async () => {
         const { cacheSet, cacheGet, cacheDel } = await import('../cache.js');
-        const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         flags.throwSet = true;
         await cacheSet('k3', { y: 2 }, 1000); // should not throw
-        expect(errSpy).toHaveBeenCalled();
+        expect(loggerSpies.error).toHaveBeenCalled();
 
         flags.throwGet = true;
         const got = await cacheGet('k3');
         expect(got).toBeNull();
-        expect(errSpy).toHaveBeenCalled();
+        expect(loggerSpies.error).toHaveBeenCalled();
 
         flags.throwDel = true;
         await cacheDel('k3'); // should not throw
-        expect(errSpy).toHaveBeenCalled();
-
-        errSpy.mockRestore();
+        expect(loggerSpies.error).toHaveBeenCalled();
     });
 
     it('returns null/no-op when Redis is not configured/ready', async () => {

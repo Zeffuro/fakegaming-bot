@@ -2,10 +2,10 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {getYoutubeChannelId} from '../../../services/youtubeService.js';
 import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
 import { youtubeCommandConfig } from '../config.js';
+import { addYoutubeChannel as META } from '../commands.manifest.js';
 
 const { data, execute, testOnly } = createSubscriptionCommand<string>({
-    commandName: youtubeCommandConfig.commandName,
-    description: youtubeCommandConfig.description,
+    meta: META,
     usernameOptionDescription: youtubeCommandConfig.usernameOptionDescription,
     resolveOrVerify: async (username) => {
         const youtubeChannelId = await getYoutubeChannelId(username);

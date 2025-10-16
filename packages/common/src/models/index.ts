@@ -11,3 +11,4 @@ export * from './patch-subscription-config.js';
 export * from './disabled-command-config.js';
 export * from './cache-config.js';
 export * from './notification.js';
+export * from './disabled-module-config.js';

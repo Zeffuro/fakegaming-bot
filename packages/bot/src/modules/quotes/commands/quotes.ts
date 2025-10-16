@@ -1,15 +1,12 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import { formatQuotesBlock } from '../shared/formatQuotes.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { quotes as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('quotes')
-    .setDescription('Get all quotes for a user')
-    .addUserOption(option =>
-        option.setName('user')
-            .setDescription('User to get quotes for')
-            .setRequired(true)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addUserOption(option => option.setName('user').setDescription('User to get quotes for').setRequired(true))
+);
 
 /**
  * Executes the quotes command, replying with all quotes for a specified user.
@@ -29,7 +26,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply(`Quotes for ${user.tag}:\n${formatted}`);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

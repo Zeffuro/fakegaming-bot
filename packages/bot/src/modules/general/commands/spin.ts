@@ -1,17 +1,19 @@
-import {ChatInputCommandInteraction, SlashCommandBuilder} from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { spin as META } from '../commands.manifest.js';
 
 const emojis = ['🌀', '🎯', '🎲', '🎉', '🕹️', '🎰', '🔄', '🥳', '🪄', '✨'];
 
-const data = new SlashCommandBuilder()
-    .setName('spin')
-    .setDescription('Spin the wheel to pick someone!');
-for (let i = 1; i <= 10; i++) {
-    data.addStringOption(option =>
-        option.setName(`name${i}`)
-            .setDescription(`Name #${i}`)
-            .setRequired(i <= 2)
-    );
-}
+const data = createSlashCommand(META, (b: SlashCommandBuilder) => {
+    for (let i = 1; i <= 10; i++) {
+        b.addStringOption(option =>
+            option
+                .setName(`name${i}`)
+                .setDescription(`Name ${i}`)
+                .setRequired(false)
+        );
+    }
+});
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const names: string[] = [];
@@ -41,7 +43,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.editReply(`🎉 The wheel stopped at: **${winner}**!`);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
-export default {data, execute, testOnly};
+export default { data, execute, testOnly };

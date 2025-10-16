@@ -3,37 +3,39 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { months } from '../../../constants/months.js';
 import { requireAdmin } from '../../../utils/permissions.js';
 import { subjectForUser, subjectNominative } from '../shared/messages.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { setBirthday as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('set-birthday')
-    .setDescription('Set your birthday and the channel to post in')
-    .addIntegerOption(option =>
-        option.setName('day')
-            .setDescription('Day of your birthday (1-31)')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName('month')
-            .setDescription('Month of your birthday')
-            .setRequired(true)
-            .setAutocomplete(true)
-    )
-    .addIntegerOption(option =>
-        option.setName('year')
-            .setDescription('Year of your birthday (optional)')
-            .setRequired(false)
-    )
-    .addChannelOption(option =>
-        option.setName('channel')
-            .setDescription('Channel to post your birthday message (defaults to current channel)')
-            .addChannelTypes(ChannelType.GuildText)
-            .setRequired(false)
-    )
-    .addUserOption(option =>
-        option.setName('user')
-            .setDescription('User to set birthday for (admins only)')
-            .setRequired(false)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b
+        .addIntegerOption(option =>
+            option.setName('day')
+                .setDescription('Day of your birthday (1-31)')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('month')
+                .setDescription('Month of your birthday')
+                .setRequired(true)
+                .setAutocomplete(true)
+        )
+        .addIntegerOption(option =>
+            option.setName('year')
+                .setDescription('Year of your birthday (optional)')
+                .setRequired(false)
+        )
+        .addChannelOption(option =>
+            option.setName('channel')
+                .setDescription('Channel to post your birthday message (defaults to current channel)')
+                .addChannelTypes(ChannelType.GuildText)
+                .setRequired(false)
+        )
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('User to set birthday for (admins only)')
+                .setRequired(false)
+        )
+);
 
 function isValidDate(day: number, month: number, year?: number): boolean {
     const testYear = year ?? 2000;
@@ -93,4 +95,4 @@ async function autocomplete(interaction: AutocompleteInteraction) {
     await interaction.respond(choices.slice(0, 25));
 }
 
-export default { data, execute, autocomplete, testOnly: false };
+export default { data, execute, autocomplete, testOnly: getTestOnly(META) };

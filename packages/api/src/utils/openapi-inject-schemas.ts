@@ -9,7 +9,8 @@ import {
     ServerConfig,
     TwitchStreamConfig,
     UserConfig,
-    YoutubeVideoConfig
+    YoutubeVideoConfig,
+    DisabledModuleConfig
 } from "@zeffuro/fakegaming-common/models";
 import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
 
@@ -23,6 +24,7 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
         BirthdayConfig: modelToOpenApiSchema(BirthdayConfig, { mode: 'full' }),
         CacheConfig: modelToOpenApiSchema(CacheConfig, { mode: 'full' }),
         DisabledCommandConfig: modelToOpenApiSchema(DisabledCommandConfig, { mode: 'full' }),
+        DisabledModuleConfig: modelToOpenApiSchema(DisabledModuleConfig, { mode: 'full' }),
         PatchNoteConfig: modelToOpenApiSchema(PatchNoteConfig, { mode: 'full' }),
         PatchSubscriptionConfig: modelToOpenApiSchema(PatchSubscriptionConfig, { mode: 'full' }),
         QuoteConfig: modelToOpenApiSchema(QuoteConfig, { mode: 'full' }),

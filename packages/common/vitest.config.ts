@@ -34,6 +34,11 @@ export default defineConfig({
         'src/utils/schemaRegistry.ts',
         'src/utils/validation.ts',
         'src/core/dataRoot.ts',
+        // Newly excluded generated/config files
+        'src/manifest/**/*', // Auto-generated manifest validated by scripts
+        'src/validation/schemaOverrides.ts', // Declarative schema wiring validated via integration
+        // DB-backed rate limiter logic is primarily exercised via integration in API; exclude from unit coverage
+        'src/rate-limiter.ts',
       ],
       thresholds: {
         lines: 80,

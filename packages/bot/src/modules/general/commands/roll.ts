@@ -1,13 +1,15 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
+import {roll as META} from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('roll')
-    .setDescription('Roll dice or generate a random number')
-    .addStringOption(option =>
-        option.setName('dice')
-            .setDescription('Dice notation (e.g., 1d20) or a max number (e.g., 100)')
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addStringOption(option =>
+        option
+            .setName('dice')
+            .setDescription('Dice notation or max number (e.g., 2d6, d20, or 100)')
             .setRequired(false)
-    );
+    )
+);
 
 function parseDice(input: string): { count: number, sides: number } | null {
     const match = input.match(/^(\d*)d(\d+)$/i);
@@ -49,7 +51,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply('Invalid input. Use dice notation (e.g., 2d6) or a max number (e.g., 100).');
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

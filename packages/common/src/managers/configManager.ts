@@ -11,6 +11,7 @@ import {PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.j
 import {DisabledCommandManager} from "./disabledCommandManager.js";
 import {CacheManager} from "./cacheManager.js";
 import {NotificationsManager} from './notificationsManager.js';
+import {DisabledModuleManager} from './disabledModuleManager.js';
 
 /**
  * Aggregates all manager classes.
@@ -28,6 +29,7 @@ export class ConfigManager {
     disabledCommandManager = new DisabledCommandManager();
     cacheManager = new CacheManager();
     notificationsManager = new NotificationsManager();
+    disabledModuleManager = new DisabledModuleManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

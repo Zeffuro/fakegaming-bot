@@ -2,20 +2,15 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'di
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {v4 as uuidv4} from 'uuid';
 import {parseTimespan} from '@zeffuro/fakegaming-common/utils';
+import { createSlashCommand } from '../../../core/commandBuilder.js';
+import { getTestOnly } from '../../../core/commandBuilder.js';
+import { setReminder as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('set-reminder')
-    .setDescription('Set a reminder')
-    .addStringOption(option =>
-        option.setName('timespan')
-            .setDescription('When to remind (e.g., 1h, 30m)')
-            .setRequired(true)
-    )
-    .addStringOption(option =>
-        option.setName('message')
-            .setDescription('Reminder message')
-            .setRequired(true)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b
+        .addStringOption(option => option.setName('timespan').setDescription('When to remind (e.g., 1h, 30m)').setRequired(true))
+        .addStringOption(option => option.setName('message').setDescription('Reminder message').setRequired(true))
+);
 
 /**
  * Executes the set-reminder command, setting a reminder for the user after a specified timespan.
@@ -49,7 +44,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

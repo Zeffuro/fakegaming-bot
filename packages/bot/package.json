@@ -7,6 +7,7 @@
   "author": "Zeffuro",
   "license": "AGPL-3.0-only",
   "scripts": {
+    "prebuild": "tsx ../../scripts/generate-bot-manifest.ts && pnpm -C ../../packages/common build",
     "build": "pnpm --filter @zeffuro/fakegaming-common run build && tsc",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "prod:dev": "cross-env NODE_ENV=production tsx src/index.ts",
@@ -43,6 +44,7 @@
     "eslint": "^9.37.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "pino-pretty": "^13.1.2"
   }
 }

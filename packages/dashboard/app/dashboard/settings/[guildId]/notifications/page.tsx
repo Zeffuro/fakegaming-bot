@@ -2,18 +2,20 @@
 import React from "react";
 import Link from "next/link";
 import { Box, Typography, Alert, Grid, Paper, Button, Chip, Stack } from "@mui/material";
-import { LiveTv, YouTube as YouTubeIcon, NotificationsActive } from "@mui/icons-material";
+import { LiveTv, YouTube as YouTubeIcon, NotificationsActive, SpeakerNotes } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
+import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const twitchApi = useTwitchConfigs(guildId as string);
     const youtubeApi = useYouTubeConfigs(guildId as string);
+    const patchApi = usePatchSubscriptions(guildId as string);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading;
 
     if (!guild && !guildsLoading) {
         return (
@@ -36,13 +38,13 @@ export default function GuildNotificationsHubPage() {
                                 Notifications
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
-                                Manage Twitch and YouTube notifications for this server.
+                                Manage Twitch, YouTube and Patch Notes notifications for this server.
                             </Typography>
                         </Box>
                     </Box>
 
                     <Grid container spacing={3}>
-                        <Grid sx={{ width: { xs: '100%', md: '50%' }, p: 1.5 }}>
+                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
                                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                                     <LiveTv color="secondary" />
@@ -66,7 +68,7 @@ export default function GuildNotificationsHubPage() {
                             </Paper>
                         </Grid>
 
-                        <Grid sx={{ width: { xs: '100%', md: '50%' }, p: 1.5 }}>
+                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
                                 <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
                                     <YouTubeIcon htmlColor="#FF0000" />
@@ -89,10 +91,33 @@ export default function GuildNotificationsHubPage() {
                                 </Button>
                             </Paper>
                         </Grid>
+
+                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
+                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
+                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                    <SpeakerNotes color="info" />
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Patch Note Subscriptions</Typography>
+                                    <Chip size="small" label={`${patchApi.configs.length} configured`} sx={{ ml: 'auto' }} />
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    Subscribe to game patch notes and post updates to specific channels.
+                                </Typography>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/patch-notes/${encodeURIComponent(guildId as string)}`}
+                                    variant="contained"
+                                    sx={{
+                                        bgcolor: '#7C4DFF',
+                                        '&:hover': { bgcolor: '#7C4DFF', filter: 'brightness(0.9)' }
+                                    }}
+                                >
+                                    Manage Patch Notes
+                                </Button>
+                            </Paper>
+                        </Grid>
                     </Grid>
                 </>
             )}
         </DashboardLayout>
     );
 }
-

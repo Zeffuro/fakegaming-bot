@@ -16,6 +16,31 @@ function createRootLogger(): PinoLogger {
         censor: '[redacted]'
     };
 
+    // Detect Next.js runtime (app router route handlers set NEXT_RUNTIME)
+    const inNextRuntime = typeof process !== 'undefined' && typeof process.env.NEXT_RUNTIME === 'string' && process.env.NEXT_RUNTIME.length > 0;
+
+    // Pretty mode can be forced via LOG_PRETTY=1 (overrides NODE_ENV),
+    // but it's disabled automatically inside Next.js runtime to avoid worker transports.
+    const prettyRequested = process.env.LOG_PRETTY === '1';
+    const enablePretty = prettyRequested && process.env.NODE_ENV !== 'test' && !inNextRuntime;
+
+    if (enablePretty) {
+        const mode = (process.env.LOG_PRETTY_MODE || 'short').toLowerCase(); // 'short' | 'expanded'
+        const commonPrettyOpts = {
+            colorize: true,
+            translateTime: 'SYS:standard' as const,
+            ignore: 'pid,hostname',
+            errorLikeObjectKeys: ['err', 'error'],
+            errorProps: '*',
+            messageFormat: '{name} {msg}'
+        };
+        const options = mode === 'expanded'
+            ? { ...commonPrettyOpts, singleLine: false, levelFirst: true }
+            : { ...commonPrettyOpts, singleLine: true, levelFirst: true };
+
+        return pino({ level, redact, transport: { target: 'pino-pretty', options } });
+    }
+
     return pino({ level, redact });
 }
 

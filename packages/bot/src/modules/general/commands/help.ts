@@ -1,9 +1,9 @@
-import {CommandInteraction, MessageFlags, SlashCommandBuilder} from 'discord.js';
+import {CommandInteraction, MessageFlags} from 'discord.js';
 import type {FakegamingBot} from '../../../index.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { help as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('help')
-    .setDescription('List all available commands and their descriptions.');
+const data = createSlashCommand(META);
 
 /**
  * Executes the help command, listing all available commands and their descriptions.
@@ -21,7 +21,7 @@ async function execute(interaction: CommandInteraction) {
     await interaction.reply({content: helpText, flags: MessageFlags.Ephemeral});
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

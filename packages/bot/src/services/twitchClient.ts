@@ -195,18 +195,30 @@ class PersistentAppAuthProvider implements AuthProvider {
             clearTimeout(this._refreshTimer);
             this._refreshTimer = null;
         }
-        const delay = computeProactiveRefreshDelay(expiry);
-        if (delay <= 0) return;
-        log.debug({ delay }, 'Scheduling proactive Twitch token refresh');
-        this._refreshTimer = setTimeout(async () => {
-            try {
-                log.info('Proactive Twitch token refresh starting');
-                await this.getAppAccessToken(true);
-                log.info('Proactive Twitch token refresh completed');
-            } catch (err) {
-                log.warn({ err }, 'Proactive Twitch token refresh failed');
-            }
-        }, delay);
+        const MAX_TIMEOUT_MS = 0x7fffffff; // ~24.8 days
+        const schedule = (target: Date) => {
+            const delay = computeProactiveRefreshDelay(target);
+            if (delay <= 0) return;
+            const nextDelay = Math.min(delay, MAX_TIMEOUT_MS);
+            log.debug({ delay, nextDelay }, 'Scheduling proactive Twitch token refresh');
+            this._refreshTimer = setTimeout(() => {
+                if (nextDelay < delay) {
+                    // Still not at target time; schedule next chunk
+                    schedule(target);
+                    return;
+                }
+                (async () => {
+                    try {
+                        log.info('Proactive Twitch token refresh starting');
+                        await this.getAppAccessToken(true);
+                        log.info('Proactive Twitch token refresh completed');
+                    } catch (err) {
+                        log.warn({ err }, 'Proactive Twitch token refresh failed');
+                    }
+                })().catch(() => {/* swallow */});
+            }, nextDelay);
+        };
+        schedule(expiry);
     }
 }
 

@@ -5,6 +5,7 @@ import path from 'path';
 import {pathToFileURL} from 'url';
 import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
 import { findCommandFiles } from './core/commandsFs.js';
+import { BOT_COMMANDS } from '@zeffuro/fakegaming-common/manifest/bot-manifest';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -31,22 +32,48 @@ export async function deployCommands() {
             .sort((a, b) => String((a as any).name).localeCompare(String((b as any).name)));
     }
 
-    const testCommands: object[] = [];
-    const globalCommands: object[] = [];
+    // Load implementation payloads from command files
     const modulesPath = path.join(__dirname, 'modules');
     if (!fs.existsSync(modulesPath)) {
         throw new Error(`Modules directory not found at ${modulesPath}`);
     }
 
     const commandFiles = findCommandFiles(modulesPath);
+    const implByName = new Map<string, Record<string, unknown>>();
     for (const commandPath of commandFiles) {
         const commandModule = await import(pathToFileURL(commandPath).href);
         const cmd = commandModule.default;
         if (cmd?.data) {
-            if (!cmd.testOnly) {
-                globalCommands.push(cmd.data.toJSON());
-            }
-            testCommands.push(cmd.data.toJSON());
+            const json = cmd.data.toJSON() as Record<string, unknown>;
+            const name = String(json.name ?? '');
+            if (name) implByName.set(name, json);
+        }
+    }
+
+    // Build registration sets using manifest as the single source of truth
+    const globalCommands: object[] = [];
+    const testCommands: object[] = [];
+
+    for (const meta of BOT_COMMANDS) {
+        const payload = implByName.get(meta.name);
+        if (!payload) {
+            throw new Error(`Implementation for command '${meta.name}' not found. Ensure a command file exists and matches the manifest name.`);
+        }
+
+        // Overlay registration fields from manifest if provided
+        if (typeof meta.dm_permission === 'boolean') {
+            (payload as any).dm_permission = meta.dm_permission;
+        }
+        if (meta.default_member_permissions != null) {
+            (payload as any).default_member_permissions = meta.default_member_permissions;
+        }
+
+        if (meta.testOnly) {
+            testCommands.push(payload);
+        } else {
+            globalCommands.push(payload);
+            // Also include global in test (guild) set for faster propagation/testing
+            testCommands.push(payload);
         }
     }
 
@@ -54,7 +81,7 @@ export async function deployCommands() {
     const testDupes = findDuplicates(testCommands as any);
     if (globalDupes.length || testDupes.length) {
         throw new Error(
-            `Duplicate command names found:\nGlobal: ${globalDupes.map(c => c.name).join(', ')}\nTest: ${testDupes.map(c => c.name).join(', ')}`
+            `Duplicate command names found:\nGlobal: ${globalDupes.map((c: any) => c.name).join(', ')}\nTest: ${testDupes.map((c: any) => c.name).join(', ')}`
         );
     }
 

@@ -1,7 +1,11 @@
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from "@/lib/env";
 import { enforceCsrf } from "@/lib/security/csrf.js";
 import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
+import { createSimpleLogger } from "@/lib/simpleColorLogger";
+
+const log = createSimpleLogger('dashboard:proxy');
 
 type RouteContext = {
     params: Promise<{
@@ -22,6 +26,13 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const apiPath = '/' + proxy.join('/');
     const method = req.method;
 
+    // Attach a request id for correlation and forward it to the API
+    const incomingReqId = req.headers.get('x-request-id');
+    const reqId = (incomingReqId && incomingReqId.trim().length > 0)
+        ? incomingReqId
+        : `dash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const started = Date.now();
+
     // CSRF enforcement for unsafe methods (double-submit token)
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase())) {
         const csrfFailure = enforceCsrf(req);
@@ -31,9 +42,9 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const jwt = getJwt(req);
 
     if (!jwt) {
-        console.warn(`[ProxyHandler] Request to ${apiPath} is UNAUTHENTICATED. No JWT found in header or cookie.`);
+        log.warn({ apiPath, reqId }, 'Request is unauthenticated (no JWT)');
     } else {
-        console.log(`[ProxyHandler] Extracted JWT for ${apiPath}: ${jwt.substring(0, 20)}...`);
+        log.debug({ apiPath, reqId, jwtPreview: jwt.substring(0, 20) + '…' }, 'Extracted JWT');
     }
 
     if (!API_URL) {
@@ -48,6 +59,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
     const headers: Record<string, string> = {
         'Content-Type': req.headers.get('content-type') || 'application/json',
+        'x-request-id': reqId,
     };
 
     if (jwt) {
@@ -62,7 +74,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         headers['Cookie'] = `${CSRF_COOKIE_NAME}=${csrfToken}`;
     }
 
-    console.log(`[ProxyHandler] Proxying ${method} ${apiPath} to ${url}`);
+    log.info({ method, apiPath, url, reqId }, 'Proxying request');
 
     try {
         const options: RequestInit = {
@@ -80,40 +92,32 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         }
 
         const response = await fetch(url, options);
+        const ms = Date.now() - started;
 
         if (!response.ok) {
             const status = response.status;
-            let responseBody;
+            let responseBody: unknown;
 
             try {
                 responseBody = await response.json();
-                console.error(`[ProxyHandler] Error ${status} from API: ${JSON.stringify(responseBody)}`);
             } catch {
                 responseBody = await response.text();
-                console.error(`[ProxyHandler] Error ${status} from API: ${responseBody}`);
             }
 
             if (status === 403) {
-                console.error(`[ProxyHandler] 403 Forbidden Details:`);
-                console.error(`  - JWT Present: ${jwt ? 'Yes' : 'No'}`);
-                console.error(`  - Request Path: ${apiPath}`);
-                console.error(`  - Request Method: ${method}`);
-                if (options.body) {
-                    console.error(`  - Request Body: ${options.body}`);
-                }
-                console.error(`  - Response Body: ${JSON.stringify(responseBody)}`);
+                log.warn({ status, apiPath, method, ms, reqId, responseBody }, 'API returned 403 Forbidden');
+            } else {
+                log.warn({ status, apiPath, method, ms, reqId, responseBody }, 'API responded with error');
             }
 
-            return NextResponse.json(responseBody, { status });
+            return NextResponse.json(responseBody as any, { status });
         }
 
-        console.log(`[ProxyHandler] Successful response from ${apiPath} with status ${response.status}`);
-        console.log(`[ProxyHandler] Response Headers: ${JSON.stringify([...response.headers])}`);
+        log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');
 
         const responseClone = response.clone();
-
         const responseText = await responseClone.text();
-        console.log(`[ProxyHandler] Response Body: ${responseText}`);
+        log.trace({ apiPath, responseText, reqId }, 'Proxy response body');
 
         const contentType = response.headers.get('Content-Type') || 'application/json';
         return new NextResponse(await response.text(), {
@@ -123,7 +127,8 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
             },
         });
     } catch (error) {
-        console.error(`[ProxyHandler] Exception during proxy: ${error}`);
+        const ms = Date.now() - started;
+        log.error({ apiPath, error, ms, reqId }, 'Proxy exception');
         return new NextResponse(
             JSON.stringify({ error: 'Error connecting to API server' }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }

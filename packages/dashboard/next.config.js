@@ -1,11 +1,21 @@
 import path from "path";
 import {fileURLToPath} from "node:url";
 
-const traceRoot = path.join(fileURLToPath(import.meta.url), '../..');
+// Compute the trace root from the directory containing this config file
+const traceRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
 const nextConfig = {
     outputFileTracingRoot: traceRoot,
     output: 'standalone',
+
+    // Avoid bundling pino and its worker-based deps; load them from Node instead
+    serverExternalPackages: [
+        'pino',
+        'pino-pretty',
+        'thread-stream',
+        'sonic-boom'
+    ],
+
 
     // Add webpack configuration to suppress specific warnings
     webpack: (config) => {

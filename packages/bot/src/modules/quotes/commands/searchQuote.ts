@@ -1,15 +1,12 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import { formatQuotesBlock } from '../shared/formatQuotes.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { searchQuote as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('search-quote')
-    .setDescription('Search quotes by text')
-    .addStringOption(option =>
-        option.setName('text')
-            .setDescription('Text to search for')
-            .setRequired(true)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addStringOption(option => option.setName('text').setDescription('Text to search for').setRequired(true))
+);
 
 /**
  * Executes the search-quote command, searching for quotes by text.
@@ -29,7 +26,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply(`Quotes matching "${text}":\n${formatted}`);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

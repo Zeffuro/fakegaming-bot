@@ -1,5 +1,6 @@
 import fs from 'fs';
 import {pathToFileURL} from 'url';
+import path from 'path';
 import type {FakegamingBot} from '../index.js';
 import { findCommandFiles } from './commandsFs.js';
 
@@ -14,10 +15,15 @@ export async function loadCommands(client: FakegamingBot, modulesPath: string) {
         const commandModule = await import(pathToFileURL(commandPath).href);
         const cmd = commandModule.default;
         if (cmd?.data && cmd?.execute) {
+            // Derive module name from file path: modules/{module}/commands/*.{ts,js}
+            const commandsDir = path.dirname(commandPath);
+            const moduleDir = path.dirname(commandsDir);
+            const moduleName = path.basename(moduleDir);
             client.commands.set(cmd.data.name, {
                 data: cmd.data,
                 execute: cmd.execute,
                 autocomplete: cmd.autocomplete,
+                moduleName,
             });
         }
     }

@@ -1,9 +1,13 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { requireAdmin } from '../utils/permissions.js';
+import { createSlashCommand, getTestOnly } from './commandBuilder.js';
 
 export interface CreateSubscriptionCommandOptions<TId> {
-    commandName: string;
-    description: string;
+    // Prefer meta from module manifest
+    meta?: { name: string; description: string; testOnly?: boolean };
+    // Back-compat: explicit name/description (will be ignored if meta provided)
+    commandName?: string;
+    description?: string;
     usernameOptionDescription: string;
     resolveOrVerify: (username: string) => Promise<{ ok: true; id: TId } | { ok: false }>;
     // Optional: check existence using only username/channel/guild before resolving (e.g., Twitch)
@@ -22,19 +26,23 @@ export interface CreateSubscriptionCommandOptions<TId> {
  * and shared execute plumbing with optional pre/post existence checks.
  */
 export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOptions<TId>) {
-    const data = new SlashCommandBuilder()
-        .setName(opts.commandName)
-        .setDescription(opts.description)
-        .addStringOption((option) =>
-            option.setName('username').setDescription(opts.usernameOptionDescription).setRequired(true)
-        )
-        .addChannelOption((option) =>
-            option.setName('channel').setDescription('Discord channel for notifications').setRequired(true)
-        )
-        .addStringOption((option) =>
-            option.setName('message').setDescription('Custom notification message (optional)').setRequired(false)
-        )
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+    const meta = opts.meta ?? (opts.commandName && opts.description ? { name: opts.commandName, description: opts.description } : null);
+    if (!meta) {
+        throw new Error('createSubscriptionCommand: either opts.meta or opts.commandName/opts.description must be provided');
+    }
+
+    const data = createSlashCommand(meta, (b: SlashCommandBuilder) =>
+        b
+            .addStringOption((option) =>
+                option.setName('username').setDescription(opts.usernameOptionDescription).setRequired(true)
+            )
+            .addChannelOption((option) =>
+                option.setName('channel').setDescription('Discord channel for notifications').setRequired(true)
+            )
+            .addStringOption((option) =>
+                option.setName('message').setDescription('Custom notification message (optional)').setRequired(false)
+            )
+    ).setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
     async function execute(interaction: ChatInputCommandInteraction) {
         if (!(await requireAdmin(interaction))) return;
@@ -71,6 +79,6 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
         await interaction.reply(opts.successMessage({ username, channelId: discordChannel.id }));
     }
 
-    const testOnly = Boolean(opts.testOnly);
+    const testOnly = Boolean(opts.testOnly ?? getTestOnly(meta));
     return { data, execute, testOnly };
 }

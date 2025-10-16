@@ -1,14 +1,14 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
+import {ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
 import type {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js';
 import {getTierEmoji} from '../constants/leagueTierEmojis.js';
 import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { leagueStats as META } from '../commands.manifest.js';
 
 const data = buildCommonLeagueOptions(
-    new SlashCommandBuilder()
-        .setName('league-stats')
-        .setDescription('Get League of Legends stats for a summoner or linked user')
+    createSlashCommand(META)
 );
 
 /**
@@ -77,7 +77,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     }
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

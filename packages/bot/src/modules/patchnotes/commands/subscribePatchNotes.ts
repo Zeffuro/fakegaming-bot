@@ -9,23 +9,15 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {requireAdmin} from "../../../utils/permissions.js";
 import {gameAutocomplete} from "../shared/gameAutocomplete.js";
 import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { subscribePatchnotes as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('subscribe-patchnotes')
-    .setDescription('Subscribe a channel to patch notes for a game')
-    .addStringOption(option =>
-        option.setName('game')
-            .setDescription('Game to subscribe to')
-            .setRequired(true)
-            .setAutocomplete(true)
-    )
-    .addChannelOption(option =>
-        option.setName('channel')
-            .setDescription('Channel to receive patch notes')
-            .setRequired(true)
-            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b
+        .addStringOption(option => option.setName('game').setDescription('Game to subscribe to').setRequired(true).setAutocomplete(true))
+        .addChannelOption(option => option.setName('channel').setDescription('Channel to receive patch notes').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+);
 
 async function execute(interaction: ChatInputCommandInteraction) {
     if (!(await requireAdmin(interaction))) return;
@@ -50,7 +42,7 @@ async function autocomplete(interaction: AutocompleteInteraction) {
     await gameAutocomplete(interaction);
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly, autocomplete};

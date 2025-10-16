@@ -36,6 +36,10 @@ export default defineConfig({
                 'public/**',
                 'scripts/**',
                 'lib/common/**',
+                // Exclude non-unit registries/helpers and thin API wrapper (integration-tested via API stubs)
+                'lib/commands.ts',
+                'lib/modules.ts',
+                'lib/api-client.ts',
                 '**/*.d.ts',
             ],
             thresholds: {

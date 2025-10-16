@@ -2,6 +2,7 @@ import {fileURLToPath} from 'url';
 import path from 'path';
 import dotenv from 'dotenv';
 import dotenvExpand from 'dotenv-expand';
+import { getLogger } from '../utils/logger.js';
 
 /**
  * Initializes environment variables using dotenv and returns file and directory paths based on the module URL.
@@ -29,19 +30,18 @@ export function bootstrapEnv(metaUrl?: string) {
 
     // Always resolve .env files from the package root (one level up from src)
     let envPath = path.resolve(__dirname, '..', envFile);
-    console.log(`[bootstrapEnv] Loading environment from ${envPath}`);
     // Try to load the environment-specific file, fallback to .env if missing
     let result = dotenv.config({path: envPath});
-    let loadedKeys: string[] = [];
     if (result.error || !result.parsed) {
         // Fallback to .env if the specific file is missing
         envPath = path.resolve(__dirname, '..', '.env');
         result = dotenv.config({path: envPath});
     }
     dotenvExpand.expand(result);
-    if (result.parsed) {
-        loadedKeys = Object.keys(result.parsed);
-    }
-    console.log('[bootstrapEnv] Loaded env keys from .env:', loadedKeys);
+
+    // Only create the logger AFTER env is loaded so LOG_PRETTY/LOG_LEVEL are respected
+    const log = getLogger({ name: 'common:env' });
+    const loadedKeys = result.parsed ? Object.keys(result.parsed) : [];
+    log.info({ envPath, loadedKeys }, '[bootstrapEnv] Loaded environment');
     return {__filename, __dirname};
 }

@@ -4,7 +4,8 @@ export class FakegamingBot extends Client {
     commands: Collection<string, {
         data: unknown;
         execute: (interaction: CommandInteraction) => Promise<void>;
-        autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>
+        autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
+        moduleName?: string;
     }>;
 
     constructor(options: ClientOptions) {

@@ -1,3 +1,4 @@
+import './earlyEnv.js';
 import {bootstrapEnv, getConfigManager, ensureRedis, getLogger, startMetricsSummaryLogger} from '@zeffuro/fakegaming-common';
 bootstrapEnv(import.meta.url);
 

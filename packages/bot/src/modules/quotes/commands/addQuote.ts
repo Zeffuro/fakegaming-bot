@@ -1,20 +1,14 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {v4 as uuidv4} from 'uuid';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { addQuote as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('add-quote')
-    .setDescription('Add a quote')
-    .addStringOption(option =>
-        option.setName('quote')
-            .setDescription('The quote text')
-            .setRequired(true)
-    )
-    .addUserOption(option =>
-        option.setName('author')
-            .setDescription('User who said the quote')
-            .setRequired(true)
-    );
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b
+        .addStringOption(option => option.setName('quote').setDescription('The quote text').setRequired(true))
+        .addUserOption(option => option.setName('author').setDescription('User who said the quote').setRequired(true))
+);
 
 /**
  * Executes the add-quote command, adding a quote for a specified user.
@@ -42,7 +36,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     );
 }
 
-const testOnly = false;
+const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default {data, execute, testOnly};

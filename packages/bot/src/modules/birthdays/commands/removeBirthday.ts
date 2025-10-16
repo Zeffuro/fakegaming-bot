@@ -2,15 +2,16 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags } from '
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { requireAdmin } from '../../../utils/permissions.js';
 import { subjectForUser } from '../shared/messages.js';
+import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { removeBirthday as META } from '../commands.manifest.js';
 
-const data = new SlashCommandBuilder()
-    .setName('remove-birthday')
-    .setDescription("Remove your birthday or another user's birthday (admins only)")
-    .addUserOption(option =>
+const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
+    b.addUserOption(option =>
         option.setName('user')
             .setDescription('User to remove birthday for (admins only)')
             .setRequired(false)
-    );
+    )
+);
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const targetUser = interaction.options.getUser('user', false);
@@ -30,4 +31,4 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 }
 
-export default { data, execute, testOnly: false };
+export default { data, execute, testOnly: getTestOnly(META) };

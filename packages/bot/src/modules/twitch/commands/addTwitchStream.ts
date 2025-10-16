@@ -2,10 +2,10 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {verifyTwitchUser} from '../../../services/twitchService.js';
 import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
 import { twitchCommandConfig } from '../config.js';
+import { addTwitchStream as META } from '../commands.manifest.js';
 
 const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
-    commandName: twitchCommandConfig.commandName,
-    description: twitchCommandConfig.description,
+    meta: META,
     usernameOptionDescription: twitchCommandConfig.usernameOptionDescription,
     resolveOrVerify: async (username) => {
         const exists = await verifyTwitchUser(username);

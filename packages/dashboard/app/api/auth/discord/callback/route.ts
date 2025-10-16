@@ -4,6 +4,7 @@ import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CAC
 import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf.js";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
+import { sanitizeReturnTo } from "@/lib/util/sanitizeReturnTo";
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
@@ -39,7 +40,9 @@ export async function GET(req: NextRequest) {
 
     const jwtToken = issueJwt(user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
 
-    const response = NextResponse.redirect(new URL("/dashboard", getBaseUrl(req)));
+    const rawState = req.nextUrl.searchParams.get("state");
+    const returnTo = sanitizeReturnTo(rawState) || "/dashboard";
+    const response = NextResponse.redirect(new URL(returnTo, getBaseUrl(req)));
     // Harden session cookie: HttpOnly, Secure (prod), SameSite=Strict, short maxAge (20m) with refresh strategy.
     response.cookies.set("jwt", jwtToken, {
         httpOnly: true,

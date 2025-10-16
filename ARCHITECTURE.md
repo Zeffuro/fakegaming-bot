@@ -195,3 +195,30 @@ services/
 5. Register in command loader if needed
 
 ---
+
+## Cross-Cutting Concerns
+
+These apply across services and are implemented in shared locations where possible.
+
+- CSRF protection
+  - Shared core in `@zeffuro/fakegaming-common/security/csrf.ts` (cookie + header names; token generation/validation)
+  - Next.js adapter: `packages/dashboard/lib/security/csrf.ts`
+  - Express adapter: `packages/api/src/middleware/csrf.ts` (plus auto-enforcement in base router)
+- Authentication
+  - JWT (HS256) with required issuer/audience; helpers in `@zeffuro/fakegaming-common/discord/auth` and `@zeffuro/fakegaming-common/auth`
+  - Dashboard uses HttpOnly cookie; API uses Bearer for external clients
+- Rate limiting (API)
+  - DB-backed sliding window (sql table `api_rate_limits`); middleware in API
+  - Standard headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` and `Retry-After` on 429
+- Logging & Metrics
+  - Shared logger: `getLogger()` from `@zeffuro/fakegaming-common/utils/logger`
+  - API request logs via `pino-http`; sensitive headers redacted; `/healthz` skipped
+  - Minimal counters in common `utils/metrics`; API/Bot emit periodic summary logs
+- Health & Readiness
+  - API and Bot expose `/healthz` (liveness) and `/ready` (readiness) endpoints
+  - Bot health server is local-only by default; see compose files for port mapping
+- Generated artifacts
+  - Bot command manifest is auto-generated into `packages/common/src/manifest/bot-manifest.ts` (do not edit)
+  - Use `pnpm run gen:manifest` or root build scripts to regenerate
+
+---
