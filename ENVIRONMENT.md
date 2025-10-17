@@ -75,6 +75,11 @@ DISCORD_BOT_TOKEN=your_dev_bot_token
 CLIENT_ID=your_dev_client_id
 GUILD_ID=your_test_guild_id
 
+# API connection (to Express API)
+API_URL=http://localhost:3001/api
+# Service-to-service auth: must match the API's SERVICE_API_TOKEN
+SERVICE_API_TOKEN=your_shared_service_token
+
 # API Keys (use test keys for dev)
 RIOT_LEAGUE_API_KEY=your_riot_api_key
 TWITCH_CLIENT_ID=your_twitch_client_id
@@ -83,17 +88,16 @@ YOUTUBE_API_KEY=your_youtube_api_key
 OPENWEATHER_API_KEY=your_weather_api_key
 
 # Twitch (optional jitter to avoid thundering herd on startup; milliseconds)
-# If omitted, a default 0–10000ms jitter is used in production; tests use 0ms.
 TWITCH_STARTUP_JITTER_MS=8000
 
 # Twitch (optional at-rest encryption for app token in DB, AES-256-GCM)
-# Provide a stable secret; its SHA-256 is used as the 32-byte key. If this
-# is set after a token has already been stored in plaintext, a new token fetch
-# will re-store it encrypted.
 TWITCH_TOKEN_ENC_KEY=change_me
 
 # Optional YouTube enrichment (adds Duration/Views to embeds); disabled by default
 YOUTUBE_ENRICH_EMBEDS=0
+
+# Patch Notes announcements gating (see README)
+BOT_DISABLE_PATCHNOTES_ANNOUNCE=0
 ```
 
 #### Twitch Auth & Token Persistence (Bot)
@@ -101,30 +105,33 @@ YOUTUBE_ENRICH_EMBEDS=0
 - Tokens are persisted in the database via the shared `CacheConfig` table using `CacheManager` (DB-backed), not Redis.
   - Rationale: Token writes are low volume (hourly refresh), and persistence across restarts is desired.
   - Free/limited Redis tiers are better reserved for high-churn caches; DB-backed persistence avoids external dependency and retains tokens across restarts.
-- The provider uses exponential backoff + jitter when fetching tokens to reduce spikes and avoid thundering herd on multi-replica start.
-- Runtime keeps an in-memory token cache and only touches the DB if necessary.
 - Optional at-rest encryption:
   - Set `TWITCH_TOKEN_ENC_KEY` to enable AES-256-GCM encryption of the stored token JSON. The SHA-256 of the provided value is used as the 32-byte key.
-  - If the key is not set, tokens are stored as plaintext JSON.
-  - If a token is stored encrypted but the key is missing at boot, the stored value is ignored and a fresh token is fetched.
 
 #### packages/api/.env.development (example)
 ```bash
 # Server configuration
 PORT=3001
-PUBLIC_URL=http://localhost:3001/api
+DASHBOARD_URL=http://localhost:3000
+PUBLIC_URL=http://localhost:3001
 
 # Database - SQLite for local development
 DATABASE_PROVIDER=sqlite
 # DATABASE_URL not needed for SQLite
 
-# JWT configuration
+# Discord OAuth (used by /api/auth/login)
+DISCORD_CLIENT_ID=your_discord_client_id
+DISCORD_CLIENT_SECRET=your_discord_client_secret
+# This should point to your Dashboard callback route
+DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/discord/callback
+
+# JWT configuration (must match Dashboard)
 JWT_SECRET=your_development_secret
 JWT_AUDIENCE=fakegaming-dashboard
+JWT_ISSUER=fakegaming
 
-# Dashboard OAuth
-DASHBOARD_CLIENT_ID=dashboard
-DASHBOARD_CLIENT_SECRET=your_dashboard_secret
+# Service-to-service token (Bot -> API)
+SERVICE_API_TOKEN=your_shared_service_token
 
 # Optional: Redis (not required for development)
 # REDIS_URL=redis://localhost:6379
@@ -139,7 +146,8 @@ PUBLIC_URL=http://localhost:3000
 # Discord OAuth
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
-DISCORD_BOT_TOKEN=your_bot_token
+# DISCORD_REDIRECT_URI is optional; defaults to ${PUBLIC_URL}/api/auth/discord/callback
+# DISCORD_REDIRECT_URI=http://localhost:3000/api/auth/discord/callback
 
 # API connection
 API_URL=http://localhost:3001/api
@@ -147,10 +155,7 @@ API_URL=http://localhost:3001/api
 # JWT configuration (must match API)
 JWT_SECRET=your_development_secret
 JWT_AUDIENCE=fakegaming-dashboard
-
-# Dashboard OAuth (must match API)
-DASHBOARD_CLIENT_ID=dashboard
-DASHBOARD_CLIENT_SECRET=your_dashboard_secret
+JWT_ISSUER=fakegaming
 
 # Admin Discord user IDs (comma-separated)
 DASHBOARD_ADMINS=123456789012345678,987654321098765432
@@ -158,6 +163,12 @@ DASHBOARD_ADMINS=123456789012345678,987654321098765432
 # Optional: Redis (not required for development)
 # REDIS_URL=redis://localhost:6379
 ```
+
+Notes on authentication flows:
+- Dashboard initiates Discord OAuth and completes it at `/api/auth/discord/callback`. It issues a short-lived JWT and sets it as an HttpOnly cookie `jwt`. No "dashboard client id/secret" is used to authenticate to the API.
+- The Dashboard proxies browser requests to the API via `app/api/external/[...proxy]`. It forwards the `Authorization: Bearer <jwt>` header (derived from the cookie) and a CSRF token header/cookie for mutating requests.
+- The API protects routes with JWT middleware and expects a valid JWT signed with `JWT_SECRET`, `JWT_AUDIENCE`, and `JWT_ISSUER`.
+- The Bot authenticates to the API using a shared service token sent as `X-Service-Token`. The API validates it via `SERVICE_API_TOKEN` (or legacy `INTERNAL_API_TOKEN`/`API_SERVICE_TOKEN`). These service requests bypass JWT and CSRF internally but are still rate-limited and logged.
 
 ## Jobs backends (optional)
 
@@ -167,28 +178,10 @@ Background jobs are disabled by default. Two backends are available:
   - Set `JOBS_ENABLED=1` and `JOBS_BACKEND=memory`.
   - Works with `DATABASE_PROVIDER=sqlite`.
   - Not durable; single-process only; good for wiring/tests.
-  - Example (Windows cmd):
-    ```cmd
-    set JOBS_ENABLED=1
-    set JOBS_BACKEND=memory
-    set DATABASE_PROVIDER=sqlite
-    pnpm --filter @zeffuro/fakegaming-bot-api run start:dev
-    ```
 
 - Postgres with pg-boss (production/live or when you have Postgres locally)
   - Set `JOBS_ENABLED=1` with `DATABASE_PROVIDER=postgres` and a valid `DATABASE_URL`.
   - Queue is durable and runs in the API process (for now).
-  - Example (Windows cmd):
-    ```cmd
-    set JOBS_ENABLED=1
-    set DATABASE_PROVIDER=postgres
-    set DATABASE_URL=postgres://user:pass@localhost:5432/fakegaming
-    pnpm --filter @zeffuro/fakegaming-bot-api run start:dev
-    ```
-
-Notes:
-- The initial “heartbeat” job is harmless and only logs a payload once to validate wiring.
-- As pollers (e.g., birthdays/reminders) migrate to jobs, handlers will register under the same flag. We can move the worker to the bot or a separate service later without changing callers thanks to the shared `JobQueue` interface.
 
 ---
 
@@ -197,22 +190,21 @@ Notes:
 JWT is used for authentication across API and dashboard services. The following variables are required:
 
 | Variable         | Required | Description                                 | Example Value             |
-|------------------|----------|---------------------------------------------|--------------------------|
-| JWT_SECRET       | Yes      | HMAC secret for signing/verifying JWTs       | (long random string)      |
-| JWT_AUDIENCE     | Yes      | Audience claim (e.g., dashboard client)      | fakegaming-dashboard     |
-| JWT_ISSUER       | Yes      | Issuer claim (e.g., API service)             | fakegaming               |
+|------------------|----------|---------------------------------------------|---------------------------|
+| JWT_SECRET       | Yes      | HMAC secret for signing/verifying JWTs      | (long random string)      |
+| JWT_AUDIENCE     | Yes      | Audience claim (e.g., dashboard client)     | fakegaming-dashboard      |
+| JWT_ISSUER       | Yes      | Issuer claim                                | fakegaming                |
 
-- **Production:** All variables must be set. The API and dashboard will fail to start if any are missing.
-- **Development/Test:** Safe defaults are used only in test environments. For local/dev, set these in `.env.development` for each package.
-- **Rotation:** Rotate `JWT_SECRET` periodically. When rotating, ensure all services are updated simultaneously to avoid auth failures. Document rotation events and update secrets in CI/CD and all relevant `.env` files.
-- **Algorithm:** Only HS256 is supported and enforced.
-- **Security:** Never commit secrets to version control. Use environment variables or secret managers.
+- Production: All variables must be set. The API and dashboard will fail to start if any are missing.
+- Development/Test: Safe defaults are used only in test environments. For local/dev, set these in `.env.development` for each package.
+- Rotation: Rotate `JWT_SECRET` periodically and update all services together.
+- Algorithm: HS256.
 
 See also: `packages/api/src/middleware/auth.ts` for enforcement logic.
 
 ## Docker Compose Configuration
 
-The `docker-compose.yml` uses **pre-built images** for production deployment:
+The `docker-compose.yml` uses pre-built images for production deployment:
 
 ```yaml
 services:
@@ -230,7 +222,6 @@ services:
     env_file:
       - ./packages/bot/.env
     environment:
-      # DATABASE_URL constructed from root .env variables
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     volumes:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
@@ -240,7 +231,6 @@ services:
     env_file:
       - ./packages/api/.env
     environment:
-      # DATABASE_URL constructed from root .env variables
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
 
   dashboard:
@@ -251,128 +241,63 @@ services:
       - "${PORT:-3000}:${PORT:-3000}"
 ```
 
-**Important:** `DATABASE_URL` is automatically constructed from root `.env` variables and injected into containers, overriding any DATABASE_URL in service `.env` files.
+Important:
+- `DATABASE_URL` is constructed from root `.env` variables and injected into containers, overriding any `DATABASE_URL` in service `.env` files.
 
 ## Setup Instructions
 
 ### For Local Development
 
-1. **Copy `.env.example` to `.env.development`** in each package:
-   ```bash
-   cp packages/bot/.env.example packages/bot/.env.development
-   cp packages/api/.env.example packages/api/.env.development
-   cp packages/dashboard/.env.example packages/dashboard/.env.development
-   ```
-
-2. **Edit each `.env.development` file:**
-   - Set `DATABASE_PROVIDER=sqlite` (no DATABASE_URL needed)
-   - Add development Discord tokens and test API keys
-   - Use `localhost` URLs for service connections
-
-3. **Install dependencies and run:**
-   ```bash
+1. Copy `.env.example` to `.env.development` in each package.
+2. Edit each `.env.development` file (use SQLite, test API keys, localhost URLs).
+3. Install dependencies and run:
+   ```cmd
    pnpm install
-   pnpm start:bot:dev     # Loads .env.development
-   pnpm start:api:dev     # Loads .env.development
-   pnpm start:dashboard:dev  # Loads .env.development
+   pnpm start:bot:dev
+   pnpm start:api:dev
+   pnpm start:dashboard:dev
    ```
 
 ### For Production / Live Data Testing
 
-1. **Copy `.env.example` to `.env`** in each package:
-   ```bash
-   cp packages/bot/.env.example packages/bot/.env
-   cp packages/api/.env.example packages/api/.env
-   cp packages/dashboard/.env.example packages/dashboard/.env
-   ```
-
-2. **Edit each `.env` file:**
-   - Set `DATABASE_PROVIDER=postgres` and add `DATABASE_URL`
-   - Add production Discord tokens and real API keys
-   - Use production URLs
-
-3. **Build and run:**
-   ```bash
+1. Copy `.env.example` to `.env` in each package.
+2. Edit each `.env` file (Postgres DATABASE_URL, production URLs/keys).
+3. Build and run:
+   ```cmd
    pnpm build
-   pnpm start:bot      # Loads .env
-   pnpm start:api      # Loads .env
-   pnpm start:dashboard   # Loads .env
+   pnpm start:bot
+   pnpm start:api
+   pnpm start:dashboard
    ```
 
 ### For Docker Compose (Production)
 
-**Use this for production deployment with pre-built images from Docker Hub:**
-
-1. **Copy root `.env.example` to `.env`:**
-   ```bash
-   cp .env.example .env
-   ```
-
-2. **Edit root `.env`** with database credentials and volume paths.
-
-3. **Copy and edit service `.env` files** (production credentials):
-   ```bash
-   cp packages/bot/.env.example packages/bot/.env
-   cp packages/api/.env.example packages/api/.env
-   cp packages/dashboard/.env.example packages/dashboard/.env
-   ```
-   
-4. **Start Docker Compose:**
-   ```bash
+1. Copy root `.env.example` to `.env` and edit.
+2. Copy service `.env.example` to `.env` and edit for production.
+3. Start Docker Compose:
+   ```cmd
    docker-compose up -d
    ```
 
-**Notes:**
-- Uses pre-built images (`zeffuro/fakegaming-*:latest`) from Docker Hub
-- `DATABASE_URL` is automatically set from root `.env` variables
-- You do NOT need to set `DATABASE_URL` in service `.env` files (it will be overridden)
-- Volume paths for data persistence are configured in the root `.env`
-- Runs with PostgreSQL database
-- Use `-d` flag to run in detached mode (background)
-
-**Stop services:**
-```bash
-docker-compose down
-```
-
----
-
 ### For Local Docker Testing (Development)
 
-**Use this to test Dockerized builds locally with development credentials:**
-
-1. **Copy `.env.example` to `.env.development`** in each package (if not already done):
-   ```bash
-   cp packages/bot/.env.example packages/bot/.env.development
-   cp packages/api/.env.example packages/api/.env.development
-   cp packages/dashboard/.env.example packages/dashboard/.env.development
-   ```
-
-2. **Edit each `.env.development` file** with development credentials (SQLite, test API keys).
-
-3. **Build and start services with the local compose file:**
-   ```bash
+1. Ensure `.env.development` exists per service.
+2. Build and start services with the local compose file:
+   ```cmd
    docker-compose -f docker-compose.local.yml up --build -d
    ```
 
-**What makes this different:**
-- ✅ **Builds from source** (uses `build:` instead of `image:`)
-- ✅ **Uses `.env.development` files** (development credentials)
-- ✅ **No PostgreSQL** (uses SQLite via shared volume)
-- ✅ **Exposes ports** (API on 3001, Dashboard on 3000)
-- ✅ **Perfect for testing Docker builds** before pushing images
-
-**Access services:**
+Access services:
 - Dashboard: http://localhost:3000
 - API: http://localhost:3001/api
 
-**Stop services:**
-```bash
+Stop services:
+```cmd
 docker-compose -f docker-compose.local.yml down
 ```
 
-**Rebuild after code changes:**
-```bash
+Rebuild after code changes:
+```cmd
 docker-compose -f docker-compose.local.yml up --build -d
 ```
 
@@ -382,13 +307,13 @@ docker-compose -f docker-compose.local.yml up --build -d
 
 | Feature | `docker-compose.yml` (Production) | `docker-compose.local.yml` (Local Testing) |
 |---------|-----------------------------------|---------------------------------------------|
-| **Purpose** | Production deployment | Local Docker testing |
-| **Images** | Pre-built from Docker Hub | Built from source |
-| **Database** | PostgreSQL (included) | SQLite (via volume) |
-| **Environment** | `.env` files | `.env.development` files |
-| **Ports Exposed** | Dashboard only (3000) | API (3001) + Dashboard (3000) |
-| **Use Case** | Deploy to server | Test Dockerfiles locally |
-| **Command** | `docker-compose up -d` | `docker-compose -f docker-compose.local.yml up --build -d` |
+| Purpose | Production deployment | Local Docker testing |
+| Images | Pre-built from Docker Hub | Built from source |
+| Database | PostgreSQL (included) | SQLite (via volume) |
+| Environment | `.env` files | `.env.development` files |
+| Ports Exposed | Dashboard only (3000) | API (3001) + Dashboard (3000) |
+| Use Case | Deploy to server | Test Dockerfiles locally |
+| Command | `docker-compose up -d` | `docker-compose -f docker-compose.local.yml up --build -d` |
 
 #### CSRF Protection (Dashboard & API)
 Both the Dashboard (Next.js) and API (Express) use a double-submit cookie pattern via a shared core in `@zeffuro/fakegaming-common/security` for CSRF defense on mutating requests (POST/PUT/PATCH/DELETE):

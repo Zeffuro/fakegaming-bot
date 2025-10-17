@@ -1,5 +1,5 @@
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {getYoutubeChannelId} from '../../../services/youtubeService.js';
+import { resolveYoutubeChannelIdApi } from '../../../utils/apiClient.js';
 import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
 import { youtubeCommandConfig } from '../config.js';
 import { addYoutubeChannel as META } from '../commands.manifest.js';
@@ -8,7 +8,7 @@ const { data, execute, testOnly } = createSubscriptionCommand<string>({
     meta: META,
     usernameOptionDescription: youtubeCommandConfig.usernameOptionDescription,
     resolveOrVerify: async (username) => {
-        const youtubeChannelId = await getYoutubeChannelId(username);
+        const youtubeChannelId = await resolveYoutubeChannelIdApi(username);
         return youtubeChannelId ? { ok: true, id: youtubeChannelId } : { ok: false };
     },
     checkExistingPost: async ({ username: _username, externalId, discordChannelId, guildId }) => {

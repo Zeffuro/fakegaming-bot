@@ -2,7 +2,7 @@ import '../vitest.setup.js';
 import { describe, it, expect } from 'vitest';
 import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
-import { expectOk, expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectUnauthorized, expectServiceUnavailable, expectErrorCode } from '@zeffuro/fakegaming-common/testing';
 import { recordJobRun } from '../jobs/status.js';
 
 describe('Jobs status/read-only endpoints', () => {
@@ -49,8 +49,7 @@ describe('Jobs status/read-only endpoints', () => {
 
     it('POST /api/jobs/birthdays/run returns 503 when queue is unavailable', async () => {
         const res = await client.post('/api/jobs/birthdays/run').send({ force: true });
-        expect(res.status).toBe(503);
-        expect(res.body && res.body.error && res.body.error.code).toBe('JOBS_UNAVAILABLE');
+        expectServiceUnavailable(res);
+        expectErrorCode(res as any, 'JOBS_UNAVAILABLE');
     });
 });
-

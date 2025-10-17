@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtOrService } from '../middleware/auth.js';
 import { getActiveJobQueue, getLastHeartbeat } from '../jobs/bootstrap.js';
 import { z } from 'zod';
 import { validateBody } from '@zeffuro/fakegaming-common';
@@ -9,6 +9,7 @@ import type { JobRunEntry } from '../jobs/status.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { Op } from 'sequelize';
 import { JobRun } from '@zeffuro/fakegaming-common';
+import { isServiceRequest } from '../middleware/serviceAuth.js';
 
 const router = Router();
 
@@ -31,7 +32,11 @@ const runSchema = z.object({
 
 const ALLOWED_JOBS: Record<string, { queueName: string; acceptsDate?: boolean; acceptsForce?: boolean }> = {
     birthdays: { queueName: 'birthdays:run', acceptsDate: true, acceptsForce: true },
-    heartbeat: { queueName: 'heartbeat', acceptsDate: false, acceptsForce: false }
+    heartbeat: { queueName: 'heartbeat', acceptsDate: false, acceptsForce: false },
+    reminders: { queueName: 'reminders:run', acceptsDate: false, acceptsForce: false },
+    patchnotes: { queueName: 'patchnotes:run', acceptsDate: false, acceptsForce: false },
+    twitch: { queueName: 'twitch:poll', acceptsDate: false, acceptsForce: false },
+    youtube: { queueName: 'youtube:poll', acceptsDate: false, acceptsForce: false },
 };
 
 /**
@@ -50,10 +55,10 @@ const ALLOWED_JOBS: Record<string, { queueName: string; acceptsDate?: boolean; a
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/', jwtAuth, async (req, res) => {
+router.get('/', jwtOrService, async (req, res) => {
     const isProd = process.env.NODE_ENV === 'production';
     const { discordId } = (req as AuthenticatedRequest).user;
-    if (isProd && !isDashboardAdmin(discordId)) {
+    if (isProd && !isServiceRequest(req) && !isDashboardAdmin(discordId)) {
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only dashboard admins can view jobs' } });
     }
     const jobs = Object.entries(ALLOWED_JOBS).map(([name, cfg]) => ({ name, supportsDate: !!cfg.acceptsDate, supportsForce: !!cfg.acceptsForce }));
@@ -76,10 +81,10 @@ router.get('/', jwtAuth, async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/heartbeat/last', jwtAuth, async (req, res) => {
+router.get('/heartbeat/last', jwtOrService, async (req, res) => {
     const isProd = process.env.NODE_ENV === 'production';
     const { discordId } = (req as AuthenticatedRequest).user;
-    if (isProd && !isDashboardAdmin(discordId)) {
+    if (isProd && !isServiceRequest(req) && !isDashboardAdmin(discordId)) {
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only dashboard admins can view jobs' } });
     }
     const last = getLastHeartbeat();
@@ -100,7 +105,7 @@ router.get('/heartbeat/last', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *           enum: [birthdays, heartbeat]
+ *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube]
  *     responses:
  *       200:
  *         description: Recent runs for the specified job
@@ -111,7 +116,7 @@ router.get('/heartbeat/last', jwtAuth, async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/:name/status', jwtAuth, async (req, res) => {
+router.get('/:name/status', jwtOrService, async (req, res) => {
     const { name } = req.params as { name: string };
     const def = ALLOWED_JOBS[name];
     if (!def) {
@@ -119,7 +124,7 @@ router.get('/:name/status', jwtAuth, async (req, res) => {
     }
     const isProd = process.env.NODE_ENV === 'production';
     const { discordId } = (req as AuthenticatedRequest).user;
-    if (isProd && !isDashboardAdmin(discordId)) {
+    if (isProd && !isServiceRequest(req) && !isDashboardAdmin(discordId)) {
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only dashboard admins can view jobs' } });
     }
 
@@ -158,7 +163,7 @@ router.get('/:name/status', jwtAuth, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *           enum: [birthdays, heartbeat]
+ *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube]
  *     requestBody:
  *       required: false
  *       content:
@@ -185,7 +190,7 @@ router.get('/:name/status', jwtAuth, async (req, res) => {
  *       503:
  *         description: Jobs not enabled or queue unavailable
  */
-router.post('/:name/run', jwtAuth, validateBody(runSchema), async (req, res) => {
+router.post('/:name/run', jwtOrService, validateBody(runSchema), async (req, res) => {
     const { name } = req.params as { name: string };
     const def = ALLOWED_JOBS[name];
     if (!def) {
@@ -194,7 +199,7 @@ router.post('/:name/run', jwtAuth, validateBody(runSchema), async (req, res) => 
 
     const isProd = process.env.NODE_ENV === 'production';
     const { discordId } = (req as AuthenticatedRequest).user;
-    if (isProd && !isDashboardAdmin(discordId)) {
+    if (isProd && !isServiceRequest(req) && !isDashboardAdmin(discordId)) {
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only dashboard admins can trigger jobs' } });
     }
 
@@ -231,10 +236,10 @@ router.post('/:name/run', jwtAuth, validateBody(runSchema), async (req, res) => 
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/birthdays/today', jwtAuth, async (req, res) => {
+router.get('/birthdays/today', jwtOrService, async (req, res) => {
     const isProd = process.env.NODE_ENV === 'production';
     const { discordId } = (req as AuthenticatedRequest).user;
-    if (isProd && !isDashboardAdmin(discordId)) {
+    if (isProd && !isServiceRequest(req) && !isDashboardAdmin(discordId)) {
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only dashboard admins can view jobs' } });
     }
     const cm = getConfigManager();

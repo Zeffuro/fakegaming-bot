@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { YoutubeVideoConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { youtube_post_Request } from "@/types/apiResponses";
+import type { youtube_post_Request } from "@zeffuro/fakegaming-common/api-responses";
 
 export function useYouTubeConfigs(guildId: string | string[]) {
   const [configs, setConfigs] = useState<YoutubeVideoConfig[]>([]);

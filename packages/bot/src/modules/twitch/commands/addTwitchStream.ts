@@ -1,5 +1,5 @@
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {verifyTwitchUser} from '../../../services/twitchService.js';
+import { verifyTwitchUsernameApi } from '../../../utils/apiClient.js';
 import { createSubscriptionCommand } from '../../../core/createSubscriptionCommand.js';
 import { twitchCommandConfig } from '../config.js';
 import { addTwitchStream as META } from '../commands.manifest.js';
@@ -8,7 +8,8 @@ const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
     meta: META,
     usernameOptionDescription: twitchCommandConfig.usernameOptionDescription,
     resolveOrVerify: async (username) => {
-        const exists = await verifyTwitchUser(username);
+        const result = await verifyTwitchUsernameApi(username);
+        const exists = !!result && result.exists;
         return exists ? { ok: true, id: undefined } : { ok: false };
     },
     checkExistingPre: async ({ username, discordChannelId, guildId }) => {

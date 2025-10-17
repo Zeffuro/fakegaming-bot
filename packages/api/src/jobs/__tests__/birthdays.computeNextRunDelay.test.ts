@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { computeNextRunDelaySeconds } from '../birthdays.js';
 
 function makeLocalDate(hours: number, minutes = 0, seconds = 0, ms = 0): Date {
-    const d = new Date(2020, 0, 1, hours, minutes, seconds, ms);
-    return d;
+    return new Date(2020, 0, 1, hours, minutes, seconds, ms);
 }
 
 describe('computeNextRunDelaySeconds', () => {
@@ -22,4 +21,3 @@ describe('computeNextRunDelaySeconds', () => {
         expect(delay).toBe(expectedSeconds);
     });
 });
-

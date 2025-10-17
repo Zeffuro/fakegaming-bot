@@ -3,6 +3,7 @@ import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
+import { getFirstTwitchId } from './helpers/twitch.js';
 
 const testTwitch = {
     twitchUsername: 'teststreamer',
@@ -18,20 +19,16 @@ beforeEach(async () => {
 
 describe('Twitch API', () => {
     const client = givenAuthenticatedClient(app);
+    const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
 
     it('should list all twitch configs', async () => {
         const res = await client.get('/api/twitch');
         expectOk(res);
         expect(Array.isArray(res.body)).toBe(true);
     });
+
     it('should get a twitch config by id', async () => {
-        // Find the id of the inserted config
-        const all = await configManager.twitchManager.getMany({
-            twitchUsername: testTwitch.twitchUsername,
-            discordChannelId: testTwitch.discordChannelId
-        });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
+        const id = await getFirstTwitchId();
         const res = await client.get(`/api/twitch/${id}`);
         expectOk(res);
         expect(res.body.twitchUsername).toBe(testTwitch.twitchUsername);
@@ -47,7 +44,7 @@ describe('Twitch API', () => {
     });
     it('should check if a stream exists', async () => {
         const res = await client.get('/api/twitch/exists')
-            .query({twitchUsername: testTwitch.twitchUsername, discordChannelId: testTwitch.discordChannelId, guildId: testTwitch.guildId});
+            .query({ twitchUsername: testTwitch.twitchUsername, discordChannelId: testTwitch.discordChannelId, guildId: testTwitch.guildId });
         expectOk(res);
         expect(res.body.exists).toBe(true);
     });
@@ -70,7 +67,7 @@ describe('Twitch API', () => {
     });
     it('should return false for non-existent stream', async () => {
         const res = await client.get('/api/twitch/exists')
-            .query({twitchUsername: 'nonexistent', discordChannelId: 'nonexistent', guildId: 'testguild1'});
+            .query({ twitchUsername: 'nonexistent', discordChannelId: 'nonexistent', guildId: 'testguild1' });
         expectOk(res);
         expect(res.body.exists).toBe(false);
     });
@@ -80,13 +77,7 @@ describe('Twitch API', () => {
     });
 
     it('should delete a twitch config', async () => {
-        const all = await configManager.twitchManager.getMany({
-            twitchUsername: testTwitch.twitchUsername,
-            discordChannelId: testTwitch.discordChannelId
-        });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
-
+        const id = await getFirstTwitchId();
         const res = await client.delete(`/api/twitch/${id}`);
         expectOk(res);
         expect(res.body.success).toBe(true);
@@ -112,7 +103,6 @@ describe('Twitch API', () => {
     });
 
     it('should return 403 for POST /api/twitch as non-admin', async () => {
-        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
         const res = await nonAdmin.post('/api/twitch', {
             twitchUsername: 'anotherstreamer',
             discordChannelId: 'testchannel2',
@@ -122,24 +112,13 @@ describe('Twitch API', () => {
     });
 
     it('should return 401 for DELETE /api/twitch/:id without JWT', async () => {
-        const all = await configManager.twitchManager.getMany({
-            twitchUsername: testTwitch.twitchUsername,
-            discordChannelId: testTwitch.discordChannelId
-        });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
+        const id = await getFirstTwitchId();
         const res = await client.raw.delete(`/api/twitch/${id}`);
         expectUnauthorized(res);
     });
 
     it('should return 403 for DELETE /api/twitch/:id as non-admin', async () => {
-        const all = await configManager.twitchManager.getMany({
-            twitchUsername: testTwitch.twitchUsername,
-            discordChannelId: testTwitch.discordChannelId
-        });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
-        const nonAdmin = givenAuthenticatedClient(app, { discordId: 'nonadminuser' });
+        const id = await getFirstTwitchId();
         const res = await nonAdmin.delete(`/api/twitch/${id}`);
         expectForbidden(res);
     });
@@ -161,9 +140,7 @@ describe('Twitch API', () => {
     });
 
     it('should return 403 for ForbiddenError on DELETE /api/twitch/:id', async () => {
-        const all = await configManager.twitchManager.getMany({ twitchUsername: testTwitch.twitchUsername });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
+        const id = await getFirstTwitchId();
         // Mock manager to throw ForbiddenError
         const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
         (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).ForbiddenError('Forbidden'); };
@@ -173,9 +150,7 @@ describe('Twitch API', () => {
     });
 
     it('should return 404 for NotFoundError on DELETE /api/twitch/:id', async () => {
-        const all = await configManager.twitchManager.getMany({ twitchUsername: testTwitch.twitchUsername });
-        const id = all[0]?.id;
-        expect(id).toBeDefined();
+        const id = await getFirstTwitchId();
         // Mock manager to throw NotFoundError
         const origRemoveByPk = (configManager.twitchManager as any).removeByPk as (id: number) => Promise<void>;
         (configManager.twitchManager as any).removeByPk = async () => { throw new (await import('@zeffuro/fakegaming-common')).NotFoundError('Not found'); };

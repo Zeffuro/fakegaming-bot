@@ -1,12 +1,11 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { setupCommandTest, expectReplyText, expectReplyHasEmbedsArray } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
-import { loadPatchNoteFetchers } from '../../../loaders/loadPatchNoteFetchers.js';
 import { buildPatchNoteEmbed } from '../shared/patchNoteEmbed.js';
 
-// Mock the loadPatchNoteFetchers module
-vi.mock('../../../loaders/loadPatchNoteFetchers.js', () => ({
-    loadPatchNoteFetchers: vi.fn()
+// Mock the API client used by the command
+vi.mock('../../../utils/apiClient.js', () => ({
+    fetchLatestPatchNoteApi: vi.fn()
 }));
 
 // Mock the buildPatchNoteEmbed function
@@ -77,27 +76,21 @@ describe('getPatchNotes command', () => {
         assertEmbedReply(interaction);
     });
 
-    it('fetches patch notes from fetcher when not available in the database', async () => {
+    it('fetches patch notes from API when not available in the database', async () => {
         // Mock the database to return null (no patch notes available)
         const getLatestPatchSpy = vi.fn().mockResolvedValue(null);
 
-        // Create mock patch note from fetcher
+        // Mock the API to return a patch note
         const mockFetchedPatchNote = {
             game: 'Valorant',
             title: 'Valorant Patch 3.10',
             content: 'Freshly fetched patch content',
             url: 'https://example.com/valorant-patch',
-            date: new Date()
+            publishedAt: new Date()
         };
 
-        // Mock the fetcher
-        const mockFetcher = {
-            game: 'Valorant',
-            fetchLatestPatchNote: vi.fn().mockResolvedValue(mockFetchedPatchNote)
-        };
-
-        // Mock loadPatchNoteFetchers to return our mock fetcher
-        (loadPatchNoteFetchers as Mock).mockResolvedValue([mockFetcher]);
+        const { fetchLatestPatchNoteApi } = await import('../../../utils/apiClient.js');
+        (fetchLatestPatchNoteApi as Mock).mockResolvedValue(mockFetchedPatchNote);
 
         // Setup the test environment
         const { command, interaction } = await setupWithManagerOverride({
@@ -112,11 +105,8 @@ describe('getPatchNotes command', () => {
         // Verify getLatestPatch was called with the correct game
         expect(getLatestPatchSpy).toHaveBeenCalledWith('Valorant');
 
-        // Verify loadPatchNoteFetchers was called
-        expect(loadPatchNoteFetchers).toHaveBeenCalled();
-
-        // Verify the fetcher was called
-        expect(mockFetcher.fetchLatestPatchNote).toHaveBeenCalled();
+        // Verify the API was called
+        expect(fetchLatestPatchNoteApi).toHaveBeenCalledWith('Valorant');
 
         // Verify buildPatchNoteEmbed was called with the fetched patch data
         expect(buildPatchNoteEmbed).toHaveBeenCalledWith(mockFetchedPatchNote);
@@ -125,17 +115,15 @@ describe('getPatchNotes command', () => {
         assertEmbedReply(interaction);
     });
 
-    it('reports when no fetcher is found for the game', async () => {
+    it('reports when no patch notes are found for the game', async () => {
         // Mock the database to return null (no patch notes available)
         const getLatestPatchSpy = vi.fn().mockResolvedValue(null);
 
-        // Mock loadPatchNoteFetchers to return fetchers for other games only
-        (loadPatchNoteFetchers as Mock).mockResolvedValue([
-            { game: 'LeagueOfLegends', fetchLatestPatchNote: vi.fn() },
-            { game: 'Valorant', fetchLatestPatchNote: vi.fn() }
-        ]);
+        // Mock the API to return null (no patch notes found)
+        const { fetchLatestPatchNoteApi } = await import('../../../utils/apiClient.js');
+        (fetchLatestPatchNoteApi as Mock).mockResolvedValue(null);
 
-        // Setup the test environment with a game that has no fetcher
+        // Setup the test environment with a game that returns no patch notes
         const { command, interaction } = await setupWithManagerOverride({
             cmd: 'modules/patchnotes/commands/getPatchNotes.js',
             game: 'Fortnite',
@@ -148,44 +136,11 @@ describe('getPatchNotes command', () => {
         // Verify getLatestPatch was called with the correct game
         expect(getLatestPatchSpy).toHaveBeenCalledWith('Fortnite');
 
-        // Verify loadPatchNoteFetchers was called
-        expect(loadPatchNoteFetchers).toHaveBeenCalled();
+        // Verify the API was called
+        expect(fetchLatestPatchNoteApi).toHaveBeenCalledWith('Fortnite');
 
-        // Verify the interaction reply contains the error message
-        assertTextReply(interaction, 'No patch notes fetcher found for `Fortnite`.');
-    });
-
-    it('reports when no patch notes are found by the fetcher', async () => {
-        // Mock the database to return null (no patch notes available)
-        const getLatestPatchSpy = vi.fn().mockResolvedValue(null);
-
-        // Mock the fetcher to return null (no patch notes found)
-        const mockFetcher = {
-            game: 'Overwatch',
-            fetchLatestPatchNote: vi.fn().mockResolvedValue(null)
-        };
-
-        // Mock loadPatchNoteFetchers to return our mock fetcher
-        (loadPatchNoteFetchers as Mock).mockResolvedValue([mockFetcher]);
-
-        // Setup the test environment
-        const { command, interaction } = await setupWithManagerOverride({
-            cmd: 'modules/patchnotes/commands/getPatchNotes.js',
-            game: 'Overwatch',
-            getLatestPatchSpy,
-        });
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
-
-        // Verify getLatestPatch was called with the correct game
-        expect(getLatestPatchSpy).toHaveBeenCalledWith('Overwatch');
-
-        // Verify loadPatchNoteFetchers was called
-        expect(loadPatchNoteFetchers).toHaveBeenCalled();
-
-        // Verify the interaction reply contains the error message
-        assertTextReply(interaction, 'No patch notes found for `Overwatch`.');
+        // Verify the interaction reply contains the not found message
+        assertTextReply(interaction, 'No patch notes found for `Fortnite`.');
     });
 
     // Test for autocomplete function

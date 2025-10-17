@@ -17,7 +17,7 @@ import type {
   disabledCommands_post_Response201,
   disabledCommands_id_delete_Response200,
   disabledModules_post_Request,
-} from "@/types/apiResponses";
+} from "@zeffuro/fakegaming-common/api-responses";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 

@@ -4,15 +4,37 @@ import {
     AutocompleteInteraction
 } from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {loadPatchNoteFetchers} from "../../../loaders/loadPatchNoteFetchers.js";
 import {buildPatchNoteEmbed} from '../shared/patchNoteEmbed.js';
 import {gameAutocomplete} from '../shared/gameAutocomplete.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { getPatchnotes as META } from '../commands.manifest.js';
+import { fetchLatestPatchNoteApi, type LatestPatchNoteDto } from '../../../utils/apiClient.js';
+import type { PatchNoteConfig } from '@zeffuro/fakegaming-common/models';
+import type { CreationAttributes } from 'sequelize';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option => option.setName('game').setDescription('Game to get patch notes for').setRequired(true).setAutocomplete(true))
 );
+
+function toPatchNoteAttrs(dto: LatestPatchNoteDto): CreationAttributes<PatchNoteConfig> {
+    const pa = dto.publishedAt as unknown;
+    const publishedAt = pa instanceof Date ? pa : new Date(pa as string);
+
+    const base: Partial<CreationAttributes<PatchNoteConfig>> = {
+        game: dto.game,
+        title: dto.title,
+        content: dto.content,
+        url: dto.url,
+        publishedAt,
+    };
+
+    // Only set optional properties if provided; avoid adding nulls that break strict test equality
+    if (dto.imageUrl !== undefined) (base as any).imageUrl = dto.imageUrl;
+    if (dto.logoUrl !== undefined) (base as any).logoUrl = dto.logoUrl;
+    if (dto.accentColor !== undefined) (base as any).accentColor = dto.accentColor as number | null;
+
+    return base as CreationAttributes<PatchNoteConfig>;
+}
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const game = interaction.options.getString('game', true);
@@ -21,15 +43,10 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (latestPatch) {
         await interaction.reply({embeds: [buildPatchNoteEmbed(latestPatch)]});
     } else {
-        const fetchers = await loadPatchNoteFetchers();
-        const fetcher = fetchers.find(f => f.game === game);
-        if (!fetcher) {
-            await interaction.reply(`No patch notes fetcher found for \`${game}\`.`);
-            return;
-        }
-        const patch = await fetcher.fetchLatestPatchNote();
+        const patch = await fetchLatestPatchNoteApi(game);
         if (patch) {
-            await interaction.reply({embeds: [buildPatchNoteEmbed(patch)]});
+            const attrs = toPatchNoteAttrs(patch);
+            await interaction.reply({embeds: [buildPatchNoteEmbed(attrs)]});
         } else {
             await interaction.reply(`No patch notes found for \`${game}\`.`);
         }

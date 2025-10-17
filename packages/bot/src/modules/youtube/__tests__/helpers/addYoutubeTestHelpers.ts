@@ -22,15 +22,15 @@ export function makeAddYoutubeTestHelpers() {
     }
 
     async function mockGetChannelId(value: string | null) {
-        const { getYoutubeChannelId } = await import('../../../../services/youtubeService.js');
-        vi.mocked(getYoutubeChannelId).mockResolvedValue(value as never);
-        return { getYoutubeChannelId } as const;
+        const { resolveYoutubeChannelIdApi } = await import('../../../../utils/apiClient.js');
+        vi.mocked(resolveYoutubeChannelIdApi).mockResolvedValue(value as never);
+        return { resolveYoutubeChannelIdApi } as const;
     }
 
     function assertAdded(params: {
         interaction: unknown;
         requireAdmin: unknown;
-        getYoutubeChannelId: unknown;
+        resolveYoutubeChannelIdApi: unknown;
         getVideoChannelSpy: unknown;
         addSpy: unknown;
         username: string;
@@ -38,12 +38,12 @@ export function makeAddYoutubeTestHelpers() {
         guildId: string;
         youtubeChannelId: string;
     }) {
-        const { interaction, requireAdmin, getYoutubeChannelId, getVideoChannelSpy, addSpy, username, channelId, guildId, youtubeChannelId } = params;
+        const { interaction, requireAdmin, resolveYoutubeChannelIdApi, getVideoChannelSpy, addSpy, username, channelId, guildId, youtubeChannelId } = params;
 
         // Permissions checked
         expect(requireAdmin).toHaveBeenCalledWith(interaction);
         // Service call
-        expect(getYoutubeChannelId).toHaveBeenCalledWith(username);
+        expect(resolveYoutubeChannelIdApi).toHaveBeenCalledWith(username);
         // Manager queried and updated
         expect(getVideoChannelSpy).toHaveBeenCalledWith({
             youtubeChannelId,
@@ -64,7 +64,7 @@ export function makeAddYoutubeTestHelpers() {
     function assertAlreadyExists(params: {
         interaction: unknown;
         requireAdmin: unknown;
-        getYoutubeChannelId: unknown;
+        resolveYoutubeChannelIdApi: unknown;
         getVideoChannelSpy: unknown;
         addSpy: unknown;
         username: string;
@@ -72,10 +72,10 @@ export function makeAddYoutubeTestHelpers() {
         guildId: string;
         youtubeChannelId: string;
     }) {
-        const { interaction, requireAdmin, getYoutubeChannelId, getVideoChannelSpy, addSpy, username, channelId, guildId, youtubeChannelId } = params;
+        const { interaction, requireAdmin, resolveYoutubeChannelIdApi, getVideoChannelSpy, addSpy, username, channelId, guildId, youtubeChannelId } = params;
 
         expect(requireAdmin).toHaveBeenCalledWith(interaction);
-        expect(getYoutubeChannelId).toHaveBeenCalledWith(username);
+        expect(resolveYoutubeChannelIdApi).toHaveBeenCalledWith(username);
         expect(getVideoChannelSpy).toHaveBeenCalledWith({
             youtubeChannelId,
             discordChannelId: channelId,
@@ -88,13 +88,13 @@ export function makeAddYoutubeTestHelpers() {
     function assertNonexistent(params: {
         interaction: unknown;
         requireAdmin: unknown;
-        getYoutubeChannelId: unknown;
+        resolveYoutubeChannelIdApi: unknown;
         username: string;
     }) {
-        const { interaction, requireAdmin, getYoutubeChannelId, username } = params;
+        const { interaction, requireAdmin, resolveYoutubeChannelIdApi, username } = params;
 
         expect(requireAdmin).toHaveBeenCalledWith(interaction);
-        expect(getYoutubeChannelId).toHaveBeenCalledWith(username);
+        expect(resolveYoutubeChannelIdApi).toHaveBeenCalledWith(username);
         expectEphemeralReply(interaction as never, { equals: `Youtube channel \`${username}\` does not exist.` });
     }
 

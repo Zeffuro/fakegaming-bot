@@ -139,3 +139,6 @@ export { PostgresRateLimiter, type RateLimiter, type RateLimiterResult } from '.
 
 // Jobs interfaces
 export * from './jobs/index.js';
+
+// Patch notes fetchers (shared)
+export * from './patchnotes/index.js';

@@ -1,5 +1,6 @@
 import {expressjwt} from 'express-jwt';
 import type {Request, Response, NextFunction} from 'express';
+import { isServiceRequest } from './serviceAuth.js';
 
 /**
  * Throws if required JWT env vars are missing (except in test env).
@@ -32,18 +33,26 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
         // Fail fast if required envs are missing
         return next(err);
     }
-    return expressjwt({
+    return (expressjwt({
         secret: JWT_SECRET,
         algorithms: ['HS256'],
         audience: JWT_AUDIENCE,
         issuer: JWT_ISSUER,
         requestProperty: 'user',
-    })(req, res, (err) => {
+    }) as any)(req, res, (err: any) => {
         if (err) {
             console.error('JWT validation error:', err);
         }
         next(err);
     });
+};
+
+/**
+ * Conditional auth that skips JWT when request is authenticated as an internal service.
+ */
+export const jwtOrService = (req: Request, res: Response, next: NextFunction) => {
+    if (isServiceRequest(req)) return next();
+    return jwtAuth(req, res, next);
 };
 
 /**

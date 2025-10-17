@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { patchSubscriptions_post_Request } from "@/types/apiResponses";
+import type { patchSubscriptions_post_Request } from "@zeffuro/fakegaming-common/api-responses";
 
 export interface PatchSubscriptionUIConfig {
   id: number;

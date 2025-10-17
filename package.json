@@ -30,7 +30,7 @@
     "jscpd": "^3.5.10"
   },
   "scripts": {
-    "build": "pnpm --filter @zeffuro/fakegaming-common run build && tsx scripts/generate-bot-manifest.ts && pnpm --filter @zeffuro/fakegaming-bot-api run build && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
+    "build": "pnpm --filter @zeffuro/fakegaming-common run build ; pnpm --filter @zeffuro/fakegaming-bot-api run build ; tsx scripts/generate-api-types.ts ; pnpm --filter @zeffuro/fakegaming-bot run build ; pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "test:coverage": "pnpm -r run test:coverage",
@@ -54,7 +54,8 @@
     "validate:commands": "tsx scripts/validate-command-manifests.ts",
     "validate:commands:strict": "tsx scripts/validate-command-manifests.ts --strict",
     "validate:impl-vs-manifest": "tsx scripts/validate-implementation-vs-manifest.ts",
-    "gen:command-table": "tsx scripts/generate-command-table.ts"
+    "gen:command-table": "tsx scripts/generate-command-table.ts",
+    "gen:api-types": "tsx scripts/generate-api-types.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",

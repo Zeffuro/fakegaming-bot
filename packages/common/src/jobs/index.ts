@@ -48,3 +48,13 @@ export interface JobQueue {
 }
 
 export { MemoryJobQueue } from './memory.js';
+export {
+    computeExponentialBackoff,
+    computeNextDailyRunDelaySeconds,
+    computeNextMinuteBoundaryDelaySeconds,
+    computeBackoffFromDelay,
+    computeBackoffWithNearWindow,
+    formatDateKey,
+    formatMinuteKey,
+    scheduleSingleton,
+} from './utils.js';

@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { makeAddTwitchTestHelpers } from './helpers/addTwitchTestHelpers.js';
 
-// Mock the twitchService module
-vi.mock('../../../services/twitchService.js', () => ({
-    verifyTwitchUser: vi.fn()
+// Mock the apiClient module used by the command
+vi.mock('../../../utils/apiClient.js', () => ({
+    verifyTwitchUsernameApi: vi.fn()
 }));
 
 // Mock the permissions utility
@@ -25,8 +25,8 @@ describe('addTwitchStream command', () => {
         // Mock requireAdmin to return true (user has admin permissions)
         const { requireAdmin } = await H.mockAdmin(true);
 
-        // Mock verifyTwitchUser to return true (Twitch user exists)
-        const { verifyTwitchUser } = await H.mockVerifyUser(true);
+        // Mock verifyTwitchUsernameApi to return exists=true
+        const { verifyTwitchUsernameApi } = await H.mockVerifyUser(true);
 
         // Mock for twitchManager's streamExists and add methods
         const streamExistsSpy = vi.fn().mockResolvedValue(false);
@@ -57,7 +57,7 @@ describe('addTwitchStream command', () => {
         H.assertAdded({
             interaction,
             requireAdmin,
-            verifyTwitchUser,
+            verifyTwitchUsernameApi,
             streamExistsSpy,
             addSpy,
             username: 'testChannel',
@@ -106,8 +106,8 @@ describe('addTwitchStream command', () => {
         // Mock requireAdmin to return true (user has admin permissions)
         const { requireAdmin } = await H.mockAdmin(true);
 
-        // Mock verifyTwitchUser to return false (Twitch user doesn't exist)
-        const { verifyTwitchUser } = await H.mockVerifyUser(false);
+        // Mock verifyTwitchUsernameApi to return exists=false
+        const { verifyTwitchUsernameApi } = await H.mockVerifyUser(false);
 
         // Mock for twitchManager's streamExists and add methods
         const streamExistsSpy = vi.fn().mockResolvedValue(false);
@@ -133,7 +133,7 @@ describe('addTwitchStream command', () => {
         H.assertNonexistent({
             interaction,
             requireAdmin,
-            verifyTwitchUser,
+            verifyTwitchUsernameApi,
             streamExistsSpy,
             addSpy,
             username: 'nonexistentChannel',

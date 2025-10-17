@@ -24,26 +24,26 @@ export const makeAddTwitchTestHelpers = () => {
     }
 
     async function mockVerifyUser(exists: boolean) {
-        const { verifyTwitchUser } = await import('../../../../services/twitchService.js');
-        vi.mocked(verifyTwitchUser).mockResolvedValue(exists as never);
-        return { verifyTwitchUser } as const;
+        const { verifyTwitchUsernameApi } = await import('../../../../utils/apiClient.js');
+        vi.mocked(verifyTwitchUsernameApi).mockResolvedValue({ exists } as never);
+        return { verifyTwitchUsernameApi } as const;
     }
 
     function assertAdded(params: {
         interaction: unknown;
         requireAdmin: unknown;
-        verifyTwitchUser: unknown;
+        verifyTwitchUsernameApi: unknown;
         streamExistsSpy: unknown;
         addSpy: unknown;
         username: string;
         channelId: string;
         guildId: string;
     }) {
-        const { interaction, requireAdmin, verifyTwitchUser, streamExistsSpy, addSpy, username, channelId, guildId } = params;
+        const { interaction, requireAdmin, verifyTwitchUsernameApi, streamExistsSpy, addSpy, username, channelId, guildId } = params;
 
         expect(requireAdmin).toHaveBeenCalled();
         expect(streamExistsSpy).toHaveBeenCalledWith(username, channelId, guildId);
-        expect(verifyTwitchUser).toHaveBeenCalledWith(username);
+        expect(verifyTwitchUsernameApi).toHaveBeenCalledWith(username);
         expect(addSpy).toHaveBeenCalledWith({
             twitchUsername: username,
             discordChannelId: channelId,
@@ -73,18 +73,18 @@ export const makeAddTwitchTestHelpers = () => {
     function assertNonexistent(params: {
         interaction: unknown;
         requireAdmin: unknown;
-        verifyTwitchUser: unknown;
+        verifyTwitchUsernameApi: unknown;
         streamExistsSpy: unknown;
         addSpy: unknown;
         username: string;
         channelId: string;
         guildId: string;
     }) {
-        const { interaction, requireAdmin, verifyTwitchUser, streamExistsSpy, addSpy, username, channelId, guildId } = params;
+        const { interaction, requireAdmin, verifyTwitchUsernameApi, streamExistsSpy, addSpy, username, channelId, guildId } = params;
 
         expect(requireAdmin).toHaveBeenCalled();
         expect(streamExistsSpy).toHaveBeenCalledWith(username, channelId, guildId);
-        expect(verifyTwitchUser).toHaveBeenCalledWith(username);
+        expect(verifyTwitchUsernameApi).toHaveBeenCalledWith(username);
         expect(addSpy).not.toHaveBeenCalled();
         expectEphemeralReply(interaction as never, { equals: `Twitch user \`${username}\` does not exist.` });
     }

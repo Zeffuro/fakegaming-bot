@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import { getLogger } from '@zeffuro/fakegaming-common';
 
 // Schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -15,6 +16,29 @@ const channelSchema = z.object({
 });
 
 const router = createBaseRouter();
+const log = getLogger({ name: 'api:routes:youtube' });
+
+// Accept identifier via multiple keys; allow string or string[]; normalize to identifier
+const resolveQuerySchema = z.object({
+    identifier: z.union([z.string(), z.array(z.string())]).optional(),
+    id: z.union([z.string(), z.array(z.string())]).optional(),
+    channelId: z.union([z.string(), z.array(z.string())]).optional(),
+    handle: z.union([z.string(), z.array(z.string())]).optional(),
+    username: z.union([z.string(), z.array(z.string())]).optional(),
+}).refine((q) => {
+    const raw = q.identifier ?? q.id ?? q.channelId ?? q.handle ?? q.username;
+    if (Array.isArray(raw)) return (raw[0]?.trim().length ?? 0) > 0;
+    return typeof raw === 'string' && raw.trim().length > 0;
+}, { message: 'identifier is required', path: ['identifier'] }).transform((q) => {
+    const raw = q.identifier ?? q.id ?? q.channelId ?? q.handle ?? q.username;
+    const v = Array.isArray(raw) ? raw[0] : raw;
+    return { identifier: (v ?? '').trim() };
+});
+
+function getYoutubeApiKey(): string | null {
+    const key = process.env.YOUTUBE_API_KEY;
+    return key && key.length > 0 ? key : null;
+}
 
 /**
  * @openapi
@@ -35,6 +59,54 @@ const router = createBaseRouter();
 router.get('/', async (_req, res) => {
     const videos = await getConfigManager().youtubeManager.getAllPlain();
     res.json(videos);
+});
+
+/**
+ * @openapi
+ * /youtube/resolve:
+ *   get:
+ *     summary: Resolve a YouTube channel identifier (handle/username/UC-Id) to a channelId
+ *     tags: [YouTube]
+ *     parameters:
+ *       - in: query
+ *         name: identifier
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Resolution result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 channelId:
+ *                   type: string
+ *                   nullable: true
+ */
+router.get('/resolve', validateQuery(resolveQuerySchema), async (req, res) => {
+    const { identifier } = req.query as z.infer<typeof resolveQuerySchema>;
+    if (/^UC[\w-]{22}$/.test(identifier)) {
+        return res.json({ channelId: identifier });
+    }
+    const apiKey = getYoutubeApiKey();
+    if (!apiKey) return res.json({ channelId: null });
+    const base = 'https://www.googleapis.com/youtube/v3/channels?part=id';
+    const isHandle = identifier.startsWith('@');
+    const url = isHandle
+        ? `${base}&forHandle=${encodeURIComponent(identifier.substring(1))}&key=${apiKey}`
+        : `${base}&forUsername=${encodeURIComponent(identifier)}&key=${apiKey}`;
+    try {
+        const r = await fetch(url);
+        if (!r.ok) return res.json({ channelId: null });
+        const data = await r.json();
+        const id = data?.items?.[0]?.id ?? null;
+        return res.json({ channelId: id ?? null });
+    } catch (err) {
+        log.error({ err, identifier }, 'Error resolving YouTube channel');
+        return res.json({ channelId: null });
+    }
 });
 
 /**
@@ -358,5 +430,6 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     await getConfigManager().youtubeManager.removeByPk(numericId);
     res.json({ success: true });
 });
+
 
 export { router };

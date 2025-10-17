@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { twitch_post_Request } from "@/types/apiResponses";
+import type { twitch_post_Request } from "@zeffuro/fakegaming-common/api-responses";
 
 export function useTwitchConfigs(guildId: string | string[]) {
   const [configs, setConfigs] = useState<TwitchStreamConfig[]>([]);

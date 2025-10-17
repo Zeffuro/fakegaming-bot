@@ -9,7 +9,6 @@ import path from 'path';
 import {FakegamingBot} from './core/FakegamingBot.js';
 import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {startBotServices} from './services/botScheduler.js';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';
 import {deployCommands} from "./deploy-commands.js";
@@ -83,7 +82,6 @@ const logger = getLogger({ name: 'bot' });
 
         client.once('clientReady', async () => {
             logger.info({ user: client.user?.tag }, `Logged in as ${client.user?.tag}`);
-            startBotServices(client);
         });
 
 

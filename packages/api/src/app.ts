@@ -12,6 +12,7 @@ import { readFileSync } from 'fs';
 import { rateLimit } from './middleware/rateLimit.js';
 import { enforceCsrfOnce } from './middleware/csrf.js';
 import type { Request, Response, NextFunction } from 'express';
+import { serviceAuth, shouldSkipJwt } from './middleware/serviceAuth.js';
 
 const app = express();
 
@@ -61,9 +62,13 @@ app.use(cors({
     credentials: true,
 }));
 
-// Apply JWT auth to all /api routes except /api/auth/login
+// Service-to-service auth (must come before JWT/CSRF)
+app.use('/api', serviceAuth);
+
+// Apply JWT auth to all /api routes except /api/auth/login; skip if service-authenticated
 app.use('/api', (req, res, next) => {
     if (req.path.startsWith('/auth/login')) return next();
+    if (shouldSkipJwt(req)) return next();
     return jwtAuth(req, res, next);
 });
 

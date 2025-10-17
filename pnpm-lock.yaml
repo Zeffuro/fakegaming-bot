@@ -138,6 +138,9 @@ importers:
       pg-boss:
         specifier: ^11.1.1
         version: 11.1.1
+      rss-parser:
+        specifier: ^3.13.0
+        version: 3.13.0
       sequelize:
         specifier: ^6.37.7
         version: 6.37.7(pg-hstore@2.3.4)(pg@8.16.3)(sqlite3@5.1.7)
@@ -196,15 +199,6 @@ importers:
 
   packages/bot:
     dependencies:
-      '@twurple/api':
-        specifier: ^7.4.0
-        version: 7.4.0(@twurple/auth@7.4.0(encoding@0.1.13))(encoding@0.1.13)
-      '@twurple/auth':
-        specifier: ^7.4.0
-        version: 7.4.0(encoding@0.1.13)
-      '@twurple/common':
-        specifier: ^7.4.0
-        version: 7.4.0
       '@zeffuro/fakegaming-common':
         specifier: workspace:*
         version: link:../common
@@ -232,9 +226,6 @@ importers:
       ms:
         specifier: ^2.1.3
         version: 2.1.3
-      rss-parser:
-        specifier: ^3.13.0
-        version: 3.13.0
       sqlite3:
         specifier: ^5.1.7
         version: 5.1.7
@@ -275,6 +266,9 @@ importers:
       '@asteasolutions/zod-to-openapi':
         specifier: ^8.1.0
         version: 8.1.0(zod@4.1.12)
+      cheerio:
+        specifier: ^1.1.2
+        version: 1.1.2
       discord.js:
         specifier: ^14.23.2
         version: 14.23.2
@@ -547,31 +541,6 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
-
-  '@d-fischer/cache-decorators@4.0.1':
-    resolution: {integrity: sha512-HNYLBLWs/t28GFZZeqdIBqq8f37mqDIFO6xNPof94VjpKvuP6ROqCZGafx88dk5zZUlBfViV9jD8iNNlXfc4CA==}
-
-  '@d-fischer/cross-fetch@5.0.5':
-    resolution: {integrity: sha512-symjDUPInTrkfIsZc2n2mo9hiAJLcTJsZkNICjZajEWnWpJ3s3zn50/FY8xpNUAf5w3eFuQii2wxztTGpvG1Xg==}
-
-  '@d-fischer/detect-node@3.0.1':
-    resolution: {integrity: sha512-0Rf3XwTzuTh8+oPZW9SfxTIiL+26RRJ0BRPwj5oVjZFyFKmsj9RGfN2zuTRjOuA3FCK/jYm06HOhwNK+8Pfv8w==}
-
-  '@d-fischer/logger@4.2.4':
-    resolution: {integrity: sha512-TFMZ/SVW8xyQtyJw9Rcuci4betSKy0qbQn2B5+1+72vVXeO8Qb1pYvuwF5qr0vDGundmSWq7W8r19nVPnXXSvA==}
-
-  '@d-fischer/qs@7.0.2':
-    resolution: {integrity: sha512-yAu3xDooiL+ef84Jo8nLjDjWBRk7RXk163Y6aTvRB7FauYd3spQD/dWvgT7R4CrN54Juhrrc3dMY7mc+jZGurQ==}
-    engines: {node: '>=0.6'}
-
-  '@d-fischer/rate-limiter@1.1.0':
-    resolution: {integrity: sha512-O5HgACwApyCZhp4JTEBEtbv/W3eAwEkrARFvgWnEsDmXgCMWjIHwohWoHre5BW6IYXFSHBGsuZB/EvNL3942kQ==}
-
-  '@d-fischer/shared-utils@3.6.4':
-    resolution: {integrity: sha512-BPkVLHfn2Lbyo/ENDBwtEB8JVQ+9OzkjJhUunLaxkw4k59YFlQxUUwlDBejVSFcpQT0t+D3CQlX+ySZnQj0wxw==}
-
-  '@d-fischer/typed-event-emitter@3.3.3':
-    resolution: {integrity: sha512-OvSEOa8icfdWDqcRtjSEZtgJTFOFNgTjje7zaL0+nAtu2/kZtRCSK5wUMrI/aXtCH8o0Qz2vA8UqkhWUTARFQQ==}
 
   '@discordjs/builders@1.12.2':
     resolution: {integrity: sha512-AugKmrgRJOHXEyMkABH/hXpAmIBKbYokCEl9VAM4Kh6FvkdobQ+Zhv7AR6K+y5hS7+VQ7gKXPYCe1JQmV07H1g==}
@@ -1533,20 +1502,6 @@ packages:
 
   '@tsconfig/node16@1.0.4':
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
-
-  '@twurple/api-call@7.4.0':
-    resolution: {integrity: sha512-WNxvjp/hMqZREElbvE4rHMyUIrHdGY5cbG8xbqgSM9CESFvJ1wm5BubhyANOyKd1TxABacLddbfbO//Fz9YHgA==}
-
-  '@twurple/api@7.4.0':
-    resolution: {integrity: sha512-RlXLs4ZvS8n0+iIk7YyVDwrjhlwpn+N+h7fX5Q61HoxlmzoCShmnnFo03abYw9i8Cc3deGpbQATOSVmigXM4qg==}
-    peerDependencies:
-      '@twurple/auth': 7.4.0
-
-  '@twurple/auth@7.4.0':
-    resolution: {integrity: sha512-WAQV6nJGkfY7r2BkRYhnzUpdfozLvjNsCxkyNVprl4dCWdJzccnTvqkKTdDRJc5ZJxDVaB9Drzwx9/fCp/gRDA==}
-
-  '@twurple/common@7.4.0':
-    resolution: {integrity: sha512-lX5cVkYar6jGvni6iLmMYjhxH1oPSl2v7XVeZ4C7U1GbLz/Jwk0L0uldQNGUIf9gpRHPY+TXRlk0UIpz2yo8DA==}
 
   '@types/argparse@1.0.38':
     resolution: {integrity: sha512-ebDJ9b0e702Yr7pWgB0jzm+CX4Srzz8RcXtLJDJB+BSccqMa36uyH/zUsSYao5+BD1ytv3k3rPYCq4mAE1hsXA==}
@@ -3030,10 +2985,6 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  klona@2.0.6:
-    resolution: {integrity: sha512-dhG34DXATL5hSxJbIexCft8FChFXtmskoZYnoPWjXQuebWYCNkVeV3KkGegCK9CP1oswI/vQibS2GY7Em/sJJA==}
-    engines: {node: '>= 8'}
-
   kysely@0.28.7:
     resolution: {integrity: sha512-u/cAuTL4DRIiO2/g4vNGRgklEKNIj5Q3CG7RoUB5DV5SfEC2hMvPxKi0GWPmnzwL2ryIeud2VTcEEmqzTzEPNw==}
     engines: {node: '>=20.0.0'}
@@ -3333,15 +3284,6 @@ packages:
 
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
-
-  node-fetch@2.7.0:
-    resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
-    engines: {node: 4.x || >=6.0.0}
-    peerDependencies:
-      encoding: ^0.1.0
-    peerDependenciesMeta:
-      encoding:
-        optional: true
 
   node-gyp@8.4.1:
     resolution: {integrity: sha512-olTJRgUtAb/hOXG0E93wZDs5YiJlgbXxTwQAFHyNlRsXQnYzUaF2aGgujZbw+hR8aF4ZG/rST57bWMWD16jr9w==}
@@ -3789,10 +3731,6 @@ packages:
     resolution: {integrity: sha512-9LkiTwjUh6rT555DtE9rTX+BKByPfrMzEAtnlEtdEwr3Nkffwiihqe2bWADg+OQRjt9gl6ICdmB/ZFDCGAtSow==}
     engines: {node: '>= 4'}
 
-  retry@0.13.1:
-    resolution: {integrity: sha512-XQBQ3I8W1Cge0Seh+6gjj03LbmRFWuoszgK9ooCpwYIrhhoO80pfq4cUkU5DkknwfOfFteRwlZ56PYOGYyFWdg==}
-    engines: {node: '>= 4'}
-
   reusify@1.1.0:
     resolution: {integrity: sha512-g6QUff04oZpHs0eG5p83rFLhHeV00ug/Yf9nZM6fLeUrPguBTkTQOdpAWWspMh55TZfVQDPaN3NQJfbVRAxdIw==}
     engines: {iojs: '>=1.0.0', node: '>=0.10.0'}
@@ -4207,9 +4145,6 @@ packages:
     resolution: {integrity: sha512-kXuRi1mtaKMrsLUxz3sQYvVl37B0Ns6MzfrtV5DvJceE9bPyspOqk9xxv7XbZWcfLWbFmm997vl83qUWVJA64w==}
     engines: {node: '>=16'}
 
-  tr46@0.0.3:
-    resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
-
   tr46@6.0.0:
     resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
     engines: {node: '>=20'}
@@ -4428,9 +4363,6 @@ packages:
     resolution: {integrity: sha512-o8qghlI8NZHU1lLPrpi2+Uq7abh4GGPpYANlalzWxyWteJOCsr/P+oPBA49TOLu5FTZO4d3F9MnWJfiMo4BkmA==}
     engines: {node: '>=18'}
 
-  webidl-conversions@3.0.1:
-    resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
-
   webidl-conversions@8.0.0:
     resolution: {integrity: sha512-n4W4YFyz5JzOfQeA8oN7dUYpR+MBP3PIUsn2jLjWXwK5ASUzt0Jc/A5sAUZoCYFJRGF0FBKJ+1JjN43rNdsQzA==}
     engines: {node: '>=20'}
@@ -4446,9 +4378,6 @@ packages:
   whatwg-url@15.1.0:
     resolution: {integrity: sha512-2ytDk0kiEj/yu90JOAp44PVPUkO9+jVhyf+SybKlRHSDlvOOZhdPIrr7xTH64l4WixO2cP+wQIcgujkGBPPz6g==}
     engines: {node: '>=20'}
-
-  whatwg-url@5.0.0:
-    resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
 
   which@1.3.1:
     resolution: {integrity: sha512-HxJdYWq1MTIQbJ3nw0cqssHoTNU267KlrDuGZ1WYlxDStUtKUhOaJmh112/TZmHxxUfuJqPXSOm7tDyas0OSIQ==}
@@ -4719,41 +4648,6 @@ snapshots:
       postcss: 8.5.6
 
   '@csstools/css-tokenizer@3.0.4': {}
-
-  '@d-fischer/cache-decorators@4.0.1':
-    dependencies:
-      '@d-fischer/shared-utils': 3.6.4
-      tslib: 2.8.1
-
-  '@d-fischer/cross-fetch@5.0.5(encoding@0.1.13)':
-    dependencies:
-      node-fetch: 2.7.0(encoding@0.1.13)
-    transitivePeerDependencies:
-      - encoding
-
-  '@d-fischer/detect-node@3.0.1': {}
-
-  '@d-fischer/logger@4.2.4':
-    dependencies:
-      '@d-fischer/detect-node': 3.0.1
-      '@d-fischer/shared-utils': 3.6.4
-      tslib: 2.8.1
-
-  '@d-fischer/qs@7.0.2': {}
-
-  '@d-fischer/rate-limiter@1.1.0':
-    dependencies:
-      '@d-fischer/logger': 4.2.4
-      '@d-fischer/shared-utils': 3.6.4
-      tslib: 2.8.1
-
-  '@d-fischer/shared-utils@3.6.4':
-    dependencies:
-      tslib: 2.8.1
-
-  '@d-fischer/typed-event-emitter@3.3.3':
-    dependencies:
-      tslib: 2.8.1
 
   '@discordjs/builders@1.12.2':
     dependencies:
@@ -5656,50 +5550,6 @@ snapshots:
   '@tsconfig/node14@1.0.3': {}
 
   '@tsconfig/node16@1.0.4': {}
-
-  '@twurple/api-call@7.4.0(encoding@0.1.13)':
-    dependencies:
-      '@d-fischer/cross-fetch': 5.0.5(encoding@0.1.13)
-      '@d-fischer/qs': 7.0.2
-      '@d-fischer/shared-utils': 3.6.4
-      '@twurple/common': 7.4.0
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - encoding
-
-  '@twurple/api@7.4.0(@twurple/auth@7.4.0(encoding@0.1.13))(encoding@0.1.13)':
-    dependencies:
-      '@d-fischer/cache-decorators': 4.0.1
-      '@d-fischer/cross-fetch': 5.0.5(encoding@0.1.13)
-      '@d-fischer/detect-node': 3.0.1
-      '@d-fischer/logger': 4.2.4
-      '@d-fischer/rate-limiter': 1.1.0
-      '@d-fischer/shared-utils': 3.6.4
-      '@d-fischer/typed-event-emitter': 3.3.3
-      '@twurple/api-call': 7.4.0(encoding@0.1.13)
-      '@twurple/auth': 7.4.0(encoding@0.1.13)
-      '@twurple/common': 7.4.0
-      retry: 0.13.1
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - encoding
-
-  '@twurple/auth@7.4.0(encoding@0.1.13)':
-    dependencies:
-      '@d-fischer/logger': 4.2.4
-      '@d-fischer/shared-utils': 3.6.4
-      '@d-fischer/typed-event-emitter': 3.3.3
-      '@twurple/api-call': 7.4.0(encoding@0.1.13)
-      '@twurple/common': 7.4.0
-      tslib: 2.8.1
-    transitivePeerDependencies:
-      - encoding
-
-  '@twurple/common@7.4.0':
-    dependencies:
-      '@d-fischer/shared-utils': 3.6.4
-      klona: 2.0.6
-      tslib: 2.8.1
 
   '@types/argparse@1.0.38': {}
 
@@ -7453,8 +7303,6 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  klona@2.0.6: {}
-
   kysely@0.28.7: {}
 
   levn@0.4.1:
@@ -7725,12 +7573,6 @@ snapshots:
       semver: 7.7.3
 
   node-addon-api@7.1.1: {}
-
-  node-fetch@2.7.0(encoding@0.1.13):
-    dependencies:
-      whatwg-url: 5.0.0
-    optionalDependencies:
-      encoding: 0.1.13
 
   node-gyp@8.4.1:
     dependencies:
@@ -8230,8 +8072,6 @@ snapshots:
   retry@0.12.0:
     optional: true
 
-  retry@0.13.1: {}
-
   reusify@1.1.0: {}
 
   rimraf@3.0.2:
@@ -8706,8 +8546,6 @@ snapshots:
     dependencies:
       tldts: 7.0.16
 
-  tr46@0.0.3: {}
-
   tr46@6.0.0:
     dependencies:
       punycode: 2.3.1
@@ -8922,8 +8760,6 @@ snapshots:
     dependencies:
       xml-name-validator: 5.0.0
 
-  webidl-conversions@3.0.1: {}
-
   webidl-conversions@8.0.0: {}
 
   whatwg-encoding@3.1.1:
@@ -8936,11 +8772,6 @@ snapshots:
     dependencies:
       tr46: 6.0.0
       webidl-conversions: 8.0.0
-
-  whatwg-url@5.0.0:
-    dependencies:
-      tr46: 0.0.3
-      webidl-conversions: 3.0.1
 
   which@1.3.1:
     dependencies:

@@ -28,8 +28,8 @@ export class PatchSubscriptionManager extends BaseManager<PatchSubscriptionConfi
         await this.findOrCreate({ where: { game, channelId, guildId } });
     }
 
-    async getSubscriptionsForGame(game: string): Promise<PatchSubscriptionConfig[]> {
-        return this.getMany({ game });
+    async getSubscriptionsForGame(game: string): Promise<CreationAttributes<PatchSubscriptionConfig>[]> {
+        return this.getMany({ game }, { raw: true });
     }
 
     async upsertSubscription(sub: Partial<PatchSubscriptionConfig> | PatchSubscriptionConfig) {

@@ -3,6 +3,11 @@ import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { registerBirthdaysJobs } from './birthdays.js';
 import { PgBossJobQueue } from './pgBossAdapter.js';
 import { recordJobRun } from './status.js';
+import { registerRemindersJobs } from './reminders.js';
+import { registerPatchNotesJobs } from './patchNotes.js';
+import { registerPatchNotesScanJobs } from './patchNotesScan.js';
+import { registerTwitchJobs } from './twitch.js';
+import { registerYouTubeJobs } from './youtube.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -66,6 +71,19 @@ export async function bootstrapJobs(): Promise<void> {
 
     // Register and schedule birthdays job
     await registerBirthdaysJobs(queue);
+
+    // Register and schedule reminders job
+    await registerRemindersJobs(queue);
+
+    // Register and schedule patch notes announcements
+    await registerPatchNotesJobs(queue);
+
+    // Register and schedule patch notes scan (fetchers moved to common)
+    await registerPatchNotesScanJobs(queue);
+
+    // Register and schedule Twitch and YouTube polling jobs
+    await registerTwitchJobs(queue);
+    await registerYouTubeJobs(queue);
 
     log.info({ backend: backendName }, 'Jobs bootstrap complete');
 }

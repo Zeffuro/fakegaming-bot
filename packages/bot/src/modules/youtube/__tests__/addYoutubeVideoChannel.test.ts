@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { makeAddYoutubeTestHelpers } from './helpers/addYoutubeTestHelpers.js';
 
-// Mock the youtubeService module
-vi.mock('../../../services/youtubeService.js', () => ({
-    getYoutubeChannelId: vi.fn()
+// Mock the apiClient module used by the command
+vi.mock('../../../utils/apiClient.js', () => ({
+    resolveYoutubeChannelIdApi: vi.fn()
 }));
 
 // Mock the permissions utility
@@ -25,8 +25,8 @@ describe('addYoutubeVideoChannel command', () => {
         // Mock requireAdmin to return true (user has admin permissions)
         const { requireAdmin } = await H.mockAdmin(true);
 
-        // Mock getYoutubeChannelId to return a valid channel ID
-        const { getYoutubeChannelId } = await H.mockGetChannelId('UC1234567890');
+        // Mock resolveYoutubeChannelIdApi to return a valid channel ID
+        const { resolveYoutubeChannelIdApi } = await H.mockGetChannelId('UC1234567890');
 
         // Mock for youtubeManager's getVideoChannel and add methods
         const getVideoChannelSpy = vi.fn().mockResolvedValue(null); // No existing config
@@ -58,7 +58,7 @@ describe('addYoutubeVideoChannel command', () => {
         H.assertAdded({
             interaction,
             requireAdmin,
-            getYoutubeChannelId,
+            resolveYoutubeChannelIdApi,
             getVideoChannelSpy,
             addSpy,
             username: 'testChannel',
@@ -72,8 +72,8 @@ describe('addYoutubeVideoChannel command', () => {
         // Mock requireAdmin to return true (user has admin permissions)
         const { requireAdmin } = await H.mockAdmin(true);
 
-        // Mock getYoutubeChannelId to return a valid channel ID
-        const { getYoutubeChannelId } = await H.mockGetChannelId('UC1234567890');
+        // Mock resolveYoutubeChannelIdApi to return a valid channel ID
+        const { resolveYoutubeChannelIdApi } = await H.mockGetChannelId('UC1234567890');
 
         // Mock for youtubeManager's getVideoChannel to return an existing config
         const getVideoChannelSpy = vi.fn().mockResolvedValue({
@@ -103,7 +103,7 @@ describe('addYoutubeVideoChannel command', () => {
         H.assertAlreadyExists({
             interaction,
             requireAdmin,
-            getYoutubeChannelId,
+            resolveYoutubeChannelIdApi,
             getVideoChannelSpy,
             addSpy,
             username: 'testChannel',
@@ -117,8 +117,8 @@ describe('addYoutubeVideoChannel command', () => {
         // Mock requireAdmin to return true (user has admin permissions)
         const { requireAdmin } = await H.mockAdmin(true);
 
-        // Mock getYoutubeChannelId to return null (channel doesn't exist)
-        const { getYoutubeChannelId } = await H.mockGetChannelId(null);
+        // Mock resolveYoutubeChannelIdApi to return null (channel doesn't exist)
+        const { resolveYoutubeChannelIdApi } = await H.mockGetChannelId(null);
 
         // Setup the test environment with only necessary mocks
         const { command, interaction } = await H.setupCmd({
@@ -134,7 +134,7 @@ describe('addYoutubeVideoChannel command', () => {
         H.assertNonexistent({
             interaction,
             requireAdmin,
-            getYoutubeChannelId,
+            resolveYoutubeChannelIdApi,
             username: 'nonexistentChannel'
         });
     });

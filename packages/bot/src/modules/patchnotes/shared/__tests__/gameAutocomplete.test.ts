@@ -1,14 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
 import { gameAutocomplete } from '../gameAutocomplete.js';
-import * as loadPatchNoteFetchers from '../../../../loaders/loadPatchNoteFetchers.js';
 import { createMockAutocompleteInteraction } from '@zeffuro/fakegaming-common/testing';
 
-vi.mock('../../../../loaders/loadPatchNoteFetchers.js');
+vi.mock('@zeffuro/fakegaming-common', async () => {
+    const actual = await vi.importActual<any>('@zeffuro/fakegaming-common');
+    return {
+        ...actual,
+        getDefaultPatchNoteFetchers: vi.fn()
+    };
+});
+
+import { getDefaultPatchNoteFetchers } from '@zeffuro/fakegaming-common';
 
 // --- local DRY helpers ---
 function mockFetchers(games: string[]) {
     const fetchers = games.map(g => ({ game: g }));
-    vi.mocked(loadPatchNoteFetchers.loadPatchNoteFetchers).mockResolvedValue(fetchers as any);
+    vi.mocked(getDefaultPatchNoteFetchers).mockResolvedValue(fetchers as any);
 }
 
 async function runAndExpect(focused: string, expectedNames: string[]) {

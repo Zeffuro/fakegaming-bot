@@ -9,17 +9,15 @@
   "license": "AGPL-3.0-only",
   "scripts": {
     "build": "next build",
-    "prebuild": "pnpm run generate:api-types",
-    "prepare": "pnpm run generate:api-types",
-    "generate:api-aliases": "pnpm tsx scripts/generateApiAliases.ts",
+    "prebuild": "pnpm -w run gen:api-types",
+    "prepare": "pnpm -w run gen:api-types",
     "start": "next start",
-    "start:dev": "pnpm --filter @zeffuro/fakegaming-bot-api export:openapi && pnpm generate:api-types && next dev",
+    "start:dev": "pnpm --filter @zeffuro/fakegaming-bot-api export:openapi && pnpm -w run gen:api-types && next dev",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint app components lib --ext .ts,.tsx --config ../../eslint.config.mjs",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "generate:api-types": "openapi-typescript ../api/openapi.json -o types/api.d.ts && pnpm tsx scripts/generateApiAliases.ts"
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

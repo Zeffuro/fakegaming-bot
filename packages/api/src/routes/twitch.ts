@@ -1,6 +1,7 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { TwitchStreamConfig } from '@zeffuro/fakegaming-common/models';
+import { getLogger } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -15,6 +16,22 @@ const existsQuerySchema = z.object({
 });
 
 const router = createBaseRouter();
+
+const log = getLogger({ name: 'api:routes:twitch' });
+
+// Accept both username and twitchUsername; allow string or string[], and normalize to a single username string
+const verifyQuerySchema = z.object({
+    username: z.union([z.string(), z.array(z.string())]).optional(),
+    twitchUsername: z.union([z.string(), z.array(z.string())]).optional()
+}).refine((q) => {
+    const raw = q.username ?? q.twitchUsername;
+    if (Array.isArray(raw)) return (raw[0]?.trim().length ?? 0) > 0;
+    return typeof raw === 'string' && raw.trim().length > 0;
+}, { message: 'username is required', path: ['username'] }).transform((q) => {
+    const raw = q.username ?? q.twitchUsername;
+    const v = Array.isArray(raw) ? raw[0] : raw;
+    return { username: (v ?? '').trim() };
+});
 
 /**
  * @openapi
@@ -80,6 +97,61 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res
     const { twitchUsername, discordChannelId, guildId } = req.query as z.infer<typeof existsQuerySchema>;
     const exists = await getConfigManager().twitchManager.exists({ twitchUsername, discordChannelId, guildId });
     res.json({ exists });
+});
+
+/**
+ * @openapi
+ * /twitch/verify:
+ *   get:
+ *     summary: Verify a Twitch username exists
+ *     tags: [Twitch]
+ *     parameters:
+ *       - in: query
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Verification result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 exists:
+ *                   type: boolean
+ *                 id:
+ *                   type: string
+ *                 login:
+ *                   type: string
+ *                 displayName:
+ *                   type: string
+ */
+router.get('/verify', validateQuery(verifyQuerySchema), async (req, res) => {
+    const { username } = req.query as z.infer<typeof verifyQuerySchema>;
+    const clientId = process.env.TWITCH_CLIENT_ID ?? '';
+    const clientSecret = process.env.TWITCH_CLIENT_SECRET ?? '';
+    if (!clientId || !clientSecret) {
+        log.warn('TWITCH_CLIENT_ID/SECRET missing; cannot verify');
+        return res.json({ exists: false });
+    }
+    try {
+        const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}&grant_type=client_credentials`, { method: 'POST' });
+        if (!tokenRes.ok) return res.json({ exists: false });
+        const tokenData = await tokenRes.json() as { access_token: string };
+        const usersRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Client-Id': clientId }
+        });
+        if (!usersRes.ok) return res.json({ exists: false });
+        const data = await usersRes.json();
+        const user = (data?.data ?? [])[0];
+        if (!user) return res.json({ exists: false });
+        return res.json({ exists: true, id: String(user.id ?? ''), login: String(user.login ?? username), displayName: String(user.display_name ?? user.login ?? username) });
+    } catch (err) {
+        log.error({ err, username }, 'Error verifying Twitch user');
+        return res.json({ exists: false });
+    }
 });
 
 /**
@@ -257,5 +329,6 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     await getConfigManager().twitchManager.removeByPk(numericId);
     res.json({ success: true });
 });
+
 
 export { router };

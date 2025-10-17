@@ -65,7 +65,7 @@ export default function AdminJobsPage() {
                     setSelectedJob(res.jobs[0]?.name ?? 'birthdays');
                 }
             }
-        } catch (_e) {
+        } catch {
             // keep fallback list
         }
     };
@@ -75,7 +75,7 @@ export default function AdminJobsPage() {
             setLoadingHeartbeat(true);
             const res = await api.getLastHeartbeat();
             setLastHeartbeat(res.last ?? null);
-        } catch (_e) {
+        } catch {
             // ignore errors
         } finally {
             setLoadingHeartbeat(false);
@@ -87,7 +87,7 @@ export default function AdminJobsPage() {
             setLoadingStatus(true);
             const res = await api.getJobStatus(name);
             setRuns(res.runs?.slice(0, 5) ?? []);
-        } catch (_e) {
+        } catch {
             setRuns([]);
         } finally {
             setLoadingStatus(false);
@@ -99,7 +99,7 @@ export default function AdminJobsPage() {
             setLoadingBirthdaysToday(true);
             const res = await api.getBirthdaysProcessedToday();
             setBirthdaysToday(res.processed);
-        } catch (_e) {
+        } catch {
             setBirthdaysToday(null);
         } finally {
             setLoadingBirthdaysToday(false);
