@@ -17,6 +17,7 @@ export function expectConflict(res: HasStatusLike) { expect(getStatus(res)).toBe
 export function expectTooManyRequests(res: HasStatusLike) { expect(getStatus(res)).toBe(429); }
 export function expectInternalServerError(res: HasStatusLike) { expect(getStatus(res)).toBe(500); }
 export function expectServiceUnavailable(res: HasStatusLike) { expect(getStatus(res)).toBe(503); }
+export function expectAccepted(res: HasStatusLike) { expect(getStatus(res)).toBe(202); }
 
 // Helpers to assert the standardized error envelope { error: { code, message, details? } }
 interface HasBodyLike {

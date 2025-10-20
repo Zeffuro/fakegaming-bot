@@ -30,7 +30,7 @@
     "jscpd": "^3.5.10"
   },
   "scripts": {
-    "build": "pnpm --filter @zeffuro/fakegaming-common run build ; pnpm --filter @zeffuro/fakegaming-bot-api run build ; tsx scripts/generate-api-types.ts ; pnpm --filter @zeffuro/fakegaming-bot run build ; pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
+    "build": "pnpm --filter @zeffuro/fakegaming-common run build && pnpm --filter @zeffuro/fakegaming-bot-api run build && tsx scripts/generate-api-types.ts && pnpm --filter @zeffuro/fakegaming-bot run build && pnpm --filter @zeffuro/fakegaming-bot-dashboard run build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test",
     "test:coverage": "pnpm -r run test:coverage",

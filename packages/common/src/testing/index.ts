@@ -98,3 +98,6 @@ export { seedUserGuilds, seedUserProfiles, seedUserGuildNick } from './utils/cac
 
 // Canvas mocks
 export { createMockCanvasContext2D, type Canvas2DMock } from './mocks/canvasMock.js';
+
+// Job queue test helper
+export { TestJobQueue, getJobHandler, runJobHandler } from './mocks/jobQueueMock.js';

@@ -29,6 +29,8 @@ export default defineConfig({
         'src/__tests__/**/*', // Test helpers
         'src/utils/openapi-inject-schemas.ts', // Build-time utility
         'src/utils/sequelize-to-openapi.ts', // Build-time utility
+        // Exclude deprecated validation overrides placeholder
+        'src/validation/**/*.ts',
       ],
       thresholds: {
         lines: 80,
