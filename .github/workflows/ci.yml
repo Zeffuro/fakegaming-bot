@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         if: steps.cc-token.outputs.present == 'true'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/api/lcov.info,./coverage/bot/lcov.info,./coverage/common/lcov.info,./coverage/dashboard/lcov.info
