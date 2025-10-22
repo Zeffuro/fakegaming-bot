@@ -78,7 +78,7 @@ describe('YouTube job branches', () => {
         expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
         const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
         expect(String(payload?.content)).toContain('Watch Video X by Channel!');
-        expect(String(payload?.content)).toContain('\nhttps://youtu.be/VIDX');
+        expect(String(payload?.content)).toMatch(/\n<?https:\/\/youtu\.be\/VIDX>?/);
     });
 
     it('enrich enabled but details API returns !ok, continues without details', async () => {
@@ -124,7 +124,7 @@ describe('YouTube job branches', () => {
         expect(done).toHaveBeenCalled();
         expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
         const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
-        expect(String(payload?.content)).toContain('https://youtu.be/A');
+        expect(String(payload?.content)).toMatch(/https:\/\/youtu\.be\/A/);
         expect(cfg.lastVideoId).toBe('A');
     });
 

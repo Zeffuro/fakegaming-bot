@@ -17,6 +17,10 @@ import type {
   disabledCommands_post_Response201,
   disabledCommands_id_delete_Response200,
   disabledModules_post_Request,
+  tiktok_get_Response200,
+  tiktok_post_Request,
+  tiktok_post_Response201,
+  tiktok_id_delete_Response200,
 } from "@zeffuro/fakegaming-common/api-responses";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
@@ -25,6 +29,9 @@ import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 export const API_ENDPOINTS = {
   // Twitch endpoints
   TWITCH: '/api/external/twitch',
+
+  // TikTok endpoints
+  TIKTOK: '/api/external/tiktok',
 
   // YouTube endpoints
   YOUTUBE: '/api/external/youtube',
@@ -179,6 +186,40 @@ export const api = {
     apiRequest<{ success: boolean }>(
       `${API_ENDPOINTS.TWITCH}/${id}`,
       { method: 'DELETE' }
+    ),
+
+  // TikTok APIs (parity with Twitch; types generated from OpenAPI after build)
+  getTikTokConfigs: () =>
+    apiRequest<tiktok_get_Response200>(API_ENDPOINTS.TIKTOK),
+
+  // Check live status of a username (admin/debug)
+  getTikTokLive: (username: string, debug: boolean = false) =>
+    apiRequest<{ live: boolean; roomId: string | null; title: string | null; startedAt: number | null; viewers: number | null; cover: string | null; debugMeta?: { method: 'fetchIsLive' | 'getRoomInfo' | 'connect' | 'unknown'; raw?: unknown } }>(
+      `${API_ENDPOINTS.TIKTOK}/live?username=${encodeURIComponent(username)}${debug ? `&debug=1` : ''}`
+    ),
+
+  createTikTokStream: (data: tiktok_post_Request) =>
+    apiRequest<tiktok_post_Response201>(
+      API_ENDPOINTS.TIKTOK,
+      { method: 'POST', body: data }
+    ),
+
+  deleteTikTokStream: (id: string | number) =>
+    apiRequest<tiktok_id_delete_Response200>(
+      `${API_ENDPOINTS.TIKTOK}/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  // Verify Twitch username
+  verifyTwitchUsername: (username: string) =>
+    apiRequest<{ exists: boolean; id?: string; login?: string; displayName?: string }>(
+      `${API_ENDPOINTS.TWITCH}/verify?username=${encodeURIComponent(username)}`
+    ),
+
+  // Resolve YouTube identifier to channelId
+  resolveYouTubeIdentifier: (identifier: string) =>
+    apiRequest<{ channelId: string | null }>(
+      `${API_ENDPOINTS.YOUTUBE}/resolve?identifier=${encodeURIComponent(identifier)}`
     ),
 
   // YouTube APIs

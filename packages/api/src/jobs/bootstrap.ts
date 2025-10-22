@@ -8,6 +8,7 @@ import { registerPatchNotesJobs } from './patchNotes.js';
 import { registerPatchNotesScanJobs } from './patchNotesScan.js';
 import { registerTwitchJobs } from './twitch.js';
 import { registerYouTubeJobs } from './youtube.js';
+import { registerTikTokJobs } from './tiktok.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -81,9 +82,10 @@ export async function bootstrapJobs(): Promise<void> {
     // Register and schedule patch notes scan (fetchers moved to common)
     await registerPatchNotesScanJobs(queue);
 
-    // Register and schedule Twitch and YouTube polling jobs
+    // Register and schedule Twitch, YouTube, and TikTok polling jobs
     await registerTwitchJobs(queue);
     await registerYouTubeJobs(queue);
+    await registerTikTokJobs(queue);
 
     log.info({ backend: backendName }, 'Jobs bootstrap complete');
 }

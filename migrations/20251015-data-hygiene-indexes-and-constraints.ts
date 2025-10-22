@@ -1,46 +1,32 @@
-import { DataTypes, Sequelize } from 'sequelize';
+import { Sequelize } from 'sequelize';
 
 export const up = async ({ context }: { context: Sequelize }) => {
     const qi = context.getQueryInterface();
 
-    // Unique per-guild subscription constraints
-    await qi.addConstraint('TwitchStreamConfigs', {
-        fields: ['guildId', 'twitchUsername'],
-        type: 'unique',
-        name: 'unique_guild_twitch_username'
-    });
-    await qi.addConstraint('YoutubeVideoConfigs', {
-        fields: ['guildId', 'youtubeChannelId'],
-        type: 'unique',
-        name: 'unique_guild_youtube_channel'
-    });
+    // Use raw SQL with IF NOT EXISTS to make this migration idempotent across reruns (especially in SQLite)
+    // Unique per-guild subscription constraints via unique indexes
+    await context.query('CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_twitch_username ON `TwitchStreamConfigs` ("guildId", "twitchUsername")');
+    await context.query('CREATE UNIQUE INDEX IF NOT EXISTS unique_guild_youtube_channel ON `YoutubeVideoConfigs` ("guildId", "youtubeChannelId")');
 
     // Hot-path indexes
-    // Quotes: fast filter by guild + createdAt
-    await qi.addIndex('QuoteConfigs', ['guildId', 'createdAt'], { name: 'ix_quoteconfigs_guild_createdAt' });
-
-    // Subscriptions/feeds: quick lookups by provider source IDs
-    await qi.addIndex('TwitchStreamConfigs', ['twitchUsername'], { name: 'ix_twitchstreamconfigs_username' });
-    await qi.addIndex('YoutubeVideoConfigs', ['youtubeChannelId'], { name: 'ix_youtubevideoconfigs_channel' });
-
-    // Reminders: index by (userId, timestamp) for upcoming checks
-    await qi.addIndex('ReminderConfigs', ['userId', 'timestamp'], { name: 'ix_reminderconfigs_user_timestamp' });
-
-    // Patch subscriptions: speedy guild+game lookups
-    await qi.addIndex('PatchSubscriptionConfigs', ['guildId', 'game'], { name: 'ix_patchsubs_guild_game' });
+    await context.query('CREATE INDEX IF NOT EXISTS ix_quoteconfigs_guild_createdAt ON `QuoteConfigs` ("guildId", "createdAt")');
+    await context.query('CREATE INDEX IF NOT EXISTS ix_twitchstreamconfigs_username ON `TwitchStreamConfigs` ("twitchUsername")');
+    await context.query('CREATE INDEX IF NOT EXISTS ix_youtubevideoconfigs_channel ON `YoutubeVideoConfigs` ("youtubeChannelId")');
+    await context.query('CREATE INDEX IF NOT EXISTS ix_reminderconfigs_user_timestamp ON `ReminderConfigs` ("userId", "timestamp")');
+    await context.query('CREATE INDEX IF NOT EXISTS ix_patchsubs_guild_game ON `PatchSubscriptionConfigs` ("guildId", "game")');
 };
 
 export const down = async ({ context }: { context: Sequelize }) => {
     const qi = context.getQueryInterface();
 
-    // Drop indexes
-    await qi.removeIndex('PatchSubscriptionConfigs', 'ix_patchsubs_guild_game');
-    await qi.removeIndex('ReminderConfigs', 'ix_reminderconfigs_user_timestamp');
-    await qi.removeIndex('YoutubeVideoConfigs', 'ix_youtubevideoconfigs_channel');
-    await qi.removeIndex('TwitchStreamConfigs', 'ix_twitchstreamconfigs_username');
-    await qi.removeIndex('QuoteConfigs', 'ix_quoteconfigs_guild_createdAt');
+    // Drop indexes safely if present
+    await context.query('DROP INDEX IF EXISTS ix_patchsubs_guild_game');
+    await context.query('DROP INDEX IF EXISTS ix_reminderconfigs_user_timestamp');
+    await context.query('DROP INDEX IF EXISTS ix_youtubevideoconfigs_channel');
+    await context.query('DROP INDEX IF EXISTS ix_twitchstreamconfigs_username');
+    await context.query('DROP INDEX IF EXISTS ix_quoteconfigs_guild_createdAt');
 
-    // Drop unique constraints
-    await qi.removeConstraint('YoutubeVideoConfigs', 'unique_guild_youtube_channel');
-    await qi.removeConstraint('TwitchStreamConfigs', 'unique_guild_twitch_username');
+    // Drop unique indexes
+    await context.query('DROP INDEX IF EXISTS unique_guild_youtube_channel');
+    await context.query('DROP INDEX IF EXISTS unique_guild_twitch_username');
 };

@@ -3,16 +3,18 @@ import type { ConfigManager } from '@zeffuro/fakegaming-common/managers';
 
 /**
  * CRITICAL: This must be at top-level, before any test imports the SUT.
- * ESM imports are evaluated once and cached. If we mock after the SUT is imported,
- * the SUT's binding to getConfigManager() will already point to the real one.
  */
 vi.mock('@zeffuro/fakegaming-common/managers', async () => {
-    const testing: { getActiveMockConfigManager: () => ConfigManager } =
-        await vi.importActual('@zeffuro/fakegaming-common/testing');
-
-    return {
-        getConfigManager: vi.fn(() => testing.getActiveMockConfigManager()),
-    };
+    // Lazily import testing helpers to create a mock config manager on-demand
+    const testing = await vi.importActual<typeof import('@zeffuro/fakegaming-common/testing')>('@zeffuro/fakegaming-common/testing');
+    function getActive(): ConfigManager {
+        const g = globalThis as any;
+        if (!g.__FG_ACTIVE_CONFIG_MANAGER__) {
+            testing.createMockConfigManager({});
+        }
+        return g.__FG_ACTIVE_CONFIG_MANAGER__ as ConfigManager;
+    }
+    return { getConfigManager: () => getActive() } as unknown as { getConfigManager: () => ConfigManager };
 });
 
 // Provide a shared mock logger across all tests in this package.

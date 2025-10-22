@@ -5,10 +5,10 @@ import { assertGetByGuildCalled, expectReplyContains } from './helpers/quotesTes
 
 describe('randomQuote command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
-        
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
+
         // Mock Math.random to return a consistent value for testing
         vi.spyOn(global.Math, 'random').mockReturnValue(0.5);
     });

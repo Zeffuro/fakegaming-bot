@@ -1,7 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { useDashboardData } from "@/components/hooks/useDashboardData";
+import { AdminPage } from "@/components/AdminPage";
 import { api, type JobRunEntry } from "@/lib/api-client";
 import {
     Alert,
@@ -31,8 +30,6 @@ interface TriggerResult {
 interface JobInfo { name: string; supportsDate: boolean; supportsForce: boolean }
 
 export default function AdminJobsPage() {
-    const { isAdmin, loading, error } = useDashboardData();
-
     const fallbackJobs: JobInfo[] = useMemo(() => ([
         { name: 'birthdays', supportsDate: true, supportsForce: true },
         { name: 'heartbeat', supportsDate: false, supportsForce: false },
@@ -163,132 +160,112 @@ export default function AdminJobsPage() {
         );
     };
 
-    if (error) {
-        return (
-            <DashboardLayout>
-                <Alert severity="error">{error}</Alert>
-            </DashboardLayout>
-        );
-    }
-
-    if (!loading && !isAdmin) {
-        return (
-            <DashboardLayout>
-                <Alert severity="warning">You do not have access to Admin tools.</Alert>
-            </DashboardLayout>
-        );
-    }
-
     return (
-        <DashboardLayout loading={loading} currentTrail={[{ label: 'Admin', href: '/dashboard' }, { label: 'Jobs', href: '/dashboard/admin/jobs' }]}>
-            {!loading && (
-                <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 600, mb: 3 }}>Admin Jobs</Typography>
+        <AdminPage title="Admin Jobs" trail={[{ label: 'Jobs', href: '/dashboard/admin/jobs' }] }>
+            <Box>
+                <Stack spacing={3} sx={{ maxWidth: 700 }}>
+                    <FormControl fullWidth>
+                        <InputLabel id="job-select-label">Job</InputLabel>
+                        <Select
+                            labelId="job-select-label"
+                            id="job-select"
+                            value={selectedJob}
+                            label="Job"
+                            onChange={handleJobChange}
+                        >
+                            {jobs.map(j => (
+                                <MenuItem key={j.name} value={j.name}>{j.name}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
 
-                    <Stack spacing={3} sx={{ maxWidth: 700 }}>
-                        <FormControl fullWidth>
-                            <InputLabel id="job-select-label">Job</InputLabel>
-                            <Select
-                                labelId="job-select-label"
-                                id="job-select"
-                                value={selectedJob}
-                                label="Job"
-                                onChange={handleJobChange}
-                            >
-                                {jobs.map(j => (
-                                    <MenuItem key={j.name} value={j.name}>{j.name}</MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                    {selectedMeta?.supportsDate && (
+                        <TextField
+                            label="Date (optional)"
+                            type="datetime-local"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            helperText="If set, process for this date/time; otherwise, uses now"
+                            slotProps={{ inputLabel: { shrink: true } }}
+                            fullWidth
+                        />
+                    )}
 
-                        {selectedMeta?.supportsDate && (
-                            <TextField
-                                label="Date (optional)"
-                                type="datetime-local"
-                                value={date}
-                                onChange={(e) => setDate(e.target.value)}
-                                helperText="If set, process for this date/time; otherwise, uses now"
-                                slotProps={{ inputLabel: { shrink: true } }}
-                                fullWidth
-                            />
-                        )}
+                    {selectedMeta?.supportsForce && (
+                        <FormControlLabel
+                            control={<Checkbox checked={force} onChange={(_e, checked) => setForce(checked)} />}
+                            label="Force (bypass idempotency if supported)"
+                        />
+                    )}
 
-                        {selectedMeta?.supportsForce && (
-                            <FormControlLabel
-                                control={<Checkbox checked={force} onChange={(_e, checked) => setForce(checked)} />}
-                                label="Force (bypass idempotency if supported)"
-                            />
-                        )}
-
-                        <Stack direction="row" spacing={2}>
-                            <Button variant="contained" color="primary" onClick={handleTrigger} disabled={submitting}>
-                                {submitting ? 'Triggering…' : 'Trigger Job'}
-                            </Button>
-                            <Button variant="outlined" onClick={() => { setDate(''); setForce(false); setResult(null); }} disabled={submitting}>Reset</Button>
-                        </Stack>
-
-                        <Card variant="outlined">
-                            <CardContent>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                                    <Typography variant="h6">Heartbeat</Typography>
-                                    <Button size="small" onClick={() => void loadLastHeartbeat()} disabled={loadingHeartbeat}>Refresh</Button>
-                                </Stack>
-                                {lastHeartbeat ? (
-                                    <>
-                                        <Typography variant="body2">Received at: {new Date(lastHeartbeat.receivedAt).toLocaleString()}</Typography>
-                                        <Typography variant="body2">Worker started at: {new Date(lastHeartbeat.startedAt).toLocaleString()}</Typography>
-                                        <Typography variant="body2">Backend: {lastHeartbeat.backend}</Typography>
-                                    </>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">No heartbeat observed yet.</Typography>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card variant="outlined">
-                            <CardContent>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                                    <Typography variant="h6">Birthdays today</Typography>
-                                    <Button size="small" onClick={() => void loadBirthdaysToday()} disabled={loadingBirthdaysToday}>Refresh</Button>
-                                </Stack>
-                                {birthdaysToday !== null ? (
-                                    <Typography variant="body2">Processed: {birthdaysToday}</Typography>
-                                ) : (
-                                    <Typography variant="body2" color="text.secondary">No data yet.</Typography>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card variant="outlined">
-                            <CardContent>
-                                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                                    <Typography variant="h6">Recent runs — {selectedJob}</Typography>
-                                    <Button size="small" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus}>Refresh</Button>
-                                </Stack>
-                                {runs.length === 0 ? (
-                                    <Typography variant="body2" color="text.secondary">No recent runs.</Typography>
-                                ) : (
-                                    <>
-                                        {runs.map((r, idx) => (
-                                            <React.Fragment key={idx}>
-                                                {idx > 0 && <Divider sx={{ my: 0.5 }} />}
-                                                {renderRunSummary(r, idx)}
-                                            </React.Fragment>
-                                        ))}
-                                    </>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {result && result.ok && (
-                            <Alert severity="success">Scheduled! Job ID: {String(result.jobId)}</Alert>
-                        )}
-                        {result && !result.ok && (
-                            <Alert severity="error">Failed: {result.error}</Alert>
-                        )}
+                    <Stack direction="row" spacing={2}>
+                        <Button variant="contained" color="primary" onClick={handleTrigger} disabled={submitting}>
+                            {submitting ? 'Triggering…' : 'Trigger Job'}
+                        </Button>
+                        <Button variant="outlined" onClick={() => { setDate(''); setForce(false); setResult(null); }} disabled={submitting}>Reset</Button>
                     </Stack>
-                </Box>
-            )}
-        </DashboardLayout>
+
+                    <Card variant="outlined">
+                        <CardContent>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="h6">Heartbeat</Typography>
+                                <Button size="small" onClick={() => void loadLastHeartbeat()} disabled={loadingHeartbeat}>Refresh</Button>
+                            </Stack>
+                            {lastHeartbeat ? (
+                                <>
+                                    <Typography variant="body2">Received at: {new Date(lastHeartbeat.receivedAt).toLocaleString()}</Typography>
+                                    <Typography variant="body2">Worker started at: {new Date(lastHeartbeat.startedAt).toLocaleString()}</Typography>
+                                    <Typography variant="body2">Backend: {lastHeartbeat.backend}</Typography>
+                                </>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">No heartbeat observed yet.</Typography>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="outlined">
+                        <CardContent>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="h6">Birthdays today</Typography>
+                                <Button size="small" onClick={() => void loadBirthdaysToday()} disabled={loadingBirthdaysToday}>Refresh</Button>
+                            </Stack>
+                            {birthdaysToday !== null ? (
+                                <Typography variant="body2">Processed: {birthdaysToday}</Typography>
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">No data yet.</Typography>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card variant="outlined">
+                        <CardContent>
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                                <Typography variant="h6">Recent runs — {selectedJob}</Typography>
+                                <Button size="small" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus}>Refresh</Button>
+                            </Stack>
+                            {runs.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">No recent runs.</Typography>
+                            ) : (
+                                <>
+                                    {runs.map((r, idx) => (
+                                        <React.Fragment key={idx}>
+                                            {idx > 0 && <Divider sx={{ my: 0.5 }} />}
+                                            {renderRunSummary(r, idx)}
+                                        </React.Fragment>
+                                    ))}
+                                </>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {result && result.ok && (
+                        <Alert severity="success">Scheduled! Job ID: {String(result.jobId)}</Alert>
+                    )}
+                    {result && !result.ok && (
+                        <Alert severity="error">Failed: {result.error}</Alert>
+                    )}
+                </Stack>
+            </Box>
+        </AdminPage>
     );
 }

@@ -136,6 +136,13 @@ export type discord_users_resolve_post_Request = paths["/discord/users/resolve"]
 export type discord_guilds_guildId_members_search_get_Response200 = paths["/discord/guilds/{guildId}/members/search"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Request body for [POST /jobs/{name}/run]
+ *
+ * @see paths["/jobs/{name}/run"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type jobs_name_run_post_Request = paths["/jobs/{name}/run"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
  * Response for [GET /patchNotes 200]
  *
  * @see paths["/patchNotes"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -248,6 +255,69 @@ export type servers_post_Request = paths["/servers"]["post"]["requestBody"]["con
 export type servers_serverId_put_Request = paths["/servers/{serverId}"]["put"]["requestBody"]["content"]["application/json"];
 
 /**
+ * Response for [GET /tiktok 200]
+ *
+ * @see paths["/tiktok"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_get_Response200 = paths["/tiktok"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [POST /tiktok 201]
+ *
+ * @see paths["/tiktok"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type tiktok_post_Response201 = paths["/tiktok"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /tiktok]
+ *
+ * @see paths["/tiktok"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type tiktok_post_Request = paths["/tiktok"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [GET /tiktok/exists 200]
+ *
+ * @see paths["/tiktok/exists"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_exists_get_Response200 = paths["/tiktok/exists"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /tiktok/live 200]
+ *
+ * @see paths["/tiktok/live"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_live_get_Response200 = paths["/tiktok/live"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /tiktok/{id} 200]
+ *
+ * @see paths["/tiktok/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_id_get_Response200 = paths["/tiktok/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [PUT /tiktok/{id} 200]
+ *
+ * @see paths["/tiktok/{id}"]["put"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_id_put_Response200 = paths["/tiktok/{id}"]["put"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [PUT /tiktok/{id}]
+ *
+ * @see paths["/tiktok/{id}"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type tiktok_id_put_Request = paths["/tiktok/{id}"]["put"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [DELETE /tiktok/{id} 200]
+ *
+ * @see paths["/tiktok/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type tiktok_id_delete_Response200 = paths["/tiktok/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /twitch 200]
  *
  * @see paths["/twitch"]["get"]["responses"]["200"]["content"]["application/json"]
@@ -274,6 +344,13 @@ export type twitch_post_Request = paths["/twitch"]["post"]["requestBody"]["conte
  * @see paths["/twitch/exists"]["get"]["responses"]["200"]["content"]["application/json"]
  */
 export type twitch_exists_get_Response200 = paths["/twitch/exists"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /twitch/verify 200]
+ *
+ * @see paths["/twitch/verify"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type twitch_verify_get_Response200 = paths["/twitch/verify"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
  * Response for [GET /twitch/{id} 200]
@@ -365,6 +442,13 @@ export type youtube_put_Response200 = paths["/youtube"]["put"]["responses"]["200
  * @see paths["/youtube"]["put"]["requestBody"]["content"]["application/json"]
  */
 export type youtube_put_Request = paths["/youtube"]["put"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [GET /youtube/resolve 200]
+ *
+ * @see paths["/youtube/resolve"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type youtube_resolve_get_Response200 = paths["/youtube/resolve"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
  * Response for [GET /youtube/channel 200]

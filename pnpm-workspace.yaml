@@ -9,5 +9,6 @@ ignoredBuiltDependencies:
 onlyBuiltDependencies:
   - '@scarf/scarf'
   - canvas
+  - protobufjs
   - sharp
   - sqlite3

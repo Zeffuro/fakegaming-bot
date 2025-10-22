@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupCommandTest, expectEphemeralReply, expectReplyText } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
-import { v4 as _uuidv4 } from 'uuid';
 import { parseTimespan } from '@zeffuro/fakegaming-common/utils';
 
 // Mock the uuid library
@@ -16,9 +15,9 @@ vi.mock('@zeffuro/fakegaming-common/utils', () => ({
 
 describe('setReminder command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
 
         // Make Date.now() return a consistent value
         vi.spyOn(Date, 'now').mockReturnValue(1633027200000); // October 1, 2021

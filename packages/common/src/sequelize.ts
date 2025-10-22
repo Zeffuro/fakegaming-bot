@@ -14,7 +14,8 @@ import {DisabledCommandConfig} from "./models/disabled-command-config.js";
 import {CacheConfig} from "./models/cache-config.js";
 import {Notification} from './models/notification.js';
 import {DisabledModuleConfig} from './models/disabled-module-config.js';
-import { JobRun } from './models/job-run.js';
+import {TikTokStreamConfig} from './models/tiktok-stream-config.js';
+import {JobRun} from './models/job-run.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -26,7 +27,12 @@ export function getSequelize(useTest = false): Sequelize {
 
     const provider: Dialect = process.env.DATABASE_PROVIDER as Dialect;
     const dbUrl = process.env.DATABASE_URL?.replace(/^"|"$/g, '');
-    const sqlitePath = useTest ? ':memory:' : path.join(resolveDataRoot(), 'dev.sqlite');
+
+    // Prefer a shared on-disk SQLite file in tests when provided to avoid per-worker in-memory DBs
+    const testSqliteFile = useTest ? process.env.TEST_SQLITE_FILE : undefined;
+    const sqlitePath = testSqliteFile && testSqliteFile.length > 0
+        ? testSqliteFile
+        : (useTest ? ':memory:' : path.join(resolveDataRoot(), 'dev.sqlite'));
 
     const options: Options = {
         dialect: provider,
@@ -57,7 +63,8 @@ export function getSequelize(useTest = false): Sequelize {
         CacheConfig,
         Notification,
         DisabledModuleConfig,
-        JobRun
+        JobRun,
+        TikTokStreamConfig
     ]);
 
     return sequelize;

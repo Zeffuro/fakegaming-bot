@@ -5,9 +5,9 @@ import { assertGetByAuthorCalled, expectReplyContains } from './helpers/quotesTe
 
 describe('quotes command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     // Helper to setup the command with common options

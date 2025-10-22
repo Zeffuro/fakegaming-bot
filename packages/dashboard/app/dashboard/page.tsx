@@ -33,8 +33,8 @@ export default function Dashboard() {
                             Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
                         </Typography>
                         {isAdmin && (
-                            <Button variant="contained" color="primary" onClick={() => router.push('/dashboard/admin/jobs')}>
-                                Admin Jobs
+                            <Button variant="contained" color="primary" onClick={() => router.push('/dashboard/admin')}>
+                                Admin Panel
                             </Button>
                         )}
                     </Stack>

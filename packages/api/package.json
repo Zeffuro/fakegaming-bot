@@ -18,7 +18,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "export:openapi": "pnpm --filter @zeffuro/fakegaming-common run build; pnpm tsx scripts/export-openapi.ts",
+    "export:openapi": "pnpm --filter @zeffuro/fakegaming-common run build && pnpm exec tsx scripts/export-openapi.ts",
     "postbuild": "pnpm run export:openapi"
   },
   "dependencies": {
@@ -35,7 +35,8 @@
     "swagger-ui-express": "^5.0.1",
     "zod": "^4.1.12",
     "pg-boss": "^11.1.1",
-    "rss-parser": "^3.13.0"
+    "rss-parser": "^3.13.0",
+    "tiktok-live-connector": "^2.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

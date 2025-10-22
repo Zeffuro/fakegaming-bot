@@ -42,6 +42,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Shared module"
     },
     {
+        "name": "tiktok",
+        "title": "Tiktok",
+        "description": "Tiktok module"
+    },
+    {
         "name": "twitch",
         "title": "Twitch",
         "description": "Twitch module"
@@ -229,6 +234,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "name": "set-timezone",
         "description": "Set your timezone",
         "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "add-tiktok-stream",
+        "description": "Add a TikTok account for live notifications",
+        "module": "tiktok",
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
@@ -496,6 +510,24 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             "description": "Shared module"
         },
         "commands": []
+    },
+    {
+        "module": {
+            "name": "tiktok",
+            "title": "Tiktok",
+            "description": "Tiktok module"
+        },
+        "commands": [
+            {
+                "name": "add-tiktok-stream",
+                "description": "Add a TikTok account for live notifications",
+                "module": "tiktok",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            }
+        ]
     },
     {
         "module": {

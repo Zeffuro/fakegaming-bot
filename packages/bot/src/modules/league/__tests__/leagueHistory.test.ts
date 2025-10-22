@@ -39,9 +39,9 @@ vi.mock('discord.js', async (importOriginal) => {
 
 describe('leagueHistory command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history before each test without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     const H = makeHistoryTestHelpers({

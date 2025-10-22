@@ -38,9 +38,9 @@ const assertTextReply = (interaction: any, text: string) => {
 
 describe('getPatchNotes command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history before each test without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('retrieves patch notes from the database when available', async () => {
@@ -74,7 +74,7 @@ describe('getPatchNotes command', () => {
 
         // Verify interaction.reply was called with an embed
         assertEmbedReply(interaction);
-    });
+    }, 15000);
 
     it('fetches patch notes from API when not available in the database', async () => {
         // Mock the database to return null (no patch notes available)

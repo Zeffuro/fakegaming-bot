@@ -1,79 +1,32 @@
 import fs from 'fs';
 import path from 'path';
-import { pathToFileURL } from 'url';
-import { PROJECT_ROOT } from '@zeffuro/fakegaming-common/core';
-const modulesPath = fs.existsSync(path.join(PROJECT_ROOT, 'packages/bot/src/modules'))
-    ? path.join(PROJECT_ROOT, 'packages/bot/src/modules')
-    : path.join(PROJECT_ROOT, 'packages/bot/dist/modules');
-function findCommandDirs(modulesPath) {
-    if (!fs.existsSync(modulesPath)) {
-        console.error(`ERROR: modules directory not found at ${modulesPath}`);
-        process.exit(1);
-    }
-    const moduleFolders = fs.readdirSync(modulesPath, { withFileTypes: true })
-        .filter(f => f.isDirectory())
-        .map(f => f.name);
-    const commandDirs = [];
-    for (const folder of moduleFolders) {
-        const commandsPath = path.join(modulesPath, folder, 'commands');
-        if (fs.existsSync(commandsPath)) {
-            console.log(`Found commands folder: ${commandsPath}`);
-            commandDirs.push(commandsPath);
-        }
-        else {
-            console.log(`No commands folder in: ${folder}`);
-        }
-    }
-    return commandDirs;
-}
-async function loadCommands(commandDirs) {
-    const commands = [];
-    for (const dir of commandDirs) {
-        const files = fs.readdirSync(dir).filter(f => f.endsWith('.js') || f.endsWith('.ts'));
-        if (files.length === 0) {
-            console.log(`No command files in: ${dir}`);
-            continue;
-        }
-        for (const file of files) {
-            const cmdPath = path.join(dir, file);
-            try {
-                const commandModule = await import(pathToFileURL(cmdPath).href);
-                const cmd = commandModule.default || commandModule;
-                if (cmd && cmd.data && cmd.data.name && cmd.data.description) {
-                    commands.push({
-                        name: cmd.data.name,
-                        description: cmd.data.description,
-                        permissions: cmd.permissions || 'All users'
-                    });
-                    console.log(`Loaded command: ${cmd.data.name} from ${cmdPath}`);
-                }
-                else {
-                    console.warn(`Skipping ${cmdPath}: missing data.name or data.description`);
-                }
-            }
-            catch (e) {
-                console.error(`Failed to import ${cmdPath}:`, e);
-            }
-        }
-    }
-    return commands;
-}
+import { fileURLToPath, pathToFileURL } from 'url';
+// Resolve project root based on this script location (repoRoot/scripts/..)
+const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 function generateTable(commands) {
     let table = `| Command | Description | Permissions |\n|---------|-------------|-------------|\n`;
-    for (const cmd of commands.sort((a, b) => a.name.localeCompare(b.name))) {
-        table += `|\`/${cmd.name}\`|${cmd.description}|${cmd.permissions}|\n`;
+    const sorted = [...commands].sort((a, b) => a.name.localeCompare(b.name));
+    for (const cmd of sorted) {
+        const perms = cmd.permissions ?? 'All users';
+        table += `|\`/${cmd.name}\`|${cmd.description}|${perms}|\n`;
     }
     return table;
 }
 async function main() {
-    console.log(`Scanning modulesPath: ${modulesPath}`);
-    const commandDirs = findCommandDirs(modulesPath);
-    const commands = await loadCommands(commandDirs);
+    // Load the generated manifest directly to avoid importing bot code
+    const manifestPath = path.join(PROJECT_ROOT, 'packages/common/src/manifest/bot-manifest.ts');
+    if (!fs.existsSync(manifestPath)) {
+        console.error(`ERROR: Manifest not found at ${manifestPath}. Run: pnpm run gen:manifest`);
+        process.exit(1);
+        return;
+    }
+    const mod = (await import(pathToFileURL(manifestPath).href));
+    const commands = Array.isArray(mod.BOT_COMMANDS) ? mod.BOT_COMMANDS : [];
     if (commands.length === 0) {
-        console.warn('WARNING: No commands found. The command table will be empty.');
+        console.warn('WARNING: No commands in manifest. The command table will be empty.');
     }
     else {
-        console.log(`Found ${commands.length} commands in ${commandDirs.length} directories.`);
+        console.log(`Using ${commands.length} commands from manifest.`);
     }
     const table = generateTable(commands);
     // README is at project root
@@ -85,14 +38,16 @@ async function main() {
     catch (err) {
         console.error(`ERROR: Could not read README at ${readmePath}:`, err);
         process.exit(1);
+        return;
     }
     const start = '<!-- COMMAND_TABLE_START -->';
     const end = '<!-- COMMAND_TABLE_END -->';
     const regex = new RegExp(`${start}[\\s\\S]*?${end}`, 'm');
     const newSection = `${start}\n\n${table}${end}`;
     let updated = false;
-    if (regex.test(readme)) {
-        if (readme.match(regex)[0] !== newSection) {
+    const match = readme.match(regex);
+    if (match) {
+        if (match[0] !== newSection) {
             readme = readme.replace(regex, newSection);
             updated = true;
         }
@@ -102,11 +57,14 @@ async function main() {
         updated = true;
     }
     if (updated) {
-        fs.writeFileSync(readmePath, readme);
+        fs.writeFileSync(readmePath, readme, 'utf8');
         console.log('README.md command table updated!');
     }
     else {
         console.log('README.md command table is already up-to-date.');
     }
 }
-main();
+main().catch(err => {
+    console.error(err);
+    process.exit(1);
+});

@@ -85,6 +85,7 @@ function buildTwitchEmbedAndContent(opts: { user: HelixUser; stream: HelixStream
     const { user, stream } = opts;
     const gameName = opts.gameName ?? null;
     const url = `https://twitch.tv/${user.login}`;
+    const urlSafe = `<${url}>`;
     const startedAtMs = stream.started_at ? Date.parse(stream.started_at) : NaN;
     const uptimeMs = Number.isFinite(startedAtMs) ? Math.max(0, Date.now() - startedAtMs) : null;
     const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatUptimeShort(uptimeMs) : null;
@@ -109,15 +110,15 @@ function buildTwitchEmbedAndContent(opts: { user: HelixUser; stream: HelixStream
         streamer: user.display_name || user.login || '',
         title: stream.title || '',
         game: gameName || '',
-        url,
+        url: urlSafe,
         uptime: uptimeStr || '',
         viewers: typeof stream.viewer_count === 'number' ? String(stream.viewer_count) : ''
     };
-    let content = `Hey @everyone, ${user.display_name || user.login} is now live on ${url}!`;
+    let content = `Hey @everyone, ${user.display_name || user.login} is now live! ${urlSafe}`;
     if (opts.customMessage) {
         const tmpl = String(opts.customMessage);
         content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${url}`;
+        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
     }
 
     return { content, payload: { content, embeds: [embed], components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Watch Stream', url }] }] } };
@@ -217,4 +218,3 @@ export async function registerTwitchJobs(queue: JobQueue, now: Date = new Date()
 
     log.info('Scheduled Twitch polling job');
 }
-

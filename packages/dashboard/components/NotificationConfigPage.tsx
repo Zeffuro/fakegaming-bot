@@ -144,6 +144,23 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                                 </Button>
                                 <Button
                                     component={Link}
+                                    href={`/dashboard/tiktok/${encodeURIComponent(guildId)}`}
+                                    startIcon={<LiveTv />}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: 'none',
+                                        bgcolor: moduleName === 'TikTok' ? '#000000' : 'grey.800',
+                                        color: moduleName === 'TikTok' ? 'white' : 'grey.300',
+                                        borderColor: 'grey.600',
+                                        '&:hover': {
+                                            bgcolor: moduleName === 'TikTok' ? '#111111' : 'grey.700'
+                                        }
+                                    }}
+                                >
+                                    TikTok
+                                </Button>
+                                <Button
+                                    component={Link}
                                     href={`/dashboard/youtube/${encodeURIComponent(guildId)}`}
                                     startIcon={<YouTubeIcon />}
                                     sx={{

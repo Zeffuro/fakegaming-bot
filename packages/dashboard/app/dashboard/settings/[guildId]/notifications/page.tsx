@@ -8,14 +8,16 @@ import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
+import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const twitchApi = useTwitchConfigs(guildId as string);
     const youtubeApi = useYouTubeConfigs(guildId as string);
     const patchApi = usePatchSubscriptions(guildId as string);
+    const tiktokApi = useTikTokConfigs(guildId as string);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading;
 
     if (!guild && !guildsLoading) {
         return (
@@ -38,7 +40,7 @@ export default function GuildNotificationsHubPage() {
                                 Notifications
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
-                                Manage Twitch, YouTube and Patch Notes notifications for this server.
+                                Manage Twitch, TikTok, YouTube and Patch Notes notifications for this server.
                             </Typography>
                         </Box>
                     </Box>
@@ -64,6 +66,31 @@ export default function GuildNotificationsHubPage() {
                                     }}
                                 >
                                     Manage Twitch
+                                </Button>
+                            </Paper>
+                        </Grid>
+
+                        {/* TikTok card */}
+                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
+                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
+                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                    <LiveTv color="secondary" />
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>TikTok Live Notifications</Typography>
+                                    <Chip size="small" label={`${tiktokApi.configs.length} configured`} sx={{ ml: 'auto' }} />
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    Configure stream alerts: channel, destination, custom message, cooldown and quiet hours.
+                                </Typography>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/tiktok/${encodeURIComponent(guildId as string)}`}
+                                    variant="contained"
+                                    sx={{
+                                        bgcolor: '#000000',
+                                        '&:hover': { bgcolor: '#000000', filter: 'brightness(0.9)' }
+                                    }}
+                                >
+                                    Manage TikTok
                                 </Button>
                             </Paper>
                         </Grid>

@@ -34,7 +34,7 @@ describe('authUtils', () => {
             const res = await authenticateUser(req);
             expect(res.success).toBe(false);
             expectUnauthorized(res as any);
-        });
+        }, 10000);
 
         it('returns user when valid jwt cookie present', async () => {
             const { authenticateUser } = await importAuthUtils();

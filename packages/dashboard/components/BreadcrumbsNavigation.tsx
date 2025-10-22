@@ -33,6 +33,7 @@ export default function BreadcrumbsNavigation({ guild, currentModule, currentTra
       }
     ];
 
+    // If we have a guild, include it and then either a provided trail or module
     if (guild) {
       breadcrumbs.push({
         label: guild.name,
@@ -50,16 +51,22 @@ export default function BreadcrumbsNavigation({ guild, currentModule, currentTra
       });
 
       if (Array.isArray(currentTrail) && currentTrail.length > 0) {
-        // Use explicit multi-level trail when provided
         for (const item of currentTrail) {
           breadcrumbs.push({ label: item.label, href: item.href ?? null, icon: item.icon });
         }
       } else if (currentModule) {
-        // Back-compat: single module breadcrumb
         breadcrumbs.push({
           label: currentModule.charAt(0).toUpperCase() + currentModule.slice(1),
           href: null
         });
+      }
+      return breadcrumbs;
+    }
+
+    // No guild context: still respect an explicit trail following Dashboard
+    if (Array.isArray(currentTrail) && currentTrail.length > 0) {
+      for (const item of currentTrail) {
+        breadcrumbs.push({ label: item.label, href: item.href ?? null, icon: item.icon });
       }
     }
 

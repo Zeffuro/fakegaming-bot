@@ -4,6 +4,7 @@ import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
 
 import { getSequelize } from './sequelize.js';
+export { closeSequelize } from './sequelize.js';
 
 import { cacheGet, cacheSet, cacheDel, ensureRedis } from './cache.js';
 import { CACHE_KEYS, CACHE_TTL, getCacheManager, defaultCacheManager, type CacheManager } from './utils/cacheManager.js';
@@ -28,7 +29,8 @@ export {
   CacheConfig,
   Notification,
   DisabledModuleConfig,
-  JobRun
+  JobRun,
+  TikTokStreamConfig
 } from './models/index.js';
 
 export {
@@ -48,7 +50,8 @@ export {
   BirthdayManager,
   PatchNotesManager,
   DisabledCommandManager,
-  NotificationsManager
+  NotificationsManager,
+  TikTokManager
 } from './managers/index.js';
 
 export {
@@ -142,3 +145,6 @@ export * from './jobs/index.js';
 
 // Patch notes fetchers (shared)
 export * from './patchnotes/index.js';
+
+// TikTok utilities (shared)
+export * from './utils/tiktok.js';

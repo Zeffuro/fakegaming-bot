@@ -14,9 +14,9 @@ vi.mock('../../../utils/permissions.js', () => ({
 
 describe('addTwitchStream command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     const H = makeAddTwitchTestHelpers();

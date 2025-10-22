@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
+import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 
 interface ModuleCardProps {
   title: string;
@@ -139,14 +140,18 @@ export default function GuildDashboard() {
 
   // Load provider configs to display a combined count on the Notifications Hub card
   const twitchApi = useTwitchConfigs(String(guildId));
+  const tiktokApi = useTikTokConfigs(String(guildId));
   const youtubeApi = useYouTubeConfigs(String(guildId));
   const patchApi = usePatchSubscriptions(String(guildId));
-  const hubLoading = twitchApi.loading || youtubeApi.loading || patchApi.loading;
-  const totalConfigured = (twitchApi.configs?.length ?? 0) + (youtubeApi.configs?.length ?? 0) + (patchApi.configs?.length ?? 0);
+  const hubLoading = twitchApi.loading || tiktokApi.loading || youtubeApi.loading || patchApi.loading;
+  const totalConfigured = (twitchApi.configs?.length ?? 0) + (tiktokApi.configs?.length ?? 0) + (youtubeApi.configs?.length ?? 0) + (patchApi.configs?.length ?? 0);
   const hubChip = hubLoading ? 'loading…' : `${totalConfigured} configured`;
-  const hubBreakdown = hubLoading ? 'loading…' : `Twitch ${(twitchApi.configs?.length ?? 0)} • YouTube ${(youtubeApi.configs?.length ?? 0)} • Patch Notes ${(patchApi.configs?.length ?? 0)}`;
+  const hubBreakdown = hubLoading
+    ? 'loading…'
+    : `Twitch ${(twitchApi.configs?.length ?? 0)} • TikTok ${(tiktokApi.configs?.length ?? 0)} • YouTube ${(youtubeApi.configs?.length ?? 0)} • Patch Notes ${(patchApi.configs?.length ?? 0)}`;
   // individual chips per module
   const twitchChip = twitchApi.loading ? 'loading…' : `${twitchApi.configs?.length ?? 0} configured`;
+  const tiktokChip = tiktokApi.loading ? 'loading…' : `${tiktokApi.configs?.length ?? 0} configured`;
   const youtubeChip = youtubeApi.loading ? 'loading…' : `${youtubeApi.configs?.length ?? 0} configured`;
   const patchChip = patchApi.loading ? 'loading…' : `${patchApi.configs?.length ?? 0} configured`;
 
@@ -163,7 +168,7 @@ export default function GuildDashboard() {
   const modules: ModuleCardProps[] = [
     {
       title: "Notifications Hub",
-      description: "Open the central settings for Twitch, YouTube, and Patch Notes notifications.",
+      description: "Open the central settings for Twitch, TikTok, YouTube, and Patch Notes notifications.",
       icon: <NotificationsActive />,
       status: "active",
       href: `/dashboard/settings/${guildId}/notifications`,
@@ -192,6 +197,14 @@ export default function GuildDashboard() {
       status: "active",
       href: `/dashboard/twitch/${guildId}`,
       chipLabel: twitchChip
+    },
+    {
+      title: "TikTok Integration",
+      description: "Configure TikTok live notifications and live alerts.",
+      icon: <LiveTv />,
+      status: "active",
+      href: `/dashboard/tiktok/${guildId}`,
+      chipLabel: tiktokChip
     },
     {
       title: "Server Settings",

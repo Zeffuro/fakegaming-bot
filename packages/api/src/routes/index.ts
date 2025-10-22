@@ -41,6 +41,10 @@ function getRouteFiles(dir: string): string[] {
 
 const routeFiles = getRouteFiles(routesDir);
 
+function isExpressRouter(obj: unknown): obj is Router {
+    return !!obj && typeof obj === 'function' && typeof (obj as unknown as { use?: unknown }).use === 'function';
+}
+
 for (const file of routeFiles) {
     // Generate a route path relative to routesDir
     let routePath =
@@ -53,9 +57,14 @@ for (const file of routeFiles) {
     // Dynamic import using a relative specifier so Vitest/Vite can transform and mock dependencies
     const relativeSpecifier = './' + path.posix.relative(routesDir.replace(/\\/g, '/'), file.replace(/\\/g, '/'));
     const routeModule = await import(relativeSpecifier);
-    const routeHandler = (routeModule.router || routeModule.default) as Router;
+    const candidate = (routeModule.router ?? routeModule.default) as unknown;
 
-    router.use(routePath, routeHandler);
+    if (!isExpressRouter(candidate)) {
+        // Skip files that do not export an Express Router (e.g., schema or helper files)
+        continue;
+    }
+
+    router.use(routePath, candidate);
 }
 
 export { router };

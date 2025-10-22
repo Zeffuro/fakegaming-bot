@@ -101,9 +101,9 @@ async function setupSubscribeTest(opts: {
 
 describe('subscribePatchNotes command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('subscribes a channel to patch notes and shows latest patch when available', async () => {

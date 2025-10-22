@@ -153,6 +153,6 @@ describe('Twitch job branches', () => {
         const payload = call[1];
         expect(typeof payload?.content).toBe('string');
         expect(payload.content).toContain('Live now: Great Stream');
-        expect(payload.content).toContain('\nhttps://twitch.tv/custom');
+        expect(String(payload.content)).toMatch(/\n<?https:\/\/twitch\.tv\/custom>?/);
     });
 });

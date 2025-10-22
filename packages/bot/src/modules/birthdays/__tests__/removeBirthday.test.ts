@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupCommandTest, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction } from 'discord.js';
 
+// Hoist mock for requireAdmin to allow per-test configuration via vi.mocked
+vi.mock('../../../utils/permissions.js', () => ({
+    requireAdmin: vi.fn()
+}));
+
 describe('removeBirthday command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset calls but keep hoisted mocks intact
+        vi.clearAllMocks();
     });
 
     // Local helpers
@@ -54,17 +58,14 @@ describe('removeBirthday command', () => {
     });
 
     it('allows admin to remove another user\'s birthday', async () => {
+        const { requireAdmin } = await import('../../../utils/permissions.js');
+        vi.mocked(requireAdmin).mockResolvedValue(true);
+
         // Target user ID
         const targetUserId = '234567890123456789';
 
         // Create mocks
         const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
-        const requireAdminSpy = vi.fn().mockResolvedValue(true); // User is admin
-
-        // Mock the requireAdmin function
-        vi.doMock('../../../utils/permissions.js', () => ({
-            requireAdmin: requireAdminSpy
-        }));
 
         // Setup the test environment with target user option
         const { command, interaction } = await setupRemoveBirthdayCmd({
@@ -86,7 +87,7 @@ describe('removeBirthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify requireAdmin was called
-        expect(requireAdminSpy).toHaveBeenCalledWith(interaction);
+        expect(requireAdmin).toHaveBeenCalledWith(interaction);
 
         // Verify removeBirthday was called with the target user's ID
         expect(removeBirthdaySpy).toHaveBeenCalledWith(targetUserId, '135381928284343204');
@@ -97,17 +98,14 @@ describe('removeBirthday command', () => {
     });
 
     it('prevents non-admin from removing another user\'s birthday', async () => {
+        const { requireAdmin } = await import('../../../utils/permissions.js');
+        vi.mocked(requireAdmin).mockResolvedValue(false);
+
         // Target user ID
         const targetUserId = '234567890123456789';
 
         // Create mocks
         const removeBirthdaySpy = vi.fn().mockResolvedValue(true);
-        const requireAdminSpy = vi.fn().mockResolvedValue(false); // User is NOT admin
-
-        // Mock the requireAdmin function
-        vi.doMock('../../../utils/permissions.js', () => ({
-            requireAdmin: requireAdminSpy
-        }));
 
         // Setup the test environment with target user option
         const { command, interaction } = await setupRemoveBirthdayCmd({
@@ -129,7 +127,7 @@ describe('removeBirthday command', () => {
         await command.execute(interaction as unknown as CommandInteraction);
 
         // Verify requireAdmin was called
-        expect(requireAdminSpy).toHaveBeenCalledWith(interaction);
+        expect(requireAdmin).toHaveBeenCalledWith(interaction);
 
         // Verify removeBirthday was NOT called
         expect(removeBirthdaySpy).not.toHaveBeenCalled();

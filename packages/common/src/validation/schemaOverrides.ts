@@ -77,5 +77,28 @@ export function registerSchemaOverrides(): void {
 
     schemaRegistry.registerCustom(Models.YoutubeVideoConfig as any, 'create', youtubeCreateSchema);
     schemaRegistry.registerCustom(Models.YoutubeVideoConfig as any, 'update', youtubeUpdateSchema);
-}
 
+    // TikTokStreamConfig: safe fields only; forbid isLive/lastNotifiedAt
+    const tiktokCreateSchema = z.object({
+        tiktokUsername: z.string().min(1),
+        discordChannelId: z.string().min(1),
+        guildId: z.string().min(1),
+        customMessage: z.string().optional(),
+        cooldownMinutes: z.number().int().min(0).nullable().optional(),
+        quietHoursStart: hhmm.nullable().optional(),
+        quietHoursEnd: hhmm.nullable().optional(),
+    }).strict();
+
+    const tiktokUpdateSchema = z.object({
+        tiktokUsername: z.string().min(1).optional(),
+        discordChannelId: z.string().min(1).optional(),
+        guildId: z.string().min(1).optional(),
+        customMessage: z.string().optional(),
+        cooldownMinutes: z.number().int().min(0).nullable().optional(),
+        quietHoursStart: hhmm.nullable().optional(),
+        quietHoursEnd: hhmm.nullable().optional(),
+    }).strict();
+
+    schemaRegistry.registerCustom(Models.TikTokStreamConfig as any, 'create', tiktokCreateSchema);
+    schemaRegistry.registerCustom(Models.TikTokStreamConfig as any, 'update', tiktokUpdateSchema);
+}

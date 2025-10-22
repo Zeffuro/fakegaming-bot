@@ -128,6 +128,7 @@ async function fetchYoutubeVideoDetailsBatch(videoIds: string[], log = getLogger
 function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, details?: YoutubeVideoDetails | null, customMessage?: string | null): { content: string; payload: Record<string, unknown> } {
     const videoId = item['yt:videoId'] ?? '';
     const url = item.link ?? (videoId ? `https://www.youtube.com/watch?v=${videoId}` : 'https://youtube.com');
+    const urlSafe = `<${url}>`;
     const author = item.author ?? 'Unknown';
     const title = item.title ?? null;
     const publishedIso = item.published ? new Date(item.published).toISOString() : new Date().toISOString();
@@ -154,15 +155,15 @@ function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, deta
     const tokens = {
         title: item.title ?? '',
         channel: author,
-        url,
+        url: urlSafe,
         duration: details?.duration ? (formatYoutubeDuration(details.duration) ?? '') : '',
         views: details?.viewCount ?? ''
     };
-    let content = `Hey @everyone, new video from ${author}: ${url}`;
+    let content = `Hey @everyone, new video from ${author}: ${urlSafe}`;
     if (customMessage) {
         const tmpl = String(customMessage);
         content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${url}`;
+        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
     }
     return { content, payload: { content, embeds: [embed], components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Watch Video', url }] }] } };
 }

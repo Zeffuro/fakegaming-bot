@@ -37,6 +37,7 @@ const ALLOWED_JOBS: Record<string, { queueName: string; acceptsDate?: boolean; a
     patchnotes: { queueName: 'patchnotes:run', acceptsDate: false, acceptsForce: false },
     twitch: { queueName: 'twitch:poll', acceptsDate: false, acceptsForce: false },
     youtube: { queueName: 'youtube:poll', acceptsDate: false, acceptsForce: false },
+    tiktok: { queueName: 'tiktok:poll', acceptsDate: false, acceptsForce: false },
 };
 
 /**
@@ -105,7 +106,7 @@ router.get('/heartbeat/last', jwtOrService, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube]
+ *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube, tiktok]
  *     responses:
  *       200:
  *         description: Recent runs for the specified job
@@ -163,7 +164,7 @@ router.get('/:name/status', jwtOrService, async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube]
+ *           enum: [birthdays, heartbeat, reminders, patchnotes, twitch, youtube, tiktok]
  *     requestBody:
  *       required: false
  *       content:

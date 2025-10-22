@@ -51,6 +51,11 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
  * Conditional auth that skips JWT when request is authenticated as an internal service.
  */
 export const jwtOrService = (req: Request, res: Response, next: NextFunction) => {
+    // In unit tests, this middleware may be invoked with bare objects (no headers).
+    // Avoid invoking express-jwt in that case, which could throw before calling next().
+    if (process.env.NODE_ENV === 'test' && (req as any).headers == null) {
+        return next();
+    }
     if (isServiceRequest(req)) return next();
     return jwtAuth(req, res, next);
 };

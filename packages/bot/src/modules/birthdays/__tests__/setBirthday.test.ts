@@ -4,9 +4,9 @@ import { CommandInteraction } from 'discord.js';
 
 describe('setBirthday command', () => {
     beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+        // Reset mock call history without tearing down module graph
+        vi.clearAllMocks();
+        vi.restoreAllMocks();
     });
 
     // Local helpers to reduce repetition

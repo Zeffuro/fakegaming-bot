@@ -10,3 +10,4 @@ export * from './time.js';
 export * from './logger.js';
 export * from './supportedGames.js';
 export * from './template.js';
+export * from './tiktok.js';

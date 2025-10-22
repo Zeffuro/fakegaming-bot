@@ -98,7 +98,9 @@ app.use('/api', (_req, _res, next) => {
 app.use(errorHandler);
 
 // Swagger setup (runtime-aware)
-const isProd = process.env.NODE_ENV === 'production';
+// Prefer dev-time generation when building OpenAPI, even if NODE_ENV=production
+const isOpenApiBuild = process.env.API_BUILD_MODE === 'openapi';
+const isProd = process.env.NODE_ENV === 'production' && !isOpenApiBuild;
 let swaggerSpec: any;
 const log = getLogger({ name: 'api:swagger' });
 if (isProd) {

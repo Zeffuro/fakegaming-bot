@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
 /**
@@ -24,18 +24,42 @@ export async function mountWithSnapshots<TSnapshot>(
         snapshots.push(snap);
     };
 
+    // Initial render wrapped in act
     await act(async () => {
         root.render(factory(onSnapshot));
-        // allow microtasks to flush
-        await Promise.resolve();
     });
 
-    const unmount = () => root.unmount();
-    const last = () => snapshots[snapshots.length - 1];
-    const flush = async () => {
-        await act(async () => {
-            await Promise.resolve();
+    // Helper to settle queued microtasks and macrotasks that may schedule updates
+    const settle = async () => {
+        let _prev = -1;
+        for (let i = 0; i < 10; i++) {
+            const before = snapshots.length;
+            await act(async () => {
+                // Flush microtasks first
+                await Promise.resolve();
+                // Then a macrotask tick for timers
+                await new Promise<void>((r) => setTimeout(r, 0));
+            });
+            const after = snapshots.length;
+            if (after === before && after === _prev) {
+                break;
+            }
+            _prev = after;
+        }
+    };
+
+    // Flush initial effects and possible async state updates before returning
+    await settle();
+
+    const unmount = () => {
+        act(() => {
+            root.unmount();
         });
+    };
+    const last = () => snapshots[snapshots.length - 1];
+
+    const flush = async () => {
+        await settle();
     };
 
     return { root, container, snapshots, last, unmount, flush };

@@ -1,16 +1,12 @@
 import { Sequelize } from 'sequelize';
 
 export const up = async ({ context }: { context: Sequelize }) => {
-    await context.getQueryInterface().addConstraint('BirthdayConfigs', {
-        fields: ['userId', 'guildId'],
-        type: 'unique',
-        name: 'unique_user_guild_birthday',
-    });
+    // Use a unique index to enforce constraint; add IF NOT EXISTS for idempotency across reruns
+    await context.query(
+        'CREATE UNIQUE INDEX IF NOT EXISTS unique_user_guild_birthday ON `BirthdayConfigs` ("userId", "guildId")'
+    );
 };
 
 export const down = async ({ context }: { context: Sequelize }) => {
-    await context.getQueryInterface().removeConstraint(
-        'BirthdayConfigs',
-        'unique_user_guild_birthday'
-    );
+    await context.query('DROP INDEX IF EXISTS unique_user_guild_birthday');
 };

@@ -235,6 +235,7 @@ Required:
 Optional:
 - `DASHBOARD_URL` - CORS origin for dashboard
 - `PORT` - Server port (default: 4000)
+- `SERVICE_API_TOKEN` / `INTERNAL_API_TOKEN` / `API_SERVICE_TOKEN` - Service-to-service token for `X-Service-Token` header
 
 ## Development
 
@@ -261,3 +262,46 @@ pnpm lint
 5. Documentation — Add OpenAPI comments to all endpoints
 6. Keep routes thin — Delegate to managers/services for business logic
 7. Type safety — Use strict TypeScript, no implicit `any`
+
+---
+
+## Service token curl examples
+
+The API supports service-to-service auth via the `X-Service-Token` header. Set one of these env vars on the API: `SERVICE_API_TOKEN`, `INTERNAL_API_TOKEN`, or `API_SERVICE_TOKEN`.
+
+- Direct API base URL in dev: `http://localhost:3001`
+
+### cmd.exe (Windows)
+
+- GET (verify TikTok username)
+```bat
+curl -H "X-Service-Token: <YOUR_SERVICE_TOKEN>" "http://localhost:3001/api/tiktok/verify?username=someone&debug=1"
+```
+
+- POST (create TikTok config)
+```bat
+curl -X POST -H "X-Service-Token: <YOUR_SERVICE_TOKEN>" -H "Content-Type: application/json" -d "{\"tiktokUsername\":\"streamer1\",\"discordChannelId\":\"chan-1\",\"guildId\":\"testguild1\"}" "http://localhost:3001/api/tiktok"
+```
+
+### PowerShell (Invoke-WebRequest / Invoke-RestMethod)
+
+Note: In PowerShell, `curl` is an alias for `Invoke-WebRequest`. Use `curl.exe` to invoke real curl, or pass headers via the `-Headers` hashtable.
+
+- GET with Invoke-WebRequest
+```powershell
+iwr -Method GET -Uri "http://localhost:3001/api/tiktok/verify?username=someone&debug=1" -Headers @{ 'X-Service-Token' = '<YOUR_SERVICE_TOKEN>' }
+```
+
+- GET with real curl
+```powershell
+curl.exe -H "X-Service-Token: <YOUR_SERVICE_TOKEN>" "http://localhost:3001/api/tiktok/verify?username=someone&debug=1"
+```
+
+- POST with Invoke-RestMethod
+```powershell
+$headers = @{ 'X-Service-Token' = '<YOUR_SERVICE_TOKEN>' }
+$body = @{ tiktokUsername = 'streamer1'; discordChannelId = 'chan-1'; guildId = 'testguild1' } | ConvertTo-Json -Compress
+irm -Method POST -Uri "http://localhost:3001/api/tiktok" -Headers $headers -ContentType "application/json" -Body $body
+```
+
+When using the dashboard proxy endpoints (`/api/external/...`) instead of the API directly, prefer user JWT + CSRF. For service calls, hit the API service directly and send `X-Service-Token`.

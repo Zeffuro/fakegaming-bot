@@ -11,6 +11,9 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./src/vitest.setup.ts'],
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    // Increase global timeouts to account for coverage transform and heavy command setup
+    testTimeout: 20000,
+    hookTimeout: 10000,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],

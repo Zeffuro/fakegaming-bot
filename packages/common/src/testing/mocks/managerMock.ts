@@ -79,41 +79,68 @@ const DEFAULT_MANAGER_MOCKS: Record<string, ManagerMethodMocks> = {
 };
 
 /**
+ * Applies manager method overrides to the target config object
+ */
+function applyManagerOverrides(targetConfig: any, managerOverrides: Record<string, ManagerMethodMocks>) {
+    for (const [key, overrides] of Object.entries(managerOverrides)) {
+        if (!targetConfig[key]) continue;
+        const manager = targetConfig[key] as Record<string, ReturnType<typeof vi.fn>>;
+        for (const [method, fn] of Object.entries(overrides)) {
+            // Replace or assign the method to the provided spy
+            (manager as any)[method] = fn as any;
+        }
+    }
+}
+
+/**
+ * Ensures there is an active mock ConfigManager, creating one if necessary,
+ * and applies any provided manager overrides
+ */
+function ensureActiveMock(managerOverrides: Record<string, ManagerMethodMocks> = {}): ConfigManager {
+    const g = globalThis as any;
+    if (!g.__FG_ACTIVE_CONFIG_MANAGER__ || !activeMockConfigManager) {
+        // Create a brand new mock config manager
+        const real = new ConfigManager();
+        const mockConfig: any = {};
+        for (const key of Object.keys(real)) {
+            const manager = (real as any)[key];
+            if (manager && typeof manager === 'object' && manager.constructor) {
+                const ManagerClass = manager.constructor;
+                const defaultMocks = DEFAULT_MANAGER_MOCKS[key] || {};
+                mockConfig[key] = createDynamicMockManager(ManagerClass, defaultMocks, {});
+            }
+        }
+        activeMockConfigManager = mockConfig;
+        g.__FG_ACTIVE_CONFIG_MANAGER__ = activeMockConfigManager;
+    }
+    // Apply overrides onto existing instance to preserve object identity and any spies
+    applyManagerOverrides(activeMockConfigManager, managerOverrides);
+    return activeMockConfigManager as ConfigManager;
+}
+
+/**
  * Creates a complete mock ConfigManager by dynamically discovering all managers
  * from the real ConfigManager class and creating mocks for each
  */
 export function createMockConfigManager(managerOverrides: Record<string, ManagerMethodMocks> = {}): ConfigManager {
-    const realConfigManager = new ConfigManager();
-    const mockConfig: any = {};
-
-    // Dynamically discover all manager properties from ConfigManager
-    for (const key of Object.keys(realConfigManager)) {
-        const manager = (realConfigManager as any)[key];
-
-        // Only process actual manager instances
-        if (manager && typeof manager === 'object' && manager.constructor) {
-            const ManagerClass = manager.constructor;
-            const defaultMocks = DEFAULT_MANAGER_MOCKS[key] || {};
-            const userMocks = managerOverrides[key] || {};
-
-            mockConfig[key] = createDynamicMockManager(ManagerClass, defaultMocks, userMocks);
-        }
-    }
-
-    activeMockConfigManager = mockConfig;
-    return mockConfig as ConfigManager;
+    // Backwards-compatible API: ensure there is an active mock and then apply overrides
+    return ensureActiveMock(managerOverrides);
 }
 
 /**
  * Setup mocks for the entire fakegaming-common/managers package
  */
 export async function setupManagerMocks(configManagerOverrides: Record<string, ManagerMethodMocks> = {}): Promise<void> {
-    const mockConfigManager = createMockConfigManager(configManagerOverrides);
+    // Ensure or update the active mock
+    ensureActiveMock(configManagerOverrides);
 
-    vi.doMock('@zeffuro/fakegaming-common/managers', () => ({
-        configManager: mockConfigManager,
-        getConfigManager: vi.fn(() => mockConfigManager),
-    }));
+    // Ensure any subsequent imports of the managers module return the current active mock
+    vi.doMock('@zeffuro/fakegaming-common/managers', async () => {
+        return {
+            // Read from global to avoid depending on a specific module instance
+            getConfigManager: () => (globalThis as any).__FG_ACTIVE_CONFIG_MANAGER__ as ConfigManager,
+        } as unknown as { getConfigManager: () => ConfigManager };
+    });
 }
 
 /**
