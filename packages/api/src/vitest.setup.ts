@@ -192,7 +192,7 @@ beforeAll(async () => {
             const workerDb = process.env.TEST_SQLITE_FILE;
             try {
                 await configManager.init(true);
-            } catch (err) {
+            } catch {
                 // Log a small hint to help debug CI readonly issues
                 try {
                     const st = workerDb && fs.existsSync(workerDb) ? fs.statSync(workerDb) : null;
