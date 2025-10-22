@@ -306,6 +306,7 @@ This project uses **GitHub Actions** for continuous integration:
 | Command | Description | Permissions |
 |---------|-------------|-------------|
 |`/add-quote`|Add a quote|All users|
+|`/add-tiktok-stream`|Add a TikTok account for live notifications|All users|
 |`/add-twitch-stream`|Add a Twitch stream for notifications|All users|
 |`/add-youtube-channel`|Add a Youtube Channel for new video notifications|All users|
 |`/birthday`|Show your or another user's birthday|All users|
