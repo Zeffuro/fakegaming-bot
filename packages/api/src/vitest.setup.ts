@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, afterEach, vi } from 'vitest';
+import { beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest';
 
 // Set up test environment variables
 process.env.DATABASE_PROVIDER = 'sqlite';
@@ -10,6 +10,7 @@ process.env.JWT_ISSUER = 'fakegaming-test';
 // Choose a per-worker on-disk SQLite file (no template/locks). This avoids shared-state issues and extra .env.
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 
 function resolveRepoRoot(): string {
     // Try walking up to find pnpm-workspace.yaml as repo root marker
@@ -29,10 +30,22 @@ const dataDir = path.join(repoRoot, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
-// Place API test DBs under data/_test/api
-const testDbDir = path.join(dataDir, '_test', 'api');
+// Prefer OS temp for test DBs (more reliable on CI); e.g., .../fakegaming-bot-tests/api
+const ciTmp = process.env.RUNNER_TEMP || os.tmpdir();
+const testDbDir = path.join(ciTmp, 'fakegaming-bot-tests', 'api');
 if (!fs.existsSync(testDbDir)) {
-    fs.mkdirSync(testDbDir, { recursive: true });
+    try { fs.mkdirSync(testDbDir, { recursive: true }); } catch { /* noop */ }
+}
+
+function dirIsWritable(dir: string): boolean {
+    try {
+        const probe = path.join(dir, `.probe-${process.pid}-${Date.now()}`);
+        fs.writeFileSync(probe, 'ok');
+        fs.unlinkSync(probe);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 // Ensure common's resolveDataRoot() points to repoRoot/data (avoid packages/api/data)
@@ -43,18 +56,50 @@ function makeWorkerDbPath(): string {
     return path.join(testDbDir, `_api_test.${unique}.sqlite`);
 }
 
-function cleanupOldTestDbs(): void {
-    // Remove leftover API test DB files from previous runs
-    const dirs = [testDbDir, dataDir];
+function cleanupOldTestDbs(opts?: { aggressive?: boolean }): void {
+    const aggressive = opts?.aggressive === true;
+    const ttlMs = 30 * 60 * 1000; // 30 minutes
+    const now = Date.now();
+    const dirs = [testDbDir];
+
+    function tryUnlinkWithSiblings(baseFile: string): void {
+        const siblings = [
+            baseFile,
+            `${baseFile}-wal`,
+            `${baseFile}-shm`,
+            `${baseFile}-journal`,
+        ];
+        for (const f of siblings) {
+            try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { /* noop */ }
+        }
+    }
+
     for (const dir of dirs) {
         try {
             if (!fs.existsSync(dir)) continue;
             const entries = fs.readdirSync(dir);
+            let matchCount = 0;
             for (const name of entries) {
-                if (name.startsWith('_api_test.') && name.endsWith('.sqlite')) {
-                    try {
-                        fs.unlinkSync(path.join(dir, name));
-                    } catch { /* noop */ }
+                if (!(name.startsWith('_api_test.') && name.endsWith('.sqlite'))) continue;
+                matchCount++;
+                const full = path.join(dir, name);
+                if (aggressive) {
+                    tryUnlinkWithSiblings(full);
+                    continue;
+                }
+                try {
+                    const stat = fs.statSync(full);
+                    if ((now - stat.mtimeMs) > ttlMs) {
+                        tryUnlinkWithSiblings(full);
+                    }
+                } catch { /* noop */ }
+            }
+            // If too many files remain, attempt a second-pass aggressive cleanup
+            if (!aggressive && matchCount > 20) {
+                for (const name of entries) {
+                    if (!(name.startsWith('_api_test.') && name.endsWith('.sqlite'))) continue;
+                    const full = path.join(dir, name);
+                    tryUnlinkWithSiblings(full);
                 }
             }
         } catch { /* noop */ }
@@ -121,23 +166,46 @@ export const configManager = getConfigManager();
 beforeAll(async () => {
     const g = globalThis as any;
 
-    // Proactively clean up leftover DB files from previous runs
-    cleanupOldTestDbs();
+    // Proactively clean up stale DB files from previous runs
+    if (process.env.CI === 'true') {
+        cleanupOldTestDbs(); // TTL-based on CI
+    } else {
+        cleanupOldTestDbs({ aggressive: true }); // delete anything not locked locally
+    }
 
-    // Reuse a single worker DB path across files in the same worker
-    if (!process.env.TEST_SQLITE_FILE) {
+    const preferMemory = process.env.CI === 'true' || !dirIsWritable(testDbDir);
+    process.env.FAKEGAMING_TEST_DB_MODE = preferMemory ? 'memory' : 'file';
+
+    // Reuse a single worker DB path across files in the same worker (only when using file mode)
+    if (!preferMemory && !process.env.TEST_SQLITE_FILE) {
         process.env.TEST_SQLITE_FILE = makeWorkerDbPath();
+        // Best-effort: create/touch file to ensure directory is writable
+        try { fs.writeFileSync(process.env.TEST_SQLITE_FILE, '', { flag: 'a' }); } catch { /* noop */ }
+    } else if (preferMemory) {
+        // Ensure we don't accidentally reuse an old path
+        delete process.env.TEST_SQLITE_FILE;
     }
 
     // Ensure only one init runs per worker by using a shared promise
     if (!g.__API_DB_READY_PROMISE__) {
         g.__API_DB_READY_PROMISE__ = (async () => {
-            const workerDb = process.env.TEST_SQLITE_FILE!;
+            const workerDb = process.env.TEST_SQLITE_FILE;
             try {
                 await configManager.init(true);
-            } catch {
+            } catch (err) {
+                // Log a small hint to help debug CI readonly issues
+                try {
+                    const st = workerDb && fs.existsSync(workerDb) ? fs.statSync(workerDb) : null;
+                    const msg = `[api-tests] init failed dbMode=${process.env.FAKEGAMING_TEST_DB_MODE} path=${workerDb || ':memory:'} exists=${!!st} size=${st ? st.size : 'n/a'}`;
+                    console.error(msg);
+                } catch { /* noop */ }
                 try { await closeSequelize(); } catch { /* noop */ }
-                try { if (fs.existsSync(workerDb)) fs.unlinkSync(workerDb); } catch { /* noop */ }
+                if (!preferMemory && workerDb) {
+                    try { if (fs.existsSync(workerDb)) fs.unlinkSync(workerDb); } catch { /* noop */ }
+                    // Create a fresh path and retry once
+                    try { fs.mkdirSync(path.dirname(workerDb), { recursive: true }); } catch { /* noop */ }
+                    try { fs.writeFileSync(workerDb, '', { flag: 'a' }); } catch { /* noop */ }
+                }
                 await configManager.init(true);
             }
             g.__API_DB_READY__ = true;
@@ -147,12 +215,16 @@ beforeAll(async () => {
                 g.__API_DB_CLEANUP_REGISTERED__ = true;
                 const cleanup = async () => {
                     try { await closeSequelize(); } catch { /* noop */ }
+                    if (!preferMemory) {
+                        try {
+                            const p = process.env.TEST_SQLITE_FILE;
+                            if (p && fs.existsSync(p)) fs.unlinkSync(p);
+                        } catch { /* noop */ }
+                    }
+                    // Final pass to tidy up any orphaned files
                     try {
-                        const p = process.env.TEST_SQLITE_FILE;
-                        if (p && fs.existsSync(p)) fs.unlinkSync(p);
+                        if (process.env.CI === 'true') cleanupOldTestDbs(); else cleanupOldTestDbs({ aggressive: true });
                     } catch { /* noop */ }
-                    // Best-effort: remove any leftover test DBs
-                    try { cleanupOldTestDbs(); } catch { /* noop */ }
                 };
                 process.once('exit', () => { void cleanup(); });
                 process.once('SIGINT', () => { void cleanup(); process.exit(0); });
@@ -181,4 +253,34 @@ afterEach(() => {
     vi.clearAllMocks();
     vi.resetAllMocks();
     vi.restoreAllMocks();
+});
+
+// Final per-worker cleanup once all tests in this worker finish
+async function unlinkWithRetries(baseFile: string): Promise<void> {
+    const siblings = [baseFile, `${baseFile}-wal`, `${baseFile}-shm`, `${baseFile}-journal`];
+    const retries = 3;
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+    for (let attempt = 0; attempt < retries; attempt++) {
+        let allGone = true;
+        for (const f of siblings) {
+            try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { allGone = false; }
+        }
+        if (allGone) return;
+        await delay(100 * (attempt + 1));
+    }
+}
+
+afterAll(async () => {
+    const preferMemory = process.env.FAKEGAMING_TEST_DB_MODE === 'memory';
+    try { await closeSequelize(); } catch { /* noop */ }
+    if (!preferMemory) {
+        const p = process.env.TEST_SQLITE_FILE;
+        if (p) {
+            try { await unlinkWithRetries(p); } catch { /* noop */ }
+        }
+    }
+    // Now that connections are closed, aggressively clean leftover test DBs
+    try {
+        if (process.env.CI === 'true') cleanupOldTestDbs(); else cleanupOldTestDbs({ aggressive: true });
+    } catch { /* noop */ }
 });
