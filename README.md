@@ -12,15 +12,105 @@ A modular Discord bot for community management, Twitch stream notifications, You
 Legends stats, quotes, reminders, and more. Built with TypeScript and Discord.js. **This project is now a monorepo**
 containing multiple packages.
 
+## 📖 Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Features](#features)
+- [Monorepo Structure](#monorepo-structure)
+- [Documentation](#documentation)
+- [Getting Started](#getting-started)
+- [Running & Development](#running--development)
+- [Building, Linting, and Testing](#building-linting-and-testing)
+- [Available Commands](#available-commands)
+- [Database & Migrations](#database--migrations)
+- [Contributing](#development--contributing)
+- [FAQ](#faq)
+- [License](#license)
+
+---
+
+## 🚀 Quick Start
+
+### For Users (Docker - Recommended)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Zeffuro/fakegaming-bot.git
+cd fakegaming-bot
+
+# 2. Set up environment
+cp .env.example .env
+cp packages/bot/.env.example packages/bot/.env
+cp packages/api/.env.example packages/api/.env
+cp packages/dashboard/.env.example packages/dashboard/.env
+# Edit all .env files with your credentials
+
+# 3. Start all services
+docker-compose up -d
+
+# 4. Check logs
+docker-compose logs -f bot
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
+
+### For Developers (Local)
+
+```bash
+# 1. Install pnpm
+npm install -g pnpm
+
+# 2. Clone and install dependencies
+git clone https://github.com/Zeffuro/fakegaming-bot.git
+cd fakegaming-bot
+pnpm install
+
+# 3. Set up development environment
+cp packages/bot/.env.example packages/bot/.env.development
+cp packages/api/.env.example packages/api/.env.development
+cp packages/dashboard/.env.example packages/dashboard/.env.development
+# Edit files with development credentials (use SQLite)
+
+# 4. Build and start
+pnpm build
+pnpm start:bot:dev     # Start bot
+pnpm start:api:dev     # Start API (separate terminal)
+pnpm start:dashboard:dev # Start dashboard (separate terminal)
+```
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
+
 ---
 
 ## Features
 
-- Modular command system
-- Twitch and YouTube integration
-- League of Legends and Teamfight Tactics stats
-- Quote management
-- Reminders and timezone support
+### 🤖 Discord Bot
+- **23 Slash Commands** across 10 modules
+- Quote management system
+- Birthday tracking with automatic announcements
+- Reminder system with timezone support
+- League of Legends & TFT stats and match history
+- Utility commands (poll, roll, weather, spin)
+
+### 🔔 Notifications & Integrations
+- Twitch stream notifications (EventSub webhooks)
+- YouTube video announcements
+- TikTok live stream alerts
+- Game patch notes (League, Valorant, TFT)
+- Cooldown and quiet hours support
+
+### 🖥️ Web Dashboard
+- Discord OAuth authentication
+- Guild-level configuration management
+- Quote, notification, and command management
+- Real-time Discord data integration
+
+### 🔒 Security & Infrastructure
+- JWT authentication with CSRF protection
+- Database-backed rate limiting
+- Comprehensive testing (80% coverage target)
+- Docker Compose deployment ready
+- PostgreSQL (production) & SQLite (development)
 
 ---
 
@@ -41,12 +131,37 @@ This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage
 
 ## Documentation
 
-- Architecture and patterns: `ARCHITECTURE.md`
-- Engineering guides:
-  - TypeScript & ESLint conventions: `TYPESCRIPT.md`
-  - Testing strategy and helpers: `TESTING.md`
-  - Environment and Docker setup: `ENVIRONMENT.md`
-  - Database schema and migrations: `SCHEMA.md` and `MIGRATIONS.md`
+### 📚 Getting Started
+- [README.md](./README.md) - This file
+- [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment guide
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
+
+### 📋 Project Management
+- [ISSUES_TODO.md](./ISSUES_TODO.md) - Backlog and task tracking (P0/P1/P2 priorities)
+- [NEXT_STEPS.md](./NEXT_STEPS.md) - Roadmap and focus areas
+- [CHANGELOG.md](./CHANGELOG.md) - Version history
+
+### 🏗️ Architecture & Patterns
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Service boundaries and code organization
+- [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript & ESLint conventions
+- [TESTING.md](./TESTING.md) - Testing strategy and helpers
+
+### 🔧 Development Guides
+- [ENVIRONMENT.md](./ENVIRONMENT.md) - Environment variables and Docker setup
+- [SCHEMA.md](./SCHEMA.md) - Database schema with ER diagram
+- [MIGRATIONS.md](./MIGRATIONS.md) - Database migration guide
+- [API_GUIDE.md](./API_GUIDE.md) - Complete API documentation
+
+### 📦 Package Documentation
+- [packages/bot/README.md](./packages/bot/README.md) - Bot package details
+- [packages/api/README.md](./packages/api/README.md) - API package details
+- [packages/common/README.md](./packages/common/README.md) - Common package details
+- [packages/dashboard/README.md](./packages/dashboard/README.md) - Dashboard package details
+
+### 🤝 Contributing
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - How to contribute
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) - Community standards
+- [SECURITY.md](./SECURITY.md) - Security policy and reporting
 
 ---
 
@@ -372,22 +487,34 @@ This project is licensed under the GNU Affero General Public License v3.0 (AGPLv
 
 ## FAQ
 
-**Q: Can I use this bot on my own server?**
-A: Yes! This project is open source and self-hosted. Follow the instructions above to deploy it to your own environment.
+**Q: Can I use this bot on my own server?**  
+A: Yes! This project is open source and self-hosted. Follow the [Quick Start](#-quick-start) guide or see [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions.
 
-**Q: Is there a public instance or support server?**
-A: No, this bot is used privately. There is no public instance or official support server.
+**Q: Is there a public instance or support server?**  
+A: No, this bot is used privately. There is no public instance or official support server. You must self-host.
 
-**Q: How do I add new commands or features?**
-A: See the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on adding commands, features, and database changes.
+**Q: What are the system requirements?**  
+A: Minimum 2GB RAM, 2 CPU cores, 20GB storage. Works great on a 2GB VPS. See [DEPLOYMENT.md](./DEPLOYMENT.md) for details.
 
-**Q: Where are the database models?**
-A: All models are in `packages/common`. See [SCHEMA.md](./SCHEMA.md) for a complete database schema diagram and documentation.
+**Q: How do I add new commands or features?**  
+A: See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guides on adding commands, features, and database changes.
 
-**Q: How do I report bugs or request features?**
-A: Use GitHub Issues. See the Reporting Issues section in [CONTRIBUTING.md](./CONTRIBUTING.md).
+**Q: Where are the database models?**  
+A: All models are in `packages/common/src/models/`. See [SCHEMA.md](./SCHEMA.md) for complete database schema with ER diagram.
 
-**Q: Who maintains this project?**
+**Q: How do I report bugs or request features?**  
+A: Use [GitHub Issues](https://github.com/Zeffuro/fakegaming-bot/issues). See the "Reporting Issues" section in [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+**Q: What databases are supported?**  
+A: PostgreSQL (production recommended) and SQLite (development). Configured via `DATABASE_PROVIDER` environment variable.
+
+**Q: How do I update to the latest version?**  
+A: For Docker: `docker-compose pull && docker-compose up -d`. For manual: `git pull && pnpm install && pnpm build`. See [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+**Q: Can I disable specific commands per server?**  
+A: Yes! Use the dashboard at `/dashboard/commands/[guildId]` or configure via API. See [API_GUIDE.md](./API_GUIDE.md).
+
+**Q: Who maintains this project?**  
 A: [@Zeffuro](https://github.com/Zeffuro)
 
 ---
