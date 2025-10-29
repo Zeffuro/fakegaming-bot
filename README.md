@@ -136,11 +136,6 @@ This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage
 - [DEPLOYMENT.md](./DEPLOYMENT.md) - Production deployment guide
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Common issues and solutions
 
-### 📋 Project Management
-- [ISSUES_TODO.md](./ISSUES_TODO.md) - Backlog and task tracking (P0/P1/P2 priorities)
-- [NEXT_STEPS.md](./NEXT_STEPS.md) - Roadmap and focus areas
-- [CHANGELOG.md](./CHANGELOG.md) - Version history
-
 ### 🏗️ Architecture & Patterns
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Service boundaries and code organization
 - [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript & ESLint conventions
