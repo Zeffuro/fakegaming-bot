@@ -156,7 +156,8 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
             if (isLive && !cfg.isLive) {
                 const now = new Date();
                 const eventId = String(stream!.id);
-                const already = await notifications.has('twitch', eventId);
+                const already = await (notifications as any).hasForGuild?.('twitch', eventId, cfg.guildId)
+                    ?? await notifications.has('twitch', eventId);
                 const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
                 const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(toMillis(cfg.lastNotifiedAt)) : null;
                 const cooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate

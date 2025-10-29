@@ -10,6 +10,14 @@ export class NotificationsManager extends BaseManager<Notification> {
         return this.exists({ provider, eventId });
     }
 
+    /**
+     * Check if a notification exists scoped to a specific guild.
+     * Does not require a unique constraint; returns true only if a record with matching provider, eventId and guildId exists.
+     */
+    async hasForGuild(provider: string, eventId: string, guildId: string): Promise<boolean> {
+        return this.exists({ provider, eventId, guildId } as any);
+    }
+
     async recordIfNew(entry: {
         provider: string;
         eventId: string;

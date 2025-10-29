@@ -209,7 +209,9 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
             for (const video of newVideos) {
                 const videoId = video['yt:videoId'];
                 if (!videoId) continue;
-                const already = await notifications.has('youtube', videoId);
+                // Use per-guild deduplication so the same YouTube video can be announced in multiple guilds
+                const already = await (notifications as any).hasForGuild?.('youtube', videoId, cfg.guildId)
+                    ?? await notifications.has('youtube', videoId);
                 if (already || suppressedByQuiet || suppressedByCooldown) {
                     log.debug({ videoId, already, suppressedByQuiet, suppressedByCooldown }, 'Suppressing YouTube video announcement');
                     continue;
