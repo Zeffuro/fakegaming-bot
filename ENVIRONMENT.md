@@ -399,7 +399,7 @@ The API enforces a sliding-window rate limit using a SQL table (`api_rate_limits
   - `X-RateLimit-Remaining`: remaining requests in the current window
   - `X-RateLimit-Reset`: UTC epoch millis when the window resets
   - `Retry-After`: seconds until retry (only on 429)
-- Cleanup: a periodic job deletes old windows to keep the table small (see migrations & API code). You can also run the SQL from NEXT_STEPS.md appendix manually if needed.
+- Cleanup: a periodic job deletes old windows to keep the table small (see migrations & API code).
 - Fallback: if the DB returns an error, a tiny in-memory bucket (very small burst allowance) is used briefly; a WARN is logged.
 
 Schema (see also SCHEMA.md):
