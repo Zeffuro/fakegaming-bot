@@ -19,7 +19,7 @@
     "depcheck": "^1.4.7",
     "dotenv-cli": "^10.0.0",
     "eslint": "^9.37.0",
-    "glob": "^11.0.3",
+    "glob": "^11.1.0",
     "globals": "^16.4.0",
     "jsonwebtoken": "^9.0.2",
     "openapi-typescript": "^7.9.1",
