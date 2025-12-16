@@ -25,7 +25,7 @@
     "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
     "@zeffuro/fakegaming-common": "workspace:*",
-    "better-auth": "^1.3.27",
+    "better-auth": "^1.4.5",
     "cross-env": "^10.1.0",
     "discord-api-types": "^0.38.29",
     "ioredis": "^5.8.1",
