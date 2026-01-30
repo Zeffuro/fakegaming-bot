@@ -61,3 +61,5 @@ backups/
 
 # Misc
 .devcontext
+/.dev_docs
+duplicates.json
