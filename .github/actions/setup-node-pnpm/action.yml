@@ -61,4 +61,4 @@ runs:
       shell: bash
       run: |
         pnpm rebuild canvas
-        pnpm rebuild sqlite3
+        pnpm rebuild sqlite3 --build-from-source
