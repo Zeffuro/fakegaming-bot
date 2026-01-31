@@ -1,23 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// We will mock the 'twisted' classes used by riotService so we can control responses
-const mockLolApi = {
-    Summoner: { getByPUUID: vi.fn() },
-    MatchV5: { list: vi.fn(), get: vi.fn() },
-    League: { byPUUID: vi.fn() }
-};
-const mockTftApi = {
-    Match: { list: vi.fn(), get: vi.fn() }
-};
+const { mockLolApi, mockTftApi } = vi.hoisted(() => {
+    const mockLolApi = {
+        Summoner: { getByPUUID: vi.fn() },
+        MatchV5: { list: vi.fn(), get: vi.fn() },
+        League: { byPUUID: vi.fn() }
+    };
+    const mockTftApi = {
+        Match: { list: vi.fn(), get: vi.fn() }
+    };
+    return { mockLolApi, mockTftApi };
+});
 
 vi.mock('twisted', () => ({
     RiotApi: vi.fn(),
-    LolApi: vi.fn().mockImplementation(() => mockLolApi),
-    TftApi: vi.fn().mockImplementation(() => mockTftApi)
+    LolApi: vi.fn().mockImplementation(function() { return mockLolApi; }),
+    TftApi: vi.fn().mockImplementation(function() { return mockTftApi; })
 }));
 
 // Import after mocks are defined
-import { getMatchHistory, getSummoner, getTftMatchDetails } from '../../services/riotService.js';
+import { getMatchHistory, getSummoner, getTftMatchDetails } from '../riotService.js';
 
 describe('riotService helpers', () => {
     beforeEach(() => {
