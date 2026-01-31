@@ -41,6 +41,8 @@ export default defineConfig({
                 'lib/modules.ts',
                 'lib/api-client.ts',
                 '**/*.d.ts',
+                // Re-export only file with no logic
+                'lib/constants.ts',
             ],
             thresholds: {
                 lines: 80,
