@@ -18,9 +18,11 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    /** @example {
+                    /**
+                     * @example {
                      *       "code": "your_discord_oauth_code"
-                     *     } */
+                     *     }
+                     */
                     "application/json": {
                         code?: string;
                     };
@@ -556,7 +558,6 @@ export interface paths {
          *     with optional cached guild nickname where available. Profiles are cached
          *     in the server-side cache. Any IDs that could not be resolved are listed
          *     under `missed`.
-         *
          */
         post: {
             parameters: {
@@ -1675,7 +1676,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null, optional)
          *
          *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
-         *
          */
         post: {
             parameters: {
@@ -1847,7 +1847,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null)
          *
          *     Read-only fields: isLive, lastNotifiedAt.
-         *
          */
         put: {
             parameters: {
@@ -1954,7 +1953,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null, optional)
          *
          *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
-         *
          */
         post: {
             parameters: {
@@ -2121,7 +2119,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null)
          *
          *     Read-only fields: isLive, lastNotifiedAt.
-         *
          */
         put: {
             parameters: {
@@ -2455,7 +2452,6 @@ export interface paths {
          *     - discordChannelId (string, required)
          *     - guildId (string, required)
          *     Other fields like cooldownMinutes/quietHours should be updated via PUT /youtube/{id}.
-         *
          */
         put: {
             parameters: {
@@ -2503,7 +2499,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null, optional)
          *
          *     Read-only fields (ignored if provided): lastVideoId, lastNotifiedAt.
-         *
          */
         post: {
             parameters: {
@@ -2699,7 +2694,6 @@ export interface paths {
          *     - quietHoursEnd (HH:mm or null)
          *
          *     Read-only fields: lastVideoId, lastNotifiedAt.
-         *
          */
         put: {
             parameters: {
