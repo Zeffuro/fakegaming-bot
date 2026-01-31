@@ -68,4 +68,10 @@ describe('bootstrapEnv', () => {
         expect(result.__filename).toBe('/mock/file.js');
         expect(result.__dirname).toBe('/mock/dir');
     });
+
+    it('should use CommonJS fallback when metaUrl is not provided', () => {
+        const result = bootstrapEnv();
+        expect(result).toHaveProperty('__filename');
+        expect(result).toHaveProperty('__dirname');
+    });
 });
