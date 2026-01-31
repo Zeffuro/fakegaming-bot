@@ -60,5 +60,5 @@ runs:
       if: inputs.build-natives == 'true'
       shell: bash
       run: |
-        pnpm rebuild canvas || true
-        pnpm rebuild sqlite3 || true
+        pnpm rebuild canvas
+        pnpm rebuild sqlite3
