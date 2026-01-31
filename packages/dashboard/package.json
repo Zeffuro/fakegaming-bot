@@ -20,12 +20,9 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.7",
     "@mui/material": "^7.3.7",
     "@zeffuro/fakegaming-common": "workspace:*",
-    "better-auth": "^1.4.18",
     "cross-env": "^10.1.0",
     "discord-api-types": "^0.38.38",
     "ioredis": "^5.9.2",

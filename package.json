@@ -58,14 +58,9 @@
     "gen:api-types": "tsx scripts/generate-api-types.ts"
   },
   "dependencies": {
-    "cors": "^2.8.6",
     "cross-env": "^10.1.0",
-    "express-jwt": "^8.5.1",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.7",
-    "sqlite3": "^5.1.7",
-    "swagger-jsdoc": "^6.2.8",
     "ts-node": "^10.9.2"
   }
 }
