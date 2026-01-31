@@ -1,15 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { asValidated } from '../typeUtils.js';
 
+
 describe('asValidated', () => {
-    it('casts a value to the desired compile-time type without changing runtime value', () => {
-        const input: unknown = { x: 1, y: 'two' };
-        const result = asValidated<{ x: number; y: string }>(input);
-        // Runtime identity check
-        expect(result).toBe(input);
-        // Property checks at runtime
-        expect(result.x).toBe(1);
-        expect(result.y).toBe('two');
+    it('should cast unknown value to specified type', () => {
+        const input: unknown = { name: 'test', value: 123 };
+        const result = asValidated<{ name: string; value: number }>(input);
+
+        expect(result.name).toBe('test');
+        expect(result.value).toBe(123);
+    });
+
+    it('should work with primitive types', () => {
+        const str = asValidated<string>('hello');
+        expect(str).toBe('hello');
+
+        const num = asValidated<number>(42);
+        expect(num).toBe(42);
     });
 });
-
