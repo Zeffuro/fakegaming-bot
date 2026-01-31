@@ -61,4 +61,7 @@ runs:
       shell: bash
       run: |
         pnpm rebuild canvas
-        pnpm rebuild sqlite3 --build-from-source
+        
+        # Build sqlite3 from source
+        cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3
+        npx --yes node-pre-gyp install --fallback-to-build
