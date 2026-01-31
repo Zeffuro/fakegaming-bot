@@ -56,7 +56,7 @@ router.get('/', async (_req, res) => {
  */
 router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;
-    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
     if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
     res.json(server);
 });
@@ -120,10 +120,10 @@ router.post('/', jwtAuth, validateBody(serverCreateSchema), async (req, res) => 
  */
 router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateSchema), async (req, res) => {
     const { serverId } = req.params;
-    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
     if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
-    await getConfigManager().serverManager.updatePlain(req.body, { serverId });
-    const updated = await getConfigManager().serverManager.findByPkPlain(serverId);
+    await getConfigManager().serverManager.updatePlain(req.body, { serverId: serverId as string });
+    const updated = await getConfigManager().serverManager.findByPkPlain(serverId as string);
     res.json(updated);
 });
 
@@ -149,7 +149,7 @@ router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateB
  */
 router.delete('/:serverId', jwtAuth, validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;
-    await getConfigManager().serverManager.removeByPk(serverId);
+    await getConfigManager().serverManager.removeByPk(serverId as string);
     res.json({ success: true });
 });
 

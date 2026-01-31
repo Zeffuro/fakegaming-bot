@@ -16,6 +16,8 @@ const nextConfig = {
         'sonic-boom'
     ],
 
+    // Add turbopack configuration for Next.js 16
+    turbopack: {},
 
     // Add webpack configuration to suppress specific warnings
     webpack: (config) => {

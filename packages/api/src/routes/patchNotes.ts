@@ -84,7 +84,7 @@ router.get('/supportedGames', (_req, res) => {
  */
 router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
     const { game } = req.params;
-    const note = await getConfigManager().patchNotesManager.getLatestPatch(game);
+    const note = await getConfigManager().patchNotesManager.getLatestPatch(game as string);
     if (!note) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Patch note not found' } });
     res.json(note);
 });
