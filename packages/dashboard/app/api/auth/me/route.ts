@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
-import { enforceCsrf } from "@/lib/security/csrf.js";
+import { enforceCsrf } from "@/lib/security/csrf";
 
 export async function PUT(req: NextRequest) {
     const csrfFailure = enforceCsrf(req);

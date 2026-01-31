@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {getBaseUrl} from "@/lib/util/getBaseUrl";
 import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
-import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf.js";
+import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 import { sanitizeReturnTo } from "@/lib/util/sanitizeReturnTo";
 

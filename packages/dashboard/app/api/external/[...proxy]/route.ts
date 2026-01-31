@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { API_URL } from "@/lib/env";
-import { enforceCsrf } from "@/lib/security/csrf.js";
+import { enforceCsrf } from "@/lib/security/csrf";
 import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
 
