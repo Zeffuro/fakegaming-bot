@@ -104,7 +104,7 @@ describe('simpleColorLogger', () => {
         it('should use info level in production by default', async () => {
             const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
             const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-            process.env.NODE_ENV = 'production';
+            (process.env as Record<string, string | undefined>).NODE_ENV = 'production';
             delete process.env.LOG_LEVEL;
 
             const { createSimpleLogger } = await import('../simpleColorLogger.js');
@@ -119,7 +119,7 @@ describe('simpleColorLogger', () => {
 
         it('should use debug level in development by default', async () => {
             const debugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
-            process.env.NODE_ENV = 'development';
+            (process.env as Record<string, string | undefined>).NODE_ENV = 'development';
             delete process.env.LOG_LEVEL;
 
             const { createSimpleLogger } = await import('../simpleColorLogger.js');
