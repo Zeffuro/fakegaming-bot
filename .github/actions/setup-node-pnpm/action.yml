@@ -54,4 +54,14 @@ runs:
     - name: Install dependencies
       if: inputs.install-deps == 'true'
       shell: bash
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --frozen-lockfile --ignore-scripts
+
+    - name: Rebuild native modules
+      if: inputs.build-natives == 'true'
+      shell: bash
+      run: |
+        pnpm rebuild canvas
+        
+        # Build sqlite3 from source using node-gyp
+        cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3
+        npx --yes node-gyp rebuild --release
