@@ -9,7 +9,6 @@ const { mockRedisConstructor, mockRedisInstance, flags, store, loggerSpies } = v
 
     const mockRedisInstance = {
         once: vi.fn((event: string, cb: (arg?: unknown) => void) => {
-            // Immediately signal ready; error is opt-in by tests via direct invocation
             if (event === 'ready') cb();
         }),
         get: vi.fn(async (key: string) => {
@@ -19,19 +18,20 @@ const { mockRedisConstructor, mockRedisInstance, flags, store, loggerSpies } = v
         set: vi.fn(async (key: string, value: string, _mode?: string, _ttl?: number) => {
             if (flags.throwSet) throw new Error('set-error');
             store.set(key, value);
-            return 'OK' as unknown as number; // ioredis returns string OK
+            return 'OK' as unknown as number;
         }),
         del: vi.fn(async (key: string) => {
             if (flags.throwDel) throw new Error('del-error');
             store.delete(key);
             return 1;
         }),
-        quit: vi.fn(async () => {
-            // no-op
-        })
-    } as const;
+        quit: vi.fn(async () => {})
+    };
 
-    const mockRedisConstructor = vi.fn(() => mockRedisInstance);
+    // Create a mock that works both as a constructor and has mockClear
+    const mockRedisConstructor = vi.fn(function() {
+        return mockRedisInstance;
+    });
 
     const loggerSpies = {
         info: vi.fn(),

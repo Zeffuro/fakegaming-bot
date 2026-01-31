@@ -58,7 +58,7 @@ router.get('/', async (_req, res) => {
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
+    const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
     if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
     res.json(reminder);
 });
@@ -125,9 +125,9 @@ router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async 
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { id } = req.params;
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id);
+    const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
     if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
-    await getConfigManager().reminderManager.removeByPk(id);
+    await getConfigManager().reminderManager.removeByPk(id as string);
     console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
     res.json({ success: true });
 });

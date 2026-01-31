@@ -67,7 +67,7 @@ router.get('/', async (_req, res) => {
  */
 router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;
-    const user = await getConfigManager().userManager.findByPkPlain(discordId);
+    const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
     if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
     res.json(user);
 });
@@ -131,10 +131,10 @@ router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
  */
 router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateSchema), async (req, res) => {
     const { discordId } = req.params;
-    const user = await getConfigManager().userManager.findByPkPlain(discordId);
+    const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
     if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
-    await getConfigManager().userManager.updatePlain(req.body, { discordId });
-    const updated = await getConfigManager().userManager.findByPkPlain(discordId);
+    await getConfigManager().userManager.updatePlain(req.body, { discordId: discordId as string });
+    const updated = await getConfigManager().userManager.findByPkPlain(discordId as string);
     res.json(updated);
 });
 
@@ -261,7 +261,7 @@ router.put(
  */
 router.delete('/:discordId', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;
-    await getConfigManager().userManager.removeByPk(discordId);
+    await getConfigManager().userManager.removeByPk(discordId as string);
     res.json({ success: true });
 });
 

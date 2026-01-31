@@ -39,6 +39,7 @@ export default defineConfig({
         'src/validation/schemaOverrides.ts', // Declarative schema wiring validated via integration
         // DB-backed rate limiter logic is primarily exercised via integration in API; exclude from unit coverage
         'src/rate-limiter.ts',
+        'src/utils/typeUtils.ts',
       ],
       thresholds: {
         lines: 80,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt, issueJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
-import { enforceCsrf, generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf.js";
+import { enforceCsrf, generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 
 /**
  * POST /api/auth/refresh

@@ -117,9 +117,9 @@ router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res
  */
 router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async (req, res) => {
     const { guildId } = req.params;
-    const accessResult = await checkUserGuildAccess(req, res, guildId);
+    const accessResult = await checkUserGuildAccess(req, res, guildId as string);
     if (!accessResult.authorized) return;
-    const quotes = await getConfigManager().quoteManager.getQuotesByGuild(guildId);
+    const quotes = await getConfigManager().quoteManager.getQuotesByGuild(guildId as string);
     res.json(quotes);
 });
 
@@ -158,9 +158,9 @@ router.get('/guild/:guildId', jwtAuth, validateParams(guildIdParamSchema), async
  */
 router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuthorParamSchema), async (req, res) => {
     const { guildId, authorId } = req.params;
-    const accessResult = await checkUserGuildAccess(req, res, guildId);
+    const accessResult = await checkUserGuildAccess(req, res, guildId as string);
     if (!accessResult.authorized) return;
-    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor(guildId, authorId);
+    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor(guildId as string, authorId as string);
     res.json(quotes);
 });
 
@@ -184,7 +184,7 @@ router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuth
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
+    const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
     if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     res.json(quote);
 });
@@ -275,13 +275,13 @@ router.post('/', jwtAuth, validateBodyForModel(QuoteConfig, 'create'), async (re
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id);
+    const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
     if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     if (quote.guildId) {
         const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
         if (!accessResult.authorized) return;
     }
-    await getConfigManager().quoteManager.removeByPk(id);
+    await getConfigManager().quoteManager.removeByPk(id as string);
     res.json({ success: true });
 });
 

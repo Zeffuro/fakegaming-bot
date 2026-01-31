@@ -60,5 +60,8 @@ runs:
       if: inputs.build-natives == 'true'
       shell: bash
       run: |
-        pnpm rebuild canvas || true
-        pnpm rebuild sqlite3 || true
+        pnpm rebuild canvas
+        
+        # Build sqlite3 from source using node-gyp
+        cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3
+        npx --yes node-gyp rebuild --release

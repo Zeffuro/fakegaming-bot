@@ -63,7 +63,7 @@ router.get('/', async (_req, res) => {
  */
 router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
-    const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
+    const birthday = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
     if (!birthday) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
     res.json(birthday);
 });
@@ -141,11 +141,11 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
  */
 router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), async (req, res) => {
     const { userId, guildId } = req.params;
-    const existing = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
+    const existing = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
     if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
-    const access = await checkUserGuildAccess(req, res, guildId);
+    const access = await checkUserGuildAccess(req, res, guildId as string);
     if (!access.authorized) return;
-    await getConfigManager().birthdayManager.removeBirthday(userId, guildId);
+    await getConfigManager().birthdayManager.removeBirthday(userId as string, guildId as string);
     res.json({ success: true });
 });
 

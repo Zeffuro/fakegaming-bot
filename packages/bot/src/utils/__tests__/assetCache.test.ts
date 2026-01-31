@@ -1,14 +1,35 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getAssetCacheDir, getAsset } from '../assetCache.js';
-import fs from 'fs';
-import axios from 'axios';
 import path from 'path';
 
-vi.mock('fs');
-vi.mock('axios');
+const { mockFs, mockAxios } = vi.hoisted(() => {
+    const mockFs = {
+        existsSync: vi.fn(),
+        mkdirSync: vi.fn(),
+        promises: {
+            readFile: vi.fn(),
+            writeFile: vi.fn(),
+        }
+    };
+    const mockAxios = {
+        get: vi.fn(),
+    };
+    return { mockFs, mockAxios };
+});
+
+vi.mock('fs', () => ({
+    default: mockFs,
+    ...mockFs,
+}));
+
+vi.mock('axios', () => ({
+    default: mockAxios,
+}));
+
 vi.mock('@zeffuro/fakegaming-common/core', () => ({
     resolveDataRoot: () => '/test/data',
 }));
+
+import { getAssetCacheDir, getAsset } from '../assetCache.js';
 
 describe('assetCache', () => {
     beforeEach(() => {
@@ -21,7 +42,7 @@ describe('assetCache', () => {
 
     describe('getAssetCacheDir', () => {
         it('should return cache directory path', () => {
-            vi.mocked(fs.existsSync).mockReturnValue(true);
+            mockFs.existsSync.mockReturnValue(true);
 
             const result = getAssetCacheDir('champion');
 
@@ -29,12 +50,12 @@ describe('assetCache', () => {
         });
 
         it('should create directory if it does not exist', () => {
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-            vi.mocked(fs.mkdirSync).mockReturnValue(undefined);
+            mockFs.existsSync.mockReturnValue(false);
+            mockFs.mkdirSync.mockReturnValue(undefined);
 
             const result = getAssetCacheDir('item');
 
-            expect(fs.mkdirSync).toHaveBeenCalledWith(
+            expect(mockFs.mkdirSync).toHaveBeenCalledWith(
                 path.join('/test/data', 'assets', 'item'),
                 { recursive: true }
             );
@@ -45,40 +66,36 @@ describe('assetCache', () => {
     describe('getAsset', () => {
         it('should return cached asset if it exists', async () => {
             const mockBuffer = Buffer.from('cached data');
-            vi.mocked(fs.existsSync).mockReturnValue(true);
-            const readFileSpy = vi.spyOn(fs.promises, 'readFile').mockResolvedValue(mockBuffer);
+            mockFs.existsSync.mockReturnValue(true);
+            mockFs.promises.readFile.mockResolvedValue(mockBuffer);
 
             const result = await getAsset('https://example.com/asset.png', 'asset.png', 'champion');
 
             expect(result.buffer).toEqual(mockBuffer);
             expect(result.path).toBe(path.join('/test/data', 'assets', 'champion', 'asset.png'));
-            expect(axios.get).not.toHaveBeenCalled();
-
-            readFileSpy.mockRestore();
+            expect(mockAxios.get).not.toHaveBeenCalled();
         });
 
         it('should fetch and cache asset if not cached', async () => {
             const mockData = Buffer.from('new data');
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-            vi.mocked(axios.get).mockResolvedValue({ data: mockData });
-            const writeFileSpy = vi.spyOn(fs.promises, 'writeFile').mockResolvedValue(undefined);
+            mockFs.existsSync.mockReturnValue(false);
+            mockAxios.get.mockResolvedValue({ data: mockData });
+            mockFs.promises.writeFile.mockResolvedValue(undefined);
 
             const result = await getAsset('https://example.com/new.png', 'new.png', 'item');
 
-            expect(axios.get).toHaveBeenCalledWith('https://example.com/new.png', { responseType: 'arraybuffer' });
-            expect(fs.promises.writeFile).toHaveBeenCalledWith(
+            expect(mockAxios.get).toHaveBeenCalledWith('https://example.com/new.png', { responseType: 'arraybuffer' });
+            expect(mockFs.promises.writeFile).toHaveBeenCalledWith(
                 path.join('/test/data', 'assets', 'item', 'new.png'),
                 mockData
             );
             expect(result.buffer).toEqual(mockData);
-
-            writeFileSpy.mockRestore();
         });
 
         it('should handle fetch errors gracefully', async () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-            vi.mocked(axios.get).mockRejectedValue(new Error('Network error'));
+            mockFs.existsSync.mockReturnValue(false);
+            mockAxios.get.mockRejectedValue(new Error('Network error'));
 
             const result = await getAsset('https://example.com/error.png', 'error.png', 'champion');
 
@@ -89,8 +106,8 @@ describe('assetCache', () => {
 
         it('should handle non-Error exceptions', async () => {
             const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            vi.mocked(fs.existsSync).mockReturnValue(false);
-            vi.mocked(axios.get).mockRejectedValue('String error');
+            mockFs.existsSync.mockReturnValue(false);
+            mockAxios.get.mockRejectedValue('String error');
 
             const result = await getAsset('https://example.com/error.png', 'error.png', 'item');
 
