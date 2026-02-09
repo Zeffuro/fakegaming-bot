@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@zeffuro/fakegaming-common": "workspace:*",
-    "axios": "^1.13.4",
+    "axios": "^1.13.5",
     "canvas": "^3.2.1",
     "cheerio": "^1.2.0",
     "cross-env": "^10.1.0",
@@ -35,9 +35,9 @@
   },
   "devDependencies": {
     "@types/ms": "^2.1.0",
-    "@types/node": "^25.1.0",
+    "@types/node": "^25.2.2",
     "@vitest/coverage-v8": "^4.0.18",
-    "eslint": "^9.39.2",
+    "eslint": "^10.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18",
