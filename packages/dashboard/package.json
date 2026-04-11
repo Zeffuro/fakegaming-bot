@@ -27,7 +27,7 @@
     "discord-api-types": "^0.38.38",
     "ioredis": "^5.9.2",
     "jsonwebtoken": "^9.0.3",
-    "next": "^16.1.6",
+    "next": "^16.2.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
