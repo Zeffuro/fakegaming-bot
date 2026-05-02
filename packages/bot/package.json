@@ -31,7 +31,7 @@
     "sqlite3": "^5.1.7",
     "sequelize": "^6.37.7",
     "twisted": "^1.72.2",
-    "uuid": "^13.0.0"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@types/ms": "^2.1.0",
