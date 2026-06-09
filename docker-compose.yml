@@ -10,6 +10,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # -------------------- BOT --------------------
   bot:
@@ -36,8 +42,16 @@ services:
     volumes:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
     depends_on:
-      - postgres
-      - api
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8081/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # -------------------- API --------------------
   api:
@@ -68,7 +82,14 @@ services:
       YOUTUBE_ENRICH_EMBEDS: 0
       TIKTOK_COOKIE: ${TIKTOK_COOKIE}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
 
   # -------------------- DASHBOARD --------------------
   dashboard:
@@ -87,6 +108,13 @@ services:
       JWT_AUDIENCE: fakegaming-dashboard
       JWT_ISSUER: fakegaming
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     ports:
       - "3000:3000"
