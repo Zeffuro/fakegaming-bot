@@ -25,6 +25,12 @@ export function registerSchemaOverrides(): void {
     }).strict();
     schemaRegistry.registerCustom(Models.QuoteConfig as any, 'create', quoteCreateSchema);
 
+    const disabledModuleCreateSchema = z.object({
+        guildId: z.string().min(1),
+        moduleName: z.string().min(1),
+    }).strict();
+    schemaRegistry.registerCustom(Models.DisabledModuleConfig as any, 'create', disabledModuleCreateSchema);
+
     // Helper: HH:mm validator for quiet hours
     const hhmm = z.string().refine((v) => parseHHmmToMinutes(v) !== null, {
         message: 'Expected time in HH:mm',

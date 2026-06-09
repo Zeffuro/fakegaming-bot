@@ -26,6 +26,8 @@ COPY scripts ./scripts
 
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive
+RUN cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3 && npx --yes node-gyp rebuild --release
+RUN cd node_modules/.pnpm/canvas@*/node_modules/canvas && npx --yes node-gyp rebuild --release
 
 # -------------------- BUILDER --------------------
 FROM base AS builder
@@ -59,8 +61,8 @@ RUN apt-get update && apt-get install -y \
     libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev
 
 # Rebuild native modules
-RUN pnpm rebuild sqlite3
-RUN pnpm rebuild canvas
+RUN cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3 && npx --yes node-gyp rebuild --release
+RUN cd node_modules/.pnpm/canvas@*/node_modules/canvas && npx --yes node-gyp rebuild --release
 
 # Clean up heavy dependencies
 RUN apt-get purge -y build-essential pkg-config python3 make g++ libsqlite3-dev \

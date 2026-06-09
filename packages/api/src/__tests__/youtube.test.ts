@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testYoutube = {
@@ -58,6 +58,11 @@ describe('YouTube API', () => {
         expectOk(res);
         expect(res.body.youtubeChannelId).toBe('ytchan1');
     });
+    it('should return 404 when youtube channel config does not exist', async () => {
+        const res = await client.get('/api/youtube/channel')
+            .query({ youtubeChannelId: 'missing', discordChannelId: 'missingdiscord', guildId: 'testguild1' });
+        expectNotFound(res);
+    });
     it('should return 401 for GET /api/youtube/channel without JWT', async () => {
         const res = await client.raw
             .get('/api/youtube/channel')
@@ -108,6 +113,40 @@ describe('YouTube API', () => {
         expectCreated(res);
         expect(res.body.success).toBe(true);
     });
+    it('should update an existing youtube config by id', async () => {
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+
+        const res = await client.put(`/api/youtube/${id}`, {
+            customMessage: 'Fresh upload: {url}',
+            cooldownMinutes: 30
+        });
+
+        expectOk(res);
+        expect(res.body.customMessage).toBe('Fresh upload: {url}');
+        expect(res.body.cooldownMinutes).toBe(30);
+    });
+    it('should return 404 when updating non-existent youtube config', async () => {
+        const res = await client.put('/api/youtube/999999', {
+            customMessage: 'missing'
+        });
+        expectNotFound(res);
+    });
+    it('should return 400 when updating youtube config with invalid id or body', async () => {
+        const invalidId = await client.put('/api/youtube/invalid', {
+            customMessage: 'ignored'
+        });
+        expectBadRequest(invalidId);
+
+        const all = await configManager.youtubeManager.getMany({ youtubeChannelId: testYoutube.youtubeChannelId });
+        const id = all[0]?.id;
+        expect(id).toBeDefined();
+        const invalidBody = await client.put(`/api/youtube/${id}`, {
+            cooldownMinutes: -1
+        });
+        expectBadRequest(invalidBody);
+    });
     it('should return 400 when POST /channel with missing fields', async () => {
         const res = await client.post('/api/youtube/channel', { youtubeChannelId: 'test' } as any);
         expectBadRequest(res);
@@ -134,6 +173,35 @@ describe('YouTube API', () => {
             .post('/api/youtube')
             .send({ youtubeChannelId: 'ytchan3', discordChannelId: 'ytchan3discord', guildId: 'testguild3' });
         expectForbidden(res);
+    });
+
+    it('should map NotFoundError on POST /api/youtube to 403', async () => {
+        const { NotFoundError } = await import('@zeffuro/fakegaming-common');
+        const origAddPlain = configManager.youtubeManager.addPlain;
+        configManager.youtubeManager.addPlain = async () => {
+            throw new NotFoundError('Guild not found');
+        };
+        const res = await client.post('/api/youtube', {
+            youtubeChannelId: 'ytchan3',
+            discordChannelId: 'ytchan3discord',
+            guildId: 'testguild3'
+        });
+        expectForbidden(res);
+        configManager.youtubeManager.addPlain = origAddPlain;
+    });
+
+    it('should pass through generic errors on POST /api/youtube', async () => {
+        const origAddPlain = configManager.youtubeManager.addPlain;
+        configManager.youtubeManager.addPlain = async () => {
+            throw new Error('DB error');
+        };
+        const res = await client.post('/api/youtube', {
+            youtubeChannelId: 'ytchan3',
+            discordChannelId: 'ytchan3discord',
+            guildId: 'testguild3'
+        });
+        expectInternalServerError(res);
+        configManager.youtubeManager.addPlain = origAddPlain;
     });
 
     it('should return 403 for DELETE /api/youtube/:id as non-admin', async () => {

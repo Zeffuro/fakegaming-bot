@@ -43,6 +43,14 @@ describe('PatchSubscriptions API', () => {
         expect(res.body.error.message).toBe('Params validation failed');
     });
 
+    it('should return 404 for GET /api/patchSubscriptions/:id when missing', async () => {
+        const res = await request(app)
+            .get('/api/patchSubscriptions/999999')
+            .set('Authorization', `Bearer ${token}`);
+
+        expectNotFound(res);
+    });
+
     it('should return 400 when POST /api/patchSubscriptions with missing fields', async () => {
         const res = await request(app)
             .post('/api/patchSubscriptions')

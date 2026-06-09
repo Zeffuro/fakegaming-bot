@@ -29,6 +29,18 @@ describe('DisabledCommands API', () => {
         expect(Array.isArray(res.body)).toBe(true);
     });
 
+    it('should filter disabled commands by guild', async () => {
+        const res = await request(app)
+            .get('/api/disabledCommands')
+            .set('Authorization', `Bearer ${token}`)
+            .query({ guildId: testConfig.guildId });
+
+        expectOk(res);
+        expect(res.body).toEqual(expect.arrayContaining([
+            expect.objectContaining(testConfig)
+        ]));
+    });
+
     it('should check if a command is disabled in a guild', async () => {
         const res = await request(app)
             .get('/api/disabledCommands/check')
@@ -36,6 +48,19 @@ describe('DisabledCommands API', () => {
             .query({guildId: testConfig.guildId, commandName: testConfig.commandName});
         expectOk(res);
         expect(res.body.disabled).toBe(true);
+    });
+
+    it('should get a disabled command by id and return 404 when missing', async () => {
+        const found = await request(app)
+            .get(`/api/disabledCommands/${disabledId}`)
+            .set('Authorization', `Bearer ${token}`);
+        expectOk(found);
+        expect(found.body).toMatchObject(testConfig);
+
+        const missing = await request(app)
+            .get('/api/disabledCommands/999999')
+            .set('Authorization', `Bearer ${token}`);
+        expectNotFound(missing);
     });
 
     it('should add a disabled command', async () => {

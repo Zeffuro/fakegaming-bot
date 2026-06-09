@@ -1,5 +1,5 @@
 process.env.ENABLE_RATE_LIMIT_TESTS = '1';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 import { rateLimit, limiter } from '../middleware/rateLimit.js';
@@ -14,6 +14,8 @@ process.env.JWT_ISSUER = 'fakegaming-test';
 process.env.RATE_LIMIT_WINDOW_MS = '5000'; // 5s window for stable tests
 process.env.RATE_LIMIT_DEFAULT = '3'; // allow 3
 process.env.DATABASE_PROVIDER = 'sqlite';
+
+const originalEnv = { ...process.env };
 
 async function ensureTable() {
     const sequelize = getSequelize(true);
@@ -102,5 +104,83 @@ describe('rateLimit middleware', () => {
         expect(r.headers['x-ratelimit-limit']).toBeDefined();
         expect(r.headers['x-ratelimit-remaining']).toBeDefined();
         expect(r.headers['x-ratelimit-reset']).toBeDefined();
+    });
+});
+
+describe('rateLimit module guards', () => {
+    afterEach(() => {
+        process.env = { ...originalEnv, ENABLE_RATE_LIMIT_TESTS: '1' };
+        vi.unstubAllGlobals();
+        vi.resetModules();
+        vi.restoreAllMocks();
+    });
+
+    it('skips middleware in tests unless explicitly enabled', async () => {
+        process.env.NODE_ENV = 'test';
+        delete process.env.ENABLE_RATE_LIMIT_TESTS;
+        vi.resetModules();
+        const { rateLimit: skippedRateLimit } = await import('../middleware/rateLimit.js');
+        const next = vi.fn();
+        const req = { method: 'GET', path: '/api/test/123' } as any;
+        const res = {
+            setHeader: vi.fn(),
+            status: vi.fn().mockReturnThis(),
+            json: vi.fn(),
+        } as any;
+
+        await skippedRateLimit(req, res, next);
+
+        expect(next).toHaveBeenCalledOnce();
+        expect(res.setHeader).not.toHaveBeenCalled();
+    });
+
+    it('does not schedule cleanup in openapi build mode', async () => {
+        process.env.API_BUILD_MODE = 'openapi';
+        process.env.NODE_ENV = 'production';
+        vi.resetModules();
+        const setIntervalSpy = vi.fn();
+        vi.stubGlobal('setInterval', setIntervalSpy);
+        const { scheduleRateLimitCleanup } = await import('../middleware/rateLimit.js');
+
+        scheduleRateLimitCleanup();
+
+        expect(setIntervalSpy).not.toHaveBeenCalled();
+    });
+
+    it('does not schedule cleanup during tests', async () => {
+        delete process.env.API_BUILD_MODE;
+        process.env.NODE_ENV = 'test';
+        vi.resetModules();
+        const setIntervalSpy = vi.fn();
+        vi.stubGlobal('setInterval', setIntervalSpy);
+        const { scheduleRateLimitCleanup } = await import('../middleware/rateLimit.js');
+
+        scheduleRateLimitCleanup();
+
+        expect(setIntervalSpy).not.toHaveBeenCalled();
+    });
+
+    it('schedules cleanup once with configured timing', async () => {
+        delete process.env.API_BUILD_MODE;
+        delete process.env.SKIP_DB_INIT;
+        process.env.NODE_ENV = 'production';
+        process.env.RATE_LIMIT_WINDOW_MS = '1000';
+        process.env.RATE_LIMIT_RETENTION_MS = '5000';
+        process.env.RATE_LIMIT_CLEANUP_INTERVAL_MS = '2500';
+        vi.resetModules();
+        const timer = {
+            unref: vi.fn()
+        };
+        timer.unref.mockReturnValue(timer);
+        const setIntervalSpy = vi.fn().mockReturnValue(timer);
+        vi.stubGlobal('setInterval', setIntervalSpy);
+        const { scheduleRateLimitCleanup } = await import('../middleware/rateLimit.js');
+
+        scheduleRateLimitCleanup();
+        scheduleRateLimitCleanup();
+
+        expect(setIntervalSpy).toHaveBeenCalledOnce();
+        expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 2500);
+        expect(timer.unref).toHaveBeenCalledOnce();
     });
 });

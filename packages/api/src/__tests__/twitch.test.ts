@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
@@ -15,6 +15,11 @@ beforeEach(async () => {
     // Clean up twitch table before each test
     await configManager.twitchManager.removeAll();
     await configManager.twitchManager.add(testTwitch);
+});
+
+afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
 });
 
 describe('Twitch API', () => {
@@ -71,6 +76,91 @@ describe('Twitch API', () => {
         expectOk(res);
         expect(res.body.exists).toBe(false);
     });
+
+    it('should verify twitch username using credentials and first repeated query value', async () => {
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'token-1' }) })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({
+                    data: [{ id: 'user-1', login: 'creator', display_name: 'Creator Display' }]
+                })
+            });
+        vi.stubGlobal('fetch', fetchMock);
+        vi.stubEnv('TWITCH_CLIENT_ID', 'client-id');
+        vi.stubEnv('TWITCH_CLIENT_SECRET', 'client-secret');
+
+        const res = await client
+            .get('/api/twitch/verify')
+            .query({ twitchUsername: [' creator ', 'ignored'] });
+
+        expectOk(res);
+        expect(res.body).toEqual({
+            exists: true,
+            id: 'user-1',
+            login: 'creator',
+            displayName: 'Creator Display'
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return false when twitch verify credentials are missing', async () => {
+        vi.stubEnv('TWITCH_CLIENT_ID', '');
+        vi.stubEnv('TWITCH_CLIENT_SECRET', '');
+
+        const res = await client.get('/api/twitch/verify').query({ username: 'creator' });
+
+        expectOk(res);
+        expect(res.body).toEqual({ exists: false });
+    });
+
+    it('should reject twitch verify missing username', async () => {
+        const res = await client.get('/api/twitch/verify');
+
+        expectBadRequest(res);
+    });
+
+    it('should return false when twitch token request fails', async () => {
+        vi.stubEnv('TWITCH_CLIENT_ID', 'client-id');
+        vi.stubEnv('TWITCH_CLIENT_SECRET', 'client-secret');
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false }));
+
+        const res = await client.get('/api/twitch/verify').query({ username: 'creator' });
+
+        expectOk(res);
+        expect(res.body).toEqual({ exists: false });
+    });
+
+    it('should return false when twitch user lookup fails or has no user', async () => {
+        vi.stubEnv('TWITCH_CLIENT_ID', 'client-id');
+        vi.stubEnv('TWITCH_CLIENT_SECRET', 'client-secret');
+        vi.stubGlobal('fetch', vi.fn()
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'token-1' }) })
+            .mockResolvedValueOnce({ ok: false }));
+
+        const failedLookup = await client.get('/api/twitch/verify').query({ username: 'creator' });
+        expectOk(failedLookup);
+        expect(failedLookup.body).toEqual({ exists: false });
+
+        vi.stubGlobal('fetch', vi.fn()
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'token-2' }) })
+            .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) }));
+
+        const missingUser = await client.get('/api/twitch/verify').query({ username: 'missing' });
+        expectOk(missingUser);
+        expect(missingUser.body).toEqual({ exists: false });
+    });
+
+    it('should return false when twitch verify throws', async () => {
+        vi.stubEnv('TWITCH_CLIENT_ID', 'client-id');
+        vi.stubEnv('TWITCH_CLIENT_SECRET', 'client-secret');
+        vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce(new Error('network')));
+
+        const res = await client.get('/api/twitch/verify').query({ username: 'creator' });
+
+        expectOk(res);
+        expect(res.body).toEqual({ exists: false });
+    });
     it('should return 404 for non-existent twitch config', async () => {
         const res = await client.get('/api/twitch/999999');
         expectNotFound(res);
@@ -81,6 +171,50 @@ describe('Twitch API', () => {
         const res = await client.delete(`/api/twitch/${id}`);
         expectOk(res);
         expect(res.body.success).toBe(true);
+    });
+
+    it('should update a twitch config by id', async () => {
+        const id = await getFirstTwitchId();
+        const res = await client.put(`/api/twitch/${id}`, {
+            twitchUsername: 'updatedstreamer',
+            discordChannelId: 'updatedchannel',
+            guildId: 'testguild1',
+            customMessage: 'Updated live message',
+            cooldownMinutes: 5,
+            quietHoursStart: null,
+            quietHoursEnd: null
+        });
+
+        expectOk(res);
+        expect(res.body.twitchUsername).toBe('updatedstreamer');
+        expect(res.body.discordChannelId).toBe('updatedchannel');
+    });
+
+    it('should return 404 when updating non-existent twitch config', async () => {
+        const res = await client.put('/api/twitch/999999', {
+            twitchUsername: 'updatedstreamer',
+            discordChannelId: 'updatedchannel',
+            guildId: 'testguild1'
+        });
+
+        expectNotFound(res);
+    });
+
+    it('should return 400 for invalid PUT id or body', async () => {
+        const invalidId = await client.put('/api/twitch/invalid', {
+            twitchUsername: 'updatedstreamer',
+            discordChannelId: 'updatedchannel',
+            guildId: 'testguild1'
+        });
+        expectBadRequest(invalidId);
+
+        const id = await getFirstTwitchId();
+        const invalidBody = await client.put(`/api/twitch/${id}`, {
+            twitchUsername: null,
+            discordChannelId: 123,
+            guildId: 'testguild1'
+        } as any);
+        expectBadRequest(invalidBody);
     });
 
     it('should return 404 when deleting non-existent twitch config', async () => {

@@ -105,13 +105,12 @@ export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
     return makeValidator(
         (input) => schema.parseAsync(input),
         (req, parsed) => {
-            // Express' req.query is read-only type, so assign properties
-            if (parsed && typeof parsed === 'object') {
-                const record = parsed as Record<string, unknown>;
-                Object.keys(record).forEach((key) => {
-                    (req.query as Record<string, unknown>)[key] = record[key];
-                });
-            }
+            Object.defineProperty(req, 'query', {
+                value: parsed,
+                configurable: true,
+                enumerable: true,
+                writable: true,
+            });
         },
         'Query'
     );

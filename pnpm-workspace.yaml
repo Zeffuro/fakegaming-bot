@@ -11,12 +11,12 @@ overrides:
   'twisted>uuid': '11.1.1'
   vite: '8.0.16'
 
-onlyBuiltDependencies:
-  - '@scarf/scarf'
-  - '@swc/core'
-  - canvas
-  - esbuild
-  - protobufjs
-  - sharp
-  - sqlite3
-  - unrs-resolver
+allowBuilds:
+  '@scarf/scarf': true
+  '@swc/core': true
+  canvas: true
+  esbuild: true
+  protobufjs: true
+  sharp: true
+  sqlite3: true
+  unrs-resolver: true
