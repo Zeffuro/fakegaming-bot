@@ -112,6 +112,7 @@
         },
         "required": [
           "userId",
+          "guildId",
           "createdAt",
           "updatedAt"
         ]

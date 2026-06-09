@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PgBossJobQueue } from '../pgBossAdapter.js';
+import { PgBossJobQueue, resolvePgBossConstructor } from '../pgBossAdapter.js';
 
 class MockBoss {
     public started = false;
@@ -83,5 +83,27 @@ describe('PgBossJobQueue (with injected boss)', () => {
         await queue.start();
         // Ensure it did not clear or duplicate works
         expect((queue as any).boss).toBe(boss);
+    });
+});
+
+describe('resolvePgBossConstructor', () => {
+    it('uses the pg-boss v12 named ESM export', () => {
+        expect(resolvePgBossConstructor({ PgBoss: MockBoss })).toBe(MockBoss);
+    });
+
+    it('uses a default constructor export', () => {
+        expect(resolvePgBossConstructor({ default: MockBoss })).toBe(MockBoss);
+    });
+
+    it('uses a default object with PgBoss export', () => {
+        expect(resolvePgBossConstructor({ default: { PgBoss: MockBoss } })).toBe(MockBoss);
+    });
+
+    it('uses a CommonJS-style constructor export', () => {
+        expect(resolvePgBossConstructor(MockBoss)).toBe(MockBoss);
+    });
+
+    it('throws when no constructor is exported', () => {
+        expect(() => resolvePgBossConstructor({})).toThrow('pg-boss did not export a PgBoss constructor');
     });
 });

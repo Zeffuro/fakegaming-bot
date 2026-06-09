@@ -1,6 +1,16 @@
 import type { Job, JobHandler, JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { getLogger } from '@zeffuro/fakegaming-common';
 
+type PgBossConstructor = new (config: { connectionString: string }) => any;
+
+export function resolvePgBossConstructor(mod: any): PgBossConstructor {
+    const candidate = mod?.PgBoss ?? mod?.default?.PgBoss ?? mod?.default ?? mod;
+    if (typeof candidate !== 'function') {
+        throw new TypeError('pg-boss did not export a PgBoss constructor');
+    }
+    return candidate as PgBossConstructor;
+}
+
 /**
  * PgBoss-backed JobQueue adapter
  */
@@ -17,7 +27,7 @@ export class PgBossJobQueue implements JobQueue {
     async start(): Promise<void> {
         if (this.boss) return;
         const mod: any = await (Function('return import("pg-boss")')() as Promise<any>);
-        const PgBoss = mod?.default ?? mod;
+        const PgBoss = resolvePgBossConstructor(mod);
         this.boss = new PgBoss({ connectionString: this.connectionString });
         // Attach error listener to avoid process crash on emitted 'error'
         if (typeof this.boss?.on === 'function') {
