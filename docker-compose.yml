@@ -18,7 +18,7 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       DATA_ROOT: /app/data
       API_URL: http://fakegaming-api:3001/api # Internal routing inside Docker network
       SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
@@ -44,7 +44,7 @@ services:
     environment:
       PORT: 3001
       DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@fakegaming-postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       DASHBOARD_URL: ${PRODUCTION_DASHBOARD_URL}
       PUBLIC_URL: ${PRODUCTION_API_URL}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
