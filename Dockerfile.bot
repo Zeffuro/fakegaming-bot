@@ -26,6 +26,7 @@ COPY scripts ./scripts
 
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive
+RUN ln -sfn /app/packages/common/node_modules/sequelize /app/node_modules/sequelize
 RUN cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3 && npx --yes node-gyp rebuild --release
 RUN cd node_modules/.pnpm/canvas@*/node_modules/canvas && npx --yes node-gyp rebuild --release
 
