@@ -19,6 +19,8 @@ services:
     environment:
       DATABASE_PROVIDER: postgres
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DB_MIGRATIONS_ENABLED: 0
+      DB_SYNC_ENABLED: 0
       DATA_ROOT: /app/data
       API_URL: http://fakegaming-api:3001/api # Internal routing inside Docker network
       SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
@@ -35,6 +37,7 @@ services:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
     depends_on:
       - postgres
+      - api
 
   # -------------------- API --------------------
   api:

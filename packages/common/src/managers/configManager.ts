@@ -46,7 +46,16 @@ export class ConfigManager {
                 console.error('Database connection failed:', err);
                 process.exit(1);
             });
-        await runMigrations(getSequelize(useTest));
-        await getSequelize(useTest).sync();
+        if (process.env.DB_MIGRATIONS_ENABLED !== '0') {
+            await runMigrations(getSequelize(useTest));
+        } else {
+            console.log('Database migrations disabled by DB_MIGRATIONS_ENABLED=0.');
+        }
+
+        if (process.env.DB_SYNC_ENABLED !== '0') {
+            await getSequelize(useTest).sync();
+        } else {
+            console.log('Sequelize sync disabled by DB_SYNC_ENABLED=0.');
+        }
     }
 }

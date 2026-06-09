@@ -21,7 +21,7 @@ export const up = async ({ context }: { context: Sequelize }) => {
     if (dialect === 'sqlite') {
         // SQLite cannot add a primary key post-hoc; use a unique index instead
         await context.query(
-            'CREATE UNIQUE INDEX IF NOT EXISTS ux_api_rate_limits_key_window ON `api_rate_limits` ("key", "window_ts")'
+            'CREATE UNIQUE INDEX IF NOT EXISTS ux_api_rate_limits_key_window ON "api_rate_limits" ("key", "window_ts")'
         );
     } else {
         try {
@@ -38,7 +38,7 @@ export const up = async ({ context }: { context: Sequelize }) => {
     // Hot-path index on window_ts
     if (dialect === 'sqlite') {
         await context.query(
-            'CREATE INDEX IF NOT EXISTS ix_api_rate_limits_window_ts ON `api_rate_limits` ("window_ts")'
+            'CREATE INDEX IF NOT EXISTS ix_api_rate_limits_window_ts ON "api_rate_limits" ("window_ts")'
         );
     } else {
         try {
