@@ -48,7 +48,7 @@ export default function GuildNotificationsHubPage() {
                     <Grid container spacing={3}>
                         <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
                                     <LiveTv color="secondary" />
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Twitch Live Notifications</Typography>
                                     <Chip size="small" label={`${twitchApi.configs.length} configured`} sx={{ ml: 'auto' }} />
@@ -73,7 +73,7 @@ export default function GuildNotificationsHubPage() {
                         {/* TikTok card */}
                         <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
                                     <LiveTv color="secondary" />
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>TikTok Live Notifications</Typography>
                                     <Chip size="small" label={`${tiktokApi.configs.length} configured`} sx={{ ml: 'auto' }} />
@@ -97,7 +97,7 @@ export default function GuildNotificationsHubPage() {
 
                         <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
                                     <YouTubeIcon htmlColor="#FF0000" />
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>YouTube Notifications</Typography>
                                     <Chip size="small" label={`${youtubeApi.configs.length} configured`} sx={{ ml: 'auto' }} />
@@ -121,7 +121,7 @@ export default function GuildNotificationsHubPage() {
 
                         <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
                             <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
                                     <SpeakerNotes color="info" />
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>Patch Note Subscriptions</Typography>
                                     <Chip size="small" label={`${patchApi.configs.length} configured`} sx={{ ml: 'auto' }} />

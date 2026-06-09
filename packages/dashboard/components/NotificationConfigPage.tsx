@@ -123,7 +123,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                                 {moduleTitle}
                             </Typography>
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
                             <ButtonGroup variant="outlined" sx={{ mr: 1 }}>
                                 <Button
                                     component={Link}

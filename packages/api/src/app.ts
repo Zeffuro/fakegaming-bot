@@ -141,7 +141,7 @@ if (isProd) {
             },
             security: [{ bearerAuth: [] }],
         },
-        apis: [path.join(PROJECT_ROOT, 'packages/api/src/routes/**/*.ts')], // only in dev
+        apis: [path.join(PROJECT_ROOT, 'packages/api/src/routes/**/*.ts').split(path.sep).join('/')], // only in dev
     } as const;
     swaggerSpec = swaggerJsdoc(swaggerOptions);
 }

@@ -52,10 +52,12 @@ describe('tiktok job branches', () => {
         hoisted.recordJobRun.mockReset();
         // Set default connector to successful connect each test
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
-        (TikTokLiveConnection as any).mockImplementation(() => ({
+        (TikTokLiveConnection as any).mockImplementation(function () {
+            return {
             connect: vi.fn().mockResolvedValue({ roomInfo: { room: { id: 'roomX', title: 't', create_time: Math.floor((Date.now()-60000)/1000), user_count: 10 } } }),
             disconnect: vi.fn().mockResolvedValue(undefined)
-        }));
+            };
+        });
     });
     afterEach(() => { vi.clearAllMocks(); });
 
@@ -128,10 +130,12 @@ describe('tiktok job branches', () => {
     it('handles not-live by toggling off and persisting', async () => {
         // Make connect throw => resolveTikTokLive returns live:false
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
-        (TikTokLiveConnection as any).mockImplementation(() => ({
+        (TikTokLiveConnection as any).mockImplementation(function () {
+            return {
             connect: vi.fn().mockRejectedValue(new Error('offline')),
             disconnect: vi.fn().mockResolvedValue(undefined)
-        }));
+            };
+        });
         hoisted.getAllStreams.mockResolvedValue([makeCfg({ isLive: true })]);
         hoisted.upsert.mockResolvedValue(null);
 

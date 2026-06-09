@@ -18,7 +18,7 @@ export default function AdminHubPage() {
                             <Card variant="outlined">
                                 <CardActionArea onClick={() => router.push(c.href)}>
                                     <CardContent>
-                                        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                                        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
                                             {c.icon}
                                             <Typography variant="h6">{c.title}</Typography>
                                         </Stack>

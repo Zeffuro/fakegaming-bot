@@ -73,12 +73,14 @@ export default function UserMenu() {
         anchorEl={anchorEl}
         open={open}
         onClose={handleClose}
-        PaperProps={{
-          sx: {
-            bgcolor: "grey.800",
-            border: 1,
-            borderColor: "grey.700",
-            minWidth: 180
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "grey.800",
+              border: 1,
+              borderColor: "grey.700",
+              minWidth: 180
+            }
           }
         }}
       >

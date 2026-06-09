@@ -14,10 +14,12 @@ vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mo
 
 // Mock tiktok-live-connector to simulate a live connection
 vi.mock('tiktok-live-connector', () => ({
-    TikTokLiveConnection: vi.fn().mockImplementation((_username: string) => ({
-        connect: vi.fn().mockResolvedValue({ roomId: '12345', roomInfo: { room: { title: 'Live now!', create_time: Math.floor((Date.now()-60000)/1000), user_count: 100 } } }),
-        disconnect: vi.fn().mockResolvedValue(undefined)
-    }))
+    TikTokLiveConnection: vi.fn().mockImplementation(function (_username: string) {
+        return {
+            connect: vi.fn().mockResolvedValue({ roomId: '12345', roomInfo: { room: { title: 'Live now!', create_time: Math.floor((Date.now()-60000)/1000), user_count: 100 } } }),
+            disconnect: vi.fn().mockResolvedValue(undefined)
+        };
+    })
 }));
 
 import { registerTikTokJobs } from '../../jobs/tiktok.js';

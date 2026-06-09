@@ -14,10 +14,12 @@ describe('GET /api/tiktok/live', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
-        (TikTokLiveConnection as any).mockImplementation(() => ({
+        (TikTokLiveConnection as any).mockImplementation(function () {
+            return {
             connect: vi.fn().mockResolvedValue({ roomInfo: { room: { id: 'RID', title: 'Title', create_time: Math.floor((Date.now()-60000)/1000), user_count: 5, background_image: 'img' } } }),
             disconnect: vi.fn().mockResolvedValue(undefined)
-        }));
+            };
+        });
     });
     afterEach(() => { vi.clearAllMocks(); });
 
@@ -47,10 +49,12 @@ describe('GET /api/tiktok/live', () => {
 
     it('handles offline case', async () => {
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
-        (TikTokLiveConnection as any).mockImplementation(() => ({
+        (TikTokLiveConnection as any).mockImplementation(function () {
+            return {
             connect: vi.fn().mockRejectedValue(new Error('offline')),
             disconnect: vi.fn().mockResolvedValue(undefined)
-        }));
+            };
+        });
         const res = await client.get('/api/tiktok/live').query({ username: 'creator', debug: true });
         expectOk(res);
         expect(res.body.live).toBe(false);

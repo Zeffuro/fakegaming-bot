@@ -48,7 +48,7 @@ export default function AdminYouTubeDebugPage() {
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 1 }}>Result</Typography>
                             <Stack spacing={0.5}>
-                                <Stack direction="row" justifyContent="space-between">
+                                <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                                     <Typography variant="body2">Channel ID</Typography>
                                     <Typography variant="body2">{channelId ?? 'null'}</Typography>
                                 </Stack>

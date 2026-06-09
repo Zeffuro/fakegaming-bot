@@ -53,24 +53,24 @@ export default function AdminTwitchDebugPage() {
                         <CardContent>
                             <Typography variant="h6" sx={{ mb: 1 }}>Result</Typography>
                             <Stack spacing={0.5}>
-                                <Stack direction="row" justifyContent="space-between">
+                                <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                                     <Typography variant="body2">Exists</Typography>
                                     <Typography variant="body2" color={result.exists ? 'success.main' : 'error.main'}>{String(result.exists)}</Typography>
                                 </Stack>
                                 {result.id && (
-                                    <Stack direction="row" justifyContent="space-between">
+                                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                                         <Typography variant="body2">ID</Typography>
                                         <Typography variant="body2">{result.id}</Typography>
                                     </Stack>
                                 )}
                                 {result.login && (
-                                    <Stack direction="row" justifyContent="space-between">
+                                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                                         <Typography variant="body2">Login</Typography>
                                         <Typography variant="body2">{result.login}</Typography>
                                     </Stack>
                                 )}
                                 {result.displayName && (
-                                    <Stack direction="row" justifyContent="space-between">
+                                    <Stack direction="row" sx={{ justifyContent: "space-between" }}>
                                         <Typography variant="body2">Display Name</Typography>
                                         <Typography variant="body2">{result.displayName}</Typography>
                                     </Stack>

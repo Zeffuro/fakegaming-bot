@@ -174,12 +174,13 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                                     }
                                 }}
                                 slotProps={{
+                                    ...params.slotProps,
                                     input: {
-                                        ...params.InputProps,
+                                        ...params.slotProps.input,
                                         endAdornment: (
                                             <>
                                                 {loadingChannels ? <CircularProgress size={20} /> : null}
-                                                {params.InputProps.endAdornment}
+                                                {params.slotProps.input.endAdornment}
                                             </>
                                         ),
                                     }

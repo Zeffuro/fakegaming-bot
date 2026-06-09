@@ -201,12 +201,13 @@ export default function GuildQuotesPage() {
                                             }
                                         }}
                                         slotProps={{
+                                            ...params.slotProps,
                                             input: {
-                                                ...params.InputProps,
+                                                ...params.slotProps.input,
                                                 endAdornment: (
                                                     <>
                                                         {memberLoading ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}
-                                                        {params.InputProps.endAdornment}
+                                                        {params.slotProps.input.endAdornment}
                                                     </>
                                                 )
                                             }

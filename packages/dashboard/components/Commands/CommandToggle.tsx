@@ -11,9 +11,9 @@ interface CommandToggleProps {
 }
 
 const CommandToggle: React.FC<CommandToggleProps> = ({ name, description, disabled, onToggle, loading, interactiveDisabled }) => (
-  <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+  <Box sx={{ alignItems: "center", display: "flex", justifyContent: "space-between", mb: 2 }}>
     <Box>
-      <Box display="flex" alignItems="center" gap={1}>
+      <Box sx={{ alignItems: "center", display: "flex", gap: 1 }}>
         <Typography variant="subtitle1">{name}</Typography>
         {interactiveDisabled ? (
           <Chip size="small" color="warning" variant="outlined" label="Module disabled" />

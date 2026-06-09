@@ -28,7 +28,7 @@ export default function Dashboard() {
         <DashboardLayout loading={loading}>
             {!loading && (
                 <>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{mb: 3}}>
+                    <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 3 }}>
                         <Typography variant="h4" sx={{ fontWeight: 600 }}>
                             Your Guilds {isAdmin && <span style={{color: "gold"}}>(Full Access)</span>}
                         </Typography>

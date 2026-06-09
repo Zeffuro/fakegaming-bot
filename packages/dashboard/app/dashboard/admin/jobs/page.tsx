@@ -153,7 +153,7 @@ export default function AdminJobsPage() {
             details = `backend: ${typeof backend === 'string' ? backend : ''}`;
         }
         return (
-            <Stack key={idx} direction="row" justifyContent="space-between" sx={{ py: 0.5 }}>
+            <Stack key={idx} direction="row" sx={{ justifyContent: "space-between", py: 0.5 }}>
                 <Typography variant="body2">{status} · {finished}</Typography>
                 {details && <Typography variant="body2" color="text.secondary">{details}</Typography>}
             </Stack>
@@ -207,7 +207,7 @@ export default function AdminJobsPage() {
 
                     <Card variant="outlined">
                         <CardContent>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
                                 <Typography variant="h6">Heartbeat</Typography>
                                 <Button size="small" onClick={() => void loadLastHeartbeat()} disabled={loadingHeartbeat}>Refresh</Button>
                             </Stack>
@@ -225,7 +225,7 @@ export default function AdminJobsPage() {
 
                     <Card variant="outlined">
                         <CardContent>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
                                 <Typography variant="h6">Birthdays today</Typography>
                                 <Button size="small" onClick={() => void loadBirthdaysToday()} disabled={loadingBirthdaysToday}>Refresh</Button>
                             </Stack>
@@ -239,7 +239,7 @@ export default function AdminJobsPage() {
 
                     <Card variant="outlined">
                         <CardContent>
-                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                            <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", mb: 1 }}>
                                 <Typography variant="h6">Recent runs — {selectedJob}</Typography>
                                 <Button size="small" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus}>Refresh</Button>
                             </Stack>

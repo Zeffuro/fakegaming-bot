@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest';
+import { beforeAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Set up test environment variables
 process.env.DATABASE_PROVIDER = 'sqlite';
@@ -30,9 +30,10 @@ const dataDir = path.join(repoRoot, 'data');
 if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
 }
-// Prefer OS temp for test DBs (more reliable on CI); e.g., .../fakegaming-bot-tests/api
+
 const ciTmp = process.env.RUNNER_TEMP || os.tmpdir();
-const testDbDir = path.join(ciTmp, 'fakegaming-bot-tests', 'api');
+const testDbRoot = path.join(ciTmp, 'fakegaming-bot-tests', 'api');
+const testDbDir = path.join(testDbRoot, String(process.pid));
 if (!fs.existsSync(testDbDir)) {
     try { fs.mkdirSync(testDbDir, { recursive: true }); } catch { /* noop */ }
 }
@@ -54,6 +55,45 @@ process.env.DATA_ROOT = path.relative(repoRoot, dataDir) || 'data';
 function makeWorkerDbPath(): string {
     const unique = `${process.pid}-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
     return path.join(testDbDir, `_api_test.${unique}.sqlite`);
+}
+
+function isProcessAlive(pid: number): boolean {
+    if (pid <= 0) return false;
+    try {
+        process.kill(pid, 0);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+function removeDirIfSafe(dir: string): void {
+    try {
+        const resolvedRoot = path.resolve(testDbRoot);
+        const resolvedDir = path.resolve(dir);
+        if (!resolvedDir.startsWith(`${resolvedRoot}${path.sep}`)) return;
+        fs.rmSync(resolvedDir, { recursive: true, force: true });
+    } catch { /* noop */ }
+}
+
+function cleanupStaleProcessDirs(): void {
+    try {
+        if (!fs.existsSync(testDbRoot)) return;
+        const now = Date.now();
+        const maxAgeMs = 24 * 60 * 60 * 1000;
+        for (const entry of fs.readdirSync(testDbRoot, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            const pid = Number(entry.name);
+            if (!Number.isInteger(pid) || pid === process.pid) continue;
+
+            const full = path.join(testDbRoot, entry.name);
+            const stat = fs.statSync(full);
+            const staleByAge = (now - stat.mtimeMs) > maxAgeMs;
+            if (!isProcessAlive(pid) || staleByAge) {
+                removeDirIfSafe(full);
+            }
+        }
+    } catch { /* noop */ }
 }
 
 function cleanupOldTestDbs(opts?: { aggressive?: boolean }): void {
@@ -78,10 +118,8 @@ function cleanupOldTestDbs(opts?: { aggressive?: boolean }): void {
         try {
             if (!fs.existsSync(dir)) continue;
             const entries = fs.readdirSync(dir);
-            let matchCount = 0;
             for (const name of entries) {
                 if (!(name.startsWith('_api_test.') && name.endsWith('.sqlite'))) continue;
-                matchCount++;
                 const full = path.join(dir, name);
                 if (aggressive) {
                     tryUnlinkWithSiblings(full);
@@ -93,14 +131,6 @@ function cleanupOldTestDbs(opts?: { aggressive?: boolean }): void {
                         tryUnlinkWithSiblings(full);
                     }
                 } catch { /* noop */ }
-            }
-            // If too many files remain, attempt a second-pass aggressive cleanup
-            if (!aggressive && matchCount > 20) {
-                for (const name of entries) {
-                    if (!(name.startsWith('_api_test.') && name.endsWith('.sqlite'))) continue;
-                    const full = path.join(dir, name);
-                    tryUnlinkWithSiblings(full);
-                }
             }
         } catch { /* noop */ }
     }
@@ -167,6 +197,7 @@ beforeAll(async () => {
     const g = globalThis as any;
 
     // Proactively clean up stale DB files from previous runs
+    cleanupStaleProcessDirs();
     if (process.env.CI === 'true') {
         cleanupOldTestDbs(); // TTL-based on CI
     } else {
@@ -210,25 +241,6 @@ beforeAll(async () => {
             }
             g.__API_DB_READY__ = true;
 
-            // Register a one-time process exit cleanup for this worker
-            if (!g.__API_DB_CLEANUP_REGISTERED__) {
-                g.__API_DB_CLEANUP_REGISTERED__ = true;
-                const cleanup = async () => {
-                    try { await closeSequelize(); } catch { /* noop */ }
-                    if (!preferMemory) {
-                        try {
-                            const p = process.env.TEST_SQLITE_FILE;
-                            if (p && fs.existsSync(p)) fs.unlinkSync(p);
-                        } catch { /* noop */ }
-                    }
-                    // Final pass to tidy up any orphaned files
-                    try {
-                        if (process.env.CI === 'true') cleanupOldTestDbs(); else cleanupOldTestDbs({ aggressive: true });
-                    } catch { /* noop */ }
-                };
-                process.once('exit', () => { void cleanup(); });
-                process.once('SIGINT', () => { void cleanup(); process.exit(0); });
-            }
         })();
     }
 
@@ -253,34 +265,4 @@ afterEach(() => {
     vi.clearAllMocks();
     vi.resetAllMocks();
     vi.restoreAllMocks();
-});
-
-// Final per-worker cleanup once all tests in this worker finish
-async function unlinkWithRetries(baseFile: string): Promise<void> {
-    const siblings = [baseFile, `${baseFile}-wal`, `${baseFile}-shm`, `${baseFile}-journal`];
-    const retries = 3;
-    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-    for (let attempt = 0; attempt < retries; attempt++) {
-        let allGone = true;
-        for (const f of siblings) {
-            try { if (fs.existsSync(f)) fs.unlinkSync(f); } catch { allGone = false; }
-        }
-        if (allGone) return;
-        await delay(100 * (attempt + 1));
-    }
-}
-
-afterAll(async () => {
-    const preferMemory = process.env.FAKEGAMING_TEST_DB_MODE === 'memory';
-    try { await closeSequelize(); } catch { /* noop */ }
-    if (!preferMemory) {
-        const p = process.env.TEST_SQLITE_FILE;
-        if (p) {
-            try { await unlinkWithRetries(p); } catch { /* noop */ }
-        }
-    }
-    // Now that connections are closed, aggressively clean leftover test DBs
-    try {
-        if (process.env.CI === 'true') cleanupOldTestDbs(); else cleanupOldTestDbs({ aggressive: true });
-    } catch { /* noop */ }
 });

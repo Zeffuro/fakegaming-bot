@@ -18,10 +18,10 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
             }}
         >
             <FakegamingLogo size={100} variant="circle" elevation={3}/>
-            <Typography variant="h4" fontWeight={700} mb={2} mt={2}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 2, mt: 2 }}>
                 Fakegaming Bot Dashboard
             </Typography>
-            <Typography variant="body1" color="text.secondary" mb={4}>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
                 Log in with Discord to manage your servers and bot settings.
             </Typography>
             {isLoggedIn ? (

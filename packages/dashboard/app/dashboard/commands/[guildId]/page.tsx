@@ -95,7 +95,7 @@ export default function GuildCommandsPage() {
 
           return (
             <Box key={moduleName} sx={{ mb: 2, border: 1, borderColor: 'grey.700', borderRadius: 1, bgcolor: 'grey.900' }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ p: 1.5 }}>
+              <Box sx={{ alignItems: "center", display: "flex", justifyContent: "space-between", p: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <IconButton size="small" onClick={() => toggleCollapsed(moduleName)} aria-label={isCollapsed ? `Expand ${node.module.title}` : `Collapse ${node.module.title}`}>
                     {isCollapsed ? <ExpandMore /> : <ExpandLess />}
