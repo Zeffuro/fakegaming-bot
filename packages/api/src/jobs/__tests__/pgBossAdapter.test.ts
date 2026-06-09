@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { PgBossJobQueue, resolvePgBossConstructor } from '../pgBossAdapter.js';
+import { PgBossJobQueue, resolvePgBossConstructor, toPgBossQueueName } from '../pgBossAdapter.js';
 
 class MockBoss {
     public started = false;
@@ -31,6 +31,7 @@ describe('PgBossJobQueue (with injected boss)', () => {
         });
         expect(boss.works.length).toBe(1);
         const work = boss.works[0];
+        expect(work.name).toBe('test/job');
         await work.fn({ id: 7, data: { x: 1 }, attempts: 2 });
         expect(handled).toEqual(['test:job', { x: 1 }, 2, '7']);
     });
@@ -39,7 +40,7 @@ describe('PgBossJobQueue (with injected boss)', () => {
         const id = await queue.schedule('another:job', { y: 2 }, { startAfterSeconds: 5, idempotencyKey: 'abc' });
         expect(id).toBe('123');
         expect(boss.lastPublish).toBeTruthy();
-        expect(boss.lastPublish!.name).toBe('another:job');
+        expect(boss.lastPublish!.name).toBe('another/job');
         expect(boss.lastPublish!.data).toEqual({ y: 2 });
         expect(boss.lastPublish!.options).toHaveProperty('startAfter');
         expect(boss.lastPublish!.options).toHaveProperty('singletonKey', 'abc');
@@ -68,7 +69,7 @@ describe('PgBossJobQueue (with injected boss)', () => {
     it('schedule without options does not set startAfter/singletonKey', async () => {
         await queue.schedule('simple:job', { z: 3 });
         expect(boss.lastPublish).toBeTruthy();
-        expect(boss.lastPublish!.name).toBe('simple:job');
+        expect(boss.lastPublish!.name).toBe('simple/job');
         expect(boss.lastPublish!.options).toEqual({});
     });
 
@@ -105,5 +106,20 @@ describe('resolvePgBossConstructor', () => {
 
     it('throws when no constructor is exported', () => {
         expect(() => resolvePgBossConstructor({})).toThrow('pg-boss did not export a PgBoss constructor');
+    });
+});
+
+describe('toPgBossQueueName', () => {
+    it('maps logical colon-delimited job names to pg-boss-safe queue names', () => {
+        expect(toPgBossQueueName('twitch:poll')).toBe('twitch/poll');
+        expect(toPgBossQueueName('reminders:run')).toBe('reminders/run');
+    });
+
+    it('replaces other invalid pg-boss queue characters', () => {
+        expect(toPgBossQueueName('bad queue:name')).toBe('bad_queue/name');
+    });
+
+    it('throws on an empty queue name', () => {
+        expect(() => toPgBossQueueName('')).toThrow('Job queue name cannot be empty');
     });
 });

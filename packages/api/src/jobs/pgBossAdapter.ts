@@ -11,6 +11,14 @@ export function resolvePgBossConstructor(mod: any): PgBossConstructor {
     return candidate as PgBossConstructor;
 }
 
+export function toPgBossQueueName(name: string): string {
+    const normalized = name.replaceAll(':', '/').replace(/[^\w./-]/g, '_');
+    if (!normalized) {
+        throw new Error('Job queue name cannot be empty');
+    }
+    return normalized;
+}
+
 /**
  * PgBoss-backed JobQueue adapter
  */
@@ -61,14 +69,15 @@ export class PgBossJobQueue implements JobQueue {
 
     private async ensureQueue(name: string): Promise<void> {
         if (!this.boss) return;
+        const queueName = toPgBossQueueName(name);
         try {
-            const existing = await this.boss.getQueue?.(name);
+            const existing = await this.boss.getQueue?.(queueName);
             if (!existing) {
-                await this.boss.createQueue?.(name);
+                await this.boss.createQueue?.(queueName);
             }
         } catch {
             // Fallback best-effort: attempt create and ignore if it already exists
-            try { await this.boss.createQueue?.(name); } catch { /* noop */ }
+            try { await this.boss.createQueue?.(queueName); } catch { /* noop */ }
         }
     }
 
@@ -83,8 +92,9 @@ export class PgBossJobQueue implements JobQueue {
         if (hasEnsure) {
             await this.ensureQueue(name);
         }
+        const queueName = toPgBossQueueName(name);
         // Do not await work() to keep synchronous semantics for tests/mocks
-        this.boss.work(name, async (pgJob: any) => {
+        this.boss.work(queueName, async (pgJob: any) => {
             const wrapped: Job<T> = {
                 id: String(pgJob.id),
                 name,
@@ -119,9 +129,9 @@ export class PgBossJobQueue implements JobQueue {
         }
         let id: unknown;
         if (typeof this.boss.send === 'function') {
-            id = await this.boss.send(name, data, opts);
+            id = await this.boss.send(toPgBossQueueName(name), data, opts);
         } else {
-            id = await this.boss.publish(name, data, opts);
+            id = await this.boss.publish(toPgBossQueueName(name), data, opts);
         }
         return String(id);
     }
