@@ -21,6 +21,13 @@ const {__dirname} = bootstrapEnv(import.meta.url);
 
 const logger = getLogger({ name: 'bot' });
 
+function isUnknownInteractionError(error: unknown): boolean {
+    return typeof error === 'object'
+        && error !== null
+        && 'code' in error
+        && (error as { code?: unknown }).code === 10062;
+}
+
 (async () => {
     try {
         // Start minimal periodic metrics summary logger
@@ -68,6 +75,10 @@ const logger = getLogger({ name: 'bot' });
             ]
         });
 
+        client.on(Events.Error, (error) => {
+            logger.error({ err: error }, 'Discord client emitted an error');
+        });
+
         const modulesPath = path.join(__dirname, 'modules');
 
         try {
@@ -91,7 +102,17 @@ const logger = getLogger({ name: 'bot' });
             if (!command) return;
 
             if (interaction.isAutocomplete() && command.autocomplete) {
-                await command.autocomplete(interaction);
+                try {
+                    await command.autocomplete(interaction);
+                } catch (error) {
+                    if (isUnknownInteractionError(error)) {
+                        logger.debug({ err: error, command: interaction.commandName }, 'Autocomplete interaction expired before response');
+                        return;
+                    }
+
+                    incMetric('autocomplete_error', { name: interaction.commandName });
+                    logger.warn({ err: error, command: interaction.commandName }, 'Error handling autocomplete interaction');
+                }
                 return;
             }
             if (interaction.isChatInputCommand()) {

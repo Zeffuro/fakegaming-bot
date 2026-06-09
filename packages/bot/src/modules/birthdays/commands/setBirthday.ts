@@ -5,6 +5,7 @@ import { requireAdmin } from '../../../utils/permissions.js';
 import { subjectForUser, subjectNominative } from '../shared/messages.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { setBirthday as META } from '../commands.manifest.js';
+import { UniqueConstraintError } from 'sequelize';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
@@ -43,6 +44,13 @@ function isValidDate(day: number, month: number, year?: number): boolean {
     return date.getDate() === day && date.getMonth() === month - 1;
 }
 
+async function replyAlreadySet(interaction: ChatInputCommandInteraction, targetUserId: string | null) {
+    await interaction.reply({
+        content: `${subjectNominative(targetUserId)} already have a birthday set in this server.`,
+        flags: MessageFlags.Ephemeral
+    });
+}
+
 async function execute(interaction: ChatInputCommandInteraction) {
     const day = interaction.options.getInteger('day', true);
     const monthName = interaction.options.getString('month', true);
@@ -65,21 +73,26 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const alreadySet = await getConfigManager().birthdayManager.hasBirthday(userId, guildId);
     if (alreadySet) {
-        await interaction.reply({
-            content: `${subjectNominative(targetUser ? userId : null)} already have a birthday set in this channel.`,
-            flags: MessageFlags.Ephemeral
-        });
+        await replyAlreadySet(interaction, targetUser ? userId : null);
         return;
     }
 
-    await getConfigManager().birthdayManager.add({
-        userId,
-        day,
-        month: monthObj.value,
-        year,
-        guildId,
-        channelId: channel!.id
-    });
+    try {
+        await getConfigManager().birthdayManager.add({
+            userId,
+            day,
+            month: monthObj.value,
+            year,
+            guildId,
+            channelId: channel!.id
+        });
+    } catch (error) {
+        if (error instanceof UniqueConstraintError) {
+            await replyAlreadySet(interaction, targetUser ? userId : null);
+            return;
+        }
+        throw error;
+    }
 
     await interaction.reply({
         content: `${subjectForUser(targetUser ? userId : null)} birthday reminder is set!`,

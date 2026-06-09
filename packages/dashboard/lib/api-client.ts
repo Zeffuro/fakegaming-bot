@@ -22,7 +22,7 @@ import type {
   tiktok_post_Response201,
   tiktok_id_delete_Response200,
 } from "@zeffuro/fakegaming-common/api-responses";
-import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
+import type { BirthdayConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 
 // Define endpoint paths centrally
@@ -42,6 +42,9 @@ export const API_ENDPOINTS = {
 
   // Quotes
   QUOTES: '/api/external/quotes',
+
+  // Birthdays
+  BIRTHDAYS: '/api/external/birthdays',
 
   // Discord helpers
   DISCORD: '/api/external/discord',
@@ -169,6 +172,15 @@ export interface ResolveUsersResponse {
 export interface JobsListResponse { jobs: Array<{ name: string; supportsDate: boolean; supportsForce: boolean }>; }
 export interface LastHeartbeatResponse { last: { startedAt: string; backend: string; receivedAt: string } | null }
 export interface JobRunEntry { startedAt: string; finishedAt: string; ok: boolean; meta?: Record<string, unknown>; error?: string }
+export interface BirthdayPayload {
+  userId: string;
+  guildId: string;
+  channelId: string;
+  day: number;
+  month: number;
+  year?: number;
+}
+export type BirthdayUpdatePayload = Omit<BirthdayPayload, 'userId' | 'guildId'>;
 
 // Typed API methods using apiResponses.ts types
 export const api = {
@@ -279,6 +291,25 @@ export const api = {
 
   deleteQuote: (id: string) =>
     apiRequest<{ success: boolean }>(`${API_ENDPOINTS.QUOTES}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+
+  // Birthdays APIs
+  getBirthdays: (guildId: string) =>
+    apiRequest<BirthdayConfig[]>(`${API_ENDPOINTS.BIRTHDAYS}?guildId=${encodeURIComponent(guildId)}`),
+
+  createBirthday: (data: BirthdayPayload) =>
+    apiRequest<{ success: boolean }>(API_ENDPOINTS.BIRTHDAYS, { method: 'POST', body: data }),
+
+  updateBirthday: (userId: string, guildId: string, data: BirthdayUpdatePayload) =>
+    apiRequest<BirthdayConfig>(
+      `${API_ENDPOINTS.BIRTHDAYS}/${encodeURIComponent(userId)}/${encodeURIComponent(guildId)}`,
+      { method: 'PUT', body: data }
+    ),
+
+  deleteBirthday: (userId: string, guildId: string) =>
+    apiRequest<{ success: boolean }>(
+      `${API_ENDPOINTS.BIRTHDAYS}/${encodeURIComponent(userId)}/${encodeURIComponent(guildId)}`,
+      { method: 'DELETE' }
+    ),
 
   // Discord resolve API
   resolveUsers: (guildId: string, ids: string[]) =>

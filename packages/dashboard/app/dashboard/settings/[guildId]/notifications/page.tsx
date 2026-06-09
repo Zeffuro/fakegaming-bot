@@ -2,13 +2,14 @@
 import React from "react";
 import Link from "next/link";
 import { Box, Typography, Alert, Grid, Paper, Button, Chip, Stack } from "@mui/material";
-import { LiveTv, YouTube as YouTubeIcon, NotificationsActive, SpeakerNotes } from "@mui/icons-material";
+import { Cake, LiveTv, YouTube as YouTubeIcon, NotificationsActive, SpeakerNotes } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
+import { useBirthdays } from "@/components/hooks/useBirthdays";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -16,8 +17,9 @@ export default function GuildNotificationsHubPage() {
     const youtubeApi = useYouTubeConfigs(guildId as string);
     const patchApi = usePatchSubscriptions(guildId as string);
     const tiktokApi = useTikTokConfigs(guildId as string);
+    const birthdayApi = useBirthdays(guildId as string);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || birthdayApi.loading;
 
     if (!guild && !guildsLoading) {
         return (
@@ -40,7 +42,7 @@ export default function GuildNotificationsHubPage() {
                                 Notifications
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
-                                Manage Twitch, TikTok, YouTube and Patch Notes notifications for this server.
+                                Manage Twitch, TikTok, YouTube, Patch Notes and birthday notifications for this server.
                             </Typography>
                         </Box>
                     </Box>
@@ -139,6 +141,27 @@ export default function GuildNotificationsHubPage() {
                                     }}
                                 >
                                     Manage Patch Notes
+                                </Button>
+                            </Paper>
+                        </Grid>
+
+                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
+                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
+                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
+                                    <Cake color="warning" />
+                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Birthday Announcements</Typography>
+                                    <Chip size="small" label={`${birthdayApi.birthdays.length} configured`} sx={{ ml: 'auto' }} />
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                    Configure member birthday dates and the channel where birthday messages are posted.
+                                </Typography>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/birthdays/${encodeURIComponent(guildId as string)}`}
+                                    variant="contained"
+                                    color="warning"
+                                >
+                                    Manage Birthdays
                                 </Button>
                             </Paper>
                         </Grid>

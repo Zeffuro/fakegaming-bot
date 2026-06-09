@@ -3662,6 +3662,31 @@
           }
         }
       },
+      "put": {
+        "summary": "Update a birthday by userId and guildId",
+        "tags": [
+          "Birthdays"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated birthday config"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
       "delete": {
         "summary": "Remove a birthday by userId and guildId",
         "tags": [

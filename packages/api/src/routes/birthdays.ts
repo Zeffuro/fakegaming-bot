@@ -2,8 +2,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
-import { validateParams, validateBodyForModel } from '@zeffuro/fakegaming-common';
-import { BirthdayConfig } from '@zeffuro/fakegaming-common/models';
+import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
@@ -12,6 +11,29 @@ import { UniqueConstraintError } from 'sequelize';
 const userGuildParamSchema = z.object({
     userId: z.string().min(1),
     guildId: z.string().min(1)
+});
+const listQuerySchema = z.object({
+    guildId: z.string().min(1).optional()
+});
+const birthdayDateFieldsSchema = z.object({
+    day: z.coerce.number().int().min(1).max(31),
+    month: z.coerce.number().int().min(1).max(12),
+    year: z.coerce.number().int().min(1900).max(9999).optional()
+}).refine(({ day, month, year }) => {
+    const testYear = year ?? 2000;
+    const date = new Date(testYear, month - 1, day);
+    return date.getFullYear() === testYear && date.getMonth() === month - 1 && date.getDate() === day;
+}, {
+    message: 'Invalid calendar date',
+    path: ['day']
+});
+const birthdayCreateBodySchema = birthdayDateFieldsSchema.extend({
+    userId: z.string().min(1),
+    guildId: z.string().min(1),
+    channelId: z.string().min(1)
+});
+const birthdayUpdateBodySchema = birthdayDateFieldsSchema.extend({
+    channelId: z.string().min(1)
 });
 
 // Router
@@ -33,8 +55,16 @@ const router = createBaseRouter();
  *               items:
  *                 $ref: '#/components/schemas/BirthdayConfig'
  */
-router.get('/', async (_req, res) => {
-    const birthdays = await getConfigManager().birthdayManager.getAllPlain();
+router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
+    if (guildId) {
+        const access = await checkUserGuildAccess(req, res, guildId);
+        if (!access.authorized) return;
+    }
+
+    const birthdays = guildId
+        ? await getConfigManager().birthdayManager.getManyPlain({ guildId })
+        : await getConfigManager().birthdayManager.getAllPlain();
     res.json(birthdays);
 });
 
@@ -94,7 +124,7 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *       409:
  *         $ref: '#/components/responses/Conflict'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateBodySchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.body;
     try {
@@ -108,6 +138,38 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BirthdayConfig
             throw error;
         }
     }
+});
+
+/**
+ * @openapi
+ * /birthdays/{userId}/{guildId}:
+ *   put:
+ *     summary: Update a birthday by userId and guildId
+ *     tags: [Birthdays]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Updated birthday config
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), validateBody(birthdayUpdateBodySchema), async (req, res) => {
+    const { userId, guildId } = req.params;
+    const existing = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
+    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+
+    const access = await checkUserGuildAccess(req, res, guildId as string);
+    if (!access.authorized) return;
+
+    const [affectedCount, rows] = await getConfigManager().birthdayManager.updatePlain(req.body, { userId, guildId });
+    if (affectedCount === 0) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+
+    res.json(rows[0] ?? await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string));
 });
 
 /**

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound, expectInternalServerError, expectBadRequest } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testBirthday = {
@@ -37,6 +37,21 @@ describe('Birthdays API', () => {
         expect(Array.isArray(res.body)).toBe(true);
     });
 
+    it('should list birthdays filtered by guild', async () => {
+        await configManager.birthdayManager.addPlain({
+            userId: 'birthdayuser-filtered',
+            guildId: 'birthdayguild2',
+            channelId: 'testchannel-filtered',
+            ...parseDate('1991-02-03')
+        });
+
+        const res = await client.get('/api/birthdays?guildId=birthdayguild1');
+        expectOk(res);
+        expect(Array.isArray(res.body)).toBe(true);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].guildId).toBe('birthdayguild1');
+    });
+
     it('should get a birthday by userId and guildId', async () => {
         const res = await client.get(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`);
         expectOk(res);
@@ -56,6 +71,19 @@ describe('Birthdays API', () => {
         });
         expectCreated(res);
         expect(res.body.success).toBe(true);
+    });
+
+    it('should update a birthday', async () => {
+        const res = await client.put(`/api/birthdays/${testBirthday.userId}/${testBirthday.guildId}`, {
+            channelId: 'updatedchannel',
+            month: 2,
+            day: 29,
+            year: 2000
+        });
+        expectOk(res);
+        expect(res.body.channelId).toBe('updatedchannel');
+        expect(res.body.month).toBe(2);
+        expect(res.body.day).toBe(29);
     });
 
     it('should delete a birthday', async () => {
@@ -110,6 +138,17 @@ describe('Birthdays API', () => {
         const res = await client.post('/api/birthdays', {userId: 123 as any, guildId: null as any, year: 'x' as any, month: null as any, day: null as any, channelId: null as any});
         // Depending on validation, this might be 400 or 500
         expect([400, 500]).toContain(res.status);
+    });
+
+    it('should return 400 for invalid calendar dates', async () => {
+        const res = await client.post('/api/birthdays', {
+            userId: 'birthdayuser-invalid-date',
+            guildId: 'birthdayguild1',
+            channelId: 'testchannel-invalid-date',
+            month: 4,
+            day: 31
+        });
+        expectBadRequest(res);
     });
 
     it('should return 500 for DB error on POST /api/birthdays', async () => {

@@ -23,7 +23,7 @@ export class BirthdayManager extends BaseManager<BirthdayConfig> {
     }
 
     /** Get all birthdays as plain objects */
-    async getAllPlain(): Promise<{ day: number; month: number; year?: number; userId: string; channelId: string }[]> {
+    async getAllPlain(): Promise<{ day: number; month: number; year?: number; userId: string; guildId: string; channelId: string }[]> {
         return await this.getAll({ raw: true }) as any;
     }
 

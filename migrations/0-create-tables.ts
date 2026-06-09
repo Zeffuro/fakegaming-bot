@@ -88,7 +88,7 @@ export const up = async ({context}: { context: Sequelize }) => {
         day: {type: DataTypes.INTEGER, allowNull: false},
         month: {type: DataTypes.INTEGER, allowNull: false},
         year: {type: DataTypes.INTEGER, allowNull: true},
-        guildId: {type: DataTypes.STRING, allowNull: false},
+        guildId: {type: DataTypes.STRING, primaryKey: true, allowNull: false},
         channelId: {type: DataTypes.STRING, allowNull: false},
         createdAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},
         updatedAt: {type: DataTypes.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')},

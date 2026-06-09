@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupCommandTest, createMockBirthday, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction } from 'discord.js';
+import { UniqueConstraintError } from 'sequelize';
 
 describe('setBirthday command', () => {
     beforeEach(() => {
@@ -145,6 +146,38 @@ describe('setBirthday command', () => {
         expect(addSpy).not.toHaveBeenCalled();
 
         // Verify error message was sent (content and ephemeral)
+        expectReplyContains(interaction, 'already have a birthday set');
+        expectEphemeral(interaction);
+    });
+
+    it('replies with error when insert hits a duplicate race', async () => {
+        const addSpy = vi.fn().mockRejectedValue(new UniqueConstraintError({ errors: [] }));
+        const hasBirthdaySpy = vi.fn().mockResolvedValue(false);
+
+        const { command, interaction } = await setupSetBirthdayCmd({
+            interaction: {
+                stringOptions: {
+                    month: 'January'
+                },
+                integerOptions: {
+                    day: 5,
+                    year: 1990
+                },
+                user: { id: '123456789012345678' },
+                guildId: '135381928284343204',
+                channelId: '929533532185956352'
+            },
+            managerOverrides: {
+                birthdayManager: {
+                    add: addSpy,
+                    hasBirthday: hasBirthdaySpy
+                }
+            }
+        });
+
+        await command.execute(interaction as unknown as CommandInteraction);
+
+        expect(addSpy).toHaveBeenCalled();
         expectReplyContains(interaction, 'already have a birthday set');
         expectEphemeral(interaction);
     });

@@ -17,7 +17,7 @@ import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useSt
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import Link from "next/link";
 import { Stack, ButtonGroup } from "@mui/material";
-import { LiveTv, YouTube as YouTubeIcon, SpeakerNotes } from "@mui/icons-material";
+import { Cake, LiveTv, YouTube as YouTubeIcon, SpeakerNotes } from "@mui/icons-material";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -192,6 +192,24 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                                     }}
                                 >
                                     Patch Notes
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/birthdays/${encodeURIComponent(guildId)}`}
+                                    startIcon={<Cake />}
+                                    sx={{
+                                        borderRadius: 999,
+                                        textTransform: 'none',
+                                        bgcolor: moduleName === 'Birthdays' ? 'warning.dark' : 'grey.800',
+                                        color: moduleName === 'Birthdays' ? 'warning.contrastText' : 'grey.300',
+                                        borderColor: 'grey.600',
+                                        '&:hover': {
+                                            bgcolor: moduleName === 'Birthdays' ? 'warning.dark' : 'grey.700',
+                                            filter: moduleName === 'Birthdays' ? 'brightness(0.9)' : undefined
+                                        }
+                                    }}
+                                >
+                                    Birthdays
                                 </Button>
                             </ButtonGroup>
                             <Button

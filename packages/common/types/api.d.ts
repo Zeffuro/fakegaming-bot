@@ -2650,7 +2650,28 @@ export interface paths {
                 404: components["responses"]["NotFound"];
             };
         };
-        put?: never;
+        /** Update a birthday by userId and guildId */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Updated birthday config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         post?: never;
         /** Remove a birthday by userId and guildId */
         delete: {

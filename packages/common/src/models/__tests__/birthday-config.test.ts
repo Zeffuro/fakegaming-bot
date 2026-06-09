@@ -75,7 +75,7 @@ describe('BirthdayConfig Model', () => {
         birthday.year = 1995;
         await birthday.save();
 
-        const updated = await BirthdayConfig.findByPk('user-update');
+        const updated = await BirthdayConfig.findOne({ where: { userId: 'user-update', guildId: 'guild-update' } });
         expect(updated?.channelId).toBe('channel-new');
         expect(updated?.year).toBe(1995);
     });
@@ -91,13 +91,34 @@ describe('BirthdayConfig Model', () => {
 
         await birthday.destroy();
 
-        const deleted = await BirthdayConfig.findByPk('user-delete');
+        const deleted = await BirthdayConfig.findOne({ where: { userId: 'user-delete', guildId: 'guild-delete' } });
         expect(deleted).toBeNull();
     });
 
-    it('should enforce unique userId', async () => {
+    it('should allow the same user to have birthdays in different guilds', async () => {
         await BirthdayConfig.create({
-            userId: 'unique-user',
+            userId: 'shared-user',
+            day: 15,
+            month: 3,
+            guildId: 'guild-1',
+            channelId: 'channel-1',
+        });
+
+        await BirthdayConfig.create({
+            userId: 'shared-user',
+            day: 20,
+            month: 4,
+            guildId: 'guild-2',
+            channelId: 'channel-2',
+        });
+
+        const birthdays = await BirthdayConfig.findAll({ where: { userId: 'shared-user' } });
+        expect(birthdays).toHaveLength(2);
+    });
+
+    it('should enforce one birthday per user per guild', async () => {
+        await BirthdayConfig.create({
+            userId: 'unique-user-guild',
             day: 15,
             month: 3,
             guildId: 'guild-1',
@@ -106,10 +127,10 @@ describe('BirthdayConfig Model', () => {
 
         await expect(
             BirthdayConfig.create({
-                userId: 'unique-user',
+                userId: 'unique-user-guild',
                 day: 20,
                 month: 4,
-                guildId: 'guild-2',
+                guildId: 'guild-1',
                 channelId: 'channel-2',
             })
         ).rejects.toThrow();
