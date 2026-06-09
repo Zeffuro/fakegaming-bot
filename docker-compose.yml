@@ -42,10 +42,8 @@ services:
     volumes:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
     depends_on:
-      postgres:
-        condition: service_healthy
-      api:
-        condition: service_healthy
+      - postgres
+      - api
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8081/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
@@ -83,14 +81,13 @@ services:
       YOUTUBE_ENRICH_EMBEDS: 0
       TIKTOK_COOKIE: ${TIKTOK_COOKIE}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - postgres
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 90s
+      start_period: 120s
 
   # -------------------- DASHBOARD --------------------
   dashboard:
@@ -109,8 +106,7 @@ services:
       JWT_AUDIENCE: fakegaming-dashboard
       JWT_ISSUER: fakegaming
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
