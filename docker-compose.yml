@@ -22,7 +22,7 @@ services:
       DB_MIGRATIONS_ENABLED: 0
       DB_SYNC_ENABLED: 0
       DATA_ROOT: /app/data
-      API_URL: http://fakegaming-api:3001/api # Internal routing inside Docker network
+      API_URL: 'http://api:3001/api'
       SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       CLIENT_ID: ${BOT_DISCORD_CLIENT_ID}
@@ -78,7 +78,7 @@ services:
     environment:
       PORT: 3000
       PUBLIC_URL: ${PRODUCTION_DASHBOARD_URL}
-      API_URL: http://fakegaming-api:3001/api
+      API_URL: 'http://api:3001/api'
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
