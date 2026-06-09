@@ -69,6 +69,7 @@ services:
       DISCORD_REDIRECT_URI: ${PRODUCTION_DASHBOARD_URL}/api/auth/discord/callback
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DASHBOARD_ADMINS: ${DASHBOARD_ADMINS}
+      JOBS_ENABLED: 1
       JWT_SECRET: ${JWT_SECRET}
       JWT_AUDIENCE: fakegaming-dashboard
       JWT_ISSUER: fakegaming
