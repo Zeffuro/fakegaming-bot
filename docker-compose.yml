@@ -111,6 +111,7 @@ services:
     restart: unless-stopped
     environment:
       PORT: 3000
+      HOSTNAME: 0.0.0.0
       PUBLIC_URL: ${PRODUCTION_DASHBOARD_URL}
       API_URL: 'http://api:3001/api'
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
