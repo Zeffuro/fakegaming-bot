@@ -44,6 +44,8 @@ describe('PgBossJobQueue (with injected boss)', () => {
         expect(boss.lastPublish!.data).toEqual({ y: 2 });
         expect(boss.lastPublish!.options).toHaveProperty('startAfter');
         expect(boss.lastPublish!.options).toHaveProperty('singletonKey', 'abc');
+        expect(boss.lastPublish!.options).toHaveProperty('retentionSeconds', 86400);
+        expect(boss.lastPublish!.options).toHaveProperty('deleteAfterSeconds', 86400);
     });
 
     it('throws when scheduling before boss is injected', async () => {
@@ -70,7 +72,7 @@ describe('PgBossJobQueue (with injected boss)', () => {
         await queue.schedule('simple:job', { z: 3 });
         expect(boss.lastPublish).toBeTruthy();
         expect(boss.lastPublish!.name).toBe('simple/job');
-        expect(boss.lastPublish!.options).toEqual({});
+        expect(boss.lastPublish!.options).toEqual({ retentionSeconds: 86400, deleteAfterSeconds: 86400 });
     });
 
     it('stop is a no-op when boss is already null', async () => {

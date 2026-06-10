@@ -17,6 +17,19 @@ export interface Job<T = unknown> {
  */
 export type JobHandler<T = unknown> = (job: Job<T>) => Promise<void>;
 
+export interface JobScheduleOptions {
+    /** Delay before execution, in seconds */
+    startAfterSeconds?: number;
+    /** Optional idempotency key; semantics depend on adapter */
+    idempotencyKey?: string;
+    /** Optional priority (higher runs earlier); adapter-specific */
+    priority?: number;
+    /** Provider retention after completion, in seconds. */
+    retentionSeconds?: number;
+    /** Provider deletion delay after retention, in seconds. */
+    deleteAfterSeconds?: number;
+}
+
 /**
  * Common job queue interface (single Postgres impl provided initially)
  */
@@ -36,14 +49,7 @@ export interface JobQueue {
     schedule<T = unknown>(
         name: string,
         data: T,
-        options?: {
-            /** Delay before execution, in seconds */
-            startAfterSeconds?: number;
-            /** Optional idempotency key; semantics depend on adapter */
-            idempotencyKey?: string;
-            /** Optional priority (higher runs earlier); adapter-specific */
-            priority?: number;
-        }
+        options?: JobScheduleOptions
     ): Promise<string>;
 }
 

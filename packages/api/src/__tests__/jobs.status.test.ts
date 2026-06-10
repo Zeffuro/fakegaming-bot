@@ -3,7 +3,8 @@ import { describe, it, expect } from 'vitest';
 import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import { expectOk, expectUnauthorized, expectServiceUnavailable, expectErrorCode } from '@zeffuro/fakegaming-common/testing';
-import { recordJobRun } from '../jobs/status.js';
+import { cleanupJobRuns, recordJobRun } from '../jobs/status.js';
+import { JobRun } from '@zeffuro/fakegaming-common';
 
 describe('Jobs status/read-only endpoints', () => {
     const client = givenAuthenticatedClient(app, { discordId: 'testuser' });
@@ -51,5 +52,27 @@ describe('Jobs status/read-only endpoints', () => {
         const res = await client.post('/api/jobs/birthdays/run').send({ force: true });
         expectServiceUnavailable(res);
         expectErrorCode(res as any, 'JOBS_UNAVAILABLE');
+    });
+
+    it('cleanupJobRuns deletes old rows and caps rows per job', async () => {
+        await JobRun.destroy({ where: { name: 'cleanup-test' } });
+        const now = new Date();
+        const old = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+
+        await JobRun.bulkCreate([
+            { name: 'cleanup-test', startedAt: old, finishedAt: old, ok: true },
+            { name: 'cleanup-test', startedAt: new Date(now.getTime() - 3000), finishedAt: new Date(now.getTime() - 3000), ok: true },
+            { name: 'cleanup-test', startedAt: new Date(now.getTime() - 2000), finishedAt: new Date(now.getTime() - 2000), ok: true },
+            { name: 'cleanup-test', startedAt: new Date(now.getTime() - 1000), finishedAt: new Date(now.getTime() - 1000), ok: true },
+        ]);
+
+        const result = await cleanupJobRuns({ retentionDays: 7, maxRowsPerJob: 2 });
+        expect(result.deletedOlderThanRetention).toBeGreaterThanOrEqual(1);
+
+        const remaining = await JobRun.findAll({
+            where: { name: 'cleanup-test' },
+            order: [['finishedAt', 'DESC']],
+        });
+        expect(remaining).toHaveLength(2);
     });
 });

@@ -8,6 +8,7 @@ import { pathToFileURL } from 'url';
 import path from 'path';
 import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
 import { bootstrapJobs } from './jobs/bootstrap.js';
+import { scheduleJobRunCleanup } from './jobs/status.js';
 
 const log = getLogger({ name: 'api' });
 
@@ -49,6 +50,7 @@ if (isDirectRun) {
         // Jobs are optional; enable with JOBS_ENABLED=1 and Postgres
         await bootstrapJobs();
         scheduleRateLimitCleanup();
+        scheduleJobRunCleanup();
         app.listen(port, () => {
             log.info(`API server running on port ${port}`);
         });

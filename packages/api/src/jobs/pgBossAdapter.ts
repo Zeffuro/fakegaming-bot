@@ -1,7 +1,14 @@
-import type { Job, JobHandler, JobQueue } from '@zeffuro/fakegaming-common/jobs';
+import type { Job, JobHandler, JobQueue, JobScheduleOptions } from '@zeffuro/fakegaming-common/jobs';
 import { getLogger } from '@zeffuro/fakegaming-common';
 
 type PgBossConstructor = new (config: { connectionString: string }) => any;
+
+function readPositiveIntegerEnv(name: string, fallback: number): number {
+    const raw = process.env[name];
+    if (!raw) return fallback;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
 
 export function resolvePgBossConstructor(mod: any): PgBossConstructor {
     const candidate = mod?.PgBoss ?? mod?.default?.PgBoss ?? mod?.default ?? mod;
@@ -27,6 +34,8 @@ export class PgBossJobQueue implements JobQueue {
     private readonly connectionString: string;
     private readonly log = getLogger({ name: 'api:jobs:pgboss' });
     private pendingHandlers = new Map<string, Array<JobHandler<any>>>();
+    private readonly retentionSeconds = readPositiveIntegerEnv('PGBOSS_RETENTION_SECONDS', 60 * 60 * 24);
+    private readonly deleteAfterSeconds = readPositiveIntegerEnv('PGBOSS_DELETE_AFTER_SECONDS', 60 * 60 * 24);
 
     constructor(connectionString: string) {
         this.connectionString = connectionString;
@@ -110,7 +119,7 @@ export class PgBossJobQueue implements JobQueue {
         void this.registerWork(name, handler);
     }
 
-    async schedule<T = unknown>(name: string, data: T, options?: { startAfterSeconds?: number; idempotencyKey?: string; priority?: number; }): Promise<string> {
+    async schedule<T = unknown>(name: string, data: T, options?: JobScheduleOptions): Promise<string> {
         if (!this.boss) throw new Error('PgBossJobQueue not started');
         const hasEnsure = typeof this.boss.getQueue === 'function' || typeof this.boss.createQueue === 'function';
         if (hasEnsure) {
@@ -127,6 +136,8 @@ export class PgBossJobQueue implements JobQueue {
         if (typeof options?.priority === 'number') {
             opts.priority = options.priority;
         }
+        opts.retentionSeconds = options?.retentionSeconds ?? this.retentionSeconds;
+        opts.deleteAfterSeconds = options?.deleteAfterSeconds ?? this.deleteAfterSeconds;
         let id: unknown;
         if (typeof this.boss.send === 'function') {
             id = await this.boss.send(toPgBossQueueName(name), data, opts);

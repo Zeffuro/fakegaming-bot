@@ -1,5 +1,5 @@
 // filepath: f:\Coding\discord-bot\packages\common\src\testing\mocks\jobQueueMock.ts
-import type { JobHandler, JobQueue } from '../../jobs/index.js';
+import type { JobHandler, JobQueue, JobScheduleOptions } from '../../jobs/index.js';
 import { vi } from 'vitest';
 
 /**
@@ -10,7 +10,7 @@ import { vi } from 'vitest';
  */
 export class TestJobQueue implements JobQueue {
     public handlers: Map<string, JobHandler<any>> = new Map();
-    public scheduled: Array<{ name: string; data: unknown; options?: { startAfterSeconds?: number; idempotencyKey?: string; priority?: number } }> = [];
+    public scheduled: Array<{ name: string; data: unknown; options?: JobScheduleOptions }> = [];
 
     async start(): Promise<void> { /* no-op */ }
     async stop(): Promise<void> { /* no-op */ }
@@ -20,7 +20,7 @@ export class TestJobQueue implements JobQueue {
         this.handlers.set(name, handler as JobHandler<any>);
     }
 
-    async schedule<T = unknown>(name: string, data: T, options?: { startAfterSeconds?: number; idempotencyKey?: string; priority?: number }): Promise<string> {
+    async schedule<T = unknown>(name: string, data: T, options?: JobScheduleOptions): Promise<string> {
         this.scheduled.push({ name, data, options });
         return 'id';
     }

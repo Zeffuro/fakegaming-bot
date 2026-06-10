@@ -1,4 +1,4 @@
-import type { Job, JobHandler, JobQueue } from './index.js';
+import type { Job, JobHandler, JobQueue, JobScheduleOptions } from './index.js';
 
 function uuid(): string {
     if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -33,7 +33,7 @@ export class MemoryJobQueue implements JobQueue {
         this.handlers.set(name, list);
     }
 
-    async schedule<T = unknown>(name: string, data: T, options?: { startAfterSeconds?: number; idempotencyKey?: string; priority?: number; }): Promise<string> {
+    async schedule<T = unknown>(name: string, data: T, options?: JobScheduleOptions): Promise<string> {
         // idempotencyKey and priority are ignored in memory mode
         const delayMs = Math.max(0, Math.floor((options?.startAfterSeconds ?? 0) * 1000));
         const id = uuid();
