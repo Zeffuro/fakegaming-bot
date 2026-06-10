@@ -17,44 +17,6 @@ services:
       retries: 5
       start_period: 10s
 
-  # -------------------- BOT --------------------
-  bot:
-    image: zeffuro/fakegaming-bot:latest
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
-    container_name: fakegaming-bot
-    restart: unless-stopped
-    environment:
-      DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      DB_MIGRATIONS_ENABLED: 0
-      DB_SYNC_ENABLED: 0
-      DATA_ROOT: /app/data
-      API_URL: 'http://api:3001/api'
-      SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
-      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
-      CLIENT_ID: ${BOT_DISCORD_CLIENT_ID}
-      GUILD_ID: ${BOT_DISCORD_GUILD_ID}
-      BOT_HEALTH_HOST: 0.0.0.0
-      BOT_HEALTH_PORT: 8081
-      RIOT_LEAGUE_API_KEY: ${RIOT_LEAGUE_API_KEY}
-      RIOT_TFT_API_KEY: ${RIOT_TFT_API_KEY}
-      RIOT_DEV_API_KEY: ${RIOT_DEV_API_KEY}
-      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
-    volumes:
-      - ${BOT_DATA_PATH:-./data/bot}:/app/data
-    depends_on:
-      - postgres
-      - api
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8081/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 60s
-
   # -------------------- API --------------------
   api:
     image: zeffuro/fakegaming-api:latest
@@ -89,13 +51,54 @@ services:
       YOUTUBE_ENRICH_EMBEDS: 0
       TIKTOK_COOKIE: ${TIKTOK_COOKIE}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 5
       start_period: 120s
+
+  # -------------------- BOT --------------------
+  bot:
+    image: zeffuro/fakegaming-bot:latest
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: fakegaming-bot
+    restart: unless-stopped
+    environment:
+      DATABASE_PROVIDER: postgres
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DB_MIGRATIONS_ENABLED: 0
+      DB_SYNC_ENABLED: 0
+      DATA_ROOT: /app/data
+      API_URL: 'http://api:3001/api'
+      SERVICE_API_TOKEN: ${SERVICE_API_TOKEN}
+      DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
+      CLIENT_ID: ${BOT_DISCORD_CLIENT_ID}
+      GUILD_ID: ${BOT_DISCORD_GUILD_ID}
+      BOT_HEALTH_HOST: 0.0.0.0
+      BOT_HEALTH_PORT: 8081
+      RIOT_LEAGUE_API_KEY: ${RIOT_LEAGUE_API_KEY}
+      RIOT_TFT_API_KEY: ${RIOT_TFT_API_KEY}
+      RIOT_DEV_API_KEY: ${RIOT_DEV_API_KEY}
+      OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+    volumes:
+      - ${BOT_DATA_PATH:-./data/bot}:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8081/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
 
   # -------------------- DASHBOARD --------------------
   dashboard:
@@ -118,9 +121,10 @@ services:
       JWT_AUDIENCE: fakegaming-dashboard
       JWT_ISSUER: fakegaming
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 5s
       retries: 5
