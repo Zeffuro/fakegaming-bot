@@ -20,6 +20,10 @@ services:
   # -------------------- BOT --------------------
   bot:
     image: zeffuro/fakegaming-bot:latest
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
     container_name: fakegaming-bot
     restart: unless-stopped
     environment:
@@ -54,6 +58,10 @@ services:
   # -------------------- API --------------------
   api:
     image: zeffuro/fakegaming-api:latest
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     container_name: fakegaming-api
     restart: unless-stopped
     environment:
@@ -92,6 +100,10 @@ services:
   # -------------------- DASHBOARD --------------------
   dashboard:
     image: zeffuro/fakegaming-dashboard:latest
+    pull_policy: build
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
     container_name: fakegaming-dashboard
     restart: unless-stopped
     environment:
