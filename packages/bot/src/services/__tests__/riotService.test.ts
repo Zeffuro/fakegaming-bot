@@ -73,6 +73,10 @@ describe('riotService helpers', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         process.env = { ...originalEnv };
+        delete process.env.RIOT_ACCOUNT_API_KEY;
+        delete process.env.RIOT_LEAGUE_API_KEY;
+        delete process.env.RIOT_TFT_API_KEY;
+        process.env.RIOT_DEV_API_KEY = 'test-dev-key';
         // Reset methods to fresh fn to avoid cross-test calls accumulation
         mockLolApi.Summoner.getByPUUID = vi.fn();
         mockLolApi.MatchV5.list = vi.fn();
