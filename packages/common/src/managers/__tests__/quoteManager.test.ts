@@ -151,4 +151,40 @@ describe('QuoteManager', () => {
             expect(quotes).toHaveLength(1);
         });
     });
+
+    describe('addQuote/upsertQuote', () => {
+        it('adds and upserts quotes by id', async () => {
+            const added = await quoteManager.addQuote({
+                id: 'quote-add',
+                guildId: 'guild-1',
+                authorId: 'author-1',
+                quote: 'Original quote',
+                submitterId: 'submitter-1',
+                timestamp: Date.now(),
+            });
+            expect(added.id).toBe('quote-add');
+
+            const inserted = await quoteManager.upsertQuote({
+                id: 'quote-upsert',
+                guildId: 'guild-1',
+                authorId: 'author-1',
+                quote: 'Inserted quote',
+                submitterId: 'submitter-1',
+                timestamp: Date.now(),
+            });
+            expect(inserted.created).toBe(true);
+            expect(inserted.record?.quote).toBe('Inserted quote');
+
+            const updated = await quoteManager.upsertQuote({
+                id: 'quote-upsert',
+                guildId: 'guild-1',
+                authorId: 'author-1',
+                quote: 'Updated quote',
+                submitterId: 'submitter-1',
+                timestamp: Date.now(),
+            });
+            expect(updated.created).toBe(false);
+            expect(updated.record?.quote).toBe('Updated quote');
+        });
+    });
 });

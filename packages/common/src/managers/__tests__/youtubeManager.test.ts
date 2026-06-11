@@ -73,4 +73,25 @@ describe('YoutubeManager', () => {
             expect(results.length).toBeGreaterThan(0);
         });
     });
+
+    describe('getAllChannels/removeVideoChannel', () => {
+        it('returns and removes video channel configs', async () => {
+            await YoutubeVideoConfig.create({
+                youtubeChannelId: 'yt-channel-2',
+                discordChannelId: 'discord-channel-2',
+                guildId: 'guild-2',
+            });
+
+            const channels = await youtubeManager.getAllChannels();
+            expect(channels).toHaveLength(1);
+
+            await youtubeManager.removeVideoChannel('yt-channel-2', 'discord-channel-2', 'guild-2');
+            const remaining = await youtubeManager.getVideoChannel({
+                youtubeChannelId: 'yt-channel-2',
+                discordChannelId: 'discord-channel-2',
+                guildId: 'guild-2',
+            });
+            expect(remaining).toBeNull();
+        });
+    });
 });

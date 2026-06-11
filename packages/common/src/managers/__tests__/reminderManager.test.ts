@@ -64,4 +64,22 @@ describe('ReminderManager', () => {
             }).rejects.toThrow('Item not found');
         });
     });
+
+    describe('addReminder/getAllPlain', () => {
+        it('adds a reminder and returns plain reminders', async () => {
+            const created = await reminderManager.addReminder({
+                id: 'created-reminder',
+                userId: 'user-1',
+                message: 'Created reminder',
+                timespan: '1h',
+                timestamp: Date.now(),
+            });
+
+            const reminders = await reminderManager.getAllPlain();
+
+            expect(created.id).toBe('created-reminder');
+            expect(reminders).toHaveLength(1);
+            expect(reminders[0]?.message).toBe('Created reminder');
+        });
+    });
 });

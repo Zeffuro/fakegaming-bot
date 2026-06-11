@@ -28,6 +28,8 @@ export default defineConfig({
         'src/migrate.ts', // Migration runner itself
         'src/vitest.setup.ts',
         'src/testing/**/*', // Exclude all test utilities and mocks
+        // External provider clients are covered through API/job behavior tests; keep common unit coverage focused on shared logic.
+        'src/anime/anilistClient.ts',
         // Exclude non-critical codegen/infra utilities that are validated indirectly
         'src/utils/modelToZod.ts',
         'src/utils/openapi.ts',
