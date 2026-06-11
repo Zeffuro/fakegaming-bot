@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
-import { Alert, Box, Button, Chip, Collapse, Divider, IconButton, Stack, Switch, Typography } from "@mui/material";
-import { Block, ExpandLess, ExpandMore } from "@mui/icons-material";
+import { Alert, Box, Button, Chip, Collapse, Divider, IconButton, InputAdornment, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Block, ExpandLess, ExpandMore, Search } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import CommandToggle from "@/components/Commands/CommandToggle";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -12,6 +12,14 @@ import { useGuildCommands } from "@/components/hooks/useGuildCommands";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useGuildModules } from "@/components/hooks/useGuildModules";
 import { BOT_TREE } from "@/lib/commands";
+
+function toTitleCase(value: string): string {
+  return value
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
 
 export default function GuildCommandsPage() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -40,6 +48,7 @@ export default function GuildCommandsPage() {
   }, [guildId, fetchDisabledCommands, fetchDisabledModules]);
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const setAll = (value: boolean) => {
     const next: Record<string, boolean> = {};
     for (const node of BOT_TREE) next[node.module.name] = value;
@@ -52,6 +61,26 @@ export default function GuildCommandsPage() {
   const disabledSet = useMemo(() => new Set(disabledCommands), [disabledCommands]);
   const totalCommands = BOT_TREE.reduce((sum, node) => sum + node.commands.length, 0);
   const enabledCommands = totalCommands - disabledCommands.length;
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const filteredTree = useMemo(() => {
+    if (!normalizedSearch) return BOT_TREE;
+    return BOT_TREE.map(node => {
+      const moduleMatches = [
+        node.module.name,
+        node.module.title,
+        node.module.description,
+      ].some(value => value.toLowerCase().includes(normalizedSearch));
+      const commands = moduleMatches
+        ? node.commands
+        : node.commands.filter(command => [
+          command.name,
+          toTitleCase(command.name),
+          command.description,
+        ].some(value => value.toLowerCase().includes(normalizedSearch)));
+      return { ...node, commands };
+    }).filter(node => node.commands.length > 0);
+  }, [normalizedSearch]);
+  const filteredCommandCount = filteredTree.reduce((sum, node) => sum + node.commands.length, 0);
 
   if (!guild && !guildsLoading) {
     return (
@@ -68,13 +97,13 @@ export default function GuildCommandsPage() {
           <FeatureHero
             icon={<Block />}
             eyebrow="Commands"
-            title="Command management"
+            title="Command Management"
             description="Enable or disable bot modules and individual commands without losing visibility into what each module contains."
             accent={dashboardAccents.commands}
             secondaryAccent={dashboardAccents.settings}
             stats={[
-              { label: "commands enabled", value: `${enabledCommands}/${totalCommands}` },
-              { label: "modules disabled", value: disabledModules.length },
+              { label: "Commands Enabled", value: `${enabledCommands}/${totalCommands}` },
+              { label: "Modules Disabled", value: disabledModules.length },
             ]}
             actions={(
               <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", justifyContent: { xs: "flex-start", lg: "flex-end" }, rowGap: 1 }}>
@@ -92,7 +121,45 @@ export default function GuildCommandsPage() {
 
           <FeaturePanel accent={dashboardAccents.commands}>
             <Stack spacing={2} sx={{ position: "relative" }}>
-              {BOT_TREE.map((node) => {
+              <TextField
+                value={searchQuery}
+                onChange={event => setSearchQuery(event.target.value)}
+                placeholder="Search commands"
+                size="small"
+                fullWidth
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search sx={{ color: "rgba(255,255,255,0.48)" }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+                sx={{
+                  maxWidth: 520,
+                  "& .MuiOutlinedInput-root": {
+                    color: "grey.100",
+                    bgcolor: "rgba(255,255,255,0.045)",
+                    borderRadius: 2,
+                    "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
+                    "&:hover fieldset": { borderColor: "rgba(255,255,255,0.24)" },
+                    "&.Mui-focused fieldset": { borderColor: dashboardAccents.commands },
+                  },
+                  "& input::placeholder": { color: "rgba(255,255,255,0.48)", opacity: 1 },
+                }}
+              />
+              {normalizedSearch && (
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
+                  Showing {filteredCommandCount} {filteredCommandCount === 1 ? "command" : "commands"}
+                </Typography>
+              )}
+              {filteredTree.length === 0 && (
+                <Alert severity="info" sx={{ bgcolor: "rgba(104,215,255,0.10)", color: "grey.100", border: "1px solid rgba(104,215,255,0.20)" }}>
+                  No commands match your search.
+                </Alert>
+              )}
+              {filteredTree.map((node) => {
                 const moduleName = node.module.name;
                 const moduleDisabled = disabledModules.includes(moduleName);
                 const isCollapsed = !!collapsed[moduleName];
@@ -142,6 +209,7 @@ export default function GuildCommandsPage() {
                             <CommandToggle
                               key={cmd.name}
                               name={cmd.name}
+                              displayName={toTitleCase(cmd.name)}
                               description={cmd.description}
                               disabled={effectiveDisabled}
                               interactiveDisabled={moduleDisabled}

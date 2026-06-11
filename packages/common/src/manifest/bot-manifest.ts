@@ -160,6 +160,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "time",
+        "description": "Convert a time into Discord timestamp formats",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "weather",
         "description": "Get the current weather and a short forecast for a specified location",
         "module": "general",
@@ -424,6 +433,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "spin",
                 "description": "Spin the wheel to pick someone!",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "time",
+                "description": "Convert a time into Discord timestamp formats",
                 "module": "general",
                 "permissions": null,
                 "dm_permission": null,

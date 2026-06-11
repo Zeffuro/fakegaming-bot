@@ -10,12 +10,16 @@ import {
   ListItemText,
   Skeleton
 } from "@mui/material";
-import { Logout, Person } from "@mui/icons-material";
+import { AdminPanelSettings, Logout, Person } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
+import { useRouter } from "next/navigation";
+import { useAdminAccess } from "@/components/hooks/useAdmin";
 import { useUserData } from "@/components/hooks/useUserData";
 
 export default function UserMenu() {
+  const router = useRouter();
   const {loading, getUserDisplayName, getUserAvatarUrl } = useUserData();
+  const { isAdmin } = useAdminAccess();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -29,6 +33,11 @@ export default function UserMenu() {
 
   const handleLogout = () => {
     window.location.href = "/api/auth/logout";
+    handleClose();
+  };
+
+  const handleAdmin = () => {
+    router.push("/dashboard/admin");
     handleClose();
   };
 
@@ -95,6 +104,14 @@ export default function UserMenu() {
           </ListItemIcon>
           <ListItemText primary="Profile" />
         </MenuItem>
+        {isAdmin && (
+          <MenuItem onClick={handleAdmin} sx={{ color: "grey.200" }}>
+            <ListItemIcon>
+              <AdminPanelSettings sx={{ color: "grey.300" }} />
+            </ListItemIcon>
+            <ListItemText primary="Admin Panel" />
+          </MenuItem>
+        )}
         <MenuItem onClick={handleLogout} sx={{ color: "error.light" }}>
           <ListItemIcon>
             <Logout sx={{ color: "error.light" }} />
