@@ -13,6 +13,7 @@ import {CacheManager} from "./cacheManager.js";
 import {NotificationsManager} from './notificationsManager.js';
 import {DisabledModuleManager} from './disabledModuleManager.js';
 import {TikTokManager} from './tiktokManager.js';
+import {BlueskyManager} from './blueskyManager.js';
 import {AnimeManager} from './animeManager.js';
 
 /**
@@ -33,6 +34,7 @@ export class ConfigManager {
     notificationsManager = new NotificationsManager();
     disabledModuleManager = new DisabledModuleManager();
     tiktokManager = new TikTokManager();
+    blueskyManager = new BlueskyManager();
     animeManager = new AnimeManager();
 
     /**

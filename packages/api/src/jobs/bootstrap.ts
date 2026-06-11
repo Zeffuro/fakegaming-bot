@@ -9,6 +9,7 @@ import { registerPatchNotesScanJobs } from './patchNotesScan.js';
 import { registerTwitchJobs } from './twitch.js';
 import { registerYouTubeJobs } from './youtube.js';
 import { registerTikTokJobs } from './tiktok.js';
+import { registerBlueskyJobs } from './bluesky.js';
 import { registerAnimeJobs } from './anime.js';
 
 let activeQueue: JobQueue | null = null;
@@ -87,6 +88,7 @@ export async function bootstrapJobs(): Promise<void> {
     await registerTwitchJobs(queue);
     await registerYouTubeJobs(queue);
     await registerTikTokJobs(queue);
+    await registerBlueskyJobs(queue);
     await registerAnimeJobs(queue);
 
     log.info({ backend: backendName }, 'Jobs bootstrap complete');

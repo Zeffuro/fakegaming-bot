@@ -31,6 +31,7 @@ export {
   DisabledModuleConfig,
   JobRun,
   TikTokStreamConfig,
+  BlueskyPostConfig,
   AnimeTitle,
   AnimeSubscriptionConfig,
   AnimeEpisode
@@ -55,6 +56,7 @@ export {
   DisabledCommandManager,
   NotificationsManager,
   TikTokManager,
+  BlueskyManager,
   AnimeManager,
   AnimeTitleManager,
   AnimeSubscriptionManager,

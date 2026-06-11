@@ -479,6 +479,69 @@ export type disabledCommands_id_get_Response200 = paths["/disabledCommands/{id}"
 export type disabledCommands_id_delete_Response200 = paths["/disabledCommands/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [GET /bluesky 200]
+ *
+ * @see paths["/bluesky"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_get_Response200 = paths["/bluesky"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [POST /bluesky 201]
+ *
+ * @see paths["/bluesky"]["post"]["responses"]["201"]["content"]["application/json"]
+ */
+export type bluesky_post_Response201 = paths["/bluesky"]["post"]["responses"]["201"]["content"]["application/json"];
+
+/**
+ * Request body for [POST /bluesky]
+ *
+ * @see paths["/bluesky"]["post"]["requestBody"]["content"]["application/json"]
+ */
+export type bluesky_post_Request = paths["/bluesky"]["post"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [GET /bluesky/exists 200]
+ *
+ * @see paths["/bluesky/exists"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_exists_get_Response200 = paths["/bluesky/exists"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /bluesky/profile 200]
+ *
+ * @see paths["/bluesky/profile"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_profile_get_Response200 = paths["/bluesky/profile"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [GET /bluesky/{id} 200]
+ *
+ * @see paths["/bluesky/{id}"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_id_get_Response200 = paths["/bluesky/{id}"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Response for [PUT /bluesky/{id} 200]
+ *
+ * @see paths["/bluesky/{id}"]["put"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_id_put_Response200 = paths["/bluesky/{id}"]["put"]["responses"]["200"]["content"]["application/json"];
+
+/**
+ * Request body for [PUT /bluesky/{id}]
+ *
+ * @see paths["/bluesky/{id}"]["put"]["requestBody"]["content"]["application/json"]
+ */
+export type bluesky_id_put_Request = paths["/bluesky/{id}"]["put"]["requestBody"]["content"]["application/json"];
+
+/**
+ * Response for [DELETE /bluesky/{id} 200]
+ *
+ * @see paths["/bluesky/{id}"]["delete"]["responses"]["200"]["content"]["application/json"]
+ */
+export type bluesky_id_delete_Response200 = paths["/bluesky/{id}"]["delete"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /birthdays 200]
  *
  * @see paths["/birthdays"]["get"]["responses"]["200"]["content"]["application/json"]

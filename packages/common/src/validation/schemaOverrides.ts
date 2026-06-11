@@ -107,4 +107,28 @@ export function registerSchemaOverrides(): void {
 
     schemaRegistry.registerCustom(Models.TikTokStreamConfig as any, 'create', tiktokCreateSchema);
     schemaRegistry.registerCustom(Models.TikTokStreamConfig as any, 'update', tiktokUpdateSchema);
+
+    // BlueskyPostConfig: safe fields only; forbid lastPostUri/lastPostCid/lastNotifiedAt
+    const blueskyCreateSchema = z.object({
+        blueskyHandle: z.string().min(1),
+        discordChannelId: z.string().min(1),
+        guildId: z.string().min(1),
+        customMessage: z.string().optional(),
+        cooldownMinutes: z.number().int().min(0).nullable().optional(),
+        quietHoursStart: hhmm.nullable().optional(),
+        quietHoursEnd: hhmm.nullable().optional(),
+    }).strict();
+
+    const blueskyUpdateSchema = z.object({
+        blueskyHandle: z.string().min(1).optional(),
+        discordChannelId: z.string().min(1).optional(),
+        guildId: z.string().min(1).optional(),
+        customMessage: z.string().optional(),
+        cooldownMinutes: z.number().int().min(0).nullable().optional(),
+        quietHoursStart: hhmm.nullable().optional(),
+        quietHoursEnd: hhmm.nullable().optional(),
+    }).strict();
+
+    schemaRegistry.registerCustom(Models.BlueskyPostConfig as any, 'create', blueskyCreateSchema);
+    schemaRegistry.registerCustom(Models.BlueskyPostConfig as any, 'update', blueskyUpdateSchema);
 }

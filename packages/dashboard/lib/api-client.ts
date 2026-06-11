@@ -22,7 +22,7 @@ import type {
   tiktok_post_Response201,
   tiktok_id_delete_Response200,
 } from "@zeffuro/fakegaming-common/api-responses";
-import type { BirthdayConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
+import type { BirthdayConfig, BlueskyPostConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 
 // Define endpoint paths centrally
@@ -32,6 +32,9 @@ export const API_ENDPOINTS = {
 
   // TikTok endpoints
   TIKTOK: '/api/external/tiktok',
+
+  // Bluesky endpoints
+  BLUESKY: '/api/external/bluesky',
 
   // YouTube endpoints
   YOUTUBE: '/api/external/youtube',
@@ -234,6 +237,21 @@ export interface AnimeSearchResult {
   nextAiringEpisode?: { airingAt: number; episode: number; timeUntilAiring?: number | null } | null;
 }
 
+export type BlueskyCreateRequest = Pick<BlueskyPostConfig, 'blueskyHandle' | 'discordChannelId' | 'guildId'> & {
+  customMessage?: string;
+  cooldownMinutes?: number | null;
+  quietHoursStart?: string | null;
+  quietHoursEnd?: string | null;
+};
+
+export interface BlueskyProfileResponse {
+  exists: boolean;
+  did?: string;
+  handle?: string;
+  displayName?: string;
+  avatar?: string;
+}
+
 // Typed API methods using apiResponses.ts types
 export const api = {
   // Twitch APIs
@@ -271,6 +289,27 @@ export const api = {
   deleteTikTokStream: (id: string | number) =>
     apiRequest<tiktok_id_delete_Response200>(
       `${API_ENDPOINTS.TIKTOK}/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  // Bluesky APIs
+  getBlueskyConfigs: () =>
+    apiRequest<BlueskyPostConfig[]>(API_ENDPOINTS.BLUESKY),
+
+  getBlueskyProfile: (handle: string) =>
+    apiRequest<BlueskyProfileResponse>(
+      `${API_ENDPOINTS.BLUESKY}/profile?handle=${encodeURIComponent(handle)}`
+    ),
+
+  createBlueskyAccount: (data: BlueskyCreateRequest) =>
+    apiRequest<{ success: boolean }>(
+      API_ENDPOINTS.BLUESKY,
+      { method: 'POST', body: data }
+    ),
+
+  deleteBlueskyAccount: (id: string | number) =>
+    apiRequest<{ success: boolean }>(
+      `${API_ENDPOINTS.BLUESKY}/${id}`,
       { method: 'DELETE' }
     ),
 

@@ -91,6 +91,47 @@ export async function resolveYoutubeChannelIdApi(identifier: string): Promise<st
     }
 }
 
+export interface BlueskyProfileVerification {
+    exists: boolean;
+    did?: string;
+    handle?: string;
+    displayName?: string;
+    avatar?: string;
+}
+
+export async function verifyBlueskyHandleApi(handle: string): Promise<BlueskyProfileVerification | null> {
+    if (!handle) return { exists: false } as const;
+    const base = getApiBaseUrl();
+    const url = `${base}/bluesky/profile?handle=${encodeURIComponent(handle)}`;
+    try {
+        const res = await fetch(url, { headers: getServiceHeaders() });
+        if (!res.ok) {
+            let body: unknown;
+            try {
+                const text = await res.text();
+                try {
+                    body = JSON.parse(text);
+                } catch {
+                    body = text;
+                }
+            } catch {
+                body = null;
+            }
+            log.warn({ status: res.status, url, body }, '[bot] verifyBlueskyHandleApi non-OK response');
+            return { exists: false } as const;
+        }
+        const json = await res.json();
+        if (typeof (json as { exists?: unknown }).exists !== 'boolean') {
+            log.warn({ url, body: json }, '[bot] verifyBlueskyHandleApi invalid payload');
+            return { exists: false } as const;
+        }
+        return json as BlueskyProfileVerification;
+    } catch (err) {
+        log.warn({ err, url }, '[bot] verifyBlueskyHandleApi request failed');
+        return null;
+    }
+}
+
 /**
  * Fetch the latest patch note for a game from the API. Returns a plain object compatible with buildPatchNoteEmbed.
  */

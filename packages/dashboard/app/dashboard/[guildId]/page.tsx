@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Alert, Box, Typography } from "@mui/material";
-import { AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, Timeline, YouTube } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, Timeline, YouTube } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -12,6 +12,7 @@ import { useAnimeConfigs } from "@/components/hooks/useAnime";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
+import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
@@ -22,14 +23,16 @@ export default function GuildDashboard() {
 
   const twitchApi = useTwitchConfigs(guildId);
   const tiktokApi = useTikTokConfigs(guildId);
+  const blueskyApi = useBlueskyConfigs(guildId);
   const youtubeApi = useYouTubeConfigs(guildId);
   const patchApi = usePatchSubscriptions(guildId);
   const animeApi = useAnimeConfigs(guildId);
   const birthdayApi = useBirthdays(guildId);
 
-  const notificationLoading = twitchApi.loading || tiktokApi.loading || youtubeApi.loading || patchApi.loading || animeApi.loading || birthdayApi.loading;
+  const notificationLoading = twitchApi.loading || tiktokApi.loading || blueskyApi.loading || youtubeApi.loading || patchApi.loading || animeApi.loading || birthdayApi.loading;
   const totalConfigured = (twitchApi.configs?.length ?? 0)
     + (tiktokApi.configs?.length ?? 0)
+    + (blueskyApi.configs?.length ?? 0)
     + (youtubeApi.configs?.length ?? 0)
     + (patchApi.configs?.length ?? 0)
     + (animeApi.configs?.length ?? 0)
@@ -48,12 +51,12 @@ export default function GuildDashboard() {
   const modules = [
     {
       title: "Notifications Hub",
-      description: "Central command center for Twitch, TikTok, YouTube, Patch Notes, Anime, and Birthday notifications.",
+      description: "Central command center for Twitch, TikTok, Bluesky, YouTube, Patch Notes, Anime, and Birthday notifications.",
       icon: <NotificationsActive />,
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}/notifications`,
       chipLabel: notificationLoading ? "Loading..." : `${totalConfigured} Configured`,
-      meta: notificationLoading ? "Loading notification counts" : `Twitch ${twitchApi.configs.length} | TikTok ${tiktokApi.configs.length} | YouTube ${youtubeApi.configs.length} | Patch ${patchApi.configs.length} | Anime ${animeApi.configs.length} | Birthdays ${birthdayApi.birthdays.length}`,
+      meta: notificationLoading ? "Loading notification counts" : `Twitch ${twitchApi.configs.length} | TikTok ${tiktokApi.configs.length} | Bluesky ${blueskyApi.configs.length} | YouTube ${youtubeApi.configs.length} | Patch ${patchApi.configs.length} | Anime ${animeApi.configs.length} | Birthdays ${birthdayApi.birthdays.length}`,
       actionLabel: "Open Hub",
     },
     {
@@ -108,6 +111,15 @@ export default function GuildDashboard() {
       href: `/dashboard/tiktok/${encodedGuildId}`,
       chipLabel: `${tiktokApi.configs.length} Configured`,
       actionLabel: "Configure TikTok",
+    },
+    {
+      title: "Bluesky Posts",
+      description: "Configure Bluesky account post notifications.",
+      icon: <AlternateEmail />,
+      accent: dashboardAccents.bluesky,
+      href: `/dashboard/bluesky/${encodedGuildId}`,
+      chipLabel: `${blueskyApi.configs.length} Configured`,
+      actionLabel: "Configure Bluesky",
     },
     {
       title: "Server Settings",

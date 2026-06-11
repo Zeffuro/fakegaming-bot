@@ -50,13 +50,14 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
 function moduleDescription(moduleName: string, plural: string): string {
     if (moduleName === "Twitch") return "Track live streams, route announcements to the right channel, and tune cooldowns or quiet hours.";
     if (moduleName === "TikTok") return "Track creators going live and keep noisy alerts under control with per-channel notification settings.";
+    if (moduleName === "Bluesky") return "Watch Bluesky accounts for new posts and route announcements with cooldowns and quiet hours.";
     if (moduleName === "YouTube") return "Watch channels for new uploads and post clean video announcements where your server expects them.";
     if (moduleName === "Patch Notes") return "Subscribe Discord channels to game update feeds so patch posts land in predictable places.";
     return `Configure ${moduleName} ${plural.toLowerCase()} for this server.`;
 }
 
 function toFeatureModule(moduleName: string): FeatureNavModule {
-    if (moduleName === "Twitch" || moduleName === "TikTok" || moduleName === "YouTube" || moduleName === "Patch Notes" || moduleName === "Anime" || moduleName === "Birthdays") {
+    if (moduleName === "Twitch" || moduleName === "TikTok" || moduleName === "Bluesky" || moduleName === "YouTube" || moduleName === "Patch Notes" || moduleName === "Anime" || moduleName === "Birthdays") {
         return moduleName;
     }
     return "Twitch";

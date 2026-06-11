@@ -5,6 +5,7 @@ export type DashboardSx = Record<string, unknown>;
 export const dashboardAccents = {
   twitch: "#9146FF",
   tiktok: "#00F2EA",
+  bluesky: "#1185FE",
   youtube: "#FF3B30",
   patchNotes: "#8B5CF6",
   anime: "#02A9FF",

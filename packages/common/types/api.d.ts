@@ -2037,7 +2037,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "anime";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime";
                 };
                 cookie?: never;
             };
@@ -2078,7 +2078,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "anime";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime";
                 };
                 cookie?: never;
             };
@@ -2601,6 +2601,247 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bluesky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List all Bluesky post configs */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of Bluesky post configs */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlueskyPostConfig"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create a new Bluesky post config
+         * @description Creates or updates a Bluesky post configuration for a guild+handle pair.
+         *     Read-only fields: lastPostUri, lastPostCid, lastNotifiedAt.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlueskyPostConfig"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bluesky/exists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check if a Bluesky post config exists */
+        get: {
+            parameters: {
+                query: {
+                    blueskyHandle: string;
+                    discordChannelId: string;
+                    guildId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Config existence status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            exists?: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bluesky/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve public Bluesky profile metadata */
+        get: {
+            parameters: {
+                query: {
+                    handle: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Profile resolution result */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            exists?: boolean;
+                            did?: string;
+                            handle?: string;
+                            displayName?: string;
+                            avatar?: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bluesky/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a Bluesky post config by id */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bluesky post config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlueskyPostConfig"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        /** Update a Bluesky post config by id */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BlueskyPostConfig"];
+                };
+            };
+            responses: {
+                /** @description Updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BlueskyPostConfig"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Delete a Bluesky post config by id */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/birthdays": {
         parameters: {
             query?: never;
@@ -3010,6 +3251,26 @@ export interface components {
             lastNotifiedAt?: string;
             guildId?: string;
             isLive?: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BlueskyPostConfig: {
+            /** Format: int64 */
+            id: number;
+            blueskyHandle?: string;
+            discordChannelId?: string;
+            lastPostUri?: string;
+            lastPostCid?: string;
+            customMessage?: string;
+            /** Format: int64 */
+            cooldownMinutes?: number;
+            quietHoursStart?: string;
+            quietHoursEnd?: string;
+            /** Format: date-time */
+            lastNotifiedAt?: string;
+            guildId?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */

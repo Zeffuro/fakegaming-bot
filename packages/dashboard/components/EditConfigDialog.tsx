@@ -60,7 +60,21 @@ export default function EditConfigDialog<T extends StreamingConfig>({
 
     const tokens = moduleName === 'Twitch'
         ? ['{streamer}', '{title}', '{game}', '{url}', '{uptime}', '{viewers}']
-        : ['{title}', '{channel}', '{url}', '{duration}', '{views}'];
+        : moduleName === 'Bluesky'
+            ? ['{author}', '{handle}', '{text}', '{url}', '{likes}', '{reposts}', '{replies}']
+            : ['{title}', '{channel}', '{url}', '{duration}', '{views}'];
+
+    const customMessageHelper = moduleName === 'YouTube'
+        ? 'Tokens: {title}, {channel}, {url}, {duration}, {views}. If {url} is omitted, it will be appended automatically.'
+        : moduleName === 'Bluesky'
+            ? 'Tokens: {author}, {handle}, {text}, {url}, {likes}, {reposts}, {replies}. If {url} is omitted, it will be appended automatically.'
+            : 'Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers}. If {url} is omitted, it will be appended automatically.';
+
+    const customMessageExample = moduleName === 'YouTube'
+        ? 'Example: New video from {channel}: {title} {url}'
+        : moduleName === 'Bluesky'
+            ? 'Example: New post from {author}: {text} {url}'
+            : '{streamer} is live: {title} {url}';
 
     const insertToken = (token: string) => {
         const current = String((config as any).customMessage ?? '');
@@ -197,9 +211,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                                         '&.Mui-focused fieldset': { borderColor: 'primary.main' }
                                     }
                                 }}
-                                helperText={moduleName === 'YouTube'
-                                    ? 'Tokens: {title}, {channel}, {url}, {duration}, {views} — If {url} is omitted, it will be appended automatically.'
-                                    : 'Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers} — If {url} is omitted, it will be appended automatically.'}
+                                helperText={customMessageHelper}
                                 slotProps={{
                                     formHelperText: { sx: { color: 'grey.400' } }
                                 }}
@@ -213,9 +225,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                                 ))}
                             </Stack>
                             <Typography variant="caption" sx={{ color: 'grey.500', mt: 1, display: 'block' }}>
-                                {moduleName === 'YouTube'
-                                    ? 'Example: New video from {channel}: {title} {url}'
-                                    : '{streamer} is live: {title} {url}'}
+                                {customMessageExample}
                             </Typography>
                         </>
                     )}

@@ -2,7 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import { Alert, Box, Button } from "@mui/material";
-import { AutoStories, Cake, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Cake, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -14,6 +14,7 @@ import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
+import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
 
@@ -23,11 +24,12 @@ export default function GuildNotificationsHubPage() {
     const youtubeApi = useYouTubeConfigs(guildId as string);
     const patchApi = usePatchSubscriptions(guildId as string);
     const tiktokApi = useTikTokConfigs(guildId as string);
+    const blueskyApi = useBlueskyConfigs(guildId as string);
     const birthdayApi = useBirthdays(guildId as string);
     const animeApi = useAnimeConfigs(guildId as string);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || birthdayApi.loading || animeApi.loading;
-    const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || blueskyApi.loading || birthdayApi.loading || animeApi.loading;
+    const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + blueskyApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
     const encodedGuildId = encodeURIComponent(guildId as string);
 
     if (!guild && !guildsLoading) {
@@ -58,6 +60,15 @@ export default function GuildNotificationsHubPage() {
             href: `/dashboard/tiktok/${encodedGuildId}`,
             chipLabel: `${tiktokApi.configs.length} Configured`,
             actionLabel: "Manage TikTok",
+        },
+        {
+            title: "Bluesky Posts",
+            description: "Account post alerts with Discord channel routing, custom messages, cooldowns, and quiet hours.",
+            icon: <AlternateEmail />,
+            accent: dashboardAccents.bluesky,
+            href: `/dashboard/bluesky/${encodedGuildId}`,
+            chipLabel: `${blueskyApi.configs.length} Configured`,
+            actionLabel: "Manage Bluesky",
         },
         {
             title: "YouTube Uploads",

@@ -15,6 +15,7 @@ import {CacheConfig} from "./models/cache-config.js";
 import {Notification} from './models/notification.js';
 import {DisabledModuleConfig} from './models/disabled-module-config.js';
 import {TikTokStreamConfig} from './models/tiktok-stream-config.js';
+import {BlueskyPostConfig} from './models/bluesky-post-config.js';
 import {JobRun} from './models/job-run.js';
 import {AnimeTitle} from './models/anime-title.js';
 import {AnimeSubscriptionConfig} from './models/anime-subscription-config.js';
@@ -68,6 +69,7 @@ export function getSequelize(useTest = false): Sequelize {
         DisabledModuleConfig,
         JobRun,
         TikTokStreamConfig,
+        BlueskyPostConfig,
         AnimeTitle,
         AnimeSubscriptionConfig,
         AnimeEpisode

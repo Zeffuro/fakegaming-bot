@@ -14,6 +14,7 @@ export * from './notification.js';
 export * from './disabled-module-config.js';
 export * from './job-run.js';
 export * from './tiktok-stream-config.js';
+export * from './bluesky-post-config.js';
 export * from './anime-title.js';
 export * from './anime-subscription-config.js';
 export * from './anime-episode.js';

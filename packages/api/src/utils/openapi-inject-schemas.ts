@@ -11,7 +11,8 @@ import {
     UserConfig,
     YoutubeVideoConfig,
     DisabledModuleConfig,
-    TikTokStreamConfig
+    TikTokStreamConfig,
+    BlueskyPostConfig
 } from "@zeffuro/fakegaming-common/models";
 import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
 
@@ -53,6 +54,7 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
         ServerConfig: modelToOpenApiSchema(ServerConfig, { mode: 'full' }),
         TwitchStreamConfig: modelToOpenApiSchema(TwitchStreamConfig, { mode: 'full' }),
         TikTokStreamConfig: modelToOpenApiSchema(TikTokStreamConfig, { mode: 'full' }),
+        BlueskyPostConfig: modelToOpenApiSchema(BlueskyPostConfig, { mode: 'full' }),
         UserConfig: modelToOpenApiSchema(UserConfig, { mode: 'full' }),
         YoutubeVideoConfig: modelToOpenApiSchema(YoutubeVideoConfig, { mode: 'full' }),
         RateLimitError: {

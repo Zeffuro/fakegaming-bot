@@ -17,6 +17,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Birthdays module"
     },
     {
+        "name": "bluesky",
+        "title": "Bluesky",
+        "description": "Bluesky module"
+    },
+    {
         "name": "general",
         "title": "General",
         "description": "General module"
@@ -95,6 +100,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "name": "set-birthday",
         "description": "Set your birthday and the channel to post in",
         "module": "birthdays",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "add-bluesky-account",
+        "description": "Add a Bluesky account for post notifications",
+        "module": "bluesky",
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
@@ -330,6 +344,24 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "name": "set-birthday",
                 "description": "Set your birthday and the channel to post in",
                 "module": "birthdays",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "bluesky",
+            "title": "Bluesky",
+            "description": "Bluesky module"
+        },
+        "commands": [
+            {
+                "name": "add-bluesky-account",
+                "description": "Add a Bluesky account for post notifications",
+                "module": "bluesky",
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
