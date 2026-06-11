@@ -1,9 +1,11 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
-import { API_URL } from "@/lib/env";
+import { createHmac } from 'node:crypto';
+import { API_URL, JWT_SECRET, SERVICE_API_TOKEN } from "@/lib/env";
 import { enforceCsrf } from "@/lib/security/csrf";
 import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
+import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
 
 const log = createSimpleLogger('dashboard:proxy');
 
@@ -20,6 +22,12 @@ const getJwt = (req: NextRequest): string | undefined => {
     const jwt = req.cookies.get('jwt')?.value;
     return jwt ? `Bearer ${jwt}` : undefined;
 };
+
+function signDashboardAdminAssertion(discordId: string, reqId: string): string {
+    return createHmac('sha256', JWT_SECRET)
+        .update(`${discordId}:${reqId}`)
+        .digest('hex');
+}
 
 const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const { proxy } = await context.params;
@@ -64,6 +72,21 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
     if (jwt) {
         headers['Authorization'] = jwt;
+    }
+
+    const authResult = jwt ? await authenticateUser(req) : { success: false as const };
+    const dashboardAdminId = authResult.success && authResult.user && isDashboardAdmin(authResult.user.discordId)
+        ? authResult.user.discordId
+        : undefined;
+
+    if (dashboardAdminId && SERVICE_API_TOKEN) {
+        headers['x-service-token'] = SERVICE_API_TOKEN;
+    }
+
+    if (dashboardAdminId) {
+        headers['x-dashboard-admin-user'] = dashboardAdminId;
+        headers['x-dashboard-admin-request'] = reqId;
+        headers['x-dashboard-admin-signature'] = signDashboardAdminAssertion(dashboardAdminId, reqId);
     }
 
     // Forward CSRF header and cookie to API after local validation succeeded

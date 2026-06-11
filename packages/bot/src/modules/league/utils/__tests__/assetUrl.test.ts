@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { leagueChampionIconUrl, tftUnitIconUrl, communityDragonAssetUrl } from '../assetUrl.js';
+import { leagueChampionIconUrl, tftUnitIconUrl, tftUnitIconUrlCandidates, communityDragonAssetUrl } from '../assetUrl.js';
 
 describe('assetUrl', () => {
     describe('leagueChampionIconUrl', () => {
@@ -21,18 +21,22 @@ describe('assetUrl', () => {
 
     describe('tftUnitIconUrl', () => {
         it('should generate URL for TFT unit', () => {
-            const url = tftUnitIconUrl('TFT5_Akshan');
-            expect(url).toBe('https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/tft5_akshan/icon.png');
+            const url = tftUnitIconUrl('TFT13_Amumu');
+            expect(url).toBe('https://raw.communitydragon.org/latest/game/assets/characters/tft13_amumu/hud/tft13_amumu_square.tft_set13.png');
         });
 
         it('should convert to lowercase', () => {
-            const url = tftUnitIconUrl('TFT_Jinx');
-            expect(url).toBe('https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/tft_jinx/icon.png');
+            const url = tftUnitIconUrl('TFT17_Nami');
+            expect(url).toBe('https://raw.communitydragon.org/latest/game/assets/characters/tft17_nami/hud/tft17_nami_square.tft_set17.png');
         });
 
-        it('should handle already lowercase input', () => {
-            const url = tftUnitIconUrl('tft6_jayce');
-            expect(url).toBe('https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/tft6_jayce/icon.png');
+        it('should provide fallback URLs for older TFT assets', () => {
+            const urls = tftUnitIconUrlCandidates('TFT4B_Kindred');
+            expect(urls).toEqual([
+                'https://raw.communitydragon.org/latest/game/assets/characters/tft4b_kindred/hud/tft4b_kindred_square.tft_set4.png',
+                'https://raw.communitydragon.org/latest/game/assets/characters/tft4b_kindred/hud/tft4b_kindred_square.png',
+                'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/characters/tft4b_kindred/icon.png'
+            ]);
         });
     });
 

@@ -13,7 +13,7 @@ export function getAssetCacheDir(type: string): string {
     return dir;
 }
 
-export async function getAsset(assetUrl: string, assetName: string, type: string): Promise<CachedAsset> {
+export async function getAsset(assetUrl: string, assetName: string, type: string, options: { logFailures?: boolean } = {}): Promise<CachedAsset> {
     const cacheDir = getAssetCacheDir(type);
     const cachePath = path.join(cacheDir, assetName);
     if (fs.existsSync(cachePath)) {
@@ -25,8 +25,10 @@ export async function getAsset(assetUrl: string, assetName: string, type: string
         await fs.promises.writeFile(cachePath, response.data);
         return {buffer: response.data, path: cachePath};
     } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to fetch asset: ${assetUrl}`, errorMsg);
+        if (options.logFailures ?? true) {
+            const errorMsg = error instanceof Error ? error.message : String(error);
+            console.error(`Failed to fetch asset: ${assetUrl}`, errorMsg);
+        }
         return {buffer: null, path: cachePath};
     }
 }

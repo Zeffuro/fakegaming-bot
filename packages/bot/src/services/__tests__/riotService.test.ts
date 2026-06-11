@@ -10,12 +10,42 @@ const { mockLolApi, mockRiotApi, mockTftApi } = vi.hoisted(() => {
         Account: { getByRiotId: vi.fn() }
     };
     const mockTftApi = {
-        Match: { list: vi.fn(), get: vi.fn() }
+        Match: { list: vi.fn(), get: vi.fn() },
+        Summoner: { getByPUUID: vi.fn() },
+        League: { getByPUUID: vi.fn() }
     };
     return { mockLolApi, mockRiotApi, mockTftApi };
 });
 
 vi.mock('twisted', () => ({
+    Constants: {
+        Regions: {
+            BRAZIL: 'BR1',
+            EU_EAST: 'EUN1',
+            EU_WEST: 'EUW1',
+            KOREA: 'KR',
+            LAT_NORTH: 'LA1',
+            LAT_SOUTH: 'LA2',
+            AMERICA_NORTH: 'NA1',
+            OCEANIA: 'OC1',
+            TURKEY: 'TR1',
+            RUSSIA: 'RU',
+            JAPAN: 'JP1',
+            VIETNAM: 'VN2',
+            TAIWAN: 'TW2',
+            SINGAPORE: 'SG2',
+            MIDDLE_EAST: 'ME1',
+            PBE: 'PBE1'
+        },
+        RegionGroups: {
+            ASIA: 'ASIA',
+            AMERICAS: 'AMERICAS',
+            EUROPE: 'EUROPE',
+            SEA: 'SEA'
+        },
+        regionToRegionGroup: vi.fn().mockReturnValue('EUROPE'),
+        regionToRegionGroupForAccountAPI: vi.fn().mockReturnValue('EUROPE')
+    },
     RiotApi: vi.fn().mockImplementation(function() { return mockRiotApi; }),
     LolApi: vi.fn().mockImplementation(function() { return mockLolApi; }),
     TftApi: vi.fn().mockImplementation(function() { return mockTftApi; })
@@ -30,14 +60,19 @@ import {
     getSummonerDetails,
     getTftMatchDetails,
     getTftMatchHistory,
+    getTftSummoner,
     resolveLeagueIdentity
 } from '../riotService.js';
 import { createMockConfigManager, createMockUserWithLeague } from '@zeffuro/fakegaming-common/testing';
-import type { Regions } from 'twisted/dist/constants/regions.js';
+import type { Regions } from '../../modules/league/constants/riotRegions.js';
+import { LolApi, RiotApi, TftApi } from 'twisted';
 
 describe('riotService helpers', () => {
+    const originalEnv = process.env;
+
     beforeEach(() => {
         vi.clearAllMocks();
+        process.env = { ...originalEnv };
         // Reset methods to fresh fn to avoid cross-test calls accumulation
         mockLolApi.Summoner.getByPUUID = vi.fn();
         mockLolApi.MatchV5.list = vi.fn();
@@ -46,6 +81,8 @@ describe('riotService helpers', () => {
         mockRiotApi.Account.getByRiotId = vi.fn();
         mockTftApi.Match.list = vi.fn();
         mockTftApi.Match.get = vi.fn();
+        mockTftApi.Summoner.getByPUUID = vi.fn();
+        mockTftApi.League.getByPUUID = vi.fn();
     });
 
     it('unwraps response for match history (success)', async () => {
@@ -67,6 +104,24 @@ describe('riotService helpers', () => {
         const res = await getSummoner('puuid', 'EUW' as any);
         expect(res.success).toBe(false);
         expect(res.error).toBe('not found');
+    });
+
+    it('extracts Riot status payloads from thrown HTTP errors', async () => {
+        mockLolApi.Summoner.getByPUUID.mockRejectedValue({
+            response: {
+                data: {
+                    status: {
+                        status_code: 400,
+                        message: 'Bad Request - Exception decrypting puuid'
+                    }
+                }
+            }
+        });
+
+        const res = await getSummoner('puuid', 'EUW' as any);
+
+        expect(res.success).toBe(false);
+        expect(res.error).toBe('400 Bad Request - Exception decrypting puuid');
     });
 
     it('normalizes malformed summoner payloads and fail errors', async () => {
@@ -118,6 +173,50 @@ describe('riotService helpers', () => {
         });
     });
 
+    it('uses the dedicated League key for League API calls', async () => {
+        process.env.RIOT_LEAGUE_API_KEY = 'league-key';
+        process.env.RIOT_DEV_API_KEY = 'dev-key';
+        mockLolApi.MatchV5.list.mockResolvedValueOnce({ response: [] });
+
+        await expect(getMatchHistory('puuid', 'EUROPE' as any)).resolves.toEqual({
+            success: true,
+            data: []
+        });
+        expect(LolApi).toHaveBeenCalledWith({ key: 'league-key' });
+    });
+
+    it('uses the dedicated TFT key for TFT API calls', async () => {
+        process.env.RIOT_TFT_API_KEY = 'tft-key';
+        process.env.RIOT_DEV_API_KEY = 'dev-key';
+        mockTftApi.Summoner.getByPUUID.mockResolvedValueOnce({ response: { puuid: 'puuid', summonerLevel: 10 } });
+
+        await expect(getTftSummoner('puuid', 'EUW' as any)).resolves.toEqual({
+            success: true,
+            data: { puuid: 'puuid', summonerLevel: 10 }
+        });
+        expect(TftApi).toHaveBeenCalledWith({ key: 'tft-key' });
+    });
+
+    it('uses the dedicated Account key for Riot ID lookups when configured', async () => {
+        process.env.RIOT_ACCOUNT_API_KEY = 'account-key';
+        process.env.RIOT_LEAGUE_API_KEY = 'league-key';
+        mockRiotApi.Account.getByRiotId.mockResolvedValueOnce({ response: { puuid: 'account-key-puuid' } });
+
+        await expect(getPUUIDByRiotId('AccountKeyUser', 'EUW', 'EUROPE' as any)).resolves.toBe('account-key-puuid');
+        expect(RiotApi).toHaveBeenCalledWith({ key: 'account-key' });
+    });
+
+    it('falls back to the TFT key for Riot ID lookups when no account or League key exists', async () => {
+        delete process.env.RIOT_ACCOUNT_API_KEY;
+        delete process.env.RIOT_LEAGUE_API_KEY;
+        delete process.env.RIOT_DEV_API_KEY;
+        process.env.RIOT_TFT_API_KEY = 'tft-key';
+        mockRiotApi.Account.getByRiotId.mockResolvedValueOnce({ response: { puuid: 'tft-key-puuid' } });
+
+        await expect(getPUUIDByRiotId('TftOnlyUser', 'EUW', 'EUROPE' as any)).resolves.toBe('tft-key-puuid');
+        expect(RiotApi).toHaveBeenCalledWith({ key: 'tft-key' });
+    });
+
     it('fetches PUUIDs by Riot ID and uses the case-insensitive cache', async () => {
         mockRiotApi.Account.getByRiotId.mockResolvedValueOnce({ response: { puuid: 'cached-puuid' } });
 
@@ -132,25 +231,50 @@ describe('riotService helpers', () => {
         await expect(getPUUIDByRiotId('FailureUser', 'EUW', 'EUROPE' as any)).rejects.toThrow('Failed to fetch PUUID by Riot ID');
     });
 
-    it('resolves linked League identity from user config without refetching PUUID', async () => {
+    it('refreshes stale linked PUUIDs from Riot ID and persists the update', async () => {
+        const update = vi.fn().mockResolvedValue(undefined);
+        mockRiotApi.Account.getByRiotId.mockResolvedValueOnce({ response: { puuid: 'fresh-puuid' } });
         createMockConfigManager({
             userManager: {
                 getUserWithLeague: vi.fn().mockResolvedValue(createMockUserWithLeague({
                     league: {
-                        summonerName: 'LinkedName',
+                        summonerName: 'LinkedName#EUW',
                         region: 'euw1',
-                        puuid: 'linked-puuid'
+                        puuid: 'stale-puuid',
+                        update,
                     } as any
                 }))
             }
         });
 
         await expect(resolveLeagueIdentity({ userId: 'discord-1' })).resolves.toEqual({
-            summoner: 'LinkedName',
+            summoner: 'LinkedName#EUW',
             region: 'euw1',
-            puuid: 'linked-puuid'
+            puuid: 'fresh-puuid'
         });
-        expect(mockRiotApi.Account.getByRiotId).not.toHaveBeenCalled();
+        expect(mockRiotApi.Account.getByRiotId).toHaveBeenCalledWith('LinkedName', 'EUW', expect.any(String));
+        expect(update).toHaveBeenCalledWith({ puuid: 'fresh-puuid' });
+    });
+
+    it('falls back to the stored linked PUUID when refresh fails', async () => {
+        mockRiotApi.Account.getByRiotId.mockRejectedValueOnce(new Error('riot down'));
+        createMockConfigManager({
+            userManager: {
+                getUserWithLeague: vi.fn().mockResolvedValue(createMockUserWithLeague({
+                    league: {
+                        summonerName: 'LinkedName#EUW',
+                        region: 'euw1',
+                        puuid: 'stored-puuid'
+                    } as any
+                }))
+            }
+        });
+
+        await expect(resolveLeagueIdentity({ userId: 'discord-1' })).resolves.toEqual({
+            summoner: 'LinkedName#EUW',
+            region: 'euw1',
+            puuid: 'stored-puuid'
+        });
     });
 
     it('resolves unlinked Riot IDs with fallback account routing', async () => {

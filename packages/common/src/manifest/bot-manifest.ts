@@ -97,6 +97,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "birthdays",
+        "description": "Show upcoming birthdays in this server",
+        "module": "birthdays",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "remove-birthday",
         "description": "Remove your birthday or another user's birthday (admins only)",
         "module": "birthdays",
@@ -160,6 +169,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "test-notification",
+        "description": "Send a sample notification to a channel",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "time",
         "description": "Convert a time into Discord timestamp formats",
         "module": "general",
@@ -205,6 +223,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "riot-links",
+        "description": "Manage linked Riot accounts",
+        "module": "league",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "tft-history",
         "description": "Get recent Teamfight Tactics match history for a summoner",
         "module": "league",
@@ -214,8 +241,26 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "tft-stats",
+        "description": "Get Teamfight Tactics ranked stats for a summoner",
+        "module": "league",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "get-patchnotes",
         "description": "Get the latest patch notes for a game",
+        "module": "patchnotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "patchnotes-history",
+        "description": "Show stored patch note history for a game",
         "module": "patchnotes",
         "permissions": null,
         "dm_permission": null,
@@ -234,6 +279,24 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "add-quote",
         "description": "Add a quote",
+        "module": "quotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "delete-quote",
+        "description": "Delete a quote you added or authored",
+        "module": "quotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "quote-leaderboard",
+        "description": "Show the most quoted users in this server",
         "module": "quotes",
         "permissions": null,
         "dm_permission": null,
@@ -286,6 +349,33 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "reminders",
+        "description": "List your pending reminders",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "delete-reminder",
+        "description": "Delete one of your pending reminders",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "snooze-reminder",
+        "description": "Snooze one of your pending reminders",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "add-tiktok-stream",
         "description": "Add a TikTok account for live notifications",
         "module": "tiktok",
@@ -304,8 +394,26 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "stream-status",
+        "description": "Check whether a Twitch channel is live",
+        "module": "twitch",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "add-youtube-channel",
         "description": "Add a Youtube Channel for new video notifications",
+        "module": "youtube",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
+        "name": "youtube-latest",
+        "description": "Show the latest video from a YouTube channel ID",
         "module": "youtube",
         "permissions": null,
         "dm_permission": null,
@@ -352,6 +460,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "birthday",
                 "description": "Show your or another user's birthday",
+                "module": "birthdays",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "birthdays",
+                "description": "Show upcoming birthdays in this server",
                 "module": "birthdays",
                 "permissions": null,
                 "dm_permission": null,
@@ -440,6 +557,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "testOnly": null
             },
             {
+                "name": "test-notification",
+                "description": "Send a sample notification to a channel",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
                 "name": "time",
                 "description": "Convert a time into Discord timestamp formats",
                 "module": "general",
@@ -494,8 +620,26 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "testOnly": null
             },
             {
+                "name": "riot-links",
+                "description": "Manage linked Riot accounts",
+                "module": "league",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
                 "name": "tft-history",
                 "description": "Get recent Teamfight Tactics match history for a summoner",
+                "module": "league",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "tft-stats",
+                "description": "Get Teamfight Tactics ranked stats for a summoner",
                 "module": "league",
                 "permissions": null,
                 "dm_permission": null,
@@ -514,6 +658,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "get-patchnotes",
                 "description": "Get the latest patch notes for a game",
+                "module": "patchnotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "patchnotes-history",
+                "description": "Show stored patch note history for a game",
                 "module": "patchnotes",
                 "permissions": null,
                 "dm_permission": null,
@@ -541,6 +694,24 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "add-quote",
                 "description": "Add a quote",
+                "module": "quotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "delete-quote",
+                "description": "Delete a quote you added or authored",
+                "module": "quotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "quote-leaderboard",
+                "description": "Show the most quoted users in this server",
                 "module": "quotes",
                 "permissions": null,
                 "dm_permission": null,
@@ -600,6 +771,33 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null
+            },
+            {
+                "name": "reminders",
+                "description": "List your pending reminders",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "delete-reminder",
+                "description": "Delete one of your pending reminders",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "snooze-reminder",
+                "description": "Snooze one of your pending reminders",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
             }
         ]
     },
@@ -644,6 +842,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null
+            },
+            {
+                "name": "stream-status",
+                "description": "Check whether a Twitch channel is live",
+                "module": "twitch",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
             }
         ]
     },
@@ -657,6 +864,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "add-youtube-channel",
                 "description": "Add a Youtube Channel for new video notifications",
+                "module": "youtube",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "youtube-latest",
+                "description": "Show the latest video from a YouTube channel ID",
                 "module": "youtube",
                 "permissions": null,
                 "dm_permission": null,

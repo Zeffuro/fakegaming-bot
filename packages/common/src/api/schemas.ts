@@ -134,6 +134,12 @@ export const reminderCreateRequestSchema = z.object({
     completed: z.boolean().optional(),
 }).strict();
 
+export const riotLinkUpdateRequestSchema = z.object({
+    summonerName: nonEmptyString,
+    region: nonEmptyString,
+    puuid: nonEmptyString,
+}).strict();
+
 export const serverCreateRequestSchema = z.object({
     serverId: nonEmptyString,
     name: nonEmptyString.optional(),
@@ -237,6 +243,7 @@ export const apiRequestSchemas = {
     PatchSubscriptionRequest: patchSubscriptionRequestSchema,
     QuoteCreateRequest: quoteCreateRequestSchema,
     ReminderCreateRequest: reminderCreateRequestSchema,
+    RiotLinkUpdateRequest: riotLinkUpdateRequestSchema,
     ServerCreateRequest: serverCreateRequestSchema,
     ServerUpdateRequest: serverUpdateRequestSchema,
     TikTokCreateRequest: tiktokCreateRequestSchema,

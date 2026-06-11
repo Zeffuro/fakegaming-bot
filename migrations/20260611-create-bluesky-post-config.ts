@@ -1,6 +1,9 @@
-import type { Sequelize } from 'sequelize';
+interface MigrationSequelize {
+    getDialect(): string;
+    query(sql: string): Promise<unknown>;
+}
 
-async function createSqliteTable(context: Sequelize): Promise<void> {
+async function createSqliteTable(context: MigrationSequelize): Promise<void> {
     await context.query(`
         CREATE TABLE IF NOT EXISTS "BlueskyPostConfigs" (
             "id" INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +28,7 @@ async function createSqliteTable(context: Sequelize): Promise<void> {
     `);
 }
 
-async function createPostgresTable(context: Sequelize): Promise<void> {
+async function createPostgresTable(context: MigrationSequelize): Promise<void> {
     await context.query(`
         CREATE TABLE IF NOT EXISTS "BlueskyPostConfigs" (
             "id" SERIAL PRIMARY KEY,
@@ -50,7 +53,7 @@ async function createPostgresTable(context: Sequelize): Promise<void> {
     `);
 }
 
-export const up = async ({ context }: { context: Sequelize }) => {
+export const up = async ({ context }: { context: MigrationSequelize }) => {
     if (context.getDialect() === 'sqlite') {
         await createSqliteTable(context);
         return;
@@ -59,7 +62,7 @@ export const up = async ({ context }: { context: Sequelize }) => {
     await createPostgresTable(context);
 };
 
-export const down = async ({ context }: { context: Sequelize }) => {
+export const down = async ({ context }: { context: MigrationSequelize }) => {
     await context.query('DROP INDEX IF EXISTS "unique_guild_bluesky_handle"');
     await context.query('DROP TABLE IF EXISTS "BlueskyPostConfigs"');
 };

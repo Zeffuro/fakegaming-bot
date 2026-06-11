@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setupCommandTest, expectEditReplyContainsText, expectEditReplyHasEmbed } from '@zeffuro/fakegaming-common/testing';
 import { ChatInputCommandInteraction } from 'discord.js';
-import { Regions } from 'twisted/dist/constants/regions.js';
+import { Regions } from '../constants/riotRegions.js';
 
 // Mock the riotService module
 vi.mock('../../../services/riotService.js', () => ({

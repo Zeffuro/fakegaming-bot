@@ -7,6 +7,7 @@ export * from './youtube-video-config.js';
 export * from './reminder-config.js';
 export * from './birthday-config.js';
 export * from './patch-note-config.js';
+export * from './patch-note-history-config.js';
 export * from './patch-subscription-config.js';
 export * from './disabled-command-config.js';
 export * from './cache-config.js';

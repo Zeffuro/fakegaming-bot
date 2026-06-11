@@ -1,7 +1,7 @@
 import {ChatInputCommandInteraction, EmbedBuilder} from 'discord.js';
 import {getSummoner, getSummonerDetails} from '../../../services/riotService.js';
 import {getLeagueIdentityFromInteraction} from "../utils/leagueUtils.js";
-import type {LeagueEntryDTO} from 'twisted/dist/models-dto/league/league-exp/league-entry.dto.js';
+import type {LeagueEntryDto} from '../types/riotDtos.js';
 import {getTierEmoji} from '../constants/leagueTierEmojis.js';
 import { buildCommonLeagueOptions } from '../shared/commandOptions.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
@@ -45,7 +45,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             await interaction.editReply({embeds: [errorEmbed]});
             return;
         }
-        const leagueEntries = leagueResult.data as LeagueEntryDTO[];
+        const leagueEntries = leagueResult.data as LeagueEntryDto[];
 
         const embed = new EmbedBuilder()
             .setTitle(`Stats for ${identity.summoner} [${identity.region}]`)
@@ -55,14 +55,14 @@ async function execute(interaction: ChatInputCommandInteraction) {
             );
 
         if (Array.isArray(leagueEntries) && leagueEntries.length > 0) {
-            leagueEntries.forEach((entry: LeagueEntryDTO) => {
-                const emoji = getTierEmoji(interaction.guild, (entry as any).tier as string);
-                let value = `**${(entry as any).tier} ${(entry as any).rank}** ${emoji} (${(entry as any).leaguePoints} LP)\nWins: ${(entry as any).wins}, Losses: ${(entry as any).losses}`;
-                if ((entry as any).miniSeries) {
-                    const ms = (entry as any).miniSeries as { progress?: string; wins?: number; losses?: number; target?: number };
+            leagueEntries.forEach((entry: LeagueEntryDto) => {
+                const emoji = getTierEmoji(interaction.guild, entry.tier);
+                let value = `**${entry.tier} ${entry.rank}** ${emoji} (${entry.leaguePoints} LP)\nWins: ${entry.wins}, Losses: ${entry.losses}`;
+                if (entry.miniSeries) {
+                    const ms = entry.miniSeries;
                     value += `\nPromos: ${ms.progress ?? ''} (${ms.wins ?? 0}W/${ms.losses ?? 0}L, Target: ${ms.target ?? 0})`;
                 }
-                embed.addFields({name: (entry as any).queueType as string, value, inline: false});
+                embed.addFields({name: entry.queueType, value, inline: false});
             });
         } else {
             embed.addFields({name: 'Ranked', value: 'No ranked data found.', inline: false});

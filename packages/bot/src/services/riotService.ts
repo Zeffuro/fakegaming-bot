@@ -1,13 +1,29 @@
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {RiotApi, LolApi, TftApi} from 'twisted';
-import {AccountAPIRegionGroups, Regions, regionToRegionGroupForAccountAPI, RegionGroups} from 'twisted/dist/constants/regions.js';
 import {LeagueConfig} from "@zeffuro/fakegaming-common/models";
+import {
+    AccountAPIRegionGroups,
+    Regions,
+    RegionGroups,
+    regionToRegionGroupForAccountAPI,
+} from '../modules/league/constants/riotRegions.js';
 
 const puuidCache = new Map<string, string>();
 
-function getLeagueApiKey(): string {
-    // Prefer dedicated LEAGUE key; fall back to DEV key if missing for local/dev convenience
-    return process.env.RIOT_LEAGUE_API_KEY || process.env.RIOT_DEV_API_KEY || '';
+type RiotApiKeyScope = 'account' | 'league' | 'tft';
+
+function getRiotApiKey(scope: RiotApiKeyScope): string {
+    const key = {
+        account: process.env.RIOT_ACCOUNT_API_KEY || process.env.RIOT_LEAGUE_API_KEY || process.env.RIOT_TFT_API_KEY || process.env.RIOT_DEV_API_KEY,
+        league: process.env.RIOT_LEAGUE_API_KEY || process.env.RIOT_DEV_API_KEY,
+        tft: process.env.RIOT_TFT_API_KEY || process.env.RIOT_DEV_API_KEY
+    }[scope];
+
+    if (!key) {
+        throw new Error(`Missing Riot ${scope} API key`);
+    }
+
+    return key;
 }
 
 // Safe conversion from region to account API region group with fallback mapping
@@ -50,8 +66,13 @@ function safeAccountRegionGroup(region: Regions | string): AccountAPIRegionGroup
 function normalizeRiotError(_err: unknown): string {
     const err = _err as unknown;
     if (typeof err === 'string') return err;
-    if (err instanceof Error && err.message) return err.message;
-    // Try to extract Riot error payload
+
+    const responseStatus = (err as { response?: { data?: { status?: { status_code?: number; message?: string } } } })?.response?.data?.status;
+    if (responseStatus && (responseStatus.status_code || responseStatus.message)) {
+        const code = responseStatus.status_code ? String(responseStatus.status_code) : '';
+        return `${code}${code ? ' ' : ''}${responseStatus.message ?? 'Error'}`.trim();
+    }
+
     if (err && typeof err === 'object' && 'status' in err) {
         const status = (err as { status?: { status_code?: number; message?: string } }).status;
         if (status && (status.status_code || status.message)) {
@@ -59,6 +80,8 @@ function normalizeRiotError(_err: unknown): string {
             return `${code}${code ? ' ' : ''}${status.message ?? 'Error'}`.trim();
         }
     }
+
+    if (err instanceof Error && err.message) return err.message;
     return 'Unknown error';
 }
 
@@ -89,7 +112,7 @@ async function callLol<T>(
     }
 ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
-        const api = new LolApi({ key: getLeagueApiKey() });
+        const api = new LolApi({ key: getRiotApiKey('league') });
         const raw = await run(api);
         const data = unwrapResponse<T>(raw);
         const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
@@ -110,7 +133,7 @@ async function callTft<T>(
     }
 ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
-        const api = new TftApi({ key: process.env.RIOT_DEV_API_KEY });
+        const api = new TftApi({ key: getRiotApiKey('tft') });
         const raw = await run(api);
         const data = unwrapResponse<T>(raw);
         const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
@@ -146,13 +169,18 @@ export async function getSummoner(puuid: string, region: Regions): Promise<{
     );
 }
 
-export async function getPUUIDByRiotId(gameName: string, tagLine: string, region: AccountAPIRegionGroups): Promise<string> {
+export async function getPUUIDByRiotId(
+    gameName: string,
+    tagLine: string,
+    region: AccountAPIRegionGroups,
+    options: { bypassCache?: boolean } = {}
+): Promise<string> {
     const cacheKey = `${gameName.trim().toLowerCase()}#${tagLine.trim().toLowerCase()}`;
-    if (puuidCache.has(cacheKey)) {
+    if (!options.bypassCache && puuidCache.has(cacheKey)) {
         return puuidCache.get(cacheKey)!;
     }
     try {
-        const riotApi = new RiotApi({key: getLeagueApiKey()});
+        const riotApi = new RiotApi({key: getRiotApiKey('account')});
         const {response} = await riotApi.Account.getByRiotId(gameName, tagLine, region);
         puuidCache.set(cacheKey, response.puuid);
         return response.puuid;
@@ -211,7 +239,25 @@ export async function resolveLeagueIdentity(options: {
         const leagueConfig: LeagueConfig = userConfig.league;
         summoner = leagueConfig.summonerName;
         region = leagueConfig.region as Regions;
-        if (leagueConfig.puuid) puuid = leagueConfig.puuid;
+        if (leagueConfig.puuid) {
+            puuid = leagueConfig.puuid;
+        }
+
+        if (summoner.includes('#')) {
+            const [gameName, tagLine] = summoner.split('#');
+            try {
+                const accountRegion = safeAccountRegionGroup(region);
+                const refreshedPuuid = await getPUUIDByRiotId(gameName, tagLine, accountRegion, { bypassCache: true });
+                if (refreshedPuuid && refreshedPuuid !== puuid) {
+                    puuid = refreshedPuuid;
+                    if (typeof leagueConfig.update === 'function') {
+                        await leagueConfig.update({ puuid: refreshedPuuid });
+                    }
+                }
+            } catch {
+                // Keep the stored PUUID if Account-V1 is temporarily unavailable.
+            }
+        }
     }
 
     if (!summoner || !region) {
@@ -255,4 +301,20 @@ export async function getTftMatchDetails(matchId: string, region: AccountAPIRegi
     error?: string
 }> {
     return callTft<object>(async (api) => api.Match.get(matchId, region));
+}
+
+export async function getTftSummoner(puuid: string, region: Regions): Promise<{
+    success: boolean,
+    data?: object,
+    error?: string
+}> {
+    return callTft<object>(async (api) => api.Summoner.getByPUUID(puuid, region));
+}
+
+export async function getTftLeagueEntries(puuid: string, region: Regions): Promise<{
+    success: boolean,
+    data?: object,
+    error?: string
+}> {
+    return callTft<object>(async (api) => api.League.getByPUUID(puuid, region));
 }

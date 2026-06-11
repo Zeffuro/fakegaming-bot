@@ -9,6 +9,7 @@ import {YoutubeVideoConfig} from './models/youtube-video-config.js';
 import {ReminderConfig} from './models/reminder-config.js';
 import {BirthdayConfig} from './models/birthday-config.js';
 import {PatchNoteConfig} from './models/patch-note-config.js';
+import {PatchNoteHistoryConfig} from './models/patch-note-history-config.js';
 import {PatchSubscriptionConfig} from './models/patch-subscription-config.js';
 import {DisabledCommandConfig} from "./models/disabled-command-config.js";
 import {CacheConfig} from "./models/cache-config.js";
@@ -62,6 +63,7 @@ export function getSequelize(useTest = false): Sequelize {
         ReminderConfig,
         BirthdayConfig,
         PatchNoteConfig,
+        PatchNoteHistoryConfig,
         PatchSubscriptionConfig,
         DisabledCommandConfig,
         CacheConfig,

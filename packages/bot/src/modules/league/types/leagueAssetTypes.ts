@@ -59,3 +59,15 @@ export interface LeagueAugment {
     id: number | string;
     augmentSmallIconPath: string;
 }
+
+export interface TftItem {
+    name: string;
+    nameId: string;
+    squareIconPath: string;
+}
+
+export interface TftTrait {
+    display_name: string;
+    trait_id: string;
+    icon_path: string;
+}

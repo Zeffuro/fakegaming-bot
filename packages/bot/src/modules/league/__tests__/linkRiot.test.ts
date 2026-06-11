@@ -1,7 +1,7 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { setupModelMocks, setupCommandTest, expectEphemeralReply, createMockCommandInteraction, expectEditReplyContainsText } from "@zeffuro/fakegaming-common/testing";
+import { setupModelMocks, setupCommandTest, createMockCommandInteraction, expectEditReplyContainsText } from "@zeffuro/fakegaming-common/testing";
 import { ChatInputCommandInteraction } from "discord.js";
-import { Regions } from "twisted/dist/constants/regions.js";
+import { Regions } from "../constants/riotRegions.js";
 
 // Ensure DB/model mocks are ready
 beforeAll(() => {
@@ -215,7 +215,7 @@ describe("linkRiot command", () => {
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        expectEphemeralReply(interaction, { equals: "You need admin permissions to link for another user." });
+        expectEditReplyContainsText(interaction, "You need admin permissions to link for another user.");
         expect(resolveLeagueIdentity).not.toHaveBeenCalled();
     });
 

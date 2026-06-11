@@ -36,6 +36,7 @@ type DisabledCommandCreateResponse = ApiJsonResponse<'/disabledCommands', 'post'
 type DisabledCommandDeleteResponse = ApiJsonResponse<'/disabledCommands/{id}', 'delete', 200>;
 type QuoteResponse = ApiSchema<'QuoteConfig'>;
 type QuoteCreateRequest = ApiSchema<'QuoteCreateRequest'>;
+type RiotLinkUpdateRequest = ApiSchema<'RiotLinkUpdateRequest'>;
 
 // Define endpoint paths centrally
 export const API_ENDPOINTS = {
@@ -73,6 +74,9 @@ export const API_ENDPOINTS = {
 
   // Jobs (proxied to API /jobs)
   JOBS: '/api/external/jobs',
+
+  // Riot links
+  RIOT_LINKS: '/api/external/riotLinks',
 };
 
 // Type for API options
@@ -200,6 +204,15 @@ export interface ResolveUsersResponse {
 export interface JobsListResponse { jobs: Array<{ name: string; supportsDate: boolean; supportsForce: boolean }>; }
 export interface LastHeartbeatResponse { last: { startedAt: string; backend: string; receivedAt: string } | null }
 export interface JobRunEntry { startedAt: string; finishedAt: string; ok: boolean; meta?: Record<string, unknown>; error?: string }
+export interface RiotLinkEntry {
+  id?: number;
+  discordId: string;
+  summonerName: string;
+  region: string;
+  puuid: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 export interface BirthdayPayload {
   userId: string;
   guildId?: string | null;
@@ -500,4 +513,20 @@ export const api = {
   getLastHeartbeat: () => apiRequest<LastHeartbeatResponse>(`${API_ENDPOINTS.JOBS}/heartbeat/last`),
   getJobStatus: (name: string) => apiRequest<{ runs: JobRunEntry[] }>(`${API_ENDPOINTS.JOBS}/${encodeURIComponent(name)}/status`),
   getBirthdaysProcessedToday: () => apiRequest<{ processed: number }>(`${API_ENDPOINTS.JOBS}/birthdays/today`),
+
+  // Riot Links admin API
+  getRiotLinks: () =>
+    apiRequest<{ links: RiotLinkEntry[] }>(API_ENDPOINTS.RIOT_LINKS),
+
+  updateRiotLink: (discordId: string, data: RiotLinkUpdateRequest) =>
+    apiRequest<RiotLinkEntry>(
+      `${API_ENDPOINTS.RIOT_LINKS}/${encodeURIComponent(discordId)}`,
+      { method: 'PUT', body: data }
+    ),
+
+  deleteRiotLink: (discordId: string) =>
+    apiRequest<{ success: boolean }>(
+      `${API_ENDPOINTS.RIOT_LINKS}/${encodeURIComponent(discordId)}`,
+      { method: 'DELETE' }
+    ),
 };

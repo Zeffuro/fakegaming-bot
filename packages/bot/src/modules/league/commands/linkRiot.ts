@@ -1,4 +1,4 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, MessageFlags} from 'discord.js';
+import {SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
@@ -31,10 +31,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (targetUser) {
         const member = await interaction.guild?.members.fetch(interaction.user.id);
         if (!member?.permissions.has(PermissionFlagsBits.Administrator)) {
-            await interaction.reply({
-                content: 'You need admin permissions to link for another user.',
-                flags: MessageFlags.Ephemeral
-            });
+            await interaction.editReply('You need admin permissions to link for another user.');
             return;
         }
         userId = targetUser.id;

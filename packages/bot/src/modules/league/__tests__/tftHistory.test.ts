@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ChatInputCommandInteraction } from 'discord.js';
-import { Regions } from 'twisted/dist/constants/regions.js';
+import { Regions } from '../constants/riotRegions.js';
 import { makeHistoryTestHelpers } from './helpers/historyTestHelpers.js';
 
 // Mock the riotService module
@@ -19,8 +19,7 @@ vi.mock('../image/tftHistoryImage.js', () => ({
     generateTftHistoryImage: vi.fn(() => Promise.resolve(Buffer.from('fake-tft-image-data')))
 }));
 
-// Mock the twisted library's regionToRegionGroupForAccountAPI function
-vi.mock('twisted/dist/constants/regions.js', async (importOriginal) => {
+vi.mock('../constants/riotRegions.js', async (importOriginal) => {
     const actual = await importOriginal();
     return Object.assign({}, actual, {
         regionToRegionGroupForAccountAPI: vi.fn().mockReturnValue('EUROPE')
@@ -68,7 +67,7 @@ describe('tftHistory command', () => {
         expect(getLeagueIdentityFromInteraction).toHaveBeenCalledWith(interaction);
 
         // Verify regionToRegionGroupForAccountAPI was called with the region
-        const { regionToRegionGroupForAccountAPI } = await import('twisted/dist/constants/regions.js');
+        const { regionToRegionGroupForAccountAPI } = await import('../constants/riotRegions.js');
         expect(regionToRegionGroupForAccountAPI).toHaveBeenCalledWith('EUW');
 
         // Verify service calls

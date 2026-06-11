@@ -1,6 +1,9 @@
-import type { Sequelize } from 'sequelize';
+interface MigrationSequelize {
+    getDialect(): string;
+    query(sql: string): Promise<unknown>;
+}
 
-async function createSqliteTables(context: Sequelize): Promise<void> {
+async function createSqliteTables(context: MigrationSequelize): Promise<void> {
     await context.query(`
         CREATE TABLE IF NOT EXISTS "AnimeTitles" (
             "id" INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,7 +68,7 @@ async function createSqliteTables(context: Sequelize): Promise<void> {
     `);
 }
 
-async function createPostgresTables(context: Sequelize): Promise<void> {
+async function createPostgresTables(context: MigrationSequelize): Promise<void> {
     await context.query(`
         CREATE TABLE IF NOT EXISTS "AnimeTitles" (
             "id" SERIAL PRIMARY KEY,
@@ -130,7 +133,7 @@ async function createPostgresTables(context: Sequelize): Promise<void> {
     `);
 }
 
-export const up = async ({ context }: { context: Sequelize }) => {
+export const up = async ({ context }: { context: MigrationSequelize }) => {
     if (context.getDialect() === 'sqlite') {
         await createSqliteTables(context);
         return;
@@ -139,7 +142,7 @@ export const up = async ({ context }: { context: Sequelize }) => {
     await createPostgresTables(context);
 };
 
-export const down = async ({ context }: { context: Sequelize }) => {
+export const down = async ({ context }: { context: MigrationSequelize }) => {
     await context.query('DROP INDEX IF EXISTS "unique_anime_episode"');
     await context.query('DROP TABLE IF EXISTS "AnimeEpisodes"');
     await context.query('DROP INDEX IF EXISTS "idx_anime_subscriptions_lookup"');

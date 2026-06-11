@@ -7,7 +7,7 @@ import {TwitchManager} from './twitchManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
-import {PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.js";
+import {PatchNoteHistoryManager, PatchNotesManager, PatchSubscriptionManager} from "./patchNotesManager.js";
 import {DisabledCommandManager} from "./disabledCommandManager.js";
 import {CacheManager} from "./cacheManager.js";
 import {NotificationsManager} from './notificationsManager.js';
@@ -15,6 +15,7 @@ import {DisabledModuleManager} from './disabledModuleManager.js';
 import {TikTokManager} from './tiktokManager.js';
 import {BlueskyManager} from './blueskyManager.js';
 import {AnimeManager} from './animeManager.js';
+import {LeagueManager} from './leagueManager.js';
 
 /**
  * Aggregates all manager classes.
@@ -28,6 +29,7 @@ export class ConfigManager {
     reminderManager = new ReminderManager();
     birthdayManager = new BirthdayManager();
     patchNotesManager = new PatchNotesManager();
+    patchNoteHistoryManager = new PatchNoteHistoryManager();
     patchSubscriptionManager = new PatchSubscriptionManager();
     disabledCommandManager = new DisabledCommandManager();
     cacheManager = new CacheManager();
@@ -36,6 +38,7 @@ export class ConfigManager {
     tiktokManager = new TikTokManager();
     blueskyManager = new BlueskyManager();
     animeManager = new AnimeManager();
+    leagueManager = new LeagueManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

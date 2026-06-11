@@ -4,7 +4,18 @@ import {parseDateSafe} from '@zeffuro/fakegaming-common/utils';
 import {formatPatchNoteEmbedDescription} from '@zeffuro/fakegaming-common/patchnotes';
 import {CreationAttributes} from 'sequelize';
 
-export function buildPatchNoteEmbed(note: PatchNoteConfig | CreationAttributes<PatchNoteConfig>): EmbedBuilder {
+interface PatchNoteEmbedSource {
+    game: string;
+    title: string;
+    content: string;
+    url: string;
+    publishedAt: string | number | Date;
+    accentColor?: number | null;
+    imageUrl?: string | null;
+    logoUrl?: string | null;
+}
+
+export function buildPatchNoteEmbed(note: PatchNoteConfig | CreationAttributes<PatchNoteConfig> | PatchNoteEmbedSource): EmbedBuilder {
     const publishedAt = parseDateSafe(note.publishedAt);
     const embed = new EmbedBuilder()
         .setColor(note.accentColor ?? 0x5865F2)

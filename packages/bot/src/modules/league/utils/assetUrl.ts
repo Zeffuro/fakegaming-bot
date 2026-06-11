@@ -1,6 +1,6 @@
 const COMMUNITY_DRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/';
+const COMMUNITY_DRAGON_GAME_BASE = 'https://raw.communitydragon.org/latest/game/';
 const LEAGUE_CHAMP_ICON_PATH = 'v1/champion-icons/';
-const TFT_UNIT_ICON_PATH = 'assets/characters/';
 
 /**
  * Returns the URL for a League champion icon.
@@ -17,8 +17,21 @@ export function leagueChampionIconUrl(championId: number | string): string {
  * @returns The icon URL.
  */
 export function tftUnitIconUrl(unitCharacterId: string): string {
+    return tftUnitIconUrlCandidates(unitCharacterId)[0];
+}
+
+export function tftUnitIconUrlCandidates(unitCharacterId: string): string[] {
     const norm = unitCharacterId.toLowerCase();
-    return `${COMMUNITY_DRAGON_BASE}${TFT_UNIT_ICON_PATH}${norm}/icon.png`;
+    const setMatch = /^tft(?<set>\d+)[a-z]?_/.exec(norm);
+    const candidates: string[] = [];
+
+    if (setMatch?.groups?.set) {
+        candidates.push(`${COMMUNITY_DRAGON_GAME_BASE}assets/characters/${norm}/hud/${norm}_square.tft_set${setMatch.groups.set}.png`);
+    }
+
+    candidates.push(`${COMMUNITY_DRAGON_GAME_BASE}assets/characters/${norm}/hud/${norm}_square.png`);
+    candidates.push(`${COMMUNITY_DRAGON_BASE}assets/characters/${norm}/icon.png`);
+    return [...new Set(candidates)];
 }
 
 /**

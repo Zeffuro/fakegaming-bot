@@ -1049,6 +1049,29 @@
         ],
         "additionalProperties": false
       },
+      "RiotLinkUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "summonerName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "region": {
+            "type": "string",
+            "minLength": 1
+          },
+          "puuid": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "summonerName",
+          "region",
+          "puuid"
+        ],
+        "additionalProperties": false
+      },
       "ServerCreateRequest": {
         "type": "object",
         "properties": {
@@ -3150,6 +3173,129 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/riotLinks": {
+      "get": {
+        "summary": "List linked Riot accounts",
+        "tags": [
+          "Riot Links"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Linked Riot accounts"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/riotLinks/{discordId}": {
+      "get": {
+        "summary": "Get linked Riot account by Discord user ID",
+        "tags": [
+          "Riot Links"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Linked Riot account"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "summary": "Create or update a linked Riot account for a Discord user",
+        "tags": [
+          "Riot Links"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RiotLinkUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated linked Riot account"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove a linked Riot account for a Discord user",
+        "tags": [
+          "Riot Links"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "discordId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }

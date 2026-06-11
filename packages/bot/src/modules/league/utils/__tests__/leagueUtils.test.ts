@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getLeagueIdentityFromInteraction, getRegionCodeFromName } from '../leagueUtils.js';
 import { ChatInputCommandInteraction } from 'discord.js';
-import { Regions } from 'twisted/dist/constants/regions.js';
+import { Regions } from '../../constants/riotRegions.js';
 import * as riotService from '../../../../services/riotService.js';
 import { createMockCommandInteraction } from '@zeffuro/fakegaming-common/testing';
 

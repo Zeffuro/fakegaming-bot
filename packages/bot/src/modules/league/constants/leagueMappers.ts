@@ -4,10 +4,16 @@ export const queueMapper: Record<number, string> = {
     430: 'Blind Pick',
     440: 'Ranked Flex',
     450: 'ARAM',
+    480: 'Swiftplay',
+    490: 'Quickplay',
     700: 'Clash',
+    720: 'ARAM Clash',
     830: 'Co-op vs. AI Intro',
     840: 'Co-op vs. AI Beginner',
     850: 'Co-op vs. AI Intermediate',
+    870: 'Co-op vs. AI Intro',
+    880: 'Co-op vs. AI Beginner',
+    890: 'Co-op vs. AI Intermediate',
     900: 'URF',
     920: 'Legend of the Poro King',
     940: 'Snow ARAM',
@@ -15,9 +21,17 @@ export const queueMapper: Record<number, string> = {
     1300: 'Nexus Blitz',
     1400: 'Ultimate Spellbook',
     1700: 'Arena',
+    1710: 'Arena',
+    1810: 'Swarm',
+    1820: 'Swarm',
+    1830: 'Swarm',
+    1840: 'Swarm',
+    1900: 'Pick URF',
     2000: 'Tutorial 1',
     2010: 'Tutorial 2',
     2020: 'Tutorial 3',
+    2300: 'Brawl',
+    2400: 'ARAM: Mayhem',
 };
 
 export const rankedTypeMapper: Record<string, string> = {
@@ -29,6 +43,7 @@ export const rankedTypeMapper: Record<string, string> = {
 
 export const gameModeConvertMap: Record<string, string> = {
     'CLASSIC': 'Summoner\'s Rift',
+    'SWIFTPLAY': 'Swiftplay',
     'ARAM': 'ARAM',
     'TUTORIAL': 'Tutorial',
     'URF': 'AR Ultra Rapid Fire',
@@ -41,4 +56,5 @@ export const gameModeConvertMap: Record<string, string> = {
     'KINGPORO': 'Legend of the Poro King',
     'SIEGE': 'Nexus Siege',
     'ODYSSEY': 'Odyssey',
+    'BRAWL': 'Brawl',
 };

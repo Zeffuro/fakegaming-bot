@@ -1,5 +1,5 @@
 import { setupCommandTest, expectEditReplyWithAttachment, expectEditReplyContainsText } from '@zeffuro/fakegaming-common/testing';
-import type { Regions } from 'twisted/dist/constants/regions.js';
+import type { Regions } from '../../constants/riotRegions.js';
 import { vi } from 'vitest';
 
 /**

@@ -1317,6 +1317,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/riotLinks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List linked Riot accounts */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Linked Riot accounts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/riotLinks/{discordId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get linked Riot account by Discord user ID */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Linked Riot account */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        /** Create or update a linked Riot account for a Discord user */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["RiotLinkUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated linked Riot account */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        post?: never;
+        /** Remove a linked Riot account for a Discord user */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    discordId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Removed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/reminders": {
         parameters: {
             query?: never;
@@ -3401,6 +3520,11 @@ export interface components {
             timespan: string;
             timestamp: number;
             completed?: boolean;
+        };
+        RiotLinkUpdateRequest: {
+            summonerName: string;
+            region: string;
+            puuid: string;
         };
         ServerCreateRequest: {
             serverId: string;

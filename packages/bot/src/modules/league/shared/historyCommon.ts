@@ -1,6 +1,6 @@
 import { AttachmentBuilder, ChatInputCommandInteraction } from 'discord.js';
-import { regionToRegionGroupForAccountAPI } from 'twisted/dist/constants/regions.js';
-import type { Regions } from 'twisted/dist/constants/regions.js';
+import { regionToRegionGroupForAccountAPI } from '../constants/riotRegions.js';
+import type { AccountAPIRegionGroups, Regions } from '../constants/riotRegions.js';
 import { getLeagueIdentityFromInteraction } from '../utils/leagueUtils.js';
 
 export interface LeagueIdentity {
@@ -10,8 +10,8 @@ export interface LeagueIdentity {
 }
 
 export interface HistoryCommandOptions<TMatch> {
-    fetchHistory: (puuid: string, regionGroup: ReturnType<typeof regionToRegionGroupForAccountAPI>, start: number, count: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
-    fetchDetails: (matchId: string, regionGroup: ReturnType<typeof regionToRegionGroupForAccountAPI>) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+    fetchHistory: (puuid: string, regionGroup: AccountAPIRegionGroups, start: number, count: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
+    fetchDetails: (matchId: string, regionGroup: AccountAPIRegionGroups) => Promise<{ success: boolean; data?: unknown; error?: string }>;
     generateImage: (matches: TMatch[], identity: { puuid: string }) => Promise<Buffer>;
     contentPrefix: string; // e.g., 'Recent League matches' or 'Recent TFT matches'
     historyErrorPrefix: string; // e.g., 'Failed to fetch match history' or 'Failed to fetch TFT match history'
