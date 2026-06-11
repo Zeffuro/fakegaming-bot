@@ -21,16 +21,28 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/**/*.{test,spec}.ts',
+        'src/**/__tests__/**/*',
         'src/test/**/*',
         'src/types/**/*',
+        'src/**/types/**/*',
+        'src/**/commands.manifest.ts',
+        'src/**/config.ts',
+        'src/constants/**/*',
         // Infrastructure/entry points - better tested through integration
+        'src/earlyEnv.ts',
         'src/index.ts',
         'src/deploy-commands.ts',
         'src/config/db.ts',
+        'src/core/applicationEmojiManager.ts',
         'src/core/FakegamingBot.ts',
         'src/core/preloadModules.ts',
         // Complex canvas rendering - better validated through visual QA
         'src/modules/league/image/**/*Image.ts',
+        // Anime command UI is integration-heavy; shared pure formatters remain covered by unit tests.
+        'src/modules/anime/commands/anime.ts',
+        'src/modules/anime/shared/anilistAutocomplete.ts',
+        'src/modules/anime/shared/animeComponents.ts',
+        'src/modules/anime/shared/animeEmbed.ts',
         // Type definition files
         '**/*.d.ts',
       ],
