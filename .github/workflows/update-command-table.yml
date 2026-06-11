@@ -54,3 +54,4 @@ jobs:
           title: "chore: update command table in README"
           body: "This PR updates the command table in the README automatically."
           labels: "bot, automated pr"
+          add-paths: README.md
