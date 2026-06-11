@@ -45,6 +45,13 @@ export type youtube_put_Request = paths["/youtube"]["put"]["requestBody"]["conte
 export type youtube_resolve_get_Response200 = paths["/youtube/resolve"]["get"]["responses"]["200"]["content"]["application/json"];
 
 /**
+ * Response for [GET /youtube/metadata 200]
+ *
+ * @see paths["/youtube/metadata"]["get"]["responses"]["200"]["content"]["application/json"]
+ */
+export type youtube_metadata_get_Response200 = paths["/youtube/metadata"]["get"]["responses"]["200"]["content"]["application/json"];
+
+/**
  * Response for [GET /youtube/channel 200]
  *
  * @see paths["/youtube/channel"]["get"]["responses"]["200"]["content"]["application/json"]

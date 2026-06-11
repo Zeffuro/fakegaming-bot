@@ -1,0 +1,162 @@
+import { z } from 'zod';
+import {
+    getAniListAnimeById,
+    getAniListSeasonAnimePage,
+    getCurrentAniListSeason,
+    getNextAniListSeason,
+    formatAniListSeasonScope,
+    isAniListSubscribable,
+    mapAniListTitleToInput,
+    searchAniListAnime,
+    searchAniListAnimePage,
+    type AniListSeason,
+    type AniListSeasonScope,
+    type AniListTitle,
+} from '@zeffuro/fakegaming-common/anime';
+import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import type { CreationAttributes } from 'sequelize';
+import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { jwtAuth } from '../middleware/auth.js';
+import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import type { AuthenticatedRequest } from '../types/express.js';
+
+const router = createBaseRouter();
+
+const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
+const searchQuerySchema = z.object({
+    q: z.string().min(1),
+    page: z.coerce.number().int().min(1).optional(),
+    perPage: z.coerce.number().int().min(1).max(25).optional(),
+});
+const seasonQuerySchema = z.object({
+    season: z.enum(['current', 'next', 'WINTER', 'SPRING', 'SUMMER', 'FALL']),
+    scope: z.enum(['airing', 'chart', 'tv', 'all']).optional(),
+    year: z.coerce.number().int().min(1940).max(2100).optional(),
+    page: z.coerce.number().int().min(1).optional(),
+    perPage: z.coerce.number().int().min(1).max(25).optional(),
+});
+const listQuerySchema = z.object({
+    guildId: z.string().min(1).optional(),
+});
+const subscribeBodySchema = z.object({
+    anilistId: z.coerce.number().int().positive().optional(),
+    title: z.string().min(1).optional(),
+    guildId: z.string().min(1),
+    channelId: z.string().min(1),
+    reminderMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+}).refine((value) => value.anilistId || value.title, { message: 'anilistId or title is required', path: ['anilistId'] });
+
+function resolveSeason(value: z.infer<typeof seasonQuerySchema>): { season: AniListSeason; year: number } {
+    if (value.season === 'current') return getCurrentAniListSeason();
+    if (value.season === 'next') return getNextAniListSeason();
+    return { season: value.season, year: value.year ?? new Date().getUTCFullYear() };
+}
+
+async function resolveAnime(args: { anilistId?: number; title?: string }): Promise<AniListTitle | null> {
+    if (args.anilistId) {
+        const anime = await getAniListAnimeById(args.anilistId);
+        if (!anime) return null;
+        await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
+        return anime;
+    }
+    const result = (await searchAniListAnime(args.title ?? ''))[0] ?? null;
+    if (!result) return null;
+    await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(result));
+    return result;
+}
+
+async function serializeSubscription(sub: CreationAttributes<AnimeSubscriptionConfig>) {
+    const title = await getConfigManager().animeManager.titles.getOnePlain({ anilistId: sub.anilistId });
+    return {
+        ...sub,
+        animeTitle: title?.titleEnglish ?? title?.titleRomaji ?? title?.titleNative ?? `AniList #${sub.anilistId}`,
+        discordChannelId: sub.channelId ?? '',
+        status: title?.status ?? null,
+        format: title?.format ?? null,
+        episodes: title?.episodes ?? null,
+        averageScore: title?.averageScore ?? null,
+        nextEpisode: title?.nextEpisode ?? null,
+        nextAiringAt: title?.nextAiringAt ?? null,
+        title,
+    };
+}
+
+/**
+ * @openapi
+ * /anime:
+ *   get:
+ *     summary: List anime channel subscriptions
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
+    const subscriptions = guildId
+        ? await getConfigManager().animeManager.subscriptions.getGuildChannelSubscriptions(guildId)
+        : await getConfigManager().animeManager.subscriptions.getUserSubscriptions((req as AuthenticatedRequest).user.discordId);
+    if (guildId) {
+        const access = await checkUserGuildAccess(req, res, guildId);
+        if (!access.authorized) return;
+    }
+    res.json(await Promise.all(subscriptions.map(serializeSubscription)));
+});
+
+router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
+    const { q, page = 1, perPage = 10 } = req.query as unknown as z.infer<typeof searchQuerySchema>;
+    const { items: results, pageInfo } = await searchAniListAnimePage(q, page, perPage);
+    for (const anime of results.slice(0, 10)) {
+        await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
+    }
+    res.json({ results, pageInfo });
+});
+
+router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res) => {
+    const resolved = resolveSeason(req.query as unknown as z.infer<typeof seasonQuerySchema>);
+    const { page = 1, perPage = 10, scope = 'airing' } = req.query as unknown as z.infer<typeof seasonQuerySchema>;
+    const { items: results, pageInfo } = await getAniListSeasonAnimePage(resolved.season, resolved.year, page, perPage, { scope: scope as AniListSeasonScope });
+    for (const anime of results) {
+        await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
+    }
+    res.json({ ...resolved, scope, scopeLabel: formatAniListSeasonScope(scope as AniListSeasonScope), results, pageInfo });
+});
+
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(subscribeBodySchema), async (req, res) => {
+    const body = req.body as z.infer<typeof subscribeBodySchema>;
+    const anime = await resolveAnime(body);
+    if (!anime) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Anime not found' } });
+    }
+    if (!isAniListSubscribable(anime)) {
+        return res.status(400).json({
+            error: {
+                code: 'ANIME_NOT_SUBSCRIBABLE',
+                message: `${anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`} is ${anime.status?.toLowerCase() ?? 'not subscribable'}.`,
+            },
+        });
+    }
+    const created = await getConfigManager().animeManager.subscriptions.subscribeChannel({
+        anilistId: anime.id,
+        guildId: body.guildId,
+        channelId: body.channelId,
+        reminderMinutes: body.reminderMinutes ?? 30,
+    });
+    res.status(created ? 201 : 200).json({ success: true, created, anilistId: anime.id });
+});
+
+router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+    const { id } = req.params;
+    const subscription = await getConfigManager().animeManager.subscriptions.findByPkPlain(Number(id));
+    if (subscription.guildId) {
+        const access = await checkUserGuildAccess(req, res, subscription.guildId);
+        if (!access.authorized) return;
+    } else if (subscription.userId !== (req as AuthenticatedRequest).user.discordId) {
+        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized for this anime subscription' } });
+    }
+    await getConfigManager().animeManager.subscriptions.removeByPk(Number(id));
+    res.json({ success: true });
+});
+
+export { router };

@@ -23,6 +23,7 @@ export async function loadCommands(client: FakegamingBot, modulesPath: string) {
                 data: cmd.data,
                 execute: cmd.execute,
                 autocomplete: cmd.autocomplete,
+                handleComponent: cmd.handleComponent,
                 moduleName,
             });
         }

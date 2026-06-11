@@ -7,29 +7,22 @@ import {
   Avatar,
   Box,
   Button,
-  ButtonGroup,
   CircularProgress,
-  Divider,
   IconButton,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
-import {
-  Add,
-  Cake,
-  Close,
-  Delete,
-  Edit,
-  LiveTv,
-  Save,
-  SpeakerNotes,
-  YouTube as YouTubeIcon,
-} from "@mui/icons-material";
+import { Add, Cake, Close, Delete, Edit, Save } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
+import { EmptyState } from "@/components/dashboard/EmptyState";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeatureNav } from "@/components/dashboard/FeatureNav";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { dashboardAccents, dashboardCardSx, dashboardFieldSx, dangerActionButtonSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useBirthdays, type BirthdayFormData, type ResolvedUser } from "@/components/hooks/useBirthdays";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
@@ -121,6 +114,8 @@ export default function BirthdayConfigPage() {
   const [memberOptions, setMemberOptions] = useState<MemberItem[]>([]);
   const [memberLoading, setMemberLoading] = useState(false);
   const memberSearchCacheRef = React.useRef<Map<string, { ts: number; items: MemberItem[] }>>(new Map());
+  const accent = dashboardAccents.birthdays;
+  const fieldSx = dashboardFieldSx(accent);
 
   const inputLooksLikeId = useMemo(() => /^(\d{5,})$/.test(memberInput.trim()), [memberInput]);
   const sortedBirthdays = useMemo(
@@ -217,227 +212,202 @@ export default function BirthdayConfigPage() {
   }
 
   return (
-    <DashboardLayout guild={guild} currentModule="birthdays" currentTrail={currentTrail as any} maxWidth="lg" loading={loading || guildsLoading}>
+    <DashboardLayout guild={guild} currentModule="birthdays" currentTrail={currentTrail as any} maxWidth="xl" loading={loading || guildsLoading}>
       {!loading && guild && (
-        <>
-          <Box sx={{ mb: 4, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
-            <Box>
-              <Typography variant="h4" sx={{ mb: 1, fontWeight: 600, display: "flex", alignItems: "center", gap: 2, color: "grey.100" }}>
-                <Cake color="warning" />
-                Birthdays
-              </Typography>
-              <Typography variant="body1" sx={{ color: "grey.300" }}>
-                Manage birthday announcements for this server.
-              </Typography>
-            </Box>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <ButtonGroup variant="outlined">
-                <Button component={Link} href={`/dashboard/twitch/${encodeURIComponent(guildId)}`} startIcon={<LiveTv />}>Twitch</Button>
-                <Button component={Link} href={`/dashboard/tiktok/${encodeURIComponent(guildId)}`} startIcon={<LiveTv />}>TikTok</Button>
-                <Button component={Link} href={`/dashboard/youtube/${encodeURIComponent(guildId)}`} startIcon={<YouTubeIcon />}>YouTube</Button>
-                <Button component={Link} href={`/dashboard/patch-notes/${encodeURIComponent(guildId)}`} startIcon={<SpeakerNotes />}>Patch Notes</Button>
-                <Button component={Link} href={`/dashboard/birthdays/${encodeURIComponent(guildId)}`} startIcon={<Cake />} sx={{ bgcolor: "warning.dark", color: "warning.contrastText" }}>Birthdays</Button>
-              </ButtonGroup>
+        <FeatureShell accent={accent} secondaryAccent={dashboardAccents.quotes}>
+          <FeatureHero
+            icon={<Cake />}
+            eyebrow="Birthdays"
+            title="Birthday Announcements"
+            description="Search Discord members, store their birthday, and choose exactly where celebration messages should be posted."
+            accent={accent}
+            secondaryAccent={dashboardAccents.quotes}
+            stats={[{ label: "Birthdays Configured", value: birthdays.length }]}
+            actions={(
               <Button
                 component={Link}
                 href={`/dashboard/settings/${encodeURIComponent(guildId)}/notifications`}
                 variant="outlined"
-                size="small"
-                sx={{ borderColor: "grey.600", color: "grey.300", "&:hover": { borderColor: "grey.500", bgcolor: "grey.700" } }}
+                sx={ghostActionButtonSx(accent)}
               >
-                Back to Notifications
+                Back To Notifications
               </Button>
-            </Stack>
-          </Box>
+            )}
+            nav={<FeatureNav guildId={guildId} activeModule="Birthdays" />}
+          />
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3, bgcolor: "error.dark", color: "error.light" }} onClose={() => setError(null)}>
+            <Alert severity="error" sx={{ mb: 3, bgcolor: "rgba(255,107,154,0.12)", color: "grey.50", border: "1px solid rgba(255,107,154,0.24)" }} onClose={() => setError(null)}>
               {error}
             </Alert>
           )}
 
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: "grey.800", border: 1, borderColor: "grey.700", mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: "grey.100" }}>
-              {editingUserId ? "Edit Birthday" : "Add Birthday"}
-            </Typography>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "2fr 1fr 1fr 1fr 2fr auto" }, gap: 2, alignItems: "center" }}>
-              <Autocomplete<MemberItem, false, false, true>
-                freeSolo
-                fullWidth
-                disabled={!!editingUserId}
-                options={memberOptions}
-                inputValue={memberInput}
-                onInputChange={(_event, value) => setMemberInput(value)}
-                onChange={(_event, newValue) => {
-                  if (newValue && typeof newValue !== "string") {
-                    setForm(prev => ({ ...prev, userId: newValue.id }));
-                    setMemberInput(`${getDisplayName(newValue)} (${newValue.id})`);
-                  }
-                }}
-                getOptionLabel={(option) => typeof option === "string" ? option : getDisplayName(option)}
-                loading={memberLoading}
-                noOptionsText={memberInput.trim().length < 3 ? "Type at least 3 characters" : "No members found"}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Member"
-                    placeholder="Search member or paste user ID"
-                    size="small"
-                    slotProps={{
-                      ...params.slotProps,
-                      input: {
-                        ...params.slotProps.input,
-                        endAdornment: (
-                          <>
-                            {memberLoading ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}
-                            {params.slotProps.input.endAdornment}
-                          </>
-                        ),
-                      },
-                    }}
-                  />
-                )}
-                renderOption={(props, option) => {
-                  const avatarUrl = buildAvatarUrl(option.id, option.avatar);
-                  const { key, ...rest } = props as unknown as { key?: React.Key } & React.HTMLAttributes<HTMLLIElement>;
-                  return (
-                    <li key={key} {...rest}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar src={avatarUrl ?? undefined} sx={{ width: 24, height: 24 }}>
-                          {getDisplayName(option).slice(0, 1).toUpperCase()}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2">{getDisplayName(option)}</Typography>
-                          <Typography variant="caption" sx={{ color: "grey.500" }}>{option.id}</Typography>
-                        </Box>
-                      </Box>
-                    </li>
-                  );
-                }}
-              />
-              <TextField
-                select
-                label="Month"
-                size="small"
-                value={form.month}
-                onChange={(event) => setForm(prev => ({ ...prev, month: event.target.value }))}
-              >
-                {months.map(month => <MenuItem key={month.value} value={month.value}>{month.label}</MenuItem>)}
-              </TextField>
-              <TextField
-                label="Day"
-                type="number"
-                size="small"
-                value={form.day}
-                onChange={(event) => setForm(prev => ({ ...prev, day: event.target.value }))}
-                slotProps={{ htmlInput: { min: 1, max: 31 } }}
-              />
-              <TextField
-                label="Year"
-                type="number"
-                size="small"
-                value={form.year}
-                onChange={(event) => setForm(prev => ({ ...prev, year: event.target.value }))}
-                helperText="Optional"
-                slotProps={{ htmlInput: { min: 1900, max: 9999 } }}
-              />
-              <TextField
-                select
-                label="Announcement Channel"
-                size="small"
-                value={form.channelId}
-                disabled={loadingChannels}
-                onChange={(event) => setForm(prev => ({ ...prev, channelId: event.target.value }))}
-              >
-                {channels.map(channel => <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>)}
-              </TextField>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  variant="contained"
-                  startIcon={editingUserId ? <Save /> : <Add />}
-                  disabled={saving}
-                  onClick={() => void handleSubmit()}
-                  sx={{ whiteSpace: "nowrap" }}
-                >
-                  {editingUserId ? "Save" : "Add"}
-                </Button>
-                {editingUserId && (
-                  <IconButton color="inherit" onClick={resetForm} disabled={saving}>
-                    <Close />
-                  </IconButton>
-                )}
-              </Stack>
-            </Box>
-          </Paper>
+          <FeaturePanel accent={accent} sx={{ mb: 3 }}>
+            <Stack spacing={2.25} sx={{ position: "relative" }}>
+              <Box>
+                <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
+                  {editingUserId ? "Edit Birthday" : "Add Birthday"}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>
+                  Use member search when possible; pasting a Discord user ID still works for edge cases.
+                </Typography>
+              </Box>
 
-          <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: "grey.800", border: 1, borderColor: "grey.700" }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: 600, color: "grey.100" }}>
-                Configured Birthdays
-              </Typography>
-              <Button variant="outlined" onClick={() => void refresh()} disabled={loading || saving}>Refresh</Button>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            {sortedBirthdays.length === 0 ? (
-              <Typography variant="body1" sx={{ color: "grey.400" }}>
-                No birthdays configured for this server.
-              </Typography>
-            ) : (
-              <Stack spacing={1.5}>
-                {sortedBirthdays.map(birthday => {
-                  const user = userMap[birthday.userId];
-                  return (
-                    <Box key={`${birthday.guildId}:${birthday.userId}`} sx={{ display: "flex", alignItems: "center", gap: 2, p: 2, borderRadius: 1, bgcolor: "grey.900", border: 1, borderColor: "grey.700" }}>
-                      <Avatar src={buildAvatarUrl(birthday.userId, user?.avatar) ?? undefined}>
-                        {getDisplayName(user).slice(0, 1).toUpperCase()}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" sx={{ color: "grey.100" }}>
-                          {getDisplayName(user)}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "grey.500" }}>
-                          {birthday.userId}
-                        </Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr 1fr 1fr 2fr auto" }, gap: 2, alignItems: "start" }}>
+                <Autocomplete<MemberItem, false, false, true>
+                  freeSolo
+                  fullWidth
+                  disabled={!!editingUserId}
+                  options={memberOptions}
+                  inputValue={memberInput}
+                  onInputChange={(_event, value) => setMemberInput(value)}
+                  onChange={(_event, newValue) => {
+                    if (newValue && typeof newValue !== "string") {
+                      setForm(prev => ({ ...prev, userId: newValue.id }));
+                      setMemberInput(`${getDisplayName(newValue)} (${newValue.id})`);
+                    }
+                  }}
+                  getOptionLabel={(option) => typeof option === "string" ? option : getDisplayName(option)}
+                  loading={memberLoading}
+                  noOptionsText={memberInput.trim().length < 3 ? "Type at least 3 characters" : "No members found"}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Member"
+                      placeholder="Search member or paste user ID"
+                      size="small"
+                      sx={fieldSx}
+                      slotProps={{
+                        ...params.slotProps,
+                        input: {
+                          ...params.slotProps.input,
+                          endAdornment: (
+                            <>
+                              {memberLoading ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}
+                              {params.slotProps.input.endAdornment}
+                            </>
+                          ),
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => {
+                    const avatarUrl = buildAvatarUrl(option.id, option.avatar);
+                    const { key, ...rest } = props as unknown as { key?: React.Key } & React.HTMLAttributes<HTMLLIElement>;
+                    return (
+                      <li key={key} {...rest}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar src={avatarUrl ?? undefined} sx={{ width: 24, height: 24 }}>
+                            {getDisplayName(option).slice(0, 1).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2">{getDisplayName(option)}</Typography>
+                            <Typography variant="caption" sx={{ color: "grey.500" }}>{option.id}</Typography>
+                          </Box>
+                        </Box>
+                      </li>
+                    );
+                  }}
+                />
+                <TextField select label="Month" size="small" value={form.month} onChange={(event) => setForm(prev => ({ ...prev, month: event.target.value }))} sx={fieldSx}>
+                  {months.map(month => <MenuItem key={month.value} value={month.value}>{month.label}</MenuItem>)}
+                </TextField>
+                <TextField label="Day" type="number" size="small" value={form.day} onChange={(event) => setForm(prev => ({ ...prev, day: event.target.value }))} slotProps={{ htmlInput: { min: 1, max: 31 } }} sx={fieldSx} />
+                <TextField label="Year" type="number" size="small" value={form.year} onChange={(event) => setForm(prev => ({ ...prev, year: event.target.value }))} helperText="Optional" slotProps={{ htmlInput: { min: 1900, max: 9999 } }} sx={fieldSx} />
+                <TextField select label="Announcement Channel" size="small" value={form.channelId} disabled={loadingChannels} onChange={(event) => setForm(prev => ({ ...prev, channelId: event.target.value }))} sx={fieldSx}>
+                  {channels.map(channel => <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>)}
+                </TextField>
+                <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: "flex-start", lg: "flex-end" } }}>
+                  <Button variant="contained" startIcon={editingUserId ? <Save /> : <Add />} disabled={saving} onClick={() => void handleSubmit()} sx={primaryActionButtonSx(accent)}>
+                    {editingUserId ? "Save" : "Add"}
+                  </Button>
+                  {editingUserId && (
+                    <IconButton color="inherit" onClick={resetForm} disabled={saving} sx={ghostActionButtonSx(accent)}>
+                      <Close />
+                    </IconButton>
+                  )}
+                </Stack>
+              </Box>
+            </Stack>
+          </FeaturePanel>
+
+          <FeaturePanel accent={accent}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
+                    Configured Birthdays
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>
+                    Sorted by month and day so upcoming dates are easier to scan.
+                  </Typography>
+                </Box>
+                <Button variant="outlined" onClick={() => void refresh()} disabled={loading || saving} sx={ghostActionButtonSx(accent)}>
+                  Refresh
+                </Button>
+              </Box>
+
+              {sortedBirthdays.length === 0 ? (
+                <EmptyState icon={<Cake />} title="No Birthdays Configured" description="Add the first member birthday above to enable announcements." accent={accent} />
+              ) : (
+                <Stack spacing={1.5}>
+                  {sortedBirthdays.map(birthday => {
+                    const user = userMap[birthday.userId];
+                    return (
+                      <Box key={`${birthday.guildId}:${birthday.userId}`} sx={{ ...dashboardCardSx(accent), display: "flex", alignItems: "center", gap: 2, p: 2, flexWrap: { xs: "wrap", md: "nowrap" } }}>
+                        <Avatar src={buildAvatarUrl(birthday.userId, user?.avatar) ?? undefined} sx={{ border: "1px solid rgba(255,255,255,0.12)" }}>
+                          {getDisplayName(user).slice(0, 1).toUpperCase()}
+                        </Avatar>
+                        <Box sx={{ flex: 1, minWidth: 220 }}>
+                          <Typography variant="body1" sx={{ color: "grey.50", fontWeight: 800 }}>
+                            {getDisplayName(user)}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)" }}>
+                            {birthday.userId}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ minWidth: 190 }}>
+                          <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 700 }}>{formatBirthday(birthday.month, birthday.day, birthday.year)}</Typography>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)" }}>{getChannelName(birthday.channelId)}</Typography>
+                        </Box>
+                        <Stack direction="row" spacing={1}>
+                          <Tooltip title="Edit Birthday">
+                            <span>
+                              <IconButton
+                                disabled={saving}
+                                onClick={() => {
+                                  setEditingUserId(birthday.userId);
+                                  setForm({
+                                    userId: birthday.userId,
+                                    channelId: birthday.channelId,
+                                    day: String(birthday.day),
+                                    month: String(birthday.month),
+                                    year: birthday.year ? String(birthday.year) : "",
+                                  });
+                                  setMemberInput(`${getDisplayName(user)} (${birthday.userId})`);
+                                }}
+                                sx={ghostActionButtonSx(accent)}
+                              >
+                                <Edit />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="Delete Birthday">
+                            <span>
+                              <IconButton color="error" disabled={saving} onClick={() => void deleteBirthday(birthday.userId)} sx={dangerActionButtonSx}>
+                                <Delete />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
                       </Box>
-                      <Box sx={{ minWidth: 160 }}>
-                        <Typography variant="body2" sx={{ color: "grey.100" }}>{formatBirthday(birthday.month, birthday.day, birthday.year)}</Typography>
-                        <Typography variant="caption" sx={{ color: "grey.500" }}>{getChannelName(birthday.channelId)}</Typography>
-                      </Box>
-                      <Tooltip title="Edit birthday">
-                        <span>
-                          <IconButton
-                            color="primary"
-                            disabled={saving}
-                            onClick={() => {
-                              setEditingUserId(birthday.userId);
-                              setForm({
-                                userId: birthday.userId,
-                                channelId: birthday.channelId,
-                                day: String(birthday.day),
-                                month: String(birthday.month),
-                                year: birthday.year ? String(birthday.year) : "",
-                              });
-                              setMemberInput(`${getDisplayName(user)} (${birthday.userId})`);
-                            }}
-                          >
-                            <Edit />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      <Tooltip title="Delete birthday">
-                        <span>
-                          <IconButton color="error" disabled={saving} onClick={() => void deleteBirthday(birthday.userId)}>
-                            <Delete />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                    </Box>
-                  );
-                })}
-              </Stack>
-            )}
-          </Paper>
-        </>
+                    );
+                  })}
+                </Stack>
+              )}
+            </Stack>
+          </FeaturePanel>
+        </FeatureShell>
       )}
     </DashboardLayout>
   );

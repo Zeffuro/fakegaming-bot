@@ -13,6 +13,7 @@ import {
     Stack,
     Typography
 } from "@mui/material";
+import { dashboardDialogPaperSx, dashboardFieldSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useStreamingForm } from "@/components/hooks/useStreamingForm";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
 
@@ -68,6 +69,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
 
     const selectedChannel = channels.find(ch => ch.id === (newConfig as any).discordChannelId) || null;
     const nameValue = (newConfig as any)[channelNameField] as string;
+    const fieldSx = dashboardFieldSx(moduleColor);
 
     const tokens = moduleName === 'Twitch'
         ? ['{streamer}', '{title}', '{game}', '{url}', '{uptime}', '{viewers}']
@@ -87,15 +89,11 @@ export default function AddConfigDialog<T extends StreamingConfig>({
             fullWidth
             slotProps={{
                 paper: {
-                    sx: {
-                        bgcolor: 'grey.800',
-                        border: 1,
-                        borderColor: 'grey.700'
-                    }
+                    sx: dashboardDialogPaperSx(moduleColor)
                 }
             }}
         >
-            <DialogTitle sx={{ color: 'grey.100' }}>
+            <DialogTitle sx={{ color: 'grey.100', fontWeight: 850 }}>
                 {itemSingularLabel ? `Add ${itemSingularLabel}` : `Add ${moduleName} ${moduleName === 'YouTube' ? 'Channel' : 'Streamer'}`}
             </DialogTitle>
             <DialogContent>
@@ -112,16 +110,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                                     {...params}
                                     label={channelNameLabel}
                                     placeholder={channelNamePlaceholder}
-                                    sx={{
-                                        mb: 2,
-                                        '& .MuiInputLabel-root': { color: 'grey.300' },
-                                        '& .MuiOutlinedInput-root': {
-                                            color: 'grey.100',
-                                            '& fieldset': { borderColor: 'grey.600' },
-                                            '&:hover fieldset': { borderColor: 'grey.500' },
-                                            '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                        }
-                                    }}
+                                    sx={[fieldSx, { mb: 2 }]}
                                 />
                             )}
                         />
@@ -132,16 +121,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                             placeholder={channelNamePlaceholder}
                             value={nameValue}
                             onChange={(e) => handleChannelNameChange(e.target.value)}
-                            sx={{
-                                mb: 2,
-                                '& .MuiInputLabel-root': { color: 'grey.300' },
-                                '& .MuiOutlinedInput-root': {
-                                    color: 'grey.100',
-                                    '& fieldset': { borderColor: 'grey.600' },
-                                    '&:hover fieldset': { borderColor: 'grey.500' },
-                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                }
-                            }}
+                            sx={[fieldSx, { mb: 2 }]}
                             helperText={`Enter the ${moduleName} ${channelNameLabel.toLowerCase()}`}
                             slotProps={{
                                 formHelperText: { sx: { color: 'grey.400' } }
@@ -178,16 +158,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                             <TextField
                                 {...params}
                                 label="Discord Channel"
-                                sx={{
-                                    mb: 2,
-                                    '& .MuiInputLabel-root': { color: 'grey.300' },
-                                    '& .MuiOutlinedInput-root': {
-                                        color: 'grey.100',
-                                        '& fieldset': { borderColor: 'grey.600' },
-                                        '&:hover fieldset': { borderColor: 'grey.500' },
-                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                    }
-                                }}
+                                sx={[fieldSx, { mb: 2 }]}
                                 slotProps={{
                                     ...params.slotProps,
                                     input: {
@@ -331,7 +302,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                 <Button
                     onClick={onClose}
                     disabled={saving}
-                    sx={{ color: 'grey.300' }}
+                    sx={ghostActionButtonSx(moduleColor)}
                 >
                     Cancel
                 </Button>
@@ -339,10 +310,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                     onClick={handleAddConfig}
                     variant="contained"
                     disabled={saving || !nameValue || !(newConfig as any).discordChannelId}
-                    sx={{
-                        bgcolor: moduleColor,
-                        '&:hover': { bgcolor: moduleColor, filter: 'brightness(0.9)' }
-                    }}
+                    sx={primaryActionButtonSx(moduleColor)}
                 >
                     {saving ? <CircularProgress size={20} /> : 'Add'}
                 </Button>

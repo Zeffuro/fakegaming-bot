@@ -1,5 +1,7 @@
 import React from "react";
-import { Paper, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 
 /**
  * SettingsCard standardizes the visual layout for a settings section.
@@ -8,25 +10,26 @@ export interface SettingsCardProps {
     title: string;
     description?: React.ReactNode;
     children: React.ReactNode;
+    accent?: string;
 }
 
 /**
  * Render a settings section card with a title, optional description, and content area.
  */
-export function SettingsCard({ title, description, children }: SettingsCardProps) {
+export function SettingsCard({ title, description, children, accent = dashboardAccents.settings }: SettingsCardProps) {
     return (
-        <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
-            <Typography variant="h6" sx={{ mb: description ? 1.5 : 3, fontWeight: 600 }}>
+        <FeaturePanel accent={accent}>
+            <Typography variant="h6" sx={{ mb: description ? 1.5 : 3, fontWeight: 850, color: "grey.50", position: "relative" }}>
                 {title}
             </Typography>
             {description ? (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 2, color: "rgba(255,255,255,0.58)", position: "relative" }}>
                     {description}
                 </Typography>
             ) : null}
-            <Box>
+            <Box sx={{ position: "relative" }}>
                 {children}
             </Box>
-        </Paper>
+        </FeaturePanel>
     );
 }

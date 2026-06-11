@@ -6,6 +6,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 import { getLogger } from '@zeffuro/fakegaming-common';
+import { fetchYouTubeChannelPageMetadata } from '../utils/youtubePublic.js';
 
 // Schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -13,6 +14,9 @@ const channelSchema = z.object({
     youtubeChannelId: z.string().min(1),
     discordChannelId: z.string().min(1),
     guildId: z.string().min(1)
+});
+const metadataQuerySchema = z.object({
+    channelId: z.string().trim().min(1),
 });
 
 const router = createBaseRouter();
@@ -38,6 +42,24 @@ const resolveQuerySchema = z.object({
 function getYoutubeApiKey(): string | null {
     const key = process.env.YOUTUBE_API_KEY;
     return key && key.length > 0 ? key : null;
+}
+
+function decodeXmlText(value: string): string {
+    return value
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+function extractXmlText(xml: string, tagName: string): string | null {
+    const match = xml.match(new RegExp(`<${tagName}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tagName}>`, 'i'));
+    return match?.[1] ? decodeXmlText(match[1].trim()) : null;
+}
+
+function extractLatestVideoId(xml: string): string | null {
+    return extractXmlText(xml, 'yt:videoId');
 }
 
 /**
@@ -106,6 +128,78 @@ router.get('/resolve', validateQuery(resolveQuerySchema), async (req, res) => {
     } catch (err) {
         log.error({ err, identifier }, 'Error resolving YouTube channel');
         return res.json({ channelId: null });
+    }
+});
+
+/**
+ * @openapi
+ * /youtube/metadata:
+ *   get:
+ *     summary: Resolve public YouTube channel metadata from the channel Atom feed
+ *     tags: [YouTube]
+ *     parameters:
+ *       - in: query
+ *         name: channelId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Public channel metadata when available
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 channelId:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                   nullable: true
+ *                 url:
+ *                   type: string
+ *                   nullable: true
+ *                 latestVideoId:
+ *                   type: string
+ *                   nullable: true
+ */
+router.get('/metadata', validateQuery(metadataQuerySchema), async (req, res) => {
+    const { channelId } = req.query as z.infer<typeof metadataQuerySchema>;
+    const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
+    let feedTitle: string | null = null;
+    let feedUrlValue: string | null = null;
+    let feedLatestVideoId: string | null = null;
+
+    try {
+        const r = await fetch(feedUrl, {
+            headers: { 'user-agent': 'fakegaming-bot/1.0 (+https://github.com/)' },
+        });
+        if (r.ok) {
+            const xml = await r.text();
+            feedTitle = extractXmlText(xml, 'name') ?? extractXmlText(xml, 'title');
+            feedUrlValue = extractXmlText(xml, 'uri');
+            feedLatestVideoId = extractLatestVideoId(xml);
+        }
+    } catch (err) {
+        log.debug({ err, channelId }, 'Error resolving YouTube channel metadata from feed');
+    }
+
+    try {
+        const pageMetadata = feedTitle ? { title: null, url: null, latestVideoId: null } : await fetchYouTubeChannelPageMetadata(channelId);
+        return res.json({
+            channelId,
+            title: feedTitle ?? pageMetadata.title,
+            url: feedUrlValue ?? pageMetadata.url ?? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}`,
+            latestVideoId: feedLatestVideoId ?? pageMetadata.latestVideoId,
+        });
+    } catch (err) {
+        log.warn({ err, channelId }, 'Error resolving YouTube channel metadata from public page');
+        return res.json({
+            channelId,
+            title: feedTitle,
+            url: feedUrlValue,
+            latestVideoId: feedLatestVideoId,
+        });
     }
 });
 

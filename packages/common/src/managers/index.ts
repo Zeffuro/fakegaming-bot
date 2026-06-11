@@ -12,6 +12,7 @@ export * from './configManager.js';
 export * from './notificationsManager.js';
 export * from './disabledModuleManager.js';
 export * from './tiktokManager.js';
+export * from './animeManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

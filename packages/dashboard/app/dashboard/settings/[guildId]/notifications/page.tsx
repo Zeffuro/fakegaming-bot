@@ -1,15 +1,21 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Box, Typography, Alert, Grid, Paper, Button, Chip, Stack } from "@mui/material";
-import { Cake, LiveTv, YouTube as YouTubeIcon, NotificationsActive, SpeakerNotes } from "@mui/icons-material";
+import { Alert, Box, Button } from "@mui/material";
+import { AutoStories, Cake, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
+import { FeatureCard } from "@/components/dashboard/FeatureCard";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
+import { useAnimeConfigs } from "@/components/hooks/useAnime";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -18,155 +24,111 @@ export default function GuildNotificationsHubPage() {
     const patchApi = usePatchSubscriptions(guildId as string);
     const tiktokApi = useTikTokConfigs(guildId as string);
     const birthdayApi = useBirthdays(guildId as string);
+    const animeApi = useAnimeConfigs(guildId as string);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || birthdayApi.loading;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || birthdayApi.loading || animeApi.loading;
+    const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
+    const encodedGuildId = encodeURIComponent(guildId as string);
 
     if (!guild && !guildsLoading) {
         return (
             <DashboardLayout>
-                <Alert severity="error" sx={{ bgcolor: 'error.dark', color: 'error.light' }}>
+                <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
                     Guild not found or you don't have access to this guild.
                 </Alert>
             </DashboardLayout>
         );
     }
 
+    const cards = [
+        {
+            title: "Twitch Live",
+            description: "Stream alerts with destination channels, custom messages, cooldowns, and quiet hours.",
+            icon: <LiveTv />,
+            accent: dashboardAccents.twitch,
+            href: `/dashboard/twitch/${encodedGuildId}`,
+            chipLabel: `${twitchApi.configs.length} Configured`,
+            actionLabel: "Manage Twitch",
+        },
+        {
+            title: "TikTok Live",
+            description: "Creator live alerts using the same channel routing and notification controls as Twitch.",
+            icon: <LiveTv />,
+            accent: dashboardAccents.tiktok,
+            href: `/dashboard/tiktok/${encodedGuildId}`,
+            chipLabel: `${tiktokApi.configs.length} Configured`,
+            actionLabel: "Manage TikTok",
+        },
+        {
+            title: "YouTube Uploads",
+            description: "Watch channels for new uploads and post clean video announcements to Discord.",
+            icon: <YouTubeIcon />,
+            accent: dashboardAccents.youtube,
+            href: `/dashboard/youtube/${encodedGuildId}`,
+            chipLabel: `${youtubeApi.configs.length} Configured`,
+            actionLabel: "Manage YouTube",
+        },
+        {
+            title: "Patch Notes",
+            description: "Subscribe channels to game update feeds so patch posts land where people expect them.",
+            icon: <SpeakerNotes />,
+            accent: dashboardAccents.patchNotes,
+            href: `/dashboard/patch-notes/${encodedGuildId}`,
+            chipLabel: `${patchApi.configs.length} Configured`,
+            actionLabel: "Manage Patch Notes",
+        },
+        {
+            title: "Anime Episodes",
+            description: "AniList search, season browsing, and channel reminders for upcoming episodes.",
+            icon: <AutoStories />,
+            accent: dashboardAccents.anime,
+            href: `/dashboard/anime/${encodedGuildId}`,
+            chipLabel: `${animeApi.configs.length} Configured`,
+            actionLabel: "Manage Anime",
+        },
+        {
+            title: "Birthday Announcements",
+            description: "Member birthday announcements with member search and per-birthday destination channels.",
+            icon: <Cake />,
+            accent: dashboardAccents.birthdays,
+            href: `/dashboard/birthdays/${encodedGuildId}`,
+            chipLabel: `${birthdayApi.birthdays.length} Configured`,
+            actionLabel: "Manage Birthdays",
+        },
+    ];
+
     return (
-        <DashboardLayout guild={guild} currentModule="settings" maxWidth="lg" loading={loading}>
+        <DashboardLayout guild={guild} currentModule="settings" maxWidth="xl" loading={loading}>
             {!loading && guild && (
-                <>
-                    <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <NotificationsActive color="primary" />
-                        <Box>
-                            <Typography variant="h4" sx={{ mb: 0.5, fontWeight: 600 }}>
-                                Notifications
-                            </Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Manage Twitch, TikTok, YouTube, Patch Notes and birthday notifications for this server.
-                            </Typography>
+                <FeatureShell accent={dashboardAccents.settings} secondaryAccent={dashboardAccents.anime}>
+                    <FeatureHero
+                        icon={<NotificationsActive />}
+                        eyebrow="Notifications"
+                        title="Notification Command Center"
+                        description="One place to manage every server-facing notification feed: live streams, uploads, patch notes, anime episodes, and birthday announcements."
+                        accent={dashboardAccents.settings}
+                        secondaryAccent={dashboardAccents.anime}
+                        stats={[{ label: "Configured Feeds", value: totalConfigured }]}
+                        actions={(
+                            <Button
+                                component={Link}
+                                href={`/dashboard/settings/${encodedGuildId}`}
+                                variant="outlined"
+                                sx={ghostActionButtonSx(dashboardAccents.settings)}
+                            >
+                                Back To Settings
+                            </Button>
+                        )}
+                    />
+
+                    <FeaturePanel accent={dashboardAccents.settings}>
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
+                            {cards.map((card) => (
+                                <FeatureCard key={card.title} {...card} statusLabel="active" />
+                            ))}
                         </Box>
-                    </Box>
-
-                    <Grid container spacing={3}>
-                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                    <LiveTv color="secondary" />
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Twitch Live Notifications</Typography>
-                                    <Chip size="small" label={`${twitchApi.configs.length} configured`} sx={{ ml: 'auto' }} />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    Configure stream alerts: channel, destination, custom message, cooldown and quiet hours.
-                                </Typography>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/twitch/${encodeURIComponent(guildId as string)}`}
-                                    variant="contained"
-                                    sx={{
-                                        bgcolor: '#9146FF',
-                                        '&:hover': { bgcolor: '#9146FF', filter: 'brightness(0.9)' }
-                                    }}
-                                >
-                                    Manage Twitch
-                                </Button>
-                            </Paper>
-                        </Grid>
-
-                        {/* TikTok card */}
-                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                    <LiveTv color="secondary" />
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>TikTok Live Notifications</Typography>
-                                    <Chip size="small" label={`${tiktokApi.configs.length} configured`} sx={{ ml: 'auto' }} />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    Configure stream alerts: channel, destination, custom message, cooldown and quiet hours.
-                                </Typography>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/tiktok/${encodeURIComponent(guildId as string)}`}
-                                    variant="contained"
-                                    sx={{
-                                        bgcolor: '#000000',
-                                        '&:hover': { bgcolor: '#000000', filter: 'brightness(0.9)' }
-                                    }}
-                                >
-                                    Manage TikTok
-                                </Button>
-                            </Paper>
-                        </Grid>
-
-                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                    <YouTubeIcon htmlColor="#FF0000" />
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>YouTube Notifications</Typography>
-                                    <Chip size="small" label={`${youtubeApi.configs.length} configured`} sx={{ ml: 'auto' }} />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    Configure video alerts: channel, destination, custom message, cooldown and quiet hours.
-                                </Typography>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/youtube/${encodeURIComponent(guildId as string)}`}
-                                    variant="contained"
-                                    sx={{
-                                        bgcolor: '#FF0000',
-                                        '&:hover': { bgcolor: '#FF0000', filter: 'brightness(0.9)' }
-                                    }}
-                                >
-                                    Manage YouTube
-                                </Button>
-                            </Paper>
-                        </Grid>
-
-                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                    <SpeakerNotes color="info" />
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Patch Note Subscriptions</Typography>
-                                    <Chip size="small" label={`${patchApi.configs.length} configured`} sx={{ ml: 'auto' }} />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    Subscribe to game patch notes and post updates to specific channels.
-                                </Typography>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/patch-notes/${encodeURIComponent(guildId as string)}`}
-                                    variant="contained"
-                                    sx={{
-                                        bgcolor: '#7C4DFF',
-                                        '&:hover': { bgcolor: '#7C4DFF', filter: 'brightness(0.9)' }
-                                    }}
-                                >
-                                    Manage Patch Notes
-                                </Button>
-                            </Paper>
-                        </Grid>
-
-                        <Grid sx={{ width: { xs: '100%', md: '33.333%' }, p: 1.5 }}>
-                            <Paper elevation={2} sx={{ p: 3, borderRadius: 2, bgcolor: 'grey.800', border: 1, borderColor: 'grey.700', height: '100%' }}>
-                                <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                    <Cake color="warning" />
-                                    <Typography variant="h6" sx={{ fontWeight: 600 }}>Birthday Announcements</Typography>
-                                    <Chip size="small" label={`${birthdayApi.birthdays.length} configured`} sx={{ ml: 'auto' }} />
-                                </Stack>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                    Configure member birthday dates and the channel where birthday messages are posted.
-                                </Typography>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/birthdays/${encodeURIComponent(guildId as string)}`}
-                                    variant="contained"
-                                    color="warning"
-                                >
-                                    Manage Birthdays
-                                </Button>
-                            </Paper>
-                        </Grid>
-                    </Grid>
-                </>
+                    </FeaturePanel>
+                </FeatureShell>
             )}
         </DashboardLayout>
     );

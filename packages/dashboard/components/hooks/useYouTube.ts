@@ -1,10 +1,21 @@
 import { useState, useEffect } from "react";
-import type { YoutubeVideoConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { youtube_post_Request } from "@zeffuro/fakegaming-common/api-responses";
+import type { youtube_get_Response200, youtube_post_Request } from "@zeffuro/fakegaming-common/api-responses";
+
+type YouTubeConfig = youtube_get_Response200[number] & {
+  youtubeChannelId: string;
+  discordChannelId: string;
+  guildId: string;
+};
+
+type YouTubeDashboardConfig = YouTubeConfig & {
+  youtubeChannelTitle?: string;
+  youtubeChannelUrl?: string | null;
+};
+type YouTubeChannelMetadata = Awaited<ReturnType<typeof api.getYouTubeChannelMetadata>>;
 
 export function useYouTubeConfigs(guildId: string | string[]) {
-  const [configs, setConfigs] = useState<YoutubeVideoConfig[]>([]);
+  const [configs, setConfigs] = useState<YouTubeDashboardConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -14,8 +25,28 @@ export function useYouTubeConfigs(guildId: string | string[]) {
       setLoading(true);
       const allConfigs = await api.getYouTubeConfigs();
 
-      const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YoutubeVideoConfig[];
-      setConfigs(guildConfigs);
+      const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YouTubeConfig[];
+      const uniqueChannelIds = [...new Set(guildConfigs.map((config) => config.youtubeChannelId).filter(Boolean))];
+      const metadata = await Promise.allSettled(uniqueChannelIds.map(async (channelId) => {
+        const data = await api.getYouTubeChannelMetadata(channelId);
+        return [channelId, data] as const;
+      }));
+      const metadataByChannelId = new Map<string, YouTubeChannelMetadata>();
+      for (const result of metadata) {
+        if (result.status === 'fulfilled') {
+          const [channelId, data] = result.value;
+          metadataByChannelId.set(channelId, data);
+        }
+      }
+
+      setConfigs(guildConfigs.map((config) => {
+        const meta = metadataByChannelId.get(config.youtubeChannelId);
+        return {
+          ...config,
+          ...(meta?.title ? { youtubeChannelTitle: meta.title } : {}),
+          ...(meta?.url ? { youtubeChannelUrl: meta.url } : {}),
+        };
+      }));
     } catch (err: any) {
       setError(err.message || 'Failed to load YouTube configurations');
     } finally {
@@ -23,7 +54,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
-  const addConfig = async (configData: Omit<YoutubeVideoConfig, 'id' | 'guildId'>) => {
+  const addConfig = async (configData: Omit<YouTubeConfig, 'id' | 'guildId'>) => {
     if (!configData.youtubeChannelId || !configData.discordChannelId) {
       setError('YouTube Channel ID and Discord Channel ID are required');
       return false;
@@ -52,7 +83,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
-  const updateConfig = async (config: YoutubeVideoConfig) => {
+  const updateConfig = async (config: YouTubeDashboardConfig) => {
     try {
       setSaving(true);
       const payload = {
@@ -77,7 +108,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
     }
   };
 
-  const deleteConfig = async (config: YoutubeVideoConfig) => {
+  const deleteConfig = async (config: YouTubeDashboardConfig) => {
     try {
       setSaving(true);
       await api.deleteYouTubeChannel(config.id.toString());

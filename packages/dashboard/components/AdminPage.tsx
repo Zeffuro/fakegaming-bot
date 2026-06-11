@@ -1,7 +1,11 @@
 "use client";
 import React from "react";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Alert, Box, Typography } from "@mui/material";
+import { Alert } from "@mui/material";
+import { AdminPanelSettings } from "@mui/icons-material";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { useAdminAccess, useAdminBreadcrumbs } from "@/components/hooks/useAdmin";
 
 export interface AdminBreadcrumbItem {
@@ -16,10 +20,6 @@ export interface AdminPageProps {
     children: React.ReactNode;
 }
 
-/**
- * AdminPage wraps admin-only pages with a standard layout, access gating,
- * and consistent breadcrumb trail starting at Dashboard > Admin.
- */
 export function AdminPage({ title, trail = [], children }: AdminPageProps) {
     const { loading, isAdmin, error } = useAdminAccess();
     const currentTrail = useAdminBreadcrumbs(trail);
@@ -27,7 +27,7 @@ export function AdminPage({ title, trail = [], children }: AdminPageProps) {
     if (error) {
         return (
             <DashboardLayout>
-                <Alert severity="error">{error}</Alert>
+                <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>{error}</Alert>
             </DashboardLayout>
         );
     }
@@ -41,14 +41,20 @@ export function AdminPage({ title, trail = [], children }: AdminPageProps) {
     }
 
     return (
-        <DashboardLayout loading={loading} currentTrail={currentTrail}>
+        <DashboardLayout loading={loading} currentTrail={currentTrail} maxWidth="xl">
             {!loading && (
-                <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 600, mb: 3 }}>{title}</Typography>
+                <FeatureShell accent={dashboardAccents.admin} secondaryAccent={dashboardAccents.patchNotes}>
+                    <FeatureHero
+                        icon={<AdminPanelSettings />}
+                        eyebrow="Admin"
+                        title={title}
+                        description="Operational tools for checking jobs, providers, and backend-only diagnostics."
+                        accent={dashboardAccents.admin}
+                        secondaryAccent={dashboardAccents.patchNotes}
+                    />
                     {children}
-                </Box>
+                </FeatureShell>
             )}
         </DashboardLayout>
     );
 }
-

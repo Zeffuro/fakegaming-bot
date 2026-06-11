@@ -869,6 +869,53 @@
         }
       }
     },
+    "/youtube/metadata": {
+      "get": {
+        "summary": "Resolve public YouTube channel metadata from the channel Atom feed",
+        "tags": [
+          "YouTube"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "channelId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public channel metadata when available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "channelId": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "url": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "latestVideoId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/youtube/channel": {
       "get": {
         "summary": "Get a YouTube video config by channel",
@@ -2891,7 +2938,8 @@
                 "patchnotes",
                 "twitch",
                 "youtube",
-                "tiktok"
+                "tiktok",
+                "anime"
               ]
             }
           }
@@ -2937,7 +2985,8 @@
                 "patchnotes",
                 "twitch",
                 "youtube",
-                "tiktok"
+                "tiktok",
+                "anime"
               ]
             }
           }
@@ -3800,6 +3849,19 @@
             "description": "Failed to authenticate with Discord"
           }
         }
+      }
+    },
+    "/anime": {
+      "get": {
+        "summary": "List anime channel subscriptions",
+        "tags": [
+          "Anime"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
       }
     }
   },

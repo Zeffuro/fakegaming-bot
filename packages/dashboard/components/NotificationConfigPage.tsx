@@ -1,23 +1,18 @@
 import React from "react";
-import {
-    Box,
-    Typography,
-    Alert,
-    Paper,
-    Button,
-    SxProps,
-    Theme
-} from "@mui/material";
+import Link from "next/link";
+import { Alert, Box, Button, Stack, Typography } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import AddConfigDialog from "@/components/AddConfigDialog";
 import EditConfigDialog from "@/components/EditConfigDialog";
 import NotificationConfigList from "@/components/NotificationConfigList";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeatureNav, type FeatureNavModule } from "@/components/dashboard/FeatureNav";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useStreamingForm";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
-import Link from "next/link";
-import { Stack, ButtonGroup } from "@mui/material";
-import { Cake, LiveTv, YouTube as YouTubeIcon, SpeakerNotes } from "@mui/icons-material";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -52,6 +47,21 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     allowEdit?: boolean;
 }
 
+function moduleDescription(moduleName: string, plural: string): string {
+    if (moduleName === "Twitch") return "Track live streams, route announcements to the right channel, and tune cooldowns or quiet hours.";
+    if (moduleName === "TikTok") return "Track creators going live and keep noisy alerts under control with per-channel notification settings.";
+    if (moduleName === "YouTube") return "Watch channels for new uploads and post clean video announcements where your server expects them.";
+    if (moduleName === "Patch Notes") return "Subscribe Discord channels to game update feeds so patch posts land in predictable places.";
+    return `Configure ${moduleName} ${plural.toLowerCase()} for this server.`;
+}
+
+function toFeatureModule(moduleName: string): FeatureNavModule {
+    if (moduleName === "Twitch" || moduleName === "TikTok" || moduleName === "YouTube" || moduleName === "Patch Notes" || moduleName === "Anime" || moduleName === "Birthdays") {
+        return moduleName;
+    }
+    return "Twitch";
+}
+
 export default function NotificationConfigPage<T extends StreamingConfig>({
     guildId,
     guild,
@@ -79,8 +89,8 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId);
 
-    const singular = itemSingularLabel ?? (moduleName === 'YouTube' ? 'Channel' : 'Streamer');
-    const plural = itemPluralLabel ?? (moduleName === 'YouTube' ? 'Channels' : 'Streamers');
+    const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
+    const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
 
     const {
         addDialogOpen,
@@ -105,152 +115,70 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
         });
     };
 
-    // Multi-level breadcrumbs for a clearer path
     const currentTrail = guild ? [
-        { label: 'Settings', href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
-        { label: 'Notifications', href: `/dashboard/settings/${encodeURIComponent(guild.id)}/notifications` },
+        { label: "Settings", href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
+        { label: "Notifications", href: `/dashboard/settings/${encodeURIComponent(guild.id)}/notifications` },
         { label: moduleName, href: null }
     ] : null;
 
     return (
-        <DashboardLayout guild={guild} currentModule={moduleName.toLowerCase()} currentTrail={currentTrail as any} maxWidth="lg" loading={loading}>
+        <DashboardLayout guild={guild} currentModule={moduleName.toLowerCase()} currentTrail={currentTrail as any} maxWidth="xl" loading={loading}>
             {!loading && guild && (
-                <>
-                    <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                            <Typography variant="h4" sx={{ mb: 0, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 2, color: 'grey.100' }}>
-                                {moduleIcon}
-                                {moduleTitle}
-                            </Typography>
-                        </Box>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-                            <ButtonGroup variant="outlined" sx={{ mr: 1 }}>
+                <FeatureShell accent={moduleColor} secondaryAccent={dashboardAccents.settings}>
+                    <FeatureHero
+                        icon={moduleIcon}
+                        eyebrow={moduleName}
+                        title={moduleTitle}
+                        description={moduleDescription(moduleName, plural)}
+                        accent={moduleColor}
+                        secondaryAccent={dashboardAccents.settings}
+                        stats={[{ label: `${plural} Configured`, value: configs.length }]}
+                        actions={(
+                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", lg: "flex-end" }, flexWrap: "wrap", rowGap: 1 }}>
                                 <Button
                                     component={Link}
-                                    href={`/dashboard/twitch/${encodeURIComponent(guildId)}`}
-                                    startIcon={<LiveTv />}
-                                    sx={{
-                                        borderRadius: 999,
-                                        textTransform: 'none',
-                                        bgcolor: moduleName === 'Twitch' ? '#9146FF' : 'grey.800',
-                                        color: moduleName === 'Twitch' ? 'white' : 'grey.300',
-                                        borderColor: 'grey.600',
-                                        '&:hover': {
-                                            bgcolor: moduleName === 'Twitch' ? '#7f37ff' : 'grey.700'
-                                        }
-                                    }}
+                                    href={`/dashboard/settings/${encodeURIComponent(guildId)}/notifications`}
+                                    variant="outlined"
+                                    sx={ghostActionButtonSx(moduleColor)}
                                 >
-                                    Twitch
+                                    Back To Notifications
                                 </Button>
                                 <Button
-                                    component={Link}
-                                    href={`/dashboard/tiktok/${encodeURIComponent(guildId)}`}
-                                    startIcon={<LiveTv />}
-                                    sx={{
-                                        borderRadius: 999,
-                                        textTransform: 'none',
-                                        bgcolor: moduleName === 'TikTok' ? '#000000' : 'grey.800',
-                                        color: moduleName === 'TikTok' ? 'white' : 'grey.300',
-                                        borderColor: 'grey.600',
-                                        '&:hover': {
-                                            bgcolor: moduleName === 'TikTok' ? '#111111' : 'grey.700'
-                                        }
-                                    }}
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setAddDialogOpen(true)}
+                                    disabled={saving}
+                                    sx={primaryActionButtonSx(moduleColor)}
                                 >
-                                    TikTok
+                                    Add {singular}
                                 </Button>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/youtube/${encodeURIComponent(guildId)}`}
-                                    startIcon={<YouTubeIcon />}
-                                    sx={{
-                                        borderRadius: 999,
-                                        textTransform: 'none',
-                                        bgcolor: moduleName === 'YouTube' ? '#FF0000' : 'grey.800',
-                                        color: moduleName === 'YouTube' ? 'white' : 'grey.300',
-                                        borderColor: 'grey.600',
-                                        '&:hover': {
-                                            bgcolor: moduleName === 'YouTube' ? '#cc0000' : 'grey.700'
-                                        }
-                                    }}
-                                >
-                                    YouTube
-                                </Button>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/patch-notes/${encodeURIComponent(guildId)}`}
-                                    startIcon={<SpeakerNotes />}
-                                    sx={{
-                                        borderRadius: 999,
-                                        textTransform: 'none',
-                                        bgcolor: moduleName === 'Patch Notes' ? '#7C4DFF' : 'grey.800',
-                                        color: moduleName === 'Patch Notes' ? 'white' : 'grey.300',
-                                        borderColor: 'grey.600',
-                                        '&:hover': {
-                                            bgcolor: moduleName === 'Patch Notes' ? '#6b3afe' : 'grey.700'
-                                        }
-                                    }}
-                                >
-                                    Patch Notes
-                                </Button>
-                                <Button
-                                    component={Link}
-                                    href={`/dashboard/birthdays/${encodeURIComponent(guildId)}`}
-                                    startIcon={<Cake />}
-                                    sx={{
-                                        borderRadius: 999,
-                                        textTransform: 'none',
-                                        bgcolor: moduleName === 'Birthdays' ? 'warning.dark' : 'grey.800',
-                                        color: moduleName === 'Birthdays' ? 'warning.contrastText' : 'grey.300',
-                                        borderColor: 'grey.600',
-                                        '&:hover': {
-                                            bgcolor: moduleName === 'Birthdays' ? 'warning.dark' : 'grey.700',
-                                            filter: moduleName === 'Birthdays' ? 'brightness(0.9)' : undefined
-                                        }
-                                    }}
-                                >
-                                    Birthdays
-                                </Button>
-                            </ButtonGroup>
-                            <Button
-                                component={Link}
-                                href={`/dashboard/settings/${encodeURIComponent(guildId)}/notifications`}
-                                variant="outlined"
-                                size="small"
-                                sx={{ borderColor: 'grey.600', color: 'grey.300', '&:hover': { borderColor: 'grey.500', bgcolor: 'grey.700' } }}
-                            >
-                                Back to Notifications
-                            </Button>
-                        </Stack>
-                    </Box>
+                            </Stack>
+                        )}
+                        nav={<FeatureNav guildId={guildId} activeModule={toFeatureModule(moduleName)} />}
+                    />
 
                     {error && (
-                        <Alert severity="error" sx={{ mb: 3, bgcolor: 'error.dark', color: 'error.light' }} onClose={() => onSetError(null)}>
+                        <Alert severity="error" sx={{ mb: 3, bgcolor: "rgba(255,107,154,0.12)", color: "grey.50", border: "1px solid rgba(255,107,154,0.24)" }} onClose={() => onSetError(null)}>
                             {error}
                         </Alert>
                     )}
 
-                    <Paper elevation={2} sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        bgcolor: 'grey.800',
-                        border: 1,
-                        borderColor: 'grey.700'
-                    }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 600, color: 'grey.100' }}>
-                                Configured {moduleName} {plural}
-                            </Typography>
+                    <FeaturePanel accent={moduleColor}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, mb: 3, flexWrap: "wrap", position: "relative" }}>
+                            <Box>
+                                <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
+                                    Configured {moduleName} {plural}
+                                </Typography>
+                                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
+                                    Edit destinations, messages, cooldowns, and quiet hours from one place.
+                                </Typography>
+                            </Box>
                             <Button
                                 variant="contained"
                                 startIcon={<Add />}
                                 onClick={() => setAddDialogOpen(true)}
                                 disabled={saving}
-                                sx={{
-                                    borderRadius: 2,
-                                    bgcolor: moduleColor,
-                                    '&:hover': { bgcolor: moduleColor, filter: 'brightness(0.9)' }
-                                }}
+                                sx={primaryActionButtonSx(moduleColor)}
                             >
                                 Add {singular}
                             </Button>
@@ -264,14 +192,15 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                             onEdit={setEditingConfig as any}
                             onDelete={handleDeleteConfig}
                             moduleName={moduleName}
+                            moduleColor={moduleColor}
                             saving={saving}
-                            emptyStateIcon={moduleIcon as React.ReactElement & { props?: { sx?: SxProps<Theme> } }}
+                            emptyStateIcon={moduleIcon as React.ReactElement}
                             renderChip={renderChip}
                             itemSingularLabel={singular}
                             itemPluralLabel={plural}
                             canEdit={allowEdit}
                         />
-                    </Paper>
+                    </FeaturePanel>
 
                     <AddConfigDialog
                         open={addDialogOpen}
@@ -308,7 +237,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                         showCustomMessage={showCustomMessage}
                         itemNameOptions={itemNameOptions}
                     />
-                </>
+                </FeatureShell>
             )}
         </DashboardLayout>
     );

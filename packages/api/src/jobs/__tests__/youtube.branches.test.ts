@@ -58,6 +58,32 @@ describe('YouTube job branches', () => {
         expect(done).toHaveBeenCalled();
     });
 
+    it('uses the channel page fallback when the feed returns 404', async () => {
+        vi.resetModules();
+        vi.doMock('rss-parser', () => ({ default: class Parser { async parseURL(){ throw new Error('Status code 404'); } } }));
+        const cfg = { id: 'yc3b', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC3B', lastVideoId: null } as any;
+        manager.youtubeManager.getAllChannels.mockResolvedValueOnce([cfg]);
+        has.mockResolvedValue(false);
+        const html = `
+<html>
+  <head><meta property="og:title" content="Fallback Channel"></head>
+  <body><script>{"videoId":"FALLBACK1","title":{"runs":[{"text":"Fallback Video"}]}}</script></body>
+</html>`;
+        const fetchSpy = vi.spyOn(globalThis, 'fetch' as any).mockResolvedValue({ ok: true, text: async () => html } as any);
+
+        const { registerYouTubeJobs: freshRegister } = await import('../youtube.js');
+        const { discord } = await prepareDiscord();
+        const { done } = await runJobOnce('youtube:poll', freshRegister);
+
+        expect(done).toHaveBeenCalled();
+        expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/videos'), expect.any(Object));
+        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
+        const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
+        expect(String(payload?.content)).toContain('Fallback Channel');
+        expect(String(payload?.content)).toContain('FALLBACK1');
+        expect(cfg.lastVideoId).toBe('FALLBACK1');
+    });
+
     it('does nothing when lastVideoId equals latest (no new videos)', async () => {
         const cfg = { id: 'yc4', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC4', lastVideoId: 'VIDX' } as any;
         manager.youtubeManager.getAllChannels.mockResolvedValueOnce([cfg]);

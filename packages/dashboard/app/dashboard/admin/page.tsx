@@ -2,34 +2,32 @@
 import React from "react";
 import { AdminPage } from "@/components/AdminPage";
 import { useAdminCards } from "@/components/hooks/useAdmin";
-import { useRouter } from "next/navigation";
-import { Box, Card, CardActionArea, CardContent, Grid, Stack, Typography } from "@mui/material";
+import { FeatureCard } from "@/components/dashboard/FeatureCard";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
+import { Box } from "@mui/material";
 
 export default function AdminHubPage() {
-    const router = useRouter();
     const cards = useAdminCards();
 
     return (
-        <AdminPage title="Admin Panel">
-            <Box>
-                <Grid container spacing={2}>
-                    {cards.map((c) => (
-                        <Grid key={c.href} sx={{ width: { xs: '100%', sm: '50%', md: '33.333%', lg: '25%' }, p: 1.5 }}>
-                            <Card variant="outlined">
-                                <CardActionArea onClick={() => router.push(c.href)}>
-                                    <CardContent>
-                                        <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 1 }}>
-                                            {c.icon}
-                                            <Typography variant="h6">{c.title}</Typography>
-                                        </Stack>
-                                        <Typography variant="body2" color="text.secondary">{c.description}</Typography>
-                                    </CardContent>
-                                </CardActionArea>
-                            </Card>
-                        </Grid>
+        <AdminPage title="Admin panel">
+            <FeaturePanel accent={dashboardAccents.admin}>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }, gap: 2, position: "relative" }}>
+                    {cards.map((card) => (
+                        <FeatureCard
+                            key={card.href}
+                            title={card.title}
+                            description={card.description}
+                            icon={card.icon}
+                            accent={dashboardAccents.admin}
+                            href={card.href}
+                            statusLabel="admin"
+                            actionLabel="Open"
+                        />
                     ))}
-                </Grid>
-            </Box>
+                </Box>
+            </FeaturePanel>
         </AdminPage>
     );
 }

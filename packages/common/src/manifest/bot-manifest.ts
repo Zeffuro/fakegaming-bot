@@ -7,6 +7,11 @@ export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<B
 
 export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
     {
+        "name": "anime",
+        "title": "Anime",
+        "description": "Anime module"
+    },
+    {
         "name": "birthdays",
         "title": "Birthdays",
         "description": "Birthdays module"
@@ -59,6 +64,15 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
 ] as const;
 
 export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
+    {
+        "name": "anime",
+        "description": "Search anime, subscribe to releases, and view upcoming episodes",
+        "module": "anime",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
     {
         "name": "birthday",
         "description": "Show your or another user's birthday",
@@ -269,6 +283,24 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
 ] as const;
 
 export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
+    {
+        "module": {
+            "name": "anime",
+            "title": "Anime",
+            "description": "Anime module"
+        },
+        "commands": [
+            {
+                "name": "anime",
+                "description": "Search anime, subscribe to releases, and view upcoming episodes",
+                "module": "anime",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            }
+        ]
+    },
     {
         "module": {
             "name": "birthdays",

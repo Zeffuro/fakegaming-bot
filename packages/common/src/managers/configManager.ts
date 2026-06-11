@@ -13,6 +13,7 @@ import {CacheManager} from "./cacheManager.js";
 import {NotificationsManager} from './notificationsManager.js';
 import {DisabledModuleManager} from './disabledModuleManager.js';
 import {TikTokManager} from './tiktokManager.js';
+import {AnimeManager} from './animeManager.js';
 
 /**
  * Aggregates all manager classes.
@@ -32,6 +33,7 @@ export class ConfigManager {
     notificationsManager = new NotificationsManager();
     disabledModuleManager = new DisabledModuleManager();
     tiktokManager = new TikTokManager();
+    animeManager = new AnimeManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

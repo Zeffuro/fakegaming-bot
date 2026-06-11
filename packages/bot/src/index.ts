@@ -97,6 +97,31 @@ function isUnknownInteractionError(error: unknown): boolean {
 
 
         client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {
+            if (interaction.isButton()) {
+                for (const command of client.commands.values()) {
+                    if (!command.handleComponent) continue;
+                    try {
+                        const handled = await command.handleComponent(interaction);
+                        if (handled) return;
+                    } catch (error) {
+                        incMetric('component_error', { name: interaction.customId.split(':')[0] ?? 'unknown' });
+                        logger.error({ err: error, customId: interaction.customId }, 'Error handling component interaction');
+                        try {
+                            if (!interaction.replied && !interaction.deferred) {
+                                await interaction.reply({
+                                    content: 'Error handling interaction.',
+                                    flags: MessageFlags.Ephemeral
+                                });
+                            }
+                        } catch (err) {
+                            logger.error({ err }, 'Failed to send component error reply:');
+                        }
+                        return;
+                    }
+                }
+                return;
+            }
+
             if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
             const command = client.commands.get(interaction.commandName);
             if (!command) return;

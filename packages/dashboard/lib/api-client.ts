@@ -40,6 +40,9 @@ export const API_ENDPOINTS = {
   PATCH_NOTES: '/api/external/patchNotes',
   PATCH_SUBSCRIPTIONS: '/api/external/patchSubscriptions',
 
+  // Anime
+  ANIME: '/api/external/anime',
+
   // Quotes
   QUOTES: '/api/external/quotes',
 
@@ -146,8 +149,9 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
+    const apiError = (errorData as any)?.error;
     throw new Error(
-      (errorData as any)?.error ||
+      (typeof apiError === 'string' ? apiError : apiError?.message) ||
       (errorData as any)?.message ||
       `API request failed with status: ${response.status}`
     );
@@ -174,13 +178,61 @@ export interface LastHeartbeatResponse { last: { startedAt: string; backend: str
 export interface JobRunEntry { startedAt: string; finishedAt: string; ok: boolean; meta?: Record<string, unknown>; error?: string }
 export interface BirthdayPayload {
   userId: string;
-  guildId: string;
+  guildId?: string | null;
   channelId: string;
   day: number;
   month: number;
   year?: number;
 }
 export type BirthdayUpdatePayload = Omit<BirthdayPayload, 'userId' | 'guildId'>;
+export interface AnimeSubscriptionDashboardConfig {
+  id?: number;
+  anilistId: number;
+  animeTitle: string;
+  discordChannelId: string;
+  channelId?: string;
+  guildId: string;
+  targetType?: 'dm' | 'channel';
+  userId?: string | null;
+  reminderMinutes: number;
+  status?: string | null;
+  format?: string | null;
+  episodes?: number | null;
+  averageScore?: number | null;
+  nextEpisode?: number | null;
+  nextAiringAt?: number | null;
+  customMessage?: string;
+}
+
+export interface AnimePageInfo {
+  total?: number | null;
+  currentPage?: number | null;
+  lastPage?: number | null;
+  hasNextPage?: boolean | null;
+  perPage?: number | null;
+}
+
+export interface AnimeSearchResult {
+  id: number;
+  title: {
+    romaji?: string | null;
+    english?: string | null;
+    native?: string | null;
+  };
+  description?: string | null;
+  siteUrl?: string | null;
+  coverImage?: { large?: string | null; color?: string | null } | null;
+  bannerImage?: string | null;
+  format?: string | null;
+  status?: string | null;
+  season?: string | null;
+  seasonYear?: number | null;
+  episodes?: number | null;
+  duration?: number | null;
+  averageScore?: number | null;
+  genres?: string[] | null;
+  nextAiringEpisode?: { airingAt: number; episode: number; timeUntilAiring?: number | null } | null;
+}
 
 // Typed API methods using apiResponses.ts types
 export const api = {
@@ -234,6 +286,11 @@ export const api = {
       `${API_ENDPOINTS.YOUTUBE}/resolve?identifier=${encodeURIComponent(identifier)}`
     ),
 
+  getYouTubeChannelMetadata: (channelId: string) =>
+    apiRequest<{ channelId: string; title: string | null; url: string | null; latestVideoId: string | null }>(
+      `${API_ENDPOINTS.YOUTUBE}/metadata?channelId=${encodeURIComponent(channelId)}`
+    ),
+
   // YouTube APIs
   getYouTubeConfigs: () =>
     apiRequest<youtube_get_Response200>(API_ENDPOINTS.YOUTUBE),
@@ -276,6 +333,35 @@ export const api = {
   deletePatchSubscription: (id: string | number) =>
     apiRequest<{ success: boolean }>(
       `${API_ENDPOINTS.PATCH_SUBSCRIPTIONS}/${id}`,
+      { method: 'DELETE' }
+    ),
+
+  // Anime APIs
+  getAnimeSubscriptions: (guildId: string) =>
+    apiRequest<AnimeSubscriptionDashboardConfig[]>(`${API_ENDPOINTS.ANIME}?guildId=${encodeURIComponent(guildId)}`),
+
+  getMyAnimeSubscriptions: () =>
+    apiRequest<AnimeSubscriptionDashboardConfig[]>(API_ENDPOINTS.ANIME),
+
+  searchAnime: (query: string, page: number = 1, perPage: number = 10) =>
+    apiRequest<{ results: AnimeSearchResult[]; pageInfo: AnimePageInfo }>(
+      `${API_ENDPOINTS.ANIME}/search?q=${encodeURIComponent(query)}&page=${encodeURIComponent(String(page))}&perPage=${encodeURIComponent(String(perPage))}`
+    ),
+
+  getAnimeSeason: (season: string, year?: number, page: number = 1, perPage: number = 10, scope: string = 'airing') =>
+    apiRequest<{ season: string; year: number; scope: string; scopeLabel: string; results: AnimeSearchResult[]; pageInfo: AnimePageInfo }>(
+      `${API_ENDPOINTS.ANIME}/season?season=${encodeURIComponent(season)}&scope=${encodeURIComponent(scope)}${year ? `&year=${encodeURIComponent(String(year))}` : ''}&page=${encodeURIComponent(String(page))}&perPage=${encodeURIComponent(String(perPage))}`
+    ),
+
+  createAnimeSubscription: (data: { anilistId?: number; title?: string; guildId: string; channelId: string; reminderMinutes?: number }) =>
+    apiRequest<{ success: boolean; created: boolean; anilistId: number }>(
+      API_ENDPOINTS.ANIME,
+      { method: 'POST', body: data }
+    ),
+
+  deleteAnimeSubscription: (id: string | number) =>
+    apiRequest<{ success: boolean }>(
+      `${API_ENDPOINTS.ANIME}/${id}`,
       { method: 'DELETE' }
     ),
 

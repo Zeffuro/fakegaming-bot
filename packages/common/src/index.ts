@@ -30,7 +30,10 @@ export {
   Notification,
   DisabledModuleConfig,
   JobRun,
-  TikTokStreamConfig
+  TikTokStreamConfig,
+  AnimeTitle,
+  AnimeSubscriptionConfig,
+  AnimeEpisode
 } from './models/index.js';
 
 export {
@@ -51,7 +54,11 @@ export {
   PatchNotesManager,
   DisabledCommandManager,
   NotificationsManager,
-  TikTokManager
+  TikTokManager,
+  AnimeManager,
+  AnimeTitleManager,
+  AnimeSubscriptionManager,
+  AnimeEpisodeManager
 } from './managers/index.js';
 
 export {
@@ -145,6 +152,9 @@ export * from './jobs/index.js';
 
 // Patch notes fetchers (shared)
 export * from './patchnotes/index.js';
+
+// Anime provider utilities (shared)
+export * from './anime/index.js';
 
 // TikTok utilities (shared)
 export * from './utils/tiktok.js';

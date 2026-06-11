@@ -8,7 +8,9 @@ import {
   Box,
   Chip
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import { People, AdminPanelSettings } from "@mui/icons-material";
+import { dashboardAccents, dashboardCardSx } from "@/components/dashboard/dashboardTheme";
 import { DISCORD_PERMISSION_ADMINISTRATOR } from "@/lib/constants";
 
 interface GuildCardProps {
@@ -35,14 +37,9 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
 
   return (
     <Card
-      elevation={2}
       sx={{
-        borderRadius: 2,
-        transition: 'all 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 6
-        }
+        ...dashboardCardSx(dashboardAccents.settings),
+        cursor: "pointer",
       }}
     >
       <CardActionArea onClick={onClick}>
@@ -55,7 +52,10 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
               mx: 'auto',
               mb: 2,
               fontSize: 24,
-              fontWeight: 600
+              fontWeight: 800,
+              bgcolor: alpha(dashboardAccents.settings, 0.16),
+              color: dashboardAccents.settings,
+              border: `1px solid ${alpha(dashboardAccents.settings, 0.30)}`,
             }}
           >
             {guild.name?.charAt(0)}
@@ -66,6 +66,7 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
             sx={{
               fontWeight: 600,
               mb: 1,
+              color: "grey.50",
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap'
@@ -97,8 +98,8 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
 
           {guild.member_count && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-              <People sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="body2" color="text.secondary">
+              <People sx={{ fontSize: 16, color: 'rgba(255,255,255,0.54)' }} />
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.54)' }}>
                 {guild.member_count.toLocaleString()} members
               </Typography>
             </Box>

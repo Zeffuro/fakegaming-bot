@@ -7,6 +7,7 @@ import { isWithinQuietHours } from '@zeffuro/fakegaming-common/utils';
 import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { fetchYouTubeChannelPageLatestVideo, getHttpStatusFromError } from '../utils/youtubePublic.js';
 
 interface YoutubeChannelConfigPlain {
     id?: number | string;
@@ -93,7 +94,28 @@ async function fetchYoutubeChannelFeed(channelId: string, log = getLogger({ name
         const items = (feed.items ?? []) as unknown as YoutubeFeedItem[];
         return items.length > 0 ? items : null;
     } catch (err) {
-        log.error({ err, channelId }, 'Failed to fetch YouTube channel feed');
+        const statusCode = getHttpStatusFromError(err);
+        try {
+            const fallback = await fetchYouTubeChannelPageLatestVideo(channelId);
+            if (fallback) {
+                log.debug({ channelId, statusCode }, 'Using YouTube channel page fallback after feed fetch failed');
+                return [{
+                    'yt:videoId': fallback.videoId,
+                    title: fallback.title ?? undefined,
+                    link: fallback.link,
+                    author: fallback.author ?? undefined,
+                    published: new Date().toISOString(),
+                }];
+            }
+        } catch (fallbackErr) {
+            log.debug({ err: fallbackErr, channelId }, 'Failed to fetch YouTube channel page fallback');
+        }
+
+        if (statusCode) {
+            log.warn({ channelId, statusCode }, 'YouTube channel feed unavailable and page fallback found no videos');
+        } else {
+            log.error({ err, channelId }, 'Failed to fetch YouTube channel feed');
+        }
         return null;
     }
 }

@@ -109,3 +109,39 @@ export async function sendDirectMessage(userId: string, content: string): Promis
         return null;
     }
 }
+
+/**
+ * Send a direct message (DM) with a raw payload by creating a DM channel then posting.
+ */
+export async function sendDirectMessagePayload(userId: string, payload: Record<string, unknown>): Promise<any | null> {
+    const token = process.env.DISCORD_BOT_TOKEN;
+    if (!token) {
+        log.warn('DISCORD_BOT_TOKEN is not set; cannot send direct messages');
+        return null;
+    }
+    try {
+        const dmRes = await fetch('https://discord.com/api/v10/users/@me/channels', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bot ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ recipient_id: userId })
+        });
+        if (!dmRes.ok) {
+            const bodyText = await dmRes.text().catch(() => '');
+            log.warn({ status: dmRes.status, body: bodyText.slice(0, 512), userId }, 'Failed to create DM channel');
+            return null;
+        }
+        const dm = await dmRes.json();
+        const channelId = dm?.id as string | undefined;
+        if (!channelId) {
+            log.warn({ userId }, 'DM channel response missing id');
+            return null;
+        }
+        return await sendChannelMessagePayload(channelId, payload);
+    } catch (err) {
+        log.error({ err, userId }, 'Error sending direct message payload');
+        return null;
+    }
+}

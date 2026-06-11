@@ -16,6 +16,9 @@ import {Notification} from './models/notification.js';
 import {DisabledModuleConfig} from './models/disabled-module-config.js';
 import {TikTokStreamConfig} from './models/tiktok-stream-config.js';
 import {JobRun} from './models/job-run.js';
+import {AnimeTitle} from './models/anime-title.js';
+import {AnimeSubscriptionConfig} from './models/anime-subscription-config.js';
+import {AnimeEpisode} from './models/anime-episode.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -64,7 +67,10 @@ export function getSequelize(useTest = false): Sequelize {
         Notification,
         DisabledModuleConfig,
         JobRun,
-        TikTokStreamConfig
+        TikTokStreamConfig,
+        AnimeTitle,
+        AnimeSubscriptionConfig,
+        AnimeEpisode
     ]);
 
     return sequelize;

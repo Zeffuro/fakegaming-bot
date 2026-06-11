@@ -5,23 +5,26 @@ import { skipCsrf } from './csrf.js';
 const SERVICE_FLAG = Symbol.for('fakegaming.service');
 const SKIP_JWT_FLAG = Symbol.for('fakegaming.skipJwt');
 
-function getServiceToken(): string | undefined {
-    const v = process.env.SERVICE_API_TOKEN || process.env.INTERNAL_API_TOKEN || process.env.API_SERVICE_TOKEN;
-    return v && v.trim() !== '' ? v : undefined;
+function getServiceTokens(): string[] {
+    return [
+        process.env.SERVICE_API_TOKEN,
+        process.env.INTERNAL_API_TOKEN,
+        process.env.API_SERVICE_TOKEN,
+    ].filter((value): value is string => Boolean(value && value.trim() !== ''));
 }
 
 /**
- * Express middleware: if X-Service-Token matches env token, treat as internal service request.
+ * Express middleware: if X-Service-Token matches a configured env token, treat as internal service request.
  * - Sets req.user to a synthetic service identity
  * - Skips CSRF checks for this request
  * - Flags request so global JWT middleware can be bypassed
  */
 export function serviceAuth(req: Request, res: Response, next: NextFunction): void {
-    const token = getServiceToken();
-    if (!token) return next();
+    const tokens = getServiceTokens();
+    if (tokens.length === 0) return next();
 
     const hdr = req.header('x-service-token');
-    if (!hdr || hdr !== token) return next();
+    if (!hdr || !tokens.includes(hdr)) return next();
 
     // Attach minimal user to satisfy downstream types/guards
     (req as AuthenticatedRequest).user = {

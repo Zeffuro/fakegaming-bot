@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, FormControlLabel, Switch } from "@mui/material";
+import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 
 /**
  * Describes a single toggle item within a settings list.
@@ -26,8 +27,9 @@ export function SettingsToggleList({ items }: SettingsToggleListProps) {
             {items.map((item) => (
                 <FormControlLabel
                     key={item.label}
-                    control={<Switch defaultChecked={item.defaultChecked} disabled={item.disabled} />}
+                    control={<Switch defaultChecked={item.defaultChecked} disabled={item.disabled} sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: dashboardAccents.settings } }} />}
                     label={item.label}
+                    sx={{ color: item.disabled ? "rgba(255,255,255,0.34)" : "rgba(255,255,255,0.76)" }}
                 />
             ))}
         </Box>

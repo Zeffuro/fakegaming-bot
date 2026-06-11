@@ -11,6 +11,7 @@ import {
   Skeleton
 } from "@mui/material";
 import { Logout, Person } from "@mui/icons-material";
+import { alpha } from "@mui/material/styles";
 import { useUserData } from "@/components/hooks/useUserData";
 
 export default function UserMenu() {
@@ -48,23 +49,26 @@ export default function UserMenu() {
           display: "flex",
           alignItems: "center",
           gap: 1,
-          color: "grey.300",
+          color: "grey.100",
           textTransform: "none",
-          borderRadius: 2,
-          px: 1,
-          py: 0.5,
+          borderRadius: 999,
+          px: { xs: 0.5, sm: 1 },
+          py: 0.55,
+          border: "1px solid rgba(255,255,255,0.10)",
+          bgcolor: "rgba(255,255,255,0.045)",
           '&:hover': {
-            bgcolor: "grey.700"
+            bgcolor: "rgba(255,255,255,0.08)",
+            borderColor: alpha("#68D7FF", 0.35)
           }
         }}
       >
         <Avatar
           src={getUserAvatarUrl() || undefined}
-          sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+          sx={{ width: 32, height: 32, bgcolor: "primary.main", border: "1px solid rgba(255,255,255,0.18)" }}
         >
           {getUserDisplayName().charAt(0)}
         </Avatar>
-        <Typography variant="body2" sx={{ color: "grey.300" }}>
+        <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, display: { xs: "none", sm: "block" } }}>
           {getUserDisplayName()}
         </Typography>
       </Button>
@@ -76,10 +80,11 @@ export default function UserMenu() {
         slotProps={{
           paper: {
             sx: {
-              bgcolor: "grey.800",
-              border: 1,
-              borderColor: "grey.700",
-              minWidth: 180
+              bgcolor: "rgba(18,24,34,0.98)",
+              border: "1px solid rgba(255,255,255,0.10)",
+              minWidth: 180,
+              borderRadius: 3,
+              boxShadow: "0 24px 70px rgba(0,0,0,0.42)"
             }
           }
         }}

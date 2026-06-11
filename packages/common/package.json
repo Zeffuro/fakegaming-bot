@@ -64,6 +64,10 @@
       "import": "./dist/patchnotes/index.js",
       "types": "./dist/patchnotes/index.d.ts"
     },
+    "./anime": {
+      "import": "./dist/anime/index.js",
+      "types": "./dist/anime/index.d.ts"
+    },
     "./api-types": {
       "import": "./types/empty.js",
       "types": "./types/api.d.ts"
@@ -131,6 +135,9 @@
       ],
       "patchnotes": [
         "dist/patchnotes/index.d.ts"
+      ],
+      "anime": [
+        "dist/anime/index.d.ts"
       ],
       "api-types": [
         "types/api.d.ts"

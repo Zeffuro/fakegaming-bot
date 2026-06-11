@@ -1,320 +1,193 @@
 "use client";
 import React from "react";
-import { useParams } from "next/navigation";
-import { useDashboardData } from "@/components/hooks/useDashboardData";
-import {
-  Box,
-  Typography,
-  Alert,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Avatar,
-  Chip,
-  Paper
-} from "@mui/material";
-import {
-  YouTube,
-  Settings,
-  Block,
-  SpeakerNotes,
-  Timeline,
-  LiveTv,
-  FormatQuote,
-  NotificationsActive
-} from "@mui/icons-material";
+import { Alert, Box, Typography } from "@mui/material";
+import { AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, Timeline, YouTube } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
-import { useRouter } from "next/navigation";
-import { useTwitchConfigs } from "@/components/hooks/useTwitch";
-import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
+import { FeatureCard } from "@/components/dashboard/FeatureCard";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
+import { useAnimeConfigs } from "@/components/hooks/useAnime";
+import { useBirthdays } from "@/components/hooks/useBirthdays";
+import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
-
-interface ModuleCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  status: "active" | "inactive" | "beta";
-  href: string;
-  disabled?: boolean;
-  chipLabel?: string;
-  subtleMeta?: string;
-}
-
-function ModuleCard({ title, description, icon, status, href, disabled, chipLabel, subtleMeta }: ModuleCardProps) {
-  const router = useRouter();
-
-  const handleClick = () => {
-    if (!disabled) {
-      router.push(href);
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (status) {
-      case "active": return "success";
-      case "inactive": return "default";
-      case "beta": return "warning";
-      default: return "default";
-    }
-  };
-
-  return (
-    <Card
-      elevation={2}
-      sx={{
-        height: '100%',
-        borderRadius: 2,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.6 : 1,
-        transition: 'all 0.2s ease-in-out',
-        bgcolor: 'grey.800',
-        border: 1,
-        borderColor: 'grey.700',
-        '&:hover': disabled ? {} : {
-          transform: 'translateY(-2px)',
-          boxShadow: 6,
-          borderColor: 'grey.600'
-        }
-      }}
-      onClick={handleClick}
-    >
-      <CardContent sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-            {icon}
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: 'grey.100' }}>
-              {title}
-            </Typography>
-            <Chip
-              label={status}
-              size="small"
-              color={getStatusColor() as any}
-              variant="outlined"
-              sx={{ mt: 0.5 }}
-            />
-          </Box>
-          {chipLabel ? (
-            <Chip size="small" label={chipLabel} sx={{ ml: 1 }} />
-          ) : null}
-        </Box>
-        <Typography variant="body2" sx={{ color: 'grey.300' }}>
-          {description}
-        </Typography>
-        {subtleMeta ? (
-          <Typography variant="caption" sx={{ color: 'grey.500', display: 'block', mt: 0.5 }}>
-            {subtleMeta}
-          </Typography>
-        ) : null}
-      </CardContent>
-      <CardActions sx={{ pt: 0 }}>
-        <Button
-          size="small"
-          variant="outlined"
-          disabled={disabled}
-          fullWidth
-          sx={{
-            borderColor: disabled ? 'grey.600' : 'primary.main',
-            color: disabled ? 'grey.500' : 'primary.light',
-            '&:hover': disabled ? {} : {
-              borderColor: 'primary.light',
-              bgcolor: 'primary.dark'
-            }
-          }}
-        >
-          {disabled ? 'Coming Soon' : 'Configure'}
-        </Button>
-      </CardActions>
-    </Card>
-  );
-}
+import { useTwitchConfigs } from "@/components/hooks/useTwitch";
+import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 
 export default function GuildDashboard() {
-  const { guildId } = useParams();
-  const { guilds } = useDashboardData();
-  const guild = guilds.find(g => g.id === guildId);
+  const { guildId, guild, guildsLoading } = useGuildFromParams();
+  const encodedGuildId = encodeURIComponent(guildId);
 
-  // Load provider configs to display a combined count on the Notifications Hub card
-  const twitchApi = useTwitchConfigs(String(guildId));
-  const tiktokApi = useTikTokConfigs(String(guildId));
-  const youtubeApi = useYouTubeConfigs(String(guildId));
-  const patchApi = usePatchSubscriptions(String(guildId));
-  const hubLoading = twitchApi.loading || tiktokApi.loading || youtubeApi.loading || patchApi.loading;
-  const totalConfigured = (twitchApi.configs?.length ?? 0) + (tiktokApi.configs?.length ?? 0) + (youtubeApi.configs?.length ?? 0) + (patchApi.configs?.length ?? 0);
-  const hubChip = hubLoading ? 'loading…' : `${totalConfigured} configured`;
-  const hubBreakdown = hubLoading
-    ? 'loading…'
-    : `Twitch ${(twitchApi.configs?.length ?? 0)} • TikTok ${(tiktokApi.configs?.length ?? 0)} • YouTube ${(youtubeApi.configs?.length ?? 0)} • Patch Notes ${(patchApi.configs?.length ?? 0)}`;
-  // individual chips per module
-  const twitchChip = twitchApi.loading ? 'loading…' : `${twitchApi.configs?.length ?? 0} configured`;
-  const tiktokChip = tiktokApi.loading ? 'loading…' : `${tiktokApi.configs?.length ?? 0} configured`;
-  const youtubeChip = youtubeApi.loading ? 'loading…' : `${youtubeApi.configs?.length ?? 0} configured`;
-  const patchChip = patchApi.loading ? 'loading…' : `${patchApi.configs?.length ?? 0} configured`;
+  const twitchApi = useTwitchConfigs(guildId);
+  const tiktokApi = useTikTokConfigs(guildId);
+  const youtubeApi = useYouTubeConfigs(guildId);
+  const patchApi = usePatchSubscriptions(guildId);
+  const animeApi = useAnimeConfigs(guildId);
+  const birthdayApi = useBirthdays(guildId);
 
-  if (!guild) {
+  const notificationLoading = twitchApi.loading || tiktokApi.loading || youtubeApi.loading || patchApi.loading || animeApi.loading || birthdayApi.loading;
+  const totalConfigured = (twitchApi.configs?.length ?? 0)
+    + (tiktokApi.configs?.length ?? 0)
+    + (youtubeApi.configs?.length ?? 0)
+    + (patchApi.configs?.length ?? 0)
+    + (animeApi.configs?.length ?? 0)
+    + (birthdayApi.birthdays?.length ?? 0);
+
+  if (!guild && !guildsLoading) {
     return (
       <DashboardLayout>
-        <Alert severity="error" sx={{ bgcolor: 'error.dark', color: 'error.light' }}>
+        <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
           Guild not found or you don't have access to this guild.
         </Alert>
       </DashboardLayout>
     );
   }
 
-  const modules: ModuleCardProps[] = [
+  const modules = [
     {
       title: "Notifications Hub",
-      description: "Open the central settings for Twitch, TikTok, YouTube, and Patch Notes notifications.",
+      description: "Central command center for Twitch, TikTok, YouTube, Patch Notes, Anime, and Birthday notifications.",
       icon: <NotificationsActive />,
-      status: "active",
-      href: `/dashboard/settings/${guildId}/notifications`,
-      chipLabel: hubChip,
-      subtleMeta: hubBreakdown
+      accent: dashboardAccents.settings,
+      href: `/dashboard/settings/${encodedGuildId}/notifications`,
+      chipLabel: notificationLoading ? "Loading..." : `${totalConfigured} Configured`,
+      meta: notificationLoading ? "Loading notification counts" : `Twitch ${twitchApi.configs.length} | TikTok ${tiktokApi.configs.length} | YouTube ${youtubeApi.configs.length} | Patch ${patchApi.configs.length} | Anime ${animeApi.configs.length} | Birthdays ${birthdayApi.birthdays.length}`,
+      actionLabel: "Open Hub",
+    },
+    {
+      title: "Anime Episodes",
+      description: "AniList-powered anime search, season browsing, and channel reminders.",
+      icon: <AutoStories />,
+      accent: dashboardAccents.anime,
+      href: `/dashboard/anime/${encodedGuildId}`,
+      chipLabel: `${animeApi.configs.length} Configured`,
+      actionLabel: "Configure Anime",
+    },
+    {
+      title: "Birthday Announcements",
+      description: "Member birthday dates with Discord member search and per-birthday destination channels.",
+      icon: <Cake />,
+      accent: dashboardAccents.birthdays,
+      href: `/dashboard/birthdays/${encodedGuildId}`,
+      chipLabel: `${birthdayApi.birthdays.length} Configured`,
+      actionLabel: "Configure Birthdays",
     },
     {
       title: "Quotes Management",
       description: "View, add, search, and delete quotes stored for your server.",
       icon: <FormatQuote />,
-      status: "active",
-      href: `/dashboard/quotes/${guildId}`
+      accent: dashboardAccents.quotes,
+      href: `/dashboard/quotes/${encodedGuildId}`,
+      actionLabel: "Manage Quotes",
     },
     {
-      title: "YouTube Notifications",
-      description: "Configure YouTube channels to automatically post notifications when new videos are uploaded.",
+      title: "YouTube Uploads",
+      description: "Configure YouTube channels to post notifications when new videos are uploaded.",
       icon: <YouTube />,
-      status: "active",
-      href: `/dashboard/youtube/${guildId}`,
-      chipLabel: youtubeChip
+      accent: dashboardAccents.youtube,
+      href: `/dashboard/youtube/${encodedGuildId}`,
+      chipLabel: `${youtubeApi.configs.length} Configured`,
+      actionLabel: "Configure YouTube",
     },
     {
-      title: "Twitch Integration",
+      title: "Twitch Live",
       description: "Configure Twitch stream notifications and live alerts.",
       icon: <LiveTv />,
-      status: "active",
-      href: `/dashboard/twitch/${guildId}`,
-      chipLabel: twitchChip
+      accent: dashboardAccents.twitch,
+      href: `/dashboard/twitch/${encodedGuildId}`,
+      chipLabel: `${twitchApi.configs.length} Configured`,
+      actionLabel: "Configure Twitch",
     },
     {
-      title: "TikTok Integration",
+      title: "TikTok Live",
       description: "Configure TikTok live notifications and live alerts.",
       icon: <LiveTv />,
-      status: "active",
-      href: `/dashboard/tiktok/${guildId}`,
-      chipLabel: tiktokChip
+      accent: dashboardAccents.tiktok,
+      href: `/dashboard/tiktok/${encodedGuildId}`,
+      chipLabel: `${tiktokApi.configs.length} Configured`,
+      actionLabel: "Configure TikTok",
     },
     {
       title: "Server Settings",
       description: "Configure bot behavior, permissions, and general server settings.",
       icon: <Settings />,
-      status: "active",
-      href: `/dashboard/settings/${guildId}`
+      accent: dashboardAccents.settings,
+      href: `/dashboard/settings/${encodedGuildId}`,
+      actionLabel: "Open Settings",
     },
     {
       title: "Command Management",
-      description: "Enable or disable specific bot commands for your server.",
+      description: "Enable or disable specific bot commands and modules for this server.",
       icon: <Block />,
-      status: "active",
-      href: `/dashboard/commands/${guildId}`
+      accent: dashboardAccents.commands,
+      href: `/dashboard/commands/${encodedGuildId}`,
+      actionLabel: "Manage Commands",
     },
     {
       title: "Patch Notes",
       description: "Manage game patch note notifications and subscriptions.",
       icon: <SpeakerNotes />,
-      status: "beta",
-      href: `/dashboard/patch-notes/${guildId}`,
-      chipLabel: patchChip
+      accent: dashboardAccents.patchNotes,
+      href: `/dashboard/patch-notes/${encodedGuildId}`,
+      chipLabel: `${patchApi.configs.length} Configured`,
+      actionLabel: "Configure Patches",
     },
     {
       title: "Analytics",
-      description: "View server activity, member engagement, and bot usage statistics.",
+      description: "Server activity, member engagement, and bot usage analytics.",
       icon: <Timeline />,
-      status: "inactive",
-      href: `/dashboard/analytics/${guildId}`,
-      disabled: true
-    }
+      accent: dashboardAccents.neutral,
+      disabled: true,
+      statusLabel: "planned",
+    },
   ];
 
   return (
-    <DashboardLayout guild={guild} currentModule={null} maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ mb: 2, fontWeight: 600, color: 'grey.100' }}>
-          {guild.name} Dashboard
-        </Typography>
-        <Typography variant="body1" sx={{ color: 'grey.300' }}>
-          Manage and configure bot features for your server.
-        </Typography>
-      </Box>
+    <DashboardLayout guild={guild} currentModule={null} maxWidth="xl" loading={guildsLoading}>
+      {guild && (
+        <FeatureShell accent={dashboardAccents.settings} secondaryAccent={dashboardAccents.anime}>
+          <FeatureHero
+            icon={<Settings />}
+            eyebrow="Dashboard"
+            title={`${guild.name} Dashboard`}
+            description="A cleaner control center for the bot features this server can actually use. High-value tools are grouped first; lower-level settings stay available without dominating the page."
+            accent={dashboardAccents.settings}
+            secondaryAccent={dashboardAccents.anime}
+            stats={[
+              { label: "Members", value: guild.member_count || "N/A" },
+              { label: "Configured Notifications", value: notificationLoading ? "..." : totalConfigured },
+              { label: "Available Pages", value: modules.filter(module => !module.disabled).length },
+            ]}
+          />
 
-      <Paper elevation={1} sx={{
-        p: 3,
-        mb: 4,
-        borderRadius: 2,
-        bgcolor: 'grey.800',
-        border: 1,
-        borderColor: 'grey.700'
-      }}>
-        <Typography variant="h6" sx={{ mb: 1, fontWeight: 600, color: 'grey.100' }}>
-          Quick Stats
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid sx={{ width: { xs: '50%', sm: '25%' } }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: 'primary.light' }}>
-                {guild.member_count || 'N/A'}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'grey.400' }}>
-                Members
-              </Typography>
+          <FeaturePanel accent={dashboardAccents.settings} sx={{ mb: 3 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }, gap: 2, position: "relative" }}>
+              {[
+                { label: "Members", value: guild.member_count || "N/A", color: dashboardAccents.settings },
+                { label: "Active Pages", value: modules.filter(module => !module.disabled).length, color: dashboardAccents.commands },
+                { label: "Notification Configs", value: notificationLoading ? "..." : totalConfigured, color: dashboardAccents.anime },
+                { label: "Coming Soon", value: modules.filter(module => module.disabled).length, color: dashboardAccents.neutral },
+              ].map((stat) => (
+                <Box key={stat.label} sx={{ textAlign: "center", p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 900, color: stat.color }}>{stat.value}</Typography>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>{stat.label}</Typography>
+                </Box>
+              ))}
             </Box>
-          </Grid>
-          <Grid sx={{ width: { xs: '50%', sm: '25%' } }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: 'success.light' }}>
-                {modules.filter(m => m.status === 'active' && !m.disabled).length}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'grey.400' }}>
-                Active Modules
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid sx={{ width: { xs: '50%', sm: '25%' } }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: 'warning.light' }}>
-                {modules.filter(m => m.status === 'beta').length}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'grey.400' }}>
-                Beta Features
-              </Typography>
-            </Box>
-          </Grid>
-          <Grid sx={{ width: { xs: '50%', sm: '25%' } }}>
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, color: 'grey.500' }}>
-                {modules.filter(m => m.disabled).length}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'grey.400' }}>
-                Coming Soon
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Paper>
+          </FeaturePanel>
 
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, color: 'grey.100' }}>
-        Available Modules
-      </Typography>
-
-      <Grid container spacing={3}>
-        {modules.map((module, index) => (
-          <Grid sx={{ width: { xs: '100%', sm: '50%', md: '33.333%' }, p: 1.5 }} key={index}>
-            <ModuleCard {...module} />
-          </Grid>
-        ))}
-      </Grid>
+          <Typography variant="h5" sx={{ mb: 2, fontWeight: 850, color: "grey.50" }}>
+            Available Modules
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
+            {modules.map((module) => (
+              <FeatureCard key={module.title} {...module} statusLabel={module.statusLabel ?? "active"} />
+            ))}
+          </Box>
+        </FeatureShell>
+      )}
     </DashboardLayout>
   );
 }
