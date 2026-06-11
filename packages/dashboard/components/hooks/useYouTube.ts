@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api-client";
-import type { youtube_get_Response200, youtube_post_Request } from "@zeffuro/fakegaming-common/api-responses";
 
-type YouTubeConfig = youtube_get_Response200[number] & {
+type YouTubeConfig = Awaited<ReturnType<typeof api.getYouTubeConfigs>>[number] & {
   youtubeChannelId: string;
   discordChannelId: string;
   guildId: string;
 };
+type YouTubeCreateRequest = Parameters<typeof api.createYouTubeChannel>[0];
 
 type YouTubeDashboardConfig = YouTubeConfig & {
   youtubeChannelTitle?: string;
@@ -72,7 +72,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
         quietHoursEnd: (configData as any).quietHoursEnd ? String((configData as any).quietHoursEnd) : null,
       };
 
-      await api.createYouTubeChannel(payload as unknown as youtube_post_Request);
+      await api.createYouTubeChannel(payload as unknown as YouTubeCreateRequest);
       await fetchConfigs();
       return true;
     } catch (err: any) {
@@ -97,7 +97,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
       };
 
       await api.deleteYouTubeChannel(config.id.toString());
-      await api.createYouTubeChannel(payload as unknown as youtube_post_Request);
+      await api.createYouTubeChannel(payload as unknown as YouTubeCreateRequest);
       await fetchConfigs();
       return true;
     } catch (err: any) {

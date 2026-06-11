@@ -1,29 +1,41 @@
 // Centralized API client that leverages typed endpoints
 import type {
-  twitch_get_Response200,
-  twitch_post_Request,
-  twitch_post_Response201,
-  youtube_get_Response200,
-  youtube_post_Request,
-  patchNotes_game_get_Response200,
-  patchNotes_supportedGames_get_Response200,
-  patchSubscriptions_post_Request,
-  patchSubscriptions_put_Request,
-  discord_guilds_guildId_members_search_get_Response200,
-  disabledModules_get_Response200,
-  disabledModules_post_Response201,
-  disabledModules_id_delete_Response200,
-  disabledCommands_get_Response200,
-  disabledCommands_post_Response201,
-  disabledCommands_id_delete_Response200,
-  disabledModules_post_Request,
-  tiktok_get_Response200,
-  tiktok_post_Request,
-  tiktok_post_Response201,
-  tiktok_id_delete_Response200,
-} from "@zeffuro/fakegaming-common/api-responses";
-import type { BirthdayConfig, BlueskyPostConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
+  ApiJsonResponse,
+  ApiSchema,
+} from "@zeffuro/fakegaming-common/api-helpers";
+import type { BirthdayConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
+
+type TwitchListResponse = ApiJsonResponse<'/twitch', 'get', 200>;
+type TwitchCreateRequest = ApiSchema<'TwitchCreateRequest'>;
+type TwitchCreateResponse = ApiJsonResponse<'/twitch', 'post', 200 | 201>;
+type TikTokListResponse = ApiJsonResponse<'/tiktok', 'get', 200>;
+type TikTokCreateRequest = ApiSchema<'TikTokCreateRequest'>;
+type TikTokCreateResponse = ApiJsonResponse<'/tiktok', 'post', 200 | 201>;
+type TikTokDeleteResponse = ApiJsonResponse<'/tiktok/{id}', 'delete', 200>;
+type BlueskyListResponse = ApiJsonResponse<'/bluesky', 'get', 200>;
+export type BlueskyCreateRequest = ApiSchema<'BlueskyCreateRequest'>;
+type BlueskyCreateResponse = ApiJsonResponse<'/bluesky', 'post', 200 | 201>;
+type BlueskyDeleteResponse = ApiJsonResponse<'/bluesky/{id}', 'delete', 200>;
+export type BlueskyProfileResponse = ApiJsonResponse<'/bluesky/profile', 'get', 200>;
+type YouTubeListResponse = ApiJsonResponse<'/youtube', 'get', 200>;
+type YouTubeCreateRequest = ApiSchema<'YoutubeCreateRequest'>;
+type YouTubeCreateResponse = ApiJsonResponse<'/youtube', 'post', 201>;
+type SupportedGamesResponse = ApiJsonResponse<'/patchNotes/supportedGames', 'get', 200>;
+type PatchNoteResponse = ApiJsonResponse<'/patchNotes/{game}', 'get', 200>;
+type PatchSubscriptionCreateRequest = ApiSchema<'PatchSubscriptionRequest'>;
+type PatchSubscriptionUpsertRequest = ApiSchema<'PatchSubscriptionRequest'>;
+type GuildMemberSearchResponse = ApiJsonResponse<'/discord/guilds/{guildId}/members/search', 'get', 200>;
+type DisabledModulesResponse = ApiJsonResponse<'/disabledModules', 'get', 200>;
+type DisabledModuleCreateRequest = ApiSchema<'DisabledModuleCreateRequest'>;
+type DisabledModuleCreateResponse = ApiJsonResponse<'/disabledModules', 'post', 201>;
+type DisabledModuleDeleteResponse = ApiJsonResponse<'/disabledModules/{id}', 'delete', 200>;
+type DisabledCommandsResponse = ApiJsonResponse<'/disabledCommands', 'get', 200>;
+type DisabledCommandCreateRequest = ApiSchema<'DisabledCommandCreateRequest'>;
+type DisabledCommandCreateResponse = ApiJsonResponse<'/disabledCommands', 'post', 201>;
+type DisabledCommandDeleteResponse = ApiJsonResponse<'/disabledCommands/{id}', 'delete', 200>;
+type QuoteResponse = ApiSchema<'QuoteConfig'>;
+type QuoteCreateRequest = ApiSchema<'QuoteCreateRequest'>;
 
 // Define endpoint paths centrally
 export const API_ENDPOINTS = {
@@ -66,7 +78,7 @@ export const API_ENDPOINTS = {
 // Type for API options
 interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: any;
+  body?: unknown;
   headers?: Record<string, string>;
   credentials?: RequestCredentials;
 }
@@ -151,11 +163,20 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
   }
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    const apiError = (errorData as any)?.error;
+    const errorData: unknown = await response.json().catch(() => null);
+    const apiError = typeof errorData === 'object' && errorData !== null && 'error' in errorData
+      ? (errorData as { error?: unknown }).error
+      : undefined;
+    const apiErrorMessage = typeof apiError === 'object' && apiError !== null && 'message' in apiError
+      ? (apiError as { message?: unknown }).message
+      : undefined;
+    const fallbackMessage = typeof errorData === 'object' && errorData !== null && 'message' in errorData
+      ? (errorData as { message?: unknown }).message
+      : undefined;
     throw new Error(
-      (typeof apiError === 'string' ? apiError : apiError?.message) ||
-      (errorData as any)?.message ||
+      (typeof apiError === 'string' ? apiError : undefined) ||
+      (typeof apiErrorMessage === 'string' ? apiErrorMessage : undefined) ||
+      (typeof fallbackMessage === 'string' ? fallbackMessage : undefined) ||
       `API request failed with status: ${response.status}`
     );
   }
@@ -164,10 +185,10 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 }
 
 // Overloaded helpers for endpoints where generated request types may be too strict
-export function createDisabledModuleRequest(data: disabledModules_post_Request): Promise<disabledModules_post_Response201>;
-export function createDisabledModuleRequest(data: { guildId: string; moduleName: string }): Promise<disabledModules_post_Response201>;
-export async function createDisabledModuleRequest(data: disabledModules_post_Request | { guildId: string; moduleName: string }): Promise<disabledModules_post_Response201> {
-  return apiRequest<disabledModules_post_Response201>(API_ENDPOINTS.DISABLED_MODULES, { method: 'POST', body: data });
+export function createDisabledModuleRequest(data: DisabledModuleCreateRequest): Promise<DisabledModuleCreateResponse>;
+export function createDisabledModuleRequest(data: { guildId: string; moduleName: string }): Promise<DisabledModuleCreateResponse>;
+export async function createDisabledModuleRequest(data: DisabledModuleCreateRequest | { guildId: string; moduleName: string }): Promise<DisabledModuleCreateResponse> {
+  return apiRequest<DisabledModuleCreateResponse>(API_ENDPOINTS.DISABLED_MODULES, { method: 'POST', body: data });
 }
 
 // Types local to this client for endpoints not in generated types
@@ -237,29 +258,14 @@ export interface AnimeSearchResult {
   nextAiringEpisode?: { airingAt: number; episode: number; timeUntilAiring?: number | null } | null;
 }
 
-export type BlueskyCreateRequest = Pick<BlueskyPostConfig, 'blueskyHandle' | 'discordChannelId' | 'guildId'> & {
-  customMessage?: string;
-  cooldownMinutes?: number | null;
-  quietHoursStart?: string | null;
-  quietHoursEnd?: string | null;
-};
-
-export interface BlueskyProfileResponse {
-  exists: boolean;
-  did?: string;
-  handle?: string;
-  displayName?: string;
-  avatar?: string;
-}
-
-// Typed API methods using apiResponses.ts types
+// Typed API methods using OpenAPI path helpers.
 export const api = {
   // Twitch APIs
   getTwitchConfigs: () =>
-    apiRequest<twitch_get_Response200>(API_ENDPOINTS.TWITCH),
+    apiRequest<TwitchListResponse>(API_ENDPOINTS.TWITCH),
 
-  createTwitchStream: (data: twitch_post_Request) =>
-    apiRequest<twitch_post_Response201>(
+  createTwitchStream: (data: TwitchCreateRequest) =>
+    apiRequest<TwitchCreateResponse>(
       API_ENDPOINTS.TWITCH,
       { method: 'POST', body: data }
     ),
@@ -272,7 +278,7 @@ export const api = {
 
   // TikTok APIs (parity with Twitch; types generated from OpenAPI after build)
   getTikTokConfigs: () =>
-    apiRequest<tiktok_get_Response200>(API_ENDPOINTS.TIKTOK),
+    apiRequest<TikTokListResponse>(API_ENDPOINTS.TIKTOK),
 
   // Check live status of a username (admin/debug)
   getTikTokLive: (username: string, debug: boolean = false) =>
@@ -280,21 +286,21 @@ export const api = {
       `${API_ENDPOINTS.TIKTOK}/live?username=${encodeURIComponent(username)}${debug ? `&debug=1` : ''}`
     ),
 
-  createTikTokStream: (data: tiktok_post_Request) =>
-    apiRequest<tiktok_post_Response201>(
+  createTikTokStream: (data: TikTokCreateRequest) =>
+    apiRequest<TikTokCreateResponse>(
       API_ENDPOINTS.TIKTOK,
       { method: 'POST', body: data }
     ),
 
   deleteTikTokStream: (id: string | number) =>
-    apiRequest<tiktok_id_delete_Response200>(
+    apiRequest<TikTokDeleteResponse>(
       `${API_ENDPOINTS.TIKTOK}/${id}`,
       { method: 'DELETE' }
     ),
 
   // Bluesky APIs
   getBlueskyConfigs: () =>
-    apiRequest<BlueskyPostConfig[]>(API_ENDPOINTS.BLUESKY),
+    apiRequest<BlueskyListResponse>(API_ENDPOINTS.BLUESKY),
 
   getBlueskyProfile: (handle: string) =>
     apiRequest<BlueskyProfileResponse>(
@@ -302,13 +308,13 @@ export const api = {
     ),
 
   createBlueskyAccount: (data: BlueskyCreateRequest) =>
-    apiRequest<{ success: boolean }>(
+    apiRequest<BlueskyCreateResponse>(
       API_ENDPOINTS.BLUESKY,
       { method: 'POST', body: data }
     ),
 
   deleteBlueskyAccount: (id: string | number) =>
-    apiRequest<{ success: boolean }>(
+    apiRequest<BlueskyDeleteResponse>(
       `${API_ENDPOINTS.BLUESKY}/${id}`,
       { method: 'DELETE' }
     ),
@@ -332,10 +338,10 @@ export const api = {
 
   // YouTube APIs
   getYouTubeConfigs: () =>
-    apiRequest<youtube_get_Response200>(API_ENDPOINTS.YOUTUBE),
+    apiRequest<YouTubeListResponse>(API_ENDPOINTS.YOUTUBE),
 
-  createYouTubeChannel: (data: youtube_post_Request) =>
-    apiRequest<{ success: boolean }>(
+  createYouTubeChannel: (data: YouTubeCreateRequest) =>
+    apiRequest<YouTubeCreateResponse>(
       API_ENDPOINTS.YOUTUBE,
       { method: 'POST', body: data }
     ),
@@ -348,22 +354,22 @@ export const api = {
 
   // Patch Notes APIs
   getSupportedGames: () =>
-    apiRequest<patchNotes_supportedGames_get_Response200>(`${API_ENDPOINTS.PATCH_NOTES}/supportedGames`),
+    apiRequest<SupportedGamesResponse>(`${API_ENDPOINTS.PATCH_NOTES}/supportedGames`),
 
   getLatestPatchNote: (game: string) =>
-    apiRequest<patchNotes_game_get_Response200>(`${API_ENDPOINTS.PATCH_NOTES}/${encodeURIComponent(game)}`),
+    apiRequest<PatchNoteResponse>(`${API_ENDPOINTS.PATCH_NOTES}/${encodeURIComponent(game)}`),
 
   // Patch Subscriptions APIs
   getPatchSubscriptions: () =>
     apiRequest<PatchSubscriptionConfig[]>(API_ENDPOINTS.PATCH_SUBSCRIPTIONS),
 
-  createPatchSubscription: (data: patchSubscriptions_post_Request) =>
+  createPatchSubscription: (data: PatchSubscriptionCreateRequest) =>
     apiRequest<{ success: boolean }>(
       API_ENDPOINTS.PATCH_SUBSCRIPTIONS,
       { method: 'POST', body: data }
     ),
 
-  upsertPatchSubscription: (data: patchSubscriptions_put_Request) =>
+  upsertPatchSubscription: (data: PatchSubscriptionUpsertRequest) =>
     apiRequest<{ success: boolean }>(
       API_ENDPOINTS.PATCH_SUBSCRIPTIONS,
       { method: 'PUT', body: data }
@@ -406,13 +412,13 @@ export const api = {
 
   // Quotes APIs
   getQuotesByGuild: (guildId: string) =>
-    apiRequest<any[]>(`${API_ENDPOINTS.QUOTES}/guild/${encodeURIComponent(guildId)}`),
+    apiRequest<QuoteResponse[]>(`${API_ENDPOINTS.QUOTES}/guild/${encodeURIComponent(guildId)}`),
 
   searchQuotes: (guildId: string, text: string) =>
-    apiRequest<any[]>(`${API_ENDPOINTS.QUOTES}/search?guildId=${encodeURIComponent(guildId)}&text=${encodeURIComponent(text)}`),
+    apiRequest<QuoteResponse[]>(`${API_ENDPOINTS.QUOTES}/search?guildId=${encodeURIComponent(guildId)}&text=${encodeURIComponent(text)}`),
 
-  createQuote: (data: any) =>
-    apiRequest<any>(API_ENDPOINTS.QUOTES, { method: 'POST', body: data }),
+  createQuote: (data: QuoteCreateRequest) =>
+    apiRequest<QuoteResponse>(API_ENDPOINTS.QUOTES, { method: 'POST', body: data }),
 
   deleteQuote: (id: string) =>
     apiRequest<{ success: boolean }>(`${API_ENDPOINTS.QUOTES}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
@@ -442,28 +448,28 @@ export const api = {
 
   // Discord member search (autocomplete)
   searchGuildMembers: (guildId: string, query: string, limit: number = 25) =>
-    apiRequest<discord_guilds_guildId_members_search_get_Response200>(
+    apiRequest<GuildMemberSearchResponse>(
       `${API_ENDPOINTS.DISCORD}/guilds/${encodeURIComponent(guildId)}/members/search?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(String(limit))}`
     ),
 
   // Disabled Modules APIs
   getDisabledModules: (guildId: string) =>
-    apiRequest<disabledModules_get_Response200>(`${API_ENDPOINTS.DISABLED_MODULES}?guildId=${encodeURIComponent(guildId)}`),
+    apiRequest<DisabledModulesResponse>(`${API_ENDPOINTS.DISABLED_MODULES}?guildId=${encodeURIComponent(guildId)}`),
 
   createDisabledModule: createDisabledModuleRequest,
 
   deleteDisabledModule: (id: string | number) =>
-    apiRequest<disabledModules_id_delete_Response200>(`${API_ENDPOINTS.DISABLED_MODULES}/${id}`, { method: 'DELETE' }),
+    apiRequest<DisabledModuleDeleteResponse>(`${API_ENDPOINTS.DISABLED_MODULES}/${id}`, { method: 'DELETE' }),
 
   // Disabled Commands APIs
   getDisabledCommands: (guildId: string) =>
-    apiRequest<disabledCommands_get_Response200>(`${API_ENDPOINTS.DISABLED_COMMANDS}?guildId=${encodeURIComponent(guildId)}`),
+    apiRequest<DisabledCommandsResponse>(`${API_ENDPOINTS.DISABLED_COMMANDS}?guildId=${encodeURIComponent(guildId)}`),
 
-  createDisabledCommand: (data: { guildId: string; commandName: string }) =>
-    apiRequest<disabledCommands_post_Response201>(API_ENDPOINTS.DISABLED_COMMANDS, { method: 'POST', body: data }),
+  createDisabledCommand: (data: DisabledCommandCreateRequest) =>
+    apiRequest<DisabledCommandCreateResponse>(API_ENDPOINTS.DISABLED_COMMANDS, { method: 'POST', body: data }),
 
   deleteDisabledCommand: (id: string | number) =>
-    apiRequest<disabledCommands_id_delete_Response200>(`${API_ENDPOINTS.DISABLED_COMMANDS}/${id}`, { method: 'DELETE' }),
+    apiRequest<DisabledCommandDeleteResponse>(`${API_ENDPOINTS.DISABLED_COMMANDS}/${id}`, { method: 'DELETE' }),
 
   // Jobs API
   triggerJob: (name: string, date?: string, force?: boolean) =>

@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { jwtOrService } from '../middleware/auth.js';
 import { getActiveJobQueue, getLastHeartbeat } from '../jobs/bootstrap.js';
-import { z } from 'zod';
 import { validateBody } from '@zeffuro/fakegaming-common';
+import { jobRunRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { getJobRuns } from '../jobs/status.js';
 import type { JobRunEntry } from '../jobs/status.js';
@@ -19,16 +19,6 @@ function isDashboardAdmin(discordId: string | undefined): boolean {
     const list = raw.split(',').map(s => s.trim()).filter(Boolean);
     return list.includes(discordId);
 }
-
-const isoDateTime = z.string().refine((s) => {
-    const t = Date.parse(s);
-    return !Number.isNaN(t);
-}, { message: 'Invalid date-time' });
-
-const runSchema = z.object({
-    date: isoDateTime.optional(),
-    force: z.boolean().optional()
-});
 
 const ALLOWED_JOBS: Record<string, { queueName: string; acceptsDate?: boolean; acceptsForce?: boolean }> = {
     birthdays: { queueName: 'birthdays:run', acceptsDate: true, acceptsForce: true },
@@ -172,15 +162,7 @@ router.get('/:name/status', jwtOrService, async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               date:
- *                 type: string
- *                 format: date-time
- *                 description: Optional ISO date to process; supported for specific jobs (e.g., birthdays).
- *               force:
- *                 type: boolean
- *                 description: When true (and supported by the job), bypasses normal idempotency to force re-processing.
+ *             $ref: '#/components/schemas/JobRunRequest'
  *     responses:
  *       202:
  *         description: Job scheduled
@@ -193,7 +175,7 @@ router.get('/:name/status', jwtOrService, async (req, res) => {
  *       503:
  *         description: Jobs not enabled or queue unavailable
  */
-router.post('/:name/run', jwtOrService, validateBody(runSchema), async (req, res) => {
+router.post('/:name/run', jwtOrService, validateBody(jobRunRequestSchema), async (req, res) => {
     const { name } = req.params as { name: string };
     const def = ALLOWED_JOBS[name];
     if (!def) {

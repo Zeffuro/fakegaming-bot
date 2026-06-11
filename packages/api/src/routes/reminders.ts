@@ -1,8 +1,8 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateBodyForModel, validateParams } from '@zeffuro/fakegaming-common';
-import { ReminderConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
+import { reminderCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
@@ -76,7 +76,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/ReminderConfig'
+ *             $ref: '#/components/schemas/ReminderCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -87,7 +87,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       409:
  *         $ref: '#/components/responses/Conflict'
  */
-router.post('/', jwtAuth, validateBodyForModel(ReminderConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req, res) => {
     try {
         const created = await getConfigManager().reminderManager.addPlain(req.body);
         res.status(201).json(created);

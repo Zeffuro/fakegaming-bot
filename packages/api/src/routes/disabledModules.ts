@@ -1,8 +1,8 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { DisabledModuleConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { disabledModuleCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 
 // Zod schemas
@@ -128,7 +128,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/DisabledModuleConfig'
+ *             $ref: '#/components/schemas/DisabledModuleCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -141,7 +141,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBodyForModel(DisabledModuleConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, validateBody(disabledModuleCreateRequestSchema), async (req, res) => {
     const created = await getConfigManager().disabledModuleManager.addPlain(req.body);
     res.status(201).json(created);
 });

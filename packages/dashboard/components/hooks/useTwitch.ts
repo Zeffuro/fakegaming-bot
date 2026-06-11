@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { twitch_post_Request } from "@zeffuro/fakegaming-common/api-responses";
+
+type TwitchCreateRequest = Parameters<typeof api.createTwitchStream>[0];
 
 export function useTwitchConfigs(guildId: string | string[]) {
   const [configs, setConfigs] = useState<TwitchStreamConfig[]>([]);
@@ -41,7 +42,7 @@ export function useTwitchConfigs(guildId: string | string[]) {
         quietHoursEnd: (configData as any).quietHoursEnd ? String((configData as any).quietHoursEnd) : null,
       };
 
-      await api.createTwitchStream(payload as unknown as twitch_post_Request);
+      await api.createTwitchStream(payload as unknown as TwitchCreateRequest);
       await fetchConfigs();
       return true;
     } catch (err: any) {
@@ -66,7 +67,7 @@ export function useTwitchConfigs(guildId: string | string[]) {
       };
 
       await api.deleteTwitchStream(config.id.toString());
-      await api.createTwitchStream(payload as unknown as twitch_post_Request);
+      await api.createTwitchStream(payload as unknown as TwitchCreateRequest);
       await fetchConfigs();
       return true;
     } catch (err: any) {

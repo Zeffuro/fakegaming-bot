@@ -1,20 +1,13 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
+import { patchNoteCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { SUPPORTED_GAMES } from '@zeffuro/fakegaming-common';
 
 // Zod schemas
 const gameParamSchema = z.object({ game: z.string().min(1) });
-const patchNoteCreateSchema = z.object({
-    game: z.string().min(1),
-    title: z.string().min(1),
-    content: z.string().min(1),
-    url: z.string().min(1),
-    publishedAt: z.number().int(),
-    version: z.string().min(1),
-});
 
 // Router
 const router = createBaseRouter();
@@ -102,7 +95,7 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/PatchNoteConfig'
+ *             $ref: '#/components/schemas/PatchNoteCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -111,7 +104,7 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(patchNoteCreateSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(patchNoteCreateRequestSchema), async (req, res) => {
     await getConfigManager().patchNotesManager.setLatestPatch(req.body);
     res.status(201).json({ success: true });
 });

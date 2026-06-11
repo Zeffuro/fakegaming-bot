@@ -3,6 +3,7 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
+import { birthdayCreateRequestSchema, birthdayUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
@@ -14,26 +15,6 @@ const userGuildParamSchema = z.object({
 });
 const listQuerySchema = z.object({
     guildId: z.string().min(1).optional()
-});
-const birthdayDateFieldsSchema = z.object({
-    day: z.coerce.number().int().min(1).max(31),
-    month: z.coerce.number().int().min(1).max(12),
-    year: z.coerce.number().int().min(1900).max(9999).optional()
-}).refine(({ day, month, year }) => {
-    const testYear = year ?? 2000;
-    const date = new Date(testYear, month - 1, day);
-    return date.getFullYear() === testYear && date.getMonth() === month - 1 && date.getDate() === day;
-}, {
-    message: 'Invalid calendar date',
-    path: ['day']
-});
-const birthdayCreateBodySchema = birthdayDateFieldsSchema.extend({
-    userId: z.string().min(1),
-    guildId: z.string().min(1),
-    channelId: z.string().min(1)
-});
-const birthdayUpdateBodySchema = birthdayDateFieldsSchema.extend({
-    channelId: z.string().min(1)
 });
 
 // Router
@@ -111,7 +92,7 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BirthdayConfig'
+ *             $ref: '#/components/schemas/BirthdayCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -124,7 +105,7 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *       409:
  *         $ref: '#/components/responses/Conflict'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateBodySchema), async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateRequestSchema), async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.body;
     try {
@@ -148,6 +129,12 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateBodySche
  *     tags: [Birthdays]
  *     security:
  *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BirthdayUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated birthday config
@@ -158,7 +145,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateBodySche
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), validateBody(birthdayUpdateBodySchema), async (req, res) => {
+router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), validateBody(birthdayUpdateRequestSchema), async (req, res) => {
     const { userId, guildId } = req.params;
     const existing = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
     if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });

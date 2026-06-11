@@ -16,6 +16,7 @@ import {
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { animeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -40,13 +41,6 @@ const seasonQuerySchema = z.object({
 const listQuerySchema = z.object({
     guildId: z.string().min(1).optional(),
 });
-const subscribeBodySchema = z.object({
-    anilistId: z.coerce.number().int().positive().optional(),
-    title: z.string().min(1).optional(),
-    guildId: z.string().min(1),
-    channelId: z.string().min(1),
-    reminderMinutes: z.coerce.number().int().min(0).max(1440).optional(),
-}).refine((value) => value.anilistId || value.title, { message: 'anilistId or title is required', path: ['anilistId'] });
 
 function resolveSeason(value: z.infer<typeof seasonQuerySchema>): { season: AniListSeason; year: number } {
     if (value.season === 'current') return getCurrentAniListSeason();
@@ -123,8 +117,8 @@ router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res
     res.json({ ...resolved, scope, scopeLabel: formatAniListSeasonScope(scope as AniListSeasonScope), results, pageInfo });
 });
 
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(subscribeBodySchema), async (req, res) => {
-    const body = req.body as z.infer<typeof subscribeBodySchema>;
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(animeSubscribeRequestSchema), async (req, res) => {
+    const body = req.body as z.infer<typeof animeSubscribeRequestSchema>;
     const anime = await resolveAnime(body);
     if (!anime) {
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Anime not found' } });

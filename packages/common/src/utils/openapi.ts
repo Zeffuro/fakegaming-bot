@@ -1,10 +1,26 @@
 import {z} from 'zod';
 import type {Model, ModelCtor} from 'sequelize-typescript';
+import type {ModelAttributeColumnOptions} from 'sequelize';
 import {schemaRegistry} from './schemaRegistry.js';
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 
-export function mapSequelizeTypeToOpenAPI(type: any): { type: string; format?: string } {
-    const typeName = type?.constructor?.name || '';
+type RuntimeModelAttribute = Pick<
+    ModelAttributeColumnOptions<Model>,
+    'allowNull' | 'primaryKey' | 'type'
+>;
+type RuntimeModelAttributes = Record<string, RuntimeModelAttribute>;
+type RuntimeModelWithAttributes<T extends Model> = ModelCtor<T> & {
+    getAttributes?: () => RuntimeModelAttributes;
+    rawAttributes?: RuntimeModelAttributes;
+};
+
+function getRuntimeModelAttributes<T extends Model>(model: ModelCtor<T>): RuntimeModelAttributes | undefined {
+    const runtimeModel = model as RuntimeModelWithAttributes<T>;
+    return runtimeModel.getAttributes?.() ?? runtimeModel.rawAttributes;
+}
+
+export function mapSequelizeTypeToOpenAPI(type: unknown): { type: string; format?: string } {
+    const typeName = typeof type === 'object' && type !== null ? type.constructor.name : '';
     switch (typeName) {
         case 'STRING':
         case 'TEXT':
@@ -27,14 +43,14 @@ export function mapSequelizeTypeToOpenAPI(type: any): { type: string; format?: s
 }
 
 function deriveOpenApiFromSequelize<T extends Model>(model: ModelCtor<T>): Record<string, unknown> | null {
-    const attributes: Record<string, any> | undefined = (model as any)?.getAttributes?.() ?? (model as any)?.rawAttributes;
+    const attributes = getRuntimeModelAttributes(model);
     if (!attributes || Object.keys(attributes).length === 0) return null;
     const properties: Record<string, unknown> = {};
     const required: string[] = [];
     for (const [name, attr] of Object.entries(attributes)) {
-        const typeInfo = mapSequelizeTypeToOpenAPI((attr as any).type);
+        const typeInfo = mapSequelizeTypeToOpenAPI(attr.type);
         properties[name] = { ...typeInfo };
-        if ((attr as any).allowNull === false || (attr as any).primaryKey) {
+        if (attr.allowNull === false || attr.primaryKey) {
             required.push(name);
         }
     }
@@ -48,7 +64,13 @@ function deriveOpenApiFromSequelize<T extends Model>(model: ModelCtor<T>): Recor
 /**
  * Convert a Zod schema to an OpenAPI 3.0 SchemaObject using @asteasolutions/zod-to-openapi.
  */
-export function zodSchemaToOpenApiSchema<T extends z.ZodTypeAny>(schema: T): Record<string, unknown> {
+export function zodSchemaToOpenApiSchema<T extends z.ZodType<unknown>>(schema: T): Record<string, unknown> {
+    const jsonSchema = z.toJSONSchema(schema);
+    if (jsonSchema && typeof jsonSchema === 'object') {
+        const { $schema: _schema, ...schemaObject } = jsonSchema as Record<string, unknown>;
+        return schemaObject;
+    }
+
     const registry = new OpenAPIRegistry();
     const componentName = 'InlineSchema';
     registry.register(componentName, schema);
@@ -80,7 +102,7 @@ export function modelToOpenApiSchema<T extends Model>(
                 : schemaRegistry.getFullSchema(model);
         const schemaObj = zodSchemaToOpenApiSchema(zodSchema);
         // Validate it's an object schema with properties
-        const isObjectSchema = schemaObj && typeof schemaObj === 'object' && (schemaObj as any).type === 'object';
+        const isObjectSchema = schemaObj.type === 'object';
         if (isObjectSchema) return schemaObj;
     } catch {
     }

@@ -44,11 +44,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        youtubeChannelId?: string;
-                        discordChannelId?: string;
-                        guildId?: string;
-                    };
+                    "application/json": components["schemas"]["YoutubeChannelRequest"];
                 };
             };
             responses: {
@@ -91,7 +87,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["YoutubeVideoConfig"];
+                    "application/json": components["schemas"]["YoutubeCreateRequest"];
                 };
             };
             responses: {
@@ -101,9 +97,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            success?: boolean;
-                        };
+                        "application/json": components["schemas"]["YoutubeVideoConfig"];
                     };
                 };
                 400: components["responses"]["BadRequest"];
@@ -246,11 +240,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        youtubeChannelId?: string;
-                        discordChannelId?: string;
-                        guildId?: string;
-                    };
+                    "application/json": components["schemas"]["YoutubeChannelRequest"];
                 };
             };
             responses: {
@@ -331,7 +321,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["YoutubeVideoConfig"];
+                    "application/json": components["schemas"]["YoutubeUpdateRequest"];
                 };
             };
             responses: {
@@ -421,7 +411,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["UserConfig"];
+                    "application/json": components["schemas"]["UserCreateRequest"];
                 };
             };
             responses: {
@@ -483,7 +473,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["UserConfig"];
+                    "application/json": components["schemas"]["UserUpdateRequest"];
                 };
             };
             responses: {
@@ -547,9 +537,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        timezone?: string;
-                    };
+                    "application/json": components["schemas"]["UserTimezoneUpdateRequest"];
                 };
             };
             responses: {
@@ -592,9 +580,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        timespan?: string;
-                    };
+                    "application/json": components["schemas"]["UserDefaultReminderTimeSpanUpdateRequest"];
                 };
             };
             responses: {
@@ -669,10 +655,21 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TwitchStreamConfig"];
+                    "application/json": components["schemas"]["TwitchCreateRequest"];
                 };
             };
             responses: {
+                /** @description Existing config updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
                 /** @description Created */
                 201: {
                     headers: {
@@ -837,7 +834,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TwitchStreamConfig"];
+                    "application/json": components["schemas"]["TwitchUpdateRequest"];
                 };
             };
             responses: {
@@ -941,10 +938,21 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TikTokStreamConfig"];
+                    "application/json": components["schemas"]["TikTokCreateRequest"];
                 };
             };
             responses: {
+                /** @description Existing config updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
                 /** @description Created */
                 201: {
                     headers: {
@@ -1114,7 +1122,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["TikTokStreamConfig"];
+                    "application/json": components["schemas"]["TikTokUpdateRequest"];
                 };
             };
             responses: {
@@ -1203,7 +1211,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ServerConfig"];
+                    "application/json": components["schemas"]["ServerCreateRequest"];
                 };
             };
             responses: {
@@ -1265,7 +1273,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ServerConfig"];
+                    "application/json": components["schemas"]["ServerUpdateRequest"];
                 };
             };
             responses: {
@@ -1348,7 +1356,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["ReminderConfig"];
+                    "application/json": components["schemas"]["ReminderCreateRequest"];
                 };
             };
             responses: {
@@ -1470,7 +1478,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["QuoteConfig"];
+                    "application/json": components["schemas"]["QuoteCreateRequest"];
                 };
             };
             responses: {
@@ -1712,7 +1720,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PatchSubscriptionConfig"];
+                    "application/json": components["schemas"]["PatchSubscriptionRequest"];
                 };
             };
             responses: {
@@ -1737,7 +1745,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PatchSubscriptionConfig"];
+                    "application/json": components["schemas"]["PatchSubscriptionRequest"];
                 };
             };
             responses: {
@@ -1856,7 +1864,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["PatchNoteConfig"];
+                    "application/json": components["schemas"]["PatchNoteCreateRequest"];
                 };
             };
             responses: {
@@ -2084,15 +2092,7 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": {
-                        /**
-                         * Format: date-time
-                         * @description Optional ISO date to process; supported for specific jobs (e.g., birthdays).
-                         */
-                        date?: string;
-                        /** @description When true (and supported by the job), bypasses normal idempotency to force re-processing. */
-                        force?: boolean;
-                    };
+                    "application/json": components["schemas"]["JobRunRequest"];
                 };
             };
             responses: {
@@ -2182,10 +2182,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": {
-                        guildId: string;
-                        ids: string[];
-                    };
+                    "application/json": components["schemas"]["DiscordResolveUsersRequest"];
                 };
             };
             responses: {
@@ -2298,7 +2295,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["DisabledModuleConfig"];
+                    "application/json": components["schemas"]["DisabledModuleCreateRequest"];
                 };
             };
             responses: {
@@ -2470,7 +2467,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["DisabledCommandConfig"];
+                    "application/json": components["schemas"]["DisabledCommandCreateRequest"];
                 };
             };
             responses: {
@@ -2644,10 +2641,21 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["BlueskyPostConfig"];
+                    "application/json": components["schemas"]["BlueskyCreateRequest"];
                 };
             };
             responses: {
+                /** @description Existing config updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            success?: boolean;
+                        };
+                    };
+                };
                 /** @description Created */
                 201: {
                     headers: {
@@ -2796,7 +2804,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["BlueskyPostConfig"];
+                    "application/json": components["schemas"]["BlueskyUpdateRequest"];
                 };
             };
             responses: {
@@ -2881,7 +2889,7 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["BirthdayConfig"];
+                    "application/json": components["schemas"]["BirthdayCreateRequest"];
                 };
             };
             responses: {
@@ -2942,7 +2950,11 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BirthdayUpdateRequest"];
+                };
+            };
             responses: {
                 /** @description Updated birthday config */
                 200: {
@@ -3011,9 +3023,7 @@ export interface paths {
                      *       "code": "your_discord_oauth_code"
                      *     }
                      */
-                    "application/json": {
-                        code?: string;
-                    };
+                    "application/json": components["schemas"]["AuthLoginRequest"];
                 };
             };
             responses: {
@@ -3304,6 +3314,176 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        AnimeSubscribeRequest: {
+            anilistId?: number;
+            title?: string;
+            guildId: string;
+            channelId: string;
+            reminderMinutes?: number;
+        };
+        AuthLoginRequest: {
+            code: string;
+        };
+        BirthdayCreateRequest: {
+            day: number;
+            month: number;
+            year?: number;
+            userId: string;
+            guildId: string;
+            channelId: string;
+        };
+        BirthdayUpdateRequest: {
+            day: number;
+            month: number;
+            year?: number;
+            channelId: string;
+        };
+        BlueskyCreateRequest: {
+            blueskyHandle: string;
+            discordChannelId: string;
+            guildId: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        BlueskyUpdateRequest: {
+            blueskyHandle?: string;
+            discordChannelId?: string;
+            guildId?: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        DisabledCommandCreateRequest: {
+            guildId: string;
+            commandName: string;
+        };
+        DisabledModuleCreateRequest: {
+            guildId: string;
+            moduleName: string;
+        };
+        DiscordResolveUsersRequest: {
+            guildId: string;
+            ids: string[];
+        };
+        JobRunRequest: {
+            date?: string;
+            force?: boolean;
+        };
+        PatchNoteCreateRequest: {
+            game: string;
+            title: string;
+            content: string;
+            url: string;
+            publishedAt: number;
+            version: string;
+        };
+        PatchSubscriptionRequest: {
+            game: string;
+            channelId: string;
+            guildId: string;
+        };
+        QuoteCreateRequest: {
+            id?: string;
+            guildId: string;
+            quote: string;
+            authorId: string;
+            submitterId?: string;
+            timestamp: number;
+        };
+        ReminderCreateRequest: {
+            id: string;
+            userId: string;
+            message: string;
+            timespan: string;
+            timestamp: number;
+            completed?: boolean;
+        };
+        ServerCreateRequest: {
+            serverId: string;
+            name?: string;
+            prefix?: string;
+        };
+        ServerUpdateRequest: {
+            name?: string;
+            prefix?: string;
+        };
+        TikTokCreateRequest: {
+            tiktokUsername: string;
+            discordChannelId: string;
+            guildId: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        TikTokUpdateRequest: {
+            tiktokUsername?: string;
+            discordChannelId?: string;
+            guildId?: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        TwitchCreateRequest: {
+            twitchUsername: string;
+            discordChannelId: string;
+            guildId: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        TwitchUpdateRequest: {
+            twitchUsername?: string;
+            discordChannelId?: string;
+            guildId?: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        UserCreateRequest: {
+            discordId: string;
+            timezone?: string;
+            defaultReminderTimeSpan?: string;
+        };
+        UserDefaultReminderTimeSpanUpdateRequest: {
+            timespan: string;
+        };
+        UserTimezoneUpdateRequest: {
+            timezone: string;
+        };
+        UserUpdateRequest: {
+            timezone?: string;
+            defaultReminderTimeSpan?: string;
+        };
+        YoutubeChannelRequest: {
+            youtubeChannelId: string;
+            discordChannelId: string;
+            guildId: string;
+        };
+        YoutubeCreateRequest: {
+            youtubeChannelId: string;
+            discordChannelId: string;
+            guildId: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+        };
+        YoutubeUpdateRequest: {
+            youtubeChannelId?: string;
+            discordChannelId?: string;
+            guildId?: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
         };
         RateLimitError: {
             error: {

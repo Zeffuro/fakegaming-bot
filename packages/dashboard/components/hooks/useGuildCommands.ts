@@ -1,13 +1,13 @@
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api-client";
-import type { disabledCommands_get_Response200 } from "@zeffuro/fakegaming-common/api-responses";
+
+type DisabledCommandArr = Awaited<ReturnType<typeof api.getDisabledCommands>>;
 
 export function useGuildCommands(guildId: string) {
   const [disabledCommands, setDisabledCommands] = useState<string[]>([]);
   const [loadingCommand, setLoadingCommand] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
-  type DisabledCommandArr = disabledCommands_get_Response200;
   type DisabledCommandItem = { id?: string | number; commandName?: string | null };
   const isDisabledCommandItem = (v: unknown): v is DisabledCommandItem =>
     typeof v === "object" && v !== null && ("commandName" in (v as Record<string, unknown>) || "id" in (v as Record<string, unknown>));

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
-import type { patchSubscriptions_post_Request } from "@zeffuro/fakegaming-common/api-responses";
+
+type PatchSubscriptionCreateRequest = Parameters<typeof api.createPatchSubscription>[0];
+type PatchSubscriptionUpsertRequest = Parameters<typeof api.upsertPatchSubscription>[0];
 
 export interface PatchSubscriptionUIConfig {
   id: number;
@@ -49,7 +51,7 @@ export function usePatchSubscriptions(guildId: string | string[]) {
         game: config.game,
         channelId: config.discordChannelId,
         guildId: guildId as string,
-      } as unknown as patchSubscriptions_post_Request;
+      } as unknown as PatchSubscriptionCreateRequest;
       await api.createPatchSubscription(payload);
       await fetchConfigs();
       return true;
@@ -68,7 +70,7 @@ export function usePatchSubscriptions(guildId: string | string[]) {
         game: config.game,
         channelId: config.discordChannelId,
         guildId: guildId as string,
-      } as unknown as patchSubscriptions_post_Request;
+      } as unknown as PatchSubscriptionUpsertRequest;
       await api.upsertPatchSubscription(payload);
       await fetchConfigs();
       return true;

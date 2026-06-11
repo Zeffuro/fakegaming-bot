@@ -24,7 +24,7 @@ export function useBlueskyConfigs(guildId: string | string[]) {
     try {
       setLoading(true);
       const allConfigs = await api.getBlueskyConfigs();
-      const guildConfigs = allConfigs.filter((config) => config.guildId === guildId);
+      const guildConfigs = allConfigs.filter((config: BlueskyPostConfig) => config.guildId === guildId);
       setConfigs(guildConfigs);
     } catch (err: any) {
       setError(err.message || 'Failed to load Bluesky configurations');

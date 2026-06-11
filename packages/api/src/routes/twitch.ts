@@ -1,6 +1,6 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { TwitchStreamConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { twitchCreateRequestSchema, twitchUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -208,10 +208,19 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TwitchStreamConfig'
+ *             $ref: '#/components/schemas/TwitchCreateRequest'
  *     responses:
  *       201:
  *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       200:
+ *         description: Existing config updated
  *         content:
  *           application/json:
  *             schema:
@@ -226,7 +235,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(twitchCreateRequestSchema), async (req, res) => {
     // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
     const created = await getConfigManager().twitchManager.upsert(req.body, ['guildId', 'twitchUsername']);
     res.status(created ? 201 : 200).json({ success: true });
@@ -262,7 +271,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamCo
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TwitchStreamConfig'
+ *             $ref: '#/components/schemas/TwitchUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated
@@ -277,7 +286,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TwitchStreamCo
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(TwitchStreamConfig, 'update'), async (req, res) => {
+router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(twitchUpdateRequestSchema), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });

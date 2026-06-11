@@ -1,6 +1,6 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { BlueskyPostConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { blueskyCreateRequestSchema, blueskyUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -162,7 +162,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BlueskyPostConfig'
+ *             $ref: '#/components/schemas/BlueskyCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -173,9 +173,18 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *               properties:
  *                 success:
  *                   type: boolean
+ *       200:
+ *         description: Existing config updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BlueskyPostConfig, 'create'), async (req, res) => {
-    const body = req.body as Partial<BlueskyPostConfig> & { blueskyHandle: string };
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(blueskyCreateRequestSchema), async (req, res) => {
+    const body = req.body as z.infer<typeof blueskyCreateRequestSchema>;
     const blueskyHandle = normalizeBlueskyHandle(body.blueskyHandle);
     if (!blueskyHandle) {
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
@@ -203,7 +212,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BlueskyPostCon
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/BlueskyPostConfig'
+ *             $ref: '#/components/schemas/BlueskyUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated
@@ -212,11 +221,11 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(BlueskyPostCon
  *             schema:
  *               $ref: '#/components/schemas/BlueskyPostConfig'
  */
-router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(BlueskyPostConfig, 'update'), async (req, res) => {
+router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyUpdateRequestSchema), async (req, res) => {
     const { id } = req.params;
     const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
-    const body = req.body as Partial<BlueskyPostConfig>;
+    const body = req.body as z.infer<typeof blueskyUpdateRequestSchema>;
     const normalized = typeof body.blueskyHandle === 'string' ? normalizeBlueskyHandle(body.blueskyHandle) : undefined;
     if (typeof body.blueskyHandle === 'string' && !normalized) {
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });

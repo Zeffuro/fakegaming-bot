@@ -3,6 +3,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { checkUserGuildAccess } from '../utils/authHelpers.js';
 import * as common from '@zeffuro/fakegaming-common';
+import { discordResolveUsersRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { memberSearchRateBuckets } from '../utils/memberSearchLimiter.js';
 
 const router = createBaseRouter();
@@ -35,11 +36,6 @@ const cache = ((globalThis as any).__testCacheManager ?? common.defaultCacheMana
  *           nullable: true
  */
 
-const resolveUsersBodySchema = z.object({
-    guildId: z.string().min(1),
-    ids: z.array(z.string().min(1)).max(50)
-}).strict();
-
 /**
  * @openapi
  * /discord/users/resolve:
@@ -58,16 +54,7 @@ const resolveUsersBodySchema = z.object({
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required: [guildId, ids]
- *             properties:
- *               guildId:
- *                 type: string
- *               ids:
- *                 type: array
- *                 maxItems: 50
- *                 items:
- *                   type: string
+ *             $ref: '#/components/schemas/DiscordResolveUsersRequest'
  *     responses:
  *       200:
  *         description: Resolved users and list of missed IDs
@@ -91,8 +78,8 @@ const resolveUsersBodySchema = z.object({
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/users/resolve', jwtAuth, common.validateBody(resolveUsersBodySchema), async (req, res) => {
-    const { guildId, ids } = req.body as z.infer<typeof resolveUsersBodySchema>;
+router.post('/users/resolve', jwtAuth, common.validateBody(discordResolveUsersRequestSchema), async (req, res) => {
+    const { guildId, ids } = req.body as z.infer<typeof discordResolveUsersRequestSchema>;
 
     const accessResult = await checkUserGuildAccess(req, res, guildId);
     if (!accessResult.authorized) return;

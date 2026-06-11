@@ -2,6 +2,7 @@ import * as Models from './models/index.js';
 import * as Managers from './managers/index.js';
 import * as Core from './core/index.js';
 import * as Discord from './discord/index.js';
+import * as Api from './api/index.js';
 
 import { getSequelize } from './sequelize.js';
 export { closeSequelize } from './sequelize.js';
@@ -75,6 +76,12 @@ export {
 export {
   Discord
 };
+
+export {
+  Api
+};
+
+export * from './api/index.js';
 
 export {
   getDiscordGuilds,

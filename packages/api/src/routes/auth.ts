@@ -2,6 +2,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { exchangeCodeForToken, fetchDiscordUser, issueJwt } from '@zeffuro/fakegaming-common/discord';
 import { z } from 'zod';
 import { validateBody } from '@zeffuro/fakegaming-common';
+import { authLoginRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { skipCsrf } from '../middleware/csrf.js';
 import { getLogger } from '@zeffuro/fakegaming-common';
 
@@ -12,11 +13,6 @@ function requireEnv(name: string): string {
     }
     return val;
 }
-
-// Schemas
-const loginBodySchema = z.object({
-    code: z.string().min(1)
-});
 
 // Router
 const router = createBaseRouter();
@@ -34,10 +30,7 @@ const log = getLogger({ name: 'api:auth' });
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               code:
- *                 type: string
+ *             $ref: '#/components/schemas/AuthLoginRequest'
  *           example:
  *             code: your_discord_oauth_code
  *     responses:
@@ -68,8 +61,8 @@ const log = getLogger({ name: 'api:auth' });
  *       500:
  *         description: Failed to authenticate with Discord
  */
-router.post('/login', skipCsrf, validateBody(loginBodySchema), async (req, res) => {
-    const { code } = req.body as { code: string };
+router.post('/login', skipCsrf, validateBody(authLoginRequestSchema), async (req, res) => {
+    const { code } = req.body as z.infer<typeof authLoginRequestSchema>;
     try {
         const tokenData = await exchangeCodeForToken(
             code,

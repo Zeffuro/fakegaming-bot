@@ -1,14 +1,32 @@
 import { z } from 'zod';
 import { Model, ModelCtor } from 'sequelize-typescript';
+import type { DataType, ModelAttributeColumnOptions } from 'sequelize';
+
+type RuntimeModelAttribute = Pick<
+    ModelAttributeColumnOptions<Model>,
+    'allowNull' | 'autoIncrement' | 'primaryKey' | 'type'
+>;
+type RuntimeModelAttributes = Record<string, RuntimeModelAttribute>;
+type RuntimeModelWithAttributes<T extends Model> = ModelCtor<T> & {
+    getAttributes?: () => RuntimeModelAttributes;
+    rawAttributes?: RuntimeModelAttributes;
+};
+type UnknownZodSchema = z.ZodType<unknown>;
+type RuntimeModelZodSchema = z.ZodObject<Record<string, UnknownZodSchema>>;
+
+function getRuntimeModelAttributes<T extends Model>(model: ModelCtor<T>): RuntimeModelAttributes | undefined {
+    const runtimeModel = model as RuntimeModelWithAttributes<T>;
+    return runtimeModel.getAttributes?.() ?? runtimeModel.rawAttributes;
+}
 
 /**
  * Maps Sequelize DataTypes to Zod schemas.
  * This is the core utility that maintains single source of truth.
  */
-function mapDataTypeToZod(dataType: any, isOptional: boolean, allowNull: boolean): z.ZodTypeAny {
-    const typeStr = dataType?.toString() || '';
+function mapDataTypeToZod(dataType: DataType | undefined, isOptional: boolean, allowNull: boolean): UnknownZodSchema {
+    const typeStr = dataType ? String(dataType) : '';
 
-    let schema: z.ZodTypeAny;
+    let schema: UnknownZodSchema;
 
     if (typeStr.includes('STRING') || typeStr.includes('TEXT')) {
         schema = z.string();
@@ -21,10 +39,10 @@ function mapDataTypeToZod(dataType: any, isOptional: boolean, allowNull: boolean
     } else if (typeStr.includes('DATE')) {
         schema = z.union([z.string().datetime(), z.date()]);
     } else if (typeStr.includes('JSON') || typeStr.includes('JSONB')) {
-        schema = z.record(z.string(), z.any());
+        schema = z.record(z.string(), z.unknown());
     } else {
         // Fallback for unknown types
-        schema = z.any();
+        schema = z.unknown();
     }
 
     // If the column allows NULLs at the DB layer, accept nulls in validation too
@@ -46,12 +64,11 @@ export function modelToZodSchema<T extends Model>(
         omit?: string[];
         partial?: boolean;
     } = {}
-): z.ZodObject<any> {
+): RuntimeModelZodSchema {
     const { mode = 'full', omit = [], partial = false } = options;
 
-    const shape: Record<string, z.ZodTypeAny> = {};
-    // Prefer getAttributes when available; fallback to rawAttributes
-    const attributes: Record<string, any> | undefined = (model as any)?.getAttributes?.() ?? (model as any)?.rawAttributes;
+    const shape: Record<string, UnknownZodSchema> = {};
+    const attributes = getRuntimeModelAttributes(model);
 
     if (!attributes || Object.keys(attributes).length === 0) {
         // IMPORTANT: Use strict() instead of strip() to reject unknown fields with validation errors
@@ -86,7 +103,7 @@ export function modelToZodSchema<T extends Model>(
 export function createSchemaFromModel<T extends Model>(
     model: ModelCtor<T>,
     options: { omit?: string[] } = {}
-): z.ZodObject<any> {
+): RuntimeModelZodSchema {
     // Do NOT omit primary key generically. Only skip auto-increment PKs above.
     const defaultOmit = ['createdAt', 'updatedAt'];
     return modelToZodSchema(model, {
@@ -101,7 +118,7 @@ export function createSchemaFromModel<T extends Model>(
 export function updateSchemaFromModel<T extends Model>(
     model: ModelCtor<T>,
     options: { omit?: string[] } = {}
-): z.ZodObject<any> {
+): RuntimeModelZodSchema {
     const defaultOmit = ['createdAt', 'updatedAt'];
     return modelToZodSchema(model, {
         mode: 'update',

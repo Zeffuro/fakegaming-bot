@@ -617,6 +617,890 @@
           "updatedAt"
         ]
       },
+      "AnimeSubscribeRequest": {
+        "type": "object",
+        "properties": {
+          "anilistId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reminderMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          }
+        },
+        "required": [
+          "guildId",
+          "channelId"
+        ],
+        "additionalProperties": false
+      },
+      "AuthLoginRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "BirthdayCreateRequest": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 9999
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "day",
+          "month",
+          "userId",
+          "guildId",
+          "channelId"
+        ],
+        "additionalProperties": false
+      },
+      "BirthdayUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 31
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 9999
+          },
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "day",
+          "month",
+          "channelId"
+        ],
+        "additionalProperties": false
+      },
+      "BlueskyCreateRequest": {
+        "type": "object",
+        "properties": {
+          "blueskyHandle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "blueskyHandle",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "BlueskyUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "blueskyHandle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "DisabledCommandCreateRequest": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "commandName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "guildId",
+          "commandName"
+        ],
+        "additionalProperties": false
+      },
+      "DisabledModuleCreateRequest": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "moduleName": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "guildId",
+          "moduleName"
+        ],
+        "additionalProperties": false
+      },
+      "DiscordResolveUsersRequest": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ids": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "guildId",
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "JobRunRequest": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "force": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PatchNoteCreateRequest": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publishedAt": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "game",
+          "title",
+          "content",
+          "url",
+          "publishedAt",
+          "version"
+        ],
+        "additionalProperties": false
+      },
+      "PatchSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "game": {
+            "type": "string",
+            "minLength": 1
+          },
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "game",
+          "channelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "QuoteCreateRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "quote": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authorId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "submitterId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "guildId",
+          "quote",
+          "authorId",
+          "timestamp"
+        ],
+        "additionalProperties": false
+      },
+      "ReminderCreateRequest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timespan": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timestamp": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "message",
+          "timespan",
+          "timestamp"
+        ],
+        "additionalProperties": false
+      },
+      "ServerCreateRequest": {
+        "type": "object",
+        "properties": {
+          "serverId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prefix": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "serverId"
+        ],
+        "additionalProperties": false
+      },
+      "ServerUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prefix": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "TikTokCreateRequest": {
+        "type": "object",
+        "properties": {
+          "tiktokUsername": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tiktokUsername",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "TikTokUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "tiktokUsername": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwitchCreateRequest": {
+        "type": "object",
+        "properties": {
+          "twitchUsername": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "twitchUsername",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "TwitchUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "twitchUsername": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserCreateRequest": {
+        "type": "object",
+        "properties": {
+          "discordId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "defaultReminderTimeSpan": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "discordId"
+        ],
+        "additionalProperties": false
+      },
+      "UserDefaultReminderTimeSpanUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "timespan": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "timespan"
+        ],
+        "additionalProperties": false
+      },
+      "UserTimezoneUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "UserUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "defaultReminderTimeSpan": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "YoutubeChannelRequest": {
+        "type": "object",
+        "properties": {
+          "youtubeChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "youtubeChannelId",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "YoutubeCreateRequest": {
+        "type": "object",
+        "properties": {
+          "youtubeChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "youtubeChannelId",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
+      "YoutubeUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "youtubeChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "RateLimitError": {
         "type": "object",
         "properties": {
@@ -795,7 +1679,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/YoutubeVideoConfig"
+                "$ref": "#/components/schemas/YoutubeCreateRequest"
               }
             }
           }
@@ -806,12 +1690,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    }
-                  }
+                  "$ref": "#/components/schemas/YoutubeVideoConfig"
                 }
               }
             }
@@ -843,18 +1722,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "youtubeChannelId": {
-                    "type": "string"
-                  },
-                  "discordChannelId": {
-                    "type": "string"
-                  },
-                  "guildId": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/YoutubeChannelRequest"
               }
             }
           }
@@ -1044,18 +1912,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "youtubeChannelId": {
-                    "type": "string"
-                  },
-                  "discordChannelId": {
-                    "type": "string"
-                  },
-                  "guildId": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/YoutubeChannelRequest"
               }
             }
           }
@@ -1146,7 +2003,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/YoutubeVideoConfig"
+                "$ref": "#/components/schemas/YoutubeUpdateRequest"
               }
             }
           }
@@ -1262,7 +2119,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserConfig"
+                "$ref": "#/components/schemas/UserCreateRequest"
               }
             }
           }
@@ -1330,7 +2187,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UserConfig"
+                "$ref": "#/components/schemas/UserUpdateRequest"
               }
             }
           }
@@ -1406,12 +2263,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "timezone": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/UserTimezoneUpdateRequest"
               }
             }
           }
@@ -1458,12 +2310,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "timespan": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/UserDefaultReminderTimeSpanUpdateRequest"
               }
             }
           }
@@ -1522,12 +2369,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwitchStreamConfig"
+                "$ref": "#/components/schemas/TwitchCreateRequest"
               }
             }
           }
         },
         "responses": {
+          "200": {
+            "description": "Existing config updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "201": {
             "description": "Created",
             "content": {
@@ -1719,7 +2581,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TwitchStreamConfig"
+                "$ref": "#/components/schemas/TwitchUpdateRequest"
               }
             }
           }
@@ -1837,12 +2699,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TikTokStreamConfig"
+                "$ref": "#/components/schemas/TikTokCreateRequest"
               }
             }
           }
         },
         "responses": {
+          "200": {
+            "description": "Existing config updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "201": {
             "description": "Created",
             "content": {
@@ -2057,7 +2934,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/TikTokStreamConfig"
+                "$ref": "#/components/schemas/TikTokUpdateRequest"
               }
             }
           }
@@ -2159,7 +3036,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ServerConfig"
+                "$ref": "#/components/schemas/ServerCreateRequest"
               }
             }
           }
@@ -2227,7 +3104,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ServerConfig"
+                "$ref": "#/components/schemas/ServerUpdateRequest"
               }
             }
           }
@@ -2314,7 +3191,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReminderConfig"
+                "$ref": "#/components/schemas/ReminderCreateRequest"
               }
             }
           }
@@ -2437,7 +3314,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/QuoteConfig"
+                "$ref": "#/components/schemas/QuoteCreateRequest"
               }
             }
           }
@@ -2700,7 +3577,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchSubscriptionConfig"
+                "$ref": "#/components/schemas/PatchSubscriptionRequest"
               }
             }
           }
@@ -2732,7 +3609,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchSubscriptionConfig"
+                "$ref": "#/components/schemas/PatchSubscriptionRequest"
               }
             }
           }
@@ -2845,7 +3722,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PatchNoteConfig"
+                "$ref": "#/components/schemas/PatchNoteCreateRequest"
               }
             }
           }
@@ -3052,18 +3929,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "date": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Optional ISO date to process; supported for specific jobs (e.g., birthdays)."
-                  },
-                  "force": {
-                    "type": "boolean",
-                    "description": "When true (and supported by the job), bypasses normal idempotency to force re-processing."
-                  }
-                }
+                "$ref": "#/components/schemas/JobRunRequest"
               }
             }
           }
@@ -3128,23 +3994,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "guildId",
-                  "ids"
-                ],
-                "properties": {
-                  "guildId": {
-                    "type": "string"
-                  },
-                  "ids": {
-                    "type": "array",
-                    "maxItems": 50,
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                }
+                "$ref": "#/components/schemas/DiscordResolveUsersRequest"
               }
             }
           }
@@ -3315,7 +4165,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DisabledModuleConfig"
+                "$ref": "#/components/schemas/DisabledModuleCreateRequest"
               }
             }
           }
@@ -3518,7 +4368,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DisabledCommandConfig"
+                "$ref": "#/components/schemas/DisabledCommandCreateRequest"
               }
             }
           }
@@ -3712,12 +4562,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BlueskyPostConfig"
+                "$ref": "#/components/schemas/BlueskyCreateRequest"
               }
             }
           }
         },
         "responses": {
+          "200": {
+            "description": "Existing config updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "201": {
             "description": "Created",
             "content": {
@@ -3896,7 +4761,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BlueskyPostConfig"
+                "$ref": "#/components/schemas/BlueskyUpdateRequest"
               }
             }
           }
@@ -3990,7 +4855,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BirthdayConfig"
+                "$ref": "#/components/schemas/BirthdayCreateRequest"
               }
             }
           }
@@ -4057,6 +4922,16 @@
             "bearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BirthdayUpdateRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Updated birthday config"
@@ -4128,12 +5003,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "code": {
-                    "type": "string"
-                  }
-                }
+                "$ref": "#/components/schemas/AuthLoginRequest"
               },
               "example": {
                 "code": "your_discord_oauth_code"

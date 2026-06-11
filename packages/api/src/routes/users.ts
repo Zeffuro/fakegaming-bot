@@ -2,23 +2,16 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import {
+    userCreateRequestSchema,
+    userDefaultReminderTimeSpanUpdateRequestSchema,
+    userTimezoneUpdateRequestSchema,
+    userUpdateRequestSchema,
+} from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 
 // Zod schemas
 const discordIdParamSchema = z.object({ discordId: z.string().min(1) });
-const userCreateSchema = z.object({
-    discordId: z.string().min(1),
-    timezone: z.string().min(1).optional(),
-    defaultReminderTimeSpan: z.string().min(1).optional()
-});
-const userUpdateSchema = z
-    .object({
-        timezone: z.string().min(1).optional(),
-        defaultReminderTimeSpan: z.string().min(1).optional()
-    })
-    .refine((v) => Object.keys(v).length > 0, { message: 'At least one field must be provided' });
-const timezoneBodySchema = z.object({ timezone: z.string().min(1) });
-const defaultTimespanBodySchema = z.object({ timespan: z.string().min(1) });
 
 // Router
 const router = createBaseRouter();
@@ -85,7 +78,7 @@ router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res)
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UserConfig'
+ *             $ref: '#/components/schemas/UserCreateRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -94,7 +87,7 @@ router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res)
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(userCreateRequestSchema), async (req, res) => {
     await getConfigManager().userManager.addPlain(req.body);
     res.status(201).json({ success: true });
 });
@@ -118,7 +111,7 @@ router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/UserConfig'
+ *             $ref: '#/components/schemas/UserUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated
@@ -129,7 +122,7 @@ router.post('/', jwtAuth, validateBody(userCreateSchema), async (req, res) => {
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateSchema), async (req, res) => {
+router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateRequestSchema), async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
     if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
@@ -157,10 +150,7 @@ router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validat
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               timezone:
- *                 type: string
+ *             $ref: '#/components/schemas/UserTimezoneUpdateRequest'
  *     responses:
  *       200:
  *         description: Success
@@ -175,13 +165,13 @@ router.put(
     '/:discordId/timezone',
     jwtAuth,
     validateParams(discordIdParamSchema),
-    validateBody(timezoneBodySchema),
+    validateBody(userTimezoneUpdateRequestSchema),
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
         if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
 
-        const { timezone } = req.body as z.infer<typeof timezoneBodySchema>;
+        const { timezone } = req.body as z.infer<typeof userTimezoneUpdateRequestSchema>;
         await getConfigManager().userManager.updatePlain({ timezone }, { discordId });
         res.json({ success: true });
     }
@@ -206,10 +196,7 @@ router.put(
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               timespan:
- *                 type: string
+ *             $ref: '#/components/schemas/UserDefaultReminderTimeSpanUpdateRequest'
  *     responses:
  *       200:
  *         description: Success
@@ -224,13 +211,13 @@ router.put(
     '/:discordId/defaultReminderTimeSpan',
     jwtAuth,
     validateParams(discordIdParamSchema),
-    validateBody(defaultTimespanBodySchema),
+    validateBody(userDefaultReminderTimeSpanUpdateRequestSchema),
     async (req, res) => {
         const { discordId } = req.params;
         const user = await getConfigManager().userManager.getOnePlain({ discordId });
         if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
 
-        const { timespan } = req.body as z.infer<typeof defaultTimespanBodySchema>;
+        const { timespan } = req.body as z.infer<typeof userDefaultReminderTimeSpanUpdateRequestSchema>;
         await getConfigManager().userManager.updatePlain(
             { defaultReminderTimeSpan: timespan },
             { discordId }

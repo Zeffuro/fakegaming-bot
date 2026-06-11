@@ -392,7 +392,6 @@ See [TYPESCRIPT.md](../../TYPESCRIPT.md) for details.
 
 - `src/manifest/bot-manifest.ts` - Auto-generated from bot commands
 - `types/api.d.ts` - Auto-generated from OpenAPI spec
-- `types/apiResponses.d.ts` - Auto-generated API response types
 
 Regenerate with:
 
@@ -401,6 +400,8 @@ Regenerate with:
 pnpm run gen:manifest
 pnpm run gen:api-types
 ```
+
+`types/api-helpers.d.ts` is hand-written and provides stable helper types over the generated OpenAPI declarations.
 
 ## Database Models Reference
 

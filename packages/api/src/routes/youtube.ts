@@ -1,6 +1,6 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBodyForModel, validateParams, validateQuery, validateBody } from '@zeffuro/fakegaming-common';
-import { YoutubeVideoConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { youtubeChannelRequestSchema, youtubeCreateRequestSchema, youtubeUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -10,11 +10,6 @@ import { fetchYouTubeChannelPageMetadata } from '../utils/youtubePublic.js';
 
 // Schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
-const channelSchema = z.object({
-    youtubeChannelId: z.string().min(1),
-    discordChannelId: z.string().min(1),
-    guildId: z.string().min(1)
-});
 const metadataQuerySchema = z.object({
     channelId: z.string().trim().min(1),
 });
@@ -241,8 +236,8 @@ router.get('/metadata', validateQuery(metadataQuerySchema), async (req, res) => 
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/channel', jwtAuth, validateQuery(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.query as z.infer<typeof channelSchema>;
+router.get('/channel', jwtAuth, validateQuery(youtubeChannelRequestSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.query as z.infer<typeof youtubeChannelRequestSchema>;
     const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
     res.json(config);
@@ -302,17 +297,14 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/YoutubeVideoConfig'
+ *             $ref: '#/components/schemas/YoutubeCreateRequest'
  *     responses:
  *       201:
  *         description: Created
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
+ *               $ref: '#/components/schemas/YoutubeVideoConfig'
  *       400:
  *         $ref: '#/components/responses/BadRequest'
  *       401:
@@ -320,7 +312,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoConfig, 'create'), async (req, res, next) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(youtubeCreateRequestSchema), async (req, res, next) => {
     try {
         const created = await getConfigManager().youtubeManager.addPlain(req.body);
         res.status(201).json(created);
@@ -346,14 +338,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               youtubeChannelId:
- *                 type: string
- *               discordChannelId:
- *                 type: string
- *               guildId:
- *                 type: string
+ *             $ref: '#/components/schemas/YoutubeChannelRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -371,8 +356,8 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(YoutubeVideoCo
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
+router.post('/channel', jwtAuth, validateBody(youtubeChannelRequestSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof youtubeChannelRequestSchema>;
     const { created } = await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(201).json({ success: true, created });
 });
@@ -396,14 +381,7 @@ router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) =
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               youtubeChannelId:
- *                 type: string
- *               discordChannelId:
- *                 type: string
- *               guildId:
- *                 type: string
+ *             $ref: '#/components/schemas/YoutubeChannelRequest'
  *     responses:
  *       200:
  *         description: Success
@@ -421,8 +399,8 @@ router.post('/channel', jwtAuth, validateBody(channelSchema), async (req, res) =
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (req, res) => {
-    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof channelSchema>;
+router.put('/', jwtAuth, requireGuildAdmin, validateBody(youtubeChannelRequestSchema), async (req, res) => {
+    const { youtubeChannelId, discordChannelId, guildId } = req.body as z.infer<typeof youtubeChannelRequestSchema>;
     await getConfigManager().youtubeManager.setVideoChannel({ youtubeChannelId, discordChannelId, guildId });
     res.status(200).json({ success: true });
 });
@@ -457,7 +435,7 @@ router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/YoutubeVideoConfig'
+ *             $ref: '#/components/schemas/YoutubeUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated
@@ -472,7 +450,7 @@ router.put('/', jwtAuth, requireGuildAdmin, validateBody(channelSchema), async (
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(YoutubeVideoConfig, 'update'), async (req, res) => {
+router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(youtubeUpdateRequestSchema), async (req, res) => {
     const { id } = req.params;
     const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
     if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });

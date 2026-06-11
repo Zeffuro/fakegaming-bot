@@ -2,19 +2,21 @@ import { z } from 'zod';
 import { Model, ModelCtor } from 'sequelize-typescript';
 import { createSchemaFromModel, updateSchemaFromModel, modelToZodSchema } from './modelToZod.js';
 
+type UnknownZodObject = z.ZodObject<Record<string, z.ZodType<unknown>>>;
+
 /**
  * Central registry for all model schemas.
  * Prevents duplication and ensures consistency.
  */
 class SchemaRegistry {
-    private createSchemas = new Map<string, z.ZodObject<any>>();
-    private updateSchemas = new Map<string, z.ZodObject<any>>();
-    private fullSchemas = new Map<string, z.ZodObject<any>>();
+    private createSchemas = new Map<string, UnknownZodObject>();
+    private updateSchemas = new Map<string, UnknownZodObject>();
+    private fullSchemas = new Map<string, UnknownZodObject>();
 
     /**
      * Get or create a schema for creating new records
      */
-    getCreateSchema<T extends Model>(model: ModelCtor<T>): z.ZodObject<any> {
+    getCreateSchema<T extends Model>(model: ModelCtor<T>): UnknownZodObject {
         const key = model.name;
         if (!this.createSchemas.has(key)) {
             this.createSchemas.set(key, createSchemaFromModel(model));
@@ -25,7 +27,7 @@ class SchemaRegistry {
     /**
      * Get or create a schema for updating records
      */
-    getUpdateSchema<T extends Model>(model: ModelCtor<T>): z.ZodObject<any> {
+    getUpdateSchema<T extends Model>(model: ModelCtor<T>): UnknownZodObject {
         const key = model.name;
         if (!this.updateSchemas.has(key)) {
             this.updateSchemas.set(key, updateSchemaFromModel(model));
@@ -36,7 +38,7 @@ class SchemaRegistry {
     /**
      * Get or create a full schema (all fields)
      */
-    getFullSchema<T extends Model>(model: ModelCtor<T>): z.ZodObject<any> {
+    getFullSchema<T extends Model>(model: ModelCtor<T>): UnknownZodObject {
         const key = model.name;
         if (!this.fullSchemas.has(key)) {
             this.fullSchemas.set(key, modelToZodSchema(model));
@@ -50,7 +52,7 @@ class SchemaRegistry {
     registerCustom<T extends Model>(
         model: ModelCtor<T>,
         type: 'create' | 'update' | 'full',
-        schema: z.ZodObject<any>
+        schema: UnknownZodObject
     ): void {
         const key = model.name;
         const map = type === 'create' ? this.createSchemas :

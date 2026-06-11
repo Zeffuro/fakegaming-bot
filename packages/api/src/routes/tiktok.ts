@@ -1,6 +1,6 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBodyForModel, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { TikTokStreamConfig } from '@zeffuro/fakegaming-common/models';
+import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { tiktokCreateRequestSchema, tiktokUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -195,10 +195,19 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TikTokStreamConfig'
+ *             $ref: '#/components/schemas/TikTokCreateRequest'
  *     responses:
  *       201:
  *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *       200:
+ *         description: Existing config updated
  *         content:
  *           application/json:
  *             schema:
@@ -213,7 +222,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TikTokStreamConfig, 'create'), async (req, res) => {
+router.post('/', jwtAuth, requireGuildAdmin, validateBody(tiktokCreateRequestSchema), async (req, res) => {
     const created = await getConfigManager().tiktokManager.upsert(req.body, ['guildId', 'tiktokUsername']);
     res.status(created ? 201 : 200).json({ success: true });
 });
@@ -248,7 +257,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TikTokStreamCo
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/TikTokStreamConfig'
+ *             $ref: '#/components/schemas/TikTokUpdateRequest'
  *     responses:
  *       200:
  *         description: Updated
@@ -263,7 +272,7 @@ router.post('/', jwtAuth, requireGuildAdmin, validateBodyForModel(TikTokStreamCo
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBodyForModel(TikTokStreamConfig, 'update'), async (req, res) => {
+router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUpdateRequestSchema), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });

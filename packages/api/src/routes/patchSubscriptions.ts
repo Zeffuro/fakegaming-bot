@@ -1,16 +1,12 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import { patchSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
-const patchSubscriptionBodySchema = z.object({
-    game: z.string().min(1),
-    channelId: z.string().min(1),
-    guildId: z.string().min(1),
-});
 
 // Router
 const router = createBaseRouter();
@@ -68,7 +64,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/PatchSubscriptionConfig'
+ *             $ref: '#/components/schemas/PatchSubscriptionRequest'
  *     responses:
  *       201:
  *         description: Created
@@ -77,7 +73,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.addPlain(req.body);
     res.status(201).json({ success: true });
 });
@@ -95,7 +91,7 @@ router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req,
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/PatchSubscriptionConfig'
+ *             $ref: '#/components/schemas/PatchSubscriptionRequest'
  *     responses:
  *       200:
  *         description: Success
@@ -104,7 +100,7 @@ router.post('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req,
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.put('/', jwtAuth, validateBody(patchSubscriptionBodySchema), async (req, res) => {
+router.put('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
     res.json({ success: true });
 });

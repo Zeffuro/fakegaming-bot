@@ -14,9 +14,61 @@ import {
     TikTokStreamConfig,
     BlueskyPostConfig
 } from "@zeffuro/fakegaming-common/models";
-import { modelToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
+import { apiRequestSchemas } from "@zeffuro/fakegaming-common/api";
+import { modelToOpenApiSchema, zodSchemaToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
+import type { Model, ModelCtor } from "sequelize-typescript";
 
-export function injectOpenApiSchemas(swaggerSpec: any) {
+type SchemaSource = readonly [name: string, model: ModelCtor<Model>];
+type OpenApiComponents = {
+    schemas?: Record<string, unknown>;
+    securitySchemes?: Record<string, unknown>;
+    headers?: Record<string, unknown>;
+    responses?: Record<string, unknown>;
+};
+
+type OpenApiDocument = {
+    components?: OpenApiComponents;
+    [key: string]: unknown;
+};
+
+const modelSchemaSources: SchemaSource[] = [
+    ['BirthdayConfig', BirthdayConfig as ModelCtor<Model>],
+    ['CacheConfig', CacheConfig as ModelCtor<Model>],
+    ['DisabledCommandConfig', DisabledCommandConfig as ModelCtor<Model>],
+    ['DisabledModuleConfig', DisabledModuleConfig as ModelCtor<Model>],
+    ['PatchNoteConfig', PatchNoteConfig as ModelCtor<Model>],
+    ['PatchSubscriptionConfig', PatchSubscriptionConfig as ModelCtor<Model>],
+    ['QuoteConfig', QuoteConfig as ModelCtor<Model>],
+    ['ReminderConfig', ReminderConfig as ModelCtor<Model>],
+    ['ServerConfig', ServerConfig as ModelCtor<Model>],
+    ['TwitchStreamConfig', TwitchStreamConfig as ModelCtor<Model>],
+    ['TikTokStreamConfig', TikTokStreamConfig as ModelCtor<Model>],
+    ['BlueskyPostConfig', BlueskyPostConfig as ModelCtor<Model>],
+    ['UserConfig', UserConfig as ModelCtor<Model>],
+    ['YoutubeVideoConfig', YoutubeVideoConfig as ModelCtor<Model>],
+];
+
+function buildModelSchemas(): Record<string, unknown> {
+    const schemas: Record<string, unknown> = {};
+
+    for (const [name, model] of modelSchemaSources) {
+        schemas[name] = modelToOpenApiSchema(model, { mode: 'full' });
+    }
+
+    return schemas;
+}
+
+function buildApiRequestSchemas(): Record<string, unknown> {
+    const schemas: Record<string, unknown> = {};
+
+    for (const [name, schema] of Object.entries(apiRequestSchemas)) {
+        schemas[name] = zodSchemaToOpenApiSchema(schema);
+    }
+
+    return schemas;
+}
+
+export function injectOpenApiSchemas(swaggerSpec: OpenApiDocument) {
     swaggerSpec.components = swaggerSpec.components || {};
     // Ensure bearer security scheme exists for protected routes
     swaggerSpec.components.securitySchemes = Object.assign({}, swaggerSpec.components.securitySchemes, {
@@ -42,21 +94,9 @@ export function injectOpenApiSchemas(swaggerSpec: any) {
             },
             required: ['error']
         },
-        // Merge in model schemas
-        BirthdayConfig: modelToOpenApiSchema(BirthdayConfig, { mode: 'full' }),
-        CacheConfig: modelToOpenApiSchema(CacheConfig, { mode: 'full' }),
-        DisabledCommandConfig: modelToOpenApiSchema(DisabledCommandConfig, { mode: 'full' }),
-        DisabledModuleConfig: modelToOpenApiSchema(DisabledModuleConfig, { mode: 'full' }),
-        PatchNoteConfig: modelToOpenApiSchema(PatchNoteConfig, { mode: 'full' }),
-        PatchSubscriptionConfig: modelToOpenApiSchema(PatchSubscriptionConfig, { mode: 'full' }),
-        QuoteConfig: modelToOpenApiSchema(QuoteConfig, { mode: 'full' }),
-        ReminderConfig: modelToOpenApiSchema(ReminderConfig, { mode: 'full' }),
-        ServerConfig: modelToOpenApiSchema(ServerConfig, { mode: 'full' }),
-        TwitchStreamConfig: modelToOpenApiSchema(TwitchStreamConfig, { mode: 'full' }),
-        TikTokStreamConfig: modelToOpenApiSchema(TikTokStreamConfig, { mode: 'full' }),
-        BlueskyPostConfig: modelToOpenApiSchema(BlueskyPostConfig, { mode: 'full' }),
-        UserConfig: modelToOpenApiSchema(UserConfig, { mode: 'full' }),
-        YoutubeVideoConfig: modelToOpenApiSchema(YoutubeVideoConfig, { mode: 'full' }),
+        // Full model schemas describe persisted responses; request DTOs are explicit Zod contracts.
+        ...buildModelSchemas(),
+        ...buildApiRequestSchemas(),
         RateLimitError: {
             type: 'object',
             properties: {

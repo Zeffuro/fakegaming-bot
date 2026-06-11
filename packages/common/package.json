@@ -68,13 +68,17 @@
       "import": "./dist/anime/index.js",
       "types": "./dist/anime/index.d.ts"
     },
+    "./api": {
+      "import": "./dist/api/index.js",
+      "types": "./dist/api/index.d.ts"
+    },
     "./api-types": {
       "import": "./types/empty.js",
       "types": "./types/api.d.ts"
     },
-    "./api-responses": {
+    "./api-helpers": {
       "import": "./types/empty.js",
-      "types": "./types/apiResponses.d.ts"
+      "types": "./types/api-helpers.d.ts"
     }
   },
   "typesVersions": {
@@ -139,11 +143,17 @@
       "anime": [
         "dist/anime/index.d.ts"
       ],
+      "api": [
+        "dist/api/index.d.ts"
+      ],
+      "api/*": [
+        "dist/api/*"
+      ],
       "api-types": [
         "types/api.d.ts"
       ],
-      "api-responses": [
-        "types/apiResponses.d.ts"
+      "api-helpers": [
+        "types/api-helpers.d.ts"
       ]
     }
   },
