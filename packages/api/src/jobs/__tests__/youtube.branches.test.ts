@@ -165,4 +165,35 @@ describe('YouTube job branches', () => {
         expect(done).toHaveBeenCalled();
         expect((discord as any).sendChannelMessagePayload).toHaveBeenCalled();
     });
+
+    it('fetches one feed and one enrichment batch for duplicate channel configs', async () => {
+        vi.resetModules();
+        process.env = { ...ORIGINAL_ENV, YOUTUBE_API_KEY: 'key', YOUTUBE_ENRICH_EMBEDS: '1' };
+        const parseURL = vi.fn().mockResolvedValue({ items: [{
+            'yt:videoId': 'DEDUPED',
+            title: 'Deduped Video',
+            link: 'https://youtu.be/DEDUPED',
+            author: 'Channel',
+            published: '2025-01-01T00:00:00Z'
+        }] });
+        vi.doMock('rss-parser', () => ({ default: class Parser { parseURL = parseURL; } }));
+        (globalThis as any).fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ id: 'DEDUPED', contentDetails: { duration: 'PT1M' }, statistics: { viewCount: '9' } }] }) });
+        const cfgs = [
+            { id: 'yc11a', guildId: 'g1', discordChannelId: 'chan1', youtubeChannelId: 'UC11', lastVideoId: null },
+            { id: 'yc11b', guildId: 'g2', discordChannelId: 'chan2', youtubeChannelId: 'UC11', lastVideoId: null },
+        ] as any[];
+        manager.youtubeManager.getAllChannels.mockResolvedValueOnce(cfgs);
+        has.mockResolvedValue(false);
+
+        const { registerYouTubeJobs: freshRegister } = await import('../youtube.js');
+        const { discord } = await prepareDiscord();
+        const { done } = await runJobOnce('youtube:poll', freshRegister);
+
+        expect(done).toHaveBeenCalled();
+        expect(parseURL).toHaveBeenCalledTimes(1);
+        expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect(cfgs[0].lastVideoId).toBe('DEDUPED');
+        expect(cfgs[1].lastVideoId).toBe('DEDUPED');
+    });
 });

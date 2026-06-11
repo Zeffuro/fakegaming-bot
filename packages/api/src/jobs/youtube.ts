@@ -37,6 +37,14 @@ interface YoutubeFeedItem {
 
 interface YoutubeVideoDetails { duration?: string; viewCount?: string }
 
+interface YoutubeSendPlan {
+    cfg: YoutubeChannelConfigPlain;
+    channelId: string;
+    newVideos: YoutubeFeedItem[];
+    sendVideos: YoutubeFeedItem[];
+    now: Date;
+}
+
 const parser = new Parser({
     customFields: {
         item: [
@@ -199,47 +207,74 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
     if (!channels.length) return { processed: 0, errors: 0 };
 
     let processed = 0; let errors = 0;
+    const channelsById = new Map<string, YoutubeChannelConfigPlain[]>();
 
     for (const cfg of channels) {
-        try {
-            if (!cfg.youtubeChannelId || !cfg.discordChannelId) continue;
-            const feedItems = await fetchYoutubeChannelFeed(cfg.youtubeChannelId, log);
-            if (!feedItems || feedItems.length === 0) continue;
+        if (!cfg.youtubeChannelId || !cfg.discordChannelId) continue;
+        const channelId = cfg.youtubeChannelId.trim();
+        const group = channelsById.get(channelId) ?? [];
+        group.push(cfg);
+        channelsById.set(channelId, group);
+    }
 
-            let newVideos: YoutubeFeedItem[];
-            if (cfg.lastVideoId) {
-                const idxLast = feedItems.findIndex((it) => it['yt:videoId'] === cfg.lastVideoId);
-                newVideos = idxLast === 0 ? [] : idxLast > 0 ? feedItems.slice(0, idxLast).reverse() : [feedItems[0]];
-            } else {
-                newVideos = [feedItems[0]];
+    const plans: YoutubeSendPlan[] = [];
+
+    for (const [channelId, configs] of channelsById) {
+        const feedItems = await fetchYoutubeChannelFeed(channelId, log);
+        if (!feedItems || feedItems.length === 0) continue;
+
+        for (const cfg of configs) {
+            try {
+                let newVideos: YoutubeFeedItem[];
+                if (cfg.lastVideoId) {
+                    const idxLast = feedItems.findIndex((it) => it['yt:videoId'] === cfg.lastVideoId);
+                    newVideos = idxLast === 0 ? [] : idxLast > 0 ? feedItems.slice(0, idxLast).reverse() : [feedItems[0]];
+                } else {
+                    newVideos = [feedItems[0]];
+                }
+                if (newVideos.length === 0) continue;
+
+                const now = new Date();
+                const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
+                const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(cfg.lastNotifiedAt) : null;
+                const suppressedByCooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
+                    ? now.getTime() - lastNotifiedDate.getTime() < cfg.cooldownMinutes * 60_000
+                    : false;
+                const sendVideos: YoutubeFeedItem[] = [];
+
+                for (const video of newVideos) {
+                    const videoId = video['yt:videoId'];
+                    if (!videoId) continue;
+                    // Use per-guild deduplication so the same YouTube video can be announced in multiple guilds
+                    const already = await (notifications as any).hasForGuild?.('youtube', videoId, cfg.guildId)
+                        ?? await notifications.has('youtube', videoId);
+                    if (already || suppressedByQuiet || suppressedByCooldown) {
+                        log.debug({ videoId, already, suppressedByQuiet, suppressedByCooldown }, 'Suppressing YouTube video announcement');
+                        continue;
+                    }
+                    sendVideos.push(video);
+                }
+
+                plans.push({ cfg, channelId, newVideos, sendVideos, now });
+            } catch (err) {
+                errors += 1;
+                log.error({ err, youtubeChannelId: cfg.youtubeChannelId }, 'Error processing YouTube channel');
             }
-            if (newVideos.length === 0) continue;
+        }
+    }
 
-            const now = new Date();
-            const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
-            const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(cfg.lastNotifiedAt) : null;
-            const suppressedByCooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
-                ? now.getTime() - lastNotifiedDate.getTime() < cfg.cooldownMinutes * 60_000
-                : false;
+    const detailsById = await fetchYoutubeVideoDetailsBatch(plans.flatMap(plan => plan.sendVideos.map(v => v['yt:videoId']).filter((v): v is string => !!v)), log);
 
-            const detailsById = !suppressedByQuiet && !suppressedByCooldown
-                ? await fetchYoutubeVideoDetailsBatch(newVideos.map(v => v['yt:videoId']).filter((v): v is string => !!v))
-                : new Map<string, YoutubeVideoDetails>();
-
+    for (const plan of plans) {
+        const { cfg, channelId, newVideos, sendVideos, now } = plan;
+        try {
             let sentAny = false;
 
-            for (const video of newVideos) {
+            for (const video of sendVideos) {
                 const videoId = video['yt:videoId'];
                 if (!videoId) continue;
-                // Use per-guild deduplication so the same YouTube video can be announced in multiple guilds
-                const already = await (notifications as any).hasForGuild?.('youtube', videoId, cfg.guildId)
-                    ?? await notifications.has('youtube', videoId);
-                if (already || suppressedByQuiet || suppressedByCooldown) {
-                    log.debug({ videoId, already, suppressedByQuiet, suppressedByCooldown }, 'Suppressing YouTube video announcement');
-                    continue;
-                }
                 const details = detailsById.get(videoId) ?? null;
-                const built = buildYoutubeEmbedPayload(video, cfg.youtubeChannelId, details, cfg.customMessage ?? null);
+                const built = buildYoutubeEmbedPayload(video, channelId, details, cfg.customMessage ?? null);
                 const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
                 if (sent && typeof (sent as any).id === 'string') {
                     sentAny = true;
@@ -248,7 +283,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 }
             }
 
-            cfg.lastVideoId = newVideos[0]['yt:videoId'] ?? cfg.lastVideoId ?? null;
+            cfg.lastVideoId = newVideos.at(-1)?.['yt:videoId'] ?? cfg.lastVideoId ?? null;
             if (sentAny) cfg.lastNotifiedAt = now;
             await (cm.youtubeManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
         } catch (err) {

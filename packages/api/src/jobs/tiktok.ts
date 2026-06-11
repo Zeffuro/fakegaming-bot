@@ -32,6 +32,13 @@ interface TikTokLiveInfo {
     debugMeta?: { method: 'connect' | 'unknown'; raw?: unknown };
 }
 
+const TIKTOK_OFFLINE_BACKOFF_MS = 2 * 60 * 1000;
+const tiktokOfflineBackoff = new Map<string, { until: number; info: TikTokLiveInfo }>();
+
+function normalizeTikTokUsername(username: string): string {
+    return username.trim().replace(/^@/, '').toLowerCase();
+}
+
 export async function resolveTikTokLive(username: string, log = getLogger({ name: 'api:jobs:tiktok' }), opts?: { mode?: 'connect' | 'light' }): Promise<TikTokLiveInfo> {
     const mode = opts?.mode ?? 'connect';
 
@@ -94,6 +101,22 @@ export async function resolveTikTokLive(username: string, log = getLogger({ name
     }
 }
 
+async function resolveTikTokLiveForPoll(username: string, log: ReturnType<typeof getLogger>, nowMs = Date.now()): Promise<TikTokLiveInfo> {
+    const key = normalizeTikTokUsername(username);
+    const backoff = tiktokOfflineBackoff.get(key);
+    if (backoff && backoff.until > nowMs) {
+        return backoff.info;
+    }
+
+    const info = await resolveTikTokLive(username, log);
+    if (info.live) {
+        tiktokOfflineBackoff.delete(key);
+    } else {
+        tiktokOfflineBackoff.set(key, { until: nowMs + TIKTOK_OFFLINE_BACKOFF_MS, info });
+    }
+    return info;
+}
+
 function buildTikTokEmbedAndContent(opts: { username: string; info: TikTokLiveInfo; customMessage?: string | null }): { content: string; payload: Record<string, unknown> } {
     const { username, info } = opts;
     const url = `https://www.tiktok.com/@${username}/live`;
@@ -141,10 +164,31 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
     if (!streams.length) return { processed: 0, errors: 0 };
 
     let processed = 0; let errors = 0;
+    const configsByUsername = new Map<string, TikTokStreamConfigPlain[]>();
+
+    for (const cfg of streams) {
+        if (!cfg.tiktokUsername || !cfg.discordChannelId) continue;
+        const key = normalizeTikTokUsername(cfg.tiktokUsername);
+        const group = configsByUsername.get(key) ?? [];
+        group.push(cfg);
+        configsByUsername.set(key, group);
+    }
+
+    const liveInfoByUsername = new Map<string, TikTokLiveInfo>();
+    for (const [username, configs] of configsByUsername) {
+        try {
+            liveInfoByUsername.set(username, await resolveTikTokLiveForPoll(configs[0].tiktokUsername, log));
+        } catch (err) {
+            errors += configs.length;
+            log.error({ err, username }, 'Error resolving TikTok live status');
+        }
+    }
 
     for (const cfg of streams) {
         try {
-            const info = await resolveTikTokLive(cfg.tiktokUsername, log);
+            const username = normalizeTikTokUsername(cfg.tiktokUsername);
+            const info = liveInfoByUsername.get(username);
+            if (!info) continue;
             const isLive = info.live;
 
             if (isLive && !cfg.isLive) {

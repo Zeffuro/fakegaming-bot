@@ -25,7 +25,32 @@ interface HelixUser { id: string; login: string; display_name?: string; profile_
 interface HelixStream { id: string; user_id: string; title: string; viewer_count?: number; started_at?: string; thumbnail_url?: string; game_id?: string }
 interface HelixGame { id: string; name: string }
 
+const TWITCH_HELIX_BATCH_SIZE = 100;
+const TWITCH_USER_CACHE_TTL_MS = 60 * 60 * 1000;
+const TWITCH_STARTUP_DEFAULT_DELAY_SECONDS = 5;
+
 let _twitchAppToken: { token: string; expiresAt: number } | null = null;
+const twitchUserCache = new Map<string, { user: HelixUser; expiresAt: number }>();
+
+function chunkArray<T>(items: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+        chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+}
+
+function normalizeTwitchLogin(login: string): string {
+    return login.trim().toLowerCase();
+}
+
+function getTwitchStartupJitterSeconds(): number {
+    const jitterMs = Number.parseInt(process.env.TWITCH_STARTUP_JITTER_MS ?? '0', 10);
+    if (!Number.isFinite(jitterMs) || jitterMs <= 0) {
+        return 0;
+    }
+    return Math.floor(Math.random() * jitterMs) / 1000;
+}
 
 async function getTwitchAppToken(nowMs = Date.now()): Promise<string> {
     const clientId = process.env.TWITCH_CLIENT_ID ?? '';
@@ -49,35 +74,65 @@ async function getTwitchAppToken(nowMs = Date.now()): Promise<string> {
 }
 
 async function helixGetUsersByLogin(token: string, clientId: string, logins: string[]): Promise<HelixUser[]> {
-    if (logins.length === 0) return [];
-    const url = `https://api.twitch.tv/helix/users?${logins.map((l) => `login=${encodeURIComponent(l)}`).join('&')}`;
-    const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId }
-    });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return (json?.data ?? []) as HelixUser[];
+    const uniqueLogins = Array.from(new Set(logins.map(normalizeTwitchLogin).filter(Boolean)));
+    if (uniqueLogins.length === 0) return [];
+
+    const users: HelixUser[] = [];
+    const missingLogins: string[] = [];
+    const nowMs = Date.now();
+    for (const login of uniqueLogins) {
+        const cached = twitchUserCache.get(login);
+        if (cached && cached.expiresAt > nowMs) {
+            users.push(cached.user);
+        } else {
+            missingLogins.push(login);
+        }
+    }
+
+    for (const chunk of chunkArray(missingLogins, TWITCH_HELIX_BATCH_SIZE)) {
+        const url = `https://api.twitch.tv/helix/users?${chunk.map((l) => `login=${encodeURIComponent(l)}`).join('&')}`;
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId }
+        });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const fetched = (json?.data ?? []) as HelixUser[];
+        for (const user of fetched) {
+            const login = normalizeTwitchLogin(user.login);
+            twitchUserCache.set(login, { user, expiresAt: nowMs + TWITCH_USER_CACHE_TTL_MS });
+            users.push(user);
+        }
+    }
+
+    return users;
 }
 
 async function helixGetStreamsByUserIds(token: string, clientId: string, userIds: string[]): Promise<HelixStream[]> {
-    if (userIds.length === 0) return [];
-    const url = `https://api.twitch.tv/helix/streams?${userIds.map((id) => `user_id=${encodeURIComponent(id)}`).join('&')}`;
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId } });
-    if (!res.ok) return [];
-    const json = await res.json();
-    return (json?.data ?? []) as HelixStream[];
+    const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)));
+    if (uniqueUserIds.length === 0) return [];
+    const streams: HelixStream[] = [];
+    for (const chunk of chunkArray(uniqueUserIds, TWITCH_HELIX_BATCH_SIZE)) {
+        const url = `https://api.twitch.tv/helix/streams?${chunk.map((id) => `user_id=${encodeURIComponent(id)}`).join('&')}`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId } });
+        if (!res.ok) continue;
+        const json = await res.json();
+        streams.push(...((json?.data ?? []) as HelixStream[]));
+    }
+    return streams;
 }
 
 async function helixGetGamesByIds(token: string, clientId: string, gameIds: string[]): Promise<Map<string, string>> {
     const ids = Array.from(new Set(gameIds.filter(Boolean)));
     if (ids.length === 0) return new Map<string, string>();
-    const url = `https://api.twitch.tv/helix/games?${ids.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`;
-    const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId } });
-    if (!res.ok) return new Map<string, string>();
-    const json = await res.json();
-    const arr = (json?.data ?? []) as HelixGame[];
     const map = new Map<string, string>();
-    for (const g of arr) map.set(g.id, g.name);
+    for (const chunk of chunkArray(ids, TWITCH_HELIX_BATCH_SIZE)) {
+        const url = `https://api.twitch.tv/helix/games?${chunk.map((id) => `id=${encodeURIComponent(id)}`).join('&')}`;
+        const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}`, 'Client-Id': clientId } });
+        if (!res.ok) continue;
+        const json = await res.json();
+        const arr = (json?.data ?? []) as HelixGame[];
+        for (const g of arr) map.set(g.id, g.name);
+    }
     return map;
 }
 
@@ -148,7 +203,7 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
 
     for (const cfg of streams) {
         try {
-            const userId = idByLogin.get(cfg.twitchUsername.toLowerCase());
+            const userId = idByLogin.get(normalizeTwitchLogin(cfg.twitchUsername));
             if (!userId) continue;
             const stream = streamByUserId.get(userId) ?? null;
             const isLive = stream !== null && stream !== undefined;
@@ -213,9 +268,10 @@ export async function registerTwitchJobs(queue: JobQueue, now: Date = new Date()
     });
 
     // Schedule initial and immediate run
-    const initDelay = 5; // seconds
+    const startupJitter = getTwitchStartupJitterSeconds();
+    const initDelay = TWITCH_STARTUP_DEFAULT_DELAY_SECONDS + startupJitter;
     await scheduleSingleton(queue, 'twitch:poll', {}, initDelay, `twitch:init:${formatMinuteKey(new Date(now.getTime() + initDelay * 1000))}`);
-    await scheduleSingleton(queue, 'twitch:poll', {}, 0, `twitch:catchup:${formatMinuteKey(now)}`);
+    await scheduleSingleton(queue, 'twitch:poll', {}, startupJitter, `twitch:catchup:${formatMinuteKey(new Date(now.getTime() + startupJitter * 1000))}`);
 
     log.info('Scheduled Twitch polling job');
 }

@@ -166,4 +166,25 @@ describe('tiktok job branches', () => {
         const meta = last?.[1]?.meta as any;
         expect(meta && typeof meta.processed === 'number').toBe(true);
     });
+
+    it('resolves duplicate usernames once and fans out to each config', async () => {
+        const { TikTokLiveConnection } = await import('tiktok-live-connector');
+        (TikTokLiveConnection as any).mockClear();
+        hoisted.getAllStreams.mockResolvedValue([
+            makeCfg({ id: 'dup1', guildId: 'g1', discordChannelId: 'chan1', tiktokUsername: 'FreshCreator' }),
+            makeCfg({ id: 'dup2', guildId: 'g2', discordChannelId: 'chan2', tiktokUsername: '@freshcreator' }),
+        ]);
+        hoisted.notificationsHas.mockResolvedValue(false);
+        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+
+        const q = makeQueue();
+        await registerTikTokJobs(q);
+        const h = q.handlers.get('tiktok:poll')!;
+        const done = vi.fn();
+        await h({ data: {}, done });
+
+        expect(done).toHaveBeenCalled();
+        expect(TikTokLiveConnection).toHaveBeenCalledTimes(1);
+        expect(hoisted.sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+    });
 });

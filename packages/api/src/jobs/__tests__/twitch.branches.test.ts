@@ -155,4 +155,34 @@ describe('Twitch job branches', () => {
         expect(payload.content).toContain('Live now: Great Stream');
         expect(String(payload.content)).toMatch(/\n<?https:\/\/twitch\.tv\/custom>?/);
     });
+
+    it('deduplicates repeated usernames before calling Helix', async () => {
+        const cfgs = [
+            { id: 't9a', guildId: 'g1', discordChannelId: 'chan1', twitchUsername: 'samecreator', isLive: false },
+            { id: 't9b', guildId: 'g2', discordChannelId: 'chan2', twitchUsername: 'SameCreator', isLive: false },
+        ] as any[];
+        const usersUrls: string[] = [];
+        manager.twitchManager.getAllStreams.mockResolvedValueOnce(cfgs);
+        manager.notificationsManager.has.mockResolvedValue(false);
+        mockFetch.mockReset();
+        mockFetch.mockImplementation((url: any) => {
+            const u = String(url);
+            if (u.includes('/oauth2/token')) return Promise.resolve({ ok: true, json: async () => ({ access_token: 'app', expires_in: 3600 }) });
+            if (u.includes('/users')) {
+                usersUrls.push(u);
+                return Promise.resolve({ ok: true, json: async () => ({ data: [{ id: 'u9', login: 'samecreator', display_name: 'Same Creator' }] }) });
+            }
+            if (u.includes('/streams')) return Promise.resolve({ ok: true, json: async () => ({ data: [{ id: 's9', user_id: 'u9', title: 'Shared live', viewer_count: 7, started_at: new Date().toISOString(), thumbnail_url: '', game_id: null }] }) });
+            if (u.includes('/games')) return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+            return Promise.resolve({ ok: false, json: async () => ({}) });
+        });
+
+        const { discord } = await prepareDiscord();
+        const { done } = await runJobOnce('twitch:poll', registerTwitchJobs);
+
+        expect(done).toHaveBeenCalled();
+        expect(usersUrls).toHaveLength(1);
+        expect(usersUrls[0].match(/(?:\?|&)login=/g)).toHaveLength(1);
+        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+    });
 });
