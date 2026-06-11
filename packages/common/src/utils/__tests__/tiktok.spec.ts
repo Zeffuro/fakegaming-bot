@@ -6,5 +6,6 @@ describe('TikTok utils', () => {
         expect(sanitizeTikTokUsername('@TestUser')).toBe('TestUser');
         expect(sanitizeTikTokUsername('user')).toBe('user');
         expect(sanitizeTikTokUsername(' @user ')).toBe('user');
+        expect(sanitizeTikTokUsername(null as unknown as string)).toBe('');
     });
 });

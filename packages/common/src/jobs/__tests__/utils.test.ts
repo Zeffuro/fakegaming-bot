@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
     computeExponentialBackoff,
     computeNextDailyRunDelaySeconds,
@@ -7,6 +7,7 @@ import {
     computeBackoffWithNearWindow,
     formatDateKey,
     formatMinuteKey,
+    scheduleSingleton,
 } from '../../jobs/index.js';
 
 describe('jobs utils', () => {
@@ -15,6 +16,8 @@ describe('jobs utils', () => {
         expect(computeExponentialBackoff(2, 60, 900)).toBe(120);
         expect(computeExponentialBackoff(3, 60, 180)).toBe(180);
         expect(computeExponentialBackoff(10, 60, 180)).toBe(180);
+        expect(computeExponentialBackoff(Number.NaN, 30, 900)).toBe(30);
+        expect(computeExponentialBackoff(1.8, 30, 900)).toBe(30);
     });
 
     it('computeNextDailyRunDelaySeconds computes next 09:00 correctly', () => {
@@ -23,6 +26,9 @@ describe('jobs utils', () => {
         // We cannot assume local TZ; just assert positive and <= 24h
         expect(delay).toBeGreaterThan(0);
         expect(delay).toBeLessThanOrEqual(24 * 60 * 60);
+
+        const afterTarget = new Date(2025, 9, 17, 10, 0, 0);
+        expect(computeNextDailyRunDelaySeconds(9, afterTarget)).toBe(23 * 60 * 60);
     });
 
     it('computeNextMinuteBoundaryDelaySeconds computes boundary with min', () => {
@@ -30,6 +36,7 @@ describe('jobs utils', () => {
         const s = computeNextMinuteBoundaryDelaySeconds(t, 5);
         expect(s).toBeGreaterThanOrEqual(5);
         expect(s).toBeLessThanOrEqual(60);
+        expect(computeNextMinuteBoundaryDelaySeconds(t, 55)).toBe(55);
     });
 
     it('computeBackoffFromDelay doubles and caps', () => {
@@ -56,5 +63,17 @@ describe('jobs utils (near-window backoff)', () => {
         expect(computeBackoffWithNearWindow(50, 10, 60, 2)).toBe(60);
         // below base -> base
         expect(computeBackoffWithNearWindow(5, 10, 60, 2)).toBe(10);
+    });
+
+    it('scheduleSingleton forwards the idempotency key', async () => {
+        const queue = {
+            schedule: vi.fn().mockResolvedValue('job-1'),
+        };
+
+        await expect(scheduleSingleton(queue as never, 'refresh', { id: 1 }, 30, 'refresh:1')).resolves.toBe('job-1');
+        expect(queue.schedule).toHaveBeenCalledWith('refresh', { id: 1 }, {
+            startAfterSeconds: 30,
+            idempotencyKey: 'refresh:1',
+        });
     });
 });

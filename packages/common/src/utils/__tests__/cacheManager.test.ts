@@ -64,6 +64,15 @@ describe('CacheManager', () => {
             expect(cacheSet).toHaveBeenCalledWith('test-key', { data: 'fresh' }, 1000);
         });
 
+        it('should not cache empty fresh data', async () => {
+            const manager = getCacheManager();
+            (cacheGet as any).mockResolvedValue(null);
+            const fetchFn = vi.fn().mockResolvedValue(null);
+            const result = await manager.getCachedData('test-key', fetchFn, 1000);
+            expect(result).toBeNull();
+            expect(cacheSet).not.toHaveBeenCalled();
+        });
+
         it('should return null on error', async () => {
             const manager = getCacheManager();
             (cacheGet as any).mockRejectedValue(new Error('cache error'));
@@ -80,6 +89,12 @@ describe('CacheManager', () => {
             expect(cacheDel).toHaveBeenCalledWith(CACHE_KEYS.userGuilds('user123'));
             expect(cacheDel).toHaveBeenCalledWith(CACHE_KEYS.userAccessToken('user123'));
         });
+
+        it('should swallow cache deletion errors', async () => {
+            const manager = getCacheManager();
+            (cacheDel as any).mockRejectedValueOnce(new Error('delete failed'));
+            await expect(manager.clearUserCache('user123')).resolves.toBeUndefined();
+        });
     });
 
     describe('CACHE_KEYS', () => {
@@ -89,6 +104,8 @@ describe('CacheManager', () => {
             expect(CACHE_KEYS.userAccessToken('123')).toBe('user:123:access_token');
             expect(CACHE_KEYS.guildChannels('456')).toBe('guild:456:channels');
             expect(CACHE_KEYS.botGuilds()).toBe('bot_guilds');
+            expect(CACHE_KEYS.userGuildNick('123', '456')).toBe('user:123:nick:456');
+            expect(CACHE_KEYS.guildMemberSearch('456', 'Test User', 5)).toBe('guild:456:member_search:test%20user:limit:5');
         });
     });
 
@@ -99,6 +116,7 @@ describe('CacheManager', () => {
             expect(CACHE_TTL.GUILD_CHANNELS).toBe(30 * 60 * 1000);
             expect(CACHE_TTL.ACCESS_TOKEN).toBe(3600 * 1000);
             expect(CACHE_TTL.BOT_GUILDS).toBe(15 * 60 * 1000);
+            expect(CACHE_TTL.MEMBER_SEARCH).toBe(5 * 60 * 1000);
         });
     });
 });
