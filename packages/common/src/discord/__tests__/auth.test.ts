@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     exchangeCodeForToken,
+    refreshDiscordAccessToken,
     fetchDiscordUser,
     getDiscordGuilds,
     getDiscordOAuthUrl,
@@ -36,6 +37,34 @@ describe('exchangeCodeForToken', () => {
             'https://discord.com/api/oauth2/token',
             expect.objectContaining({ method: 'POST' })
         );
+    });
+});
+
+describe('refreshDiscordAccessToken', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('refreshes a Discord access token', async () => {
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+            status: 200,
+            ok: true,
+            json: vi.fn().mockResolvedValue({ access_token: 'new-token', refresh_token: 'new-refresh' })
+        } as any);
+
+        const result = await refreshDiscordAccessToken('refresh-token', 'id', 'secret');
+
+        expect(result.access_token).toBe('new-token');
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://discord.com/api/oauth2/token',
+            expect.objectContaining({
+                method: 'POST',
+                body: expect.any(URLSearchParams)
+            })
+        );
+    });
+
+    it('throws on failed refresh', async () => {
+        mockFailure(400, 'invalid refresh');
+        await expect(refreshDiscordAccessToken('refresh-token', 'id', 'secret')).rejects.toThrow('invalid refresh');
     });
 });
 
@@ -114,6 +143,14 @@ describe('issueJwt', () => {
         };
         const token = issueJwt(user, 'secret');
         expect(token).toBeTruthy();
+    });
+
+    it('supports a custom expiration', () => {
+        const token = issueJwt({ id: '123', username: 'testuser' }, 'secret', undefined, undefined, {
+            expiresIn: 60
+        });
+        const decoded = verifyJwt(token, 'secret') as { exp?: number; iat?: number };
+        expect(decoded.exp! - decoded.iat!).toBe(60);
     });
 });
 

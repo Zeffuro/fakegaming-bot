@@ -64,6 +64,7 @@ export namespace Discord {
 // Individual Discord auth exports
 export {
     exchangeCode,
+    refreshDiscordAccessToken,
     refreshToken,
     revokeToken,
     getDiscordUserInfo,

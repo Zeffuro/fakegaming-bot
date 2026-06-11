@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 
 const DEFAULT_AUDIENCE = process.env.JWT_AUDIENCE || "fakegaming-dashboard";
 const DEFAULT_ISSUER = process.env.JWT_ISSUER || "fakegaming";
@@ -37,7 +37,17 @@ export async function retryFetchJson<T>(params: {
     throw new Error(rateLimitExhaustedMessage);
 }
 
-export async function exchangeCodeForToken(code: string, clientId: string, clientSecret: string, redirectUri: string) {
+export interface DiscordOAuthTokenResponse {
+    access_token?: string;
+    refresh_token?: string;
+    token_type?: string;
+    expires_in?: number;
+    scope?: string;
+    error?: string;
+    error_description?: string;
+}
+
+export async function exchangeCodeForToken(code: string, clientId: string, clientSecret: string, redirectUri: string): Promise<DiscordOAuthTokenResponse> {
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
@@ -49,7 +59,26 @@ export async function exchangeCodeForToken(code: string, clientId: string, clien
             redirect_uri: redirectUri,
         }),
     });
-    return await tokenRes.json();
+    return await tokenRes.json() as DiscordOAuthTokenResponse;
+}
+
+export async function refreshDiscordAccessToken(refreshToken: string, clientId: string, clientSecret: string): Promise<DiscordOAuthTokenResponse> {
+    const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            grant_type: "refresh_token",
+            refresh_token: refreshToken,
+        }),
+    });
+
+    if (!tokenRes.ok) {
+        throw new Error(await tokenRes.text());
+    }
+
+    return await tokenRes.json() as DiscordOAuthTokenResponse;
 }
 
 export async function fetchDiscordUser(accessToken: string) {
@@ -76,7 +105,21 @@ export function getDiscordOAuthUrl(discordClientId: string, discordRedirectUri: 
     return `https://discord.com/api/oauth2/authorize?client_id=${discordClientId}&redirect_uri=${encodeURIComponent(discordRedirectUri)}&response_type=code&scope=identify%20guilds`;
 }
 
-export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAULT_AUDIENCE, issuer: string = DEFAULT_ISSUER) {
+export interface JwtUserShape {
+    id: string;
+    username?: string | null;
+    global_name?: string | null;
+    avatar?: string | null;
+    discriminator?: string | null;
+}
+
+export function issueJwt(
+    user: JwtUserShape,
+    jwtSecret: string,
+    audience: string = DEFAULT_AUDIENCE,
+    issuer: string = DEFAULT_ISSUER,
+    options: { expiresIn?: SignOptions["expiresIn"] } = {}
+) {
     return jwt.sign({
         discordId: user.id,
         username: user.username,
@@ -84,7 +127,7 @@ export function issueJwt(user: any, jwtSecret: string, audience: string = DEFAUL
         avatar: user.avatar || null,
         discriminator: user.discriminator || null
     }, jwtSecret, {
-        expiresIn: "1d",
+        expiresIn: options.expiresIn ?? "1d",
         audience,
         issuer
     });

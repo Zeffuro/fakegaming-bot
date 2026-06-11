@@ -1,7 +1,7 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Alert, Box, Button, Stack } from "@mui/material";
-import { AdminPanelSettings, Groups } from "@mui/icons-material";
+import { AdminPanelSettings, Groups, Refresh } from "@mui/icons-material";
 import GuildCard from "@/components/Guild/GuildCard";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -12,11 +12,21 @@ import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
 
 export default function Dashboard() {
-    const { guilds, isAdmin, loading, error } = useDashboardData();
+    const { guilds, isAdmin, loading, error, refetch } = useDashboardData();
+    const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
 
     const handleGuildClick = (guild: any) => {
         router.push(`/dashboard/${guild.id}`);
+    };
+
+    const handleRefreshGuilds = async () => {
+        setRefreshing(true);
+        try {
+            await refetch({ refresh: true });
+        } finally {
+            setRefreshing(false);
+        }
     };
 
     if (error) {
@@ -39,11 +49,35 @@ export default function Dashboard() {
                         accent={dashboardAccents.settings}
                         secondaryAccent={dashboardAccents.anime}
                         stats={[{ label: "guilds available", value: guilds.length }]}
-                        actions={isAdmin ? (
-                            <Button variant="contained" startIcon={<AdminPanelSettings />} onClick={() => router.push("/dashboard/admin")} sx={primaryActionButtonSx(dashboardAccents.admin)}>
-                                Admin panel
-                            </Button>
-                        ) : undefined}
+                        actions={(
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Refresh />}
+                                    onClick={handleRefreshGuilds}
+                                    disabled={loading || refreshing}
+                                    sx={{
+                                        borderColor: "rgba(255,255,255,0.18)",
+                                        color: "grey.100",
+                                        textTransform: "none",
+                                        fontWeight: 800,
+                                        borderRadius: 2,
+                                        bgcolor: "rgba(255,255,255,0.04)",
+                                        '&:hover': {
+                                            borderColor: "rgba(255,255,255,0.34)",
+                                            bgcolor: "rgba(255,255,255,0.08)"
+                                        }
+                                    }}
+                                >
+                                    Refresh servers
+                                </Button>
+                                {isAdmin && (
+                                    <Button variant="contained" startIcon={<AdminPanelSettings />} onClick={() => router.push("/dashboard/admin")} sx={primaryActionButtonSx(dashboardAccents.admin)}>
+                                        Admin panel
+                                    </Button>
+                                )}
+                            </Stack>
+                        )}
                     />
 
                     <FeaturePanel accent={dashboardAccents.settings}>

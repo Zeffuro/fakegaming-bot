@@ -47,8 +47,8 @@ export function setupCacheMocks(): void {
 
         const defaultCacheManager = {
             get: async <T>(key: string): Promise<T | null> => mockCacheGet(key),
-            set: async <T>(_key: string, _value: T, _ttlMs: number): Promise<void> => {},
-            del: async (_key: string): Promise<void> => {},
+            set: async <T>(key: string, value: T, ttlMs: number): Promise<void> => mockCacheSet(key, value, ttlMs),
+            del: async (key: string): Promise<void> => mockCacheDelete(key),
             getCachedData: async <T>(_key: string, fetchFn: () => Promise<T>, _ttlMs: number): Promise<T | null> => fetchFn(),
             clearUserCache: async (_userId: string): Promise<void> => {},
         };
@@ -58,6 +58,7 @@ export function setupCacheMocks(): void {
             // expose cache helpers
             cacheGet: mockCacheGet,
             cacheSet: mockCacheSet,
+            cacheDel: mockCacheDelete,
             cacheDelete: mockCacheDelete,
             // minimal cache manager implementation
             defaultCacheManager,

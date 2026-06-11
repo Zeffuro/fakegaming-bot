@@ -86,6 +86,7 @@ export * from './api/index.js';
 export {
   getDiscordGuilds,
   exchangeCodeForToken,
+  refreshDiscordAccessToken,
   fetchDiscordUser,
   getDiscordOAuthUrl,
   issueJwt,

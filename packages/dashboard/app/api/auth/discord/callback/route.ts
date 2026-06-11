@@ -5,6 +5,13 @@ import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SEC
 import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 import { sanitizeReturnTo } from "@/lib/util/sanitizeReturnTo";
+import { createRefreshSession } from "@/lib/auth/refreshSessions";
+import {
+    ACCESS_TOKEN_COOKIE_NAME,
+    ACCESS_TOKEN_MAX_AGE_SECONDS,
+    REFRESH_SESSION_COOKIE_NAME,
+    REFRESH_SESSION_IDLE_MAX_AGE_SECONDS
+} from "@/lib/auth/sessionConstants";
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
@@ -38,21 +45,32 @@ export async function GET(req: NextRequest) {
         tokenData.expires_in ? tokenData.expires_in * 1000 : CACHE_TTL.ACCESS_TOKEN
     );
 
-    const jwtToken = issueJwt(user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
+    const jwtToken = issueJwt(userProfile, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER, {
+        expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS
+    });
+    const refreshSession = await createRefreshSession({
+        user: userProfile,
+        discordRefreshToken: tokenData.refresh_token ?? null
+    });
 
     const rawState = req.nextUrl.searchParams.get("state");
     const returnTo = sanitizeReturnTo(rawState) || "/dashboard";
     const response = NextResponse.redirect(new URL(returnTo, getBaseUrl(req)));
-    // Harden session cookie: HttpOnly, Secure (prod), SameSite=Strict, short maxAge (20m) with refresh strategy.
-    response.cookies.set("jwt", jwtToken, {
+    response.cookies.set(ACCESS_TOKEN_COOKIE_NAME, jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax",
         path: "/",
-        maxAge: 20 * 60, // 20 minutes (token itself 1d; user must refresh via activity)
+        maxAge: ACCESS_TOKEN_MAX_AGE_SECONDS,
+    });
+    response.cookies.set(REFRESH_SESSION_COOKIE_NAME, refreshSession.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: REFRESH_SESSION_IDLE_MAX_AGE_SECONDS,
     });
 
-    // Issue CSRF double-submit token cookie (not HttpOnly so client can echo via header)
     const csrfToken = generateCsrfToken();
     setCsrfCookie(response, csrfToken);
 

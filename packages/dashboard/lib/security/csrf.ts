@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, generateCsrfToken, validateCsrf } from '@zeffuro/fakegaming-common/security';
+import { REFRESH_SESSION_IDLE_MAX_AGE_SECONDS } from '@/lib/auth/sessionConstants';
 
 export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, generateCsrfToken, validateCsrf };
 
@@ -13,8 +14,7 @@ export function setCsrfCookie(res: NextResponse, token: string): void {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        // Rotate at login/refresh; keep a short lifetime
-        maxAge: 30 * 60, // 30 minutes
+        maxAge: REFRESH_SESSION_IDLE_MAX_AGE_SECONDS,
     });
 }
 
@@ -26,7 +26,7 @@ export function enforceCsrf(req: NextRequest): NextResponse | undefined {
     const result = validateCsrf({
         method: req.method,
         headers: { get: (name: string) => req.headers.get(name) },
-        cookies: { get: (name: string) => req.cookies.get(name) as any },
+        cookies: { get: (name: string) => req.cookies.get(name) },
     });
     if (result.valid) return undefined;
     return NextResponse.json(

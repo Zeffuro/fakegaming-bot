@@ -1,42 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyJwt, issueJwt } from "@zeffuro/fakegaming-common";
+import { issueJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 import { enforceCsrf, generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
+import { rotateRefreshSession, revokeRefreshSession } from "@/lib/auth/refreshSessions";
+import {
+    ACCESS_TOKEN_COOKIE_NAME,
+    ACCESS_TOKEN_MAX_AGE_SECONDS,
+    REFRESH_SESSION_COOKIE_NAME,
+    REFRESH_SESSION_IDLE_MAX_AGE_SECONDS
+} from "@/lib/auth/sessionConstants";
 
 /**
  * POST /api/auth/refresh
- * Re-issues short-lived session JWT (rolling session) if current token valid.
+ * Rotates the refresh session and issues a new short-lived access JWT.
  */
 export async function POST(req: NextRequest) {
     const csrfFailure = enforceCsrf(req);
     if (csrfFailure) return csrfFailure;
 
-    const oldToken = req.cookies.get("jwt")?.value;
-    if (!oldToken) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const oldRefreshToken = req.cookies.get(REFRESH_SESSION_COOKIE_NAME)?.value;
+    const rotated = await rotateRefreshSession(oldRefreshToken);
 
-    try {
-        const decoded: any = verifyJwt(oldToken, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
-        const userShape = {
-            id: decoded.discordId,
-            username: decoded.username,
-            global_name: decoded.global_name,
-            avatar: decoded.avatar,
-            discriminator: decoded.discriminator
-        };
-        const newToken = issueJwt(userShape, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
-        const res = NextResponse.json({ refreshed: true });
-        res.cookies.set("jwt", newToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+    if (!rotated) {
+        await revokeRefreshSession(oldRefreshToken);
+        const res = NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        res.cookies.set(ACCESS_TOKEN_COOKIE_NAME, "", {
             path: "/",
-            maxAge: 20 * 60, // 20 minutes
+            expires: new Date(0),
         });
-        // Optionally rotate CSRF token with refresh
-        const csrfToken = generateCsrfToken();
-        setCsrfCookie(res, csrfToken);
+        res.cookies.set(REFRESH_SESSION_COOKIE_NAME, "", {
+            path: "/",
+            expires: new Date(0),
+        });
         return res;
-    } catch {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
+
+    const newToken = issueJwt(rotated.record.user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER, {
+        expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS
+    });
+    const res = NextResponse.json({ refreshed: true });
+    res.cookies.set(ACCESS_TOKEN_COOKIE_NAME, newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: ACCESS_TOKEN_MAX_AGE_SECONDS,
+    });
+    res.cookies.set(REFRESH_SESSION_COOKIE_NAME, rotated.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: REFRESH_SESSION_IDLE_MAX_AGE_SECONDS,
+    });
+
+    const csrfToken = generateCsrfToken();
+    setCsrfCookie(res, csrfToken);
+    return res;
 }
