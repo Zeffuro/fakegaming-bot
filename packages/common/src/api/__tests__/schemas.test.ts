@@ -10,6 +10,7 @@ import {
     patchSubscriptionRequestSchema,
     quoteCreateRequestSchema,
     reminderCreateRequestSchema,
+    riotLinkUpdateRequestSchema,
     serverUpdateRequestSchema,
     tiktokCreateRequestSchema,
     twitchCreateRequestSchema,
@@ -37,6 +38,7 @@ describe('api request schemas', () => {
             'PatchSubscriptionRequest',
             'QuoteCreateRequest',
             'ReminderCreateRequest',
+            'RiotLinkUpdateRequest',
             'ServerCreateRequest',
             'ServerUpdateRequest',
             'TikTokCreateRequest',
@@ -81,6 +83,11 @@ describe('api request schemas', () => {
             timespan: '1h',
             timestamp: 123,
         })).toMatchObject({ message: 'ping' });
+        expect(riotLinkUpdateRequestSchema.parse({
+            summonerName: 'Zeffuro',
+            region: 'EUW',
+            puuid: 'puuid-1',
+        })).toMatchObject({ region: 'EUW' });
     });
 
     it('rejects unknown fields on strict request DTOs', () => {
@@ -98,6 +105,11 @@ describe('api request schemas', () => {
             guildId: 'guild-1',
             channelId: 'channel-1',
         })).toMatchObject({ title: 'Frieren' });
+        expect(animeSubscribeRequestSchema.parse({
+            anilistId: 123,
+            guildId: 'guild-1',
+            channelId: 'channel-1',
+        })).toMatchObject({ anilistId: 123 });
         expect(() => animeSubscribeRequestSchema.parse({
             guildId: 'guild-1',
             channelId: 'channel-1',
@@ -111,6 +123,13 @@ describe('api request schemas', () => {
             month: 2,
             year: 2024,
         })).toMatchObject({ day: 29 });
+        expect(birthdayCreateRequestSchema.parse({
+            userId: 'user-1',
+            guildId: 'guild-1',
+            channelId: 'channel-1',
+            day: 29,
+            month: 2,
+        })).toMatchObject({ month: 2 });
         expect(() => birthdayCreateRequestSchema.parse({
             userId: 'user-1',
             guildId: 'guild-1',

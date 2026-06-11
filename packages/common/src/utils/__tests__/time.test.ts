@@ -115,6 +115,8 @@ describe('utils/time', () => {
             expect(toMillis(now)).toBe(now);
             expect(toMillis(String(now))).toBe(now);
             expect(toMillis(new Date(now))).toBe(now);
+            expect(toMillis(123n)).toBe(123);
+            expect(toMillis(Number.NaN)).toBe(0);
             expect(toMillis('2025-10-08')).toBeGreaterThan(0);
             expect(toMillis(null)).toBe(0);
             expect(toMillis(undefined)).toBe(0);
