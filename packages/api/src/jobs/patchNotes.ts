@@ -3,6 +3,7 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
 import { toMillis } from '@zeffuro/fakegaming-common/utils';
+import { formatPatchNoteEmbedDescription } from '@zeffuro/fakegaming-common/patchnotes';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
 
@@ -52,8 +53,7 @@ export function computeNextQuarterHourDelaySeconds(now: Date = new Date(), minSe
 export function buildPatchNoteEmbedPayload(note: PatchNotePlain): Record<string, unknown> {
     const publishedMs = toMillis(note.publishedAt);
     const timestampIso = new Date(publishedMs || Date.now()).toISOString();
-    const full = note.content;
-    const description = full.length > 350 ? `${full.slice(0, 347)}...` : full;
+    const description = formatPatchNoteEmbedDescription(note.content);
     const color = typeof note.accentColor === 'number' ? note.accentColor : 0x5865F2;
 
     const embed: Record<string, unknown> = {

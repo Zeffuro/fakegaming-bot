@@ -48,6 +48,9 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
                     Login with Discord
                 </Button>
             )}
+            <Link href="/privacy" underline="hover" sx={{ mt: 2, fontSize: 13 }}>
+                Privacy and cookies
+            </Link>
         </Box>
     );
 }

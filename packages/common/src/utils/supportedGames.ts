@@ -3,6 +3,7 @@
 
 export const SUPPORTED_GAMES: readonly string[] = [
     'League of Legends',
+    'VALORANT',
     'Marvel Rivals',
     'Overwatch 2',
 ];

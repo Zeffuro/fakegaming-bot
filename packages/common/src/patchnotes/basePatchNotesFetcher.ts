@@ -70,7 +70,23 @@ export abstract class BasePatchNotesFetcher<RawPatchNote = unknown> {
 
     /** Compare two version strings for monotonic increase. */
     protected compareVersions(a?: string, b?: string): boolean {
-        return !a || !b || a < b;
+        if (!a || !b) return true;
+
+        const aNumeric = a.match(/^\d+(?:\.\d+)*$/);
+        const bNumeric = b.match(/^\d+(?:\.\d+)*$/);
+        if (aNumeric && bNumeric) {
+            const aParts = a.split('.').map(Number);
+            const bParts = b.split('.').map(Number);
+            const length = Math.max(aParts.length, bParts.length);
+            for (let index = 0; index < length; index++) {
+                const aPart = aParts[index] ?? 0;
+                const bPart = bParts[index] ?? 0;
+                if (aPart !== bPart) return aPart < bPart;
+            }
+            return false;
+        }
+
+        return a < b;
     }
 
     /** Optionally fetch full patch content from a URL. */

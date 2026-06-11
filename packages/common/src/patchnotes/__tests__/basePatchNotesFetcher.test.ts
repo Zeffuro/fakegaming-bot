@@ -52,6 +52,18 @@ describe('BasePatchNotesFetcher.fetchLatestPatchNote', () => {
         expect(res?.accentColor).toBe(0x123456);
     });
 
+    it('compares dotted numeric versions numerically', async () => {
+        const f = new TestFetcher([
+            { title: 'v12.9', version: '12.9' },
+            { title: 'v12.10', version: '12.10' },
+        ], null);
+
+        const res = await f.fetchLatestPatchNote('12.9');
+
+        expect(res?.title).toBe('v12.10');
+        expect(res?.version).toBe('12.10');
+    });
+
     it('handles missing versions by allowing any when storedVersion undefined', async () => {
         const f = new TestFetcher([{ title: 'no-version' }], null);
         const res = await f.fetchLatestPatchNote();

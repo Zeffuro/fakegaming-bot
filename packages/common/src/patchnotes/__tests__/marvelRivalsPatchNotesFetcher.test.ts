@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { MarvelRivalsPatchNotesFetcher } from '../marvelRivalsPatchNotesFetcher.js';
 
 const html = `
@@ -13,6 +13,10 @@ const html = `
 </div>`;
 
 describe('MarvelRivalsPatchNotesFetcher.parsePatchNotes', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('parses versioned list item', () => {
         const fetcher = new MarvelRivalsPatchNotesFetcher();
         const note = fetcher.parsePatchNotes(html);
@@ -22,5 +26,24 @@ describe('MarvelRivalsPatchNotesFetcher.parsePatchNotes', () => {
         expect(note?.url).toBe('https://www.marvelrivals.com/gameupdate/20241231.html');
         expect(note?.imageUrl).toBe('https://img/mrv.png');
     });
-});
 
+    it('fetches full article body from artText', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            text: vi.fn().mockResolvedValue(`
+                <div class="artText">
+                    <p>Greetings, Rivals!</p>
+                    <h2>Fixes and Optimizations</h2>
+                    <p>1. Hero fix<br>2. Other fix</p>
+                    <p><a>Discord</a>|<a>X</a>|<a>Facebook</a>|<a>Instagram</a>|<a>TikTok</a>|<a>YouTube</a>|<a>Twitch</a></p>
+                </div>
+            `)
+        }));
+        const fetcher = new MarvelRivalsPatchNotesFetcher();
+
+        const full = await fetcher.fetchFullPatchContent('https://www.marvelrivals.com/gameupdate/20241231.html');
+
+        expect(full?.content).toContain('Greetings, Rivals!');
+        expect(full?.content).toContain('**Fixes and Optimizations**');
+        expect(full?.content).not.toContain('Discord|X|Facebook');
+    });
+});

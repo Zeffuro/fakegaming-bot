@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { buildPatchNoteEmbed } from '../patchNoteEmbed.js';
 import { EmbedBuilder } from 'discord.js';
+import { PATCH_NOTE_EMBED_DESCRIPTION_LIMIT } from '@zeffuro/fakegaming-common/patchnotes';
 
 // Tiny factory to DRY patch note creation across tests
 function makePatchNote(overrides: Record<string, unknown> = {}) {
@@ -56,12 +57,12 @@ describe('patchNoteEmbed', () => {
     });
 
     it('should truncate long descriptions', () => {
-        const longContent = 'A'.repeat(500);
+        const longContent = 'A'.repeat(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT + 100);
         const patchNote = makePatchNote({ content: longContent, publishedAt: new Date('2025-10-06') });
 
         const embed = buildPatchNoteEmbed(patchNote as any);
 
-        expect(embed.data.description!.length).toBeLessThanOrEqual(353); // 350 + "..."
+        expect(embed.data.description!.length).toBeLessThanOrEqual(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT);
     });
 
     it('should handle publishedAt as timestamp', () => {

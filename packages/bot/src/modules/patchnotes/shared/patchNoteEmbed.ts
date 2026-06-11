@@ -1,7 +1,7 @@
 import {EmbedBuilder} from 'discord.js';
 import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
-import {truncateDescription} from '../../../utils/generalUtils.js';
 import {parseDateSafe} from '@zeffuro/fakegaming-common/utils';
+import {formatPatchNoteEmbedDescription} from '@zeffuro/fakegaming-common/patchnotes';
 import {CreationAttributes} from 'sequelize';
 
 export function buildPatchNoteEmbed(note: PatchNoteConfig | CreationAttributes<PatchNoteConfig>): EmbedBuilder {
@@ -9,7 +9,7 @@ export function buildPatchNoteEmbed(note: PatchNoteConfig | CreationAttributes<P
     const embed = new EmbedBuilder()
         .setColor(note.accentColor ?? 0x5865F2)
         .setTitle(note.title)
-        .setDescription(truncateDescription(note.content, 350))
+        .setDescription(formatPatchNoteEmbedDescription(note.content))
         .setURL(note.url)
         .setImage(note.imageUrl ?? null)
         .setTimestamp(publishedAt ?? new Date())

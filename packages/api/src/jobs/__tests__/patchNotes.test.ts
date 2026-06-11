@@ -18,15 +18,16 @@ vi.mock('@zeffuro/fakegaming-common/jobs', () => ({
 }));
 
 import { buildPatchNoteEmbedPayload, computeNextQuarterHourDelaySeconds, registerPatchNotesJobs } from '../patchNotes.js';
+import { PATCH_NOTE_EMBED_DESCRIPTION_LIMIT } from '@zeffuro/fakegaming-common/patchnotes';
 
 describe('jobs/patchNotes helpers', () => {
-    it('buildPatchNoteEmbedPayload builds a short description and fields', () => {
+    it('buildPatchNoteEmbedPayload builds a bounded description and fields', () => {
         const payload = buildPatchNoteEmbedPayload({
-            game: 'G', title: 'Title', content: 'a'.repeat(400), url: 'https://u', publishedAt: Date.now(), logoUrl: 'https://logo', imageUrl: 'https://img', version: 'v', accentColor: 0x123456
+            game: 'G', title: 'Title', content: 'a'.repeat(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT + 100), url: 'https://u', publishedAt: Date.now(), logoUrl: 'https://logo', imageUrl: 'https://img', version: 'v', accentColor: 0x123456
         });
         expect(payload.embeds).toBeDefined();
         const embed: any = (payload.embeds as any[])[0];
-        expect(embed.description.length).toBe(350);
+        expect(embed.description.length).toBeLessThanOrEqual(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT);
         expect(embed.thumbnail.url).toBe('https://logo');
         expect(embed.image.url).toBe('https://img');
         expect(embed.color).toBe(0x123456);

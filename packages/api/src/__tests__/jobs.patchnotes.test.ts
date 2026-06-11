@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import { expectOk, expectUnauthorized, expectServiceUnavailable, expectErrorCode } from '@zeffuro/fakegaming-common/testing';
+import { PATCH_NOTE_EMBED_DESCRIPTION_LIMIT } from '@zeffuro/fakegaming-common/patchnotes';
 import { buildPatchNoteEmbedPayload, computeNextQuarterHourDelaySeconds } from '../jobs/patchNotes.js';
 
 const client = givenAuthenticatedClient(app, { discordId: 'testuser' });
@@ -41,8 +42,8 @@ describe('Patchnotes job utils', () => {
         expect(delay2).toBeLessThanOrEqual(15);
     });
 
-    it('buildPatchNoteEmbedPayload produces a single embed with truncated description', () => {
-        const long = 'x'.repeat(500);
+    it('buildPatchNoteEmbedPayload produces a single embed with bounded description', () => {
+        const long = 'x'.repeat(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT + 100);
         const payload = buildPatchNoteEmbedPayload({
             game: 'Test Game',
             title: 'Patch 1.2',
@@ -61,7 +62,7 @@ describe('Patchnotes job utils', () => {
         const e = embeds[0] as Record<string, unknown>;
         expect(e.title).toBe('Patch 1.2');
         expect(typeof e.description).toBe('string');
-        expect((e.description as string).length).toBe(350);
+        expect((e.description as string).length).toBeLessThanOrEqual(PATCH_NOTE_EMBED_DESCRIPTION_LIMIT);
         expect(e.url).toBe('https://example.com/patch');
         expect(e.author && (e.author as any).name).toBe('Test Game');
         expect(e.color).toBe(0x123456);
