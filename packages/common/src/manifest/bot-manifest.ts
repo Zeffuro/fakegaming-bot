@@ -79,6 +79,15 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "testOnly": null
     },
     {
+        "name": "manga",
+        "description": "Search manga, manhwa, webtoons, and light novels on AniList",
+        "module": "anime",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null
+    },
+    {
         "name": "birthday",
         "description": "Show your or another user's birthday",
         "module": "birthdays",
@@ -307,6 +316,15 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "anime",
                 "description": "Search anime, subscribe to releases, and view upcoming episodes",
+                "module": "anime",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null
+            },
+            {
+                "name": "manga",
+                "description": "Search manga, manhwa, webtoons, and light novels on AniList",
                 "module": "anime",
                 "permissions": null,
                 "dm_permission": null,

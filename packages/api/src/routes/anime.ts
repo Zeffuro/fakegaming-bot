@@ -8,7 +8,8 @@ import {
     isAniListSubscribable,
     mapAniListTitleToInput,
     searchAniListAnime,
-    searchAniListAnimePage,
+    searchAniListMediaPage,
+    type AniListMediaType,
     type AniListSeason,
     type AniListSeasonScope,
     type AniListTitle,
@@ -28,6 +29,7 @@ const router = createBaseRouter();
 const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
 const searchQuerySchema = z.object({
     q: z.string().min(1),
+    type: z.enum(['anime', 'manga']).optional(),
     page: z.coerce.number().int().min(1).optional(),
     perPage: z.coerce.number().int().min(1).max(25).optional(),
 });
@@ -46,6 +48,10 @@ function resolveSeason(value: z.infer<typeof seasonQuerySchema>): { season: AniL
     if (value.season === 'current') return getCurrentAniListSeason();
     if (value.season === 'next') return getNextAniListSeason();
     return { season: value.season, year: value.year ?? new Date().getUTCFullYear() };
+}
+
+function parseAniListMediaType(type: 'anime' | 'manga' | undefined): AniListMediaType {
+    return type === 'manga' ? 'MANGA' : 'ANIME';
 }
 
 async function resolveAnime(args: { anilistId?: number; title?: string }): Promise<AniListTitle | null> {
@@ -99,12 +105,13 @@ router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
 });
 
 router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
-    const { q, page = 1, perPage = 10 } = req.query as unknown as z.infer<typeof searchQuerySchema>;
-    const { items: results, pageInfo } = await searchAniListAnimePage(q, page, perPage);
-    for (const anime of results.slice(0, 10)) {
-        await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
+    const { q, type, page = 1, perPage = 10 } = req.query as unknown as z.infer<typeof searchQuerySchema>;
+    const mediaType = parseAniListMediaType(type);
+    const { items: results, pageInfo } = await searchAniListMediaPage(q, mediaType, page, perPage);
+    for (const media of results.slice(0, 10)) {
+        await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(media));
     }
-    res.json({ results, pageInfo });
+    res.json({ type: mediaType, results, pageInfo });
 });
 
 router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res) => {

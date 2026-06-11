@@ -3,7 +3,7 @@
 import React from "react";
 import { Avatar, Box, Chip, Stack, Typography, type SxProps, type Theme } from "@mui/material";
 import { ANIME_ACCENT_SOFT, ANIME_GOLD, ANIME_PINK } from "@/components/anime/animeTheme";
-import { canSubscribe, formatAnimeMeta, formatAnimeTitle, formatNextEpisode, formatStatus } from "@/components/anime/animeUtils";
+import { canSubscribe, formatAnimeMeta, formatAnimeTitle, formatNextEpisode, formatRankings, formatStatus } from "@/components/anime/animeUtils";
 import type { AnimeSearchResult } from "@/lib/api-client";
 
 interface AnimeMediaRowProps {
@@ -16,6 +16,7 @@ interface AnimeMediaRowProps {
 
 export function AnimeMediaRow({ anime, actions, dense = false, showGenres = false, sx }: AnimeMediaRowProps) {
   const nextEpisode = formatNextEpisode(anime);
+  const rankings = formatRankings(anime);
   const posterWidth = dense ? 42 : 64;
   const posterHeight = dense ? 58 : 90;
 
@@ -75,6 +76,18 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
                 }}
               />
             )}
+            {rankings.map((ranking) => (
+              <Chip
+                key={ranking}
+                size="small"
+                label={ranking}
+                sx={{
+                  bgcolor: "rgba(255,255,255,0.06)",
+                  color: "rgba(255,255,255,0.76)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              />
+            ))}
             {showGenres && anime.genres?.slice(0, 3).map((genre) => (
               <Chip
                 key={genre}

@@ -2,15 +2,16 @@
 
 import React from "react";
 import { Add, Search } from "@mui/icons-material";
-import { Alert, Autocomplete, Box, Button, CircularProgress, Divider, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Autocomplete, Box, Button, CircularProgress, Divider, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
 import { AnimeMediaRow } from "@/components/anime/AnimeMediaRow";
 import { fieldSx, panelSx, primaryButtonSx } from "@/components/anime/animeTheme";
 import { canSubscribe, formatAnimeTitle, getSubscribeHint } from "@/components/anime/animeUtils";
 import type { AnimeDashboardChannel } from "@/components/anime/types";
-import type { AnimeSearchResult } from "@/lib/api-client";
+import type { AnimeSearchMediaType, AnimeSearchResult } from "@/lib/api-client";
 
 interface AnimeSetupPanelProps {
   searchInput: string;
+  searchMediaType: AnimeSearchMediaType;
   searchResults: AnimeSearchResult[];
   selectedAnime: AnimeSearchResult | null;
   searchLoading: boolean;
@@ -26,10 +27,12 @@ interface AnimeSetupPanelProps {
   onReminderMinutesChange: (value: number) => void;
   onSubscribe: () => void | Promise<void>;
   notificationChannelInputRef?: React.RefObject<HTMLInputElement | null>;
+  onSearchMediaTypeChange: (value: AnimeSearchMediaType) => void;
 }
 
-function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResult | null; searchInput: string; channelId: string }) {
+function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResult | null; searchInput: string; channelId: string; searchMediaType: AnimeSearchMediaType }) {
   if (args.saving) return "Saving...";
+  if (args.searchMediaType === "manga" || args.selectedAnime?.type === "MANGA") return "Lookup Only";
   if (!args.selectedAnime && !args.searchInput.trim()) return "Pick Anime First";
   if (args.selectedAnime && !canSubscribe(args.selectedAnime)) return "Cannot Subscribe";
   if (!args.channelId) return "Choose Channel";
@@ -38,6 +41,7 @@ function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResul
 
 export function AnimeSetupPanel({
   searchInput,
+  searchMediaType,
   searchResults,
   selectedAnime,
   searchLoading,
@@ -48,6 +52,7 @@ export function AnimeSetupPanel({
   reminderMinutes,
   saving,
   onSearchInputChange,
+  onSearchMediaTypeChange,
   onSelectedAnimeChange,
   onChannelChange,
   onReminderMinutesChange,
@@ -56,8 +61,9 @@ export function AnimeSetupPanel({
 }: AnimeSetupPanelProps) {
   const hasAnimeInput = Boolean(selectedAnime || searchInput.trim());
   const invalidSelectedAnime = Boolean(selectedAnime && !canSubscribe(selectedAnime));
-  const needsChannel = !channelId && hasAnimeInput;
-  const subscribeDisabled = saving || !hasAnimeInput || invalidSelectedAnime;
+  const mangaLookup = searchMediaType === "manga" || selectedAnime?.type === "MANGA";
+  const needsChannel = !channelId && hasAnimeInput && !mangaLookup;
+  const subscribeDisabled = saving || !hasAnimeInput || invalidSelectedAnime || mangaLookup;
 
   return (
     <Paper sx={{ ...panelSx, p: 3 }}>
@@ -65,12 +71,36 @@ export function AnimeSetupPanel({
         <Stack spacing={0.5}>
           <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, display: "flex", gap: 1, alignItems: "center" }}>
             <Search fontSize="small" />
-            Configure Anime
+            Search AniList
           </Typography>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-            Pick the exact season/version from AniList, then choose the Discord channel that receives episode reminders.
+            Anime entries can be subscribed to episode reminders. Manga, manhwa, webtoons, and light novels are lookup-only.
           </Typography>
         </Stack>
+
+        <ToggleButtonGroup
+          exclusive
+          fullWidth
+          value={searchMediaType}
+          onChange={(_event, value: AnimeSearchMediaType | null) => {
+            if (value) onSearchMediaTypeChange(value);
+          }}
+          sx={{
+            "& .MuiToggleButton-root": {
+              color: "rgba(255,255,255,0.72)",
+              borderColor: "rgba(255,255,255,0.10)",
+              textTransform: "none",
+              fontWeight: 800,
+              "&.Mui-selected": {
+                color: "grey.50",
+                bgcolor: "rgba(2,169,255,0.20)",
+              },
+            },
+          }}
+        >
+          <ToggleButton value="anime">Anime</ToggleButton>
+          <ToggleButton value="manga">Manga</ToggleButton>
+        </ToggleButtonGroup>
 
         <Autocomplete
           fullWidth
@@ -91,8 +121,8 @@ export function AnimeSetupPanel({
           renderInput={(params) => (
             <TextField
               {...params}
-              label="Anime Search"
-              placeholder="Frieren, Apothecary Diaries, or AniList ID"
+              label={searchMediaType === "manga" ? "Manga Search" : "Anime Search"}
+              placeholder={searchMediaType === "manga" ? "Solo Leveling, Omniscient Reader, or AniList ID" : "Frieren, Apothecary Diaries, or AniList ID"}
               helperText={getSubscribeHint({ anime: selectedAnime, channelId, saving })}
               sx={fieldSx}
               slotProps={{
@@ -172,7 +202,7 @@ export function AnimeSetupPanel({
           onClick={() => onSubscribe()}
           sx={primaryButtonSx}
         >
-          {subscribeLabel({ saving, selectedAnime, searchInput, channelId })}
+          {subscribeLabel({ saving, selectedAnime, searchInput, channelId, searchMediaType })}
         </Button>
       </Stack>
     </Paper>

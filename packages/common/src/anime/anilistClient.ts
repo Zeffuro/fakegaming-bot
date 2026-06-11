@@ -4,12 +4,14 @@ const ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
 
 export interface AniListTitle {
     id: number;
+    type?: AniListMediaType | null;
     title: {
         romaji?: string | null;
         english?: string | null;
         native?: string | null;
     };
     description?: string | null;
+    synonyms?: string[] | null;
     siteUrl?: string | null;
     coverImage?: {
         large?: string | null;
@@ -22,9 +24,25 @@ export interface AniListTitle {
     seasonYear?: number | null;
     episodes?: number | null;
     duration?: number | null;
+    chapters?: number | null;
+    volumes?: number | null;
+    countryOfOrigin?: string | null;
     averageScore?: number | null;
+    meanScore?: number | null;
+    popularity?: number | null;
+    rankings?: AniListMediaRank[] | null;
     genres?: string[] | null;
     nextAiringEpisode?: AniListAiringEpisode | null;
+}
+
+export interface AniListMediaRank {
+    rank: number;
+    type?: 'RATED' | 'POPULAR' | string | null;
+    allTime?: boolean | null;
+    context?: string | null;
+    year?: number | null;
+    season?: AniListSeason | string | null;
+    format?: string | null;
 }
 
 export interface AniListAiringEpisode {
@@ -39,7 +57,10 @@ export interface AniListAiringScheduleItem extends AniListAiringEpisode {
 }
 
 export type AniListSeason = 'WINTER' | 'SPRING' | 'SUMMER' | 'FALL';
-export type AniListMediaFormat = 'TV' | 'TV_SHORT' | 'MOVIE' | 'SPECIAL' | 'OVA' | 'ONA' | 'MUSIC';
+export type AniListMediaType = 'ANIME' | 'MANGA';
+export type AniListAnimeFormat = 'TV' | 'TV_SHORT' | 'MOVIE' | 'SPECIAL' | 'OVA' | 'ONA' | 'MUSIC';
+export type AniListMangaFormat = 'MANGA' | 'NOVEL' | 'ONE_SHOT';
+export type AniListMediaFormat = AniListAnimeFormat | AniListMangaFormat;
 export type AniListMediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 export type AniListSeasonScope = 'airing' | 'chart' | 'tv' | 'all';
 
@@ -69,12 +90,14 @@ interface GraphQlResponse<T> {
 
 const titleFields = `
     id
+    type
     title {
         romaji
         english
         native
     }
     description(asHtml: false)
+    synonyms
     siteUrl
     coverImage {
         large
@@ -87,7 +110,21 @@ const titleFields = `
     seasonYear
     episodes
     duration
+    chapters
+    volumes
+    countryOfOrigin
     averageScore
+    meanScore
+    popularity
+    rankings {
+        rank
+        type
+        allTime
+        context
+        year
+        season
+        format
+    }
     genres
     nextAiringEpisode {
         airingAt
@@ -96,8 +133,8 @@ const titleFields = `
     }
 `;
 
-const searchAnimeQuery = `
-query SearchAnime($search: String!, $page: Int!, $perPage: Int!) {
+const searchMediaQuery = `
+query SearchMedia($search: String!, $type: MediaType!, $page: Int!, $perPage: Int!) {
     Page(page: $page, perPage: $perPage) {
         pageInfo {
             total
@@ -106,16 +143,16 @@ query SearchAnime($search: String!, $page: Int!, $perPage: Int!) {
             hasNextPage
             perPage
         }
-        media(search: $search, type: ANIME, isAdult: false, sort: SEARCH_MATCH) {
+        media(search: $search, type: $type, isAdult: false, sort: SEARCH_MATCH) {
             ${titleFields}
         }
     }
 }
 `;
 
-const animeByIdQuery = `
-query AnimeById($id: Int!) {
-    Media(id: $id, type: ANIME, isAdult: false) {
+const mediaByIdQuery = `
+query MediaById($id: Int!, $type: MediaType) {
+    Media(id: $id, type: $type, isAdult: false) {
         ${titleFields}
     }
 }
@@ -200,7 +237,7 @@ function normalizeAniListPageInfo(pageInfo: AniListPageInfo | null | undefined, 
 }
 
 export function getAniListSeasonScopeFilters(scope: AniListSeasonScope = 'airing'): Required<Pick<AniListSeasonFilter, 'formats' | 'statuses'>> {
-    const chartFormats: AniListMediaFormat[] = ['TV', 'TV_SHORT', 'ONA', 'OVA', 'MOVIE', 'SPECIAL'];
+    const chartFormats: AniListAnimeFormat[] = ['TV', 'TV_SHORT', 'ONA', 'OVA', 'MOVIE', 'SPECIAL'];
     if (scope === 'tv') {
         return {
             formats: ['TV', 'TV_SHORT'],
@@ -232,7 +269,12 @@ export function formatAniListSeasonScope(scope: AniListSeasonScope = 'airing'): 
     return 'airing/upcoming';
 }
 
-export async function searchAniListAnimePage(search: string, page = 1, perPage = 10): Promise<AniListPageResult<AniListTitle>> {
+export async function searchAniListMediaPage(
+    search: string,
+    type: AniListMediaType = 'ANIME',
+    page = 1,
+    perPage = 10,
+): Promise<AniListPageResult<AniListTitle>> {
     const query = search.trim();
     if (!query) return { items: [], pageInfo: { currentPage: 1, hasNextPage: false, perPage } };
     const log = getLogger({ name: 'anime:anilist' });
@@ -240,32 +282,56 @@ export async function searchAniListAnimePage(search: string, page = 1, perPage =
     const normalizedPerPage = normalizePerPage(perPage, 10);
     try {
         const data = await anilistRequest<{ Page?: { media?: AniListTitle[] | null; pageInfo?: AniListPageInfo | null } }>(
-            searchAnimeQuery,
-            { search: query, page: normalizedPage, perPage: normalizedPerPage },
+            searchMediaQuery,
+            { search: query, type, page: normalizedPage, perPage: normalizedPerPage },
         );
         return {
             items: data.Page?.media ?? [],
             pageInfo: normalizeAniListPageInfo(data.Page?.pageInfo, data.Page?.media?.length ?? 0, normalizedPage, normalizedPerPage),
         };
     } catch (err) {
-        log.warn({ err, search: query }, 'AniList anime search failed');
+        log.warn({ err, search: query, type }, 'AniList media search failed');
         return { items: [], pageInfo: { currentPage: normalizedPage, hasNextPage: false, perPage: normalizedPerPage } };
     }
 }
 
+export async function searchAniListMedia(search: string, type: AniListMediaType = 'ANIME'): Promise<AniListTitle[]> {
+    return (await searchAniListMediaPage(search, type, 1, 10)).items;
+}
+
+export async function searchAniListAnimePage(search: string, page = 1, perPage = 10): Promise<AniListPageResult<AniListTitle>> {
+    return searchAniListMediaPage(search, 'ANIME', page, perPage);
+}
+
 export async function searchAniListAnime(search: string): Promise<AniListTitle[]> {
-    return (await searchAniListAnimePage(search, 1, 10)).items;
+    return searchAniListMedia(search, 'ANIME');
+}
+
+export async function searchAniListMangaPage(search: string, page = 1, perPage = 10): Promise<AniListPageResult<AniListTitle>> {
+    return searchAniListMediaPage(search, 'MANGA', page, perPage);
+}
+
+export async function searchAniListManga(search: string): Promise<AniListTitle[]> {
+    return searchAniListMedia(search, 'MANGA');
+}
+
+export async function getAniListMediaById(id: number, type?: AniListMediaType): Promise<AniListTitle | null> {
+    const log = getLogger({ name: 'anime:anilist' });
+    try {
+        const data = await anilistRequest<{ Media?: AniListTitle | null }>(mediaByIdQuery, { id, type });
+        return data.Media ?? null;
+    } catch (err) {
+        log.warn({ err, id, type }, 'AniList media lookup failed');
+        return null;
+    }
 }
 
 export async function getAniListAnimeById(id: number): Promise<AniListTitle | null> {
-    const log = getLogger({ name: 'anime:anilist' });
-    try {
-        const data = await anilistRequest<{ Media?: AniListTitle | null }>(animeByIdQuery, { id });
-        return data.Media ?? null;
-    } catch (err) {
-        log.warn({ err, id }, 'AniList anime lookup failed');
-        return null;
-    }
+    return getAniListMediaById(id, 'ANIME');
+}
+
+export async function getAniListMangaById(id: number): Promise<AniListTitle | null> {
+    return getAniListMediaById(id, 'MANGA');
 }
 
 export async function getAniListNextAiring(mediaIds: number[]): Promise<AniListAiringScheduleItem[]> {
@@ -332,7 +398,7 @@ export function getNextAniListSeason(now: Date = new Date()): { season: AniListS
 }
 
 export function getAniListDisplayTitle(title: Pick<AniListTitle, 'title'>): string {
-    return title.title.english || title.title.romaji || title.title.native || 'Unknown anime';
+    return title.title.english || title.title.romaji || title.title.native || 'Unknown title';
 }
 
 export function isAniListSubscribable(title: Pick<AniListTitle, 'status'>): boolean {

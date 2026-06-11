@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, type AnimeSearchResult, type AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
+import { api, type AnimeSearchMediaType, type AnimeSearchResult, type AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
 import { canSubscribe, errorMessage, formatAnimeTitle, formatStatus } from "@/components/anime/animeUtils";
 import { ANIME_SEASON_PAGE_SIZE, type AnimeSeasonOption, type AnimeSeasonScope } from "@/components/anime/animeTheme";
 
@@ -12,6 +12,8 @@ export interface UseAnimeDashboardResult {
   setError: (error: string | null) => void;
   searchInput: string;
   setSearchInput: (value: string) => void;
+  searchMediaType: AnimeSearchMediaType;
+  setSearchMediaType: (value: AnimeSearchMediaType) => void;
   searchResults: AnimeSearchResult[];
   selectedAnime: AnimeSearchResult | null;
   setSelectedAnime: (value: AnimeSearchResult | null) => void;
@@ -45,6 +47,7 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
   const [error, setError] = useState<string | null>(null);
 
   const [searchInput, setSearchInputState] = useState("");
+  const [searchMediaType, setSearchMediaTypeState] = useState<AnimeSearchMediaType>("anime");
   const [searchResults, setSearchResults] = useState<AnimeSearchResult[]>([]);
   const [selectedAnime, setSelectedAnimeState] = useState<AnimeSearchResult | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -91,6 +94,12 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
     setSearchInputState(value ? formatAnimeTitle(value) : "");
   }, []);
 
+  const setSearchMediaType = useCallback((value: AnimeSearchMediaType) => {
+    setSearchMediaTypeState(value);
+    setSelectedAnimeState(null);
+    setSearchResults([]);
+  }, []);
+
   useEffect(() => {
     const query = searchInput.trim();
     if (query.length < 2 || (selectedAnime && formatAnimeTitle(selectedAnime) === query)) {
@@ -100,14 +109,14 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
 
     const handle = window.setTimeout(() => {
       setSearchLoading(true);
-      api.searchAnime(query, 1, 10)
+      api.searchAnime(query, 1, 10, searchMediaType)
         .then((data) => setSearchResults(data.results))
-        .catch((err: unknown) => setError(errorMessage(err, "Anime search failed")))
+        .catch((err: unknown) => setError(errorMessage(err, searchMediaType === "manga" ? "Manga search failed" : "Anime search failed")))
         .finally(() => setSearchLoading(false));
     }, 250);
 
     return () => window.clearTimeout(handle);
-  }, [searchInput, selectedAnime]);
+  }, [searchInput, searchMediaType, selectedAnime]);
 
   const setSeason = useCallback((value: AnimeSeasonOption) => {
     setSeasonState(value);
@@ -163,8 +172,13 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
       setError("Choose a Discord channel for server notifications first.");
       return;
     }
+    if (searchMediaType === "manga" && !target) {
+      setError("Manga lookup is search-only; episode reminders are anime-only.");
+      return;
+    }
     if (target && !canSubscribe(target)) {
-      setError(`${formatAnimeTitle(target)} is ${formatStatus(target.status)}; episode reminders would never fire.`);
+      const reason = target.type === "MANGA" ? "manga entries do not have AniList airing schedules" : `it is ${formatStatus(target.status).toLowerCase()} and episode reminders would never fire`;
+      setError(`${formatAnimeTitle(target)} is lookup-only because ${reason}.`);
       return;
     }
 
@@ -184,7 +198,7 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
     } finally {
       setSaving(false);
     }
-  }, [channelId, fetchSubscriptions, guildId, reminderMinutes, searchInput, selectedAnime, setSelectedAnime]);
+  }, [channelId, fetchSubscriptions, guildId, reminderMinutes, searchInput, searchMediaType, selectedAnime, setSelectedAnime]);
 
   const deleteSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
     if (!config.id) return;
@@ -208,6 +222,8 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
     setError,
     searchInput,
     setSearchInput,
+    searchMediaType,
+    setSearchMediaType,
     searchResults,
     selectedAnime,
     setSelectedAnime,
@@ -239,6 +255,8 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
     error,
     searchInput,
     setSearchInput,
+    searchMediaType,
+    setSearchMediaType,
     searchResults,
     selectedAnime,
     setSelectedAnime,

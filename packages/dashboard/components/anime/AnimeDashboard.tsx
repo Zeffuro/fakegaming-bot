@@ -72,6 +72,7 @@ export function AnimeDashboard() {
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "420px minmax(0, 1fr)" }, gap: 3, mb: 3 }}>
             <AnimeSetupPanel
               searchInput={anime.searchInput}
+              searchMediaType={anime.searchMediaType}
               searchResults={anime.searchResults}
               selectedAnime={anime.selectedAnime}
               searchLoading={anime.searchLoading}
@@ -82,6 +83,7 @@ export function AnimeDashboard() {
               reminderMinutes={anime.reminderMinutes}
               saving={anime.saving}
               onSearchInputChange={anime.setSearchInput}
+              onSearchMediaTypeChange={anime.setSearchMediaType}
               onSelectedAnimeChange={anime.setSelectedAnime}
               onChannelChange={anime.setChannelId}
               onReminderMinutesChange={anime.setReminderMinutes}

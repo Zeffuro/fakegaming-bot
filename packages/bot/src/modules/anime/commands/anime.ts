@@ -404,7 +404,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 }
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
-    await anilistAutocomplete(interaction);
+    await anilistAutocomplete(interaction, 'ANIME');
 }
 
 async function handleComponent(interaction: ButtonInteraction): Promise<boolean> {
