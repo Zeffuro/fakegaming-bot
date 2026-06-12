@@ -292,8 +292,8 @@ export interface AnimeSearchResult {
 // Typed API methods using OpenAPI path helpers.
 export const api = {
   // Twitch APIs
-  getTwitchConfigs: () =>
-    apiRequest<TwitchListResponse>(API_ENDPOINTS.TWITCH),
+  getTwitchConfigs: (guildId?: string) =>
+    apiRequest<TwitchListResponse>(guildId ? `${API_ENDPOINTS.TWITCH}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.TWITCH),
 
   createTwitchStream: (data: TwitchCreateRequest) =>
     apiRequest<TwitchCreateResponse>(
@@ -308,8 +308,8 @@ export const api = {
     ),
 
   // TikTok APIs (parity with Twitch; types generated from OpenAPI after build)
-  getTikTokConfigs: () =>
-    apiRequest<TikTokListResponse>(API_ENDPOINTS.TIKTOK),
+  getTikTokConfigs: (guildId?: string) =>
+    apiRequest<TikTokListResponse>(guildId ? `${API_ENDPOINTS.TIKTOK}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.TIKTOK),
 
   // Check live status of a username (admin/debug)
   getTikTokLive: (username: string, debug: boolean = false) =>
@@ -330,8 +330,8 @@ export const api = {
     ),
 
   // Bluesky APIs
-  getBlueskyConfigs: () =>
-    apiRequest<BlueskyListResponse>(API_ENDPOINTS.BLUESKY),
+  getBlueskyConfigs: (guildId?: string) =>
+    apiRequest<BlueskyListResponse>(guildId ? `${API_ENDPOINTS.BLUESKY}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.BLUESKY),
 
   getBlueskyProfile: (handle: string) =>
     apiRequest<BlueskyProfileResponse>(
@@ -368,8 +368,8 @@ export const api = {
     ),
 
   // YouTube APIs
-  getYouTubeConfigs: () =>
-    apiRequest<YouTubeListResponse>(API_ENDPOINTS.YOUTUBE),
+  getYouTubeConfigs: (guildId?: string) =>
+    apiRequest<YouTubeListResponse>(guildId ? `${API_ENDPOINTS.YOUTUBE}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.YOUTUBE),
 
   createYouTubeChannel: (data: YouTubeCreateRequest) =>
     apiRequest<YouTubeCreateResponse>(
@@ -391,8 +391,8 @@ export const api = {
     apiRequest<PatchNoteResponse>(`${API_ENDPOINTS.PATCH_NOTES}/${encodeURIComponent(game)}`),
 
   // Patch Subscriptions APIs
-  getPatchSubscriptions: () =>
-    apiRequest<PatchSubscriptionConfig[]>(API_ENDPOINTS.PATCH_SUBSCRIPTIONS),
+  getPatchSubscriptions: (guildId?: string) =>
+    apiRequest<PatchSubscriptionConfig[]>(guildId ? `${API_ENDPOINTS.PATCH_SUBSCRIPTIONS}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.PATCH_SUBSCRIPTIONS),
 
   createPatchSubscription: (data: PatchSubscriptionCreateRequest) =>
     apiRequest<{ success: boolean }>(

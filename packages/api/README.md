@@ -230,12 +230,16 @@ All route handlers wrapped by `createBaseRouter()` automatically forward errors 
 Required:
 - `JWT_SECRET` - Secret for signing JWT tokens
 - `JWT_AUDIENCE` - JWT audience claim
+- `JWT_ISSUER` - JWT issuer claim
 - `DATABASE_PROVIDER` - Database type (sqlite/postgres)
 
 Optional:
 - `DASHBOARD_URL` - CORS origin for dashboard
 - `PORT` - Server port (default: 4000)
 - `SERVICE_API_TOKEN` / `INTERNAL_API_TOKEN` / `API_SERVICE_TOKEN` - Service-to-service token for `X-Service-Token` header
+
+Required when serving dashboard traffic:
+- `REDIS_URL` - Shared Redis instance also used by the dashboard. Guild-scoped API routes authorize from cached Discord guild permissions at `user:<discordId>:guilds`.
 
 ## Development
 

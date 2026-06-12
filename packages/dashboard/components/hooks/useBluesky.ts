@@ -23,7 +23,7 @@ export function useBlueskyConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const allConfigs = await api.getBlueskyConfigs();
+      const allConfigs = await api.getBlueskyConfigs(guildId as string);
       const guildConfigs = allConfigs.filter((config: BlueskyPostConfig) => config.guildId === guildId);
       setConfigs(guildConfigs);
     } catch (err: any) {

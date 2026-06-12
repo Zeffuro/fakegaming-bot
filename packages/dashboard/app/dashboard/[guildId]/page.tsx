@@ -20,14 +20,15 @@ import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 export default function GuildDashboard() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const encodedGuildId = encodeURIComponent(guildId);
+  const guildReady = Boolean(guild);
 
   const twitchApi = useTwitchConfigs(guildId);
   const tiktokApi = useTikTokConfigs(guildId);
   const blueskyApi = useBlueskyConfigs(guildId);
   const youtubeApi = useYouTubeConfigs(guildId);
   const patchApi = usePatchSubscriptions(guildId);
-  const animeApi = useAnimeConfigs(guildId);
-  const birthdayApi = useBirthdays(guildId);
+  const animeApi = useAnimeConfigs(guildId, { enabled: guildReady });
+  const birthdayApi = useBirthdays(guildId, { enabled: guildReady });
 
   const notificationLoading = twitchApi.loading || tiktokApi.loading || blueskyApi.loading || youtubeApi.loading || patchApi.loading || animeApi.loading || birthdayApi.loading;
   const totalConfigured = (twitchApi.configs?.length ?? 0)

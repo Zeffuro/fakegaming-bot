@@ -16,8 +16,9 @@ import type { AnimeSearchResult } from "@/lib/api-client";
 
 export function AnimeDashboard() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
-  const anime = useAnimeDashboard(guildId);
-  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId);
+  const guildReady = Boolean(guild);
+  const anime = useAnimeDashboard(guildId, { enabled: guildReady });
+  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: guildReady });
   const notificationChannelInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedChannel = useMemo(

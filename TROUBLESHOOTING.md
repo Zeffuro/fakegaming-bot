@@ -426,19 +426,34 @@ This interaction failed
 
 1. **User is not in the guild**
 2. **User doesn't have administrator permissions**
-3. **Cache hasn't updated**
+3. **Redis is missing or not shared between dashboard and API**
+4. **Guild permission cache hasn't updated**
 
 **Solutions:**
 
 1. **Verify user is guild admin:**
    - Check in Discord server settings
 
-2. **Clear guild cache:**
-   ```sql
-   DELETE FROM "CacheConfigs" WHERE "key" LIKE 'user:%:guilds';
+2. **Verify Redis is running and shared:**
+   ```bash
+   docker-compose ps redis
+   docker-compose logs redis
+   docker-compose exec redis redis-cli ping
    ```
 
-3. **Logout and login again**
+3. **Check API and dashboard use the same `REDIS_URL`:**
+   - Bundled Docker Redis uses `redis://redis:6379`
+   - Hosted Redis is supported; set both services to the same hosted `REDIS_URL`
+   - Manual deployment should also set both to the same Redis instance
+
+4. **Refresh Discord guild permissions:**
+   - Visit `/api/guilds?refresh=1` through the dashboard session
+   - Or log out and log in again
+
+5. **Check the shared guild cache key exists:**
+   ```bash
+   docker-compose exec redis redis-cli --scan --pattern 'user:*:guilds'
+   ```
 
 ### Dashboard shows blank page
 
@@ -449,7 +464,7 @@ This interaction failed
 
 2. **Verify API is reachable:**
    ```bash
-   curl http://localhost:3001/api/healthz
+   curl http://localhost:3001/healthz
    ```
 
 3. **Check dashboard build:**
@@ -486,8 +501,9 @@ This interaction failed
 2. **Verify JWT_SECRET matches** between API and dashboard
 
 3. **Check token expiration:**
-   - Tokens expire after 24 hours (default)
-   - Login again to get new token
+   - Access JWTs expire after 20 minutes
+   - The dashboard refreshes them with the `refresh_session` cookie
+   - Log in again if refresh returns 401
 
 ### 403 CSRF token missing
 
@@ -537,7 +553,7 @@ This interaction failed
 
 2. **Check database connection:**
    ```bash
-   curl http://localhost:3001/api/ready
+   curl http://localhost:3001/ready
    ```
 
 3. **Verify all environment variables are set**
@@ -704,8 +720,8 @@ LOG_PRETTY=1  # For development only
 Verify services are healthy:
 
 ```bash
-curl http://localhost:3001/api/healthz
-curl http://localhost:3001/api/ready
+curl http://localhost:3001/healthz
+curl http://localhost:3001/ready
 curl http://localhost:8081/healthz  # Bot health
 ```
 

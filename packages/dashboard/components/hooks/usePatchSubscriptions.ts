@@ -29,7 +29,7 @@ export function usePatchSubscriptions(guildId: string | string[]) {
   const fetchConfigs = useCallback(async () => {
     try {
       setLoading(true);
-      const all = await api.getPatchSubscriptions();
+      const all = await api.getPatchSubscriptions(guildId as string);
       const guildSubs = (all as PatchSubscriptionConfig[]).filter(s => s.guildId === guildId);
       setConfigs(guildSubs.map(mapToUI));
     } catch (err: any) {

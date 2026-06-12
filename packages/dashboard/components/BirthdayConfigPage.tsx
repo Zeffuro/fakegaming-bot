@@ -94,7 +94,8 @@ function toPayload(form: typeof emptyForm): BirthdayFormData | null {
 
 export default function BirthdayConfigPage() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
-  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId);
+  const guildReady = Boolean(guild);
+  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: guildReady });
   const {
     birthdays,
     userMap,
@@ -106,7 +107,7 @@ export default function BirthdayConfigPage() {
     addBirthday,
     updateBirthday,
     deleteBirthday,
-  } = useBirthdays(guildId);
+  } = useBirthdays(guildId, { enabled: guildReady });
 
   const [form, setForm] = useState(emptyForm);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);

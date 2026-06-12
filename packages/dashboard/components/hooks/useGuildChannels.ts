@@ -6,12 +6,22 @@ interface DiscordChannel {
   type: number;
 }
 
-export function useGuildChannels(guildId: string | string[]) {
+interface UseGuildChannelsOptions {
+  enabled?: boolean;
+}
+
+export function useGuildChannels(guildId: string | string[], options: UseGuildChannelsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchChannels = async () => {
+    if (!enabled || !guildId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch(`/api/guilds/${guildId}/channels`, {
@@ -39,10 +49,13 @@ export function useGuildChannels(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      fetchChannels();
+    if (!enabled || !guildId) {
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchChannels();
+  }, [enabled, guildId]);
 
   return {
     channels,

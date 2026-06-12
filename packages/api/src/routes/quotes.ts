@@ -1,7 +1,7 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { checkUserGuildAccess } from '../utils/authHelpers.js';
+import { checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
 import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { quoteCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { QuoteConfig } from '@zeffuro/fakegaming-common/models';
@@ -21,6 +21,9 @@ const guildAuthorParamSchema = z.object({
 const searchQuerySchema = z.object({
     guildId: z.string().min(1),
     text: z.string().min(1)
+});
+const listQuerySchema = z.object({
+    guildId: z.string().min(1).optional()
 });
 
 // Router
@@ -42,9 +45,12 @@ const router = createBaseRouter();
  *               items:
  *                 $ref: '#/components/schemas/QuoteConfig'
  */
-router.get('/', async (_req, res) => {
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const quotes = await getConfigManager().quoteManager.getAllPlain();
-    res.json(quotes);
+    const visibleQuotes = await filterGuildScopedRecordsForRequest(req, res, quotes, guildId);
+    if (!visibleQuotes) return;
+    res.json(visibleQuotes);
 });
 
 /**
@@ -189,6 +195,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
     if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
+    const hasAccess = await filterGuildScopedRecordsForRequest(req, res, [quote], quote.guildId);
+    if (!hasAccess) return;
+    if (hasAccess.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
     res.json(quote);
 });
 

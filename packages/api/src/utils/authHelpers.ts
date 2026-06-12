@@ -4,10 +4,21 @@
 import { Request, Response, NextFunction } from 'express';
 import { defaultCacheManager, CACHE_KEYS, MinimalGuildData } from '@zeffuro/fakegaming-common';
 import { isGuildAdmin } from '@zeffuro/fakegaming-common';
-import type { AuthenticatedRequest } from '../types/express.js';
+import { isServiceRequest } from '../middleware/serviceAuth.js';
+import { isDashboardAdmin } from './dashboardAdmin.js';
 
 // Prefer the shared in-memory cache used by tests, fallback to default
 const _cache = ((globalThis as any).__testCacheManager ?? defaultCacheManager) as typeof defaultCacheManager;
+
+interface RequestWithOptionalUser extends Request {
+    user?: {
+        discordId?: string;
+    };
+}
+
+function getDiscordId(req: Request): string | undefined {
+    return (req as RequestWithOptionalUser).user?.discordId;
+}
 
 /**
  * Helper to check if a user has admin permissions for a guild
@@ -17,10 +28,19 @@ export async function checkUserGuildAccess(
     res: Response,
     guildId: string | undefined
 ): Promise<{ authorized: boolean, guilds?: MinimalGuildData[] }> {
-    const { discordId } = (req as AuthenticatedRequest).user;
+    const discordId = getDiscordId(req);
 
     if (!guildId) {
         res.status(400).json({ error: 'Missing guild ID parameter' });
+        return { authorized: false };
+    }
+
+    if (isServiceRequest(req) || isDashboardAdmin(discordId)) {
+        return { authorized: true };
+    }
+
+    if (!discordId) {
+        res.status(401).json({ error: 'Authentication required' });
         return { authorized: false };
     }
 
@@ -38,6 +58,81 @@ export async function checkUserGuildAccess(
     }
 
     return { authorized: true, guilds };
+}
+
+export interface GuildScopedRecord {
+    guildId?: string | null;
+}
+
+export async function filterGuildScopedRecordsForRequest<T extends GuildScopedRecord>(
+    req: Request,
+    res: Response,
+    records: T[],
+    guildId: string | undefined
+): Promise<T[] | null> {
+    const discordId = getDiscordId(req);
+
+    if (isServiceRequest(req) || isDashboardAdmin(discordId)) {
+        return guildId ? records.filter(record => record.guildId === guildId) : records;
+    }
+
+    if (!discordId) {
+        res.status(401).json({ error: 'Authentication required' });
+        return null;
+    }
+
+    if (guildId) {
+        const access = await checkUserGuildAccess(req, res, guildId);
+        if (!access.authorized) return null;
+        return records.filter(record => record.guildId === guildId);
+    }
+
+    const guilds = await _cache.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
+    if (!guilds) {
+        console.error(`[API] Cache miss for user guilds ${discordId}`);
+        res.status(403).json({ error: 'Not authorized for this guild' });
+        return null;
+    }
+
+    const authorizedGuildIds = new Set(
+        guilds
+            .filter(guild => isGuildAdmin(guilds, guild.id))
+            .map(guild => guild.id)
+    );
+
+    return records.filter(record => typeof record.guildId === 'string' && authorizedGuildIds.has(record.guildId));
+}
+
+export async function checkGuildScopedRecordAccess<T extends GuildScopedRecord>(
+    req: Request,
+    res: Response,
+    record: T
+): Promise<boolean> {
+    const guildId = typeof record.guildId === 'string' ? record.guildId : undefined;
+    const visibleRecords = await filterGuildScopedRecordsForRequest(req, res, [record], guildId);
+    if (!visibleRecords) return false;
+    if (visibleRecords.length === 0) {
+        res.status(403).json({ error: 'Not authorized for this guild' });
+        return false;
+    }
+    return true;
+}
+
+export async function checkGuildScopedUpdateAccess<T extends GuildScopedRecord>(
+    req: Request,
+    res: Response,
+    record: T,
+    nextGuildId: string | undefined
+): Promise<boolean> {
+    const hasCurrentAccess = await checkGuildScopedRecordAccess(req, res, record);
+    if (!hasCurrentAccess) return false;
+
+    if (nextGuildId && nextGuildId !== record.guildId) {
+        const nextAccess = await checkUserGuildAccess(req, res, nextGuildId);
+        return nextAccess.authorized;
+    }
+
+    return true;
 }
 
 /**

@@ -5,10 +5,17 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import {
+    requireGuildAdmin,
+    checkUserGuildAccess,
+    filterGuildScopedRecordsForRequest,
+    checkGuildScopedRecordAccess,
+    checkGuildScopedUpdateAccess
+} from '../utils/authHelpers.js';
 
 // Schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
+const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 const existsQuerySchema = z.object({
     twitchUsername: z.string().min(1),
     discordChannelId: z.string().min(1),
@@ -49,9 +56,12 @@ const verifyQuerySchema = z.object({
  *               items:
  *                 $ref: '#/components/schemas/TwitchStreamConfig'
  */
-router.get('/', async (_req, res) => {
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const streams = await getConfigManager().twitchManager.getAllPlain();
-    res.json(streams);
+    const visibleStreams = await filterGuildScopedRecordsForRequest(req, res, streams, guildId);
+    if (!visibleStreams) return;
+    res.json(visibleStreams);
 });
 
 /**
@@ -93,7 +103,7 @@ router.get('/', async (_req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
+router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdmin, async (req, res) => {
     const { twitchUsername, discordChannelId, guildId } = req.query as z.infer<typeof existsQuerySchema>;
     const exists = await getConfigManager().twitchManager.exists({ twitchUsername, discordChannelId, guildId });
     res.json({ exists });
@@ -180,6 +190,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, stream);
+    if (!hasAccess) return;
     res.json(stream);
 });
 
@@ -235,7 +247,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(twitchCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
     const created = await getConfigManager().twitchManager.upsert(req.body, ['guildId', 'twitchUsername']);
     res.status(created ? 201 : 200).json({ success: true });
@@ -290,6 +302,10 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(twitchUp
     const { id } = req.params;
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
+    const body = req.body as { guildId?: unknown };
+    const nextGuildId = typeof body.guildId === 'string' ? body.guildId : undefined;
+    const hasAccess = await checkGuildScopedUpdateAccess(req, res, stream, nextGuildId);
+    if (!hasAccess) return;
     await getConfigManager().twitchManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     res.json(updated);

@@ -4,6 +4,7 @@ import { jwtAuth } from '../middleware/auth.js';
 import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { disabledModuleCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
+import { filterGuildScopedRecordsForRequest, requireGuildAdmin, checkGuildScopedRecordAccess } from '../utils/authHelpers.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -40,10 +41,10 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const disabledModules = guildId
-        ? await getConfigManager().disabledModuleManager.getManyPlain({ guildId })
-        : await getConfigManager().disabledModuleManager.getAllPlain();
-    res.json(disabledModules);
+    const disabledModules = await getConfigManager().disabledModuleManager.getAllPlain();
+    const visibleDisabledModules = await filterGuildScopedRecordsForRequest(req, res, disabledModules, guildId);
+    if (!visibleDisabledModules) return;
+    res.json(visibleDisabledModules);
 });
 
 /**
@@ -112,6 +113,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const disabledModule = await getConfigManager().disabledModuleManager.findByPkPlain(Number(id));
     if (!disabledModule) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled module not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, disabledModule);
+    if (!hasAccess) return;
     res.json(disabledModule);
 });
 
@@ -141,7 +144,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(disabledModuleCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(disabledModuleCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const created = await getConfigManager().disabledModuleManager.addPlain(req.body);
     res.status(201).json(created);
 });
@@ -180,6 +183,8 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     const numericId = Number(id);
     const existing = await getConfigManager().disabledModuleManager.findByPkPlain(numericId);
     if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled module not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, existing);
+    if (!hasAccess) return;
     await getConfigManager().disabledModuleManager.removeByPk(numericId);
     res.json({ success: true });
 });

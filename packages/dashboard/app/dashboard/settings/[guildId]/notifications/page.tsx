@@ -20,13 +20,14 @@ import { useAnimeConfigs } from "@/components/hooks/useAnime";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
+    const guildReady = Boolean(guild);
     const twitchApi = useTwitchConfigs(guildId as string);
     const youtubeApi = useYouTubeConfigs(guildId as string);
     const patchApi = usePatchSubscriptions(guildId as string);
     const tiktokApi = useTikTokConfigs(guildId as string);
     const blueskyApi = useBlueskyConfigs(guildId as string);
-    const birthdayApi = useBirthdays(guildId as string);
-    const animeApi = useAnimeConfigs(guildId as string);
+    const birthdayApi = useBirthdays(guildId as string, { enabled: guildReady });
+    const animeApi = useAnimeConfigs(guildId as string, { enabled: guildReady });
 
     const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || blueskyApi.loading || birthdayApi.loading || animeApi.loading;
     const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + blueskyApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;

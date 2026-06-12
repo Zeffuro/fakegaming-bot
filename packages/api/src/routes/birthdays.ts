@@ -1,7 +1,7 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import { requireGuildAdmin, checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
 import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
 import { birthdayCreateRequestSchema, birthdayUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
@@ -38,15 +38,10 @@ const router = createBaseRouter();
  */
 router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    if (guildId) {
-        const access = await checkUserGuildAccess(req, res, guildId);
-        if (!access.authorized) return;
-    }
-
-    const birthdays = guildId
-        ? await getConfigManager().birthdayManager.getManyPlain({ guildId })
-        : await getConfigManager().birthdayManager.getAllPlain();
-    res.json(birthdays);
+    const birthdays = await getConfigManager().birthdayManager.getAllPlain();
+    const visibleBirthdays = await filterGuildScopedRecordsForRequest(req, res, birthdays, guildId);
+    if (!visibleBirthdays) return;
+    res.json(visibleBirthdays);
 });
 
 /**
@@ -76,6 +71,8 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
     const { userId, guildId } = req.params;
     const birthday = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
     if (!birthday) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+    const access = await checkUserGuildAccess(req, res, guildId as string);
+    if (!access.authorized) return;
     res.json(birthday);
 });
 
@@ -105,7 +102,7 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *       409:
  *         $ref: '#/components/responses/Conflict'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(birthdayCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(birthdayCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.body;
     try {

@@ -4,11 +4,18 @@ import { blueskyCreateRequestSchema, blueskyUpdateRequestSchema } from '@zeffuro
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import {
+    requireGuildAdmin,
+    checkUserGuildAccess,
+    filterGuildScopedRecordsForRequest,
+    checkGuildScopedRecordAccess,
+    checkGuildScopedUpdateAccess
+} from '../utils/authHelpers.js';
 import { existsQuerySchema, idParamSchema, profileQuerySchema } from './bluesky.schemas.js';
 import { fetchBlueskyProfile, normalizeBlueskyHandle } from '../jobs/bluesky.js';
 
 const router = createBaseRouter();
+const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 
 /**
  * @openapi
@@ -26,9 +33,12 @@ const router = createBaseRouter();
  *               items:
  *                 $ref: '#/components/schemas/BlueskyPostConfig'
  */
-router.get('/', async (_req, res) => {
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const configs = await getConfigManager().blueskyManager.getAllPlain();
-    res.json(configs);
+    const visibleConfigs = await filterGuildScopedRecordsForRequest(req, res, configs, guildId);
+    if (!visibleConfigs) return;
+    res.json(visibleConfigs);
 });
 
 /**
@@ -66,7 +76,7 @@ router.get('/', async (_req, res) => {
  *                 exists:
  *                   type: boolean
  */
-router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
+router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdmin, async (req, res) => {
     const { blueskyHandle, discordChannelId, guildId } = req.query as unknown as z.output<typeof existsQuerySchema>;
     const normalized = normalizeBlueskyHandle(blueskyHandle);
     const exists = normalized
@@ -143,6 +153,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, config);
+    if (!hasAccess) return;
     res.json(config);
 });
 
@@ -183,7 +195,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *                 success:
  *                   type: boolean
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(blueskyCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const body = req.body as z.infer<typeof blueskyCreateRequestSchema>;
     const blueskyHandle = normalizeBlueskyHandle(body.blueskyHandle);
     if (!blueskyHandle) {
@@ -226,6 +238,9 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
     const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
     const body = req.body as z.infer<typeof blueskyUpdateRequestSchema>;
+    const nextGuildId = typeof body.guildId === 'string' ? body.guildId : undefined;
+    const hasAccess = await checkGuildScopedUpdateAccess(req, res, config, nextGuildId);
+    if (!hasAccess) return;
     const normalized = typeof body.blueskyHandle === 'string' ? normalizeBlueskyHandle(body.blueskyHandle) : undefined;
     if (typeof body.blueskyHandle === 'string' && !normalized) {
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });

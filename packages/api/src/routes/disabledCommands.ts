@@ -4,6 +4,7 @@ import { jwtAuth } from '../middleware/auth.js';
 import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { disabledCommandCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
+import { filterGuildScopedRecordsForRequest, requireGuildAdmin, checkGuildScopedRecordAccess } from '../utils/authHelpers.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -40,10 +41,10 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const disabledCommands = guildId
-        ? await getConfigManager().disabledCommandManager.getManyPlain({ guildId })
-        : await getConfigManager().disabledCommandManager.getAllPlain();
-    res.json(disabledCommands);
+    const disabledCommands = await getConfigManager().disabledCommandManager.getAllPlain();
+    const visibleDisabledCommands = await filterGuildScopedRecordsForRequest(req, res, disabledCommands, guildId);
+    if (!visibleDisabledCommands) return;
+    res.json(visibleDisabledCommands);
 });
 
 /**
@@ -112,6 +113,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const disabledCommand = await getConfigManager().disabledCommandManager.findByPkPlain(Number(id));
     if (!disabledCommand) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, disabledCommand);
+    if (!hasAccess) return;
     res.json(disabledCommand);
 });
 
@@ -141,7 +144,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(disabledCommandCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(disabledCommandCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
     res.status(201).json(created);
 });
@@ -180,6 +183,8 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     const numericId = Number(id);
     const existing = await getConfigManager().disabledCommandManager.findByPkPlain(numericId);
     if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, existing);
+    if (!hasAccess) return;
     await getConfigManager().disabledCommandManager.removeByPk(numericId);
     res.json({ success: true });
 });

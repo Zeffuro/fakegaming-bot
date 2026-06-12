@@ -13,7 +13,7 @@ export function useTwitchConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const allConfigs = await api.getTwitchConfigs();
+      const allConfigs = await api.getTwitchConfigs(guildId as string);
 
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as TwitchStreamConfig[];
       setConfigs(guildConfigs);

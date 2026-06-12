@@ -11,7 +11,7 @@ export function useTikTokConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const allConfigs = await api.getTikTokConfigs();
+      const allConfigs = await api.getTikTokConfigs(guildId as string);
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as TikTokStreamConfig[];
       setConfigs(guildConfigs);
     } catch (err: any) {

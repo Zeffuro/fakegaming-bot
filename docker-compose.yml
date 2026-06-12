@@ -1,7 +1,10 @@
 services:
   # -------------------- POSTGRES --------------------
+  # Bundled Postgres for self-hosted deployments. Disable the bundled-postgres
+  # profile and set DATABASE_URL if you use an external Postgres server.
   postgres:
     image: postgres:17
+    profiles: ["bundled-postgres"]
     container_name: fakegaming-postgres
     restart: unless-stopped
     environment:
@@ -19,6 +22,24 @@ services:
     ports:
       - "${FORWARD_DB_PORT:-127.0.0.1:5432}:5432"
 
+  # -------------------- REDIS --------------------
+  # Convenience Redis for self-hosted deployments. Set REDIS_URL to a hosted
+  # Redis connection string and disable the bundled-redis profile if you use managed Redis.
+  redis:
+    image: redis:7-alpine
+    profiles: ["bundled-redis"]
+    container_name: fakegaming-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ${REDIS_DATA_PATH:-./data/redis}:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   # -------------------- API --------------------
   api:
     image: zeffuro/fakegaming-api:latest
@@ -30,8 +51,9 @@ services:
     restart: unless-stopped
     environment:
       PORT: 3001
-      DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DASHBOARD_URL: ${PRODUCTION_DASHBOARD_URL}
       PUBLIC_URL: ${PRODUCTION_API_URL}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
@@ -61,6 +83,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
@@ -78,8 +104,8 @@ services:
     container_name: fakegaming-bot
     restart: unless-stopped
     environment:
-      DATABASE_PROVIDER: postgres
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_PROVIDER: ${DATABASE_PROVIDER:-postgres}
+      DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}
       DB_MIGRATIONS_ENABLED: 0
       DB_SYNC_ENABLED: 0
       DATA_ROOT: /app/data
@@ -99,6 +125,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+        required: false
       api:
         condition: service_healthy
     healthcheck:
@@ -122,6 +149,7 @@ services:
       HOSTNAME: 0.0.0.0
       PUBLIC_URL: ${PRODUCTION_DASHBOARD_URL}
       API_URL: 'http://api:3001/api'
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
@@ -132,6 +160,9 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+        required: false
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s

@@ -94,7 +94,7 @@ describe('PatchSubscriptions API', () => {
         const created = await configManager.patchSubscriptionManager.addPlain({
             game: 'deletable-game',
             channelId: 'chan-del',
-            guildId: 'guild-del'
+            guildId: 'testguild1'
         });
         const res = await request(app)
             .delete(`/api/patchSubscriptions/${created.id}`)

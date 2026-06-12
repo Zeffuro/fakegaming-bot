@@ -4,7 +4,7 @@ Next.js dashboard for managing the fakegaming Discord bot.
 
 ## Overview
 
-Web dashboard for guild administrators to configure and manage the bot without using Discord commands. Built with Next.js 15, React, and TypeScript.
+Web dashboard for guild administrators to configure and manage the bot without using Discord commands. Built with Next.js 16, React, and TypeScript.
 
 ## Features
 
@@ -59,11 +59,11 @@ Web dashboard for guild administrators to configure and manage the bot without u
 
 ## Technology Stack
 
-- **Framework:** Next.js 15 (App Router)
+- **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
-- **Styling:** Tailwind CSS
-- **UI Components:** Custom React components
-- **Authentication:** Discord OAuth2 + JWT
+- **Styling:** Material UI with local dashboard components
+- **UI Components:** React components backed by MUI
+- **Authentication:** Discord OAuth2 + short-lived JWT + refresh sessions
 - **API Client:** Fetch API with type-safe wrappers
 - **Validation:** Zod (shared from common package)
 
@@ -113,8 +113,8 @@ JWT_ISSUER=fakegaming
 # Admins (comma-separated Discord user IDs)
 DASHBOARD_ADMINS=123456789012345678,987654321098765432
 
-# Optional: Redis (not required for development)
-# REDIS_URL=redis://localhost:6379
+# Redis shared cache (required when API and dashboard run separately)
+REDIS_URL=redis://localhost:6379
 ```
 
 ### Discord Application Setup
@@ -257,10 +257,11 @@ export default function QuotesPage({ params }) {
 4. Redirect to `/api/auth/discord/callback`
 5. Exchange code for Discord tokens
 6. Fetch user profile from Discord
-7. Issue JWT token
-8. Set HttpOnly cookie with JWT
-9. Set CSRF cookie
-10. Redirect to `/dashboard`
+7. Cache Discord profile, access token, and guild permissions in Redis
+8. Issue 20-minute JWT token
+9. Set HttpOnly `jwt` and `refresh_session` cookies
+10. Set CSRF cookie
+11. Redirect to `/dashboard`
 
 ### Protected Routes
 
@@ -283,14 +284,12 @@ Users can only access guilds where they have administrator permissions:
 
 ```typescript
 export async function checkGuildAccess(userId: string, guildId: string) {
-    const guilds = await getDiscordGuilds(userId);
-    const guild = guilds.find(g => g.id === guildId);
-    
-    if (!guild || !hasAdminPerms(guild.permissions)) {
-        throw new Error('Forbidden');
-    }
+    const guilds = await defaultCacheManager.get(CACHE_KEYS.userGuilds(userId));
+    return isGuildAdmin(guilds, guildId);
 }
 ```
+
+The API reads the same Redis cache key for guild-scoped route authorization. If API and dashboard do not share Redis, login can succeed while guild-scoped API routes return 403.
 
 ## API Integration
 
@@ -391,6 +390,7 @@ DISCORD_CLIENT_ID=...
 DISCORD_CLIENT_SECRET=...
 
 API_URL=http://api:3001/api
+REDIS_URL=redis://redis:6379
 
 JWT_SECRET=... (strong random string)
 JWT_AUDIENCE=fakegaming-dashboard
@@ -446,8 +446,9 @@ Test files are located in `__tests__` directories alongside source files.
 ### 403 Forbidden on Guild Pages
 
 1. Verify user has administrator permissions in the guild
-2. Check guild cache is not stale
-3. Logout and login again to refresh guild data
+2. Verify API and dashboard share the same Redis instance
+3. Check `user:<discordId>:guilds` exists in Redis
+4. Logout and login again, or request `/api/guilds?refresh=1`, to refresh guild data
 
 ### Dashboard Shows Blank
 

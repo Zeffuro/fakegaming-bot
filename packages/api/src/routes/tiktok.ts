@@ -4,11 +4,18 @@ import { tiktokCreateRequestSchema, tiktokUpdateRequestSchema } from '@zeffuro/f
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
-import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
+import {
+    requireGuildAdmin,
+    checkUserGuildAccess,
+    filterGuildScopedRecordsForRequest,
+    checkGuildScopedRecordAccess,
+    checkGuildScopedUpdateAccess
+} from '../utils/authHelpers.js';
 import { idParamSchema, existsQuerySchema, liveQuerySchema } from './tiktok.schemas.js';
 import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
 
 const router = createBaseRouter();
+const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 
 /**
  * @openapi
@@ -28,9 +35,12 @@ const router = createBaseRouter();
  *               items:
  *                 $ref: '#/components/schemas/TikTokStreamConfig'
  */
-router.get('/', async (_req, res) => {
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const streams = await getConfigManager().tiktokManager.getAllPlain();
-    res.json(streams);
+    const visibleStreams = await filterGuildScopedRecordsForRequest(req, res, streams, guildId);
+    if (!visibleStreams) return;
+    res.json(visibleStreams);
 });
 
 /**
@@ -72,7 +82,7 @@ router.get('/', async (_req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), async (req, res) => {
+router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdmin, async (req, res) => {
     const { tiktokUsername, discordChannelId, guildId } = req.query as unknown as z.output<typeof existsQuerySchema>;
     const manager = getConfigManager().tiktokManager as unknown as { getOne: (where: Record<string, unknown>, opts?: Record<string, unknown>) => Promise<unknown> };
     const existing = await manager.getOne({ tiktokUsername, discordChannelId, guildId }, { raw: true });
@@ -167,6 +177,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
+    const hasAccess = await checkGuildScopedRecordAccess(req, res, stream);
+    if (!hasAccess) return;
     res.json(stream);
 });
 
@@ -222,7 +234,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(tiktokCreateRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const created = await getConfigManager().tiktokManager.upsert(req.body, ['guildId', 'tiktokUsername']);
     res.status(created ? 201 : 200).json({ success: true });
 });
@@ -276,6 +288,10 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
     const { id } = req.params;
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
+    const body = req.body as { guildId?: unknown };
+    const nextGuildId = typeof body.guildId === 'string' ? body.guildId : undefined;
+    const hasAccess = await checkGuildScopedUpdateAccess(req, res, stream, nextGuildId);
+    if (!hasAccess) return;
     await getConfigManager().tiktokManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     res.json(updated);

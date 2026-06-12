@@ -48,15 +48,30 @@ This monorepo uses dedicated Dockerfiles and `.env` files for each service. The 
 
 ### Root .env (Docker Compose Only)
 ```bash
+# Compose mode
+# Default: starts bundled Postgres and Redis.
+COMPOSE_PROFILES=bundled-postgres,bundled-redis
+# Common modes:
+# - Docker Postgres + Docker Redis: COMPOSE_PROFILES=bundled-postgres,bundled-redis
+# - Docker Postgres + hosted Redis: COMPOSE_PROFILES=bundled-postgres and set REDIS_URL
+# - External Postgres + Docker Redis: COMPOSE_PROFILES=bundled-redis and set DATABASE_URL
+# - External Postgres + hosted Redis: COMPOSE_PROFILES=external-infra and set DATABASE_URL + REDIS_URL
+
 # PostgreSQL credentials for Docker Compose
 POSTGRES_USER=fakegaming
 POSTGRES_PASSWORD=your_secure_password
 POSTGRES_DB=fakegaming
 POSTGRES_PORT=5432
+# External Postgres override; leave unset when using bundled Postgres
+# DATABASE_URL=postgres://fakegaming:password@postgres-host:5432/fakegaming
 
 # Docker volume mappings
 POSTGRES_DATA_PATH=./data/postgres  # PostgreSQL data
 BOT_DATA_PATH=./data/bot           # Bot assets and SQLite backups
+
+# Redis shared cache/session store
+REDIS_URL=redis://redis:6379       # Bundled Docker Redis; use hosted Redis URL if preferred
+REDIS_DATA_PATH=./data/redis       # Only used by the bundled Redis service
 ```
 
 ### Service .env Files
@@ -103,6 +118,7 @@ BOT_DISABLE_PATCHNOTES_ANNOUNCE=0
 #### Twitch Auth & Token Persistence (Bot)
 - The bot uses Twurple with an app access token (client credentials).
 - Tokens are persisted in the database via the shared `CacheConfig` table using `CacheManager` (DB-backed), not Redis.
+  - This only describes the bot's Twitch app token. Dashboard refresh sessions, Discord user tokens, and guild permission caches use the shared Redis instance described below.
   - Rationale: Token writes are low volume (hourly refresh), and persistence across restarts is desired.
   - Free/limited Redis tiers are better reserved for high-churn caches; DB-backed persistence avoids external dependency and retains tokens across restarts.
 - Optional at-rest encryption:
@@ -133,8 +149,8 @@ JWT_ISSUER=fakegaming
 # Service-to-service token (Bot -> API)
 SERVICE_API_TOKEN=your_shared_service_token
 
-# Optional: Redis (not required for development)
-# REDIS_URL=redis://localhost:6379
+# Redis shared cache (required when API and dashboard run separately)
+REDIS_URL=redis://localhost:6379
 ```
 
 #### packages/dashboard/.env.development (example)
@@ -160,14 +176,15 @@ JWT_ISSUER=fakegaming
 # Admin Discord user IDs (comma-separated)
 DASHBOARD_ADMINS=123456789012345678,987654321098765432
 
-# Optional: Redis (not required for development)
-# REDIS_URL=redis://localhost:6379
+# Redis shared cache (required when API and dashboard run separately)
+REDIS_URL=redis://localhost:6379
 ```
 
 Notes on authentication flows:
-- Dashboard initiates Discord OAuth and completes it at `/api/auth/discord/callback`. It issues a short-lived JWT and sets it as an HttpOnly cookie `jwt`. No "dashboard client id/secret" is used to authenticate to the API.
+- Dashboard initiates Discord OAuth and completes it at `/api/auth/discord/callback`. It issues a 20-minute JWT as the HttpOnly `jwt` cookie and a server-side refresh session referenced by the HttpOnly `refresh_session` cookie. No "dashboard client id/secret" is used to authenticate to the API.
 - The Dashboard proxies browser requests to the API via `app/api/external/[...proxy]`. It forwards the `Authorization: Bearer <jwt>` header (derived from the cookie) and a CSRF token header/cookie for mutating requests.
 - The API protects routes with JWT middleware and expects a valid JWT signed with `JWT_SECRET`, `JWT_AUDIENCE`, and `JWT_ISSUER`.
+- Guild-scoped API routes rely on the shared Redis cache key `user:<discordId>:guilds`, which the dashboard writes during Discord login and `/api/guilds` refreshes. If Redis is missing or not shared by API and dashboard, login can succeed while guild-scoped routes return `403 Not authorized for this guild`.
 - The Bot authenticates to the API using a shared service token sent as `X-Service-Token`. The API validates it via `SERVICE_API_TOKEN` (or legacy `INTERNAL_API_TOKEN`/`API_SERVICE_TOKEN`). These service requests bypass JWT and CSRF internally but are still rate-limited and logged.
 
 ## Jobs backends (optional)
@@ -217,6 +234,12 @@ services:
     volumes:
       - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ${REDIS_DATA_PATH:-./data/redis}:/data
+
   bot:
     image: zeffuro/fakegaming-bot:latest
     env_file:
@@ -232,17 +255,21 @@ services:
       - ./packages/api/.env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
 
   dashboard:
     image: zeffuro/fakegaming-dashboard:latest
     env_file:
       - ./packages/dashboard/.env
+    environment:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
 ```
 
 Important:
 - `DATABASE_URL` is constructed from root `.env` variables and injected into containers, overriding any `DATABASE_URL` in service `.env` files.
+- `REDIS_URL` must point to the same Redis instance for API and dashboard. It stores dashboard refresh sessions and Discord guild permission caches used by API guild authorization. The included Redis container is a convenience; hosted Redis is fine if both services use the hosted URL.
 
 ## Setup Instructions
 
@@ -309,7 +336,7 @@ docker-compose -f docker-compose.local.yml up --build -d
 |---------|-----------------------------------|---------------------------------------------|
 | Purpose | Production deployment | Local Docker testing |
 | Images | Pre-built from Docker Hub | Built from source |
-| Database | PostgreSQL (included) | SQLite (via volume) |
+| Database | PostgreSQL (bundled or external) | SQLite (via volume) |
 | Environment | `.env` files | `.env.development` files |
 | Ports Exposed | Dashboard only (3000) | API (3001) + Dashboard (3000) |
 | Use Case | Deploy to server | Test Dockerfiles locally |
@@ -325,7 +352,7 @@ Both the Dashboard (Next.js) and API (Express) use a double-submit cookie patter
 
 Risk considerations:
 - SameSite=Lax mitigates cross-site contexts; token is random (32 bytes hex).
-- Because auth cookie `jwt` is HttpOnly + SameSite=Strict, token theft via XSS is still a concern; continue minimizing inline scripts and consider CSP.
+- Because auth cookies are HttpOnly + SameSite=Lax, token theft through ordinary client-side reads is blocked, but XSS is still a concern; continue minimizing inline scripts and consider CSP.
 
 Public names exported from common:
 - `CSRF_COOKIE_NAME` = `csrf`
@@ -381,9 +408,10 @@ To prevent accidental secret leaks and ensure consistent `.env` formatting:
 
 Rotation steps when a secret is exposed:
 - Immediately rotate the following (as applicable):
-  - DISCORD_BOT_TOKEN, TWITCH_CLIENT_SECRET, YOUTUBE_API_KEY, RIOT_* keys, OPENWEATHER_API_KEY, POSTGRES_PASSWORD
+  - DISCORD_BOT_TOKEN, DISCORD_CLIENT_SECRET, JWT_SECRET, SERVICE_API_TOKEN, TWITCH_CLIENT_SECRET, YOUTUBE_API_KEY, RIOT_* keys, OPENWEATHER_API_KEY, POSTGRES_PASSWORD
 - Update DATABASE_URL and any service configs using the rotated secret.
 - Redeploy services; verify they start cleanly.
+- Clear affected Redis session/cache keys or restart with an empty Redis data volume if a dashboard refresh session was exposed.
 - Purge any tracked `.env` files from git history (git rm --cached) and force-push if necessary; consider GitHub secret scanning.
 - Document the rotation in your ops notes and ensure CI/CD secrets are updated.
 

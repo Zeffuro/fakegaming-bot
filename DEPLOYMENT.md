@@ -35,6 +35,7 @@ This guide covers deploying the fakegaming-bot to production environments.
 - Docker & Docker Compose (for containerized deployment)
 - Node.js v22+ (for manual deployment)
 - PostgreSQL 17+ (for production database)
+- Redis 7+ (bundled in Docker Compose, or hosted Redis; required for dashboard sessions and shared guild-permission cache)
 - Git (for cloning the repository)
 
 ### External Services
@@ -66,18 +67,31 @@ cp .env.example .env
 nano .env
 ```
 
-Set database credentials and volume paths:
+Set Compose mode, database credentials, and volume paths:
 
 ```bash
+# Compose mode
+# Default: starts bundled Postgres and Redis.
+COMPOSE_PROFILES=bundled-postgres,bundled-redis
+# Common modes:
+# - Docker Postgres + Docker Redis: COMPOSE_PROFILES=bundled-postgres,bundled-redis
+# - Docker Postgres + hosted Redis: COMPOSE_PROFILES=bundled-postgres and set REDIS_URL
+# - External Postgres + Docker Redis: COMPOSE_PROFILES=bundled-redis and set DATABASE_URL
+# - External Postgres + hosted Redis: COMPOSE_PROFILES=external-infra and set DATABASE_URL + REDIS_URL
+
 # PostgreSQL configuration
 POSTGRES_USER=fakegaming
 POSTGRES_PASSWORD=CHANGE_THIS_TO_A_SECURE_PASSWORD
 POSTGRES_DB=fakegaming
 POSTGRES_PORT=5432
+# External Postgres override; leave unset when using bundled Postgres
+# DATABASE_URL=postgres://fakegaming:password@postgres-host:5432/fakegaming
 
 # Docker volume mappings
 POSTGRES_DATA_PATH=./data/postgres
 BOT_DATA_PATH=./data/bot
+REDIS_URL=redis://redis:6379
+REDIS_DATA_PATH=./data/redis
 ```
 
 #### Package `.env` Files (Service Configuration)
@@ -97,7 +111,8 @@ Edit each file with your production credentials. See [ENVIRONMENT.md](./ENVIRONM
 **Bot (`packages/bot/.env`):**
 ```bash
 DATABASE_PROVIDER=postgres
-# DATABASE_URL will be injected by Docker Compose
+# DATABASE_URL is injected from root .env / Docker Compose.
+# Set DATABASE_URL in root .env when using external Postgres.
 
 DISCORD_BOT_TOKEN=your_bot_token
 CLIENT_ID=your_application_id
@@ -123,7 +138,10 @@ DASHBOARD_URL=https://yourdomain.com
 PUBLIC_URL=https://api.yourdomain.com
 
 DATABASE_PROVIDER=postgres
-# DATABASE_URL will be injected by Docker Compose
+# DATABASE_URL is injected from root .env / Docker Compose.
+# Set DATABASE_URL in root .env when using external Postgres.
+# Use redis://redis:6379 for bundled Docker Redis, or your hosted Redis URL.
+REDIS_URL=redis://redis:6379
 
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
@@ -148,6 +166,8 @@ DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
 
 API_URL=http://api:3001/api
+# Use redis://redis:6379 for bundled Docker Redis, or your hosted Redis URL.
+REDIS_URL=redis://redis:6379
 
 JWT_SECRET=CHANGE_THIS_TO_LONG_RANDOM_STRING
 JWT_AUDIENCE=fakegaming-dashboard
@@ -178,7 +198,8 @@ docker-compose up -d
 
 This will:
 - Pull pre-built images from Docker Hub
-- Start PostgreSQL database
+- Start bundled PostgreSQL and/or Redis according to root `.env` `COMPOSE_PROFILES`
+- Use external PostgreSQL/Redis by omitting the matching bundled profile and setting `DATABASE_URL` and/or `REDIS_URL`
 - Start the bot, API, and dashboard
 - Create necessary volumes for persistent data
 
@@ -189,6 +210,7 @@ docker-compose ps
 docker-compose logs -f bot
 docker-compose logs -f api
 docker-compose logs -f dashboard
+docker-compose logs -f redis
 ```
 
 4. **Apply database migrations** (done automatically on startup)
@@ -271,6 +293,12 @@ Set `DATABASE_URL` in each service:
 
 ```bash
 DATABASE_URL=postgres://fakegaming:your_password@localhost:5432/fakegaming
+```
+
+Set the same `REDIS_URL` in the API and dashboard environments. This can be a local Redis or a hosted Redis provider:
+
+```bash
+REDIS_URL=redis://localhost:6379
 ```
 
 ### 5. Run Services
@@ -400,8 +428,8 @@ All services expose health endpoints:
 
 **API:**
 ```bash
-curl http://localhost:3001/api/healthz
-curl http://localhost:3001/api/ready
+curl http://localhost:3001/healthz
+curl http://localhost:3001/ready
 ```
 
 **Bot:**

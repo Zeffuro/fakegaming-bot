@@ -88,7 +88,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
     itemNameOptions,
     allowEdit = true,
 }: NotificationConfigPageProps<T>) {
-    const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId);
+    const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
 
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");

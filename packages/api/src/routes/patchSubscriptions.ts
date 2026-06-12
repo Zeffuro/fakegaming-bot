@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
 import { patchSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
+import { filterGuildScopedRecordsForRequest, requireGuildAdmin } from '../utils/authHelpers.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
+const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 
 // Router
 const router = createBaseRouter();
@@ -21,9 +23,12 @@ const router = createBaseRouter();
  *       200:
  *         description: List of patch subscriptions
  */
-router.get('/', async (_req, res) => {
+router.get('/', validateQuery(listQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const subscriptions = await getConfigManager().patchSubscriptionManager.getAllPlain();
-    res.json(subscriptions);
+    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, subscriptions, guildId);
+    if (!visibleSubscriptions) return;
+    res.json(visibleSubscriptions);
 });
 
 /**
@@ -48,6 +53,9 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const { id } = req.params;
     const subscription = await getConfigManager().patchSubscriptionManager.findByPkPlain(Number(id));
     if (!subscription) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
+    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, [subscription], subscription.guildId);
+    if (!visibleSubscriptions) return;
+    if (visibleSubscriptions.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
     res.json(subscription);
 });
 
@@ -73,7 +81,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
     await getConfigManager().patchSubscriptionManager.addPlain(req.body);
     res.status(201).json({ success: true });
 });
@@ -100,7 +108,7 @@ router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), async (r
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.put('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), async (req, res) => {
+router.put('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
     res.json({ success: true });
 });
@@ -132,6 +140,9 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     const numericId = Number(id);
     const existing = await getConfigManager().patchSubscriptionManager.findByPkPlain(numericId);
     if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
+    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, [existing], existing.guildId);
+    if (!visibleSubscriptions) return;
+    if (visibleSubscriptions.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
     await getConfigManager().patchSubscriptionManager.removeByPk(numericId);
     res.json({ success: true });
 });

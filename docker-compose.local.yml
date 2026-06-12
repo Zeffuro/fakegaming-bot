@@ -1,10 +1,28 @@
-version: '3.8'
-
 services:
   # The postgres service is commented out as it's not needed for local testing
   # postgres:
   #   volumes:
   #     - ${POSTGRES_DATA_PATH:-./data/postgres}:/var/lib/postgresql/data
+
+  # -------------------- REDIS --------------------
+  # Convenience Redis for local Docker. Set REDIS_URL to a hosted/local Redis
+  # connection string and start only the app services if you do not need this container.
+  redis:
+    image: redis:7-alpine
+    profiles: ["bundled-redis"]
+    container_name: fakegaming-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - ${REDIS_DATA_PATH:-./data/redis}:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   # -------------------- BOT --------------------
   bot:
@@ -45,6 +63,11 @@ services:
       - "3001:3001"
     environment:
       - PUBLIC_URL=http://api:3001/api
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+        required: false
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-api
     restart: unless-stopped
@@ -70,6 +93,11 @@ services:
       - HOST=0.0.0.0
       - API_URL=http://api:3001/api
       - PUBLIC_URL=http://localhost:3000
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      redis:
+        condition: service_healthy
+        required: false
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-dashboard
     restart: unless-stopped

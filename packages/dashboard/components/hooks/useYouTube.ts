@@ -23,7 +23,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
   const fetchConfigs = async () => {
     try {
       setLoading(true);
-      const allConfigs = await api.getYouTubeConfigs();
+      const allConfigs = await api.getYouTubeConfigs(guildId as string);
 
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YouTubeConfig[];
       const uniqueChannelIds = [...new Set(guildConfigs.map((config) => config.youtubeChannelId).filter(Boolean))];

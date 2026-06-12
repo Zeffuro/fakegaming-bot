@@ -2,78 +2,56 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in this project, please report it privately.
+Report vulnerabilities privately.
 
-- Use GitHub's [security advisory](https://github.com/Zeffuro/fakegaming-bot/security/advisories) feature if available.
-- Alternatively, open a new issue and mark it as security-related. **Do not disclose sensitive details publicly.**
-- The maintainers will respond as soon as possible and coordinate a fix.
+- Use GitHub Security Advisories for `Zeffuro/fakegaming-bot` when available.
+- If advisories are unavailable, contact the maintainer privately. Do not include exploitable details in a public issue.
 
-Thank you for helping keep the project and its users safe!
+## Current Auth Model
 
-# Contributor Covenant Code of Conduct
+- Dashboard login uses Discord OAuth at `/api/auth/discord/callback`.
+- The dashboard sets an HttpOnly `jwt` cookie with a 20-minute lifetime.
+- The dashboard sets an HttpOnly `refresh_session` cookie with a 14-day idle lifetime and a 30-day absolute lifetime.
+- Refresh sessions are stored server-side in Redis under hashed keys.
+- The `csrf` cookie is readable by client code and must match the `x-csrf-token` header for mutating requests.
+- API requests from the dashboard are proxied through `/api/external/[...proxy]`, where the dashboard forwards `Authorization: Bearer <jwt>` to the Express API.
+- Bot and trusted service calls use `X-Service-Token`, backed by `SERVICE_API_TOKEN`.
 
-## Our Pledge
+## Required Shared Cache
 
-We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for
-everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity
-and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion,
-or sexual identity and orientation.
+Redis is required when the API and dashboard run as separate processes or containers. It can be the bundled Docker Redis service or a hosted Redis instance; the API and dashboard just need the same `REDIS_URL`.
 
-We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
+The dashboard stores refresh sessions, Discord access tokens, user profiles, and Discord guild permission lists in Redis. The API authorizes guild-scoped routes, such as birthdays and anime subscriptions, from the shared `user:<discordId>:guilds` cache key.
 
-## Our Standards
+If Redis is missing or API and dashboard use different Redis instances, dashboard login can still issue cookies, but guild-scoped API routes can return `403 Not authorized for this guild`.
 
-Examples of behavior that contributes to a positive environment for our community include:
+## Secret Handling
 
-- Demonstrating empathy and kindness toward other people
-- Being respectful of differing opinions, viewpoints, and experiences
-- Giving and gracefully accepting constructive feedback
-- Accepting responsibility and apologizing to those affected by our mistakes, and learning from the experience
-- Focusing on what is best not just for us as individuals, but for the overall community
+Do not paste or commit live cookies, JWTs, OAuth tokens, service tokens, API keys, database URLs, or `.env` contents.
 
-Examples of unacceptable behavior include:
+If a dashboard cookie or token is exposed:
 
-- The use of sexualized language or imagery, and sexual attention or advances of any kind
-- Trolling, insulting or derogatory comments, and personal or political attacks
-- Public or private harassment
-- Publishing others’ private information, such as a physical or email address, without their explicit permission
-- Other conduct which could reasonably be considered inappropriate in a professional setting
+1. Log out of the dashboard to revoke the current refresh session when possible.
+2. Delete the affected Redis refresh-session key, or clear all dashboard refresh-session keys if the exact key is not known.
+3. Rotate `JWT_SECRET` if a signed JWT may have been exposed and immediate invalidation is required.
+4. Redeploy API and dashboard together after changing JWT settings.
 
-## Enforcement Responsibilities
+If a service secret is exposed, rotate it immediately:
 
-Community leaders are responsible for clarifying and enforcing our standards of acceptable behavior and will take
-appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive,
-or harmful.
+- `DISCORD_BOT_TOKEN`
+- `DISCORD_CLIENT_SECRET`
+- `JWT_SECRET`
+- `SERVICE_API_TOKEN`
+- `TWITCH_CLIENT_SECRET`
+- `YOUTUBE_API_KEY`
+- `RIOT_*` keys
+- `OPENWEATHER_API_KEY`
+- `POSTGRES_PASSWORD`
 
-Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits,
-issues, and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for
-moderation decisions when appropriate.
+After rotation, update deployment secrets, restart affected services, and verify API, bot, and dashboard startup logs.
 
-## Scope
+## Local Checks
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing
-the community in public spaces.
-
-## Enforcement
-
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the maintainer at
-zeffuro@gmail.com. All complaints will be reviewed and investigated promptly and fairly.
-
-All community leaders are obligated to respect the privacy and security of the reporter of any incident.
-
-## Enforcement Guidelines
-
-Community leaders will follow these Community Impact Guidelines in determining the consequences for any action they deem
-in violation of this Code of Conduct:
-
-1. Correction
-2. Warning
-3. Temporary Ban
-4. Permanent Ban
-
-## Attribution
-
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.1, available
-at https://www.contributor-covenant.org/version/2/1/code_of_conduct.html.
-
-[homepage]: https://www.contributor-covenant.org
+- Run `pnpm run ci:check-env` before publishing changes.
+- Keep `.env*` files untracked except `.env.example`.
+- Keep API, dashboard, and bot environment values aligned for `JWT_SECRET`, `JWT_AUDIENCE`, `JWT_ISSUER`, and `SERVICE_API_TOKEN`.

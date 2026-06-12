@@ -39,10 +39,15 @@ export interface UseAnimeDashboardResult {
   deleteSubscription: (config: AnimeSubscriptionDashboardConfig) => Promise<void>;
 }
 
-export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
+interface UseAnimeDashboardOptions {
+  enabled?: boolean;
+}
+
+export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOptions = {}): UseAnimeDashboardResult {
+  const enabled = options.enabled ?? true;
   const [serverSubs, setServerSubs] = useState<AnimeSubscriptionDashboardConfig[]>([]);
   const [personalSubs, setPersonalSubs] = useState<AnimeSubscriptionDashboardConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +69,11 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
   const [seasonLoading, setSeasonLoading] = useState(false);
 
   const fetchSubscriptions = useCallback(async () => {
-    if (!guildId) return;
+    if (!guildId || !enabled) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const [server, personal] = await Promise.all([
@@ -78,11 +87,16 @@ export function useAnimeDashboard(guildId: string): UseAnimeDashboardResult {
     } finally {
       setLoading(false);
     }
-  }, [guildId]);
+  }, [enabled, guildId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     void fetchSubscriptions();
-  }, [fetchSubscriptions]);
+  }, [enabled, fetchSubscriptions]);
 
   const setSearchInput = useCallback((value: string) => {
     setSearchInputState(value);

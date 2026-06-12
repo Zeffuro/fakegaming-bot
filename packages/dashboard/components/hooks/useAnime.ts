@@ -8,13 +8,23 @@ export type AnimeDashboardConfig = AnimeSubscriptionDashboardConfig & {
   cooldownMinutes?: number | null;
 };
 
-export function useAnimeConfigs(guildId: string | string[]) {
+interface UseAnimeConfigsOptions {
+  enabled?: boolean;
+}
+
+export function useAnimeConfigs(guildId: string | string[], options: UseAnimeConfigsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<AnimeDashboardConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfigs = async () => {
+    if (!enabled || !guildId) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const allConfigs = await api.getAnimeSubscriptions(guildId as string);
@@ -94,10 +104,13 @@ export function useAnimeConfigs(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      void fetchConfigs();
+    if (!enabled || !guildId) {
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchConfigs();
+  }, [enabled, guildId]);
 
   return {
     configs,

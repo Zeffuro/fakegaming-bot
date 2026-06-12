@@ -19,10 +19,15 @@ export interface ResolvedUser {
   nickname?: string | null;
 }
 
-export function useBirthdays(guildId: string) {
+interface UseBirthdaysOptions {
+  enabled?: boolean;
+}
+
+export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [birthdays, setBirthdays] = useState<BirthdayConfig[]>([]);
   const [userMap, setUserMap] = useState<Record<string, ResolvedUser>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +54,10 @@ export function useBirthdays(guildId: string) {
   }, [guildId]);
 
   const fetchBirthdays = useCallback(async () => {
-    if (!guildId) return;
+    if (!guildId || !enabled) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -62,7 +70,7 @@ export function useBirthdays(guildId: string) {
     } finally {
       setLoading(false);
     }
-  }, [guildId, resolveUsers]);
+  }, [enabled, guildId, resolveUsers]);
 
   const addBirthday = useCallback(async (payload: BirthdayFormData) => {
     if (!payload.userId || !payload.channelId || !payload.day || !payload.month) {
@@ -112,8 +120,13 @@ export function useBirthdays(guildId: string) {
   }, [fetchBirthdays, guildId]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
+
     void fetchBirthdays();
-  }, [fetchBirthdays]);
+  }, [enabled, fetchBirthdays]);
 
   return {
     birthdays,

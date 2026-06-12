@@ -107,6 +107,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 
 ### 🔒 Security & Infrastructure
 - JWT authentication with CSRF protection
+- Redis-backed dashboard sessions and shared guild-permission cache
 - Database-backed rate limiting
 - Comprehensive testing (80% coverage target)
 - Docker Compose deployment ready
@@ -235,9 +236,9 @@ You can run the bot and its dependencies using Docker Compose with pre-built ima
 docker-compose up -d
 ```
 
-- This will start the bot, PostgreSQL database, API, and dashboard services.
+- This will start the bot, API, dashboard, and whichever bundled infrastructure services are enabled by `COMPOSE_PROFILES`.
 - Uses pre-built images from Docker Hub (`zeffuro/fakegaming-*:latest`).
-- The root `.env` file controls Docker Compose variables (database credentials, volume paths).
+- The root `.env` file controls Docker Compose variables (database credentials, Redis URL, volume paths).
 - Each service's `.env` file is loaded for service-specific configuration.
 - To stop and remove containers:
   ```bash
@@ -255,6 +256,7 @@ docker-compose -f docker-compose.local.yml up --build -d
 - This builds images from source instead of pulling from Docker Hub.
 - Uses `.env.development` files for each service (development credentials).
 - No PostgreSQL (uses SQLite via shared volume).
+- Includes a Redis container by default; set `REDIS_URL` and start only the app services if using hosted Redis.
 - Exposes API on port 3001 and Dashboard on port 3000.
 - Perfect for testing Docker builds before deployment.
 - Access: Dashboard at http://localhost:3000, API at http://localhost:3001/api
@@ -360,7 +362,8 @@ Notes:
 ## Cross-Cutting Concerns (Security, Limits, Observability)
 
 - CSRF: Both API (Express) and Dashboard (Next.js) enforce CSRF on mutating routes via a shared core in `@zeffuro/fakegaming-common/security`.
-- Auth: JWT (HS256) with required issuer/audience. Cookies are HttpOnly/SameSite for dashboard.
+- Auth: JWT (HS256) with required issuer/audience. Dashboard uses HttpOnly `jwt` and `refresh_session` cookies, plus a readable `csrf` cookie for double-submit CSRF.
+- Shared cache: API and dashboard must share Redis for dashboard refresh sessions, Discord access tokens, and guild permission cache keys used by guild-scoped API authorization.
 - Rate limiting: DB-backed sliding window in API with standard headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, and `Retry-After` on 429.
 - Health/Readiness: `/healthz` and `/ready` endpoints for API and Bot. Docker compose exposes bot health locally only.
 - Logging: Pino-based structured logs (`getLogger` in common). Dev pretty logs with `LOG_PRETTY=1`. API uses `pino-http` for request logging (reqId, status, latency) and skips `/healthz` noise.

@@ -124,7 +124,7 @@ router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res
     res.json({ ...resolved, scope, scopeLabel: formatAniListSeasonScope(scope as AniListSeasonScope), results, pageInfo });
 });
 
-router.post('/', jwtAuth, requireGuildAdmin, validateBody(animeSubscribeRequestSchema), async (req, res) => {
+router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuildAdmin, async (req, res) => {
     const body = req.body as z.infer<typeof animeSubscribeRequestSchema>;
     const anime = await resolveAnime(body);
     if (!anime) {

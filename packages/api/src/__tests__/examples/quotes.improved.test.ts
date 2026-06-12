@@ -45,13 +45,14 @@ describe('Quotes API (Improved Pattern)', () => {
     });
 
     describe('GET /api/quotes', () => {
-        it('should return all quotes', async () => {
+        it('should return authorized quotes', async () => {
             const res = await request(app)
                 .get('/api/quotes')
                 .set('Authorization', `Bearer ${token}`);
 
             expectOk(res);
-            expect(res.body).toHaveLength(3);
+            expect(res.body).toHaveLength(2);
+            expect(res.body.every((q: any) => q.guildId === 'guild1')).toBe(true);
         });
 
         it('should return 401 without authentication', async () => {
