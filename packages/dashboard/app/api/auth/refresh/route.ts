@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { issueJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
 import { enforceCsrf, generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
-import { rotateRefreshSession, revokeRefreshSession } from "@/lib/auth/refreshSessions";
+import { rotateRefreshSession } from "@/lib/auth/refreshSessions";
 import {
     ACCESS_TOKEN_COOKIE_NAME,
     ACCESS_TOKEN_MAX_AGE_SECONDS,
@@ -22,17 +22,7 @@ export async function POST(req: NextRequest) {
     const rotated = await rotateRefreshSession(oldRefreshToken);
 
     if (!rotated) {
-        await revokeRefreshSession(oldRefreshToken);
-        const res = NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-        res.cookies.set(ACCESS_TOKEN_COOKIE_NAME, "", {
-            path: "/",
-            expires: new Date(0),
-        });
-        res.cookies.set(REFRESH_SESSION_COOKIE_NAME, "", {
-            path: "/",
-            expires: new Date(0),
-        });
-        return res;
+        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     const newToken = issueJwt(rotated.record.user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER, {

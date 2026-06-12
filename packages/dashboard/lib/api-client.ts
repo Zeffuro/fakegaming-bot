@@ -5,6 +5,7 @@ import type {
 } from "@zeffuro/fakegaming-common/api-helpers";
 import type { BirthdayConfig, PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
+import { getBrowserCookie, redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
 
 type TwitchListResponse = ApiJsonResponse<'/twitch', 'get', 200>;
 type TwitchCreateRequest = ApiSchema<'TwitchCreateRequest'>;
@@ -95,34 +96,6 @@ function isMutating(method: string): boolean {
   return m === 'POST' || m === 'PUT' || m === 'PATCH' || m === 'DELETE';
 }
 
-function getCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
-
-async function tryRefreshOnce(): Promise<boolean> {
-  try {
-    const csrf = getCookie('csrf');
-    const res = await fetch('/api/auth/refresh', {
-      method: 'POST',
-      credentials: 'include',
-      headers: csrf ? { [CSRF_HEADER_NAME]: csrf } : undefined,
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-function redirectToLogin(): void {
-  if (typeof window !== 'undefined') {
-    const path = window.location.pathname + window.location.search;
-    const returnTo = path || '/dashboard';
-    window.location.href = `/api/auth/discord?returnTo=${encodeURIComponent(returnTo)}`;
-  }
-}
-
 // Base API request function
 async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const {
@@ -139,7 +112,7 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 
   // Inject CSRF header on mutating requests for proxy validation
   if (isMutating(method) && !(CSRF_HEADER_NAME in mergedHeaders)) {
-    const csrf = getCookie('csrf');
+    const csrf = getBrowserCookie('csrf');
     if (csrf) {
       mergedHeaders[CSRF_HEADER_NAME] = csrf;
     }
@@ -159,7 +132,7 @@ async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promis
 
   // Handle 401 Unauthorized: attempt a single refresh-then-retry
   if (!response.ok && response.status === 401) {
-    const refreshed = await tryRefreshOnce();
+    const refreshed = await refreshAuthSession();
     if (refreshed) {
       response = await fetch(endpoint, requestOptions);
     }

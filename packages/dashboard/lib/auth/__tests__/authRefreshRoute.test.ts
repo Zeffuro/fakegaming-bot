@@ -96,4 +96,14 @@ describe('auth/refresh route', () => {
         const res = await POST(makeReq({ csrf: 't', headerCsrf: 't' }));
         expectUnauthorized(res);
     });
+
+    it('does not clear cookies when a stale refresh session is rejected', async () => {
+        const { POST } = await importRoute();
+        const res = await POST(makeReq({ refreshSession: 'stale-refresh-token', csrf: 't', headerCsrf: 't' }));
+
+        expectUnauthorized(res);
+        expect((res as any).cookies.get('jwt')).toBeUndefined();
+        expect((res as any).cookies.get('refresh_session')).toBeUndefined();
+        expect(mockCacheDelete).not.toHaveBeenCalled();
+    });
 });

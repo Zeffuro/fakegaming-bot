@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
+import { redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
 
 interface Guild {
   id: string;
@@ -19,26 +19,6 @@ interface FetchDashboardDataOptions {
   refresh?: boolean;
 }
 
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]!) : null;
-}
-
-async function tryRefreshSession(): Promise<boolean> {
-  const csrf = getCookie('csrf');
-  const response = await fetch('/api/auth/refresh', {
-    method: 'POST',
-    credentials: 'include',
-    headers: csrf ? { [CSRF_HEADER_NAME]: csrf } : undefined,
-  });
-  return response.ok;
-}
-
-function redirectToLogin(): void {
-  const returnTo = window.location.pathname + window.location.search;
-  window.location.href = `/api/auth/discord?returnTo=${encodeURIComponent(returnTo)}`;
-}
-
 export function useDashboardData() {
   const [data, setData] = useState<DashboardData>({ guilds: [], isAdmin: false });
   const [loading, setLoading] = useState(true);
@@ -53,7 +33,7 @@ export function useDashboardData() {
       });
 
       if (response.status === 401) {
-        const refreshed = await tryRefreshSession();
+        const refreshed = await refreshAuthSession();
         if (refreshed) {
           response = await fetch(url, {
             credentials: 'include'
