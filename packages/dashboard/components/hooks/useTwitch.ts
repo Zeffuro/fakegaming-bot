@@ -4,13 +4,24 @@ import { api } from "@/lib/api-client";
 
 type TwitchCreateRequest = Parameters<typeof api.createTwitchStream>[0];
 
-export function useTwitchConfigs(guildId: string | string[]) {
+interface UseTwitchConfigsOptions {
+  enabled?: boolean;
+}
+
+export function useTwitchConfigs(guildId: string | string[], options: UseTwitchConfigsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<TwitchStreamConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfigs = async () => {
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const allConfigs = await api.getTwitchConfigs(guildId as string);
@@ -107,10 +118,14 @@ export function useTwitchConfigs(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      fetchConfigs();
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchConfigs();
+  }, [enabled, guildId]);
 
   return {
     configs,

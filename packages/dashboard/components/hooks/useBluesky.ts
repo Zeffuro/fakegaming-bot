@@ -14,13 +14,24 @@ function buildPayload(config: Omit<BlueskyPostConfig, 'id' | 'guildId'> | Bluesk
   };
 }
 
-export function useBlueskyConfigs(guildId: string | string[]) {
+interface UseBlueskyConfigsOptions {
+  enabled?: boolean;
+}
+
+export function useBlueskyConfigs(guildId: string | string[], options: UseBlueskyConfigsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<BlueskyPostConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfigs = async () => {
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const allConfigs = await api.getBlueskyConfigs(guildId as string);
@@ -96,10 +107,14 @@ export function useBlueskyConfigs(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      fetchConfigs();
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchConfigs();
+  }, [enabled, guildId]);
 
   return {
     configs,

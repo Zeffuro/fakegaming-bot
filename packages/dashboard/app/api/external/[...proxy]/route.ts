@@ -97,7 +97,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         headers['Cookie'] = `${CSRF_COOKIE_NAME}=${csrfToken}`;
     }
 
-    log.info({ method, apiPath, url, reqId }, 'Proxying request');
+    log.debug({ method, apiPath, url, reqId }, 'Proxying request');
 
     try {
         const options: RequestInit = {
@@ -138,12 +138,11 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
         log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');
 
-        const responseClone = response.clone();
-        const responseText = await responseClone.text();
-        log.trace({ apiPath, responseText, reqId }, 'Proxy response body');
+        const responseText = await response.text();
+        log.trace({ apiPath, responseBytes: responseText.length, reqId }, 'Proxy response body');
 
         const contentType = response.headers.get('Content-Type') || 'application/json';
-        return new NextResponse(await response.text(), {
+        return new NextResponse(responseText, {
             status: response.status,
             headers: {
                 'Content-Type': contentType,

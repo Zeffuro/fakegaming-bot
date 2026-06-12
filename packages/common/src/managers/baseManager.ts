@@ -113,6 +113,10 @@ export class BaseManager<T extends Model> {
         return !!result;
     }
 
+    async count(where?: WhereOptions<Attributes<T>>): Promise<number> {
+        return this.model.count(where ? { where } : undefined);
+    }
+
     // ---------- FIND BY PK ----------
     async findByPk(id: string | number, options?: { raw?: false }): Promise<T>;
     async findByPk(id: string | number, options: { raw: true }): Promise<CreationAttributes<T>>;

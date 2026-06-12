@@ -14,13 +14,38 @@ type YouTubeDashboardConfig = YouTubeConfig & {
 };
 type YouTubeChannelMetadata = Awaited<ReturnType<typeof api.getYouTubeChannelMetadata>>;
 
-export function useYouTubeConfigs(guildId: string | string[]) {
+interface UseYouTubeConfigsOptions {
+  enabled?: boolean;
+}
+
+const channelMetadataCache = new Map<string, Promise<YouTubeChannelMetadata>>();
+
+async function getCachedYouTubeChannelMetadata(channelId: string): Promise<YouTubeChannelMetadata> {
+  const cached = channelMetadataCache.get(channelId);
+  if (cached) return cached;
+
+  const pending = api.getYouTubeChannelMetadata(channelId).catch((err: unknown) => {
+    channelMetadataCache.delete(channelId);
+    throw err;
+  });
+  channelMetadataCache.set(channelId, pending);
+  return pending;
+}
+
+export function useYouTubeConfigs(guildId: string | string[], options: UseYouTubeConfigsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<YouTubeDashboardConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfigs = async () => {
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const allConfigs = await api.getYouTubeConfigs(guildId as string);
@@ -28,7 +53,7 @@ export function useYouTubeConfigs(guildId: string | string[]) {
       const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as YouTubeConfig[];
       const uniqueChannelIds = [...new Set(guildConfigs.map((config) => config.youtubeChannelId).filter(Boolean))];
       const metadata = await Promise.allSettled(uniqueChannelIds.map(async (channelId) => {
-        const data = await api.getYouTubeChannelMetadata(channelId);
+        const data = await getCachedYouTubeChannelMetadata(channelId);
         return [channelId, data] as const;
       }));
       const metadataByChannelId = new Map<string, YouTubeChannelMetadata>();
@@ -137,10 +162,14 @@ export function useYouTubeConfigs(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      fetchConfigs();
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchConfigs();
+  }, [enabled, guildId]);
 
   return {
     configs,

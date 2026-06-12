@@ -5,6 +5,10 @@ import { api } from "@/lib/api-client";
 type PatchSubscriptionCreateRequest = Parameters<typeof api.createPatchSubscription>[0];
 type PatchSubscriptionUpsertRequest = Parameters<typeof api.upsertPatchSubscription>[0];
 
+interface UsePatchSubscriptionsOptions {
+  enabled?: boolean;
+}
+
 export interface PatchSubscriptionUIConfig {
   id: number;
   game: string;
@@ -13,9 +17,10 @@ export interface PatchSubscriptionUIConfig {
   customMessage?: string;
 }
 
-export function usePatchSubscriptions(guildId: string | string[]) {
+export function usePatchSubscriptions(guildId: string | string[], options: UsePatchSubscriptionsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<PatchSubscriptionUIConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +32,12 @@ export function usePatchSubscriptions(guildId: string | string[]) {
   });
 
   const fetchConfigs = useCallback(async () => {
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const all = await api.getPatchSubscriptions(guildId as string);
@@ -37,7 +48,7 @@ export function usePatchSubscriptions(guildId: string | string[]) {
     } finally {
       setLoading(false);
     }
-  }, [guildId]);
+  }, [enabled, guildId]);
 
   const addConfig = async (config: Omit<PatchSubscriptionUIConfig, 'id' | 'guildId'>) => {
     if (!config.game || !config.discordChannelId) {
@@ -97,8 +108,14 @@ export function usePatchSubscriptions(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) void fetchConfigs();
-  }, [guildId, fetchConfigs]);
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
+    void fetchConfigs();
+  }, [enabled, guildId, fetchConfigs]);
 
   return {
     configs,

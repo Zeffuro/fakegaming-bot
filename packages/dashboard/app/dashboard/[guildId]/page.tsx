@@ -8,36 +8,29 @@ import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
-import { useAnimeConfigs } from "@/components/hooks/useAnime";
-import { useBirthdays } from "@/components/hooks/useBirthdays";
+import { useGuildDashboardSummary } from "@/components/hooks/useGuildDashboardSummary";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
-import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
-import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
-import { useTikTokConfigs } from "@/components/hooks/useTikTok";
-import { useTwitchConfigs } from "@/components/hooks/useTwitch";
-import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
+import type { GuildDashboardSummaryCounts } from "@/lib/api-client";
+
+const emptySummaryCounts: GuildDashboardSummaryCounts = {
+  twitch: 0,
+  tiktok: 0,
+  bluesky: 0,
+  youtube: 0,
+  patchSubscriptions: 0,
+  anime: 0,
+  birthdays: 0,
+};
 
 export default function GuildDashboard() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const encodedGuildId = encodeURIComponent(guildId);
   const guildReady = Boolean(guild);
 
-  const twitchApi = useTwitchConfigs(guildId);
-  const tiktokApi = useTikTokConfigs(guildId);
-  const blueskyApi = useBlueskyConfigs(guildId);
-  const youtubeApi = useYouTubeConfigs(guildId);
-  const patchApi = usePatchSubscriptions(guildId);
-  const animeApi = useAnimeConfigs(guildId, { enabled: guildReady });
-  const birthdayApi = useBirthdays(guildId, { enabled: guildReady });
-
-  const notificationLoading = twitchApi.loading || tiktokApi.loading || blueskyApi.loading || youtubeApi.loading || patchApi.loading || animeApi.loading || birthdayApi.loading;
-  const totalConfigured = (twitchApi.configs?.length ?? 0)
-    + (tiktokApi.configs?.length ?? 0)
-    + (blueskyApi.configs?.length ?? 0)
-    + (youtubeApi.configs?.length ?? 0)
-    + (patchApi.configs?.length ?? 0)
-    + (animeApi.configs?.length ?? 0)
-    + (birthdayApi.birthdays?.length ?? 0);
+  const summaryApi = useGuildDashboardSummary(guildId, { enabled: guildReady });
+  const counts = summaryApi.summary?.counts ?? emptySummaryCounts;
+  const notificationLoading = summaryApi.loading;
+  const totalConfigured = summaryApi.summary?.totalConfigured ?? 0;
 
   if (!guild && !guildsLoading) {
     return (
@@ -57,7 +50,7 @@ export default function GuildDashboard() {
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}/notifications`,
       chipLabel: notificationLoading ? "Loading..." : `${totalConfigured} Configured`,
-      meta: notificationLoading ? "Loading notification counts" : `Twitch ${twitchApi.configs.length} | TikTok ${tiktokApi.configs.length} | Bluesky ${blueskyApi.configs.length} | YouTube ${youtubeApi.configs.length} | Patch ${patchApi.configs.length} | Anime ${animeApi.configs.length} | Birthdays ${birthdayApi.birthdays.length}`,
+      meta: notificationLoading ? "Loading notification counts" : `Twitch ${counts.twitch} | TikTok ${counts.tiktok} | Bluesky ${counts.bluesky} | YouTube ${counts.youtube} | Patch ${counts.patchSubscriptions} | Anime ${counts.anime} | Birthdays ${counts.birthdays}`,
       actionLabel: "Open Hub",
     },
     {
@@ -66,7 +59,7 @@ export default function GuildDashboard() {
       icon: <AutoStories />,
       accent: dashboardAccents.anime,
       href: `/dashboard/anime/${encodedGuildId}`,
-      chipLabel: `${animeApi.configs.length} Configured`,
+      chipLabel: `${counts.anime} Configured`,
       actionLabel: "Configure Anime",
     },
     {
@@ -75,7 +68,7 @@ export default function GuildDashboard() {
       icon: <Cake />,
       accent: dashboardAccents.birthdays,
       href: `/dashboard/birthdays/${encodedGuildId}`,
-      chipLabel: `${birthdayApi.birthdays.length} Configured`,
+      chipLabel: `${counts.birthdays} Configured`,
       actionLabel: "Configure Birthdays",
     },
     {
@@ -92,7 +85,7 @@ export default function GuildDashboard() {
       icon: <YouTube />,
       accent: dashboardAccents.youtube,
       href: `/dashboard/youtube/${encodedGuildId}`,
-      chipLabel: `${youtubeApi.configs.length} Configured`,
+      chipLabel: `${counts.youtube} Configured`,
       actionLabel: "Configure YouTube",
     },
     {
@@ -101,7 +94,7 @@ export default function GuildDashboard() {
       icon: <LiveTv />,
       accent: dashboardAccents.twitch,
       href: `/dashboard/twitch/${encodedGuildId}`,
-      chipLabel: `${twitchApi.configs.length} Configured`,
+      chipLabel: `${counts.twitch} Configured`,
       actionLabel: "Configure Twitch",
     },
     {
@@ -110,7 +103,7 @@ export default function GuildDashboard() {
       icon: <LiveTv />,
       accent: dashboardAccents.tiktok,
       href: `/dashboard/tiktok/${encodedGuildId}`,
-      chipLabel: `${tiktokApi.configs.length} Configured`,
+      chipLabel: `${counts.tiktok} Configured`,
       actionLabel: "Configure TikTok",
     },
     {
@@ -119,7 +112,7 @@ export default function GuildDashboard() {
       icon: <AlternateEmail />,
       accent: dashboardAccents.bluesky,
       href: `/dashboard/bluesky/${encodedGuildId}`,
-      chipLabel: `${blueskyApi.configs.length} Configured`,
+      chipLabel: `${counts.bluesky} Configured`,
       actionLabel: "Configure Bluesky",
     },
     {
@@ -144,7 +137,7 @@ export default function GuildDashboard() {
       icon: <SpeakerNotes />,
       accent: dashboardAccents.patchNotes,
       href: `/dashboard/patch-notes/${encodedGuildId}`,
-      chipLabel: `${patchApi.configs.length} Configured`,
+      chipLabel: `${counts.patchSubscriptions} Configured`,
       actionLabel: "Configure Patches",
     },
     {

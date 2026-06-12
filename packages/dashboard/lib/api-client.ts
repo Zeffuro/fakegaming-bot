@@ -77,6 +77,9 @@ export const API_ENDPOINTS = {
 
   // Riot links
   RIOT_LINKS: '/api/external/riotLinks',
+
+  // Dashboard summaries
+  DASHBOARD: '/api/external/dashboard',
 };
 
 // Type for API options
@@ -241,6 +244,22 @@ export interface AnimeSubscriptionDashboardConfig {
   customMessage?: string;
 }
 
+export interface GuildDashboardSummaryCounts {
+  twitch: number;
+  tiktok: number;
+  bluesky: number;
+  youtube: number;
+  patchSubscriptions: number;
+  anime: number;
+  birthdays: number;
+}
+
+export interface GuildDashboardSummary {
+  guildId: string;
+  counts: GuildDashboardSummaryCounts;
+  totalConfigured: number;
+}
+
 export interface AnimePageInfo {
   total?: number | null;
   currentPage?: number | null;
@@ -292,6 +311,11 @@ export interface AnimeSearchResult {
 // Typed API methods using OpenAPI path helpers.
 export const api = {
   // Twitch APIs
+  getGuildDashboardSummary: (guildId: string) =>
+    apiRequest<GuildDashboardSummary>(
+      `${API_ENDPOINTS.DASHBOARD}/guild/${encodeURIComponent(guildId)}/summary`
+    ),
+
   getTwitchConfigs: (guildId?: string) =>
     apiRequest<TwitchListResponse>(guildId ? `${API_ENDPOINTS.TWITCH}?guildId=${encodeURIComponent(guildId)}` : API_ENDPOINTS.TWITCH),
 

@@ -1,5 +1,5 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { youtubeChannelRequestSchema, youtubeCreateRequestSchema, youtubeUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -23,6 +23,18 @@ const metadataQuerySchema = z.object({
 
 const router = createBaseRouter();
 const log = getLogger({ name: 'api:routes:youtube' });
+const YOUTUBE_METADATA_CACHE_TTL_MS = 5 * 60 * 1000;
+
+interface YouTubeMetadataResponse {
+    channelId: string;
+    title: string | null;
+    url: string | null;
+    latestVideoId: string | null;
+}
+
+function getYouTubeMetadataCacheKey(channelId: string): string {
+    return `youtube:metadata:${channelId}`;
+}
 
 // Accept identifier via multiple keys; allow string or string[]; normalize to identifier
 const resolveQuerySchema = z.object({
@@ -168,8 +180,7 @@ router.get('/resolve', validateQuery(resolveQuerySchema), async (req, res) => {
  *                   type: string
  *                   nullable: true
  */
-router.get('/metadata', validateQuery(metadataQuerySchema), async (req, res) => {
-    const { channelId } = req.query as z.infer<typeof metadataQuerySchema>;
+async function resolveYouTubeMetadata(channelId: string): Promise<YouTubeMetadataResponse> {
     const feedUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
     let feedTitle: string | null = null;
     let feedUrlValue: string | null = null;
@@ -191,21 +202,34 @@ router.get('/metadata', validateQuery(metadataQuerySchema), async (req, res) => 
 
     try {
         const pageMetadata = feedTitle ? { title: null, url: null, latestVideoId: null } : await fetchYouTubeChannelPageMetadata(channelId);
-        return res.json({
+        return {
             channelId,
             title: feedTitle ?? pageMetadata.title,
             url: feedUrlValue ?? pageMetadata.url ?? `https://www.youtube.com/channel/${encodeURIComponent(channelId)}`,
             latestVideoId: feedLatestVideoId ?? pageMetadata.latestVideoId,
-        });
+        };
     } catch (err) {
         log.warn({ err, channelId }, 'Error resolving YouTube channel metadata from public page');
-        return res.json({
+        return {
             channelId,
             title: feedTitle,
             url: feedUrlValue,
             latestVideoId: feedLatestVideoId,
-        });
+        };
     }
+}
+
+router.get('/metadata', validateQuery(metadataQuerySchema), async (req, res) => {
+    const { channelId } = req.query as z.infer<typeof metadataQuerySchema>;
+    const cacheKey = getYouTubeMetadataCacheKey(channelId);
+    const cached = await defaultCacheManager.get<YouTubeMetadataResponse>(cacheKey);
+    if (cached) {
+        return res.json(cached);
+    }
+
+    const metadata = await resolveYouTubeMetadata(channelId);
+    await defaultCacheManager.set(cacheKey, metadata, YOUTUBE_METADATA_CACHE_TTL_MS);
+    return res.json(metadata);
 });
 
 /**

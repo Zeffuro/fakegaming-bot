@@ -2,13 +2,24 @@ import { useState, useEffect } from "react";
 import type { TikTokStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 
-export function useTikTokConfigs(guildId: string | string[]) {
+interface UseTikTokConfigsOptions {
+  enabled?: boolean;
+}
+
+export function useTikTokConfigs(guildId: string | string[], options: UseTikTokConfigsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<TikTokStreamConfig[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchConfigs = async () => {
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const allConfigs = await api.getTikTokConfigs(guildId as string);
@@ -104,10 +115,14 @@ export function useTikTokConfigs(guildId: string | string[]) {
   };
 
   useEffect(() => {
-    if (guildId) {
-      fetchConfigs();
+    if (!enabled || !guildId) {
+      setConfigs([]);
+      setLoading(false);
+      return;
     }
-  }, [guildId]);
+
+    void fetchConfigs();
+  }, [enabled, guildId]);
 
   return {
     configs,

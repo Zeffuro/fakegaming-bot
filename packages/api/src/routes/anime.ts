@@ -10,13 +10,14 @@ import {
     searchAniListAnime,
     searchAniListMediaPage,
     type AniListMediaType,
+    type AniListPageInfo,
     type AniListSeason,
     type AniListSeasonScope,
     type AniListTitle,
 } from '@zeffuro/fakegaming-common/anime';
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { animeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -25,6 +26,16 @@ import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js
 import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = createBaseRouter();
+const ANIME_SEASON_CACHE_TTL_MS = 30 * 60 * 1000;
+
+interface AnimeSeasonResponse {
+    season: AniListSeason;
+    year: number;
+    scope: AniListSeasonScope;
+    scopeLabel: string;
+    results: AniListTitle[];
+    pageInfo: AniListPageInfo;
+}
 
 const idParamSchema = z.object({ id: z.coerce.number().int().positive() });
 const searchQuerySchema = z.object({
@@ -52,6 +63,16 @@ function resolveSeason(value: z.infer<typeof seasonQuerySchema>): { season: AniL
 
 function parseAniListMediaType(type: 'anime' | 'manga' | undefined): AniListMediaType {
     return type === 'manga' ? 'MANGA' : 'ANIME';
+}
+
+function getAnimeSeasonCacheKey(args: {
+    season: AniListSeason;
+    year: number;
+    scope: AniListSeasonScope;
+    page: number;
+    perPage: number;
+}): string {
+    return `anime:season:${args.season}:${args.year}:${args.scope}:page:${args.page}:perPage:${args.perPage}`;
 }
 
 async function resolveAnime(args: { anilistId?: number; title?: string }): Promise<AniListTitle | null> {
@@ -115,13 +136,36 @@ router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res
 });
 
 router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res) => {
-    const resolved = resolveSeason(req.query as unknown as z.infer<typeof seasonQuerySchema>);
-    const { page = 1, perPage = 10, scope = 'airing' } = req.query as unknown as z.infer<typeof seasonQuerySchema>;
-    const { items: results, pageInfo } = await getAniListSeasonAnimePage(resolved.season, resolved.year, page, perPage, { scope: scope as AniListSeasonScope });
+    const query = req.query as unknown as z.infer<typeof seasonQuerySchema>;
+    const resolved = resolveSeason(query);
+    const { page = 1, perPage = 10, scope = 'airing' } = query;
+    const normalizedScope = scope as AniListSeasonScope;
+    const cacheKey = getAnimeSeasonCacheKey({
+        season: resolved.season,
+        year: resolved.year,
+        scope: normalizedScope,
+        page,
+        perPage,
+    });
+
+    const cached = await defaultCacheManager.get<AnimeSeasonResponse>(cacheKey);
+    if (cached) {
+        return res.json(cached);
+    }
+
+    const { items: results, pageInfo } = await getAniListSeasonAnimePage(resolved.season, resolved.year, page, perPage, { scope: normalizedScope });
     for (const anime of results) {
         await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
     }
-    res.json({ ...resolved, scope, scopeLabel: formatAniListSeasonScope(scope as AniListSeasonScope), results, pageInfo });
+    const payload: AnimeSeasonResponse = {
+        ...resolved,
+        scope: normalizedScope,
+        scopeLabel: formatAniListSeasonScope(normalizedScope),
+        results,
+        pageInfo,
+    };
+    await defaultCacheManager.set(cacheKey, payload, ANIME_SEASON_CACHE_TTL_MS);
+    return res.json(payload);
 });
 
 router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuildAdmin, async (req, res) => {
