@@ -5,7 +5,9 @@ import {
   AppBar,
   Toolbar,
   Typography,
-  Button
+  Button,
+  IconButton,
+  Tooltip
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
@@ -95,27 +97,49 @@ export default function DashboardLayout({
 
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.4 }, flex: "0 0 auto" }}>
             {guild && (
-              <Button
-                startIcon={<ArrowBack />}
-                onClick={() => router.push("/dashboard")}
-                variant="outlined"
-                size="small"
-                sx={{
-                  display: { xs: "none", md: "inline-flex" },
-                  borderColor: "rgba(255,255,255,0.16)",
-                  color: "grey.200",
-                  borderRadius: 999,
-                  textTransform: "none",
-                  fontWeight: 750,
-                  bgcolor: "rgba(255,255,255,0.035)",
-                  '&:hover': {
-                    borderColor: "rgba(255,255,255,0.32)",
-                    bgcolor: "rgba(255,255,255,0.08)"
-                  }
-                }}
-              >
-                Back to Guilds
-              </Button>
+              <>
+                <Tooltip title="Back to servers">
+                  <IconButton
+                    aria-label="Back to servers"
+                    onClick={() => router.push("/dashboard")}
+                    sx={{
+                      display: { xs: "inline-flex", md: "none" },
+                      width: 40,
+                      height: 40,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "grey.100",
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      '&:hover': {
+                        borderColor: "rgba(104,215,255,0.46)",
+                        bgcolor: "rgba(104,215,255,0.12)"
+                      }
+                    }}
+                  >
+                    <ArrowBack fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={() => router.push("/dashboard")}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    display: { xs: "none", md: "inline-flex" },
+                    borderColor: "rgba(255,255,255,0.16)",
+                    color: "grey.200",
+                    borderRadius: 999,
+                    textTransform: "none",
+                    fontWeight: 750,
+                    bgcolor: "rgba(255,255,255,0.035)",
+                    '&:hover': {
+                      borderColor: "rgba(255,255,255,0.32)",
+                      bgcolor: "rgba(255,255,255,0.08)"
+                    }
+                  }}
+                >
+                  Back to Guilds
+                </Button>
+              </>
             )}
             <UserMenu />
           </Box>

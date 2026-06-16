@@ -21,7 +21,7 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
   const posterHeight = dense ? 58 : 90;
 
   return (
-    <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", minWidth: 0, ...sx }}>
+    <Box sx={{ display: "flex", flexWrap: { xs: "wrap", sm: "nowrap" }, gap: 1.5, alignItems: "flex-start", minWidth: 0, ...sx }}>
       <Avatar
         src={anime.coverImage?.large ?? undefined}
         variant="rounded"
@@ -34,7 +34,7 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
           border: "1px solid rgba(255,255,255,0.10)",
         }}
       />
-      <Stack spacing={0.75} sx={{ minWidth: 0, flex: 1 }}>
+      <Stack spacing={0.75} sx={{ minWidth: 0, flex: "1 1 0" }}>
         <Typography
           variant={dense ? "body2" : "subtitle1"}
           sx={{ color: "grey.50", fontWeight: 800, lineHeight: 1.2 }}
@@ -100,7 +100,7 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
         )}
       </Stack>
       {actions && (
-        <Box sx={{ flex: { xs: "1 0 100%", sm: "0 0 auto" }, alignSelf: dense ? "center" : "flex-start" }}>
+        <Box sx={{ flex: { xs: "1 0 100%", sm: "0 0 auto" }, width: { xs: "100%", sm: "auto" }, alignSelf: dense ? "center" : "flex-start" }}>
           {actions}
         </Box>
       )}
