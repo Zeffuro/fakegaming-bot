@@ -40,6 +40,7 @@ export default defineConfig({
                 'lib/commands.ts',
                 'lib/modules.ts',
                 'lib/api-client.ts',
+                'lib/api/**/*.ts',
                 '**/*.d.ts',
                 // Re-export only file with no logic
                 'lib/constants.ts',

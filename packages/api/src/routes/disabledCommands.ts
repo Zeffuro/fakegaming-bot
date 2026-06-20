@@ -1,22 +1,12 @@
-import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { disabledCommandCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
-import { filterGuildScopedRecordsForRequest, requireGuildAdmin, checkGuildScopedRecordAccess } from '../utils/authHelpers.js';
-import { recordAuditEvent } from '../utils/audit.js';
+import { createDisabledConfigRouter } from './disabledConfigRouteFactory.js';
 
-// Zod schemas
-const idParamSchema = z.object({ id: z.coerce.number().int() });
 const checkQuerySchema = z.object({
     guildId: z.string().min(1),
-    commandName: z.string().min(1)
+    commandName: z.string().min(1),
 });
-const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
-
-// Router
-const router = createBaseRouter();
 
 /**
  * @openapi
@@ -39,17 +29,29 @@ const router = createBaseRouter();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/DisabledCommandConfig'
- */
-router.get('/', validateQuery(listQuerySchema), async (req, res) => {
-    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const disabledCommands = await getConfigManager().disabledCommandManager.getAllPlain();
-    const visibleDisabledCommands = await filterGuildScopedRecordsForRequest(req, res, disabledCommands, guildId);
-    if (!visibleDisabledCommands) return;
-    res.json(visibleDisabledCommands);
-});
-
-/**
- * @openapi
+ *   post:
+ *     summary: Add a new disabled command
+ *     tags: [DisabledCommands]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/DisabledCommandCreateRequest'
+ *     responses:
+ *       201:
+ *         description: Created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DisabledCommandConfig'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *
  * /disabledCommands/check:
  *   get:
  *     summary: Check if a command is disabled in a guild
@@ -81,15 +83,7 @@ router.get('/', validateQuery(listQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
- */
-router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) => {
-    const { guildId, commandName } = req.query as z.infer<typeof checkQuerySchema>;
-    const exists = await getConfigManager().disabledCommandManager.exists({ guildId, commandName });
-    res.json({ disabled: exists });
-});
-
-/**
- * @openapi
+ *
  * /disabledCommands/{id}:
  *   get:
  *     summary: Get a disabled command by id
@@ -109,59 +103,6 @@ router.get('/check', jwtAuth, validateQuery(checkQuerySchema), async (req, res) 
  *               $ref: '#/components/schemas/DisabledCommandConfig'
  *       404:
  *         $ref: '#/components/responses/NotFound'
- */
-router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
-    const disabledCommand = await getConfigManager().disabledCommandManager.findByPkPlain(Number(id));
-    if (!disabledCommand) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
-    const hasAccess = await checkGuildScopedRecordAccess(req, res, disabledCommand);
-    if (!hasAccess) return;
-    res.json(disabledCommand);
-});
-
-/**
- * @openapi
- * /disabledCommands:
- *   post:
- *     summary: Add a new disabled command
- *     tags: [DisabledCommands]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/DisabledCommandCreateRequest'
- *     responses:
- *       201:
- *         description: Created
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/DisabledCommandConfig'
- *       400:
- *         $ref: '#/components/responses/BadRequest'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- */
-router.post('/', jwtAuth, validateBody(disabledCommandCreateRequestSchema), requireGuildAdmin, async (req, res) => {
-    const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
-    await recordAuditEvent(req, {
-        action: 'command.disable',
-        targetType: 'disabledCommand',
-        targetId: created.id,
-        guildId: created.guildId ?? null,
-        metadata: {
-            commandName: created.commandName,
-        },
-    });
-    res.status(201).json(created);
-});
-
-/**
- * @openapi
- * /disabledCommands/{id}:
  *   delete:
  *     summary: Delete a disabled command by id
  *     tags: [DisabledCommands]
@@ -188,24 +129,15 @@ router.post('/', jwtAuth, validateBody(disabledCommandCreateRequestSchema), requ
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
-    const numericId = Number(id);
-    const existing = await getConfigManager().disabledCommandManager.findByPkPlain(numericId);
-    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Disabled command not found' } });
-    const hasAccess = await checkGuildScopedRecordAccess(req, res, existing);
-    if (!hasAccess) return;
-    await getConfigManager().disabledCommandManager.removeByPk(numericId);
-    await recordAuditEvent(req, {
-        action: 'command.enable',
-        targetType: 'disabledCommand',
-        targetId: numericId,
-        guildId: existing.guildId ?? null,
-        metadata: {
-            commandName: existing.commandName,
-        },
-    });
-    res.json({ success: true });
+const router = createDisabledConfigRouter({
+    getManager: () => getConfigManager().disabledCommandManager,
+    createSchema: disabledCommandCreateRequestSchema,
+    checkQuerySchema,
+    nameField: 'commandName',
+    notFoundMessage: 'Disabled command not found',
+    auditTargetType: 'disabledCommand',
+    auditDisableAction: 'command.disable',
+    auditEnableAction: 'command.enable',
 });
 
 export { router };

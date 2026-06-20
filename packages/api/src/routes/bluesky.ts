@@ -9,10 +9,10 @@ import { existsQuerySchema, idParamSchema, profileQuerySchema } from './bluesky.
 import { fetchBlueskyProfile, normalizeBlueskyHandle } from '../jobs/bluesky.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canDeleteGuildScopedRecord,
     canReadGuildScopedRecord,
     canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
+    deleteGuildScopedRecord,
     sendGuildScopedRecords,
     sendNotFound,
     updatedChannelAuditMetadata,
@@ -291,21 +291,15 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
  *                   type: boolean
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const numericId = Number(id);
-    const config = await getConfigManager().blueskyManager.findByPkPlain(numericId);
-    if (!config) return sendNotFound(res, 'Bluesky post config not found');
-    const hasAccess = await canDeleteGuildScopedRecord(req, res, config);
-    if (!hasAccess) return;
-    await getConfigManager().blueskyManager.removeByPk(numericId);
-    await recordAuditEvent(req, {
-        action: 'bluesky.delete',
-        targetType: 'blueskyConfig',
-        targetId: numericId,
-        guildId: config.guildId ?? null,
-        metadata: channelAuditMetadata(config),
+    const manager = getConfigManager().blueskyManager;
+    await deleteGuildScopedRecord(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        removeByPk: id => manager.removeByPk(id),
+        notFoundMessage: 'Bluesky post config not found',
+        auditAction: 'bluesky.delete',
+        auditTargetType: 'blueskyConfig',
+        auditMetadata: config => channelAuditMetadata(config),
     });
-    res.json({ success: true });
 });
 
 export { router };

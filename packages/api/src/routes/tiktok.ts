@@ -10,10 +10,10 @@ import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canDeleteGuildScopedRecord,
     canReadGuildScopedRecord,
     canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
+    deleteGuildScopedRecord,
     sendGuildScopedRecords,
     sendNotFound,
     updatedChannelAuditMetadata,
@@ -344,21 +344,15 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const numericId = Number(id);
-    const stream = await getConfigManager().tiktokManager.findByPkPlain(numericId);
-    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
-    const hasAccess = await canDeleteGuildScopedRecord(req, res, stream);
-    if (!hasAccess) return;
-    await getConfigManager().tiktokManager.removeByPk(numericId);
-    await recordAuditEvent(req, {
-        action: 'tiktok.delete',
-        targetType: 'tiktokConfig',
-        targetId: numericId,
-        guildId: stream.guildId ?? null,
-        metadata: channelAuditMetadata(stream),
+    const manager = getConfigManager().tiktokManager;
+    await deleteGuildScopedRecord(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        removeByPk: id => manager.removeByPk(id),
+        notFoundMessage: 'TikTok stream config not found',
+        auditAction: 'tiktok.delete',
+        auditTargetType: 'tiktokConfig',
+        auditMetadata: stream => channelAuditMetadata(stream),
     });
-    res.json({ success: true });
 });
 
 export { router };

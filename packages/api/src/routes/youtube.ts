@@ -13,10 +13,10 @@ import { fetchYouTubeChannelPageMetadata } from '../utils/youtubePublic.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canDeleteGuildScopedRecord,
     canReadGuildScopedRecord,
     canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
+    deleteGuildScopedRecord,
     sendGuildScopedRecords,
     sendNotFound,
     updatedChannelAuditMetadata,
@@ -568,23 +568,17 @@ router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(y
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(numericIdParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const numericId = Number(id);
-    const video = await getConfigManager().youtubeManager.findByPkPlain(numericId);
-    if (!video) return sendNotFound(res, 'YouTube video config not found');
-    const hasAccess = await canDeleteGuildScopedRecord(req, res, video);
-    if (!hasAccess) return;
-    await getConfigManager().youtubeManager.removeByPk(numericId);
-    await recordAuditEvent(req, {
-        action: 'youtube.delete',
-        targetType: 'youtubeConfig',
-        targetId: numericId,
-        guildId: video.guildId ?? null,
-        metadata: channelAuditMetadata(video, {
+    const manager = getConfigManager().youtubeManager;
+    await deleteGuildScopedRecord(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        removeByPk: id => manager.removeByPk(id),
+        notFoundMessage: 'YouTube video config not found',
+        auditAction: 'youtube.delete',
+        auditTargetType: 'youtubeConfig',
+        auditMetadata: video => channelAuditMetadata(video, {
             youtubeChannelId: video.youtubeChannelId,
         }),
     });
-    res.json({ success: true });
 });
 
 

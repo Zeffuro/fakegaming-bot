@@ -38,6 +38,7 @@ export default defineConfig({
         'src/core/preloadModules.ts',
         // Complex canvas rendering - better validated through visual QA
         'src/modules/league/image/**/*Image.ts',
+        'src/modules/league/image/textRender.ts',
         // Anime command UI is integration-heavy; shared pure formatters remain covered by unit tests.
         'src/modules/anime/commands/anime.ts',
         'src/modules/anime/shared/anilistAutocomplete.ts',

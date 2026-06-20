@@ -53,10 +53,7 @@ services:
   # -------------------- API --------------------
   api:
     image: zeffuro/fakegaming-api:latest
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.api
+    pull_policy: always
     container_name: fakegaming-api
     restart: unless-stopped
     logging:
@@ -115,10 +112,7 @@ services:
   # -------------------- BOT --------------------
   bot:
     image: zeffuro/fakegaming-bot:latest
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
+    pull_policy: always
     container_name: fakegaming-bot
     restart: unless-stopped
     logging:
@@ -162,10 +156,7 @@ services:
   # -------------------- DASHBOARD --------------------
   dashboard:
     image: zeffuro/fakegaming-dashboard:latest
-    pull_policy: build
-    build:
-      context: .
-      dockerfile: Dockerfile.dashboard
+    pull_policy: always
     container_name: fakegaming-dashboard
     restart: unless-stopped
     logging:

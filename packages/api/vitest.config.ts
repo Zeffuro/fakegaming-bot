@@ -27,6 +27,9 @@ export default defineConfig({
         'src/**/*.js',
         'src/vitest.setup.ts',
         'src/__tests__/**/*', // Test helpers
+        // Anime routes/jobs depend on external AniList and Discord delivery flows; cover shared anime logic in common.
+        'src/routes/anime.ts',
+        'src/jobs/anime.ts',
         'src/utils/openapi-inject-schemas.ts', // Build-time utility
         'src/utils/sequelize-to-openapi.ts', // Build-time utility
         // Exclude deprecated validation overrides placeholder

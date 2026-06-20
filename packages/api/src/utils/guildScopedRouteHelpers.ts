@@ -6,9 +6,19 @@ import {
     filterGuildScopedRecordsForRequest,
     type GuildScopedRecord,
 } from './authHelpers.js';
+import { recordAuditEvent } from './audit.js';
 
 interface DiscordChannelRecord extends GuildScopedRecord {
     discordChannelId?: string | null;
+}
+
+interface DeleteGuildScopedRecordOptions<T extends GuildScopedRecord> {
+    findByPk: (id: number) => Promise<T | null>;
+    removeByPk: (id: number) => Promise<void>;
+    notFoundMessage: string;
+    auditAction: string;
+    auditTargetType: string;
+    auditMetadata: (record: T) => Record<string, unknown>;
 }
 
 export function sendNotFound(res: Response, message: string): Response {
@@ -51,6 +61,32 @@ export async function canDeleteGuildScopedRecord<T extends GuildScopedRecord>(
     if (!record.guildId) return true;
     const access = await checkUserGuildAccess(req, res, record.guildId);
     return access.authorized;
+}
+
+export async function deleteGuildScopedRecord<T extends GuildScopedRecord>(
+    req: Request,
+    res: Response,
+    id: number,
+    options: DeleteGuildScopedRecordOptions<T>
+): Promise<void> {
+    const record = await options.findByPk(id);
+    if (!record) {
+        sendNotFound(res, options.notFoundMessage);
+        return;
+    }
+
+    const hasAccess = await canDeleteGuildScopedRecord(req, res, record);
+    if (!hasAccess) return;
+
+    await options.removeByPk(id);
+    await recordAuditEvent(req, {
+        action: options.auditAction,
+        targetType: options.auditTargetType,
+        targetId: id,
+        guildId: record.guildId ?? null,
+        metadata: options.auditMetadata(record),
+    });
+    res.json({ success: true });
 }
 
 export function channelAuditMetadata(record: DiscordChannelRecord, extra: Record<string, unknown> = {}): Record<string, unknown> {
