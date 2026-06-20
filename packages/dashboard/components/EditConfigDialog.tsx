@@ -1,16 +1,7 @@
 import React from "react";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    CircularProgress
-} from "@mui/material";
-import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { ConfigDialogShell } from "@/components/config-dialog/ConfigDialogShell";
 import {
     ConfigDialogFields,
-    getConfigStringValue,
     type ConfigDialogValue
 } from "@/components/config-dialog/ConfigDialogFields";
 import { StreamingConfig } from "@/components/hooks/useStreamingForm";
@@ -54,54 +45,29 @@ export default function EditConfigDialog<T extends StreamingConfig>({
 
     const configValue = config as unknown as ConfigDialogValue;
     const titleLabel = itemSingularLabel ?? (moduleName === 'YouTube' ? 'Channel' : 'Streamer');
-    const nameValue = getConfigStringValue(configValue, channelNameField);
 
     return (
-        <Dialog
+        <ConfigDialogShell
             open={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: dashboardDialogPaperSx(moduleColor)
-                }
-            }}
+            title={`Edit ${titleLabel}`}
+            moduleColor={moduleColor}
+            saving={saving}
+            submitLabel="Update"
+            onSubmit={onSave}
         >
-            <DialogTitle sx={{ color: 'grey.100', fontWeight: 850 }}>
-                Edit {titleLabel}
-            </DialogTitle>
-            <DialogContent>
-                <ConfigDialogFields
-                    value={configValue}
-                    onFieldChange={onConfigChange}
-                    channelNameField={channelNameField}
-                    channelNameLabel={channelNameLabel}
-                    moduleName={moduleName}
-                    moduleColor={moduleColor}
-                    channels={channels}
-                    loadingChannels={loadingChannels}
-                    showCustomMessage={showCustomMessage}
-                    itemNameOptions={itemNameOptions}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button
-                    onClick={onClose}
-                    disabled={saving}
-                    sx={ghostActionButtonSx(moduleColor)}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={onSave}
-                    variant="contained"
-                    disabled={saving}
-                    sx={primaryActionButtonSx(moduleColor)}
-                >
-                    {saving ? <CircularProgress size={20} /> : 'Update'}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <ConfigDialogFields
+                value={configValue}
+                onFieldChange={onConfigChange}
+                channelNameField={channelNameField}
+                channelNameLabel={channelNameLabel}
+                moduleName={moduleName}
+                moduleColor={moduleColor}
+                channels={channels}
+                loadingChannels={loadingChannels}
+                showCustomMessage={showCustomMessage}
+                itemNameOptions={itemNameOptions}
+            />
+        </ConfigDialogShell>
     );
 }

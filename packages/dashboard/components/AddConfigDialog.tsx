@@ -1,13 +1,5 @@
 import React from "react";
-import {
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Button,
-    CircularProgress
-} from "@mui/material";
-import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { ConfigDialogShell } from "@/components/config-dialog/ConfigDialogShell";
 import {
     ConfigDialogFields,
     getConfigStringValue,
@@ -65,57 +57,36 @@ export default function AddConfigDialog<T extends StreamingConfig>({
 
     const configValue = newConfig as ConfigDialogValue;
     const nameValue = getConfigStringValue(configValue, channelNameField);
+    const selectedChannelId = getConfigStringValue(configValue, "discordChannelId");
     const handleFieldChange = (field: string, value: unknown) => {
         setNewConfig({ ...configValue, [field]: value });
     };
+    const title = itemSingularLabel ? `Add ${itemSingularLabel}` : `Add ${moduleName} ${moduleName === 'YouTube' ? 'Channel' : 'Streamer'}`;
 
     return (
-        <Dialog
+        <ConfigDialogShell
             open={open}
             onClose={onClose}
-            maxWidth="sm"
-            fullWidth
-            slotProps={{
-                paper: {
-                    sx: dashboardDialogPaperSx(moduleColor)
-                }
-            }}
+            title={title}
+            moduleColor={moduleColor}
+            saving={saving}
+            submitLabel="Add"
+            submitDisabled={!nameValue || !selectedChannelId}
+            onSubmit={handleAddConfig}
         >
-            <DialogTitle sx={{ color: 'grey.100', fontWeight: 850 }}>
-                {itemSingularLabel ? `Add ${itemSingularLabel}` : `Add ${moduleName} ${moduleName === 'YouTube' ? 'Channel' : 'Streamer'}`}
-            </DialogTitle>
-            <DialogContent>
-                <ConfigDialogFields
-                    value={configValue}
-                    onFieldChange={handleFieldChange}
-                    channelNameField={channelNameField}
-                    channelNameLabel={channelNameLabel}
-                    channelNamePlaceholder={channelNamePlaceholder}
-                    moduleName={moduleName}
-                    moduleColor={moduleColor}
-                    channels={channels}
-                    loadingChannels={loadingChannels}
-                    showCustomMessage={showCustomMessage}
-                    itemNameOptions={itemNameOptions}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button
-                    onClick={onClose}
-                    disabled={saving}
-                    sx={ghostActionButtonSx(moduleColor)}
-                >
-                    Cancel
-                </Button>
-                <Button
-                    onClick={handleAddConfig}
-                    variant="contained"
-                    disabled={saving || !nameValue || !(newConfig as any).discordChannelId}
-                    sx={primaryActionButtonSx(moduleColor)}
-                >
-                    {saving ? <CircularProgress size={20} /> : 'Add'}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            <ConfigDialogFields
+                value={configValue}
+                onFieldChange={handleFieldChange}
+                channelNameField={channelNameField}
+                channelNameLabel={channelNameLabel}
+                channelNamePlaceholder={channelNamePlaceholder}
+                moduleName={moduleName}
+                moduleColor={moduleColor}
+                channels={channels}
+                loadingChannels={loadingChannels}
+                showCustomMessage={showCustomMessage}
+                itemNameOptions={itemNameOptions}
+            />
+        </ConfigDialogShell>
     );
 }

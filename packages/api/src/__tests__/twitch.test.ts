@@ -10,8 +10,10 @@ const testTwitch = {
     discordChannelId: 'testchannel1',
     guildId: 'testguild1'
 };
+const ORIGINAL_DASHBOARD_ADMINS = process.env.DASHBOARD_ADMINS;
 
 beforeEach(async () => {
+    process.env.DASHBOARD_ADMINS = 'testuser';
     // Clean up twitch table before each test
     await configManager.twitchManager.removeAll();
     await configManager.twitchManager.add(testTwitch);
@@ -20,6 +22,11 @@ beforeEach(async () => {
 afterEach(() => {
     vi.unstubAllEnvs();
     vi.unstubAllGlobals();
+    if (ORIGINAL_DASHBOARD_ADMINS === undefined) {
+        delete process.env.DASHBOARD_ADMINS;
+    } else {
+        process.env.DASHBOARD_ADMINS = ORIGINAL_DASHBOARD_ADMINS;
+    }
 });
 
 describe('Twitch API', () => {

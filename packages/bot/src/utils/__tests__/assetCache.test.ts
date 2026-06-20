@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import path from 'path';
 
-const { mockFs, mockAxios } = vi.hoisted(() => {
+const { mockFs, mockAxios, mockLogger } = vi.hoisted(() => {
     const mockFs = {
         existsSync: vi.fn(),
         mkdirSync: vi.fn(),
@@ -13,7 +13,10 @@ const { mockFs, mockAxios } = vi.hoisted(() => {
     const mockAxios = {
         get: vi.fn(),
     };
-    return { mockFs, mockAxios };
+    const mockLogger = {
+        warn: vi.fn(),
+    };
+    return { mockFs, mockAxios, mockLogger };
 });
 
 vi.mock('fs', () => ({
@@ -27,6 +30,10 @@ vi.mock('axios', () => ({
 
 vi.mock('@zeffuro/fakegaming-common/core', () => ({
     resolveDataRoot: () => '/test/data',
+}));
+
+vi.mock('@zeffuro/fakegaming-common', () => ({
+    getLogger: () => mockLogger,
 }));
 
 import { getAssetCacheDir, getAsset } from '../assetCache.js';
@@ -93,7 +100,6 @@ describe('assetCache', () => {
         });
 
         it('should handle fetch errors gracefully', async () => {
-            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockFs.existsSync.mockReturnValue(false);
             mockAxios.get.mockRejectedValue(new Error('Network error'));
 
@@ -101,20 +107,22 @@ describe('assetCache', () => {
 
             expect(result.buffer).toBeNull();
             expect(result.path).toBe(path.join('/test/data', 'assets', 'champion', 'error.png'));
-            expect(consoleErrorSpy).toHaveBeenCalled();
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                expect.objectContaining({ err: 'Network error', assetName: 'error.png', type: 'champion' }),
+                'Failed to fetch asset'
+            );
         });
 
         it('should handle non-Error exceptions', async () => {
-            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockFs.existsSync.mockReturnValue(false);
             mockAxios.get.mockRejectedValue('String error');
 
             const result = await getAsset('https://example.com/error.png', 'error.png', 'item');
 
             expect(result.buffer).toBeNull();
-            expect(consoleErrorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('Failed to fetch asset'),
-                'String error'
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                { err: 'String error', assetName: 'error.png', type: 'item' },
+                'Failed to fetch asset'
             );
         });
     });

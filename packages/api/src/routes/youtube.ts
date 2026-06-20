@@ -7,18 +7,23 @@ import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import {
     requireGuildAdmin,
     checkUserGuildAccess,
-    filterGuildScopedRecordsForRequest,
-    checkGuildScopedRecordAccess,
-    checkGuildScopedUpdateAccess
 } from '../utils/authHelpers.js';
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { fetchYouTubeChannelPageMetadata } from '../utils/youtubePublic.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import {
+    canDeleteGuildScopedRecord,
+    canReadGuildScopedRecord,
+    canUpdateGuildScopedRecordFromBody,
+    channelAuditMetadata,
+    sendGuildScopedRecords,
+    sendNotFound,
+    updatedChannelAuditMetadata,
+} from '../utils/guildScopedRouteHelpers.js';
+import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
 
 // Schemas
-const idParamSchema = z.object({ id: z.coerce.number().int() });
-const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 const metadataQuerySchema = z.object({
     channelId: z.string().trim().min(1),
 });
@@ -94,12 +99,10 @@ function extractLatestVideoId(xml: string): string | null {
  *               items:
  *                 $ref: '#/components/schemas/YoutubeVideoConfig'
  */
-router.get('/', validateQuery(listQuerySchema), async (req, res) => {
-    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
+router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
     const videos = await getConfigManager().youtubeManager.getAllPlain();
-    const visibleVideos = await filterGuildScopedRecordsForRequest(req, res, videos, guildId);
-    if (!visibleVideos) return;
-    res.json(visibleVideos);
+    await sendGuildScopedRecords(req, res, videos, guildId);
 });
 
 /**
@@ -303,11 +306,11 @@ router.get('/channel', jwtAuth, validateQuery(youtubeChannelRequestSchema), asyn
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:id', validateParams(idParamSchema), async (req, res) => {
+router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
-    const hasAccess = await checkGuildScopedRecordAccess(req, res, video);
+    if (!video) return sendNotFound(res, 'YouTube video config not found');
+    const hasAccess = await canReadGuildScopedRecord(req, res, video);
     if (!hasAccess) return;
     res.json(video);
 });
@@ -360,10 +363,9 @@ router.post('/', jwtAuth, validateBody(youtubeCreateRequestSchema), requireGuild
             targetType: 'youtubeConfig',
             targetId: created.id,
             guildId: created.guildId ?? null,
-            metadata: {
-                channelId: created.discordChannelId,
+            metadata: channelAuditMetadata(created, {
                 youtubeChannelId: created.youtubeChannelId,
-            },
+            }),
         });
         res.status(201).json(created);
     } catch (err) {
@@ -414,9 +416,7 @@ router.post('/channel', jwtAuth, validateBody(youtubeChannelRequestSchema), requ
         targetType: 'youtubeConfig',
         targetId: youtubeChannelId,
         guildId,
-        metadata: {
-            channelId: discordChannelId,
-        },
+        metadata: channelAuditMetadata({ discordChannelId }),
     });
     res.status(201).json({ success: true, created });
 });
@@ -466,9 +466,7 @@ router.put('/', jwtAuth, validateBody(youtubeChannelRequestSchema), requireGuild
         targetType: 'youtubeConfig',
         targetId: youtubeChannelId,
         guildId,
-        metadata: {
-            channelId: discordChannelId,
-        },
+        metadata: channelAuditMetadata({ discordChannelId }),
     });
     res.status(200).json({ success: true });
 });
@@ -518,13 +516,11 @@ router.put('/', jwtAuth, validateBody(youtubeChannelRequestSchema), requireGuild
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(youtubeUpdateRequestSchema), async (req, res) => {
+router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(youtubeUpdateRequestSchema), async (req, res) => {
     const id = String(req.params.id);
     const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
-    const body = req.body as { guildId?: unknown };
-    const nextGuildId = typeof body.guildId === 'string' ? body.guildId : undefined;
-    const hasAccess = await checkGuildScopedUpdateAccess(req, res, video, nextGuildId);
+    if (!video) return sendNotFound(res, 'YouTube video config not found');
+    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, video, req.body);
     if (!hasAccess) return;
     await getConfigManager().youtubeManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
@@ -533,10 +529,9 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(youtubeU
         targetType: 'youtubeConfig',
         targetId: id,
         guildId: updated.guildId ?? video.guildId ?? null,
-        metadata: {
-            channelId: updated.discordChannelId ?? video.discordChannelId,
+        metadata: updatedChannelAuditMetadata(updated, video, {
             youtubeChannelId: updated.youtubeChannelId ?? video.youtubeChannelId,
-        },
+        }),
     });
     res.json(updated);
 });
@@ -572,25 +567,22 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(youtubeU
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+router.delete('/:id', jwtAuth, validateParams(numericIdParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const numericId = Number(id);
     const video = await getConfigManager().youtubeManager.findByPkPlain(numericId);
-    if (!video) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
-    if (video.guildId) {
-        const access = await checkUserGuildAccess(req, res, video.guildId);
-        if (!access.authorized) return;
-    }
+    if (!video) return sendNotFound(res, 'YouTube video config not found');
+    const hasAccess = await canDeleteGuildScopedRecord(req, res, video);
+    if (!hasAccess) return;
     await getConfigManager().youtubeManager.removeByPk(numericId);
     await recordAuditEvent(req, {
         action: 'youtube.delete',
         targetType: 'youtubeConfig',
         targetId: numericId,
         guildId: video.guildId ?? null,
-        metadata: {
-            channelId: video.discordChannelId,
+        metadata: channelAuditMetadata(video, {
             youtubeChannelId: video.youtubeChannelId,
-        },
+        }),
     });
     res.json({ success: true });
 });

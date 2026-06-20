@@ -1,4 +1,9 @@
 import { API_ENDPOINTS, apiRequest } from "./core";
+import type {
+    AniListMediaType,
+    AniListPageInfo,
+    AniListTitle,
+} from "@zeffuro/fakegaming-common/anime";
 
 export interface AnimeSubscriptionDashboardConfig {
     id?: number;
@@ -19,53 +24,11 @@ export interface AnimeSubscriptionDashboardConfig {
     customMessage?: string;
 }
 
-export interface AnimePageInfo {
-    total?: number | null;
-    currentPage?: number | null;
-    lastPage?: number | null;
-    hasNextPage?: boolean | null;
-    perPage?: number | null;
-}
+export type AnimePageInfo = AniListPageInfo;
 
 export type AnimeSearchMediaType = "anime" | "manga";
 
-export interface AnimeSearchResult {
-    id: number;
-    type?: "ANIME" | "MANGA" | null;
-    title: {
-        romaji?: string | null;
-        english?: string | null;
-        native?: string | null;
-    };
-    description?: string | null;
-    synonyms?: string[] | null;
-    siteUrl?: string | null;
-    coverImage?: { large?: string | null; color?: string | null } | null;
-    bannerImage?: string | null;
-    format?: string | null;
-    status?: string | null;
-    season?: string | null;
-    seasonYear?: number | null;
-    episodes?: number | null;
-    duration?: number | null;
-    chapters?: number | null;
-    volumes?: number | null;
-    countryOfOrigin?: string | null;
-    averageScore?: number | null;
-    meanScore?: number | null;
-    popularity?: number | null;
-    rankings?: Array<{
-        rank: number;
-        type?: string | null;
-        allTime?: boolean | null;
-        context?: string | null;
-        year?: number | null;
-        season?: string | null;
-        format?: string | null;
-    }> | null;
-    genres?: string[] | null;
-    nextAiringEpisode?: { airingAt: number; episode: number; timeUntilAiring?: number | null } | null;
-}
+export type AnimeSearchResult = AniListTitle;
 
 export const animeApi = {
     getAnimeSubscriptions: (guildId: string) =>
@@ -75,7 +38,7 @@ export const animeApi = {
         apiRequest<AnimeSubscriptionDashboardConfig[]>(API_ENDPOINTS.ANIME),
 
     searchAnime: (query: string, page: number = 1, perPage: number = 10, type: AnimeSearchMediaType = "anime") =>
-        apiRequest<{ type: "ANIME" | "MANGA"; results: AnimeSearchResult[]; pageInfo: AnimePageInfo }>(
+        apiRequest<{ type: AniListMediaType; results: AnimeSearchResult[]; pageInfo: AnimePageInfo }>(
             `${API_ENDPOINTS.ANIME}/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(type)}&page=${encodeURIComponent(String(page))}&perPage=${encodeURIComponent(String(perPage))}`,
         ),
 

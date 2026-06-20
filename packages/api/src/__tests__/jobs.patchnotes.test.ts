@@ -1,5 +1,5 @@
 import '../vitest.setup.js';
-import { describe, it, expect } from 'vitest';
+import { afterAll, beforeEach, describe, it, expect } from 'vitest';
 import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import { expectOk, expectUnauthorized, expectServiceUnavailable, expectErrorCode } from '@zeffuro/fakegaming-common/testing';
@@ -7,8 +7,21 @@ import { PATCH_NOTE_EMBED_DESCRIPTION_LIMIT } from '@zeffuro/fakegaming-common/p
 import { buildPatchNoteEmbedPayload, computeNextQuarterHourDelaySeconds } from '../jobs/patchNotes.js';
 
 const client = givenAuthenticatedClient(app, { discordId: 'testuser' });
+const ORIGINAL_DASHBOARD_ADMINS = process.env.DASHBOARD_ADMINS;
 
 describe('Jobs — patchnotes admin endpoints', () => {
+    beforeEach(() => {
+        process.env.DASHBOARD_ADMINS = 'testuser';
+    });
+
+    afterAll(() => {
+        if (ORIGINAL_DASHBOARD_ADMINS === undefined) {
+            delete process.env.DASHBOARD_ADMINS;
+        } else {
+            process.env.DASHBOARD_ADMINS = ORIGINAL_DASHBOARD_ADMINS;
+        }
+    });
+
     it('GET /api/jobs includes patchnotes', async () => {
         const res = await client.get('/api/jobs');
         expectOk(res);

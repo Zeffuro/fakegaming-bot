@@ -1,6 +1,5 @@
 import { z } from 'zod';
-
-export const idParamSchema = z.object({ id: z.coerce.number().int() });
+export { numericIdParamSchema as idParamSchema } from './sharedSchemas.js';
 
 export const existsQuerySchema = z.object({
     blueskyHandle: z.string().min(1),

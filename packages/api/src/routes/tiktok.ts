@@ -4,20 +4,23 @@ import { tiktokCreateRequestSchema, tiktokUpdateRequestSchema } from '@zeffuro/f
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth, jwtOrService } from '../middleware/auth.js';
-import {
-    requireGuildAdmin,
-    checkUserGuildAccess,
-    filterGuildScopedRecordsForRequest,
-    checkGuildScopedRecordAccess,
-    checkGuildScopedUpdateAccess
-} from '../utils/authHelpers.js';
+import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { idParamSchema, existsQuerySchema, liveQuerySchema } from './tiktok.schemas.js';
 import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import {
+    canDeleteGuildScopedRecord,
+    canReadGuildScopedRecord,
+    canUpdateGuildScopedRecordFromBody,
+    channelAuditMetadata,
+    sendGuildScopedRecords,
+    sendNotFound,
+    updatedChannelAuditMetadata,
+} from '../utils/guildScopedRouteHelpers.js';
+import { optionalGuildListQuerySchema } from './sharedSchemas.js';
 
 const router = createBaseRouter();
-const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
 
 /**
  * @openapi
@@ -37,12 +40,10 @@ const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
  *               items:
  *                 $ref: '#/components/schemas/TikTokStreamConfig'
  */
-router.get('/', validateQuery(listQuerySchema), async (req, res) => {
-    const { guildId } = req.query as z.infer<typeof listQuerySchema>;
+router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
     const streams = await getConfigManager().tiktokManager.getAllPlain();
-    const visibleStreams = await filterGuildScopedRecordsForRequest(req, res, streams, guildId);
-    if (!visibleStreams) return;
-    res.json(visibleStreams);
+    await sendGuildScopedRecords(req, res, streams, guildId);
 });
 
 /**
@@ -178,8 +179,8 @@ router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
-    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
-    const hasAccess = await checkGuildScopedRecordAccess(req, res, stream);
+    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
+    const hasAccess = await canReadGuildScopedRecord(req, res, stream);
     if (!hasAccess) return;
     res.json(stream);
 });
@@ -243,9 +244,7 @@ router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildA
         targetType: 'tiktokConfig',
         targetId: req.body.tiktokUsername,
         guildId: req.body.guildId,
-        metadata: {
-            channelId: req.body.discordChannelId,
-        },
+        metadata: channelAuditMetadata(req.body),
     });
     res.status(created ? 201 : 200).json({ success: true });
 });
@@ -298,10 +297,8 @@ router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildA
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUpdateRequestSchema), async (req, res) => {
     const id = String(req.params.id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
-    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
-    const body = req.body as { guildId?: unknown };
-    const nextGuildId = typeof body.guildId === 'string' ? body.guildId : undefined;
-    const hasAccess = await checkGuildScopedUpdateAccess(req, res, stream, nextGuildId);
+    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
+    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, stream, req.body);
     if (!hasAccess) return;
     await getConfigManager().tiktokManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
@@ -310,9 +307,7 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
         targetType: 'tiktokConfig',
         targetId: id,
         guildId: updated.guildId ?? stream.guildId ?? null,
-        metadata: {
-            channelId: updated.discordChannelId ?? stream.discordChannelId,
-        },
+        metadata: updatedChannelAuditMetadata(updated, stream),
     });
     res.json(updated);
 });
@@ -352,20 +347,16 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     const id = String(req.params.id);
     const numericId = Number(id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(numericId);
-    if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
-    if (stream.guildId) {
-        const access = await checkUserGuildAccess(req, res, stream.guildId);
-        if (!access.authorized) return;
-    }
+    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
+    const hasAccess = await canDeleteGuildScopedRecord(req, res, stream);
+    if (!hasAccess) return;
     await getConfigManager().tiktokManager.removeByPk(numericId);
     await recordAuditEvent(req, {
         action: 'tiktok.delete',
         targetType: 'tiktokConfig',
         targetId: numericId,
         guildId: stream.guildId ?? null,
-        metadata: {
-            channelId: stream.discordChannelId,
-        },
+        metadata: channelAuditMetadata(stream),
     });
     res.json({ success: true });
 });

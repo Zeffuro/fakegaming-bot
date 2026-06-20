@@ -4,16 +4,23 @@ import { givenAuthenticatedClient } from './helpers/client.js';
 import { expectBadRequest, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 const client = givenAuthenticatedClient(app);
+const ORIGINAL_DASHBOARD_ADMINS = process.env.DASHBOARD_ADMINS;
 
 describe('YouTube resolve endpoint', () => {
     const origKey = process.env.YOUTUBE_API_KEY;
 
     beforeEach(() => {
+        process.env.DASHBOARD_ADMINS = 'testuser';
         vi.restoreAllMocks();
     });
 
     afterEach(() => {
         process.env.YOUTUBE_API_KEY = origKey;
+        if (ORIGINAL_DASHBOARD_ADMINS === undefined) {
+            delete process.env.DASHBOARD_ADMINS;
+        } else {
+            process.env.DASHBOARD_ADMINS = ORIGINAL_DASHBOARD_ADMINS;
+        }
         vi.restoreAllMocks();
         vi.resetAllMocks();
     });

@@ -67,24 +67,31 @@ describe('Riot links admin routes', () => {
     });
 
     it('allows a service-authenticated dashboard admin assertion', async () => {
+        const reqId = 'dashboard-service-request-1';
+        const signature = createHmac('sha256', process.env.JWT_SECRET!)
+            .update(`admin-user:${reqId}`)
+            .digest('hex');
+
         const res = await request(app)
             .get('/api/riotLinks')
             .set('x-service-token', 'service-token')
-            .set('x-dashboard-admin-user', 'admin-user');
+            .set('x-dashboard-admin-user', 'admin-user')
+            .set('x-dashboard-admin-request', reqId)
+            .set('x-dashboard-admin-signature', signature);
 
         expectOk(res);
         expect(res.body.links).toHaveLength(1);
     });
 
-    it('allows a signed dashboard admin assertion from the dashboard proxy', async () => {
+    it('allows a signed service dashboard admin assertion from the dashboard proxy', async () => {
         const reqId = 'dashboard-request-1';
         const signature = createHmac('sha256', process.env.JWT_SECRET!)
             .update(`admin-user:${reqId}`)
             .digest('hex');
 
-        const res = await nonAdmin.raw
+        const res = await request(app)
             .get('/api/riotLinks')
-            .set('Authorization', `Bearer ${nonAdmin.token}`)
+            .set('x-service-token', 'service-token')
             .set('x-request-id', reqId)
             .set('x-dashboard-admin-user', 'admin-user')
             .set('x-dashboard-admin-request', reqId)

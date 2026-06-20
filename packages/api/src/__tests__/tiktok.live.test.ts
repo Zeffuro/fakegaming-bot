@@ -4,6 +4,7 @@ import { givenAuthenticatedClient } from './helpers/client.js';
 import { expectOk, expectUnauthorized, expectBadRequest } from '@zeffuro/fakegaming-common/testing';
 
 const client = givenAuthenticatedClient(app);
+const ORIGINAL_DASHBOARD_ADMINS = process.env.DASHBOARD_ADMINS;
 
 // Mock the connector module once; we'll set its implementation per-test in beforeEach
 vi.mock('tiktok-live-connector', () => ({
@@ -13,6 +14,7 @@ vi.mock('tiktok-live-connector', () => ({
 describe('GET /api/tiktok/live', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
+        process.env.DASHBOARD_ADMINS = 'testuser';
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
         (TikTokLiveConnection as any).mockImplementation(function () {
             return {
@@ -21,7 +23,14 @@ describe('GET /api/tiktok/live', () => {
             };
         });
     });
-    afterEach(() => { vi.clearAllMocks(); });
+    afterEach(() => {
+        vi.clearAllMocks();
+        if (ORIGINAL_DASHBOARD_ADMINS === undefined) {
+            delete process.env.DASHBOARD_ADMINS;
+        } else {
+            process.env.DASHBOARD_ADMINS = ORIGINAL_DASHBOARD_ADMINS;
+        }
+    });
 
     it('requires auth', async () => {
         const res = await client.raw.get('/api/tiktok/live').query({ username: 'x' });

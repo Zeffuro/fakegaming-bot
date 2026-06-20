@@ -9,7 +9,7 @@ export interface SafeRequestContext {
 }
 
 export function getRequestId(req: Request): string | undefined {
-    const header = req.headers['x-request-id'];
+    const header = req.headers?.['x-request-id'];
     if (typeof header === 'string' && header.trim().length > 0) return header.trim();
     if (Array.isArray(header) && typeof header[0] === 'string' && header[0].trim().length > 0) return header[0].trim();
 
@@ -18,18 +18,19 @@ export function getRequestId(req: Request): string | undefined {
 }
 
 export function getSafeRequestPath(req: Request): string {
-    return req.path || req.url.split('?')[0] || req.url;
+    const url = req.url ?? '';
+    return req.path || url.split('?')[0] || url;
 }
 
 export function getRouteLabel(req: Request): string {
-    return `${req.method}:${getSafeRequestPath(req).replace(/\d+/g, ':id')}`;
+    return `${req.method ?? 'UNKNOWN'}:${getSafeRequestPath(req).replace(/\d+/g, ':id')}`;
 }
 
 export function getSafeRequestContext(req: Request): SafeRequestContext {
     const user = (req as { user?: { discordId?: string } }).user;
     return {
         reqId: getRequestId(req),
-        method: req.method,
+        method: req.method ?? 'UNKNOWN',
         path: getSafeRequestPath(req),
         queryKeys: Object.keys(req.query ?? {}),
         actorId: user?.discordId,
