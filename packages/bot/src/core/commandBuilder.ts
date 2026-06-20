@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import {ApplicationCommandType, ContextMenuCommandBuilder, SlashCommandBuilder} from 'discord.js';
 
 /**
  * Create a SlashCommandBuilder using manifest metadata for name and description,
@@ -13,6 +13,18 @@ export function createSlashCommand(
         .setDescription(meta.description);
     if (addOptions) addOptions(builder);
     return builder;
+}
+
+export function createUserContextCommand(meta: { name: string }): ContextMenuCommandBuilder {
+    return new ContextMenuCommandBuilder()
+        .setName(meta.name)
+        .setType(ApplicationCommandType.User);
+}
+
+export function createMessageContextCommand(meta: { name: string }): ContextMenuCommandBuilder {
+    return new ContextMenuCommandBuilder()
+        .setName(meta.name)
+        .setType(ApplicationCommandType.Message);
 }
 
 /**

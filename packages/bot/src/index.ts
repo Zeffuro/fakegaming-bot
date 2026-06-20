@@ -3,10 +3,11 @@ import './deploy-commands.js';
 
 import {
     Events, GatewayIntentBits,
-    MessageFlags
+    MessageFlags,
+    type Interaction,
 } from 'discord.js';
 import path from 'path';
-import {FakegamingBot} from './core/FakegamingBot.js';
+import {FakegamingBot, type ExecutableCommandInteraction} from './core/FakegamingBot.js';
 import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {loadCommands} from './core/loadCommands.js';
@@ -26,6 +27,12 @@ function isUnknownInteractionError(error: unknown): boolean {
         && error !== null
         && 'code' in error
         && (error as { code?: unknown }).code === 10062;
+}
+
+function isExecutableCommandInteraction(interaction: Interaction): interaction is ExecutableCommandInteraction {
+    return interaction.isChatInputCommand()
+        || interaction.isUserContextMenuCommand()
+        || interaction.isMessageContextMenuCommand();
 }
 
 (async () => {
@@ -93,7 +100,7 @@ function isUnknownInteractionError(error: unknown): boolean {
         });
 
 
-        client.on(Events.InteractionCreate, async (interaction: import('discord.js').Interaction) => {
+        client.on(Events.InteractionCreate, async (interaction: Interaction) => {
             if (interaction.isButton()) {
                 for (const command of client.commands.values()) {
                     if (!command.handleComponent) continue;
@@ -119,7 +126,7 @@ function isUnknownInteractionError(error: unknown): boolean {
                 return;
             }
 
-            if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
+            if (!isExecutableCommandInteraction(interaction) && !interaction.isAutocomplete()) return;
             const command = client.commands.get(interaction.commandName);
             if (!command) return;
 
@@ -137,59 +144,59 @@ function isUnknownInteractionError(error: unknown): boolean {
                 }
                 return;
             }
-            if (interaction.isChatInputCommand()) {
-                // Enforce per-guild DisabledModuleConfig before executing
-                const guildId = interaction.guildId ?? '';
-                if (guildId && command.moduleName) {
-                    try {
-                        const moduleDisabled = await getConfigManager().disabledModuleManager.isModuleDisabled(guildId, command.moduleName);
-                        if (moduleDisabled) {
-                            await interaction.reply({
-                                content: `The ${command.moduleName} module is disabled for this server.`,
-                                flags: MessageFlags.Ephemeral
-                            });
-                            return;
-                        }
-                    } catch (err) {
-                        logger.warn({ err, guildId, command: interaction.commandName, module: command.moduleName }, 'Failed to check disabled module config');
-                    }
-                }
+            if (!isExecutableCommandInteraction(interaction)) return;
 
-                // Enforce per-guild DisabledCommandConfig before executing
-                if (guildId) {
-                    try {
-                        const disabled = await getConfigManager().disabledCommandManager.isCommandDisabled(guildId, interaction.commandName);
-                        if (disabled) {
-                            await interaction.reply({
-                                content: 'This command is disabled for this server.',
-                                flags: MessageFlags.Ephemeral
-                            });
-                            return;
-                        }
-                    } catch (err) {
-                        logger.warn({ err, guildId, command: interaction.commandName }, 'Failed to check disabled command config');
-                    }
-                }
-
-                incMetric('command_exec', { name: interaction.commandName });
+            // Enforce per-guild DisabledModuleConfig before executing
+            const guildId = interaction.guildId ?? '';
+            if (guildId && command.moduleName) {
                 try {
-                    await command.execute(interaction);
-                    incMetric('command_ok', { name: interaction.commandName });
-                } catch (error) {
-                    incMetric('command_error', { name: interaction.commandName });
-                    logger.error({ err: error }, 'Error executing command');
-                    try {
-                        if (!interaction.replied && !interaction.deferred) {
-                            await interaction.reply({
-                                content: 'Error executing command.',
-                                flags: MessageFlags.Ephemeral
-                            });
-                        } else {
-                            await interaction.editReply({content: 'Error executing command.'});
-                        }
-                    } catch (err) {
-                        logger.error({ err }, 'Failed to send error reply:');
+                    const moduleDisabled = await getConfigManager().disabledModuleManager.isModuleDisabled(guildId, command.moduleName);
+                    if (moduleDisabled) {
+                        await interaction.reply({
+                            content: `The ${command.moduleName} module is disabled for this server.`,
+                            flags: MessageFlags.Ephemeral
+                        });
+                        return;
                     }
+                } catch (err) {
+                    logger.warn({ err, guildId, command: interaction.commandName, module: command.moduleName }, 'Failed to check disabled module config');
+                }
+            }
+
+            // Enforce per-guild DisabledCommandConfig before executing
+            if (guildId) {
+                try {
+                    const disabled = await getConfigManager().disabledCommandManager.isCommandDisabled(guildId, interaction.commandName);
+                    if (disabled) {
+                        await interaction.reply({
+                            content: 'This command is disabled for this server.',
+                            flags: MessageFlags.Ephemeral
+                        });
+                        return;
+                    }
+                } catch (err) {
+                    logger.warn({ err, guildId, command: interaction.commandName }, 'Failed to check disabled command config');
+                }
+            }
+
+            incMetric('command_exec', { name: interaction.commandName });
+            try {
+                await command.execute(interaction);
+                incMetric('command_ok', { name: interaction.commandName });
+            } catch (error) {
+                incMetric('command_error', { name: interaction.commandName });
+                logger.error({ err: error }, 'Error executing command');
+                try {
+                    if (!interaction.replied && !interaction.deferred) {
+                        await interaction.reply({
+                            content: 'Error executing command.',
+                            flags: MessageFlags.Ephemeral
+                        });
+                    } else {
+                        await interaction.editReply({content: 'Error executing command.'});
+                    }
+                } catch (err) {
+                    logger.error({ err }, 'Failed to send error reply:');
                 }
             }
         });

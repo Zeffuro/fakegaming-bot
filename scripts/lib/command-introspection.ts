@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
 
-export interface CommandOut { name: string; description: string; module?: string | null; permissions?: string | null; hidden?: boolean | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; }
+export type CommandKind = 'chatInput' | 'user' | 'message';
+
+export interface CommandOut { name: string; description: string; module?: string | null; permissions?: string | null; hidden?: boolean | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: CommandKind | null; }
 export interface ModuleOut { name: string; title: string; description: string; hidden?: boolean | null; sortOrder?: number | null; }
 export interface ModuleMeta { title?: string; description?: string; hidden?: boolean; sortOrder?: number; }
 export interface LoadResult { commands: CommandOut[]; usedFallback: boolean; }
@@ -68,6 +70,7 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                 dm_permission: (typeof c.dm_permission === 'boolean' ? c.dm_permission : null) as boolean | null,
                 default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                 testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
+                type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
                 module: null,
             })).filter(c => c.name && c.description);
         }
@@ -84,6 +87,7 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                     dm_permission: (typeof c.dm_permission === 'boolean' ? c.dm_permission : null) as boolean | null,
                     default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                     testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
+                    type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
                     module: null,
                 })).filter(c => c.name && c.description);
             }
@@ -160,6 +164,7 @@ export async function loadCommands(moduleName: string, moduleDir: string, files:
                     dm_permission: null,
                     default_member_permissions: null,
                     testOnly: null,
+                    type: null,
                 });
             }
         } catch {

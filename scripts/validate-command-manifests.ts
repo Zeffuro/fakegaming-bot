@@ -6,6 +6,7 @@ import {
     findModuleFolders,
     findCommandFiles,
     loadCommands,
+    type CommandKind,
     type CommandOut,
 } from './lib/command-introspection.js';
 
@@ -14,8 +15,11 @@ const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), 
 
 interface PerModule { name: string; commands: CommandOut[]; usedFallback: boolean; skipped: boolean; }
 
-function validateName(name: string): string | null {
+function validateName(name: string, type: CommandKind | null | undefined): string | null {
     if (name.length < 1 || name.length > 32) return `name length ${name.length} out of range [1,32]`;
+    if (type === 'user' || type === 'message') {
+        return /[\r\n\t]/.test(name) ? 'context menu name must not contain control whitespace' : null;
+    }
     if (!/^[a-z0-9-]+$/.test(name)) return 'name must match ^[a-z0-9-]+$ (lowercase, digits, hyphen)';
     return null;
 }
@@ -80,7 +84,7 @@ async function main() {
 
     // Constraint checks
     for (const c of all) {
-        const nErr = validateName(c.name);
+        const nErr = validateName(c.name, c.type);
         if (nErr) errors.push(`Invalid name '${c.name}' in module '${c.module}': ${nErr}`);
         const dErr = validateDescription(c.description);
         if (dErr) errors.push(`Invalid description for '${c.name}' in module '${c.module}': ${dErr}`);

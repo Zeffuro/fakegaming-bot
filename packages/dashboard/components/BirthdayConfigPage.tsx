@@ -7,6 +7,7 @@ import {
   Avatar,
   Box,
   Button,
+  Chip,
   CircularProgress,
   IconButton,
   MenuItem,
@@ -15,7 +16,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Add, Cake, Close, Delete, Edit, Save } from "@mui/icons-material";
+import { Add, Cake, CalendarMonth, Close, Delete, Edit, Save } from "@mui/icons-material";
+import type { BirthdayConfig } from "@zeffuro/fakegaming-common";
 import DashboardLayout from "@/components/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -78,6 +80,48 @@ function formatBirthday(month: number, day: number, year?: number): string {
   return year ? `${monthName} ${day}, ${year}` : `${monthName} ${day}`;
 }
 
+function isLeapYear(year: number): boolean {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+}
+
+function getNextBirthdayDate(month: number, day: number, now = new Date()): Date {
+  const makeDate = (year: number) => {
+    if (month === 2 && day === 29 && !isLeapYear(year)) {
+      return new Date(year, 1, 28, 12, 0, 0, 0);
+    }
+    return new Date(year, month - 1, day, 12, 0, 0, 0);
+  };
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  let next = makeDate(now.getFullYear());
+  if (next.getTime() < todayStart) {
+    next = makeDate(now.getFullYear() + 1);
+  }
+  return next;
+}
+
+function getDaysAway(date: Date, now = new Date()): number {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const targetStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  return Math.max(0, Math.round((targetStart - todayStart) / dayMs));
+}
+
+function formatDaysAway(daysAway: number): string {
+  if (daysAway === 0) return "Today";
+  if (daysAway === 1) return "Tomorrow";
+  return `In ${daysAway} days`;
+}
+
+function toUpcomingBirthday(birthday: BirthdayConfig, now: Date) {
+  const nextDate = getNextBirthdayDate(birthday.month, birthday.day, now);
+  return {
+    birthday,
+    nextDate,
+    daysAway: getDaysAway(nextDate, now),
+  };
+}
+
 function toPayload(form: typeof emptyForm): BirthdayFormData | null {
   const day = Number(form.day);
   const month = Number(form.month);
@@ -123,6 +167,17 @@ export default function BirthdayConfigPage() {
   const sortedBirthdays = useMemo(
     () => [...birthdays].sort((a, b) => a.month - b.month || a.day - b.day || a.userId.localeCompare(b.userId)),
     [birthdays]
+  );
+  const calendarBirthdays = useMemo(() => {
+    const now = new Date();
+    return birthdays
+      .map(birthday => toUpcomingBirthday(birthday, now))
+      .sort((a, b) => a.nextDate.getTime() - b.nextDate.getTime() || a.birthday.userId.localeCompare(b.birthday.userId));
+  }, [birthdays]);
+  const upcomingBirthdays = useMemo(() => calendarBirthdays.slice(0, 8), [calendarBirthdays]);
+  const upcomingCountNext30Days = useMemo(
+    () => calendarBirthdays.filter(item => item.daysAway <= 30).length,
+    [calendarBirthdays]
   );
 
   useEffect(() => {
@@ -218,7 +273,10 @@ export default function BirthdayConfigPage() {
             description="Search Discord members, store their birthday, and choose exactly where celebration messages should be posted."
             accent={accent}
             secondaryAccent={dashboardAccents.quotes}
-            stats={[{ label: "Birthdays Configured", value: birthdays.length }]}
+            stats={[
+              { label: "Birthdays Configured", value: birthdays.length },
+              { label: "Next 30 Days", value: upcomingCountNext30Days },
+            ]}
             actions={(
               <Button
                 component={Link}
@@ -237,6 +295,68 @@ export default function BirthdayConfigPage() {
               {error}
             </Alert>
           )}
+
+          <FeaturePanel accent={accent} sx={{ mb: 3 }}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                <Box>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                    <CalendarMonth sx={{ color: accent }} />
+                    <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
+                      Upcoming Calendar
+                    </Typography>
+                  </Stack>
+                  <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>
+                    The next birthdays from today, including leap-day fallback to February 28 on non-leap years.
+                  </Typography>
+                </Box>
+                <Button variant="outlined" onClick={() => void refresh()} disabled={loading || saving} sx={ghostActionButtonSx(accent)}>
+                  Refresh
+                </Button>
+              </Box>
+
+              {upcomingBirthdays.length === 0 ? (
+                <EmptyState icon={<CalendarMonth />} title="No Upcoming Birthdays" description="Add birthdays below to populate this calendar." accent={accent} />
+              ) : (
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }, gap: 1.5 }}>
+                  {upcomingBirthdays.map(item => {
+                    const birthday = item.birthday;
+                    const user = userMap[birthday.userId];
+                    return (
+                      <Box key={`upcoming:${birthday.guildId}:${birthday.userId}`} sx={{ ...dashboardCardSx(accent), p: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
+                          <Avatar src={buildAvatarUrl(birthday.userId, user?.avatar) ?? undefined} sx={{ width: 42, height: 42, border: "1px solid rgba(255,255,255,0.12)" }}>
+                            {getDisplayName(user).slice(0, 1).toUpperCase()}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="body1" sx={{ color: "grey.50", fontWeight: 850 }} noWrap>
+                              {getDisplayName(user)}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
+                              {getChannelName(birthday.channelId)}
+                            </Typography>
+                          </Box>
+                          <Chip
+                            size="small"
+                            label={formatDaysAway(item.daysAway)}
+                            sx={{ bgcolor: "rgba(255,200,87,0.13)", color: "grey.50", border: "1px solid rgba(255,200,87,0.28)" }}
+                          />
+                        </Stack>
+                        <Box>
+                          <Typography variant="h6" sx={{ color: "grey.100", fontWeight: 900, letterSpacing: "-0.02em" }}>
+                            {formatBirthday(birthday.month, birthday.day, birthday.year)}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
+                            {item.nextDate.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              )}
+            </Stack>
+          </FeaturePanel>
 
           <FeaturePanel accent={accent} sx={{ mb: 3 }}>
             <Stack spacing={2.25} sx={{ position: "relative" }}>

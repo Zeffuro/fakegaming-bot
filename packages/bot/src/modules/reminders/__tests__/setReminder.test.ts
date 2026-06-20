@@ -71,7 +71,7 @@ describe('setReminder command', () => {
         });
 
         // Verify the interaction reply (ephemeral)
-        expectEphemeralReply(interaction, { contains: '⏰ I\'ll remind you in 1h: "Remember to check the test results"' });
+        expectEphemeralReply(interaction, { contains: 'I\'ll remind you in 1h: "Remember to check the test results"' });
     });
 
     it('handles invalid timespan format', async () => {

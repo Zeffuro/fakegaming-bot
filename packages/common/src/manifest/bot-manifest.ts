@@ -2,7 +2,8 @@
 // Run: pnpm exec tsx scripts/generate-bot-manifest.ts
 
 export interface BotModuleDef { name: string; title: string; description: string; }
-export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; }
+export type BotCommandType = 'chatInput' | 'user' | 'message';
+export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; }
 export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<BotCommand>; }
 
 export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
@@ -76,7 +77,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "manga",
@@ -85,7 +87,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "birthday",
@@ -94,7 +97,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "birthdays",
@@ -103,7 +107,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "remove-birthday",
@@ -112,7 +117,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "set-birthday",
@@ -121,7 +127,18 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "Show Birthday",
+        "description": "Show a user birthday from the user context menu",
+        "module": "birthdays",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "user"
     },
     {
         "name": "add-bluesky-account",
@@ -130,7 +147,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "help",
@@ -139,7 +157,18 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "calendar",
+        "description": "Show upcoming birthdays and your reminders",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "poll",
@@ -148,7 +177,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "roll",
@@ -157,7 +187,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "spin",
@@ -166,7 +197,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "test-notification",
@@ -175,7 +207,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "time",
@@ -184,7 +217,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "weather",
@@ -193,7 +227,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "league-history",
@@ -202,7 +237,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "league-stats",
@@ -211,7 +247,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "link-riot",
@@ -220,7 +257,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "riot-links",
@@ -229,7 +267,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "tft-history",
@@ -238,7 +277,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "tft-stats",
@@ -247,7 +287,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "get-patchnotes",
@@ -256,7 +297,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "patchnotes-history",
@@ -265,7 +307,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "subscribe-patchnotes",
@@ -274,7 +317,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "add-quote",
@@ -283,7 +327,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "delete-quote",
@@ -292,7 +337,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "quote-leaderboard",
@@ -301,7 +347,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "quotes",
@@ -310,7 +357,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "random-quote",
@@ -319,7 +367,18 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "Save as Quote",
+        "description": "Save a message as a quote from the message context menu",
+        "module": "quotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "message"
     },
     {
         "name": "search-quote",
@@ -328,7 +387,18 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "Show Quotes",
+        "description": "Show quotes for a user from the user context menu",
+        "module": "quotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "user"
     },
     {
         "name": "set-reminder",
@@ -337,7 +407,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "set-timezone",
@@ -346,7 +417,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "reminders",
@@ -355,7 +427,18 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "Remind Me in 1h",
+        "description": "Set a one-hour reminder for a message from the message context menu",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "message"
     },
     {
         "name": "delete-reminder",
@@ -364,7 +447,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "snooze-reminder",
@@ -373,7 +457,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "add-tiktok-stream",
@@ -382,7 +467,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "add-twitch-stream",
@@ -391,7 +477,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "stream-status",
@@ -400,7 +487,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "add-youtube-channel",
@@ -409,7 +497,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     },
     {
         "name": "youtube-latest",
@@ -418,7 +507,8 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
-        "testOnly": null
+        "testOnly": null,
+        "type": null
     }
 ] as const;
 
@@ -437,7 +527,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "manga",
@@ -446,7 +537,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -464,7 +556,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "birthdays",
@@ -473,7 +566,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "remove-birthday",
@@ -482,7 +576,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "set-birthday",
@@ -491,7 +586,18 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "Show Birthday",
+                "description": "Show a user birthday from the user context menu",
+                "module": "birthdays",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "user"
             }
         ]
     },
@@ -509,7 +615,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -527,7 +634,18 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "calendar",
+                "description": "Show upcoming birthdays and your reminders",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "poll",
@@ -536,7 +654,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "roll",
@@ -545,7 +664,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "spin",
@@ -554,7 +674,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "test-notification",
@@ -563,7 +684,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "time",
@@ -572,7 +694,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "weather",
@@ -581,7 +704,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -599,7 +723,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "league-stats",
@@ -608,7 +733,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "link-riot",
@@ -617,7 +743,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "riot-links",
@@ -626,7 +753,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "tft-history",
@@ -635,7 +763,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "tft-stats",
@@ -644,7 +773,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -662,7 +792,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "patchnotes-history",
@@ -671,7 +802,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "subscribe-patchnotes",
@@ -680,7 +812,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -698,7 +831,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "delete-quote",
@@ -707,7 +841,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "quote-leaderboard",
@@ -716,7 +851,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "quotes",
@@ -725,7 +861,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "random-quote",
@@ -734,7 +871,18 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "Save as Quote",
+                "description": "Save a message as a quote from the message context menu",
+                "module": "quotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "message"
             },
             {
                 "name": "search-quote",
@@ -743,7 +891,18 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "Show Quotes",
+                "description": "Show quotes for a user from the user context menu",
+                "module": "quotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "user"
             }
         ]
     },
@@ -761,7 +920,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "set-timezone",
@@ -770,7 +930,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "reminders",
@@ -779,7 +940,18 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "Remind Me in 1h",
+                "description": "Set a one-hour reminder for a message from the message context menu",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "message"
             },
             {
                 "name": "delete-reminder",
@@ -788,7 +960,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "snooze-reminder",
@@ -797,7 +970,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -823,7 +997,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -841,7 +1016,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "stream-status",
@@ -850,7 +1026,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -868,7 +1045,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             },
             {
                 "name": "youtube-latest",
@@ -877,7 +1055,8 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,
-                "testOnly": null
+                "testOnly": null,
+                "type": null
             }
         ]
     }

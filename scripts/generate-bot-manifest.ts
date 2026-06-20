@@ -61,6 +61,7 @@ async function main() {
                 dm_permission: c.dm_permission ?? null,
                 default_member_permissions: c.default_member_permissions ?? null,
                 testOnly: c.testOnly ?? null,
+                type: c.type ?? null,
             }))
         }));
 
@@ -71,7 +72,8 @@ async function main() {
     const header = `// AUTO-GENERATED FILE. Do not edit manually.\n` +
         `// Run: pnpm exec tsx scripts/generate-bot-manifest.ts\n\n` +
         `export interface BotModuleDef { name: string; title: string; description: string; }\n` +
-        `export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; }\n` +
+        `export type BotCommandType = 'chatInput' | 'user' | 'message';\n` +
+        `export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; }\n` +
         `export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<BotCommand>; }\n\n`;
 
     const modulesConst = `export const BOT_MODULES: ReadonlyArray<BotModuleDef> = ${JSON.stringify(flatModules, null, 4)} as const;\n\n`;

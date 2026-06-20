@@ -1,10 +1,9 @@
-import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'discord.js';
+import {ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import {v4 as uuidv4} from 'uuid';
 import {parseTimespan} from '@zeffuro/fakegaming-common/utils';
-import { createSlashCommand } from '../../../core/commandBuilder.js';
-import { getTestOnly } from '../../../core/commandBuilder.js';
-import { setReminder as META } from '../commands.manifest.js';
+import {v4 as uuidv4} from 'uuid';
+import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
+import {setReminder as META} from '../commands.manifest.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
@@ -12,11 +11,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addStringOption(option => option.setName('message').setDescription('Reminder message').setRequired(true))
 );
 
-/**
- * Executes the set-reminder command, setting a reminder for the user after a specified timespan.
- * Replies with a confirmation or error message.
- */
-async function execute(interaction: ChatInputCommandInteraction) {
+async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const timespan = interaction.options.getString('timespan', true);
     const message = interaction.options.getString('message', true);
     const userId = interaction.user.id;
@@ -39,8 +34,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const discordTime = `<t:${Math.floor(timestamp / 1000)}:R>`;
     await interaction.reply({
-        content: `⏰ I'll remind you in ${timespan}: "${message}" (at ${discordTime})`,
-        flags: MessageFlags.Ephemeral
+        content: `I'll remind you in ${timespan}: "${message}" (at ${discordTime})`,
+        flags: MessageFlags.Ephemeral,
     });
 }
 

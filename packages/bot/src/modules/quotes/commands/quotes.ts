@@ -1,6 +1,6 @@
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
-import { formatQuotesBlock } from '../shared/formatQuotes.js';
+import { formatQuotesForUser, type QuoteLike } from '../shared/formatQuotes.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { quotes as META } from '../commands.manifest.js';
 
@@ -15,15 +15,9 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
 async function execute(interaction: ChatInputCommandInteraction) {
     const user = interaction.options.getUser('user', true);
     const guildId = interaction.guildId!;
-    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor(guildId, user.id);
+    const quotes = await getConfigManager().quoteManager.getQuotesByAuthor(guildId, user.id) as unknown as QuoteLike[];
 
-    if (!quotes || quotes.length === 0) {
-        await interaction.reply(`No quotes found for ${user.tag}.`);
-        return;
-    }
-
-    const formatted = formatQuotesBlock(quotes as Array<{ quote: string; authorId: string; timestamp?: number | string | null | undefined }>);
-    await interaction.reply(`Quotes for ${user.tag}:\n${formatted}`);
+    await interaction.reply(formatQuotesForUser(user.tag, quotes));
 }
 
 const testOnly = getTestOnly(META);

@@ -19,8 +19,14 @@ export async function loadCommands(client: FakegamingBot, modulesPath: string) {
             const commandsDir = path.dirname(commandPath);
             const moduleDir = path.dirname(commandsDir);
             const moduleName = path.basename(moduleDir);
+            const description = typeof cmd.description === 'string'
+                ? cmd.description
+                : typeof cmd.data.description === 'string'
+                    ? cmd.data.description
+                    : undefined;
             client.commands.set(cmd.data.name, {
                 data: cmd.data,
+                description,
                 execute: cmd.execute,
                 autocomplete: cmd.autocomplete,
                 handleComponent: cmd.handleComponent,
