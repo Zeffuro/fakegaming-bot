@@ -426,6 +426,7 @@ This project uses **GitHub Actions** for continuous integration:
 |`/anime`|Search anime, subscribe to releases, and view upcoming episodes|All users|
 |`/birthday`|Show your or another user's birthday|All users|
 |`/birthdays`|Show upcoming birthdays in this server|All users|
+|`/calendar`|Show upcoming birthdays and your reminders|All users|
 |`/delete-quote`|Delete a quote you added or authored|All users|
 |`/delete-reminder`|Delete one of your pending reminders|All users|
 |`/get-patchnotes`|Get the latest patch notes for a game|All users|
@@ -439,14 +440,18 @@ This project uses **GitHub Actions** for continuous integration:
 |`/quote-leaderboard`|Show the most quoted users in this server|All users|
 |`/quotes`|Get all quotes for a user|All users|
 |`/random-quote`|Get a random quote from the server|All users|
+|`/Remind Me in 1h`|Set a one-hour reminder for a message from the message context menu|All users|
 |`/reminders`|List your pending reminders|All users|
 |`/remove-birthday`|Remove your birthday or another user's birthday (admins only)|All users|
 |`/riot-links`|Manage linked Riot accounts|All users|
 |`/roll`|Roll dice or generate a random number|All users|
+|`/Save as Quote`|Save a message as a quote from the message context menu|All users|
 |`/search-quote`|Search quotes by text|All users|
 |`/set-birthday`|Set your birthday and the channel to post in|All users|
 |`/set-reminder`|Set a reminder|All users|
 |`/set-timezone`|Set your timezone|All users|
+|`/Show Birthday`|Show a user birthday from the user context menu|All users|
+|`/Show Quotes`|Show quotes for a user from the user context menu|All users|
 |`/snooze-reminder`|Snooze one of your pending reminders|All users|
 |`/spin`|Spin the wheel to pick someone!|All users|
 |`/stream-status`|Check whether a Twitch channel is live|All users|
