@@ -14,6 +14,7 @@ export default function GuildYouTubePage() {
       moduleIcon={<YouTubeIcon color="error" />}
       moduleColor="#FF0000"
       moduleName="YouTube"
+      provider="youtube"
       channelNameField="youtubeChannelId"
       channelNameLabel="Channel ID"
       channelNamePlaceholder="UCsBjURrPoezykLs9EqgamOA"

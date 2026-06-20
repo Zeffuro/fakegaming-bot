@@ -6,6 +6,7 @@ import { buildDiscordNotificationPayload } from './discordNotificationPayload.js
 import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
+import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 
 const BLUESKY_APPVIEW = 'https://public.api.bsky.app';
 
@@ -293,7 +294,20 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
         try {
             if (!cfg.blueskyHandle || !cfg.discordChannelId) continue;
             const posts = await fetchBlueskyAuthorPosts(cfg.blueskyHandle, log);
-            if (!posts || posts.length === 0) continue;
+            if (!posts) {
+                errors += 1;
+                await recordIntegrationFailure('bluesky', cfg, new Error(`Bluesky feed unavailable for ${cfg.blueskyHandle}`), {
+                    errorCode: 'BLUESKY_FEED_UNAVAILABLE',
+                    metadata: { handle: cfg.blueskyHandle },
+                });
+                continue;
+            }
+            if (posts.length === 0) {
+                await recordIntegrationSuccess('bluesky', cfg, {
+                    metadata: { handle: cfg.blueskyHandle, posts: 0 },
+                });
+                continue;
+            }
 
             const latest = posts[0];
             if (!latest) continue;
@@ -306,7 +320,16 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
                 newPosts = [latest];
             }
 
-            if (newPosts.length === 0) continue;
+            if (newPosts.length === 0) {
+                await recordIntegrationSuccess('bluesky', cfg, {
+                    metadata: {
+                        handle: cfg.blueskyHandle,
+                        latestPostUri: latest.uri,
+                        newPosts: 0,
+                    },
+                });
+                continue;
+            }
 
             const now = new Date();
             const suppression = getNotificationSuppression(cfg, now);
@@ -345,8 +368,20 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
             cfg.lastPostCid = latest.cid;
             if (sentAny) cfg.lastNotifiedAt = now;
             await persistConfig(cm, cfg);
+            await recordIntegrationSuccess('bluesky', cfg, {
+                delivered: sentAny,
+                checkedAt: now,
+                metadata: {
+                    handle: cfg.blueskyHandle,
+                    latestPostUri: latest.uri,
+                    newPosts: newPosts.length,
+                },
+            });
         } catch (err) {
             errors += 1;
+            await recordIntegrationFailure('bluesky', cfg, err, {
+                metadata: { handle: cfg.blueskyHandle },
+            });
             log.error({ err, handle: cfg.blueskyHandle }, 'Error processing Bluesky config');
         }
     }

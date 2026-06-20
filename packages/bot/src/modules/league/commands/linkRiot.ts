@@ -29,8 +29,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     let userId = interaction.user.id;
 
     if (targetUser) {
-        const member = await interaction.guild?.members.fetch(interaction.user.id);
-        if (!member?.permissions.has(PermissionFlagsBits.Administrator)) {
+        if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
             await interaction.editReply('You need admin permissions to link for another user.');
             return;
         }

@@ -20,3 +20,4 @@ export * from './anime-title.js';
 export * from './anime-subscription-config.js';
 export * from './anime-episode.js';
 export * from './audit-event.js';
+export * from './integration-health.js';

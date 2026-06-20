@@ -246,7 +246,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     const limNumRaw = Number(limit ?? '25');
     const lim = Number.isFinite(limNumRaw) ? Math.max(1, Math.min(25, Math.floor(limNumRaw))) : 25;
 
-    const botToken = process.env.DISCORD_BOT_TOKEN;
+    const botToken = shouldUseDiscordMemberSearch() ? process.env.DISCORD_BOT_TOKEN : undefined;
 
     // Try cache first
     // Fallback local cache key and TTL for member search to avoid runtime dependency on new common builds
@@ -335,5 +335,11 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     await cache.set(cacheKey, matched, getMemberSearchTtlMs());
     return res.json(matched);
 });
+
+function shouldUseDiscordMemberSearch(): boolean {
+    const value = process.env.API_DISCORD_MEMBER_SEARCH_ENABLED;
+    if (!value) return true;
+    return !['0', 'false', 'off', 'no'].includes(value.trim().toLowerCase());
+}
 
 export { router };

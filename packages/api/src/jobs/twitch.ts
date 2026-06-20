@@ -5,6 +5,7 @@ import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
 import { syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
+import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 
 interface TwitchStreamConfigPlain {
     id?: number | string;
@@ -190,7 +191,16 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
     if (!streams.length) return { processed: 0, errors: 0 };
 
     const clientId = process.env.TWITCH_CLIENT_ID ?? '';
-    const token = await getTwitchAppToken();
+    let token: string;
+    try {
+        token = await getTwitchAppToken();
+    } catch (err) {
+        await Promise.all(streams.map(cfg => recordIntegrationFailure('twitch', cfg, err, {
+            errorCode: 'TWITCH_AUTH_FAILED',
+            metadata: { username: cfg.twitchUsername },
+        })));
+        throw err;
+    }
 
     // Resolve users by login and streams by user id in batches
     const logins = streams.map(s => s.twitchUsername).filter(Boolean);
@@ -206,7 +216,14 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
     for (const cfg of streams) {
         try {
             const userId = idByLogin.get(normalizeTwitchLogin(cfg.twitchUsername));
-            if (!userId) continue;
+            if (!userId) {
+                errors += 1;
+                await recordIntegrationFailure('twitch', cfg, new Error(`Twitch user not found: ${cfg.twitchUsername}`), {
+                    errorCode: 'TWITCH_USER_NOT_FOUND',
+                    metadata: { username: cfg.twitchUsername },
+                });
+                continue;
+            }
             const stream = streamByUserId.get(userId) ?? null;
             const isLive = stream !== null && stream !== undefined;
 
@@ -226,8 +243,19 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
             if (sent) {
                 processed += 1;
             }
+            await recordIntegrationSuccess('twitch', cfg, {
+                delivered: sent,
+                metadata: {
+                    username: cfg.twitchUsername,
+                    isLive,
+                    eventId: stream?.id ?? null,
+                },
+            });
         } catch (err) {
             errors += 1;
+            await recordIntegrationFailure('twitch', cfg, err, {
+                metadata: { username: cfg.twitchUsername },
+            });
             log.error({ err, username: cfg.twitchUsername }, 'Error processing Twitch config');
         }
     }

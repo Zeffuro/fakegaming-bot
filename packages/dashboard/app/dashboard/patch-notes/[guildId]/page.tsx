@@ -22,6 +22,7 @@ export default function GuildPatchNotesPage() {
       moduleIcon={<SpeakerNotes color="secondary" />}
       moduleColor="#7C4DFF"
       moduleName="Patch Notes"
+      provider="patchnotes"
       channelNameField="game"
       channelNameLabel="Game"
       channelNamePlaceholder="League of Legends"

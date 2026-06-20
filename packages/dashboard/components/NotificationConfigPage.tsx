@@ -13,6 +13,7 @@ import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useStreamingForm";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
+import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -25,6 +26,7 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     moduleIcon: React.ReactNode;
     moduleColor: string;
     moduleName: string;
+    provider?: string;
     channelNameField: string;
     channelNameLabel: string;
     channelNamePlaceholder: string;
@@ -53,6 +55,7 @@ export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
     | "moduleIcon"
     | "moduleColor"
     | "moduleName"
+    | "provider"
     | "channelNameField"
     | "channelNameLabel"
     | "channelNamePlaceholder"
@@ -91,6 +94,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
     moduleIcon,
     moduleColor,
     moduleName,
+    provider,
     channelNameField,
     channelNameLabel,
     channelNamePlaceholder,
@@ -106,6 +110,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
     allowEdit = true,
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
+    const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
 
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
@@ -214,6 +219,8 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                             saving={saving}
                             emptyStateIcon={moduleIcon as React.ReactElement}
                             renderChip={renderChip}
+                            healthByConfigId={health.byConfigId}
+                            healthLoading={health.loading}
                             itemSingularLabel={singular}
                             itemPluralLabel={plural}
                             canEdit={allowEdit}

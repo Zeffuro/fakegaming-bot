@@ -4,6 +4,17 @@ import { alpha } from "@mui/material/styles";
 import { Delete, Edit } from "@mui/icons-material";
 import { dashboardAccents, dashboardCardSx, dangerActionButtonSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 
+export interface ConfigStatusChip {
+  label: string;
+  color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+  variant?: "filled" | "outlined";
+}
+
+export interface ConfigHealthInfo {
+  lines: string[];
+  error?: string | null;
+}
+
 interface ConfigCardProps {
   title: string;
   accent?: string;
@@ -13,11 +24,9 @@ interface ConfigCardProps {
   };
   discordChannel: string;
   customMessage?: string;
-  statusChip?: {
-    label: string;
-    color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
-    variant?: "filled" | "outlined";
-  };
+  statusChip?: ConfigStatusChip;
+  extraStatusChips?: ConfigStatusChip[];
+  healthInfo?: ConfigHealthInfo;
   onEdit: () => void;
   onDelete: () => void;
   saving?: boolean;
@@ -31,11 +40,15 @@ export default function ConfigCard({
   discordChannel,
   customMessage,
   statusChip,
+  extraStatusChips = [],
+  healthInfo,
   onEdit,
   onDelete,
   saving = false,
   showEdit = true,
 }: ConfigCardProps) {
+  const chips = [statusChip, ...extraStatusChips].filter((chip): chip is ConfigStatusChip => Boolean(chip));
+
   return (
     <Card sx={{ ...dashboardCardSx(accent), display: "flex", flexDirection: "column" }}>
       <CardContent sx={{ flex: 1 }}>
@@ -49,13 +62,18 @@ export default function ConfigCard({
                 {channelInfo.label}: {channelInfo.value}
               </Typography>
             </Box>
-            {statusChip && (
-              <Chip
-                label={statusChip.label}
-                size="small"
-                color={statusChip.color || "default"}
-                variant={statusChip.variant || "outlined"}
-              />
+            {chips.length > 0 && (
+              <Stack direction="row" spacing={0.75} sx={{ justifyContent: "flex-end", flexWrap: "wrap", rowGap: 0.75 }}>
+                {chips.map((chip) => (
+                  <Chip
+                    key={chip.label}
+                    label={chip.label}
+                    size="small"
+                    color={chip.color || "default"}
+                    variant={chip.variant || "outlined"}
+                  />
+                ))}
+              </Stack>
             )}
           </Box>
 
@@ -69,6 +87,21 @@ export default function ConfigCard({
               </Typography>
             )}
           </Box>
+
+          {healthInfo && (
+            <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.035)", border: "1px solid rgba(255,255,255,0.06)", p: 1.25 }}>
+              {healthInfo.lines.map((line) => (
+                <Typography key={line} variant="caption" sx={{ color: "rgba(255,255,255,0.58)", display: "block" }}>
+                  {line}
+                </Typography>
+              ))}
+              {healthInfo.error && (
+                <Typography variant="caption" sx={{ color: dashboardAccents.quotes, display: "block", mt: 0.5 }}>
+                  {healthInfo.error}
+                </Typography>
+              )}
+            </Box>
+          )}
         </Stack>
       </CardContent>
       <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 0, mt: "auto" }}>

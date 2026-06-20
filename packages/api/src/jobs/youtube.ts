@@ -8,6 +8,7 @@ import { buildDiscordNotificationPayload } from './discordNotificationPayload.js
 import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
+import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 
 interface YoutubeChannelConfigPlain {
     id?: number | string;
@@ -226,7 +227,14 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
 
     for (const [channelId, configs] of channelsById) {
         const feedItems = await fetchYoutubeChannelFeed(channelId, log);
-        if (!feedItems || feedItems.length === 0) continue;
+        if (!feedItems || feedItems.length === 0) {
+            errors += configs.length;
+            await Promise.all(configs.map(cfg => recordIntegrationFailure('youtube', cfg, new Error(`YouTube feed unavailable for channel ${channelId}`), {
+                errorCode: 'YOUTUBE_FEED_UNAVAILABLE',
+                metadata: { youtubeChannelId: channelId },
+            })));
+            continue;
+        }
 
         for (const cfg of configs) {
             try {
@@ -237,7 +245,16 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 } else {
                     newVideos = [feedItems[0]];
                 }
-                if (newVideos.length === 0) continue;
+                if (newVideos.length === 0) {
+                    await recordIntegrationSuccess('youtube', cfg, {
+                        metadata: {
+                            youtubeChannelId: channelId,
+                            latestVideoId: cfg.lastVideoId ?? feedItems[0]?.['yt:videoId'] ?? null,
+                            newVideos: 0,
+                        },
+                    });
+                    continue;
+                }
 
                 const now = new Date();
                 const suppression = getNotificationSuppression(cfg, now);
@@ -263,6 +280,9 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 plans.push({ cfg, channelId, newVideos, sendVideos, now });
             } catch (err) {
                 errors += 1;
+                await recordIntegrationFailure('youtube', cfg, err, {
+                    metadata: { youtubeChannelId: cfg.youtubeChannelId },
+                });
                 log.error({ err, youtubeChannelId: cfg.youtubeChannelId }, 'Error processing YouTube channel');
             }
         }
@@ -297,8 +317,21 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
             cfg.lastVideoId = newVideos.at(-1)?.['yt:videoId'] ?? cfg.lastVideoId ?? null;
             if (sentAny) cfg.lastNotifiedAt = now;
             await upsertOrSaveJobConfig(manager, cfg);
+            await recordIntegrationSuccess('youtube', cfg, {
+                delivered: sentAny,
+                checkedAt: now,
+                metadata: {
+                    youtubeChannelId: channelId,
+                    latestVideoId: cfg.lastVideoId ?? null,
+                    newVideos: newVideos.length,
+                    sentVideos: sendVideos.length,
+                },
+            });
         } catch (err) {
             errors += 1;
+            await recordIntegrationFailure('youtube', cfg, err, {
+                metadata: { youtubeChannelId: cfg.youtubeChannelId },
+            });
             log.error({ err, youtubeChannelId: cfg.youtubeChannelId }, 'Error processing YouTube channel');
         }
     }

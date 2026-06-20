@@ -14,6 +14,7 @@ export default function GuildTwitchPage() {
       moduleIcon={<LiveTv color="secondary" />}
       moduleColor="#9146FF"
       moduleName="Twitch"
+      provider="twitch"
       channelNameField="twitchUsername"
       channelNameLabel="Channel Name"
       channelNamePlaceholder="shroud"

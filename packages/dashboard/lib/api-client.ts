@@ -11,6 +11,7 @@ export * from "./api/dashboard";
 export * from "./api/discord";
 export * from "./api/disabledFeatures";
 export * from "./api/jobs";
+export * from "./api/integrationHealth";
 export * from "./api/patchNotes";
 export * from "./api/quotes";
 export * from "./api/riotLinks";
@@ -25,6 +26,7 @@ import { dashboardApi } from "./api/dashboard";
 import { discordApi } from "./api/discord";
 import { disabledFeaturesApi } from "./api/disabledFeatures";
 import { jobsApi } from "./api/jobs";
+import { integrationHealthApi } from "./api/integrationHealth";
 import { patchNotesApi } from "./api/patchNotes";
 import { quotesApi } from "./api/quotes";
 import { riotLinksApi } from "./api/riotLinks";
@@ -45,5 +47,6 @@ export const api = {
     ...discordApi,
     ...disabledFeaturesApi,
     ...jobsApi,
+    ...integrationHealthApi,
     ...riotLinksApi,
 };

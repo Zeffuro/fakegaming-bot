@@ -164,20 +164,7 @@ describe("linkRiot command", () => {
             stringOptions: { "riot-id": "TestSummoner#EUW", region: "EU_WEST" },
             userOptions: { user: "987654321098765432" },
             user: { id: "123456789012345678" },
-            guild: {
-                members: {
-                    fetch: vi.fn((userId: string) => {
-                        if (userId === "123456789012345678") {
-                            return Promise.resolve({
-                                permissions: {
-                                    has: vi.fn(() => true),
-                                },
-                            });
-                        }
-                        return Promise.resolve(null);
-                    }),
-                },
-            },
+            memberPermissions: { has: vi.fn(() => true) },
         }) as unknown as ChatInputCommandInteraction;
 
         // Execute the command
@@ -208,7 +195,7 @@ describe("linkRiot command", () => {
             interaction: {
                 userOptions: { user: "987654321098765432" },
                 user: { id: "123456789012345678" },
-                guild: { members: { fetch: vi.fn().mockResolvedValue({ permissions: { has: () => false } }) } },
+                memberPermissions: { has: vi.fn(() => false) },
                 reply: vi.fn(),
             },
         });

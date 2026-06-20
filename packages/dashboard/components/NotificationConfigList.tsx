@@ -1,9 +1,10 @@
 import React from "react";
 import { Box } from "@mui/material";
-import ConfigCard from "@/components/ConfigCard";
+import ConfigCard, { type ConfigHealthInfo, type ConfigStatusChip } from "@/components/ConfigCard";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
+import type { IntegrationHealthRecord } from "@/lib/api-client";
 
 interface NotificationConfigListProps<T extends StreamingConfig> {
     configs: T[];
@@ -16,11 +17,9 @@ interface NotificationConfigListProps<T extends StreamingConfig> {
     moduleColor?: string;
     saving: boolean;
     emptyStateIcon: React.ReactElement;
-    renderChip?: (config: T) => {
-        label: string;
-        color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
-        variant?: "filled" | "outlined";
-    } | undefined;
+    renderChip?: (config: T) => ConfigStatusChip | undefined;
+    healthByConfigId?: Map<string, IntegrationHealthRecord>;
+    healthLoading?: boolean;
     itemSingularLabel?: string;
     itemPluralLabel?: string;
     canEdit?: boolean;
@@ -38,6 +37,8 @@ export default function NotificationConfigList<T extends StreamingConfig>({
     saving,
     emptyStateIcon,
     renderChip,
+    healthByConfigId,
+    healthLoading = false,
     itemSingularLabel,
     itemPluralLabel,
     canEdit = true,
@@ -61,6 +62,9 @@ export default function NotificationConfigList<T extends StreamingConfig>({
             {configs.map((config) => {
                 const value = String((config as any)[channelNameField] ?? "").trim();
                 const displayTitle = String((config as any).youtubeChannelTitle ?? (value || `${moduleName} ${singular}`));
+                const health = getHealthForConfig(config, healthByConfigId);
+                const healthChip = getHealthChip(health, healthLoading);
+                const healthInfo = getHealthInfo(health);
                 return (
                     <ConfigCard
                         key={(config as any).id || `${value}-${(config as any).discordChannelId}`}
@@ -73,6 +77,8 @@ export default function NotificationConfigList<T extends StreamingConfig>({
                         discordChannel={getChannelName((config as any).discordChannelId)}
                         customMessage={(config as any).customMessage}
                         statusChip={renderChip ? renderChip(config) : undefined}
+                        extraStatusChips={healthChip ? [healthChip] : []}
+                        healthInfo={healthInfo}
                         onEdit={() => onEdit(config)}
                         onDelete={() => onDelete(config)}
                         saving={saving}
@@ -82,4 +88,46 @@ export default function NotificationConfigList<T extends StreamingConfig>({
             })}
         </Box>
     );
+}
+
+function getHealthForConfig<T extends StreamingConfig>(
+    config: T,
+    healthByConfigId: Map<string, IntegrationHealthRecord> | undefined
+): IntegrationHealthRecord | null {
+    if (!healthByConfigId || config.id === undefined || config.id === null) return null;
+    return healthByConfigId.get(String(config.id)) ?? null;
+}
+
+function getHealthChip(health: IntegrationHealthRecord | null, loading: boolean): ConfigStatusChip | null {
+    if (loading) return { label: "Checking...", color: "default", variant: "outlined" };
+    if (!health) return { label: "Not checked", color: "default", variant: "outlined" };
+    if (health.status === "healthy") return { label: "Healthy", color: "success", variant: "outlined" };
+    if (health.status === "warning") return { label: "Warning", color: "warning", variant: "outlined" };
+    if (health.status === "paused") return { label: "Paused", color: "info", variant: "outlined" };
+    if (health.status === "error") return { label: `Failing x${Math.max(1, health.consecutiveFailures)}`, color: "error", variant: "outlined" };
+    return { label: "Unknown", color: "default", variant: "outlined" };
+}
+
+function getHealthInfo(health: IntegrationHealthRecord | null): ConfigHealthInfo | undefined {
+    if (!health) return undefined;
+
+    const lines = [
+        `Last checked: ${formatDateTime(health.lastCheckedAt)}`,
+        `Last delivery: ${formatDateTime(health.lastDeliveryAt)}`,
+    ];
+    if (health.lastErrorCode) {
+        lines.push(`Last error code: ${health.lastErrorCode}`);
+    }
+
+    return {
+        lines,
+        error: health.lastErrorMessage ?? null,
+    };
+}
+
+function formatDateTime(value?: string | null): string {
+    if (!value) return "Never";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString();
 }

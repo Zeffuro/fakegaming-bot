@@ -15,6 +15,7 @@ export default function GuildBlueskyPage() {
       moduleIcon={<AlternateEmail />}
       moduleColor={dashboardAccents.bluesky}
       moduleName="Bluesky"
+      provider="bluesky"
       channelNameField="blueskyHandle"
       channelNameLabel="Handle"
       channelNamePlaceholder="bsky.app"

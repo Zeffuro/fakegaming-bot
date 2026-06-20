@@ -45,6 +45,7 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
     moduleIcon,
     moduleColor,
     moduleName,
+    provider,
     channelNameField,
     channelNameLabel,
     channelNamePlaceholder,
@@ -84,6 +85,7 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
             moduleIcon={moduleIcon}
             moduleColor={moduleColor}
             moduleName={moduleName}
+            provider={provider}
             channelNameField={channelNameField}
             channelNameLabel={channelNameLabel}
             channelNamePlaceholder={channelNamePlaceholder}

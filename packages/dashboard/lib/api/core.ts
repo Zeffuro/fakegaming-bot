@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
     JOBS: "/api/external/jobs",
     RIOT_LINKS: "/api/external/riotLinks",
     DASHBOARD: "/api/external/dashboard",
+    INTEGRATION_HEALTH: "/api/external/integrationHealth",
 };
 
 export interface ApiOptions {

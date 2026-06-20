@@ -6,6 +6,7 @@ import { toMillis } from '@zeffuro/fakegaming-common/utils';
 import { formatPatchNoteEmbedDescription } from '@zeffuro/fakegaming-common/patchnotes';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 
 interface PatchNotePlain {
     game: string;
@@ -94,15 +95,55 @@ async function processPatchNotesAnnouncements(log = getLogger({ name: 'api:jobs:
                             lastAnnouncedAt: noteTime,
                         } as any, ['game', 'channelId']);
                         processed += 1;
+                        await recordIntegrationSuccess('patchnotes', {
+                            id: sub.id,
+                            guildId: sub.guildId,
+                            channelId: sub.channelId,
+                        }, {
+                            delivered: true,
+                            metadata: {
+                                game: sub.game,
+                                noteUrl: note.url,
+                                publishedAt: noteTime,
+                            },
+                        });
                         log.info({ game: note.game, channelId: sub.channelId }, 'Announced patch note');
                     } catch (err) {
                         errors += 1;
+                        await recordIntegrationFailure('patchnotes', {
+                            id: sub.id,
+                            guildId: sub.guildId,
+                            channelId: sub.channelId,
+                        }, err, {
+                            errorCode: 'PATCH_SUBSCRIPTION_UPDATE_FAILED',
+                            metadata: { game: sub.game, noteUrl: note.url },
+                        });
                         log.error({ err, game: note.game, channelId: sub.channelId }, 'Failed to update subscription after announcement');
                     }
                 } else {
                     errors += 1;
+                    await recordIntegrationFailure('patchnotes', {
+                        id: sub.id,
+                        guildId: sub.guildId,
+                        channelId: sub.channelId,
+                    }, new Error('Discord send returned no message id'), {
+                        errorCode: 'DISCORD_SEND_FAILED',
+                        metadata: { game: sub.game, noteUrl: note.url },
+                    });
                     log.warn({ game: note.game, channelId: sub.channelId }, 'Failed to send patch note message');
                 }
+            } else {
+                await recordIntegrationSuccess('patchnotes', {
+                    id: sub.id,
+                    guildId: sub.guildId,
+                    channelId: sub.channelId,
+                }, {
+                    metadata: {
+                        game: sub.game,
+                        noteUrl: note.url,
+                        publishedAt: noteTime,
+                    },
+                });
             }
         }
     }

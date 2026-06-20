@@ -14,6 +14,7 @@ export default function GuildTikTokPage() {
       moduleIcon={<LiveTv color="secondary" />}
       moduleColor="#000000"
       moduleName="TikTok"
+      provider="tiktok"
       channelNameField="tiktokUsername"
       channelNameLabel="Channel Name"
       channelNamePlaceholder="somecreator"

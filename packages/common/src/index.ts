@@ -37,10 +37,13 @@ export {
   AnimeSubscriptionConfig,
   AnimeEpisode,
   AuditEvent,
+  IntegrationHealth,
   type AuditActorType,
   type AuditEventSeverity,
   type AuditEventStatus,
-  type AuditEventMetadata
+  type AuditEventMetadata,
+  type IntegrationHealthStatus,
+  type IntegrationHealthMetadata
 } from './models/index.js';
 
 export {
@@ -68,10 +71,17 @@ export {
   AnimeSubscriptionManager,
   AnimeEpisodeManager,
   AuditEventManager,
+  IntegrationHealthManager,
   type AuditEventInput,
   type AuditEventRecord,
   type AuditEventListOptions,
-  type AuditEventListResult
+  type AuditEventListResult,
+  type IntegrationHealthRecord,
+  type IntegrationHealthSuccessInput,
+  type IntegrationHealthFailureInput,
+  type IntegrationHealthListOptions,
+  type IntegrationHealthSummary,
+  type IntegrationHealthListResult
 } from './managers/index.js';
 
 export {

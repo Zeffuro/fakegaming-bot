@@ -17,6 +17,7 @@ import {BlueskyManager} from './blueskyManager.js';
 import {AnimeManager} from './animeManager.js';
 import {LeagueManager} from './leagueManager.js';
 import {AuditEventManager} from './auditEventManager.js';
+import {IntegrationHealthManager} from './integrationHealthManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -44,6 +45,7 @@ export class ConfigManager {
     animeManager = new AnimeManager();
     leagueManager = new LeagueManager();
     auditEventManager = new AuditEventManager();
+    integrationHealthManager = new IntegrationHealthManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

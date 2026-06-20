@@ -16,10 +16,12 @@ describe('Discord guild member search API', () => {
 
     beforeEach(() => {
         clearMemberSearchRateLimitsForTest();
+        process.env.API_DISCORD_MEMBER_SEARCH_ENABLED = '1';
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
+        delete process.env.API_DISCORD_MEMBER_SEARCH_ENABLED;
     });
 
     it('returns mapped results from Discord API and caches them', async () => {
@@ -62,5 +64,16 @@ describe('Discord guild member search API', () => {
         expectOk(res);
         const ids = res.body.map((m: any) => m.id);
         expect(ids).toContain('300');
+    });
+
+    it('skips Discord member search when disabled by environment', async () => {
+        process.env.API_DISCORD_MEMBER_SEARCH_ENABLED = '0';
+        const spy = vi.spyOn(common.Discord, 'retryFetchJson').mockResolvedValue([] as any);
+
+        const res = await client.get(`/api/discord/guilds/${guildId}/members/search`).query({ query: 'disabled-search' });
+
+        expectOk(res);
+        expect(res.body).toEqual([]);
+        expect(spy).not.toHaveBeenCalled();
     });
 });

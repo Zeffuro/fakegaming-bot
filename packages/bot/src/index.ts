@@ -68,10 +68,7 @@ function isUnknownInteractionError(error: unknown): boolean {
 
         const client = new FakegamingBot({
             intents: [
-                GatewayIntentBits.Guilds,
-                GatewayIntentBits.GuildMessages,
-                GatewayIntentBits.MessageContent,
-                GatewayIntentBits.GuildMembers
+                GatewayIntentBits.Guilds
             ]
         });
 

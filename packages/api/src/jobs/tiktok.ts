@@ -6,6 +6,7 @@ import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
 import { syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
+import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 
 interface TikTokStreamConfigPlain {
     id?: number | string;
@@ -182,6 +183,10 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
             liveInfoByUsername.set(username, await resolveTikTokLiveForPoll(configs[0].tiktokUsername, log));
         } catch (err) {
             errors += configs.length;
+            await Promise.all(configs.map(cfg => recordIntegrationFailure('tiktok', cfg, err, {
+                errorCode: 'TIKTOK_RESOLVE_FAILED',
+                metadata: { username: cfg.tiktokUsername },
+            })));
             log.error({ err, username }, 'Error resolving TikTok live status');
         }
     }
@@ -208,8 +213,19 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
             if (sent) {
                 processed += 1;
             }
+            await recordIntegrationSuccess('tiktok', cfg, {
+                delivered: sent,
+                metadata: {
+                    username: cfg.tiktokUsername,
+                    isLive,
+                    eventId,
+                },
+            });
         } catch (err) {
             errors += 1;
+            await recordIntegrationFailure('tiktok', cfg, err, {
+                metadata: { username: cfg.tiktokUsername },
+            });
             log.error({ err, username: cfg.tiktokUsername }, 'Error processing TikTok config');
         }
     }
