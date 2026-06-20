@@ -1,4 +1,7 @@
 import {preloadLeagueAssets} from '../modules/league/utils/preloadLeagueAssets.js';
+import {getLogger} from '@zeffuro/fakegaming-common';
+
+const log = getLogger({ name: 'bot:preload' });
 
 /**
  * Preloads all modules required for the bot to function (e.g., assets, data).
@@ -13,8 +16,8 @@ export async function preloadAllModules() {
         try {
             await preloader();
         } catch (err) {
-            console.error(`Error preloading module:`, err);
+            log.error({ err }, 'Error preloading module');
         }
     }
-    console.log("All modules preloaded!");
+    log.info('All modules preloaded');
 }

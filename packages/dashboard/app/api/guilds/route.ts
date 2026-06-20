@@ -14,8 +14,10 @@ import type { APIGuild } from "discord-api-types/v10";
 import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } from "@/lib/env";
 import { getRefreshSession, updateRefreshSession } from "@/lib/auth/refreshSessions";
 import { REFRESH_SESSION_COOKIE_NAME } from "@/lib/auth/sessionConstants";
+import { createSimpleLogger } from "@/lib/simpleColorLogger";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+const log = createSimpleLogger("dashboard:guilds-api");
 
 function toMinimalGuilds(guilds: APIGuild[]): MinimalGuildData[] {
     return guilds.map((guild: APIGuild): MinimalGuildData => ({
@@ -27,7 +29,7 @@ function toMinimalGuilds(guilds: APIGuild[]): MinimalGuildData[] {
 
 async function fetchBotGuilds(): Promise<APIGuild[]> {
     if (!BOT_TOKEN) {
-        console.error("[Discord Bot] DISCORD_BOT_TOKEN is not set!");
+        log.error(undefined, "DISCORD_BOT_TOKEN is not set");
         throw new Error("Bot token not configured");
     }
 
@@ -142,7 +144,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({guilds: sharedGuilds, isAdmin: false});
     } catch (error: unknown) {
-        console.error("[Guilds API] Error:", error);
+        log.error({ err: error }, "Error fetching guild data");
         const message = error instanceof Error ? error.message : "Failed to process guild data";
         const status = message === "Discord authorization expired" ? 401 : 500;
         return NextResponse.json({ error: message }, { status });

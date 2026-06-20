@@ -26,6 +26,7 @@ import type {
 } from '../types/leagueAssetTypes.js';
 import type {LeagueMatchDto, LeagueMatchParticipantDto} from '../types/riotDtos.js';
 import {communityDragonAssetUrl, leagueChampionIconUrl} from '../utils/assetUrl.js';
+import {historyFontString as fontString} from './textRender.js';
 
 type ArenaParticipant = LeagueMatchParticipantDto & { playerSubteamId?: number };
 
@@ -34,18 +35,9 @@ const WIDTH = 820;
 const PADDING = 16;
 const ITEM_SIZE = 32;
 const ITEM_GAP = 2;
-const FONT_FAMILY = '"Roboto", Arial, sans-serif';
 const TEAM_FONT_FAMILY = '"Noto Sans", "Segoe UI Symbol", "Arial Unicode MS", Arial, sans-serif';
 const TEXT_COLOR = '#ffffff';
 const MUTED_COLOR = '#bdbdbd';
-
-function fontString({size = 14, weight = '', family = FONT_FAMILY}: {
-    size?: number;
-    weight?: string;
-    family?: string;
-} = {}): string {
-    return `${weight ? weight + ' ' : ''}${size}px ${family}`.trim();
-}
 
 export async function generateLeagueHistoryImage(matches: LeagueMatchDto[], identity: {
     puuid: string

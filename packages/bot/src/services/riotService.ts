@@ -104,16 +104,18 @@ function errorFromDataIfAny(data: unknown): string | undefined {
     return undefined;
 }
 
-async function callLol<T>(
-    run: (api: LolApi) => Promise<unknown>,
-    options?: {
-        validate?: (data: unknown) => string | undefined;
-        transformError?: (message: string) => string;
-    }
+interface RiotCallOptions {
+    validate?: (data: unknown) => string | undefined;
+    transformError?: (message: string) => string;
+}
+
+async function callRiot<TApi, T>(
+    createApi: () => TApi,
+    run: (api: TApi) => Promise<unknown>,
+    options?: RiotCallOptions
 ): Promise<{ success: boolean; data?: T; error?: string }> {
     try {
-        const api = new LolApi({ key: getRiotApiKey('league') });
-        const raw = await run(api);
+        const raw = await run(createApi());
         const data = unwrapResponse<T>(raw);
         const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
         if (dataError) return { success: false, error: dataError };
@@ -125,25 +127,18 @@ async function callLol<T>(
     }
 }
 
+async function callLol<T>(
+    run: (api: LolApi) => Promise<unknown>,
+    options?: RiotCallOptions
+): Promise<{ success: boolean; data?: T; error?: string }> {
+    return await callRiot(() => new LolApi({ key: getRiotApiKey('league') }), run, options);
+}
+
 async function callTft<T>(
     run: (api: TftApi) => Promise<unknown>,
-    options?: {
-        validate?: (data: unknown) => string | undefined;
-        transformError?: (message: string) => string;
-    }
+    options?: RiotCallOptions
 ): Promise<{ success: boolean; data?: T; error?: string }> {
-    try {
-        const api = new TftApi({ key: getRiotApiKey('tft') });
-        const raw = await run(api);
-        const data = unwrapResponse<T>(raw);
-        const dataError = errorFromDataIfAny(data) || (options?.validate ? options.validate(data) : undefined);
-        if (dataError) return { success: false, error: dataError };
-        return { success: true, data };
-    } catch (error: unknown) {
-        const base = normalizeRiotError(error);
-        const msg = options?.transformError ? options.transformError(base) : base;
-        return { success: false, error: msg };
-    }
+    return await callRiot(() => new TftApi({ key: getRiotApiKey('tft') }), run, options);
 }
 
 export async function getSummoner(puuid: string, region: Regions): Promise<{

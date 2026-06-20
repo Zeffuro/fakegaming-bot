@@ -6,6 +6,14 @@ import * as perksCache from '../../cache/leaguePerksDataCache.js';
 import * as perkStylesCache from '../../cache/leaguePerkStylesDataCache.js';
 import * as summonerSpellCache from '../../cache/leagueSummonerSpellDataCache.js';
 
+const loggerMock = vi.hoisted(() => ({
+    info: vi.fn(),
+}));
+
+vi.mock('@zeffuro/fakegaming-common', () => ({
+    getLogger: () => loggerMock,
+}));
+
 vi.mock('../../cache/leagueAugmentDataCache.js');
 vi.mock('../../cache/leagueItemDataCache.js');
 vi.mock('../../cache/leaguePerksDataCache.js');
@@ -24,7 +32,6 @@ function mockAllCachesResolved() {
 describe('preloadLeagueAssets', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.spyOn(console, 'log').mockImplementation(() => {});
     });
 
     it('should preload all League assets', async () => {
@@ -44,7 +51,7 @@ describe('preloadLeagueAssets', () => {
 
         await preloadLeagueAssets();
 
-        expect(console.log).toHaveBeenCalledWith('League assets preloaded!');
+        expect(loggerMock.info).toHaveBeenCalledWith('League assets preloaded');
     });
 
     it('should load all assets in parallel', async () => {

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { isServiceRequest } from '../middleware/serviceAuth.js';
+import { getAuditRequestMetadata, recordAuditEvent } from './audit.js';
 
 export function isDashboardAdmin(discordId: string | undefined): boolean {
     if (!discordId) return false;
@@ -33,20 +34,45 @@ function hasValidDashboardAdminSignature(req: Request): boolean {
     return timingSafeEqual(actualBuffer, expectedBuffer);
 }
 
+function hasTrustedDashboardAdminAssertion(req: Request): boolean {
+    const dashboardAdminUser = req.header('x-dashboard-admin-user');
+    return isServiceRequest(req)
+        && isDashboardAdmin(dashboardAdminUser)
+        && hasValidDashboardAdminSignature(req);
+}
+
 export function requireDashboardAdmin(req: Request, res: Response, next: NextFunction): void {
     const discordId = (req as AuthenticatedRequest).user?.discordId;
-    const dashboardAdminUser = req.header('x-dashboard-admin-user');
-    const isTrustedDashboardAdmin = (isServiceRequest(req) && Boolean(dashboardAdminUser))
-        || hasValidDashboardAdminSignature(req);
+    const isTrustedDashboardAdmin = hasTrustedDashboardAdminAssertion(req);
 
     if (!isTrustedDashboardAdmin && !isDashboardAdmin(discordId)) {
+        void recordAuditEvent(req, {
+            action: 'admin.access.denied',
+            targetType: 'request',
+            targetId: req.path,
+            severity: 'warn',
+            status: 'failure',
+            metadata: getAuditRequestMetadata(req, {
+                reason: 'not_dashboard_admin',
+                dashboardAdminAssertion: Boolean(req.header('x-dashboard-admin-user')),
+            }),
+        });
         res.status(403).json({
             error: {
                 code: 'FORBIDDEN',
-                message: 'Only dashboard admins can manage Riot links',
+                message: 'Only dashboard admins can access this resource',
             },
         });
         return;
     }
     next();
+}
+
+export function requireDashboardAdminOrService(req: Request, res: Response, next: NextFunction): void {
+    if (isServiceRequest(req)) {
+        next();
+        return;
+    }
+
+    requireDashboardAdmin(req, res, next);
 }

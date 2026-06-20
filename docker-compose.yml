@@ -7,6 +7,11 @@ services:
     profiles: ["bundled-postgres"]
     container_name: fakegaming-postgres
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-5}"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -30,6 +35,11 @@ services:
     profiles: ["bundled-redis"]
     container_name: fakegaming-redis
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-5}"
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - ${REDIS_DATA_PATH:-./data/redis}:/data
@@ -49,8 +59,14 @@ services:
       dockerfile: Dockerfile.api
     container_name: fakegaming-api
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-5}"
     environment:
       PORT: 3001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_PROVIDER: ${DATABASE_PROVIDER:-postgres}
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
@@ -71,6 +87,8 @@ services:
       JOB_RUN_MAX_ROWS_PER_JOB: ${JOB_RUN_MAX_ROWS_PER_JOB:-1000}
       JOB_RUN_CLEANUP_INTERVAL_MS: ${JOB_RUN_CLEANUP_INTERVAL_MS:-3600000}
       JOB_RUN_SUCCESS_SAMPLE_RATE: ${JOB_RUN_SUCCESS_SAMPLE_RATE:-1}
+      AUDIT_EVENT_RETENTION_DAYS: ${AUDIT_EVENT_RETENTION_DAYS:-90}
+      AUDIT_EVENT_CLEANUP_INTERVAL_MS: ${AUDIT_EVENT_CLEANUP_INTERVAL_MS:-86400000}
       PGBOSS_RETENTION_SECONDS: ${PGBOSS_RETENTION_SECONDS:-86400}
       PGBOSS_DELETE_AFTER_SECONDS: ${PGBOSS_DELETE_AFTER_SECONDS:-86400}
       TWITCH_CLIENT_ID: ${TWITCH_CLIENT_ID}
@@ -103,7 +121,13 @@ services:
       dockerfile: Dockerfile.bot
     container_name: fakegaming-bot
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-5}"
     environment:
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       DATABASE_PROVIDER: ${DATABASE_PROVIDER:-postgres}
       DATABASE_URL: ${DATABASE_URL:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}}
       DB_MIGRATIONS_ENABLED: 0
@@ -144,8 +168,14 @@ services:
       dockerfile: Dockerfile.dashboard
     container_name: fakegaming-dashboard
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-5}"
     environment:
       PORT: 3000
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       HOSTNAME: 0.0.0.0
       PUBLIC_URL: ${PRODUCTION_DASHBOARD_URL}
       API_URL: 'http://api:3001/api'

@@ -4,6 +4,7 @@ import { riotLinkUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 const router = createBaseRouter();
 
@@ -99,6 +100,14 @@ router.put(
             discordId,
             ...body,
         });
+        await recordAuditEvent(req, {
+            action: 'riotLink.upsert',
+            targetType: 'riotLink',
+            targetId: discordId,
+            metadata: {
+                region: body.region,
+            },
+        });
         res.json(link.get({ plain: true }));
     }
 );
@@ -126,6 +135,11 @@ router.put(
 router.delete('/:discordId', requireDashboardAdmin, validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
     await getConfigManager().leagueManager.removeLinkedAccount(discordId);
+    await recordAuditEvent(req, {
+        action: 'riotLink.delete',
+        targetType: 'riotLink',
+        targetId: discordId,
+    });
     res.json({ success: true });
 });
 

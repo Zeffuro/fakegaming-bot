@@ -2,11 +2,11 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { isWithinQuietHours, toMillis } from '@zeffuro/fakegaming-common/utils';
 import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { getNotificationSuppression } from './notificationSuppression.js';
 
 interface TwitchStreamConfigPlain {
     id?: number | string;
@@ -213,12 +213,8 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
                 const eventId = String(stream!.id);
                 const already = await (notifications as any).hasForGuild?.('twitch', eventId, cfg.guildId)
                     ?? await notifications.has('twitch', eventId);
-                const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
-                const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(toMillis(cfg.lastNotifiedAt)) : null;
-                const cooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
-                    ? (now.getTime() - lastNotifiedDate.getTime()) < cfg.cooldownMinutes * 60_000
-                    : false;
-                if (!already && !suppressedByQuiet && !cooldown) {
+                const suppression = getNotificationSuppression(cfg, now);
+                if (!already && !suppression.shouldSuppress) {
                     const user = users.find(u => u.id === userId)!;
                     const gameName = stream?.game_id ? (gameNameById.get(stream.game_id) ?? null) : null;
                     const built = buildTwitchEmbedAndContent({ user, stream: stream!, gameName, customMessage: cfg.customMessage ?? null });

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { PostgresRateLimiter, getSequelize, getLogger, incMetric } from '@zeffuro/fakegaming-common';
+import { getRouteLabel, getSafeRequestContext, getSafeRequestPath } from '../utils/requestContext.js';
 
 // Build-time flag to skip DB initialization (e.g., during OpenAPI export)
 const SKIP = process.env.API_BUILD_MODE === 'openapi' || process.env.SKIP_DB_INIT === '1';
@@ -56,12 +57,8 @@ export function scheduleRateLimitCleanup() {
 
 function buildKey(req: Request): string {
     const userId = (req as any).user?.discordId || 'anon';
-    const path = req.path.replace(/\d+/g, ':id');
+    const path = getSafeRequestPath(req).replace(/\d+/g, ':id');
     return `user:${userId}:route:${req.method}:${path}`;
-}
-
-function routeLabel(req: Request): string {
-    return `${req.method}:${req.path.replace(/\d+/g, ':id')}`;
 }
 
 export async function rateLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -79,7 +76,9 @@ export async function rateLimit(req: Request, res: Response, next: NextFunction)
         if (!result.allowed) {
             const retryAfterSeconds = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000));
             res.setHeader('Retry-After', String(retryAfterSeconds));
-            incMetric('rate_limit_denied', { route: routeLabel(req) });
+            const route = getRouteLabel(req);
+            incMetric('rate_limit_denied', { route });
+            log.warn({ ...getSafeRequestContext(req), route, retryAfterSeconds }, 'Rate limit denied request');
             res.status(429).json({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded', retryAfterSeconds } });
             return;
         }

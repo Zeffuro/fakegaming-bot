@@ -18,6 +18,41 @@ function getServiceHeaders(): Record<string, string> {
 
 const log = getLogger({ name: 'bot:api' });
 
+type ApiJsonResult = { ok: true; body: unknown } | { ok: false; reason: 'non-ok' | 'request-failed' };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+async function readResponseBody(res: Response): Promise<unknown> {
+    try {
+        const text = await res.text();
+        try {
+            return JSON.parse(text) as unknown;
+        } catch {
+            return text;
+        }
+    } catch {
+        return null;
+    }
+}
+
+async function fetchApiJson(url: string, operation: string): Promise<ApiJsonResult> {
+    try {
+        const res = await fetch(url, { headers: getServiceHeaders() });
+        if (!res.ok) {
+            const body = await readResponseBody(res);
+            log.warn({ status: res.status, url, body }, `[bot] ${operation} non-OK response`);
+            return { ok: false, reason: 'non-ok' };
+        }
+
+        return { ok: true, body: await res.json() };
+    } catch (err) {
+        log.warn({ err, url }, `[bot] ${operation} request failed`);
+        return { ok: false, reason: 'request-failed' };
+    }
+}
+
 /**
  * Verify a Twitch username exists via API resolver.
  */
@@ -25,33 +60,20 @@ export async function verifyTwitchUsernameApi(username: string): Promise<{ exist
     if (!username) return { exists: false } as const;
     const base = getApiBaseUrl();
     const url = `${base}/twitch/verify?username=${encodeURIComponent(username)}`;
-    try {
-        const res = await fetch(url, { headers: getServiceHeaders() });
-        if (!res.ok) {
-            let body: unknown;
-            try {
-                const text = await res.text();
-                try {
-                    body = JSON.parse(text);
-                } catch {
-                    body = text;
-                }
-            } catch {
-                body = null;
-            }
-            log.warn({ status: res.status, url, body }, '[bot] verifyTwitchUsernameApi non-OK response');
-            return { exists: false } as const;
-        }
-        const json = await res.json();
-        if (typeof (json as any)?.exists !== 'boolean') {
-            log.warn({ url, body: json }, '[bot] verifyTwitchUsernameApi invalid payload');
-            return { exists: false } as const;
-        }
-        return json as { exists: boolean; id?: string; login?: string; displayName?: string };
-    } catch (err) {
-        log.warn({ err, url }, '[bot] verifyTwitchUsernameApi request failed');
-        return null;
+    const result = await fetchApiJson(url, 'verifyTwitchUsernameApi');
+    if (!result.ok) return result.reason === 'non-ok' ? { exists: false } as const : null;
+
+    if (!isRecord(result.body) || typeof result.body.exists !== 'boolean') {
+        log.warn({ url, body: result.body }, '[bot] verifyTwitchUsernameApi invalid payload');
+        return { exists: false } as const;
     }
+
+    return {
+        exists: result.body.exists,
+        id: typeof result.body.id === 'string' ? result.body.id : undefined,
+        login: typeof result.body.login === 'string' ? result.body.login : undefined,
+        displayName: typeof result.body.displayName === 'string' ? result.body.displayName : undefined,
+    };
 }
 
 /**
@@ -61,34 +83,16 @@ export async function resolveYoutubeChannelIdApi(identifier: string): Promise<st
     if (!identifier) return null;
     const base = getApiBaseUrl();
     const url = `${base}/youtube/resolve?identifier=${encodeURIComponent(identifier)}`;
-    try {
-        const res = await fetch(url, { headers: getServiceHeaders() });
-        if (!res.ok) {
-            let body: unknown;
-            try {
-                const text = await res.text();
-                try {
-                    body = JSON.parse(text);
-                } catch {
-                    body = text;
-                }
-            } catch {
-                body = null;
-            }
-            log.warn({ status: res.status, url, body }, '[bot] resolveYoutubeChannelIdApi non-OK response');
-            return null;
-        }
-        const json = await res.json();
-        const channelId = typeof (json as any)?.channelId === 'string' || (json as any)?.channelId === null ? (json as any).channelId : undefined;
-        if (typeof channelId === 'undefined') {
-            log.warn({ url, body: json }, '[bot] resolveYoutubeChannelIdApi invalid payload');
-            return null;
-        }
-        return channelId;
-    } catch (err) {
-        log.warn({ err, url }, '[bot] resolveYoutubeChannelIdApi request failed');
+    const result = await fetchApiJson(url, 'resolveYoutubeChannelIdApi');
+    if (!result.ok) return null;
+
+    const channelId = isRecord(result.body) ? result.body.channelId : undefined;
+    if (typeof channelId !== 'string' && channelId !== null) {
+        log.warn({ url, body: result.body }, '[bot] resolveYoutubeChannelIdApi invalid payload');
         return null;
     }
+
+    return channelId;
 }
 
 export interface BlueskyProfileVerification {
@@ -103,33 +107,21 @@ export async function verifyBlueskyHandleApi(handle: string): Promise<BlueskyPro
     if (!handle) return { exists: false } as const;
     const base = getApiBaseUrl();
     const url = `${base}/bluesky/profile?handle=${encodeURIComponent(handle)}`;
-    try {
-        const res = await fetch(url, { headers: getServiceHeaders() });
-        if (!res.ok) {
-            let body: unknown;
-            try {
-                const text = await res.text();
-                try {
-                    body = JSON.parse(text);
-                } catch {
-                    body = text;
-                }
-            } catch {
-                body = null;
-            }
-            log.warn({ status: res.status, url, body }, '[bot] verifyBlueskyHandleApi non-OK response');
-            return { exists: false } as const;
-        }
-        const json = await res.json();
-        if (typeof (json as { exists?: unknown }).exists !== 'boolean') {
-            log.warn({ url, body: json }, '[bot] verifyBlueskyHandleApi invalid payload');
-            return { exists: false } as const;
-        }
-        return json as BlueskyProfileVerification;
-    } catch (err) {
-        log.warn({ err, url }, '[bot] verifyBlueskyHandleApi request failed');
-        return null;
+    const result = await fetchApiJson(url, 'verifyBlueskyHandleApi');
+    if (!result.ok) return result.reason === 'non-ok' ? { exists: false } as const : null;
+
+    if (!isRecord(result.body) || typeof result.body.exists !== 'boolean') {
+        log.warn({ url, body: result.body }, '[bot] verifyBlueskyHandleApi invalid payload');
+        return { exists: false } as const;
     }
+
+    return {
+        exists: result.body.exists,
+        did: typeof result.body.did === 'string' ? result.body.did : undefined,
+        handle: typeof result.body.handle === 'string' ? result.body.handle : undefined,
+        displayName: typeof result.body.displayName === 'string' ? result.body.displayName : undefined,
+        avatar: typeof result.body.avatar === 'string' ? result.body.avatar : undefined,
+    };
 }
 
 /**
@@ -149,28 +141,23 @@ export interface LatestPatchNoteDto {
 export async function fetchLatestPatchNoteApi(game: string): Promise<LatestPatchNoteDto | null> {
     if (!game) return null;
     const base = getApiBaseUrl();
-    // Assuming API exposes this endpoint; tests will mock this function in any case
     const url = `${base}/patchnotes/latest?game=${encodeURIComponent(game)}`;
-    try {
-        const res = await fetch(url, { headers: getServiceHeaders() });
-        if (!res.ok) return null;
-        const json = await res.json();
-        // Accept either direct object or { patch: {...} }
-        const patch = (json && (json.patch ?? json)) as Partial<LatestPatchNoteDto>;
-        if (!patch || typeof patch.title !== 'string' || typeof patch.url !== 'string' || typeof patch.game !== 'string') {
-            return null;
-        }
-        return {
-            game: patch.game,
-            title: patch.title,
-            content: typeof patch.content === 'string' ? patch.content : '',
-            url: patch.url,
-            publishedAt: patch.publishedAt ?? new Date(),
-            imageUrl: patch.imageUrl ?? null,
-            logoUrl: patch.logoUrl ?? null,
-            accentColor: typeof patch.accentColor === 'number' ? patch.accentColor : null,
-        };
-    } catch {
+    const result = await fetchApiJson(url, 'fetchLatestPatchNoteApi');
+    if (!result.ok) return null;
+
+    const rawPatch = isRecord(result.body) && 'patch' in result.body ? result.body.patch : result.body;
+    if (!isRecord(rawPatch) || typeof rawPatch.title !== 'string' || typeof rawPatch.url !== 'string' || typeof rawPatch.game !== 'string') {
         return null;
     }
+
+    return {
+        game: rawPatch.game,
+        title: rawPatch.title,
+        content: typeof rawPatch.content === 'string' ? rawPatch.content : '',
+        url: rawPatch.url,
+        publishedAt: typeof rawPatch.publishedAt === 'string' || rawPatch.publishedAt instanceof Date ? rawPatch.publishedAt : new Date(),
+        imageUrl: typeof rawPatch.imageUrl === 'string' ? rawPatch.imageUrl : null,
+        logoUrl: typeof rawPatch.logoUrl === 'string' ? rawPatch.logoUrl : null,
+        accentColor: typeof rawPatch.accentColor === 'number' ? rawPatch.accentColor : null,
+    };
 }

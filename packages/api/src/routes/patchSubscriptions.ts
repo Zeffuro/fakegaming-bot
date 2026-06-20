@@ -5,6 +5,7 @@ import { patchSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { filterGuildScopedRecordsForRequest, requireGuildAdmin } from '../utils/authHelpers.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -82,7 +83,17 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
-    await getConfigManager().patchSubscriptionManager.addPlain(req.body);
+    const created = await getConfigManager().patchSubscriptionManager.addPlain(req.body);
+    await recordAuditEvent(req, {
+        action: 'patchSubscription.create',
+        targetType: 'patchSubscription',
+        targetId: created.id,
+        guildId: created.guildId ?? null,
+        metadata: {
+            game: created.game,
+            channelId: created.channelId,
+        },
+    });
     res.status(201).json({ success: true });
 });
 
@@ -110,6 +121,16 @@ router.post('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireG
  */
 router.put('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
     await getConfigManager().patchSubscriptionManager.upsertSubscription(req.body);
+    await recordAuditEvent(req, {
+        action: 'patchSubscription.upsert',
+        targetType: 'patchSubscription',
+        targetId: req.body.game,
+        guildId: req.body.guildId,
+        metadata: {
+            game: req.body.game,
+            channelId: req.body.channelId,
+        },
+    });
     res.json({ success: true });
 });
 
@@ -144,6 +165,16 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     if (!visibleSubscriptions) return;
     if (visibleSubscriptions.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
     await getConfigManager().patchSubscriptionManager.removeByPk(numericId);
+    await recordAuditEvent(req, {
+        action: 'patchSubscription.delete',
+        targetType: 'patchSubscription',
+        targetId: numericId,
+        guildId: existing.guildId ?? null,
+        metadata: {
+            game: existing.game,
+            channelId: existing.channelId,
+        },
+    });
     res.json({ success: true });
 });
 

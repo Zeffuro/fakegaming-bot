@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticateUser } from "@/lib/auth/authUtils";
 import { CACHE_KEYS, CACHE_TTL, defaultCacheManager, verifyJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { createSimpleLogger } from "@/lib/simpleColorLogger";
+
+const log = createSimpleLogger("dashboard:user-api");
 
 export async function GET(req: NextRequest) {
     const authResult = await authenticateUser(req);
@@ -16,7 +19,7 @@ export async function GET(req: NextRequest) {
         const userData = await defaultCacheManager.getCachedData(
             userProfileCacheKey,
             async () => {
-                console.log(`[UserAPI] Cache miss for user profile ${user.discordId}, extracting from JWT`);
+                log.debug({ userId: user.discordId }, "Cache miss for user profile, extracting from JWT");
 
                 const jwtToken = req.cookies.get("jwt")?.value;
                 if (!jwtToken) {
@@ -34,7 +37,7 @@ export async function GET(req: NextRequest) {
                         avatar: decoded.avatar
                     };
                 } catch (e) {
-                    console.error("[UserAPI] Failed to extract user data from JWT:", e);
+                    log.warn({ err: e }, "Failed to extract user data from JWT");
                     return null;
                 }
             },
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(userData);
     } catch (error) {
-        console.error("[UserAPI] Error fetching user data:", error);
+        log.error({ err: error }, "Error fetching user data");
         return NextResponse.json({ error: "Failed to retrieve user data" }, { status: 500 });
     }
 }

@@ -1,6 +1,9 @@
 import {expressjwt} from 'express-jwt';
 import type {Request, Response, NextFunction} from 'express';
 import { isServiceRequest } from './serviceAuth.js';
+import { getLogger } from '@zeffuro/fakegaming-common';
+
+const log = getLogger({ name: 'api:auth' });
 
 /**
  * Throws if required JWT env vars are missing (except in test env).
@@ -41,7 +44,7 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
         requestProperty: 'user',
     }) as any)(req, res, (err: any) => {
         if (err) {
-            console.error('JWT validation error:', err);
+            log.warn({ err }, 'JWT validation error');
         }
         next(err);
     });

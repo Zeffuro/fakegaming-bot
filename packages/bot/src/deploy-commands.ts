@@ -4,10 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import {pathToFileURL} from 'url';
 import {bootstrapEnv} from '@zeffuro/fakegaming-common/core';
+import { getLogger } from '@zeffuro/fakegaming-common';
 import { findCommandFiles } from './core/commandsFs.js';
 import { BOT_COMMANDS } from '@zeffuro/fakegaming-common/manifest/bot-manifest';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
+const log = getLogger({ name: 'bot:commands:deploy' });
 
 export async function deployCommands() {
     function findDuplicates(arr: { name: string }[]) {
@@ -102,9 +104,9 @@ export async function deployCommands() {
             Routes.applicationCommands(process.env.CLIENT_ID!),
             {body: globalCommands},
         );
-        console.log('Accepted global commands:', updatedGlobal);
+        log.info({ count: Array.isArray(updatedGlobal) ? updatedGlobal.length : globalCommands.length }, 'Accepted global commands');
     } else {
-        console.log('Global commands are up to date.');
+        log.info('Global commands are up to date');
     }
 
     // Guild commands
@@ -117,9 +119,9 @@ export async function deployCommands() {
                 Routes.applicationGuildCommands(process.env.CLIENT_ID!, process.env.GUILD_ID),
                 {body: testCommands},
             );
-            console.log('Updated test (guild) commands.', updatedTest);
+            log.info({ count: Array.isArray(updatedTest) ? updatedTest.length : testCommands.length }, 'Updated test guild commands');
         } else {
-            console.log('Test (guild) commands are up to date.');
+            log.info('Test guild commands are up to date');
         }
     }
 }

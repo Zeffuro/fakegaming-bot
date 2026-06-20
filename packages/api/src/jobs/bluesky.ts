@@ -2,9 +2,10 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { formatMinuteKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
-import { isWithinQuietHours, renderTemplate, toMillis } from '@zeffuro/fakegaming-common/utils';
+import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { getNotificationSuppression } from './notificationSuppression.js';
 
 const BLUESKY_APPVIEW = 'https://public.api.bsky.app';
 
@@ -317,11 +318,7 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
             if (newPosts.length === 0) continue;
 
             const now = new Date();
-            const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
-            const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(toMillis(cfg.lastNotifiedAt)) : null;
-            const suppressedByCooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
-                ? now.getTime() - lastNotifiedDate.getTime() < cfg.cooldownMinutes * 60_000
-                : false;
+            const suppression = getNotificationSuppression(cfg, now);
 
             let sentAny = false;
             for (const post of newPosts) {
@@ -329,8 +326,13 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
                 const already = await notifications.hasForGuild?.('bluesky', eventId, cfg.guildId)
                     ?? await notifications.has('bluesky', eventId);
 
-                if (already || suppressedByQuiet || suppressedByCooldown) {
-                    log.debug({ eventId, already, suppressedByQuiet, suppressedByCooldown }, 'Suppressing Bluesky post announcement');
+                if (already || suppression.shouldSuppress) {
+                    log.debug({
+                        eventId,
+                        already,
+                        suppressedByQuiet: suppression.suppressedByQuiet,
+                        suppressedByCooldown: suppression.suppressedByCooldown,
+                    }, 'Suppressing Bluesky post announcement');
                     continue;
                 }
 

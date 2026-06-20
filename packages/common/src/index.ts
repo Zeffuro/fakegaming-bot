@@ -35,7 +35,12 @@ export {
   BlueskyPostConfig,
   AnimeTitle,
   AnimeSubscriptionConfig,
-  AnimeEpisode
+  AnimeEpisode,
+  AuditEvent,
+  type AuditActorType,
+  type AuditEventSeverity,
+  type AuditEventStatus,
+  type AuditEventMetadata
 } from './models/index.js';
 
 export {
@@ -61,7 +66,12 @@ export {
   AnimeManager,
   AnimeTitleManager,
   AnimeSubscriptionManager,
-  AnimeEpisodeManager
+  AnimeEpisodeManager,
+  AuditEventManager,
+  type AuditEventInput,
+  type AuditEventRecord,
+  type AuditEventListOptions,
+  type AuditEventListResult
 } from './managers/index.js';
 
 export {

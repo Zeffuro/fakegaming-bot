@@ -11,7 +11,13 @@ function createRootLogger(): PinoLogger {
         paths: [
             'password', 'secret', 'token', 'accessToken', 'refreshToken', 'jwt',
             'authorization', 'Authorization', 'cookie', 'Cookie', 'set-cookie', 'Set-Cookie',
-            '*.password', '*.secret', '*.token', '*.accessToken', '*.refreshToken', '*.jwt'
+            '*.password', '*.secret', '*.token', '*.accessToken', '*.refreshToken', '*.jwt',
+            'req.headers.authorization', 'req.headers.cookie',
+            'res.headers.set-cookie', 'headers.authorization', 'headers.cookie', 'headers.set-cookie',
+            'body.password', 'body.secret', 'body.token', 'body.accessToken', 'body.refreshToken', 'body.jwt',
+            'query.token', 'query.jwt', 'query.secret', 'query.key',
+            'metadata.password', 'metadata.secret', 'metadata.token', 'metadata.accessToken', 'metadata.refreshToken',
+            'metadata.jwt', 'metadata.authorization', 'metadata.cookie'
         ] as string[],
         censor: '[redacted]'
     };

@@ -5,6 +5,7 @@ import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming
 import { disabledCommandCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { filterGuildScopedRecordsForRequest, requireGuildAdmin, checkGuildScopedRecordAccess } from '../utils/authHelpers.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -146,6 +147,15 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  */
 router.post('/', jwtAuth, validateBody(disabledCommandCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const created = await getConfigManager().disabledCommandManager.addPlain(req.body);
+    await recordAuditEvent(req, {
+        action: 'command.disable',
+        targetType: 'disabledCommand',
+        targetId: created.id,
+        guildId: created.guildId ?? null,
+        metadata: {
+            commandName: created.commandName,
+        },
+    });
     res.status(201).json(created);
 });
 
@@ -186,6 +196,15 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     const hasAccess = await checkGuildScopedRecordAccess(req, res, existing);
     if (!hasAccess) return;
     await getConfigManager().disabledCommandManager.removeByPk(numericId);
+    await recordAuditEvent(req, {
+        action: 'command.enable',
+        targetType: 'disabledCommand',
+        targetId: numericId,
+        guildId: existing.guildId ?? null,
+        metadata: {
+            commandName: existing.commandName,
+        },
+    });
     res.json({ success: true });
 });
 

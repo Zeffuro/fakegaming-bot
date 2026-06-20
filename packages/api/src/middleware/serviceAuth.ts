@@ -1,9 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { skipCsrf } from './csrf.js';
+import { getLogger, incMetric } from '@zeffuro/fakegaming-common';
+import { getSafeRequestContext } from '../utils/requestContext.js';
 
 const SERVICE_FLAG = Symbol.for('fakegaming.service');
 const SKIP_JWT_FLAG = Symbol.for('fakegaming.skipJwt');
+const log = getLogger({ name: 'api:service-auth' });
 
 function getServiceTokens(): string[] {
     return [
@@ -24,7 +27,12 @@ export function serviceAuth(req: Request, res: Response, next: NextFunction): vo
     if (tokens.length === 0) return next();
 
     const hdr = req.header('x-service-token');
-    if (!hdr || !tokens.includes(hdr)) return next();
+    if (!hdr) return next();
+    if (!tokens.includes(hdr)) {
+        incMetric('service_auth_denied');
+        log.warn(getSafeRequestContext(req), 'Invalid service token presented');
+        return next();
+    }
 
     // Attach minimal user to satisfy downstream types/guards
     (req as AuthenticatedRequest).user = {

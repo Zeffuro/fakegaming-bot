@@ -29,6 +29,28 @@ function signDashboardAdminAssertion(discordId: string, reqId: string): string {
         .digest('hex');
 }
 
+function summarizeApiError(body: unknown): Record<string, unknown> {
+    if (typeof body !== 'object' || body === null) {
+        return {
+            bodyType: typeof body,
+            bodyBytes: typeof body === 'string' ? body.length : undefined,
+        };
+    }
+
+    const maybeError = 'error' in body ? (body as { error?: unknown }).error : undefined;
+    if (typeof maybeError === 'object' && maybeError !== null) {
+        const errorObject = maybeError as { code?: unknown; message?: unknown };
+        return {
+            code: typeof errorObject.code === 'string' ? errorObject.code : undefined,
+            message: typeof errorObject.message === 'string' ? errorObject.message : undefined,
+        };
+    }
+
+    return {
+        keys: Object.keys(body),
+    };
+}
+
 const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const { proxy } = await context.params;
     const apiPath = '/' + proxy.join('/');
@@ -52,7 +74,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     if (!jwt) {
         log.warn({ apiPath, reqId }, 'Request is unauthenticated (no JWT)');
     } else {
-        log.debug({ apiPath, reqId, jwtPreview: jwt.substring(0, 20) + '…' }, 'Extracted JWT');
+        log.debug({ apiPath, reqId, hasJwt: true }, 'Extracted JWT');
     }
 
     if (!API_URL) {
@@ -127,13 +149,15 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
                 responseBody = await response.text();
             }
 
+            const errorSummary = summarizeApiError(responseBody);
+
             if (status === 403) {
-                log.warn({ status, apiPath, method, ms, reqId, responseBody }, 'API returned 403 Forbidden');
+                log.warn({ status, apiPath, method, ms, reqId, error: errorSummary }, 'API returned 403 Forbidden');
             } else {
-                log.warn({ status, apiPath, method, ms, reqId, responseBody }, 'API responded with error');
+                log.warn({ status, apiPath, method, ms, reqId, error: errorSummary }, 'API responded with error');
             }
 
-            return NextResponse.json(responseBody as any, { status });
+            return NextResponse.json(responseBody, { status });
         }
 
         log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');

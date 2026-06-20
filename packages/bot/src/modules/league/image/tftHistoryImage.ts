@@ -5,6 +5,7 @@ import {
     drawCircle,
     drawItemSlotBackground,
     drawRoundedRect,
+    drawRoundedRectBorder,
 } from '../../../utils/canvasExtensions.js';
 import {formatDuration, timeAgo} from '../../../utils/generalUtils.js';
 import {getTftItemData} from '../cache/leagueTftItemDataCache.js';
@@ -13,6 +14,7 @@ import {queueMapper} from '../constants/leagueMappers.js';
 import type {TftItem, TftTrait} from '../types/leagueAssetTypes.js';
 import type {TftMatchDto, TftParticipantDto, TftTraitDto, TftUnitDto} from '../types/riotDtos.js';
 import {communityDragonAssetUrl, tftUnitIconUrlCandidates} from '../utils/assetUrl.js';
+import {historyFontString as fontString} from './textRender.js';
 
 const ROW_HEIGHT = 160;
 const WIDTH = 940;
@@ -23,7 +25,6 @@ const UNIT_SLOTS = 10;
 const TRAIT_WIDTH = 92;
 const TRAIT_HEIGHT = 42;
 const TRAIT_GAP = 4;
-const FONT_FAMILY = '"Roboto", Arial, sans-serif';
 const TEXT_COLOR = '#f4f7fb';
 const MUTED_COLOR = '#b6bdc8';
 const PANEL_COLOR = '#1b2534';
@@ -35,10 +36,6 @@ interface TftRenderUnit {
     unit: TftUnitDto;
     unitImage?: Image;
     itemImages: (Image | undefined)[];
-}
-
-function fontString({size = 14, weight = ''}: { size?: number; weight?: string } = {}): string {
-    return `${weight ? weight + ' ' : ''}${size}px ${FONT_FAMILY}`.trim();
 }
 
 export async function generateTftHistoryImage(matches: TftMatchDto[], identity: {
@@ -148,7 +145,7 @@ function drawUnitCard(ctx: CanvasRenderingContext2D, renderUnit: TftRenderUnit, 
     drawRoundedRect(ctx, x - 2, y - 2, UNIT_SIZE + 4, UNIT_SIZE + 28, 7);
     ctx.strokeStyle = borderColor;
     ctx.lineWidth = 2;
-    drawStrokeRoundedRect(ctx, x - 1, y - 1, UNIT_SIZE + 2, UNIT_SIZE + 2, 6);
+    drawRoundedRectBorder(ctx, x - 1, y - 1, UNIT_SIZE + 2, UNIT_SIZE + 2, 6);
     ctx.restore();
 
     drawClippedImage(ctx, unitImage, x, y, UNIT_SIZE, 'rounded', 6);
@@ -162,7 +159,7 @@ function drawEmptyUnitSlot(ctx: CanvasRenderingContext2D, x: number, y: number):
     drawRoundedRect(ctx, x, y, UNIT_SIZE, UNIT_SIZE, 7);
     ctx.strokeStyle = 'rgba(151, 164, 184, 0.28)';
     ctx.lineWidth = 1;
-    drawStrokeRoundedRect(ctx, x + 0.5, y + 0.5, UNIT_SIZE - 1, UNIT_SIZE - 1, 7);
+    drawRoundedRectBorder(ctx, x + 0.5, y + 0.5, UNIT_SIZE - 1, UNIT_SIZE - 1, 7);
     ctx.restore();
 }
 
@@ -462,19 +459,4 @@ function titleCase(value: string): string {
         .filter(Boolean)
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
-}
-
-function drawStrokeRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-    ctx.stroke();
 }

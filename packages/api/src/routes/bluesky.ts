@@ -13,6 +13,7 @@ import {
 } from '../utils/authHelpers.js';
 import { existsQuerySchema, idParamSchema, profileQuerySchema } from './bluesky.schemas.js';
 import { fetchBlueskyProfile, normalizeBlueskyHandle } from '../jobs/bluesky.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 const router = createBaseRouter();
 const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
@@ -150,7 +151,7 @@ router.get('/profile', validateQuery(profileQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
     const hasAccess = await checkGuildScopedRecordAccess(req, res, config);
@@ -202,6 +203,15 @@ router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuild
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
     }
     const created = await getConfigManager().blueskyManager.upsert({ ...body, blueskyHandle }, ['guildId', 'blueskyHandle']);
+    await recordAuditEvent(req, {
+        action: created ? 'bluesky.create' : 'bluesky.update',
+        targetType: 'blueskyConfig',
+        targetId: blueskyHandle,
+        guildId: body.guildId,
+        metadata: {
+            channelId: body.discordChannelId,
+        },
+    });
     res.status(created ? 201 : 200).json({ success: true });
 });
 
@@ -234,7 +244,7 @@ router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuild
  *               $ref: '#/components/schemas/BlueskyPostConfig'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyUpdateRequestSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
     const body = req.body as z.infer<typeof blueskyUpdateRequestSchema>;
@@ -247,6 +257,15 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
     }
     await getConfigManager().blueskyManager.updatePlain({ ...body, ...(normalized ? { blueskyHandle: normalized } : {}) }, { id: Number(id) });
     const updated = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
+    await recordAuditEvent(req, {
+        action: 'bluesky.update',
+        targetType: 'blueskyConfig',
+        targetId: id,
+        guildId: updated.guildId ?? config.guildId ?? null,
+        metadata: {
+            channelId: updated.discordChannelId ?? config.discordChannelId,
+        },
+    });
     res.json(updated);
 });
 
@@ -276,7 +295,7 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
  *                   type: boolean
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const numericId = Number(id);
     const config = await getConfigManager().blueskyManager.findByPkPlain(numericId);
     if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Bluesky post config not found' } });
@@ -285,6 +304,15 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
         if (!access.authorized) return;
     }
     await getConfigManager().blueskyManager.removeByPk(numericId);
+    await recordAuditEvent(req, {
+        action: 'bluesky.delete',
+        targetType: 'blueskyConfig',
+        targetId: numericId,
+        guildId: config.guildId ?? null,
+        metadata: {
+            channelId: config.discordChannelId,
+        },
+    });
     res.json({ success: true });
 });
 

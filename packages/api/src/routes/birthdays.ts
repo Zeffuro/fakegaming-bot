@@ -5,8 +5,8 @@ import { requireGuildAdmin, checkUserGuildAccess, filterGuildScopedRecordsForReq
 import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
 import { birthdayCreateRequestSchema, birthdayUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
-import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Zod schemas
 const userGuildParamSchema = z.object({
@@ -103,11 +103,19 @@ router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req
  *         $ref: '#/components/responses/Conflict'
  */
 router.post('/', jwtAuth, validateBody(birthdayCreateRequestSchema), requireGuildAdmin, async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
     const { userId, guildId } = req.body;
     try {
         await getConfigManager().birthdayManager.addPlain(req.body);
-        console.log(`[AUDIT] User ${discordId} set birthday for user ${userId} in guild ${guildId}`);
+        await recordAuditEvent(req, {
+            action: 'birthday.create',
+            targetType: 'birthday',
+            targetId: `${guildId}:${userId}`,
+            guildId,
+            metadata: {
+                targetUserId: userId,
+                channelId: req.body.channelId,
+            },
+        });
         res.status(201).json({ success: true });
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
@@ -153,6 +161,17 @@ router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), v
     const [affectedCount, rows] = await getConfigManager().birthdayManager.updatePlain(req.body, { userId, guildId });
     if (affectedCount === 0) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
 
+    await recordAuditEvent(req, {
+        action: 'birthday.update',
+        targetType: 'birthday',
+        targetId: `${guildId}:${userId}`,
+        guildId: guildId as string,
+        metadata: {
+            targetUserId: userId,
+            channelId: req.body.channelId,
+        },
+    });
+
     res.json(rows[0] ?? await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string));
 });
 
@@ -192,6 +211,15 @@ router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema)
     const access = await checkUserGuildAccess(req, res, guildId as string);
     if (!access.authorized) return;
     await getConfigManager().birthdayManager.removeBirthday(userId as string, guildId as string);
+    await recordAuditEvent(req, {
+        action: 'birthday.delete',
+        targetType: 'birthday',
+        targetId: `${guildId}:${userId}`,
+        guildId: guildId as string,
+        metadata: {
+            targetUserId: userId,
+        },
+    });
     res.json({ success: true });
 });
 

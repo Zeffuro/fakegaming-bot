@@ -5,6 +5,9 @@
  * with added functionality for common caching patterns.
  */
 import { cacheGet, cacheSet, cacheDel, ensureRedis, type CacheConfig } from '../cache.js';
+import { getLogger } from './logger.js';
+
+const log = getLogger({ name: 'common:cache' });
 
 export const CACHE_TTL = {
   USER_PROFILE: 24 * 60 * 60 * 1000,    // 24 hours
@@ -35,7 +38,7 @@ export interface CacheManager {
 
 export function getCacheManager(config?: CacheConfig): CacheManager {
   if (config) {
-    ensureRedis(config).catch(err => console.error('[CacheManager] Failed to initialize Redis:', err));
+    ensureRedis(config).catch(err => log.warn({ err }, 'Failed to initialize Redis'));
   }
 
   return {
@@ -62,7 +65,7 @@ export function getCacheManager(config?: CacheConfig): CacheManager {
           return cachedData;
         }
 
-        console.log(`[Cache] Miss for key ${key}, fetching fresh data`);
+        log.debug({ keyFamily: getCacheKeyFamily(key) }, 'Cache miss, fetching fresh data');
         const freshData = await fetchFn();
 
         if (freshData) {
@@ -71,7 +74,7 @@ export function getCacheManager(config?: CacheConfig): CacheManager {
 
         return freshData;
       } catch (error) {
-        console.error(`[Cache] Error fetching data for key ${key}:`, error);
+        log.warn({ err: error, keyFamily: getCacheKeyFamily(key) }, 'Error fetching cached data');
         return null;
       }
     },
@@ -81,12 +84,16 @@ export function getCacheManager(config?: CacheConfig): CacheManager {
         await cacheDel(CACHE_KEYS.userProfile(userId));
         await cacheDel(CACHE_KEYS.userGuilds(userId));
         await cacheDel(CACHE_KEYS.userAccessToken(userId));
-        console.log(`[Cache] Cleared cache for user ${userId}`);
+        log.info({ userId }, 'Cleared user cache');
       } catch (error) {
-        console.error(`[Cache] Error clearing cache for user ${userId}:`, error);
+        log.warn({ err: error, userId }, 'Error clearing user cache');
       }
     }
   };
 }
 
 export const defaultCacheManager = getCacheManager();
+
+function getCacheKeyFamily(key: string): string {
+  return key.split(':')[0] ?? 'unknown';
+}

@@ -1,15 +1,6 @@
 import {CanvasRenderingContext2D, Image} from 'canvas';
 
-/**
- * Draws a filled rounded rectangle on the canvas.
- * @param ctx The canvas context.
- * @param x The x-coordinate of the rectangle.
- * @param y The y-coordinate of the rectangle.
- * @param w The width of the rectangle.
- * @param h The height of the rectangle.
- * @param r The corner radius.
- */
-export function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+function createRoundedRectPath(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
@@ -21,6 +12,19 @@ export function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: num
     ctx.lineTo(x, y + r);
     ctx.quadraticCurveTo(x, y, x + r, y);
     ctx.closePath();
+}
+
+/**
+ * Draws a filled rounded rectangle on the canvas.
+ * @param ctx The canvas context.
+ * @param x The x-coordinate of the rectangle.
+ * @param y The y-coordinate of the rectangle.
+ * @param w The width of the rectangle.
+ * @param h The height of the rectangle.
+ * @param r The corner radius.
+ */
+export function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+    createRoundedRectPath(ctx, x, y, w, h, r);
     ctx.fill();
 }
 
@@ -34,17 +38,7 @@ export function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: num
  * @param r The corner radius.
  */
 export function drawRoundedRectBorder(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
+    createRoundedRectPath(ctx, x, y, w, h, r);
     ctx.stroke();
 }
 
@@ -103,17 +97,7 @@ export function drawClippedImage(ctx: CanvasRenderingContext2D, img: Image | und
         ctx.closePath();
         ctx.clip();
     } else {
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + size - radius, y);
-        ctx.quadraticCurveTo(x + size, y, x + size, y + radius);
-        ctx.lineTo(x + size, y + size - radius);
-        ctx.quadraticCurveTo(x + size, y + size, x + size - radius, y + size);
-        ctx.lineTo(x + radius, y + size);
-        ctx.quadraticCurveTo(x, y + size, x, y + size - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
+        createRoundedRectPath(ctx, x, y, size, size, radius);
         ctx.clip();
     }
     ctx.drawImage(img, x, y, size, size);

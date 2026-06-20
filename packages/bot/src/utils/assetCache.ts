@@ -1,11 +1,13 @@
 import {CachedAsset} from '../types/cachedAsset.js';
 import {resolveDataRoot} from "@zeffuro/fakegaming-common/core";
+import {getLogger} from '@zeffuro/fakegaming-common';
 import path from 'path';
 import fs from 'fs';
 import axios from 'axios';
 
 const dataRoot = resolveDataRoot();
 const assetRoot = path.join(dataRoot, 'assets');
+const log = getLogger({ name: 'bot:assetCache' });
 
 export function getAssetCacheDir(type: string): string {
     const dir = path.join(assetRoot, type);
@@ -27,7 +29,7 @@ export async function getAsset(assetUrl: string, assetName: string, type: string
     } catch (error) {
         if (options.logFailures ?? true) {
             const errorMsg = error instanceof Error ? error.message : String(error);
-            console.error(`Failed to fetch asset: ${assetUrl}`, errorMsg);
+            log.warn({ err: errorMsg, assetName, type }, 'Failed to fetch asset');
         }
         return {buffer: null, path: cachePath};
     }

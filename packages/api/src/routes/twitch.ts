@@ -4,7 +4,7 @@ import { twitchCreateRequestSchema, twitchUpdateRequestSchema } from '@zeffuro/f
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import {
     requireGuildAdmin,
     checkUserGuildAccess,
@@ -12,6 +12,8 @@ import {
     checkGuildScopedRecordAccess,
     checkGuildScopedUpdateAccess
 } from '../utils/authHelpers.js';
+import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -138,7 +140,7 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdm
  *                 displayName:
  *                   type: string
  */
-router.get('/verify', validateQuery(verifyQuerySchema), async (req, res) => {
+router.get('/verify', jwtOrService, requireDashboardAdminOrService, validateQuery(verifyQuerySchema), async (req, res) => {
     const { username } = req.query as z.infer<typeof verifyQuerySchema>;
     const clientId = process.env.TWITCH_CLIENT_ID ?? '';
     const clientSecret = process.env.TWITCH_CLIENT_SECRET ?? '';
@@ -187,7 +189,7 @@ router.get('/verify', validateQuery(verifyQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
     const hasAccess = await checkGuildScopedRecordAccess(req, res, stream);
@@ -250,6 +252,15 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
 router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
     const created = await getConfigManager().twitchManager.upsert(req.body, ['guildId', 'twitchUsername']);
+    await recordAuditEvent(req, {
+        action: created ? 'twitch.create' : 'twitch.update',
+        targetType: 'twitchConfig',
+        targetId: req.body.twitchUsername,
+        guildId: req.body.guildId,
+        metadata: {
+            channelId: req.body.discordChannelId,
+        },
+    });
     res.status(created ? 201 : 200).json({ success: true });
 });
 
@@ -299,7 +310,7 @@ router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildA
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(twitchUpdateRequestSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
     const body = req.body as { guildId?: unknown };
@@ -308,6 +319,15 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(twitchUp
     if (!hasAccess) return;
     await getConfigManager().twitchManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().twitchManager.findByPkPlain(Number(id));
+    await recordAuditEvent(req, {
+        action: 'twitch.update',
+        targetType: 'twitchConfig',
+        targetId: id,
+        guildId: updated.guildId ?? stream.guildId ?? null,
+        metadata: {
+            channelId: updated.discordChannelId ?? stream.discordChannelId,
+        },
+    });
     res.json(updated);
 });
 
@@ -343,7 +363,7 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(twitchUp
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const numericId = Number(id);
     const stream = await getConfigManager().twitchManager.findByPkPlain(numericId);
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Twitch stream config not found' } });
@@ -352,6 +372,15 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
         if (!access.authorized) return;
     }
     await getConfigManager().twitchManager.removeByPk(numericId);
+    await recordAuditEvent(req, {
+        action: 'twitch.delete',
+        targetType: 'twitchConfig',
+        targetId: numericId,
+        guildId: stream.guildId ?? null,
+        metadata: {
+            channelId: stream.discordChannelId,
+        },
+    });
     res.json({ success: true });
 });
 

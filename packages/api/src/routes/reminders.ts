@@ -4,8 +4,8 @@ import { jwtAuth } from '../middleware/auth.js';
 import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
 import { reminderCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
-import type { AuthenticatedRequest } from '../types/express.js';
 import { UniqueConstraintError } from 'sequelize';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
@@ -57,7 +57,7 @@ router.get('/', async (_req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
     if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
     res.json(reminder);
@@ -90,6 +90,11 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
 router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req, res) => {
     try {
         const created = await getConfigManager().reminderManager.addPlain(req.body);
+        await recordAuditEvent(req, {
+            action: 'reminder.create',
+            targetType: 'reminder',
+            targetId: created.id,
+        });
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
@@ -123,12 +128,15 @@ router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req,
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { discordId } = (req as AuthenticatedRequest).user;
-    const { id } = req.params;
+    const id = String(req.params.id);
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
     if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
     await getConfigManager().reminderManager.removeByPk(id as string);
-    console.log(`[AUDIT] User ${discordId} deleted reminder ${id} at ${new Date().toISOString()}`);
+    await recordAuditEvent(req, {
+        action: 'reminder.delete',
+        targetType: 'reminder',
+        targetId: id,
+    });
     res.json({ success: true });
 });
 

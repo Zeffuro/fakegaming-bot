@@ -9,6 +9,7 @@ import path from 'path';
 import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
 import { bootstrapJobs } from './jobs/bootstrap.js';
 import { scheduleJobRunCleanup } from './jobs/status.js';
+import { scheduleAuditEventCleanup } from './utils/audit.js';
 
 const log = getLogger({ name: 'api' });
 
@@ -51,6 +52,7 @@ if (isDirectRun) {
         await bootstrapJobs();
         scheduleRateLimitCleanup();
         scheduleJobRunCleanup();
+        scheduleAuditEventCleanup();
         app.listen(port, () => {
             log.info(`API server running on port ${port}`);
         });

@@ -3,7 +3,7 @@ import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming
 import { tiktokCreateRequestSchema, tiktokUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import {
     requireGuildAdmin,
     checkUserGuildAccess,
@@ -13,6 +13,8 @@ import {
 } from '../utils/authHelpers.js';
 import { idParamSchema, existsQuerySchema, liveQuerySchema } from './tiktok.schemas.js';
 import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
+import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 const router = createBaseRouter();
 const listQuerySchema = z.object({ guildId: z.string().min(1).optional() });
@@ -129,7 +131,7 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdm
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
  */
-router.get('/live', jwtAuth, validateQuery(liveQuerySchema), async (req, res) => {
+router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(liveQuerySchema), async (req, res) => {
     const { username, debug, mode } = req.query as unknown as z.output<typeof liveQuerySchema>;
     if (mode === 'light') {
         const { live, debugMeta } = await _resolveLive(username, undefined, { mode: 'light' } as any);
@@ -174,7 +176,7 @@ router.get('/live', jwtAuth, validateQuery(liveQuerySchema), async (req, res) =>
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
     const hasAccess = await checkGuildScopedRecordAccess(req, res, stream);
@@ -236,6 +238,15 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  */
 router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildAdmin, async (req, res) => {
     const created = await getConfigManager().tiktokManager.upsert(req.body, ['guildId', 'tiktokUsername']);
+    await recordAuditEvent(req, {
+        action: created ? 'tiktok.create' : 'tiktok.update',
+        targetType: 'tiktokConfig',
+        targetId: req.body.tiktokUsername,
+        guildId: req.body.guildId,
+        metadata: {
+            channelId: req.body.discordChannelId,
+        },
+    });
     res.status(created ? 201 : 200).json({ success: true });
 });
 
@@ -285,7 +296,7 @@ router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildA
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUpdateRequestSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
     const body = req.body as { guildId?: unknown };
@@ -294,6 +305,15 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
     if (!hasAccess) return;
     await getConfigManager().tiktokManager.updatePlain(req.body, { id: Number(id) });
     const updated = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
+    await recordAuditEvent(req, {
+        action: 'tiktok.update',
+        targetType: 'tiktokConfig',
+        targetId: id,
+        guildId: updated.guildId ?? stream.guildId ?? null,
+        metadata: {
+            channelId: updated.discordChannelId ?? stream.discordChannelId,
+        },
+    });
     res.json(updated);
 });
 
@@ -329,7 +349,7 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const numericId = Number(id);
     const stream = await getConfigManager().tiktokManager.findByPkPlain(numericId);
     if (!stream) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'TikTok stream config not found' } });
@@ -338,6 +358,15 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
         if (!access.authorized) return;
     }
     await getConfigManager().tiktokManager.removeByPk(numericId);
+    await recordAuditEvent(req, {
+        action: 'tiktok.delete',
+        targetType: 'tiktokConfig',
+        targetId: numericId,
+        guildId: stream.guildId ?? null,
+        metadata: {
+            channelId: stream.discordChannelId,
+        },
+    });
     res.json({ success: true });
 });
 

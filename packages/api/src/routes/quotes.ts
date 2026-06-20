@@ -10,6 +10,7 @@ import { UniqueConstraintError } from 'sequelize';
 import type { CreationAttributes } from 'sequelize';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
@@ -192,7 +193,7 @@ router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuth
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
     if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     const hasAccess = await filterGuildScopedRecordsForRequest(req, res, [quote], quote.guildId);
@@ -245,6 +246,15 @@ router.post('/', jwtAuth, validateBody(quoteCreateRequestSchema), async (req, re
         } as CreationAttributes<QuoteConfig>;
 
         const created = await getConfigManager().quoteManager.addPlain(payload);
+        await recordAuditEvent(req, {
+            action: 'quote.create',
+            targetType: 'quote',
+            targetId: created.id,
+            guildId: created.guildId ?? null,
+            metadata: {
+                authorId: created.authorId,
+            },
+        });
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
@@ -280,7 +290,7 @@ router.post('/', jwtAuth, validateBody(quoteCreateRequestSchema), async (req, re
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
     if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
     if (quote.guildId) {
@@ -288,6 +298,15 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
         if (!accessResult.authorized) return;
     }
     await getConfigManager().quoteManager.removeByPk(id as string);
+    await recordAuditEvent(req, {
+        action: 'quote.delete',
+        targetType: 'quote',
+        targetId: id,
+        guildId: quote.guildId ?? null,
+        metadata: {
+            authorId: quote.authorId,
+        },
+    });
     res.json({ success: true });
 });
 

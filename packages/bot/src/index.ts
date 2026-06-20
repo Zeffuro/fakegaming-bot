@@ -214,7 +214,7 @@ function isUnknownInteractionError(error: unknown): boolean {
             }
             // Print a stack trace for the *catch location* (not the throw location)
 
-            console.trace('Catch location stack trace');
+            logger.error({ stack: new Error('Catch location stack trace').stack }, 'Catch location stack trace');
         }
         process.exit(1);
     }

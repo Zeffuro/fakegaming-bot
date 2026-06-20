@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
 import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
+import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 
 type TwitchCreateRequest = Parameters<typeof api.createTwitchStream>[0];
 
@@ -9,134 +9,46 @@ interface UseTwitchConfigsOptions {
 }
 
 export function useTwitchConfigs(guildId: string | string[], options: UseTwitchConfigsOptions = {}) {
-  const enabled = options.enabled ?? true;
-  const [configs, setConfigs] = useState<TwitchStreamConfig[]>([]);
-  const [loading, setLoading] = useState(enabled);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchConfigs = async () => {
-    if (!enabled || !guildId) {
-      setConfigs([]);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const allConfigs = await api.getTwitchConfigs(guildId as string);
-
-      const guildConfigs = allConfigs.filter((config: any) => config.guildId === guildId) as TwitchStreamConfig[];
-      setConfigs(guildConfigs);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load Twitch configurations');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addConfig = async (configData: Omit<TwitchStreamConfig, 'id' | 'guildId'>) => {
-    if (!configData.twitchUsername || !configData.discordChannelId) {
-      setError('Twitch Channel Name and Discord Channel ID are required');
-      return false;
-    }
-
-    try {
-      setSaving(true);
-      const payload = {
+  return useConfigResource<TwitchStreamConfig, Omit<TwitchStreamConfig, 'id' | 'guildId'>>({
+    guildId,
+    enabled: options.enabled ?? true,
+    load: async (resolvedGuildId) => {
+      const allConfigs = await api.getTwitchConfigs(resolvedGuildId);
+      return allConfigs.filter((config: TwitchStreamConfig) => config.guildId === resolvedGuildId) as TwitchStreamConfig[];
+    },
+    create: async (configData, resolvedGuildId) => {
+      await api.createTwitchStream({
         twitchUsername: configData.twitchUsername,
         discordChannelId: configData.discordChannelId,
-        guildId: guildId as string,
-        customMessage: configData.customMessage,
-        cooldownMinutes: (configData as any).cooldownMinutes ?? null,
-        quietHoursStart: (configData as any).quietHoursStart ? String((configData as any).quietHoursStart) : null,
-        quietHoursEnd: (configData as any).quietHoursEnd ? String((configData as any).quietHoursEnd) : null,
-      };
-
-      await api.createTwitchStream(payload as unknown as TwitchCreateRequest);
-      await fetchConfigs();
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to save Twitch configuration');
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateConfig = async (config: TwitchStreamConfig) => {
-    try {
-      setSaving(true);
-      const payload = {
+        guildId: resolvedGuildId,
+        ...buildNotificationTimingPayload(configData),
+      } as unknown as TwitchCreateRequest);
+    },
+    update: async (config, resolvedGuildId) => {
+      await api.deleteTwitchStream(config.id.toString());
+      await api.createTwitchStream({
         twitchUsername: config.twitchUsername,
         discordChannelId: config.discordChannelId,
-        guildId: guildId as string,
-        customMessage: config.customMessage,
-        cooldownMinutes: (config as any).cooldownMinutes ?? null,
-        quietHoursStart: (config as any).quietHoursStart ? String((config as any).quietHoursStart) : null,
-        quietHoursEnd: (config as any).quietHoursEnd ? String((config as any).quietHoursEnd) : null,
-      };
-
+        guildId: resolvedGuildId,
+        ...buildNotificationTimingPayload(config),
+      } as unknown as TwitchCreateRequest);
+    },
+    deleteConfig: async (config) => {
       await api.deleteTwitchStream(config.id.toString());
-      await api.createTwitchStream(payload as unknown as TwitchCreateRequest);
-      await fetchConfigs();
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to update Twitch configuration');
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteConfig = async (config: TwitchStreamConfig) => {
-    try {
-      setSaving(true);
-      await api.deleteTwitchStream(config.id.toString());
-      await fetchConfigs();
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete Twitch configuration');
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const removeConfig = async (configId: string) => {
-    try {
-      setSaving(true);
+    },
+    removeById: async (configId) => {
       await api.deleteTwitchStream(configId);
-      await fetchConfigs();
-      return true;
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete Twitch configuration');
-      return false;
-    } finally {
-      setSaving(false);
+    },
+    validateCreate: (configData) => (
+      configData.twitchUsername && configData.discordChannelId
+        ? null
+        : 'Twitch Channel Name and Discord Channel ID are required'
+    ),
+    messages: {
+      loadFailed: 'Failed to load Twitch configurations',
+      createFailed: 'Failed to save Twitch configuration',
+      updateFailed: 'Failed to update Twitch configuration',
+      deleteFailed: 'Failed to delete Twitch configuration',
     }
-  };
-
-  useEffect(() => {
-    if (!enabled || !guildId) {
-      setConfigs([]);
-      setLoading(false);
-      return;
-    }
-
-    void fetchConfigs();
-  }, [enabled, guildId]);
-
-  return {
-    configs,
-    loading,
-    error,
-    saving,
-    setError,
-    addConfig,
-    updateConfig,
-    deleteConfig,
-    removeConfig,
-    refreshConfigs: fetchConfigs
-  };
+  });
 }

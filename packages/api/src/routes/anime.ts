@@ -24,6 +24,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 const router = createBaseRouter();
 const ANIME_SEASON_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -188,11 +189,21 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
         channelId: body.channelId,
         reminderMinutes: body.reminderMinutes ?? 30,
     });
+    await recordAuditEvent(req, {
+        action: created ? 'animeSubscription.create' : 'animeSubscription.update',
+        targetType: 'animeSubscription',
+        targetId: anime.id,
+        guildId: body.guildId,
+        metadata: {
+            channelId: body.channelId,
+            reminderMinutes: body.reminderMinutes ?? 30,
+        },
+    });
     res.status(created ? 201 : 200).json({ success: true, created, anilistId: anime.id });
 });
 
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
+    const id = String(req.params.id);
     const subscription = await getConfigManager().animeManager.subscriptions.findByPkPlain(Number(id));
     if (subscription.guildId) {
         const access = await checkUserGuildAccess(req, res, subscription.guildId);
@@ -201,6 +212,16 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
         return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized for this anime subscription' } });
     }
     await getConfigManager().animeManager.subscriptions.removeByPk(Number(id));
+    await recordAuditEvent(req, {
+        action: 'animeSubscription.delete',
+        targetType: 'animeSubscription',
+        targetId: id,
+        guildId: subscription.guildId ?? null,
+        metadata: {
+            anilistId: subscription.anilistId,
+            channelId: subscription.channelId,
+        },
+    });
     res.json({ success: true });
 });
 

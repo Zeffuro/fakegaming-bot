@@ -3,8 +3,10 @@ import {Sequelize} from 'sequelize-typescript';
 import path from 'path';
 import {pathToFileURL} from 'url';
 import {PROJECT_ROOT} from './core/projectRoot.js';
+import {getLogger} from './utils/logger.js';
 
 const MIGRATIONS_ROOT = path.join(PROJECT_ROOT, 'migrations');
+const log = getLogger({ name: 'common:migrate' });
 
 export async function runMigrations(sequelize: Sequelize) {
     const migrationsConfig: any = {
@@ -33,16 +35,21 @@ export async function runMigrations(sequelize: Sequelize) {
         migrations: migrationsConfig,
         context: sequelize,
         storage: new SequelizeStorage({sequelize}),
-        logger: console,
+        logger: {
+            info: (message: unknown) => log.info({ message }, 'Migration info'),
+            warn: (message: unknown) => log.warn({ message }, 'Migration warning'),
+            error: (message: unknown) => log.error({ message }, 'Migration error'),
+            debug: (message: unknown) => log.debug({ message }, 'Migration debug'),
+        },
     });
 
     const pending = await migrator.pending();
-    console.log('Pending migrations:', pending.map(m => m.name));
+    log.info({ pending: pending.map(m => m.name) }, 'Pending migrations');
 
     if (pending.length) {
         await migrator.up();
-        console.log('Migrations completed!');
+        log.info('Migrations completed');
     } else {
-        console.log('No pending migrations.');
+        log.info('No pending migrations');
     }
 }

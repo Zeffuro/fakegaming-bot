@@ -2,12 +2,12 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { isWithinQuietHours, toMillis } from '@zeffuro/fakegaming-common/utils';
 import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
+import { getNotificationSuppression } from './notificationSuppression.js';
 
 interface TikTokStreamConfigPlain {
     id?: number | string;
@@ -196,12 +196,8 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
                 const eventId = String(info.roomId ?? `${cfg.tiktokUsername}:${Math.floor(now.getTime()/60000)}`);
                 const already = await (notifications as any).hasForGuild?.('tiktok', eventId, cfg.guildId)
                     ?? await notifications.has('tiktok', eventId);
-                const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
-                const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(toMillis(cfg.lastNotifiedAt)) : null;
-                const cooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
-                    ? (now.getTime() - lastNotifiedDate.getTime()) < cfg.cooldownMinutes * 60_000
-                    : false;
-                if (!already && !suppressedByQuiet && !cooldown) {
+                const suppression = getNotificationSuppression(cfg, now);
+                if (!already && !suppression.shouldSuppress) {
                     const built = buildTikTokEmbedAndContent({ username: cfg.tiktokUsername, info, customMessage: cfg.customMessage ?? null });
                     const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
                     if (sent && typeof (sent as any).id === 'string') {

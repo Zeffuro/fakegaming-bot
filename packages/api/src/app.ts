@@ -12,7 +12,8 @@ import { readFileSync } from 'fs';
 import { rateLimit } from './middleware/rateLimit.js';
 import { enforceCsrfOnce } from './middleware/csrf.js';
 import type { Request, Response, NextFunction } from 'express';
-import { serviceAuth, shouldSkipJwt } from './middleware/serviceAuth.js';
+import { isServiceRequest, serviceAuth, shouldSkipJwt } from './middleware/serviceAuth.js';
+import { getSafeRequestContext } from './utils/requestContext.js';
 
 const app = express();
 
@@ -25,14 +26,26 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.url === '/healthz' || req.url === '/ready') return next();
     const reqIdHeader = req.headers['x-request-id'];
     const reqId = typeof reqIdHeader === 'string' ? reqIdHeader : `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    (req as { requestId?: string }).requestId = reqId;
+    res.setHeader('x-request-id', reqId);
     const started = Date.now();
-    const method = req.method;
-    const url = req.originalUrl || req.url;
     res.on('finish', () => {
         const ms = Date.now() - started;
         const status = res.statusCode;
         const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
-        (httpLogger as any)[level]({ reqId, method, url, status, ms }, 'http_request');
+        const payload = {
+            ...getSafeRequestContext(req),
+            status,
+            ms,
+            actorType: isServiceRequest(req) ? 'service' : 'user',
+        };
+        if (level === 'error') {
+            httpLogger.error(payload, 'http_request');
+        } else if (level === 'warn') {
+            httpLogger.warn(payload, 'http_request');
+        } else {
+            httpLogger.info(payload, 'http_request');
+        }
     });
     next();
 });

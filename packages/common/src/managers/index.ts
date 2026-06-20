@@ -15,6 +15,7 @@ export * from './tiktokManager.js';
 export * from './blueskyManager.js';
 export * from './animeManager.js';
 export * from './leagueManager.js';
+export * from './auditEventManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

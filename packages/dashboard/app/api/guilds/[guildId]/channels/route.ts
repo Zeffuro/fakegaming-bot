@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDiscordGuildChannels, CACHE_KEYS, CACHE_TTL, defaultCacheManager } from "@zeffuro/fakegaming-common";
 import { authenticateUser, checkGuildAccess } from "@/lib/auth/authUtils";
 import type { APIChannel } from "discord-api-types/v10";
+import { createSimpleLogger } from "@/lib/simpleColorLogger";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
+const log = createSimpleLogger("dashboard:channels-api");
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ guildId: string }> }) {
     const { guildId } = await params;
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
                     throw new Error("Discord bot token not configured");
                 }
 
-                console.log(`[Channels API] Cache miss for guild ${guildId}, fetching fresh channel data`);
+                log.debug({ guildId }, "Cache miss for guild channels, fetching fresh data");
                 return await getDiscordGuildChannels(guildId, BOT_TOKEN);
             },
             CACHE_TTL.GUILD_CHANNELS
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
 
         return NextResponse.json(channels);
     } catch (error) {
-        console.error(`[Channels API] Error fetching guild channels for ${guildId}:`, error);
+        log.error({ err: error, guildId }, "Error fetching guild channels");
         return NextResponse.json({ error: "Failed to fetch guild channels" }, { status: 500 });
     }
 }

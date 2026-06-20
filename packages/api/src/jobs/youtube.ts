@@ -3,11 +3,11 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { isWithinQuietHours } from '@zeffuro/fakegaming-common/utils';
 import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessagePayload } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
 import { fetchYouTubeChannelPageLatestVideo, getHttpStatusFromError } from '../utils/youtubePublic.js';
+import { getNotificationSuppression } from './notificationSuppression.js';
 
 interface YoutubeChannelConfigPlain {
     id?: number | string;
@@ -235,11 +235,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 if (newVideos.length === 0) continue;
 
                 const now = new Date();
-                const suppressedByQuiet = isWithinQuietHours(cfg.quietHoursStart ?? null, cfg.quietHoursEnd ?? null, now);
-                const lastNotifiedDate = cfg.lastNotifiedAt ? new Date(cfg.lastNotifiedAt) : null;
-                const suppressedByCooldown = typeof cfg.cooldownMinutes === 'number' && cfg.cooldownMinutes > 0 && lastNotifiedDate
-                    ? now.getTime() - lastNotifiedDate.getTime() < cfg.cooldownMinutes * 60_000
-                    : false;
+                const suppression = getNotificationSuppression(cfg, now);
                 const sendVideos: YoutubeFeedItem[] = [];
 
                 for (const video of newVideos) {
@@ -248,8 +244,13 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                     // Use per-guild deduplication so the same YouTube video can be announced in multiple guilds
                     const already = await (notifications as any).hasForGuild?.('youtube', videoId, cfg.guildId)
                         ?? await notifications.has('youtube', videoId);
-                    if (already || suppressedByQuiet || suppressedByCooldown) {
-                        log.debug({ videoId, already, suppressedByQuiet, suppressedByCooldown }, 'Suppressing YouTube video announcement');
+                    if (already || suppression.shouldSuppress) {
+                        log.debug({
+                            videoId,
+                            already,
+                            suppressedByQuiet: suppression.suppressedByQuiet,
+                            suppressedByCooldown: suppression.suppressedByCooldown,
+                        }, 'Suppressing YouTube video announcement');
                         continue;
                     }
                     sendVideos.push(video);

@@ -1,9 +1,12 @@
 import type { Request, Response, NextFunction } from 'express';
 import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, validateCsrf } from '@zeffuro/fakegaming-common/security';
+import { getLogger, incMetric } from '@zeffuro/fakegaming-common';
+import { getSafeRequestContext } from '../utils/requestContext.js';
 
 // Per-request CSRF state without augmenting Express types
 const csrfState = new WeakMap<Request, { checked: boolean; valid: boolean }>();
 const csrfSkipped = new WeakSet<Request>();
+const log = getLogger({ name: 'api:csrf' });
 
 function parseCookies(header: string | undefined): Map<string, string> {
     const map = new Map<string, string>();
@@ -22,6 +25,12 @@ function parseCookies(header: string | undefined): Map<string, string> {
         }
     }
     return map;
+}
+
+function denyCsrf(req: Request, res: Response, details: string): void {
+    log.warn({ ...getSafeRequestContext(req), details }, 'CSRF validation failed');
+    incMetric('csrf_denied');
+    res.status(403).json({ error: 'CSRF', details });
 }
 
 /** Core CSRF enforcement. Sets request state so future checks can short-circuit. */
@@ -43,7 +52,7 @@ export function enforceCsrf(req: Request, res: Response, next: NextFunction): vo
             next();
             return;
         }
-        res.status(403).json({ error: 'CSRF', details: 'Invalid CSRF token' });
+        denyCsrf(req, res, 'Invalid CSRF token');
         return;
     }
 
@@ -67,7 +76,7 @@ export function enforceCsrf(req: Request, res: Response, next: NextFunction): vo
         next();
         return;
     }
-    res.status(403).json({ error: 'CSRF', details: result.error ?? 'Invalid CSRF token' });
+    denyCsrf(req, res, result.error ?? 'Invalid CSRF token');
 }
 
 /** Wrapper that ensures CSRF is enforced at most once per request. */
@@ -78,7 +87,7 @@ export function enforceCsrfOnce(req: Request, res: Response, next: NextFunction)
             next();
             return;
         }
-        res.status(403).json({ error: 'CSRF', details: 'Invalid CSRF token' });
+        denyCsrf(req, res, 'Invalid CSRF token');
         return;
     }
     enforceCsrf(req, res, next);

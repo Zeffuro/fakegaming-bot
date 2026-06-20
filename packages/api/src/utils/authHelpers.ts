@@ -2,13 +2,13 @@
  * Common helper for API authentication and guild permission checks
  */
 import { Request, Response, NextFunction } from 'express';
-import { defaultCacheManager, CACHE_KEYS, MinimalGuildData } from '@zeffuro/fakegaming-common';
-import { isGuildAdmin } from '@zeffuro/fakegaming-common';
+import { defaultCacheManager, CACHE_KEYS, MinimalGuildData, getLogger, isGuildAdmin } from '@zeffuro/fakegaming-common';
 import { isServiceRequest } from '../middleware/serviceAuth.js';
 import { isDashboardAdmin } from './dashboardAdmin.js';
 
 // Prefer the shared in-memory cache used by tests, fallback to default
 const _cache = ((globalThis as any).__testCacheManager ?? defaultCacheManager) as typeof defaultCacheManager;
+const log = getLogger({ name: 'api:authHelpers' });
 
 interface RequestWithOptionalUser extends Request {
     user?: {
@@ -47,7 +47,7 @@ export async function checkUserGuildAccess(
     // Read from the test-aware cache to ensure consistency in tests
     const guilds = await _cache.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
     if (!guilds) {
-        console.error(`[API] Cache miss for user guilds ${discordId}`);
+        log.warn({ discordId }, 'Cache miss for user guilds');
         res.status(403).json({ error: 'Not authorized for this guild' });
         return { authorized: false };
     }
@@ -89,7 +89,7 @@ export async function filterGuildScopedRecordsForRequest<T extends GuildScopedRe
 
     const guilds = await _cache.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(discordId));
     if (!guilds) {
-        console.error(`[API] Cache miss for user guilds ${discordId}`);
+        log.warn({ discordId }, 'Cache miss for user guilds');
         res.status(403).json({ error: 'Not authorized for this guild' });
         return null;
     }
@@ -148,7 +148,7 @@ export function requireGuildAdmin(req: Request, res: Response, next: NextFunctio
             }
         })
         .catch(err => {
-            console.error('[Auth] Error checking guild access:', err);
+            log.error({ err }, 'Error checking guild access');
             res.status(500).json({ error: 'Internal server error during authorization check' });
         });
 }

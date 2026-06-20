@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ForbiddenError, NotFoundError, getLogger, incMetric } from '@zeffuro/fakegaming-common';
+import { getSafeRequestContext } from '../utils/requestContext.js';
 
 const log = getLogger({ name: 'api:error' });
 
@@ -18,7 +19,7 @@ function codeForStatus(status: number): string {
  * Centralized API error handler for async routers.
  * Catches domain errors, validation errors, database duplicates, and unexpected errors.
  */
-export function errorHandler(err: any, _req: Request, res: Response, _next: NextFunction) {
+export function errorHandler(err: any, req: Request, res: Response, _next: NextFunction) {
     // Unauthorized (from express-jwt)
     if (err?.name === 'UnauthorizedError') {
         return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: err.message ?? 'Unauthorized' } });
@@ -35,6 +36,10 @@ export function errorHandler(err: any, _req: Request, res: Response, _next: Next
     // Explicit status & message (for thrown {status, message} objects)
     if (typeof err?.status === 'number' && typeof err?.message === 'string') {
         const status = err.status as number;
+        if (status >= 500) {
+            log.error({ err, ...getSafeRequestContext(req), status }, 'Unhandled status error in API');
+            incMetric('api_error', { type: 'status' });
+        }
         return res.status(status).json({ error: { code: codeForStatus(status), message: err.message } });
     }
 
@@ -49,7 +54,7 @@ export function errorHandler(err: any, _req: Request, res: Response, _next: Next
     }
 
     // Fallback for all other errors
-    log.error({ err }, 'Unhandled error in API');
+    log.error({ err, ...getSafeRequestContext(req) }, 'Unhandled error in API');
     incMetric('api_error', { type: 'unhandled' });
     res.status(500).json({ error: { code: 'INTERNAL_SERVER_ERROR', message: err?.message ?? 'Unexpected error' } });
 }

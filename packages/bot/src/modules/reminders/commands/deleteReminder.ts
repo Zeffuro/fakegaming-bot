@@ -2,7 +2,8 @@ import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags} from 'di
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
 import {deleteReminder as META} from '../commands.manifest.js';
-import {resolveReminderByInput, shortReminderId, type ReminderLike} from '../shared/reminderFormat.js';
+import {shortReminderId} from '../shared/reminderFormat.js';
+import {resolvePendingReminderForUser} from '../shared/reminderLookup.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
@@ -15,11 +16,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
 
 async function execute(interaction: ChatInputCommandInteraction) {
     const input = interaction.options.getString('reminder', true);
-    const rows = await getConfigManager().reminderManager.getRemindersByUser(interaction.user.id) as unknown as ReminderLike[];
-    const pending = rows
-        .filter(row => Number(row.timestamp) > Date.now())
-        .sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
-    const reminder = resolveReminderByInput(pending, input);
+    const reminder = await resolvePendingReminderForUser(interaction.user.id, input);
 
     if (!reminder) {
         await interaction.reply({content: 'Reminder not found. Use `/reminders` to see your pending reminders.', flags: MessageFlags.Ephemeral});

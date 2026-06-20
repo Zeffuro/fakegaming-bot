@@ -4,16 +4,15 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Box,
-    TextField,
     Button,
-    CircularProgress,
-    Autocomplete,
-    Chip,
-    Stack,
-    Typography
+    CircularProgress
 } from "@mui/material";
-import { dashboardDialogPaperSx, dashboardFieldSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import {
+    ConfigDialogFields,
+    getConfigStringValue,
+    type ConfigDialogValue
+} from "@/components/config-dialog/ConfigDialogFields";
 import { StreamingConfig } from "@/components/hooks/useStreamingForm";
 
 interface EditConfigDialogProps<T extends StreamingConfig> {
@@ -53,34 +52,9 @@ export default function EditConfigDialog<T extends StreamingConfig>({
 }: EditConfigDialogProps<T>) {
     if (!config) return null;
 
-    const selectedChannel = channels.find(ch => ch.id === (config as any).discordChannelId) || null;
+    const configValue = config as unknown as ConfigDialogValue;
     const titleLabel = itemSingularLabel ?? (moduleName === 'YouTube' ? 'Channel' : 'Streamer');
-    const nameValue = (config as any)[channelNameField] as string;
-    const fieldSx = dashboardFieldSx(moduleColor);
-
-    const tokens = moduleName === 'Twitch'
-        ? ['{streamer}', '{title}', '{game}', '{url}', '{uptime}', '{viewers}']
-        : moduleName === 'Bluesky'
-            ? ['{author}', '{handle}', '{text}', '{url}', '{likes}', '{reposts}', '{replies}']
-            : ['{title}', '{channel}', '{url}', '{duration}', '{views}'];
-
-    const customMessageHelper = moduleName === 'YouTube'
-        ? 'Tokens: {title}, {channel}, {url}, {duration}, {views}. If {url} is omitted, it will be appended automatically.'
-        : moduleName === 'Bluesky'
-            ? 'Tokens: {author}, {handle}, {text}, {url}, {likes}, {reposts}, {replies}. If {url} is omitted, it will be appended automatically.'
-            : 'Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers}. If {url} is omitted, it will be appended automatically.';
-
-    const customMessageExample = moduleName === 'YouTube'
-        ? 'Example: New video from {channel}: {title} {url}'
-        : moduleName === 'Bluesky'
-            ? 'Example: New post from {author}: {text} {url}'
-            : '{streamer} is live: {title} {url}';
-
-    const insertToken = (token: string) => {
-        const current = String((config as any).customMessage ?? '');
-        const sep = current.endsWith(' ') || current.length === 0 ? '' : ' ';
-        onConfigChange('customMessage', `${current}${sep}${token}`);
-    };
+    const nameValue = getConfigStringValue(configValue, channelNameField);
 
     return (
         <Dialog
@@ -98,199 +72,18 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                 Edit {titleLabel}
             </DialogTitle>
             <DialogContent>
-                <Box sx={{ pt: 1 }}>
-                    {itemNameOptions ? (
-                        <Autocomplete
-                            freeSolo
-                            fullWidth
-                            options={itemNameOptions}
-                            value={nameValue || ''}
-                            onInputChange={(_e, value) => onConfigChange(channelNameField, value)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label={channelNameLabel}
-                                    sx={[fieldSx, { mb: 2 }]}
-                                />
-                            )}
-                        />
-                    ) : (
-                        <TextField
-                            fullWidth
-                            label={channelNameLabel}
-                            value={nameValue}
-                            onChange={(e) => onConfigChange(channelNameField, e.target.value)}
-                            sx={[fieldSx, { mb: 2 }]}
-                            helperText={`Enter the ${moduleName} ${channelNameLabel.toLowerCase()}`}
-                            slotProps={{
-                                formHelperText: { sx: { color: 'grey.400' } }
-                            }}
-                        />
-                    )}
-
-                    <Autocomplete
-                        fullWidth
-                        options={channels}
-                        getOptionLabel={(option) => `#${option.name}`}
-                        value={selectedChannel}
-                        onChange={(_event, newValue) => {
-                            onConfigChange('discordChannelId', newValue?.id || '');
-                        }}
-                        loading={loadingChannels}
-                        disabled={loadingChannels}
-                        slots={{
-                            paper: ({ children, ...other }) => (
-                                <div
-                                    {...other}
-                                    style={{
-                                        backgroundColor: 'rgb(66, 66, 66)',
-                                        border: '1px solid rgb(97, 97, 97)',
-                                        borderRadius: '4px',
-                                        ...other.style
-                                    }}
-                                >
-                                    {children}
-                                </div>
-                            )
-                        }}
-                        renderInput={(params) => (
-                            <TextField
-                                {...params}
-                                label="Discord Channel"
-                                sx={[fieldSx, { mb: 2 }]}
-                                slotProps={{
-                                    ...params.slotProps,
-                                    input: {
-                                        ...params.slotProps.input,
-                                        endAdornment: (
-                                            <>
-                                                {loadingChannels ? <CircularProgress size={20} /> : null}
-                                                {params.slotProps.input.endAdornment}
-                                            </>
-                                        ),
-                                    }
-                                }}
-                            />
-                        )}
-                        renderOption={(props, option) => {
-                            const { key, ...otherProps } = props as any;
-                            return (
-                                <li
-                                    key={key}
-                                    {...otherProps}
-                                    style={{
-                                        backgroundColor: 'rgb(66, 66, 66)',
-                                        color: 'rgb(245, 245, 245)',
-                                        padding: '8px 16px',
-                                    }}
-                                >
-                                    #{option.name}
-                                </li>
-                            );
-                        }}
-                        noOptionsText={loadingChannels ? "Loading channels..." : "No channels available"}
-                        sx={{
-                            '& .MuiAutocomplete-popupIndicator': { color: 'grey.400' },
-                            '& .MuiAutocomplete-clearIndicator': { color: 'grey.400' }
-                        }}
-                    />
-
-                    {showCustomMessage && (
-                        <>
-                            <TextField
-                                fullWidth
-                                label="Custom Message (Optional)"
-                                value={(config as any).customMessage || ''}
-                                onChange={(e) => onConfigChange('customMessage', e.target.value)}
-                                sx={{
-                                    '& .MuiInputLabel-root': { color: 'grey.300' },
-                                    '& .MuiOutlinedInput-root': {
-                                        color: 'grey.100',
-                                        '& fieldset': { borderColor: 'grey.600' },
-                                        '&:hover fieldset': { borderColor: 'grey.500' },
-                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                    }
-                                }}
-                                helperText={customMessageHelper}
-                                slotProps={{
-                                    formHelperText: { sx: { color: 'grey.400' } }
-                                }}
-                            />
-                            <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
-                                <Typography variant="caption" sx={{ color: 'grey.400', mr: 1, alignSelf: 'center' }}>
-                                    Available tokens:
-                                </Typography>
-                                {tokens.map((t) => (
-                                    <Chip key={t} label={t} size="small" onClick={() => insertToken(t)} sx={{ cursor: 'pointer' }} />
-                                ))}
-                            </Stack>
-                            <Typography variant="caption" sx={{ color: 'grey.500', mt: 1, display: 'block' }}>
-                                {customMessageExample}
-                            </Typography>
-                        </>
-                    )}
-
-                    {/* Cooldown and Quiet Hours inputs */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2, mt: 2 }}>
-                        <TextField
-                            label="Cooldown (minutes)"
-                            type="number"
-                            value={(config as any).cooldownMinutes ?? ''}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                const parsed = v === '' ? null : Number.isNaN(Number(v)) ? null : Number(v);
-                                onConfigChange('cooldownMinutes', parsed);
-                            }}
-                            slotProps={{ htmlInput: { min: 0 }, formHelperText: { sx: { color: 'grey.400' } } }}
-                            sx={{
-                                '& .MuiInputLabel-root': { color: 'grey.300' },
-                                '& .MuiOutlinedInput-root': {
-                                    color: 'grey.100',
-                                    '& fieldset': { borderColor: 'grey.600' },
-                                    '&:hover fieldset': { borderColor: 'grey.500' },
-                                    '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                }
-                            }}
-                            helperText="Minimum minutes between notifications (optional)"
-                        />
-                        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                            <TextField
-                                label="Quiet Start"
-                                type="time"
-                                value={(config as any).quietHoursStart ?? ''}
-                                onChange={(e) => onConfigChange('quietHoursStart', e.target.value)}
-                                slotProps={{ htmlInput: { step: 60 }, formHelperText: { sx: { color: 'grey.400' } } }}
-                                sx={{
-                                    '& .MuiInputLabel-root': { color: 'grey.300' },
-                                    '& .MuiOutlinedInput-root': {
-                                        color: 'grey.100',
-                                        '& fieldset': { borderColor: 'grey.600' },
-                                        '&:hover fieldset': { borderColor: 'grey.500' },
-                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                    }
-                                }}
-                                helperText="HH:mm (24h)"
-                            />
-                            <TextField
-                                label="Quiet End"
-                                type="time"
-                                value={(config as any).quietHoursEnd ?? ''}
-                                onChange={(e) => onConfigChange('quietHoursEnd', e.target.value)}
-                                slotProps={{ htmlInput: { step: 60 }, formHelperText: { sx: { color: 'grey.400' } } }}
-                                sx={{
-                                    '& .MuiInputLabel-root': { color: 'grey.300' },
-                                    '& .MuiOutlinedInput-root': {
-                                        color: 'grey.100',
-                                        '& fieldset': { borderColor: 'grey.600' },
-                                        '&:hover fieldset': { borderColor: 'grey.500' },
-                                        '&.Mui-focused fieldset': { borderColor: 'primary.main' }
-                                    }
-                                }}
-                                helperText="HH:mm (24h)"
-                            />
-                        </Box>
-                    </Box>
-                </Box>
+                <ConfigDialogFields
+                    value={configValue}
+                    onFieldChange={onConfigChange}
+                    channelNameField={channelNameField}
+                    channelNameLabel={channelNameLabel}
+                    moduleName={moduleName}
+                    moduleColor={moduleColor}
+                    channels={channels}
+                    loadingChannels={loadingChannels}
+                    showCustomMessage={showCustomMessage}
+                    itemNameOptions={itemNameOptions}
+                />
             </DialogContent>
             <DialogActions>
                 <Button
