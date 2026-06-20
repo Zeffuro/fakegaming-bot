@@ -8,15 +8,14 @@ import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { idParamSchema, existsQuerySchema, liveQuerySchema } from './tiktok.schemas.js';
 import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
-import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canReadGuildScopedRecord,
-    canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
     sendGuildScopedRecords,
-    sendNotFound,
+    updateGuildScopedRecord,
     updatedChannelAuditMetadata,
+    upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { optionalGuildListQuerySchema } from './sharedSchemas.js';
 
@@ -177,12 +176,11 @@ router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
-    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
-    const hasAccess = await canReadGuildScopedRecord(req, res, stream);
-    if (!hasAccess) return;
-    res.json(stream);
+    const manager = getConfigManager().tiktokManager;
+    await sendGuildScopedRecordById(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'TikTok stream config not found',
+    });
 });
 
 /**
@@ -238,15 +236,16 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildAdmin, async (req, res) => {
-    const created = await getConfigManager().tiktokManager.upsert(req.body, ['guildId', 'tiktokUsername']);
-    await recordAuditEvent(req, {
-        action: created ? 'tiktok.create' : 'tiktok.update',
+    const body = req.body as z.output<typeof tiktokCreateRequestSchema>;
+    const manager = getConfigManager().tiktokManager;
+    await upsertGuildScopedRecord(req, res, body, {
+        upsert: data => manager.upsert(data, ['guildId', 'tiktokUsername']),
+        createAction: 'tiktok.create',
+        updateAction: 'tiktok.update',
         targetType: 'tiktokConfig',
-        targetId: req.body.tiktokUsername,
-        guildId: req.body.guildId,
-        metadata: channelAuditMetadata(req.body),
+        targetId: data => data.tiktokUsername,
+        metadata: data => channelAuditMetadata(data),
     });
-    res.status(created ? 201 : 200).json({ success: true });
 });
 
 /**
@@ -295,21 +294,16 @@ router.post('/', jwtAuth, validateBody(tiktokCreateRequestSchema), requireGuildA
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUpdateRequestSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const stream = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
-    if (!stream) return sendNotFound(res, 'TikTok stream config not found');
-    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, stream, req.body);
-    if (!hasAccess) return;
-    await getConfigManager().tiktokManager.updatePlain(req.body, { id: Number(id) });
-    const updated = await getConfigManager().tiktokManager.findByPkPlain(Number(id));
-    await recordAuditEvent(req, {
-        action: 'tiktok.update',
-        targetType: 'tiktokConfig',
-        targetId: id,
-        guildId: updated.guildId ?? stream.guildId ?? null,
-        metadata: updatedChannelAuditMetadata(updated, stream),
+    const body = req.body as z.output<typeof tiktokUpdateRequestSchema>;
+    const manager = getConfigManager().tiktokManager;
+    await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
+        findByPk: id => manager.findByPkPlain(id),
+        update: (id, data) => manager.updatePlain(data, { id }),
+        notFoundMessage: 'TikTok stream config not found',
+        auditAction: 'tiktok.update',
+        auditTargetType: 'tiktokConfig',
+        auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
     });
-    res.json(updated);
 });
 
 /**

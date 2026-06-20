@@ -1,4 +1,5 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
+import type { Request, Response } from 'express';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
@@ -19,6 +20,19 @@ const listQuerySchema = z.object({
 
 // Router
 const router = createBaseRouter();
+
+type BirthdayRecord = Awaited<ReturnType<ReturnType<typeof getConfigManager>['birthdayManager']['getBirthday']>>;
+
+async function getAuthorizedBirthday(req: Request, res: Response, userId: string, guildId: string): Promise<BirthdayRecord | null> {
+    const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
+    if (!birthday) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+        return null;
+    }
+
+    const access = await checkUserGuildAccess(req, res, guildId);
+    return access.authorized ? birthday : null;
+}
 
 /**
  * @openapi
@@ -68,11 +82,9 @@ router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:userId/:guildId', validateParams(userGuildParamSchema), async (req, res) => {
-    const { userId, guildId } = req.params;
-    const birthday = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
-    if (!birthday) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
-    const access = await checkUserGuildAccess(req, res, guildId as string);
-    if (!access.authorized) return;
+    const { userId, guildId } = req.params as z.infer<typeof userGuildParamSchema>;
+    const birthday = await getAuthorizedBirthday(req, res, userId, guildId);
+    if (!birthday) return;
     res.json(birthday);
 });
 
@@ -151,12 +163,9 @@ router.post('/', jwtAuth, validateBody(birthdayCreateRequestSchema), requireGuil
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), validateBody(birthdayUpdateRequestSchema), async (req, res) => {
-    const { userId, guildId } = req.params;
-    const existing = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
-    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
-
-    const access = await checkUserGuildAccess(req, res, guildId as string);
-    if (!access.authorized) return;
+    const { userId, guildId } = req.params as z.infer<typeof userGuildParamSchema>;
+    const existing = await getAuthorizedBirthday(req, res, userId, guildId);
+    if (!existing) return;
 
     const [affectedCount, rows] = await getConfigManager().birthdayManager.updatePlain(req.body, { userId, guildId });
     if (affectedCount === 0) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
@@ -205,11 +214,9 @@ router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), v
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), async (req, res) => {
-    const { userId, guildId } = req.params;
-    const existing = await getConfigManager().birthdayManager.getBirthday(userId as string, guildId as string);
-    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
-    const access = await checkUserGuildAccess(req, res, guildId as string);
-    if (!access.authorized) return;
+    const { userId, guildId } = req.params as z.infer<typeof userGuildParamSchema>;
+    const existing = await getAuthorizedBirthday(req, res, userId, guildId);
+    if (!existing) return;
     await getConfigManager().birthdayManager.removeBirthday(userId as string, guildId as string);
     await recordAuditEvent(req, {
         action: 'birthday.delete',

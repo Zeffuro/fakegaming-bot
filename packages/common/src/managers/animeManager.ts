@@ -1,4 +1,4 @@
-import { type CreationAttributes } from 'sequelize';
+import { type Attributes, type CreationAttributes, type WhereOptions } from 'sequelize';
 import { BaseManager } from './baseManager.js';
 import { AnimeTitle } from '../models/anime-title.js';
 import { AnimeSubscriptionConfig } from '../models/anime-subscription-config.js';
@@ -54,9 +54,18 @@ export class AnimeSubscriptionManager extends BaseManager<AnimeSubscriptionConfi
         super(AnimeSubscriptionConfig);
     }
 
-    async subscribeUser(args: { anilistId: number; userId: string; reminderMinutes?: number }): Promise<boolean> {
-        const where = { anilistId: args.anilistId, targetType: 'dm', userId: args.userId };
-        const existing = await this.getOnePlain(where);
+    private async subscribeTarget(args: {
+        anilistId: number;
+        reminderMinutes?: number;
+        target: {
+            targetType: 'dm' | 'channel';
+            userId: string | null;
+            guildId: string | null;
+            channelId: string | null;
+        };
+        where: WhereOptions<Attributes<AnimeSubscriptionConfig>>;
+    }): Promise<boolean> {
+        const existing = await this.getOnePlain(args.where);
         if (existing) {
             await this.updatePlain({
                 ...existing,
@@ -64,12 +73,10 @@ export class AnimeSubscriptionManager extends BaseManager<AnimeSubscriptionConfi
             } as CreationAttributes<AnimeSubscriptionConfig>, { id: existing.id });
             return false;
         }
+
         await this.addPlain({
             anilistId: args.anilistId,
-            targetType: 'dm',
-            userId: args.userId,
-            guildId: null,
-            channelId: null,
+            ...args.target,
             reminderMinutes: args.reminderMinutes ?? 30,
             lastNotifiedEpisode: null,
             lastNotifiedAiringAt: null,
@@ -77,32 +84,37 @@ export class AnimeSubscriptionManager extends BaseManager<AnimeSubscriptionConfi
         return true;
     }
 
+    async subscribeUser(args: { anilistId: number; userId: string; reminderMinutes?: number }): Promise<boolean> {
+        return this.subscribeTarget({
+            anilistId: args.anilistId,
+            reminderMinutes: args.reminderMinutes,
+            target: {
+                targetType: 'dm',
+                userId: args.userId,
+                guildId: null,
+                channelId: null,
+            },
+            where: { anilistId: args.anilistId, targetType: 'dm', userId: args.userId },
+        });
+    }
+
     async subscribeChannel(args: { anilistId: number; guildId: string; channelId: string; reminderMinutes?: number }): Promise<boolean> {
-        const where = {
+        return this.subscribeTarget({
             anilistId: args.anilistId,
-            targetType: 'channel',
-            guildId: args.guildId,
-            channelId: args.channelId,
-        };
-        const existing = await this.getOnePlain(where);
-        if (existing) {
-            await this.updatePlain({
-                ...existing,
-                reminderMinutes: args.reminderMinutes ?? existing.reminderMinutes ?? 30,
-            } as CreationAttributes<AnimeSubscriptionConfig>, { id: existing.id });
-            return false;
-        }
-        await this.addPlain({
-            anilistId: args.anilistId,
-            targetType: 'channel',
-            userId: null,
-            guildId: args.guildId,
-            channelId: args.channelId,
-            reminderMinutes: args.reminderMinutes ?? 30,
-            lastNotifiedEpisode: null,
-            lastNotifiedAiringAt: null,
-        } as CreationAttributes<AnimeSubscriptionConfig>);
-        return true;
+            reminderMinutes: args.reminderMinutes,
+            target: {
+                targetType: 'channel',
+                userId: null,
+                guildId: args.guildId,
+                channelId: args.channelId,
+            },
+            where: {
+                anilistId: args.anilistId,
+                targetType: 'channel',
+                guildId: args.guildId,
+                channelId: args.channelId,
+            },
+        });
     }
 
     async getUserSubscriptions(userId: string): Promise<CreationAttributes<AnimeSubscriptionConfig>[]> {

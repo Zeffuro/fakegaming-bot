@@ -7,15 +7,14 @@ import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { existsQuerySchema, idParamSchema, profileQuerySchema } from './bluesky.schemas.js';
 import { fetchBlueskyProfile, normalizeBlueskyHandle } from '../jobs/bluesky.js';
-import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canReadGuildScopedRecord,
-    canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
     sendGuildScopedRecords,
-    sendNotFound,
+    updateGuildScopedRecord,
     updatedChannelAuditMetadata,
+    upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { optionalGuildListQuerySchema } from './sharedSchemas.js';
 
@@ -152,12 +151,11 @@ router.get('/profile', validateQuery(profileQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
-    if (!config) return sendNotFound(res, 'Bluesky post config not found');
-    const hasAccess = await canReadGuildScopedRecord(req, res, config);
-    if (!hasAccess) return;
-    res.json(config);
+    const manager = getConfigManager().blueskyManager;
+    await sendGuildScopedRecordById(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'Bluesky post config not found',
+    });
 });
 
 /**
@@ -203,15 +201,16 @@ router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuild
     if (!blueskyHandle) {
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
     }
-    const created = await getConfigManager().blueskyManager.upsert({ ...body, blueskyHandle }, ['guildId', 'blueskyHandle']);
-    await recordAuditEvent(req, {
-        action: created ? 'bluesky.create' : 'bluesky.update',
+    const normalizedBody = { ...body, blueskyHandle };
+    const manager = getConfigManager().blueskyManager;
+    await upsertGuildScopedRecord(req, res, normalizedBody, {
+        upsert: data => manager.upsert(data, ['guildId', 'blueskyHandle']),
+        createAction: 'bluesky.create',
+        updateAction: 'bluesky.update',
         targetType: 'blueskyConfig',
-        targetId: blueskyHandle,
-        guildId: body.guildId,
-        metadata: channelAuditMetadata(body),
+        targetId: data => data.blueskyHandle,
+        metadata: data => channelAuditMetadata(data),
     });
-    res.status(created ? 201 : 200).json({ success: true });
 });
 
 /**
@@ -243,26 +242,21 @@ router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuild
  *               $ref: '#/components/schemas/BlueskyPostConfig'
  */
 router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyUpdateRequestSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const config = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
-    if (!config) return sendNotFound(res, 'Bluesky post config not found');
     const body = req.body as z.infer<typeof blueskyUpdateRequestSchema>;
-    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, config, body);
-    if (!hasAccess) return;
     const normalized = typeof body.blueskyHandle === 'string' ? normalizeBlueskyHandle(body.blueskyHandle) : undefined;
     if (typeof body.blueskyHandle === 'string' && !normalized) {
         return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
     }
-    await getConfigManager().blueskyManager.updatePlain({ ...body, ...(normalized ? { blueskyHandle: normalized } : {}) }, { id: Number(id) });
-    const updated = await getConfigManager().blueskyManager.findByPkPlain(Number(id));
-    await recordAuditEvent(req, {
-        action: 'bluesky.update',
-        targetType: 'blueskyConfig',
-        targetId: id,
-        guildId: updated.guildId ?? config.guildId ?? null,
-        metadata: updatedChannelAuditMetadata(updated, config),
+    const normalizedBody = { ...body, ...(normalized ? { blueskyHandle: normalized } : {}) };
+    const manager = getConfigManager().blueskyManager;
+    await updateGuildScopedRecord(req, res, Number(req.params.id), normalizedBody, {
+        findByPk: id => manager.findByPkPlain(id),
+        update: (id, data) => manager.updatePlain(data, { id }),
+        notFoundMessage: 'Bluesky post config not found',
+        auditAction: 'bluesky.update',
+        auditTargetType: 'blueskyConfig',
+        auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
     });
-    res.json(updated);
 });
 
 /**

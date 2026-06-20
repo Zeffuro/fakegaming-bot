@@ -2,12 +2,12 @@ import Parser from 'rss-parser';
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
-import { sendChannelMessagePayload } from '../utils/discord.js';
-import { recordJobRun } from './status.js';
 import { fetchYouTubeChannelPageLatestVideo, getHttpStatusFromError } from '../utils/youtubePublic.js';
 import { getNotificationSuppression } from './notificationSuppression.js';
+import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
+import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
+import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
+import { registerRecurringPollingJob } from './recurringPollingJob.js';
 
 interface YoutubeChannelConfigPlain {
     id?: number | string;
@@ -189,19 +189,24 @@ function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, deta
         duration: details?.duration ? (formatYoutubeDuration(details.duration) ?? '') : '',
         views: details?.viewCount ?? ''
     };
-    let content = `Hey @everyone, new video from ${author}: ${urlSafe}`;
-    if (customMessage) {
-        const tmpl = String(customMessage);
-        content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
-    }
-    return { content, payload: { content, embeds: [embed], components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Watch Video', url }] }] } };
+    return buildDiscordNotificationPayload({
+        defaultContent: `Hey @everyone, new video from ${author}: ${urlSafe}`,
+        embed,
+        buttonLabel: 'Watch Video',
+        buttonUrl: url,
+        tokens,
+        customMessage,
+        urlToken: urlSafe,
+    });
 }
 
 async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' })): Promise<{ processed: number; errors: number }> {
     const cm = getConfigManager();
-    const manager = cm.youtubeManager as unknown as { getAllChannels: () => Promise<YoutubeChannelConfigPlain[]> };
-    const notifications = cm.notificationsManager as unknown as { has: (p: string, id: string) => Promise<boolean>; recordIfNew: (x: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<void> };
+    const manager = cm.youtubeManager as unknown as {
+        getAllChannels: () => Promise<YoutubeChannelConfigPlain[]>;
+        upsert?: (item: YoutubeChannelConfigPlain, fields: string[]) => Promise<unknown>;
+    };
+    const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
     const channels = await manager.getAllChannels();
     if (!channels.length) return { processed: 0, errors: 0 };
@@ -242,8 +247,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                     const videoId = video['yt:videoId'];
                     if (!videoId) continue;
                     // Use per-guild deduplication so the same YouTube video can be announced in multiple guilds
-                    const already = await (notifications as any).hasForGuild?.('youtube', videoId, cfg.guildId)
-                        ?? await notifications.has('youtube', videoId);
+                    const already = await hasRecordedJobNotification(notifications, 'youtube', videoId, cfg.guildId);
                     if (already || suppression.shouldSuppress) {
                         log.debug({
                             videoId,
@@ -276,17 +280,23 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 if (!videoId) continue;
                 const details = detailsById.get(videoId) ?? null;
                 const built = buildYoutubeEmbedPayload(video, channelId, details, cfg.customMessage ?? null);
-                const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
-                if (sent && typeof (sent as any).id === 'string') {
+                const sent = await sendJobNotification({
+                    manager: notifications,
+                    provider: 'youtube',
+                    eventId: videoId,
+                    channelId: cfg.discordChannelId,
+                    guildId: cfg.guildId,
+                    payload: built.payload,
+                });
+                if (sent) {
                     sentAny = true;
-                    await notifications.recordIfNew({ provider: 'youtube', eventId: videoId, channelId: cfg.discordChannelId, guildId: cfg.guildId });
                     processed += 1;
                 }
             }
 
             cfg.lastVideoId = newVideos.at(-1)?.['yt:videoId'] ?? cfg.lastVideoId ?? null;
             if (sentAny) cfg.lastNotifiedAt = now;
-            await (cm.youtubeManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
+            await upsertOrSaveJobConfig(manager, cfg);
         } catch (err) {
             errors += 1;
             log.error({ err, youtubeChannelId: cfg.youtubeChannelId }, 'Error processing YouTube channel');
@@ -303,26 +313,15 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
 export async function registerYouTubeJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
     const log = getLogger({ name: 'api:jobs:youtube' });
 
-    queue.on('youtube:poll', async (job) => {
-        const startedAt = new Date().toISOString();
-        try {
-            const { processed, errors } = await processYoutubePoll(log);
-            const delaySec = 300;
-            const nextAt = new Date(Date.now() + delaySec * 1000);
-            const key = `youtube:next:${formatMinuteKey(nextAt)}`;
-            await scheduleSingleton(queue, 'youtube:poll', {}, delaySec, key);
-            recordJobRun('youtube', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
-        } catch (err) {
-            recordJobRun('youtube', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
-        } finally {
-            await job.done();
-        }
+    await registerRecurringPollingJob({
+        queue,
+        provider: 'youtube',
+        jobName: 'youtube:poll',
+        intervalSeconds: 300,
+        initialDelaySeconds: 5,
+        now,
+        run: () => processYoutubePoll(log),
     });
-
-    // Schedule initial and immediate run
-    const initDelay = 5; // seconds
-    await scheduleSingleton(queue, 'youtube:poll', {}, initDelay, `youtube:init:${formatMinuteKey(new Date(now.getTime() + initDelay * 1000))}`);
-    await scheduleSingleton(queue, 'youtube:poll', {}, 0, `youtube:catchup:${formatMinuteKey(now)}`);
 
     log.info('Scheduled YouTube polling job');
 }

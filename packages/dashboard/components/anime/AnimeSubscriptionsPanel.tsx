@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Delete } from "@mui/icons-material";
-import { Box, Button, Card, CardActions, CardContent, Chip, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Card, CardActions, CardContent, Chip, Paper, Stack, Typography, type SxProps, type Theme } from "@mui/material";
 import { dangerButtonSx, elevatedPanelSx } from "@/components/anime/animeTheme";
 import { subscriptionMeta, subscriptionTitle } from "@/components/anime/animeUtils";
 import type { AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
@@ -56,62 +56,76 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+interface SubscriptionSectionProps {
+  title: string;
+  count: number;
+  chipSx: SxProps<Theme>;
+  emptyMessage: string;
+  description?: string;
+  children: React.ReactNode;
+}
+
+function SubscriptionSection({ title, count, chipSx, emptyMessage, description, children }: SubscriptionSectionProps) {
+  return (
+    <Paper sx={{ ...elevatedPanelSx, p: 3 }}>
+      <Stack spacing={2} sx={{ position: "relative" }}>
+        <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+          <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
+            {title}
+          </Typography>
+          <Chip label={count} sx={chipSx} />
+        </Stack>
+        {description && (
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
+            {description}
+          </Typography>
+        )}
+        {count === 0 ? <EmptyState>{emptyMessage}</EmptyState> : children}
+      </Stack>
+    </Paper>
+  );
+}
+
 export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getChannelName, onDelete }: AnimeSubscriptionsPanelProps) {
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 3fr) minmax(320px, 2fr)" }, gap: 3 }}>
-      <Paper sx={{ ...elevatedPanelSx, p: 3 }}>
-        <Stack spacing={2} sx={{ position: "relative" }}>
-          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", gap: 2 }}>
-            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
-              Server Channel Subscriptions
-            </Typography>
-            <Chip label={serverSubs.length} sx={{ bgcolor: "rgba(104,215,255,0.14)", color: "grey.50" }} />
-          </Stack>
-          {serverSubs.length === 0 ? (
-            <EmptyState>No server channel anime subscriptions configured.</EmptyState>
-          ) : (
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
-              {serverSubs.map((config) => (
-                <SubscriptionCard
-                  key={config.id ?? `${config.anilistId}-${config.channelId}`}
-                  config={config}
-                  saving={saving}
-                  channelName={getChannelName(config.discordChannelId)}
-                  onDelete={onDelete}
-                />
-              ))}
-            </Box>
-          )}
-        </Stack>
-      </Paper>
+      <SubscriptionSection
+        title="Server Channel Subscriptions"
+        count={serverSubs.length}
+        chipSx={{ bgcolor: "rgba(104,215,255,0.14)", color: "grey.50" }}
+        emptyMessage="No server channel anime subscriptions configured."
+      >
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
+          {serverSubs.map((config) => (
+            <SubscriptionCard
+              key={config.id ?? `${config.anilistId}-${config.channelId}`}
+              config={config}
+              saving={saving}
+              channelName={getChannelName(config.discordChannelId)}
+              onDelete={onDelete}
+            />
+          ))}
+        </Box>
+      </SubscriptionSection>
 
-      <Paper sx={{ ...elevatedPanelSx, p: 3 }}>
-        <Stack spacing={2} sx={{ position: "relative" }}>
-          <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", gap: 2 }}>
-            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
-              Your DM Subscriptions
-            </Typography>
-            <Chip label={personalSubs.length} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50" }} />
-          </Stack>
-          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
-            Personal `/anime subscribe` reminders are listed here so they are not invisible from the dashboard.
-          </Typography>
-          {personalSubs.length === 0 ? (
-            <EmptyState>No personal anime subscriptions.</EmptyState>
-          ) : (
-            <Stack spacing={1.5}>
-              {personalSubs.map((config) => (
-                <SubscriptionCard
-                  key={config.id ?? config.anilistId}
-                  config={config}
-                  saving={saving}
-                  onDelete={onDelete}
-                />
-              ))}
-            </Stack>
-          )}
+      <SubscriptionSection
+        title="Your DM Subscriptions"
+        count={personalSubs.length}
+        chipSx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50" }}
+        emptyMessage="No personal anime subscriptions."
+        description="Personal `/anime subscribe` reminders are listed here so they are not invisible from the dashboard."
+      >
+        <Stack spacing={1.5}>
+          {personalSubs.map((config) => (
+            <SubscriptionCard
+              key={config.id ?? config.anilistId}
+              config={config}
+              saving={saving}
+              onDelete={onDelete}
+            />
+          ))}
         </Stack>
-      </Paper>
+      </SubscriptionSection>
     </Box>
   );
 }

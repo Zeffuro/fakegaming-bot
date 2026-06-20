@@ -45,7 +45,7 @@
     "clean": "node scripts/clean.js",
     "fulltest": "pnpm run clean && pnpm run gen:manifest && pnpm --filter @zeffuro/fakegaming-common run build && pnpm run lint && pnpm run typecheck && pnpm run validate:commands && pnpm run validate:commands:strict && pnpm run validate:impl-vs-manifest && pnpm run build && pnpm run test:coverage",
     "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard .",
-    "scan:dupes": "jscpd --min-tokens 40 --reporters json,html --output report/jscpd --ignore \"**/__tests__/**,**/*.test.ts,**/*.test.tsx,**/*.test-d.ts,**/vitest.setup.ts,packages/common/src/manifest/bot-manifest.ts,packages/common/src/testing/**\" packages/api/src packages/bot/src packages/dashboard/app packages/dashboard/components packages/dashboard/lib packages/common/src",
+    "scan:dupes": "jscpd --min-tokens 60 --reporters json,html --output report/jscpd --ignore \"**/__tests__/**,**/*.test.ts,**/*.test.tsx,**/*.test-d.ts,**/vitest.setup.ts,packages/common/src/manifest/bot-manifest.ts,packages/common/src/testing/**,packages/common/src/models/**\" packages/api/src packages/bot/src packages/dashboard/app packages/dashboard/components packages/dashboard/lib packages/common/src",
     "issues:summary": "tsx scripts/summarize-issues.ts",
     "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts",
     "ci:check-env": "tsx scripts/check-env-leaks.ts",

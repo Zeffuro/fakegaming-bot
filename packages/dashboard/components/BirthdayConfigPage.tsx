@@ -22,6 +22,7 @@ import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeatureNav } from "@/components/dashboard/FeatureNav";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, dashboardCardSx, dashboardFieldSx, dangerActionButtonSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useBirthdays, type BirthdayFormData, type ResolvedUser } from "@/components/hooks/useBirthdays";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
@@ -203,13 +204,7 @@ export default function BirthdayConfigPage() {
   ] : null;
 
   if (!guild && !guildsLoading) {
-    return (
-      <DashboardLayout>
-        <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
-          Guild not found or you don't have access to this guild.
-        </Alert>
-      </DashboardLayout>
-    );
+    return <GuildAccessError />;
   }
 
   return (

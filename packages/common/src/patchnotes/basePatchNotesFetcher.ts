@@ -94,6 +94,14 @@ export abstract class BasePatchNotesFetcher<RawPatchNote = unknown> {
         return null;
     }
 
+    protected async fetchUrlText(url: string): Promise<string | null> {
+        const f: ((u: string) => Promise<Response>) | undefined = (globalThis as { fetch?: (u: string) => Promise<Response> }).fetch;
+        if (!f) return null;
+
+        const res = await f(url);
+        return await res.text();
+    }
+
     /**
      * Fetch the latest patch note, optionally comparing to a stored version.
      */

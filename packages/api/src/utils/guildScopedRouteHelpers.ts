@@ -12,13 +12,31 @@ interface DiscordChannelRecord extends GuildScopedRecord {
     discordChannelId?: string | null;
 }
 
-interface DeleteGuildScopedRecordOptions<T extends GuildScopedRecord> {
-    findByPk: (id: number) => Promise<T | null>;
-    removeByPk: (id: number) => Promise<void>;
+interface DeleteGuildScopedRecordOptions<T extends GuildScopedRecord, TId extends string | number> {
+    findByPk: (id: TId) => Promise<T | null>;
+    removeByPk: (id: TId) => Promise<void>;
     notFoundMessage: string;
     auditAction: string;
     auditTargetType: string;
     auditMetadata: (record: T) => Record<string, unknown>;
+}
+
+interface UpdateGuildScopedRecordOptions<TRecord extends GuildScopedRecord, TBody extends Record<string, unknown>> {
+    findByPk: (id: number) => Promise<TRecord | null>;
+    update: (id: number, body: TBody) => Promise<unknown>;
+    notFoundMessage: string;
+    auditAction: string;
+    auditTargetType: string;
+    auditMetadata: (updated: TRecord, previous: TRecord) => Record<string, unknown>;
+}
+
+interface UpsertGuildScopedRecordOptions<TBody extends GuildScopedRecord & Record<string, unknown>> {
+    upsert: (body: TBody) => Promise<boolean>;
+    createAction: string;
+    updateAction: string;
+    targetType: string;
+    targetId: (body: TBody) => string | number | null;
+    metadata: (body: TBody) => Record<string, unknown>;
 }
 
 export function sendNotFound(res: Response, message: string): Response {
@@ -34,6 +52,26 @@ export async function sendGuildScopedRecords<T extends GuildScopedRecord>(
     const visibleRecords = await filterGuildScopedRecordsForRequest(req, res, records, guildId);
     if (!visibleRecords) return;
     res.json(visibleRecords);
+}
+
+export async function sendGuildScopedRecordById<T extends GuildScopedRecord, TId extends string | number>(
+    req: Request,
+    res: Response,
+    id: TId,
+    options: {
+        findByPk: (id: TId) => Promise<T | null>;
+        notFoundMessage: string;
+    }
+): Promise<void> {
+    const record = await options.findByPk(id);
+    if (!record) {
+        sendNotFound(res, options.notFoundMessage);
+        return;
+    }
+
+    const hasAccess = await canReadGuildScopedRecord(req, res, record);
+    if (!hasAccess) return;
+    res.json(record);
 }
 
 export async function canReadGuildScopedRecord<T extends GuildScopedRecord>(
@@ -63,11 +101,11 @@ export async function canDeleteGuildScopedRecord<T extends GuildScopedRecord>(
     return access.authorized;
 }
 
-export async function deleteGuildScopedRecord<T extends GuildScopedRecord>(
+export async function deleteGuildScopedRecord<T extends GuildScopedRecord, TId extends string | number>(
     req: Request,
     res: Response,
-    id: number,
-    options: DeleteGuildScopedRecordOptions<T>
+    id: TId,
+    options: DeleteGuildScopedRecordOptions<T, TId>
 ): Promise<void> {
     const record = await options.findByPk(id);
     if (!record) {
@@ -87,6 +125,56 @@ export async function deleteGuildScopedRecord<T extends GuildScopedRecord>(
         metadata: options.auditMetadata(record),
     });
     res.json({ success: true });
+}
+
+export async function updateGuildScopedRecord<TRecord extends GuildScopedRecord, TBody extends Record<string, unknown>>(
+    req: Request,
+    res: Response,
+    id: number,
+    body: TBody,
+    options: UpdateGuildScopedRecordOptions<TRecord, TBody>
+): Promise<void> {
+    const previous = await options.findByPk(id);
+    if (!previous) {
+        sendNotFound(res, options.notFoundMessage);
+        return;
+    }
+
+    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, previous, body);
+    if (!hasAccess) return;
+
+    await options.update(id, body);
+    const updated = await options.findByPk(id);
+    if (!updated) {
+        sendNotFound(res, options.notFoundMessage);
+        return;
+    }
+
+    await recordAuditEvent(req, {
+        action: options.auditAction,
+        targetType: options.auditTargetType,
+        targetId: id,
+        guildId: updated.guildId ?? previous.guildId ?? null,
+        metadata: options.auditMetadata(updated, previous),
+    });
+    res.json(updated);
+}
+
+export async function upsertGuildScopedRecord<TBody extends GuildScopedRecord & Record<string, unknown>>(
+    req: Request,
+    res: Response,
+    body: TBody,
+    options: UpsertGuildScopedRecordOptions<TBody>
+): Promise<void> {
+    const created = await options.upsert(body);
+    await recordAuditEvent(req, {
+        action: created ? options.createAction : options.updateAction,
+        targetType: options.targetType,
+        targetId: options.targetId(body),
+        guildId: body.guildId ?? null,
+        metadata: options.metadata(body),
+    });
+    res.status(created ? 201 : 200).json({ success: true });
 }
 
 export function channelAuditMetadata(record: DiscordChannelRecord, extra: Record<string, unknown> = {}): Record<string, unknown> {

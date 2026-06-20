@@ -1,7 +1,7 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
+import { checkUserGuildAccess } from '../utils/authHelpers.js';
 import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { quoteCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { QuoteConfig } from '@zeffuro/fakegaming-common/models';
@@ -11,6 +11,11 @@ import type { CreationAttributes } from 'sequelize';
 import { randomUUID } from 'node:crypto';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import {
+    deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
+    sendGuildScopedRecords,
+} from '../utils/guildScopedRouteHelpers.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
@@ -49,9 +54,7 @@ const router = createBaseRouter();
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const quotes = await getConfigManager().quoteManager.getAllPlain();
-    const visibleQuotes = await filterGuildScopedRecordsForRequest(req, res, quotes, guildId);
-    if (!visibleQuotes) return;
-    res.json(visibleQuotes);
+    await sendGuildScopedRecords(req, res, quotes, guildId);
 });
 
 /**
@@ -193,13 +196,11 @@ router.get('/guild/:guildId/author/:authorId', jwtAuth, validateParams(guildAuth
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
-    if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
-    const hasAccess = await filterGuildScopedRecordsForRequest(req, res, [quote], quote.guildId);
-    if (!hasAccess) return;
-    if (hasAccess.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
-    res.json(quote);
+    const manager = getConfigManager().quoteManager;
+    await sendGuildScopedRecordById(req, res, String(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'Quote not found',
+    });
 });
 
 /**
@@ -291,23 +292,17 @@ router.post('/', jwtAuth, validateBody(quoteCreateRequestSchema), async (req, re
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
-    const quote = await getConfigManager().quoteManager.findByPkPlain(id as string);
-    if (!quote) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Quote not found' } });
-    if (quote.guildId) {
-        const accessResult = await checkUserGuildAccess(req, res, quote.guildId);
-        if (!accessResult.authorized) return;
-    }
-    await getConfigManager().quoteManager.removeByPk(id as string);
-    await recordAuditEvent(req, {
-        action: 'quote.delete',
-        targetType: 'quote',
-        targetId: id,
-        guildId: quote.guildId ?? null,
-        metadata: {
+    const manager = getConfigManager().quoteManager;
+    await deleteGuildScopedRecord(req, res, id, {
+        findByPk: id => manager.findByPkPlain(id),
+        removeByPk: id => manager.removeByPk(id),
+        notFoundMessage: 'Quote not found',
+        auditAction: 'quote.delete',
+        auditTargetType: 'quote',
+        auditMetadata: quote => ({
             authorId: quote.authorId,
-        },
+        }),
     });
-    res.json({ success: true });
 });
 
 export { router };

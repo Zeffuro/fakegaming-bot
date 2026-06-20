@@ -1,13 +1,14 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Alert, Box, Button } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { AlternateEmail, AutoStories, Cake, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
@@ -34,13 +35,7 @@ export default function GuildNotificationsHubPage() {
     const encodedGuildId = encodeURIComponent(guildId as string);
 
     if (!guild && !guildsLoading) {
-        return (
-            <DashboardLayout>
-                <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
-                    Guild not found or you don't have access to this guild.
-                </Alert>
-            </DashboardLayout>
-        );
+        return <GuildAccessError />;
     }
 
     const cards = [

@@ -1,13 +1,11 @@
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
-import { sendChannelMessagePayload } from '../utils/discord.js';
-import { recordJobRun } from './status.js';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
-import { getNotificationSuppression } from './notificationSuppression.js';
+import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
+import { syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
+import { registerRecurringPollingJob } from './recurringPollingJob.js';
 
 interface TikTokStreamConfigPlain {
     id?: number | string;
@@ -145,20 +143,24 @@ function buildTikTokEmbedAndContent(opts: { username: string; info: TikTokLiveIn
         uptime: uptimeStr || '',
         viewers: typeof info.viewers === 'number' ? String(info.viewers) : ''
     };
-    let content = `Hey @everyone, ${username} is now live! ${urlSafe}`;
-    if (opts.customMessage) {
-        const tmpl = String(opts.customMessage);
-        content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
-    }
-
-    return { content, payload: { content, embeds: [embed], components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Watch Stream', url }] }] } };
+    return buildDiscordNotificationPayload({
+        defaultContent: `Hey @everyone, ${username} is now live! ${urlSafe}`,
+        embed,
+        buttonLabel: 'Watch Stream',
+        buttonUrl: url,
+        tokens,
+        customMessage: opts.customMessage,
+        urlToken: urlSafe,
+    });
 }
 
 async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({ name: 'api:jobs:tiktok' })): Promise<{ processed: number; errors: number }> {
     const cm = getConfigManager();
-    const manager = cm.tiktokManager as unknown as { getAllStreams: () => Promise<TikTokStreamConfigPlain[]> };
-    const notifications = cm.notificationsManager as unknown as { has: (p: string, id: string) => Promise<boolean>; recordIfNew: (x: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<void> };
+    const manager = cm.tiktokManager as unknown as {
+        getAllStreams: () => Promise<TikTokStreamConfigPlain[]>;
+        upsert?: (item: TikTokStreamConfigPlain, fields: string[]) => Promise<unknown>;
+    };
+    const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
     const streams = await manager.getAllStreams();
     if (!streams.length) return { processed: 0, errors: 0 };
@@ -190,27 +192,21 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
             const info = liveInfoByUsername.get(username);
             if (!info) continue;
             const isLive = info.live;
+            const now = new Date();
+            const eventId = isLive ? String(info.roomId ?? `${cfg.tiktokUsername}:${Math.floor(now.getTime()/60000)}`) : '';
 
-            if (isLive && !cfg.isLive) {
-                const now = new Date();
-                const eventId = String(info.roomId ?? `${cfg.tiktokUsername}:${Math.floor(now.getTime()/60000)}`);
-                const already = await (notifications as any).hasForGuild?.('tiktok', eventId, cfg.guildId)
-                    ?? await notifications.has('tiktok', eventId);
-                const suppression = getNotificationSuppression(cfg, now);
-                if (!already && !suppression.shouldSuppress) {
-                    const built = buildTikTokEmbedAndContent({ username: cfg.tiktokUsername, info, customMessage: cfg.customMessage ?? null });
-                    const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
-                    if (sent && typeof (sent as any).id === 'string') {
-                        (cfg as any).lastNotifiedAt = now;
-                        processed += 1;
-                        await notifications.recordIfNew({ provider: 'tiktok', eventId, channelId: cfg.discordChannelId, guildId: cfg.guildId });
-                    }
-                }
-                (cfg as any).isLive = true;
-                await (cm.tiktokManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
-            } else if (!isLive && cfg.isLive) {
-                (cfg as any).isLive = false;
-                await (cm.tiktokManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
+            const sent = await syncLiveNotificationState({
+                config: cfg,
+                manager,
+                notifications,
+                provider: 'tiktok',
+                eventId,
+                isLive,
+                now,
+                buildPayload: () => buildTikTokEmbedAndContent({ username: cfg.tiktokUsername, info, customMessage: cfg.customMessage ?? null }).payload,
+            });
+            if (sent) {
+                processed += 1;
             }
         } catch (err) {
             errors += 1;
@@ -224,25 +220,15 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
 export async function registerTikTokJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
     const log = getLogger({ name: 'api:jobs:tiktok' });
 
-    queue.on('tiktok:poll', async (job) => {
-        const startedAt = new Date().toISOString();
-        try {
-            const { processed, errors } = await processTikTokPoll(log);
-            const delaySec = 900; // 15 minutes
-            const nextAt = new Date(Date.now() + delaySec * 1000);
-            const key = `tiktok:next:${formatMinuteKey(nextAt)}`;
-            await scheduleSingleton(queue, 'tiktok:poll', {}, delaySec, key);
-            recordJobRun('tiktok', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
-        } catch (err) {
-            recordJobRun('tiktok', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
-        } finally {
-            await job.done();
-        }
+    await registerRecurringPollingJob({
+        queue,
+        provider: 'tiktok',
+        jobName: 'tiktok:poll',
+        intervalSeconds: 900,
+        initialDelaySeconds: 7,
+        now,
+        run: () => processTikTokPoll(log),
     });
-
-    const initDelay = 7;
-    await scheduleSingleton(queue, 'tiktok:poll', {}, initDelay, `tiktok:init:${formatMinuteKey(new Date(now.getTime() + initDelay * 1000))}`);
-    await scheduleSingleton(queue, 'tiktok:poll', {}, 0, `tiktok:catchup:${formatMinuteKey(now)}`);
 
     log.info('Scheduled TikTok polling job');
 }

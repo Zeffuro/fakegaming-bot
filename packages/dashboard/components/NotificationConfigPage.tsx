@@ -47,6 +47,23 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     allowEdit?: boolean;
 }
 
+export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
+    NotificationConfigPageProps<T>,
+    | "moduleTitle"
+    | "moduleIcon"
+    | "moduleColor"
+    | "moduleName"
+    | "channelNameField"
+    | "channelNameLabel"
+    | "channelNamePlaceholder"
+    | "renderChip"
+    | "itemSingularLabel"
+    | "itemPluralLabel"
+    | "showCustomMessage"
+    | "itemNameOptions"
+    | "allowEdit"
+>;
+
 function moduleDescription(moduleName: string, plural: string): string {
     if (moduleName === "Twitch") return "Track live streams, route announcements to the right channel, and tune cooldowns or quiet hours.";
     if (moduleName === "TikTok") return "Track creators going live and keep noisy alerts under control with per-channel notification settings.";

@@ -1,12 +1,10 @@
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
-import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
 import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
-import { sendChannelMessagePayload } from '../utils/discord.js';
-import { recordJobRun } from './status.js';
-import { getNotificationSuppression } from './notificationSuppression.js';
+import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
+import { syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
+import { registerRecurringPollingJob } from './recurringPollingJob.js';
 
 interface TwitchStreamConfigPlain {
     id?: number | string;
@@ -169,20 +167,24 @@ function buildTwitchEmbedAndContent(opts: { user: HelixUser; stream: HelixStream
         uptime: uptimeStr || '',
         viewers: typeof stream.viewer_count === 'number' ? String(stream.viewer_count) : ''
     };
-    let content = `Hey @everyone, ${user.display_name || user.login} is now live! ${urlSafe}`;
-    if (opts.customMessage) {
-        const tmpl = String(opts.customMessage);
-        content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
-    }
-
-    return { content, payload: { content, embeds: [embed], components: [{ type: 1, components: [{ type: 2, style: 5, label: 'Watch Stream', url }] }] } };
+    return buildDiscordNotificationPayload({
+        defaultContent: `Hey @everyone, ${user.display_name || user.login} is now live! ${urlSafe}`,
+        embed,
+        buttonLabel: 'Watch Stream',
+        buttonUrl: url,
+        tokens,
+        customMessage: opts.customMessage,
+        urlToken: urlSafe,
+    });
 }
 
 async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): Promise<{ processed: number; errors: number }> {
     const cm = getConfigManager();
-    const manager = cm.twitchManager as unknown as { getAllStreams: () => Promise<TwitchStreamConfigPlain[]> };
-    const notifications = cm.notificationsManager as unknown as { has: (p: string, id: string) => Promise<boolean>; recordIfNew: (x: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<void> };
+    const manager = cm.twitchManager as unknown as {
+        getAllStreams: () => Promise<TwitchStreamConfigPlain[]>;
+        upsert?: (item: TwitchStreamConfigPlain, fields: string[]) => Promise<unknown>;
+    };
+    const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
     const streams = await manager.getAllStreams();
     if (!streams.length) return { processed: 0, errors: 0 };
@@ -208,28 +210,21 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
             const stream = streamByUserId.get(userId) ?? null;
             const isLive = stream !== null && stream !== undefined;
 
-            if (isLive && !cfg.isLive) {
-                const now = new Date();
-                const eventId = String(stream!.id);
-                const already = await (notifications as any).hasForGuild?.('twitch', eventId, cfg.guildId)
-                    ?? await notifications.has('twitch', eventId);
-                const suppression = getNotificationSuppression(cfg, now);
-                if (!already && !suppression.shouldSuppress) {
+            const sent = await syncLiveNotificationState({
+                config: cfg,
+                manager,
+                notifications,
+                provider: 'twitch',
+                eventId: stream?.id ?? '',
+                isLive,
+                buildPayload: () => {
                     const user = users.find(u => u.id === userId)!;
                     const gameName = stream?.game_id ? (gameNameById.get(stream.game_id) ?? null) : null;
-                    const built = buildTwitchEmbedAndContent({ user, stream: stream!, gameName, customMessage: cfg.customMessage ?? null });
-                    const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
-                    if (sent && typeof (sent as any).id === 'string') {
-                        (cfg as any).lastNotifiedAt = now;
-                        processed += 1;
-                        await notifications.recordIfNew({ provider: 'twitch', eventId, channelId: cfg.discordChannelId, guildId: cfg.guildId });
-                    }
-                }
-                (cfg as any).isLive = true;
-                await (cm.twitchManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
-            } else if (!isLive && cfg.isLive) {
-                (cfg as any).isLive = false;
-                await (cm.twitchManager as any).upsert?.(cfg, ['id'])?.catch(async () => { await (cfg as any).save?.(); });
+                    return buildTwitchEmbedAndContent({ user, stream: stream!, gameName, customMessage: cfg.customMessage ?? null }).payload;
+                },
+            });
+            if (sent) {
+                processed += 1;
             }
         } catch (err) {
             errors += 1;
@@ -247,27 +242,18 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
 export async function registerTwitchJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
     const log = getLogger({ name: 'api:jobs:twitch' });
 
-    queue.on('twitch:poll', async (job) => {
-        const startedAt = new Date().toISOString();
-        try {
-            const { processed, errors } = await processTwitchPoll(log);
-            const delaySec = 60;
-            const nextAt = new Date(Date.now() + delaySec * 1000);
-            const key = `twitch:next:${formatMinuteKey(nextAt)}`;
-            await scheduleSingleton(queue, 'twitch:poll', {}, delaySec, key);
-            recordJobRun('twitch', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
-        } catch (err) {
-            recordJobRun('twitch', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
-        } finally {
-            await job.done();
-        }
-    });
-
     // Schedule initial and immediate run
     const startupJitter = getTwitchStartupJitterSeconds();
-    const initDelay = TWITCH_STARTUP_DEFAULT_DELAY_SECONDS + startupJitter;
-    await scheduleSingleton(queue, 'twitch:poll', {}, initDelay, `twitch:init:${formatMinuteKey(new Date(now.getTime() + initDelay * 1000))}`);
-    await scheduleSingleton(queue, 'twitch:poll', {}, startupJitter, `twitch:catchup:${formatMinuteKey(new Date(now.getTime() + startupJitter * 1000))}`);
+    await registerRecurringPollingJob({
+        queue,
+        provider: 'twitch',
+        jobName: 'twitch:poll',
+        intervalSeconds: 60,
+        initialDelaySeconds: TWITCH_STARTUP_DEFAULT_DELAY_SECONDS + startupJitter,
+        catchupDelaySeconds: startupJitter,
+        now,
+        run: () => processTwitchPoll(log),
+    });
 
     log.info('Scheduled Twitch polling job');
 }

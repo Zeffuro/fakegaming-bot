@@ -13,12 +13,11 @@ import { fetchYouTubeChannelPageMetadata } from '../utils/youtubePublic.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canReadGuildScopedRecord,
-    canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
     sendGuildScopedRecords,
-    sendNotFound,
+    updateGuildScopedRecord,
     updatedChannelAuditMetadata,
 } from '../utils/guildScopedRouteHelpers.js';
 import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
@@ -307,12 +306,11 @@ router.get('/channel', jwtAuth, validateQuery(youtubeChannelRequestSchema), asyn
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return sendNotFound(res, 'YouTube video config not found');
-    const hasAccess = await canReadGuildScopedRecord(req, res, video);
-    if (!hasAccess) return;
-    res.json(video);
+    const manager = getConfigManager().youtubeManager;
+    await sendGuildScopedRecordById(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'YouTube video config not found',
+    });
 });
 
 /**
@@ -517,23 +515,18 @@ router.put('/', jwtAuth, validateBody(youtubeChannelRequestSchema), requireGuild
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(youtubeUpdateRequestSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const video = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    if (!video) return sendNotFound(res, 'YouTube video config not found');
-    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, video, req.body);
-    if (!hasAccess) return;
-    await getConfigManager().youtubeManager.updatePlain(req.body, { id: Number(id) });
-    const updated = await getConfigManager().youtubeManager.findByPkPlain(Number(id));
-    await recordAuditEvent(req, {
-        action: 'youtube.update',
-        targetType: 'youtubeConfig',
-        targetId: id,
-        guildId: updated.guildId ?? video.guildId ?? null,
-        metadata: updatedChannelAuditMetadata(updated, video, {
-            youtubeChannelId: updated.youtubeChannelId ?? video.youtubeChannelId,
+    const body = req.body as z.output<typeof youtubeUpdateRequestSchema>;
+    const manager = getConfigManager().youtubeManager;
+    await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
+        findByPk: id => manager.findByPkPlain(id),
+        update: (id, data) => manager.updatePlain(data, { id }),
+        notFoundMessage: 'YouTube video config not found',
+        auditAction: 'youtube.update',
+        auditTargetType: 'youtubeConfig',
+        auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous, {
+            youtubeChannelId: updated.youtubeChannelId ?? previous.youtubeChannelId,
         }),
     });
-    res.json(updated);
 });
 
 /**

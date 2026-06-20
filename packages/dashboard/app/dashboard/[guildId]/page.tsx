@@ -1,12 +1,13 @@
 "use client";
 import React from "react";
-import { Alert, Box, Typography } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, Timeline, YouTube } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { useGuildDashboardSummary } from "@/components/hooks/useGuildDashboardSummary";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
@@ -33,13 +34,7 @@ export default function GuildDashboard() {
   const totalConfigured = summaryApi.summary?.totalConfigured ?? 0;
 
   if (!guild && !guildsLoading) {
-    return (
-      <DashboardLayout>
-        <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
-          Guild not found or you don't have access to this guild.
-        </Alert>
-      </DashboardLayout>
-    );
+    return <GuildAccessError />;
   }
 
   const modules = [

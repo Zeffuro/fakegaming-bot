@@ -114,11 +114,9 @@ export abstract class RiotPatchNotesFetcher extends BasePatchNotesFetcher<string
     }
 
     async fetchFullPatchContent(url: string): Promise<{ content: string; fullImage?: string } | null> {
-        const f: ((u: string) => Promise<Response>) | undefined = (globalThis as { fetch?: (u: string) => Promise<Response> }).fetch;
-        if (!f) return null;
+        const html = await this.fetchUrlText(url);
+        if (!html) return null;
 
-        const res = await f(url);
-        const html = await res.text();
         const data = getNextData(html);
         if (!data) return null;
 
@@ -138,4 +136,3 @@ export abstract class RiotPatchNotesFetcher extends BasePatchNotesFetcher<string
         return undefined;
     }
 }
-

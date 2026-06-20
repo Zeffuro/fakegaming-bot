@@ -7,6 +7,7 @@ import CommandToggle from "@/components/Commands/CommandToggle";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useGuildCommands } from "@/components/hooks/useGuildCommands";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
@@ -83,11 +84,7 @@ export default function GuildCommandsPage() {
   const filteredCommandCount = filteredTree.reduce((sum, node) => sum + node.commands.length, 0);
 
   if (!guild && !guildsLoading) {
-    return (
-      <DashboardLayout>
-        <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>Guild not found or you don't have access to this guild.</Alert>
-      </DashboardLayout>
-    );
+    return <GuildAccessError />;
   }
 
   return (

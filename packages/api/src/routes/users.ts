@@ -16,6 +16,20 @@ const discordIdParamSchema = z.object({ discordId: z.string().min(1) });
 // Router
 const router = createBaseRouter();
 
+type UserSettingsUpdate = {
+    timezone?: string;
+    defaultReminderTimeSpan?: string;
+};
+
+async function updateExistingUserSettings(discordId: string, update: UserSettingsUpdate): Promise<boolean> {
+    const manager = getConfigManager().userManager;
+    const user = await manager.getOnePlain({ discordId });
+    if (!user) return false;
+
+    await manager.updatePlain(update, { discordId });
+    return true;
+}
+
 /**
  * @openapi
  * /users:
@@ -167,12 +181,10 @@ router.put(
     validateParams(discordIdParamSchema),
     validateBody(userTimezoneUpdateRequestSchema),
     async (req, res) => {
-        const { discordId } = req.params;
-        const user = await getConfigManager().userManager.getOnePlain({ discordId });
-        if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
-
+        const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timezone } = req.body as z.infer<typeof userTimezoneUpdateRequestSchema>;
-        await getConfigManager().userManager.updatePlain({ timezone }, { discordId });
+        const updated = await updateExistingUserSettings(discordId, { timezone });
+        if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
         res.json({ success: true });
     }
 );
@@ -213,15 +225,10 @@ router.put(
     validateParams(discordIdParamSchema),
     validateBody(userDefaultReminderTimeSpanUpdateRequestSchema),
     async (req, res) => {
-        const { discordId } = req.params;
-        const user = await getConfigManager().userManager.getOnePlain({ discordId });
-        if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
-
+        const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timespan } = req.body as z.infer<typeof userDefaultReminderTimeSpanUpdateRequestSchema>;
-        await getConfigManager().userManager.updatePlain(
-            { defaultReminderTimeSpan: timespan },
-            { discordId }
-        );
+        const updated = await updateExistingUserSettings(discordId, { defaultReminderTimeSpan: timespan });
+        if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
         res.json({ success: true });
     }
 );

@@ -1,11 +1,11 @@
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { formatMinuteKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
-import { renderTemplate } from '@zeffuro/fakegaming-common/utils';
-import { sendChannelMessagePayload } from '../utils/discord.js';
-import { recordJobRun } from './status.js';
 import { getNotificationSuppression } from './notificationSuppression.js';
+import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
+import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
+import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
+import { registerRecurringPollingJob } from './recurringPollingJob.js';
 
 const BLUESKY_APPVIEW = 'https://public.api.bsky.app';
 
@@ -260,37 +260,28 @@ function buildBlueskyEmbedAndContent(opts: { post: BlueskyPostView; customMessag
         replies: typeof post.replyCount === 'number' ? String(post.replyCount) : '',
     };
 
-    let content = `Hey @everyone, new Bluesky post from ${authorName}: ${urlSafe}`;
-    if (opts.customMessage) {
-        const tmpl = String(opts.customMessage);
-        content = renderTemplate(tmpl, tokens);
-        if (!tmpl.includes('{url}')) content = `${content}\n${urlSafe}`;
-    }
-
-    return {
-        content,
-        payload: {
-            content,
-            embeds: [embed],
-            components: [{ type: 1, components: [{ type: 2, style: 5, label: 'View Post', url }] }],
-        },
-    };
+    return buildDiscordNotificationPayload({
+        defaultContent: `Hey @everyone, new Bluesky post from ${authorName}: ${urlSafe}`,
+        embed,
+        buttonLabel: 'View Post',
+        buttonUrl: url,
+        tokens,
+        customMessage: opts.customMessage,
+        urlToken: urlSafe,
+    });
 }
 
 async function persistConfig(cm: ReturnType<typeof getConfigManager>, cfg: BlueskyPostConfigPlain): Promise<void> {
-    await (cm.blueskyManager as unknown as { upsert?: (item: BlueskyPostConfigPlain, fields: string[]) => Promise<boolean> })
-        .upsert?.(cfg, ['id'])
-        ?.catch(async () => { await (cfg as unknown as { save?: () => Promise<void> }).save?.(); });
+    await upsertOrSaveJobConfig(
+        cm.blueskyManager as unknown as { upsert?: (item: BlueskyPostConfigPlain, fields: string[]) => Promise<unknown> },
+        cfg,
+    );
 }
 
 async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' })): Promise<{ processed: number; errors: number }> {
     const cm = getConfigManager();
     const manager = cm.blueskyManager as unknown as { getAllAccounts: () => Promise<BlueskyPostConfigPlain[]> };
-    const notifications = cm.notificationsManager as unknown as {
-        has: (provider: string, eventId: string) => Promise<boolean>;
-        hasForGuild?: (provider: string, eventId: string, guildId: string) => Promise<boolean>;
-        recordIfNew: (item: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<void>;
-    };
+    const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
     const configs = await manager.getAllAccounts();
     if (!configs.length) return { processed: 0, errors: 0 };
@@ -323,8 +314,7 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
             let sentAny = false;
             for (const post of newPosts) {
                 const eventId = post.uri;
-                const already = await notifications.hasForGuild?.('bluesky', eventId, cfg.guildId)
-                    ?? await notifications.has('bluesky', eventId);
+                const already = await hasRecordedJobNotification(notifications, 'bluesky', eventId, cfg.guildId);
 
                 if (already || suppression.shouldSuppress) {
                     log.debug({
@@ -337,11 +327,17 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
                 }
 
                 const built = buildBlueskyEmbedAndContent({ post, customMessage: cfg.customMessage ?? null });
-                const sent = await sendChannelMessagePayload(cfg.discordChannelId, built.payload);
-                if (sent && typeof (sent as { id?: unknown }).id === 'string') {
+                const sent = await sendJobNotification({
+                    manager: notifications,
+                    provider: 'bluesky',
+                    eventId,
+                    channelId: cfg.discordChannelId,
+                    guildId: cfg.guildId,
+                    payload: built.payload,
+                });
+                if (sent) {
                     sentAny = true;
                     processed += 1;
-                    await notifications.recordIfNew({ provider: 'bluesky', eventId, channelId: cfg.discordChannelId, guildId: cfg.guildId });
                 }
             }
 
@@ -361,25 +357,15 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
 export async function registerBlueskyJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
     const log = getLogger({ name: 'api:jobs:bluesky' });
 
-    queue.on('bluesky:poll', async (job) => {
-        const startedAt = new Date().toISOString();
-        try {
-            const { processed, errors } = await processBlueskyPoll(log);
-            const delaySec = 300;
-            const nextAt = new Date(Date.now() + delaySec * 1000);
-            const key = `bluesky:next:${formatMinuteKey(nextAt)}`;
-            await scheduleSingleton(queue, 'bluesky:poll', {}, delaySec, key);
-            recordJobRun('bluesky', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
-        } catch (err) {
-            recordJobRun('bluesky', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
-        } finally {
-            await job.done();
-        }
+    await registerRecurringPollingJob({
+        queue,
+        provider: 'bluesky',
+        jobName: 'bluesky:poll',
+        intervalSeconds: 300,
+        initialDelaySeconds: 9,
+        now,
+        run: () => processBlueskyPoll(log),
     });
-
-    const initDelay = 9;
-    await scheduleSingleton(queue, 'bluesky:poll', {}, initDelay, `bluesky:init:${formatMinuteKey(new Date(now.getTime() + initDelay * 1000))}`);
-    await scheduleSingleton(queue, 'bluesky:poll', {}, 0, `bluesky:catchup:${formatMinuteKey(now)}`);
 
     log.info('Scheduled Bluesky polling job');
 }

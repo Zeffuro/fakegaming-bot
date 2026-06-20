@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, dashboardCardSx, dashboardFieldSx, dangerActionButtonSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useQuotes } from "@/components/hooks/useQuotes";
@@ -114,11 +115,7 @@ export default function GuildQuotesPage() {
     }, [refresh]);
 
     if (!guild && !guildsLoading) {
-        return (
-            <DashboardLayout>
-                <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>Guild not found or you don't have access to this guild.</Alert>
-            </DashboardLayout>
-        );
+        return <GuildAccessError />;
     }
 
     return (

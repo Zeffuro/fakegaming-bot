@@ -4,8 +4,13 @@ import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming
 import { patchSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
-import { filterGuildScopedRecordsForRequest, requireGuildAdmin } from '../utils/authHelpers.js';
+import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import {
+    deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
+    sendGuildScopedRecords,
+} from '../utils/guildScopedRouteHelpers.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -27,9 +32,7 @@ const router = createBaseRouter();
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
     const subscriptions = await getConfigManager().patchSubscriptionManager.getAllPlain();
-    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, subscriptions, guildId);
-    if (!visibleSubscriptions) return;
-    res.json(visibleSubscriptions);
+    await sendGuildScopedRecords(req, res, subscriptions, guildId);
 });
 
 /**
@@ -51,13 +54,11 @@ router.get('/', validateQuery(listQuerySchema), async (req, res) => {
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
-    const subscription = await getConfigManager().patchSubscriptionManager.findByPkPlain(Number(id));
-    if (!subscription) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
-    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, [subscription], subscription.guildId);
-    if (!visibleSubscriptions) return;
-    if (visibleSubscriptions.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
-    res.json(subscription);
+    const manager = getConfigManager().patchSubscriptionManager;
+    await sendGuildScopedRecordById(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'Subscription not found',
+    });
 });
 
 /**
@@ -157,25 +158,18 @@ router.put('/', jwtAuth, validateBody(patchSubscriptionRequestSchema), requireGu
  *         $ref: '#/components/responses/NotFound'
  */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
-    const { id } = req.params;
-    const numericId = Number(id);
-    const existing = await getConfigManager().patchSubscriptionManager.findByPkPlain(numericId);
-    if (!existing) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Subscription not found' } });
-    const visibleSubscriptions = await filterGuildScopedRecordsForRequest(req, res, [existing], existing.guildId);
-    if (!visibleSubscriptions) return;
-    if (visibleSubscriptions.length === 0) return res.status(403).json({ error: 'Not authorized for this guild' });
-    await getConfigManager().patchSubscriptionManager.removeByPk(numericId);
-    await recordAuditEvent(req, {
-        action: 'patchSubscription.delete',
-        targetType: 'patchSubscription',
-        targetId: numericId,
-        guildId: existing.guildId ?? null,
-        metadata: {
-            game: existing.game,
-            channelId: existing.channelId,
-        },
+    const manager = getConfigManager().patchSubscriptionManager;
+    await deleteGuildScopedRecord(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        removeByPk: id => manager.removeByPk(id),
+        notFoundMessage: 'Subscription not found',
+        auditAction: 'patchSubscription.delete',
+        auditTargetType: 'patchSubscription',
+        auditMetadata: subscription => ({
+            game: subscription.game,
+            channelId: subscription.channelId,
+        }),
     });
-    res.json({ success: true });
 });
 
 export { router };

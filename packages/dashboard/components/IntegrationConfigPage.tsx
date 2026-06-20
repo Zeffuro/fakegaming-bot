@@ -1,8 +1,7 @@
 "use client";
 import React from "react";
-import { Alert } from "@mui/material";
-import DashboardLayout from "@/components/DashboardLayout";
-import NotificationConfigPage from "@/components/NotificationConfigPage";
+import { GuildAccessError } from "@/components/GuildAccessError";
+import NotificationConfigPage, { type NotificationConfigPageOptions } from "@/components/NotificationConfigPage";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
 
@@ -23,35 +22,12 @@ export interface ConfigHookResult<T extends StreamingConfig> {
 /**
  * Props for IntegrationConfigPage, a generic wrapper for integration configuration UIs.
  */
-export interface IntegrationConfigPageProps<T extends StreamingConfig> {
+export interface IntegrationConfigPageProps<T extends StreamingConfig> extends NotificationConfigPageOptions<T> {
     // Provider-specific hook that returns configs and CRUD handlers for the given guild
     useConfigs: (guildId: string) => ConfigHookResult<T>;
 
     // Optionally provide a pre-bound configs API to avoid duplicate hook calls in the page
     configsApi?: ConfigHookResult<T>;
-
-    // Visuals and labels
-    moduleTitle: string;
-    moduleIcon: React.ReactNode;
-    moduleColor: string;
-    moduleName: string;
-
-    // Field mapping for the primary identifier (username/channel/game, etc.)
-    channelNameField: string;
-    channelNameLabel: string;
-    channelNamePlaceholder: string;
-
-    // Optional customizations forwarded to NotificationConfigPage
-    renderChip?: (config: T) => {
-        label: string;
-        color?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
-        variant?: "filled" | "outlined";
-    } | undefined;
-    itemSingularLabel?: string;
-    itemPluralLabel?: string;
-    showCustomMessage?: boolean;
-    itemNameOptions?: string[];
-    allowEdit?: boolean;
 }
 
 /**
@@ -93,13 +69,7 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
     } = api;
 
     if (!guild && !guildsLoading) {
-        return (
-            <DashboardLayout>
-                <Alert severity="error" sx={{ bgcolor: 'error.dark', color: 'error.light' }}>
-                    Guild not found or you don't have access to this guild.
-                </Alert>
-            </DashboardLayout>
-        );
+        return <GuildAccessError />;
     }
 
     return (

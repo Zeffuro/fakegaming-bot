@@ -7,15 +7,14 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
-import { recordAuditEvent } from '../utils/audit.js';
 import {
-    canReadGuildScopedRecord,
-    canUpdateGuildScopedRecordFromBody,
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    sendGuildScopedRecordById,
     sendGuildScopedRecords,
-    sendNotFound,
+    updateGuildScopedRecord,
     updatedChannelAuditMetadata,
+    upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
 
@@ -189,12 +188,11 @@ router.get('/verify', jwtOrService, requireDashboardAdminOrService, validateQuer
  *         $ref: '#/components/responses/NotFound'
  */
 router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
-    if (!stream) return sendNotFound(res, 'Twitch stream config not found');
-    const hasAccess = await canReadGuildScopedRecord(req, res, stream);
-    if (!hasAccess) return;
-    res.json(stream);
+    const manager = getConfigManager().twitchManager;
+    await sendGuildScopedRecordById(req, res, Number(req.params.id), {
+        findByPk: id => manager.findByPkPlain(id),
+        notFoundMessage: 'Twitch stream config not found',
+    });
 });
 
 /**
@@ -250,16 +248,16 @@ router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/Forbidden'
  */
 router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildAdmin, async (req, res) => {
-    // Upsert by composite unique key (guildId + twitchUsername) to make POST idempotent per guild/streamer
-    const created = await getConfigManager().twitchManager.upsert(req.body, ['guildId', 'twitchUsername']);
-    await recordAuditEvent(req, {
-        action: created ? 'twitch.create' : 'twitch.update',
+    const body = req.body as z.output<typeof twitchCreateRequestSchema>;
+    const manager = getConfigManager().twitchManager;
+    await upsertGuildScopedRecord(req, res, body, {
+        upsert: data => manager.upsert(data, ['guildId', 'twitchUsername']),
+        createAction: 'twitch.create',
+        updateAction: 'twitch.update',
         targetType: 'twitchConfig',
-        targetId: req.body.twitchUsername,
-        guildId: req.body.guildId,
-        metadata: channelAuditMetadata(req.body),
+        targetId: data => data.twitchUsername,
+        metadata: data => channelAuditMetadata(data),
     });
-    res.status(created ? 201 : 200).json({ success: true });
 });
 
 /**
@@ -308,21 +306,16 @@ router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildA
  *         $ref: '#/components/responses/NotFound'
  */
 router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(twitchUpdateRequestSchema), async (req, res) => {
-    const id = String(req.params.id);
-    const stream = await getConfigManager().twitchManager.findByPkPlain(Number(id));
-    if (!stream) return sendNotFound(res, 'Twitch stream config not found');
-    const hasAccess = await canUpdateGuildScopedRecordFromBody(req, res, stream, req.body);
-    if (!hasAccess) return;
-    await getConfigManager().twitchManager.updatePlain(req.body, { id: Number(id) });
-    const updated = await getConfigManager().twitchManager.findByPkPlain(Number(id));
-    await recordAuditEvent(req, {
-        action: 'twitch.update',
-        targetType: 'twitchConfig',
-        targetId: id,
-        guildId: updated.guildId ?? stream.guildId ?? null,
-        metadata: updatedChannelAuditMetadata(updated, stream),
+    const body = req.body as z.output<typeof twitchUpdateRequestSchema>;
+    const manager = getConfigManager().twitchManager;
+    await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
+        findByPk: id => manager.findByPkPlain(id),
+        update: (id, data) => manager.updatePlain(data, { id }),
+        notFoundMessage: 'Twitch stream config not found',
+        auditAction: 'twitch.update',
+        auditTargetType: 'twitchConfig',
+        auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
     });
-    res.json(updated);
 });
 
 /**

@@ -1,11 +1,12 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { Alert, Box, Button } from "@mui/material";
+import { Box, Button } from "@mui/material";
 import { NotificationsActive, Settings } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
+import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { SettingsCard } from "@/components/SettingsCard";
@@ -16,11 +17,7 @@ export default function GuildSettingsPage() {
   const encodedGuildId = encodeURIComponent(guildId as string);
 
   if (!guild && !guildsLoading) {
-    return (
-      <DashboardLayout>
-        <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>Guild not found or you don't have access to this guild.</Alert>
-      </DashboardLayout>
-    );
+    return <GuildAccessError />;
   }
 
   return (

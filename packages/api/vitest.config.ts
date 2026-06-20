@@ -31,7 +31,6 @@ export default defineConfig({
         'src/routes/anime.ts',
         'src/jobs/anime.ts',
         'src/utils/openapi-inject-schemas.ts', // Build-time utility
-        'src/utils/sequelize-to-openapi.ts', // Build-time utility
         // Exclude deprecated validation overrides placeholder
         'src/validation/**/*.ts',
       ],
