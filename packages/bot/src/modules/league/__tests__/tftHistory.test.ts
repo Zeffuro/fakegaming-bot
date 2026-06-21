@@ -91,7 +91,7 @@ describe('tftHistory command', () => {
         const { command, interaction } = await H.setupCmd();
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        H.expectErrorText(interaction, 'Please provide a summoner name and region');
+        H.expectErrorText(interaction, 'Please provide a Riot ID and region');
     });
 
     it('handles failure to fetch TFT match history', async () => {

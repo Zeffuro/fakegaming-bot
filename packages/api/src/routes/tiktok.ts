@@ -11,6 +11,7 @@ import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import {
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
     updateGuildScopedRecord,
@@ -41,7 +42,7 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
-    const streams = await getConfigManager().tiktokManager.getAllPlain();
+    const streams = await loadGuildScopedRecords(getConfigManager().tiktokManager, guildId);
     await sendGuildScopedRecords(req, res, streams, guildId);
 });
 

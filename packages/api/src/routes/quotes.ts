@@ -13,6 +13,7 @@ import type { AuthenticatedRequest } from '../types/express.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
 } from '../utils/guildScopedRouteHelpers.js';
@@ -53,7 +54,7 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const quotes = await getConfigManager().quoteManager.getAllPlain();
+    const quotes = await loadGuildScopedRecords(getConfigManager().quoteManager, guildId);
     await sendGuildScopedRecords(req, res, quotes, guildId);
 });
 

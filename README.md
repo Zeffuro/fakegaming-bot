@@ -420,11 +420,11 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 
 | Command | Type | Description | Permissions |
 |---------|------|-------------|-------------|
-|`/add-bluesky-account`|Slash|Add a Bluesky account for post notifications|All users|
+|`/add-bluesky-account`|Slash|Add a Bluesky account for post notifications|Administrator|
 |`/add-quote`|Slash|Add a quote|All users|
-|`/add-tiktok-stream`|Slash|Add a TikTok account for live notifications|All users|
-|`/add-twitch-stream`|Slash|Add a Twitch stream for notifications|All users|
-|`/add-youtube-channel`|Slash|Add a Youtube Channel for new video notifications|All users|
+|`/add-tiktok-stream`|Slash|Add a TikTok account for live notifications|Administrator|
+|`/add-twitch-stream`|Slash|Add a Twitch stream for notifications|Administrator|
+|`/add-youtube-channel`|Slash|Add a Youtube Channel for new video notifications|Administrator|
 |`/anime`|Slash|Search anime, subscribe to releases, and view upcoming episodes|All users|
 |`/birthday`|Slash|Show your or another user's birthday|All users|
 |`/birthdays`|Slash|Show upcoming birthdays in this server|All users|
@@ -433,9 +433,13 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
 |`/help`|Slash|List all available commands and their descriptions.|All users|
-|`/league-history`|Slash|Get recent League of Legends match history for a summoner|All users|
-|`/league-stats`|Slash|Get League of Legends stats for a summoner or linked user|All users|
+|`/league-history`|Slash|Get recent League of Legends match history by Riot ID or linked user|All users|
+|`/league-stats`|Slash|Get League of Legends stats by Riot ID or linked user|All users|
 |`/link-riot`|Slash|Link your Discord account or another user to a Riot account|All users|
+|`/manage-bluesky-accounts`|Slash|List or remove Bluesky post notifications|Administrator|
+|`/manage-tiktok-streams`|Slash|List or remove TikTok live notifications|Administrator|
+|`/manage-twitch-streams`|Slash|List or remove Twitch stream notifications|Administrator|
+|`/manage-youtube-channels`|Slash|List or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|
@@ -455,8 +459,8 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/stream-status`|Slash|Check whether a Twitch channel is live|All users|
 |`/subscribe-patchnotes`|Slash|Subscribe a channel to patch notes for a game|All users|
 |`/test-notification`|Slash|Send a sample notification to a channel|All users|
-|`/tft-history`|Slash|Get recent Teamfight Tactics match history for a summoner|All users|
-|`/tft-stats`|Slash|Get Teamfight Tactics ranked stats for a summoner|All users|
+|`/tft-history`|Slash|Get recent Teamfight Tactics match history by Riot ID or linked user|All users|
+|`/tft-stats`|Slash|Get Teamfight Tactics ranked stats by Riot ID or linked user|All users|
 |`/time`|Slash|Convert a time into Discord timestamp formats|All users|
 |`/weather`|Slash|Get the current weather and a short forecast for a specified location|All users|
 |`/youtube-latest`|Slash|Show the latest video from a YouTube channel ID|All users|

@@ -43,6 +43,7 @@ export interface AuditEventListOptions {
     limit?: number;
     offset?: number;
     action?: string;
+    actionPrefix?: string | readonly string[];
     targetType?: string;
     actorId?: string;
     guildId?: string;
@@ -83,9 +84,19 @@ export class AuditEventManager extends BaseManager<AuditEvent> {
     async list(options: AuditEventListOptions = {}): Promise<AuditEventListResult> {
         const limit = clampInteger(options.limit ?? 50, 1, 200);
         const offset = clampInteger(options.offset ?? 0, 0, 10000);
-        const where: Record<string, unknown> = {};
+        const where: Record<string | symbol, unknown> = {};
 
         if (options.action) where.action = options.action;
+        if (!options.action) {
+            const actionPrefixes = normalizeActionPrefixes(options.actionPrefix);
+            if (actionPrefixes.length === 1) {
+                where.action = { [Op.like]: `${actionPrefixes[0]}%` };
+            } else if (actionPrefixes.length > 1) {
+                where[Op.or] = actionPrefixes.map(prefix => ({
+                    action: { [Op.like]: `${prefix}%` },
+                }));
+            }
+        }
         if (options.targetType) where.targetType = options.targetType;
         if (options.actorId) where.actorId = options.actorId;
         if (options.guildId) where.guildId = options.guildId;
@@ -118,6 +129,13 @@ export class AuditEventManager extends BaseManager<AuditEvent> {
             } as WhereOptions<Attributes<AuditEvent>>,
         });
     }
+}
+
+function normalizeActionPrefixes(value: string | readonly string[] | undefined): string[] {
+    const values = Array.isArray(value) ? value : value ? [value] : [];
+    return values
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
 }
 
 function clampInteger(value: number, min: number, max: number): number {

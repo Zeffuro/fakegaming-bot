@@ -115,6 +115,29 @@ describe('AuditEventManager', () => {
         });
     });
 
+    it('lists audit events by action prefix families', async () => {
+        await manager.record({
+            timestamp: new Date('2026-01-01T00:00:00.000Z'),
+            action: 'twitch.create',
+            targetType: 'twitchConfig',
+        });
+        await manager.record({
+            timestamp: new Date('2026-01-02T00:00:00.000Z'),
+            action: 'youtube.delete',
+            targetType: 'youtubeConfig',
+        });
+        await manager.record({
+            timestamp: new Date('2026-01-03T00:00:00.000Z'),
+            action: 'birthday.create',
+            targetType: 'birthday',
+        });
+
+        const result = await manager.list({ actionPrefix: ['twitch.', 'youtube.'] });
+
+        expect(result.total).toBe(2);
+        expect(result.events.map(event => event.action)).toEqual(['youtube.delete', 'twitch.create']);
+    });
+
     it('cleans up events older than the clamped retention window', async () => {
         await manager.record({
             timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),

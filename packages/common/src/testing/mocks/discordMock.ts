@@ -459,7 +459,7 @@ export function createMockSend(): ReturnType<typeof vi.fn> {
  * Setup mocks for discord.js
  */
 export function setupDiscordMocks(): void {
-    vi.mock('discord.js', async (importOriginal: () => Promise<typeof import('discord.js')>) => {
+    vi.doMock('discord.js', async (importOriginal: () => Promise<typeof import('discord.js')>) => {
         const actual = await importOriginal();
         return {
             ...actual,

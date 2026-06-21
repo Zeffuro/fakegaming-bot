@@ -42,7 +42,7 @@ export const mockCacheDelete = vi.fn<(key: string) => Promise<void>>()
  * error classes, etc.) and only override the cache helpers + default cache manager.
  */
 export function setupCacheMocks(): void {
-    vi.mock('@zeffuro/fakegaming-common', async (importOriginal: () => Promise<typeof import('@zeffuro/fakegaming-common')>) => {
+    vi.doMock('@zeffuro/fakegaming-common', async (importOriginal: () => Promise<typeof import('@zeffuro/fakegaming-common')>) => {
         const actualModule = await importOriginal();
 
         const defaultCacheManager = {

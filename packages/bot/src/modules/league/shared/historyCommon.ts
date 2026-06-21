@@ -31,7 +31,7 @@ export async function runHistoryCommand<TMatch>(interaction: ChatInputCommandInt
     try {
         identity = await getLeagueIdentityFromInteraction(interaction) as LeagueIdentity;
     } catch {
-        await interaction.editReply('Please provide a summoner name and region, or link your account first.');
+        await interaction.editReply('Please provide a Riot ID and region, or link your account first.');
         return;
     }
 

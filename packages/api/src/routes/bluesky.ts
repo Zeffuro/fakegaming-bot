@@ -10,6 +10,7 @@ import { fetchBlueskyProfile, normalizeBlueskyHandle } from '../jobs/bluesky.js'
 import {
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
     updateGuildScopedRecord,
@@ -38,7 +39,7 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
-    const configs = await getConfigManager().blueskyManager.getAllPlain();
+    const configs = await loadGuildScopedRecords(getConfigManager().blueskyManager, guildId);
     await sendGuildScopedRecords(req, res, configs, guildId);
 });
 

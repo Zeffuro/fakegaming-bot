@@ -176,6 +176,7 @@ export { SUPPORTED_GAMES } from './utils/supportedGames.js';
 
 export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js';
 export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';
+export { sanitizeAuditMetadata } from './utils/auditMetadata.js';
 
 // Register custom create/update schema overrides (executed on module import)
 registerSchemaOverrides();

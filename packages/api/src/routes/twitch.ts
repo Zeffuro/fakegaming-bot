@@ -10,6 +10,7 @@ import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import {
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
     updateGuildScopedRecord,
@@ -61,7 +62,7 @@ const verifyQuerySchema = z.object({
  */
 router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
-    const streams = await getConfigManager().twitchManager.getAllPlain();
+    const streams = await loadGuildScopedRecords(getConfigManager().twitchManager, guildId);
     await sendGuildScopedRecords(req, res, streams, guildId);
 });
 

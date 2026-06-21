@@ -11,3 +11,4 @@ export * from './logger.js';
 export * from './supportedGames.js';
 export * from './template.js';
 export * from './tiktok.js';
+export * from './auditMetadata.js';

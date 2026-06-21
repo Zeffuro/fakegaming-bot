@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 44 commands; 40 slash; 2 user context; 2 message context.
+Total: 48 commands; 44 slash; 2 user context; 2 message context.
 
 ## Anime
 
@@ -25,7 +25,8 @@ Total: 44 commands; 40 slash; 2 user context; 2 message context.
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/add-bluesky-account` | Add a Bluesky account for post notifications | All users |
+| Slash | `/add-bluesky-account` | Add a Bluesky account for post notifications | Administrator |
+| Slash | `/manage-bluesky-accounts` | List or remove Bluesky post notifications | Administrator |
 
 ## General
 
@@ -44,12 +45,12 @@ Total: 44 commands; 40 slash; 2 user context; 2 message context.
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/league-history` | Get recent League of Legends match history for a summoner | All users |
-| Slash | `/league-stats` | Get League of Legends stats for a summoner or linked user | All users |
+| Slash | `/league-history` | Get recent League of Legends match history by Riot ID or linked user | All users |
+| Slash | `/league-stats` | Get League of Legends stats by Riot ID or linked user | All users |
 | Slash | `/link-riot` | Link your Discord account or another user to a Riot account | All users |
 | Slash | `/riot-links` | Manage linked Riot accounts | All users |
-| Slash | `/tft-history` | Get recent Teamfight Tactics match history for a summoner | All users |
-| Slash | `/tft-stats` | Get Teamfight Tactics ranked stats for a summoner | All users |
+| Slash | `/tft-history` | Get recent Teamfight Tactics match history by Riot ID or linked user | All users |
+| Slash | `/tft-stats` | Get Teamfight Tactics ranked stats by Riot ID or linked user | All users |
 
 ## Patchnotes
 
@@ -87,18 +88,21 @@ Total: 44 commands; 40 slash; 2 user context; 2 message context.
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/add-tiktok-stream` | Add a TikTok account for live notifications | All users |
+| Slash | `/add-tiktok-stream` | Add a TikTok account for live notifications | Administrator |
+| Slash | `/manage-tiktok-streams` | List or remove TikTok live notifications | Administrator |
 
 ## Twitch
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/add-twitch-stream` | Add a Twitch stream for notifications | All users |
+| Slash | `/add-twitch-stream` | Add a Twitch stream for notifications | Administrator |
+| Slash | `/manage-twitch-streams` | List or remove Twitch stream notifications | Administrator |
 | Slash | `/stream-status` | Check whether a Twitch channel is live | All users |
 
 ## Youtube
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/add-youtube-channel` | Add a Youtube Channel for new video notifications | All users |
+| Slash | `/add-youtube-channel` | Add a Youtube Channel for new video notifications | Administrator |
+| Slash | `/manage-youtube-channels` | List or remove YouTube video notifications | Administrator |
 | Slash | `/youtube-latest` | Show the latest video from a YouTube channel ID | All users |

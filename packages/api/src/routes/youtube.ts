@@ -15,6 +15,7 @@ import { recordAuditEvent } from '../utils/audit.js';
 import {
     channelAuditMetadata,
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
     updateGuildScopedRecord,
@@ -100,7 +101,7 @@ function extractLatestVideoId(xml: string): string | null {
  */
 router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
-    const videos = await getConfigManager().youtubeManager.getAllPlain();
+    const videos = await loadGuildScopedRecords(getConfigManager().youtubeManager, guildId);
     await sendGuildScopedRecords(req, res, videos, guildId);
 });
 

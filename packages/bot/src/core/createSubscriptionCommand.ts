@@ -1,6 +1,22 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import { requireAdmin } from '../utils/permissions.js';
+import { recordBotAuditEvent } from '../utils/audit.js';
 import { createSlashCommand, getTestOnly } from './commandBuilder.js';
+
+export interface SubscriptionActionArgs<TId> {
+    username: string;
+    externalId: TId;
+    discordChannelId: string;
+    guildId: string;
+    customMessage?: string;
+}
+
+export interface SubscriptionAuditOptions<TId> {
+    action: string;
+    targetType: string;
+    targetId: (args: SubscriptionActionArgs<TId>) => string | number | null;
+    metadata?: (args: SubscriptionActionArgs<TId>) => Record<string, unknown>;
+}
 
 export interface CreateSubscriptionCommandOptions<TId> {
     // Prefer meta from module manifest
@@ -14,10 +30,11 @@ export interface CreateSubscriptionCommandOptions<TId> {
     checkExistingPre?: (args: { username: string; discordChannelId: string; guildId: string }) => Promise<boolean>;
     // Optional: check existence using resolved externalId (e.g., YouTube)
     checkExistingPost?: (args: { username: string; externalId: TId; discordChannelId: string; guildId: string }) => Promise<boolean>;
-    addSubscription: (args: { username: string; externalId: TId; discordChannelId: string; guildId: string; customMessage?: string }) => Promise<void>;
+    addSubscription: (args: SubscriptionActionArgs<TId>) => Promise<void>;
     successMessage: (args: { username: string; channelId: string }) => string;
     alreadyConfiguredMessage: (args: { username: string }) => string;
     notFoundMessage: (args: { username: string }) => string;
+    auditAdd?: SubscriptionAuditOptions<TId>;
     testOnly?: boolean;
 }
 
@@ -75,7 +92,17 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
             }
         }
 
-        await opts.addSubscription({ username, externalId, discordChannelId: discordChannel.id, guildId, customMessage });
+        const actionArgs = { username, externalId, discordChannelId: discordChannel.id, guildId, customMessage };
+        await opts.addSubscription(actionArgs);
+        if (opts.auditAdd) {
+            await recordBotAuditEvent(interaction, {
+                action: opts.auditAdd.action,
+                targetType: opts.auditAdd.targetType,
+                targetId: opts.auditAdd.targetId(actionArgs),
+                guildId,
+                metadata: opts.auditAdd.metadata?.(actionArgs) ?? null,
+            });
+        }
         await interaction.reply(opts.successMessage({ username, channelId: discordChannel.id }));
     }
 

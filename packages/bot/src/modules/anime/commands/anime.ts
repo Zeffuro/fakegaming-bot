@@ -23,6 +23,7 @@ import {
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { requireAdmin } from '../../../utils/permissions.js';
+import { recordBotAuditEvent } from '../../../utils/audit.js';
 import { anime as META } from '../commands.manifest.js';
 import { anilistAutocomplete, parseAniListChoice } from '../shared/anilistAutocomplete.js';
 import { buildAnimeActionRow, buildAnimeListActionRows, buildAnimeSearchActionRows, buildAnimeSeasonActionRows } from '../shared/animeComponents.js';
@@ -252,6 +253,16 @@ async function executeSubscribe(interaction: ChatInputCommandInteraction): Promi
             channelId: channel.id,
             reminderMinutes,
         });
+        await recordBotAuditEvent(interaction, {
+            action: created ? 'animeSubscription.create' : 'animeSubscription.update',
+            targetType: 'animeSubscription',
+            targetId: anime.id,
+            guildId,
+            metadata: {
+                channelId: channel.id,
+                reminderMinutes,
+            },
+        });
         await interaction.reply({
             content: `${created ? 'Subscribed' : 'Updated subscription for'} <#${channel.id}> to **${formatAnimeTitle(anime)}**.`,
             flags: MessageFlags.Ephemeral,
@@ -291,10 +302,27 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
                 await interaction.reply({ content: 'Channel subscriptions can only be removed in a server.', flags: MessageFlags.Ephemeral });
                 return;
             }
-            await getConfigManager().animeManager.subscriptions.unsubscribeChannel({
+            const manager = getConfigManager().animeManager.subscriptions;
+            const subscription = await manager.getOnePlain({
+                anilistId: anime.id,
+                targetType: 'channel',
+                guildId,
+                channelId: channel.id,
+            });
+            await manager.unsubscribeChannel({
                 anilistId: anime.id,
                 guildId,
                 channelId: channel.id,
+            });
+            await recordBotAuditEvent(interaction, {
+                action: 'animeSubscription.delete',
+                targetType: 'animeSubscription',
+                targetId: getSubscriptionAuditTargetId(subscription, anime.id),
+                guildId,
+                metadata: {
+                    anilistId: anime.id,
+                    channelId: channel.id,
+                },
             });
             await interaction.reply({ content: `Unsubscribed <#${channel.id}> from **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
             return;
@@ -308,6 +336,12 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
     } catch {
         await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
     }
+}
+
+function getSubscriptionAuditTargetId(subscription: { id?: unknown } | null, fallback: number): string | number {
+    const id = subscription?.id;
+    if (typeof id === 'string' || typeof id === 'number') return id;
+    return fallback;
 }
 
 async function executeNext(interaction: ChatInputCommandInteraction): Promise<void> {

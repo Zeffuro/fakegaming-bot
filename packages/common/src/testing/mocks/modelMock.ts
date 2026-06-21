@@ -215,7 +215,7 @@ function createCommonModelMocks(createDefaultData: () => any, defaultId: string 
  */
 export function setupModelMocks(): void {
     // Mock the models from the common package
-    vi.mock('../../models', async (importOriginal: () => Promise<typeof import('../../models/index.js')>) => {
+    vi.doMock('../../models', async (importOriginal: () => Promise<typeof import('../../models/index.js')>) => {
         const actualModels = await importOriginal();
 
         const mockModels = {

@@ -11,7 +11,7 @@ const data = buildCommonLeagueOptions(
 );
 
 /**
- * Executes the tft-history command, replying with a recent TFT match history image for a summoner.
+ * Executes the tft-history command, replying with a recent TFT match history image for a Riot ID or linked user.
  */
 async function execute(interaction: ChatInputCommandInteraction) {
     await runHistoryCommand(interaction, {

@@ -8,6 +8,7 @@ import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import {
     deleteGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
 } from '../utils/guildScopedRouteHelpers.js';
@@ -31,7 +32,7 @@ const router = createBaseRouter();
  */
 router.get('/', validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const subscriptions = await getConfigManager().patchSubscriptionManager.getAllPlain();
+    const subscriptions = await loadGuildScopedRecords(getConfigManager().patchSubscriptionManager, guildId);
     await sendGuildScopedRecords(req, res, subscriptions, guildId);
 });
 

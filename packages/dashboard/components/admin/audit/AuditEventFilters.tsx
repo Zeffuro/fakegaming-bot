@@ -5,9 +5,11 @@ import { Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEve
 import { Refresh, Tune } from "@mui/icons-material";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
-import type { AuditEventsQuery, AuditEventSeverity, AuditEventStatus } from "@/lib/api/audit";
+import type { AuditEventsQuery, AuditEventScope, AuditEventSeverity, AuditEventStatus, AuditIntegrationProvider } from "@/lib/api/audit";
 
 export type AuditFilterUpdater = <K extends keyof AuditEventsQuery>(key: K, value: AuditEventsQuery[K] | undefined) => void;
+
+const AUDIT_PROVIDER_OPTIONS: AuditIntegrationProvider[] = ["twitch", "youtube", "tiktok", "bluesky", "anime", "patchnotes"];
 
 interface AuditEventFiltersProps {
     filters: AuditEventsQuery;
@@ -27,6 +29,15 @@ export function AuditEventFilters({
     onUpdateFilter,
 }: AuditEventFiltersProps) {
     const accent = dashboardAccents.admin;
+    const updateScope = (value: AuditEventScope | undefined) => {
+        onUpdateFilter("scope", value);
+        if (!value) onUpdateFilter("provider", undefined);
+    };
+
+    const updateProvider = (value: AuditIntegrationProvider | undefined) => {
+        onUpdateFilter("provider", value);
+        if (value) onUpdateFilter("scope", "integrations");
+    };
 
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.5 }}>
@@ -53,7 +64,33 @@ export function AuditEventFilters({
                     </Stack>
                 </Stack>
 
-                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))", xl: "repeat(6, minmax(0, 1fr))" }, gap: 1.4 }}>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }, gap: 1.4 }}>
+                    <FormControl sx={dashboardFieldSx(accent)}>
+                        <InputLabel id="scope-filter-label">Category</InputLabel>
+                        <Select
+                            labelId="scope-filter-label"
+                            label="Category"
+                            value={filters.scope ?? ""}
+                            onChange={(e: SelectChangeEvent<string>) => updateScope((e.target.value || undefined) as AuditEventScope | undefined)}
+                        >
+                            <MenuItem value="">All events</MenuItem>
+                            <MenuItem value="integrations">Integrations</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControl sx={dashboardFieldSx(accent)}>
+                        <InputLabel id="provider-filter-label">Provider</InputLabel>
+                        <Select
+                            labelId="provider-filter-label"
+                            label="Provider"
+                            value={filters.provider ?? ""}
+                            onChange={(e: SelectChangeEvent<string>) => updateProvider((e.target.value || undefined) as AuditIntegrationProvider | undefined)}
+                        >
+                            <MenuItem value="">Any</MenuItem>
+                            {AUDIT_PROVIDER_OPTIONS.map(provider => (
+                                <MenuItem key={provider} value={provider}>{provider}</MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                     <TextField
                         label="Action"
                         value={filters.action ?? ""}

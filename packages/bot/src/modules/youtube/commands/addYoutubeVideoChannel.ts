@@ -28,6 +28,15 @@ const { data, execute, testOnly } = createSubscriptionCommand<string>({
             customMessage,
         });
     },
+    auditAdd: {
+        action: 'youtube.create',
+        targetType: 'youtubeConfig',
+        targetId: ({ externalId }) => externalId,
+        metadata: ({ externalId, discordChannelId }) => ({
+            channelId: discordChannelId,
+            youtubeChannelId: externalId,
+        }),
+    },
     successMessage: youtubeCommandConfig.successMessage,
     alreadyConfiguredMessage: youtubeCommandConfig.alreadyConfiguredMessage,
     notFoundMessage: youtubeCommandConfig.notFoundMessage,

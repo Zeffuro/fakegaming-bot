@@ -12,7 +12,7 @@ const data = buildCommonLeagueOptions(
 );
 
 /**
- * Executes the league-stats command, replying with a Discord embed of League stats for a summoner or linked user.
+ * Executes the league-stats command, replying with a Discord embed of League stats for a Riot ID or linked user.
  * Handles errors and provides feedback if stats cannot be fetched.
  */
 async function execute(interaction: ChatInputCommandInteraction) {

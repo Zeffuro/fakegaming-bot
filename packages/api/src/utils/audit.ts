@@ -2,8 +2,8 @@ import type { Request } from 'express';
 import {
     getConfigManager,
     getLogger,
+    sanitizeAuditMetadata,
     type AuditActorType,
-    type AuditEventMetadata,
     type AuditEventSeverity,
     type AuditEventStatus,
 } from '@zeffuro/fakegaming-common';
@@ -12,10 +12,6 @@ import { isServiceRequest } from '../middleware/serviceAuth.js';
 import { getRequestId, getSafeRequestContext } from './requestContext.js';
 
 const log = getLogger({ name: 'api:audit' });
-const SENSITIVE_KEY_RE = /(?:authorization|cookie|csrf|jwt|password|secret|token|key|credential|session)/i;
-const MAX_STRING_LENGTH = 512;
-const MAX_ARRAY_LENGTH = 20;
-const MAX_DEPTH = 4;
 let cleanupTimer: NodeJS.Timeout | undefined;
 
 export interface AuditEventParams {
@@ -104,48 +100,6 @@ async function recordAuditEventDirect(params: AuditEventParams & { actorId?: str
             status: params.status ?? 'success',
         }, 'Failed to persist audit event');
     }
-}
-
-function sanitizeAuditMetadata(metadata: Record<string, unknown> | null | undefined): AuditEventMetadata | null {
-    if (!metadata) return null;
-    const sanitized = sanitizeValue(metadata, 0);
-    return typeof sanitized === 'object' && sanitized !== null && !Array.isArray(sanitized)
-        ? sanitized as AuditEventMetadata
-        : { value: sanitized };
-}
-
-function sanitizeValue(value: unknown, depth: number): unknown {
-    if (value === null || value === undefined) return value;
-
-    if (value instanceof Date) return value.toISOString();
-
-    const valueType = typeof value;
-    if (valueType === 'string') {
-        const text = value as string;
-        return text.length > MAX_STRING_LENGTH ? `${text.slice(0, MAX_STRING_LENGTH)}...` : text;
-    }
-
-    if (valueType === 'number' || valueType === 'boolean') return value;
-
-    if (Array.isArray(value)) {
-        if (depth >= MAX_DEPTH) return '[truncated]';
-        return value.slice(0, MAX_ARRAY_LENGTH).map(item => sanitizeValue(item, depth + 1));
-    }
-
-    if (valueType === 'object') {
-        if (depth >= MAX_DEPTH) return '[truncated]';
-        const output: Record<string, unknown> = {};
-        for (const [key, nestedValue] of Object.entries(value as Record<string, unknown>)) {
-            if (SENSITIVE_KEY_RE.test(key)) {
-                output[key] = '[redacted]';
-                continue;
-            }
-            output[key] = sanitizeValue(nestedValue, depth + 1);
-        }
-        return output;
-    }
-
-    return String(value);
 }
 
 function readPositiveNumberEnv(name: string, fallback: number): number {

@@ -6,6 +6,8 @@ export const DEFAULT_AUDIT_EVENTS_LIMIT = 50;
 
 export type AuditEventSeverity = "info" | "warn" | "error";
 export type AuditEventStatus = "success" | "failure";
+export type AuditEventScope = "integrations";
+export type AuditIntegrationProvider = "anime" | "bluesky" | "patchnotes" | "tiktok" | "twitch" | "youtube";
 
 export interface AuditEventEntry {
     id: number;
@@ -33,6 +35,8 @@ export interface AuditEventsQuery {
     limit?: number;
     offset?: number;
     action?: string;
+    scope?: AuditEventScope;
+    provider?: AuditIntegrationProvider;
     targetType?: string;
     actorId?: string;
     guildId?: string;

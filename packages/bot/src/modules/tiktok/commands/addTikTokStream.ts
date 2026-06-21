@@ -3,6 +3,10 @@ import { createSubscriptionCommand } from '../../../core/createSubscriptionComma
 import { tiktokCommandConfig } from '../config.js';
 import { addTikTokStream as META } from '../commands.manifest.js';
 
+function normalizeUsername(input: string): string {
+    return input.replace(/^@/, '');
+}
+
 const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
     meta: META,
     usernameOptionDescription: tiktokCommandConfig.usernameOptionDescription,
@@ -10,17 +14,25 @@ const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
         return { ok: true, id: undefined } as const;
     },
     checkExistingPre: async ({ username, discordChannelId, guildId }) => {
-        const normalized = username.replace(/^@/, '');
-        return getConfigManager().tiktokManager.streamExists(normalized, discordChannelId, guildId);
+        return getConfigManager().tiktokManager.streamExists(normalizeUsername(username), discordChannelId, guildId);
     },
     addSubscription: async ({ username, externalId: _externalId, discordChannelId, guildId, customMessage }) => {
-        const normalized = username.replace(/^@/, '');
+        const normalized = normalizeUsername(username);
         await getConfigManager().tiktokManager.add({
             tiktokUsername: normalized,
             discordChannelId,
             guildId,
             customMessage,
         });
+    },
+    auditAdd: {
+        action: 'tiktok.create',
+        targetType: 'tiktokConfig',
+        targetId: ({ username }) => normalizeUsername(username),
+        metadata: ({ username, discordChannelId }) => ({
+            channelId: discordChannelId,
+            tiktokUsername: normalizeUsername(username),
+        }),
     },
     successMessage: tiktokCommandConfig.successMessage,
     alreadyConfiguredMessage: tiktokCommandConfig.alreadyConfiguredMessage,

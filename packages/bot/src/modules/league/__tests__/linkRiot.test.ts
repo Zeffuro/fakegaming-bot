@@ -41,14 +41,6 @@ describe("linkRiot command", () => {
             puuid: "test-puuid-12345",
         });
 
-        const modelsModule = await import("@zeffuro/fakegaming-common/models");
-        const createSpy = vi.spyOn(modelsModule.LeagueConfig, "create").mockResolvedValue({
-            discordId: "123456789012345678",
-            summonerName: "TestSummoner",
-            region: "EUW",
-            puuid: "test-puuid-12345",
-        } as any);
-
         const getUserWithLeagueSpy = vi.fn().mockResolvedValue(null);
 
         const { command, interaction } = await setupCommandTest("modules/league/commands/linkRiot.js", {
@@ -61,6 +53,14 @@ describe("linkRiot command", () => {
                 userManager: { getUserWithLeague: getUserWithLeagueSpy },
             },
         });
+
+        const modelsModule = await import("@zeffuro/fakegaming-common/models");
+        const createSpy = vi.spyOn(modelsModule.LeagueConfig, "create").mockResolvedValue({
+            discordId: "123456789012345678",
+            summonerName: "TestSummoner",
+            region: "EUW",
+            puuid: "test-puuid-12345",
+        } as any);
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 

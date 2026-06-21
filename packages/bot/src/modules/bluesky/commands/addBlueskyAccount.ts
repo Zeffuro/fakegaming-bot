@@ -26,6 +26,15 @@ const { data, execute, testOnly } = createSubscriptionCommand<string>({
             customMessage,
         });
     },
+    auditAdd: {
+        action: 'bluesky.create',
+        targetType: 'blueskyConfig',
+        targetId: ({ externalId }) => normalizeHandle(externalId),
+        metadata: ({ externalId, discordChannelId }) => ({
+            channelId: discordChannelId,
+            blueskyHandle: normalizeHandle(externalId),
+        }),
+    },
     successMessage: blueskyCommandConfig.successMessage,
     alreadyConfiguredMessage: blueskyCommandConfig.alreadyConfiguredMessage,
     notFoundMessage: blueskyCommandConfig.notFoundMessage,

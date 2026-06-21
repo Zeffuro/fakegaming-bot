@@ -2,13 +2,13 @@ import { SlashCommandBuilder } from 'discord.js';
 import { leagueRegionChoices } from '../constants/leagueRegions.js';
 
 /**
- * Adds common League command options: summoner, region, and user.
+ * Adds common League command options: Riot ID, region, and user.
  */
 export function buildCommonLeagueOptions<T extends SlashCommandBuilder>(builder: T): T {
     builder
         .addStringOption(option =>
-            option.setName('summoner')
-                .setDescription('Riot ID (e.g. Name#TAG) or Summoner')
+            option.setName('riot-id')
+                .setDescription('Riot ID, including tag (for example Name#TAG)')
                 .setRequired(false)
         )
         .addStringOption(option =>

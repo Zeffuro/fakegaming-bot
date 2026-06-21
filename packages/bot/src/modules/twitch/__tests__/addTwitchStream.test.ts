@@ -29,6 +29,7 @@ describe('addTwitchStream command', () => {
         const { verifyTwitchUsernameApi } = await H.mockVerifyUser(true);
 
         // Mock for twitchManager's streamExists and add methods
+        const auditRecord = vi.fn().mockResolvedValue(undefined);
         const streamExistsSpy = vi.fn().mockResolvedValue(false);
         const addSpy = vi.fn().mockResolvedValue({
             twitchUsername: 'testChannel',
@@ -46,6 +47,9 @@ describe('addTwitchStream command', () => {
                 twitchManager: {
                     streamExists: streamExistsSpy,
                     add: addSpy
+                },
+                auditEventManager: {
+                    record: auditRecord
                 }
             }
         });
@@ -63,6 +67,23 @@ describe('addTwitchStream command', () => {
             username: 'testChannel',
             channelId: '123456789012345678',
             guildId: '987654321098765432'
+        });
+        expect(auditRecord).toHaveBeenCalledWith({
+            actorId: '123456789012345678',
+            actorType: 'user',
+            action: 'twitch.create',
+            targetType: 'twitchConfig',
+            targetId: 'testChannel',
+            guildId: '987654321098765432',
+            severity: 'info',
+            status: 'success',
+            metadata: {
+                source: 'discordCommand',
+                commandName: 'test-command',
+                commandChannelId: '929533532185956352',
+                channelId: '123456789012345678',
+                twitchUsername: 'testChannel'
+            },
         });
     });
 

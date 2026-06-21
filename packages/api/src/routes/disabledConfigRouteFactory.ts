@@ -6,6 +6,7 @@ import { requireGuildAdmin, type GuildScopedRecord } from '../utils/authHelpers.
 import { recordAuditEvent } from '../utils/audit.js';
 import {
     canReadGuildScopedRecord,
+    loadGuildScopedRecords,
     sendGuildScopedRecords,
     sendNotFound,
 } from '../utils/guildScopedRouteHelpers.js';
@@ -18,6 +19,7 @@ interface DisabledConfigRecord extends GuildScopedRecord {
 
 interface DisabledConfigManager<TRecord extends DisabledConfigRecord, TCreateBody extends Record<string, unknown>> {
     getAllPlain(): Promise<TRecord[]>;
+    getManyPlain(where: { guildId: string }): Promise<TRecord[]>;
     exists(where: Record<string, string>): Promise<boolean>;
     findByPkPlain(id: number): Promise<TRecord | null>;
     addPlain(body: TCreateBody): Promise<TRecord>;
@@ -57,7 +59,7 @@ export function createDisabledConfigRouter<
 
     router.get('/', validateQuery(optionalGuildListQuerySchema), async (req, res) => {
         const { guildId } = req.query as z.infer<typeof optionalGuildListQuerySchema>;
-        const records = await getManager().getAllPlain();
+        const records = await loadGuildScopedRecords(getManager(), guildId);
         await sendGuildScopedRecords(req, res, records, guildId);
     });
 

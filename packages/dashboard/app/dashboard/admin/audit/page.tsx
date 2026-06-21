@@ -17,6 +17,8 @@ import {
 
 const FILTER_KEYS: Array<keyof AuditEventsQuery> = [
     "action",
+    "scope",
+    "provider",
     "targetType",
     "actorId",
     "guildId",

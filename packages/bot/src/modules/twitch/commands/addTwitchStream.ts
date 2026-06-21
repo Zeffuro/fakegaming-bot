@@ -23,6 +23,15 @@ const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
             customMessage,
         });
     },
+    auditAdd: {
+        action: 'twitch.create',
+        targetType: 'twitchConfig',
+        targetId: ({ username }) => username,
+        metadata: ({ username, discordChannelId }) => ({
+            channelId: discordChannelId,
+            twitchUsername: username,
+        }),
+    },
     successMessage: twitchCommandConfig.successMessage,
     alreadyConfiguredMessage: twitchCommandConfig.alreadyConfiguredMessage,
     notFoundMessage: twitchCommandConfig.notFoundMessage,

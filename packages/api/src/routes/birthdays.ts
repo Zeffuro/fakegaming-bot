@@ -8,6 +8,7 @@ import { birthdayCreateRequestSchema, birthdayUpdateRequestSchema } from '@zeffu
 import { z } from 'zod';
 import { UniqueConstraintError } from 'sequelize';
 import { recordAuditEvent } from '../utils/audit.js';
+import { loadGuildScopedRecords } from '../utils/guildScopedRouteHelpers.js';
 
 // Zod schemas
 const userGuildParamSchema = z.object({
@@ -52,7 +53,7 @@ async function getAuthorizedBirthday(req: Request, res: Response, userId: string
  */
 router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
     const { guildId } = req.query as z.infer<typeof listQuerySchema>;
-    const birthdays = await getConfigManager().birthdayManager.getAllPlain();
+    const birthdays = await loadGuildScopedRecords(getConfigManager().birthdayManager, guildId);
     const visibleBirthdays = await filterGuildScopedRecordsForRequest(req, res, birthdays, guildId);
     if (!visibleBirthdays) return;
     res.json(visibleBirthdays);

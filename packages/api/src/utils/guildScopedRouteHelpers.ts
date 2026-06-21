@@ -39,8 +39,24 @@ interface UpsertGuildScopedRecordOptions<TBody extends GuildScopedRecord & Recor
     metadata: (body: TBody) => Record<string, unknown>;
 }
 
+interface GuildScopedListManager<TRecord extends GuildScopedRecord> {
+    getAllPlain(): Promise<TRecord[]>;
+    getManyPlain(where: { guildId: string }): Promise<TRecord[]>;
+}
+
 export function sendNotFound(res: Response, message: string): Response {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message } });
+}
+
+export async function loadGuildScopedRecords<TRecord extends GuildScopedRecord>(
+    manager: GuildScopedListManager<TRecord>,
+    guildId: string | undefined
+): Promise<TRecord[]> {
+    if (guildId) {
+        return manager.getManyPlain({ guildId });
+    }
+
+    return manager.getAllPlain();
 }
 
 export async function sendGuildScopedRecords<T extends GuildScopedRecord>(
