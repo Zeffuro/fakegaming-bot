@@ -92,14 +92,14 @@ describe('weatherService', () => {
                 main: 'Rain',
                 description: 'light rain',
                 temp: 18.5,
-                rain: '🌧️ 2.5mm',
-                emoji: '🌧️',
+                rain: '\ud83c\udf27\ufe0f 2.5mm',
+                emoji: '\ud83c\udf27\ufe0f',
             });
             expect(result[1]).toMatchObject({
                 main: 'Clear',
                 temp: 22.0,
                 rain: '',
-                emoji: '☀️',
+                emoji: '\u2600\ufe0f',
             });
         });
 

@@ -85,7 +85,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 ## Features
 
 ### 🤖 Discord Bot
-- **23 Slash Commands** across 10 modules
+- Slash and context-menu commands generated from module manifests
 - Quote management system
 - Birthday tracking with automatic announcements
 - Reminder system with timezone support
@@ -416,47 +416,54 @@ This project uses **GitHub Actions** for continuous integration:
 
 <!-- COMMAND_TABLE_START -->
 
-| Command | Description | Permissions |
-|---------|-------------|-------------|
-|`/add-bluesky-account`|Add a Bluesky account for post notifications|All users|
-|`/add-quote`|Add a quote|All users|
-|`/add-tiktok-stream`|Add a TikTok account for live notifications|All users|
-|`/add-twitch-stream`|Add a Twitch stream for notifications|All users|
-|`/add-youtube-channel`|Add a Youtube Channel for new video notifications|All users|
-|`/anime`|Search anime, subscribe to releases, and view upcoming episodes|All users|
-|`/birthday`|Show your or another user's birthday|All users|
-|`/birthdays`|Show upcoming birthdays in this server|All users|
-|`/delete-quote`|Delete a quote you added or authored|All users|
-|`/delete-reminder`|Delete one of your pending reminders|All users|
-|`/get-patchnotes`|Get the latest patch notes for a game|All users|
-|`/help`|List all available commands and their descriptions.|All users|
-|`/league-history`|Get recent League of Legends match history for a summoner|All users|
-|`/league-stats`|Get League of Legends stats for a summoner or linked user|All users|
-|`/link-riot`|Link your Discord account or another user to a Riot account|All users|
-|`/manga`|Search manga, manhwa, webtoons, and light novels on AniList|All users|
-|`/patchnotes-history`|Show stored patch note history for a game|All users|
-|`/poll`|Create a simple poll for users to vote on|All users|
-|`/quote-leaderboard`|Show the most quoted users in this server|All users|
-|`/quotes`|Get all quotes for a user|All users|
-|`/random-quote`|Get a random quote from the server|All users|
-|`/reminders`|List your pending reminders|All users|
-|`/remove-birthday`|Remove your birthday or another user's birthday (admins only)|All users|
-|`/riot-links`|Manage linked Riot accounts|All users|
-|`/roll`|Roll dice or generate a random number|All users|
-|`/search-quote`|Search quotes by text|All users|
-|`/set-birthday`|Set your birthday and the channel to post in|All users|
-|`/set-reminder`|Set a reminder|All users|
-|`/set-timezone`|Set your timezone|All users|
-|`/snooze-reminder`|Snooze one of your pending reminders|All users|
-|`/spin`|Spin the wheel to pick someone!|All users|
-|`/stream-status`|Check whether a Twitch channel is live|All users|
-|`/subscribe-patchnotes`|Subscribe a channel to patch notes for a game|All users|
-|`/test-notification`|Send a sample notification to a channel|All users|
-|`/tft-history`|Get recent Teamfight Tactics match history for a summoner|All users|
-|`/tft-stats`|Get Teamfight Tactics ranked stats for a summoner|All users|
-|`/time`|Convert a time into Discord timestamp formats|All users|
-|`/weather`|Get the current weather and a short forecast for a specified location|All users|
-|`/youtube-latest`|Show the latest video from a YouTube channel ID|All users|
+Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.md).
+
+| Command | Type | Description | Permissions |
+|---------|------|-------------|-------------|
+|`/add-bluesky-account`|Slash|Add a Bluesky account for post notifications|All users|
+|`/add-quote`|Slash|Add a quote|All users|
+|`/add-tiktok-stream`|Slash|Add a TikTok account for live notifications|All users|
+|`/add-twitch-stream`|Slash|Add a Twitch stream for notifications|All users|
+|`/add-youtube-channel`|Slash|Add a Youtube Channel for new video notifications|All users|
+|`/anime`|Slash|Search anime, subscribe to releases, and view upcoming episodes|All users|
+|`/birthday`|Slash|Show your or another user's birthday|All users|
+|`/birthdays`|Slash|Show upcoming birthdays in this server|All users|
+|`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
+|`/delete-quote`|Slash|Delete a quote you added or authored|All users|
+|`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
+|`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
+|`/help`|Slash|List all available commands and their descriptions.|All users|
+|`/league-history`|Slash|Get recent League of Legends match history for a summoner|All users|
+|`/league-stats`|Slash|Get League of Legends stats for a summoner or linked user|All users|
+|`/link-riot`|Slash|Link your Discord account or another user to a Riot account|All users|
+|`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
+|`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
+|`/poll`|Slash|Create a simple poll for users to vote on|All users|
+|`/quote-leaderboard`|Slash|Show the most quoted users in this server|All users|
+|`/quotes`|Slash|Get all quotes for a user|All users|
+|`/random-quote`|Slash|Get a random quote from the server|All users|
+|`/reminders`|Slash|List your pending reminders|All users|
+|`/remove-birthday`|Slash|Remove your birthday or another user's birthday (admins only)|All users|
+|`/riot-links`|Slash|Manage linked Riot accounts|All users|
+|`/roll`|Slash|Roll dice or generate a random number|All users|
+|`/search-quote`|Slash|Search quotes by text|All users|
+|`/set-birthday`|Slash|Set your birthday and the channel to post in|All users|
+|`/set-reminder`|Slash|Set a reminder|All users|
+|`/set-timezone`|Slash|Set your timezone|All users|
+|`/snooze-reminder`|Slash|Snooze one of your pending reminders|All users|
+|`/spin`|Slash|Spin the wheel to pick someone!|All users|
+|`/stream-status`|Slash|Check whether a Twitch channel is live|All users|
+|`/subscribe-patchnotes`|Slash|Subscribe a channel to patch notes for a game|All users|
+|`/test-notification`|Slash|Send a sample notification to a channel|All users|
+|`/tft-history`|Slash|Get recent Teamfight Tactics match history for a summoner|All users|
+|`/tft-stats`|Slash|Get Teamfight Tactics ranked stats for a summoner|All users|
+|`/time`|Slash|Convert a time into Discord timestamp formats|All users|
+|`/weather`|Slash|Get the current weather and a short forecast for a specified location|All users|
+|`/youtube-latest`|Slash|Show the latest video from a YouTube channel ID|All users|
+|`Remind Me in 1h`|Message context|Set a one-hour reminder for a message from the message context menu|All users|
+|`Save as Quote`|Message context|Save a message as a quote from the message context menu|All users|
+|`Show Birthday`|User context|Show a user birthday from the user context menu|All users|
+|`Show Quotes`|User context|Show quotes for a user from the user context menu|All users|
 <!-- COMMAND_TABLE_END -->
 
 > **Note:** The command table above is auto-generated by CI. You do not need to update it manually.

@@ -29,6 +29,28 @@ function sumCounts(counts: GuildDashboardSummaryCounts): number {
         + counts.birthdays;
 }
 
+/**
+ * @openapi
+ * /dashboard/guild/{guildId}/summary:
+ *   get:
+ *     summary: Get dashboard summary counts for a guild
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: guildId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Guild dashboard summary
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 router.get('/guild/:guildId/summary', validateParams(guildSummaryParamsSchema), async (req, res) => {
     const { guildId } = req.params as z.infer<typeof guildSummaryParamsSchema>;
     const access = await checkUserGuildAccess(req, res, guildId);

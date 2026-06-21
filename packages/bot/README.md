@@ -10,42 +10,10 @@ The bot package contains all Discord.js bot functionality including slash comman
 
 ### Commands
 
-**General:**
-- `/help` - List all available commands
-- `/roll` - Roll dice or generate random numbers
-- `/poll` - Create polls
-- `/spin` - Spin the wheel to pick someone
-- `/weather` - Get weather information
+The current command catalog is generated from module manifests:
 
-**Quotes:**
-- `/add-quote` - Add a quote
-- `/quotes` - List all quotes for a user
-- `/random-quote` - Get a random quote
-- `/search-quote` - Search quotes
-
-**Birthdays:**
-- `/birthday` - Show your or another user's birthday
-- `/set-birthday` - Set your birthday
-- `/remove-birthday` - Remove a birthday (admins only)
-
-**Reminders:**
-- `/set-reminder` - Create a reminder
-- `/set-timezone` - Set your timezone
-
-**League of Legends:**
-- `/link-riot` - Link Riot account to Discord
-- `/league-stats` - Get League stats
-- `/league-history` - Get match history
-- `/tft-history` - Get TFT match history
-
-**Notifications:**
-- `/add-twitch-stream` - Add Twitch stream notifications
-- `/add-youtube-channel` - Add YouTube channel notifications
-- `/add-tiktok-stream` - Add TikTok live notifications
-
-**Patch Notes:**
-- `/get-patchnotes` - Get latest patch notes for a game
-- `/subscribe-patchnotes` - Subscribe to automatic patch note announcements
+- [Generated command catalog](../../docs/generated/commands.md)
+- [Root README command table](../../README.md#available-commands)
 
 ### Background Services
 

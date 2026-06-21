@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { skipCsrf } from './csrf.js';
@@ -13,7 +14,19 @@ function getServiceTokens(): string[] {
         process.env.SERVICE_API_TOKEN,
         process.env.INTERNAL_API_TOKEN,
         process.env.API_SERVICE_TOKEN,
-    ].filter((value): value is string => Boolean(value && value.trim() !== ''));
+    ]
+        .map((value) => value?.trim() ?? '')
+        .filter((value) => value.length > 0);
+}
+
+export function tokenMatches(presentedToken: string, configuredTokens: readonly string[]): boolean {
+    const presented = Buffer.from(presentedToken);
+
+    return configuredTokens.some((configuredToken) => {
+        const configured = Buffer.from(configuredToken);
+
+        return configured.length === presented.length && timingSafeEqual(configured, presented);
+    });
 }
 
 /**
@@ -28,7 +41,7 @@ export function serviceAuth(req: Request, res: Response, next: NextFunction): vo
 
     const hdr = req.header('x-service-token');
     if (!hdr) return next();
-    if (!tokens.includes(hdr)) {
+    if (!tokenMatches(hdr, tokens)) {
         incMetric('service_auth_denied');
         log.warn(getSafeRequestContext(req), 'Invalid service token presented');
         return next();

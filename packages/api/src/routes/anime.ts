@@ -126,6 +126,47 @@ router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
     res.json(await Promise.all(subscriptions.map(serializeSubscription)));
 });
 
+/**
+ * @openapi
+ * /anime/search:
+ *   get:
+ *     summary: Search AniList media
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: type
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [anime, manga]
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: perPage
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 25
+ *     responses:
+ *       200:
+ *         description: Search results with page info
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
     const { q, type, page = 1, perPage = 10 } = req.query as unknown as z.infer<typeof searchQuerySchema>;
     const mediaType = parseAniListMediaType(type);
@@ -136,6 +177,55 @@ router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res
     res.json({ type: mediaType, results, pageInfo });
 });
 
+/**
+ * @openapi
+ * /anime/season:
+ *   get:
+ *     summary: List AniList titles for a season
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: season
+ *         required: true
+ *         schema:
+ *           type: string
+ *           enum: [current, next, WINTER, SPRING, SUMMER, FALL]
+ *       - in: query
+ *         name: scope
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [airing, chart, tv, all]
+ *       - in: query
+ *         name: year
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1940
+ *           maximum: 2100
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *       - in: query
+ *         name: perPage
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 25
+ *     responses:
+ *       200:
+ *         description: Seasonal AniList titles with page info
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res) => {
     const query = req.query as unknown as z.infer<typeof seasonQuerySchema>;
     const resolved = resolveSeason(query);
@@ -169,6 +259,34 @@ router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res
     return res.json(payload);
 });
 
+/**
+ * @openapi
+ * /anime:
+ *   post:
+ *     summary: Subscribe a guild channel to anime episode notifications
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AnimeSubscribeRequest'
+ *     responses:
+ *       200:
+ *         description: Existing subscription updated
+ *       201:
+ *         description: Subscription created
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuildAdmin, async (req, res) => {
     const body = req.body as z.infer<typeof animeSubscribeRequestSchema>;
     const anime = await resolveAnime(body);
@@ -202,6 +320,33 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
     res.status(created ? 201 : 200).json({ success: true, created, anilistId: anime.id });
 });
 
+/**
+ * @openapi
+ * /anime/{id}:
+ *   delete:
+ *     summary: Delete an anime subscription
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *     responses:
+ *       200:
+ *         description: Subscription deleted
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const subscription = await getConfigManager().animeManager.subscriptions.findByPkPlain(Number(id));

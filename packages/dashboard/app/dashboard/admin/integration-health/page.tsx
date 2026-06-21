@@ -25,13 +25,12 @@ import {
     WarningAmber,
 } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
+import { ADMIN_PROVIDER_OPTIONS } from "@/components/admin/providerOptions";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { api, type AdminIntegrationHealthResponse, type IntegrationHealthRecord, type IntegrationHealthStatus } from "@/lib/api-client";
 
 type StatusFilter = "" | IntegrationHealthStatus;
-
-const PROVIDERS = ["twitch", "youtube", "tiktok", "bluesky", "patchnotes"] as const;
 
 function formatDateTime(value?: string | null): string {
     if (!value) return "Never";
@@ -238,7 +237,7 @@ export default function AdminIntegrationHealthPage() {
                                 onChange={(event) => { setProvider(event.target.value); setOffset(0); }}
                             >
                                 <MenuItem value="">All</MenuItem>
-                                {PROVIDERS.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
+                                {ADMIN_PROVIDER_OPTIONS.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
                             </Select>
                         </FormControl>
 

@@ -1,4 +1,4 @@
-name: Update Command Table
+name: Update Command Docs
 
 on:
   workflow_dispatch:
@@ -7,7 +7,11 @@ on:
       - main
     paths:
       - 'packages/bot/src/modules/**/commands/*'
+      - 'packages/bot/src/modules/**/commands.manifest.ts'
+      - 'packages/bot/src/modules/**/module.meta.json'
+      - 'scripts/generate-bot-manifest.ts'
       - 'scripts/generate-command-table.ts'
+      - 'scripts/lib/command-introspection.ts'
       - '.github/workflows/update-command-table.yml'
 
 permissions:
@@ -15,7 +19,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  update-command-table:
+  update-command-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -33,25 +37,27 @@ jobs:
           JWT_AUDIENCE: fakegaming-dashboard
           JWT_ISSUER: fakegaming
 
-      - name: Generate README command table
+      - name: Generate command docs
         run: pnpm tsx scripts/generate-command-table.ts
 
       - name: Check for changes
         id: changes
         run: |
-          if git diff --exit-code README.md; then
+          if git diff --exit-code README.md docs/generated/commands.md; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create pull request for command table update
+      - name: Create pull request for command docs update
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "chore: update command table in README [skip ci]"
-          branch: "bot/update-command-table"
-          title: "chore: update command table in README"
-          body: "This PR updates the command table in the README automatically."
+          commit-message: "chore: update generated command docs [skip ci]"
+          branch: "bot/update-command-docs"
+          title: "chore: update generated command docs"
+          body: "This PR updates generated command docs from the command manifest."
           labels: "bot, automated pr"
-          add-paths: README.md
+          add-paths: |
+            README.md
+            docs/generated/commands.md

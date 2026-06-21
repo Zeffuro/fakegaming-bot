@@ -392,12 +392,14 @@ See [TYPESCRIPT.md](../../TYPESCRIPT.md) for details.
 
 - `src/manifest/bot-manifest.ts` - Auto-generated from bot commands
 - `types/api.d.ts` - Auto-generated from OpenAPI spec
+- `../../docs/generated/commands.md` - Auto-generated from bot command manifest
+- `../../docs/generated/api.md` - Auto-generated from OpenAPI spec
 
 Regenerate with:
 
 ```bash
 # From repository root
-pnpm run gen:manifest
+pnpm run gen:docs
 pnpm run gen:api-types
 ```
 

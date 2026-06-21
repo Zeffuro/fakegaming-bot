@@ -1,79 +1,93 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { NotificationsManager } from '../notificationsManager.js';
-
-vi.mock('../models/notification.js', () => ({
-    Notification: {
-        findOne: vi.fn(),
-        findAll: vi.fn(),
-        findOrCreate: vi.fn(),
-        create: vi.fn(),
-        update: vi.fn(),
-    }
-}));
+import { beforeEach, describe, expect, it } from 'vitest';
+import { configManager } from '../../vitest.setup.js';
 
 describe('NotificationsManager', () => {
-    let manager: NotificationsManager;
+    const manager = configManager.notificationsManager;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        manager = new NotificationsManager();
+    beforeEach(async () => {
+        await manager.removeAll();
     });
 
-    describe('has', () => {
-        it('should check if notification exists', async () => {
-            vi.spyOn(manager, 'exists').mockResolvedValue(true);
-            const result = await manager.has('youtube', 'video123');
-            expect(result).toBe(true);
-            expect(manager.exists).toHaveBeenCalledWith({ provider: 'youtube', eventId: 'video123' });
+    it('checks notification existence globally and by guild', async () => {
+        await manager.recordIfNew({
+            provider: 'youtube',
+            eventId: 'video-1',
+            guildId: 'guild-1',
         });
+
+        await expect(manager.has('youtube', 'video-1')).resolves.toBe(true);
+        await expect(manager.has('youtube', 'missing')).resolves.toBe(false);
+        await expect(manager.hasForGuild('youtube', 'video-1', 'guild-1')).resolves.toBe(true);
+        await expect(manager.hasForGuild('youtube', 'video-1', 'guild-2')).resolves.toBe(false);
     });
 
-    describe('hasForGuild', () => {
-        it('should check if notification exists for specific guild', async () => {
-            vi.spyOn(manager, 'exists').mockResolvedValue(false);
-            const result = await manager.hasForGuild('twitch', 'stream456', 'guild789');
-            expect(result).toBe(false);
-            expect(manager.exists).toHaveBeenCalledWith({ provider: 'twitch', eventId: 'stream456', guildId: 'guild789' });
+    it('records a notification once per provider event', async () => {
+        const first = await manager.recordIfNew({
+            provider: 'twitch',
+            eventId: 'stream-1',
+            guildId: 'guild-1',
         });
+        const second = await manager.recordIfNew({
+            provider: 'twitch',
+            eventId: 'stream-1',
+            guildId: 'guild-2',
+        });
+
+        expect(first.created).toBe(true);
+        expect(second.created).toBe(false);
+        expect(second.record.id).toBe(first.record.id);
     });
 
-    describe('recordIfNew', () => {
-        it('should create new notification if not exists', async () => {
-            const mockRecord = { id: 1, provider: 'youtube', eventId: 'vid1' };
-            vi.spyOn(manager, 'findOrCreate').mockResolvedValue([mockRecord as any, true]);
-
-            const result = await manager.recordIfNew({ provider: 'youtube', eventId: 'vid1', guildId: 'g1' });
-
-            expect(result.created).toBe(true);
-            expect(result.record).toEqual(mockRecord);
+    it('upserts message metadata for an existing or new notification', async () => {
+        await manager.recordIfNew({ provider: 'youtube', eventId: 'video-1' });
+        await manager.setMessageMeta('youtube', 'video-1', {
+            guildId: 'guild-1',
+            channelId: 'channel-1',
+            messageId: 'message-1',
+        });
+        await manager.setMessageMeta('bluesky', 'post-1', {
+            guildId: 'guild-2',
+            channelId: 'channel-2',
+            messageId: 'message-2',
         });
 
-        it('should return existing notification if already exists', async () => {
-            const mockRecord = { id: 1, provider: 'youtube', eventId: 'vid1' };
-            vi.spyOn(manager, 'findOrCreate').mockResolvedValue([mockRecord as any, false]);
+        const result = await manager.list({ limit: 10 });
 
-            const result = await manager.recordIfNew({ provider: 'youtube', eventId: 'vid1' });
-
-            expect(result.created).toBe(false);
-        });
+        expect(result.total).toBe(2);
+        expect(result.records).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                provider: 'youtube',
+                eventId: 'video-1',
+                guildId: 'guild-1',
+                channelId: 'channel-1',
+                messageId: 'message-1',
+            }),
+            expect.objectContaining({
+                provider: 'bluesky',
+                eventId: 'post-1',
+                guildId: 'guild-2',
+                channelId: 'channel-2',
+                messageId: 'message-2',
+            }),
+        ]));
     });
 
-    describe('setMessageMeta', () => {
-        it('should update existing notification', async () => {
-            vi.spyOn(manager, 'updatePlain').mockResolvedValue([1, []] as [number, any[]]);
+    it('lists recent notifications with filters, pagination, and provider summary', async () => {
+        await manager.recordIfNew({ provider: 'twitch', eventId: 'stream-1', guildId: 'guild-1' });
+        await manager.recordIfNew({ provider: 'youtube', eventId: 'video-1', guildId: 'guild-1' });
+        await manager.recordIfNew({ provider: 'youtube', eventId: 'video-2', guildId: 'guild-2' });
 
-            await manager.setMessageMeta('youtube', 'vid1', { messageId: 'msg1', guildId: 'g1' });
+        const result = await manager.list({ guildId: 'guild-1', limit: 1 });
 
-            expect(manager.updatePlain).toHaveBeenCalled();
-        });
-
-        it('should create notification if update returns 0', async () => {
-            vi.spyOn(manager, 'updatePlain').mockResolvedValue([0, []] as [number, any[]]);
-            vi.spyOn(manager, 'addPlain').mockResolvedValue({} as any);
-
-            await manager.setMessageMeta('youtube', 'vid1', { messageId: 'msg1' });
-
-            expect(manager.addPlain).toHaveBeenCalled();
+        expect(result.total).toBe(2);
+        expect(result.limit).toBe(1);
+        expect(result.records).toHaveLength(1);
+        expect(result.summary).toEqual({
+            total: 2,
+            byProvider: expect.arrayContaining([
+                { provider: 'twitch', count: 1 },
+                { provider: 'youtube', count: 1 },
+            ]),
         });
     });
 });

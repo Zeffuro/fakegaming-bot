@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
     RIOT_LINKS: "/api/external/riotLinks",
     DASHBOARD: "/api/external/dashboard",
     INTEGRATION_HEALTH: "/api/external/integrationHealth",
+    NOTIFICATIONS: "/api/external/notifications",
 };
 
 export interface ApiOptions {

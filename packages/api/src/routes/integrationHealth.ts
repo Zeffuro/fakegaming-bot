@@ -65,6 +65,53 @@ interface IntegrationHealthRouteManager {
     }>;
 }
 
+/**
+ * @openapi
+ * /integrationHealth/admin:
+ *   get:
+ *     summary: List integration health across guilds
+ *     tags: [IntegrationHealth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: provider
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: guildId
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [unknown, healthy, warning, error, paused]
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 200
+ *       - in: query
+ *         name: offset
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           maximum: 10000
+ *     responses:
+ *       200:
+ *         description: Integration health records and summary counts
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 router.get('/admin', jwtOrService, requireDashboardAdmin, validateQuery(integrationHealthAdminQuerySchema), async (req, res) => {
     const query = req.query as z.infer<typeof integrationHealthAdminQuerySchema>;
     const manager = (getConfigManager() as unknown as { integrationHealthManager: IntegrationHealthRouteManager }).integrationHealthManager;
@@ -76,6 +123,35 @@ router.get('/admin', jwtOrService, requireDashboardAdmin, validateQuery(integrat
     });
 });
 
+/**
+ * @openapi
+ * /integrationHealth:
+ *   get:
+ *     summary: List integration health for a guild
+ *     tags: [IntegrationHealth]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: guildId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: provider
+ *         required: false
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Integration health records for the guild
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
 router.get('/', jwtAuth, validateQuery(integrationHealthQuerySchema), requireGuildAdmin, async (req, res) => {
     const { guildId, provider } = req.query as z.infer<typeof integrationHealthQuerySchema>;
     const manager = (getConfigManager() as unknown as { integrationHealthManager: IntegrationHealthRouteManager }).integrationHealthManager;

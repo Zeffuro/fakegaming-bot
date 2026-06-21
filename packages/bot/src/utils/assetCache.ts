@@ -8,11 +8,21 @@ import axios from 'axios';
 const dataRoot = resolveDataRoot();
 const assetRoot = path.join(dataRoot, 'assets');
 const log = getLogger({ name: 'bot:assetCache' });
+type AssetResponseData = Buffer | ArrayBuffer | ArrayBufferView | string;
 
 export function getAssetCacheDir(type: string): string {
     const dir = path.join(assetRoot, type);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, {recursive: true});
     return dir;
+}
+
+function toBuffer(data: AssetResponseData): Buffer {
+    if (Buffer.isBuffer(data)) return data;
+    if (typeof data === 'string') return Buffer.from(data);
+    if (data instanceof ArrayBuffer) return Buffer.from(data);
+
+    const view = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    return Buffer.from(view);
 }
 
 export async function getAsset(assetUrl: string, assetName: string, type: string, options: { logFailures?: boolean } = {}): Promise<CachedAsset> {
@@ -23,9 +33,10 @@ export async function getAsset(assetUrl: string, assetName: string, type: string
         return {buffer, path: cachePath};
     }
     try {
-        const response = await axios.get(assetUrl, {responseType: 'arraybuffer'});
-        await fs.promises.writeFile(cachePath, response.data);
-        return {buffer: response.data, path: cachePath};
+        const response = await axios.get<AssetResponseData>(assetUrl, {responseType: 'arraybuffer'});
+        const buffer = toBuffer(response.data);
+        await fs.promises.writeFile(cachePath, buffer);
+        return {buffer, path: cachePath};
     } catch (error) {
         if (options.logFailures ?? true) {
             const errorMsg = error instanceof Error ? error.message : String(error);

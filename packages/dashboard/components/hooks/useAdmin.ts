@@ -1,7 +1,7 @@
 "use client";
 import React, { useMemo } from "react";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
-import { Work, BugReport, Build, OndemandVideo, SportsEsports, History, MonitorHeart } from "@mui/icons-material";
+import { Work, BugReport, Build, OndemandVideo, SportsEsports, History, MonitorHeart, NotificationsActive } from "@mui/icons-material";
 
 export interface AdminCrumb {
     label: string;
@@ -47,6 +47,7 @@ export function useAdminCards(): AdminCard[] {
         { title: "YouTube Debug", description: "Resolve channel identifiers (handle/username/UC-Id)", href: "/dashboard/admin/youtube", icon: React.createElement(OndemandVideo) },
         { title: "Riot Links", description: "Audit, edit, and remove linked Riot accounts", href: "/dashboard/admin/riot-links", icon: React.createElement(SportsEsports) },
         { title: "Integration Health", description: "See failing notification integrations across servers", href: "/dashboard/admin/integration-health", icon: React.createElement(MonitorHeart) },
+        { title: "Notifications", description: "Review recent provider delivery and dedupe records", href: "/dashboard/admin/notifications", icon: React.createElement(NotificationsActive) },
         { title: "Audit Events", description: "Review recent admin and configuration changes", href: "/dashboard/admin/audit", icon: React.createElement(History) },
     ]), []);
 }

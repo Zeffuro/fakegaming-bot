@@ -83,4 +83,41 @@ describe('TwitchManager', () => {
             expect(remaining.length).toBe(0);
         });
     });
+
+    describe('upsertStream', () => {
+        it('creates and then updates a stream by guild and username', async () => {
+            const created = await twitchManager.upsertStream({
+                twitchUsername: 'streamer-upsert',
+                discordChannelId: 'channel-original',
+                guildId: 'guild-upsert',
+                customMessage: 'first message',
+            });
+
+            expect(created.created).toBe(true);
+            expect(created.record).toMatchObject({
+                twitchUsername: 'streamer-upsert',
+                discordChannelId: 'channel-original',
+                guildId: 'guild-upsert',
+                customMessage: 'first message',
+            });
+
+            const updated = await twitchManager.upsertStream({
+                twitchUsername: 'streamer-upsert',
+                discordChannelId: 'channel-updated',
+                guildId: 'guild-upsert',
+                customMessage: 'updated message',
+            });
+
+            expect(updated.created).toBe(false);
+            expect(updated.record).toMatchObject({
+                twitchUsername: 'streamer-upsert',
+                discordChannelId: 'channel-updated',
+                guildId: 'guild-upsert',
+                customMessage: 'updated message',
+            });
+
+            const all = await twitchManager.getManyPlain({ twitchUsername: 'streamer-upsert' } as any);
+            expect(all).toHaveLength(1);
+        });
+    });
 });
