@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     Alert,
     Box,
@@ -24,7 +25,7 @@ import {
     RestartAlt,
 } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
-import { ADMIN_PROVIDER_OPTIONS } from "@/components/admin/providerOptions";
+import { getAdminProviderOptions, normalizeAdminProviderFilter } from "@/components/admin/providerOptions";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { api, type AdminNotificationRecord, type AdminNotificationsResponse } from "@/lib/api-client";
@@ -88,10 +89,12 @@ function NotificationCard({ record }: { record: AdminNotificationRecord }) {
     );
 }
 
-export default function AdminNotificationsPage() {
+function AdminNotificationsContent() {
     const accent = dashboardAccents.admin;
-    const [provider, setProvider] = useState("");
-    const [guildId, setGuildId] = useState("");
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
+    const [provider, setProvider] = useState(() => normalizeAdminProviderFilter(searchParams?.get("provider")));
+    const [guildId, setGuildId] = useState(() => searchParams?.get("guildId")?.trim() ?? "");
     const [offset, setOffset] = useState(0);
     const [data, setData] = useState<AdminNotificationsResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -103,6 +106,7 @@ export default function AdminNotificationsPage() {
         limit: 50,
         offset,
     }), [guildId, offset, provider]);
+    const providerOptions = useMemo(() => getAdminProviderOptions(provider), [provider]);
 
     const load = useCallback(async () => {
         try {
@@ -119,6 +123,13 @@ export default function AdminNotificationsPage() {
     useEffect(() => {
         void load();
     }, [load]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(searchParamString);
+        setProvider(normalizeAdminProviderFilter(params.get("provider")));
+        setGuildId(params.get("guildId")?.trim() ?? "");
+        setOffset(0);
+    }, [searchParamString]);
 
     const clearFilters = () => {
         setProvider("");
@@ -169,7 +180,7 @@ export default function AdminNotificationsPage() {
                                 onChange={(event) => { setProvider(event.target.value); setOffset(0); }}
                             >
                                 <MenuItem value="">All</MenuItem>
-                                {ADMIN_PROVIDER_OPTIONS.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
+                                {providerOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
                             </Select>
                         </FormControl>
 
@@ -241,5 +252,13 @@ export default function AdminNotificationsPage() {
                 </FeaturePanel>
             </Stack>
         </AdminPage>
+    );
+}
+
+export default function AdminNotificationsPage() {
+    return (
+        <Suspense fallback={<AdminPage title="Notification Deliveries"><Typography>Loading notification deliveries...</Typography></AdminPage>}>
+            <AdminNotificationsContent />
+        </Suspense>
     );
 }

@@ -11,6 +11,7 @@ const providerRoutes = new Map([
     ["YouTube", "youtube"],
     ["TikTok", "tiktok"],
     ["Bluesky", "bluesky"],
+    ["Steam News", "steam-news"],
     ["Patch Notes", "patch-notes"],
 ]);
 

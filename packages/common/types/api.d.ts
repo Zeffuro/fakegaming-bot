@@ -1180,6 +1180,260 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/steamNewsSubscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Steam news subscriptions */
+        get: {
+            parameters: {
+                query?: {
+                    guildId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description List of Steam news subscriptions */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Upsert a Steam news subscription */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SteamNewsSubscriptionRequest"];
+                };
+            };
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        /** Add a Steam news subscription */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SteamNewsSubscriptionRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/steamNewsSubscriptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a Steam news subscription by id */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Steam news subscription config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /** Delete a Steam news subscription by id */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Pause or resume a Steam news subscription */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PausedStateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated Steam news subscription config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        trace?: never;
+    };
+    "/steamApps/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Steam apps by name, App ID, or Steam app URL */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ranked Steam app search results */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/steamApps/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resolve one Steam app from a name, App ID, or Steam app URL */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Resolved Steam app */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                /** @description Multiple Steam apps matched the input */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/servers": {
         parameters: {
             query?: never;
@@ -2121,6 +2375,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/notifications/guild/{guildId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent notification delivery records for a guild */
+        get: {
+            parameters: {
+                query?: {
+                    provider?: string;
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Guild-scoped notification delivery records and provider counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications/admin": {
         parameters: {
             query?: never;
@@ -2247,7 +2543,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews";
                 };
                 cookie?: never;
             };
@@ -2288,7 +2584,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews";
                 };
                 cookie?: never;
             };
@@ -3991,6 +4287,17 @@ export interface components {
         ServerUpdateRequest: {
             name?: string;
             prefix?: string;
+        };
+        SteamNewsSubscriptionRequest: {
+            steamAppId: number;
+            appName?: string;
+            discordChannelId: string;
+            guildId: string;
+            customMessage?: string;
+            cooldownMinutes?: number | null;
+            quietHoursStart?: string | null;
+            quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         TikTokCreateRequest: {
             tiktokUsername: string;

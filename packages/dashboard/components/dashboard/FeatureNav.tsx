@@ -2,18 +2,19 @@
 
 import React from "react";
 import Link from "next/link";
-import { AlternateEmail, AutoStories, Cake, LiveTv, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Cake, LiveTv, SpeakerNotes, SportsEsports, YouTube as YouTubeIcon } from "@mui/icons-material";
 import { Button, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 
-export type FeatureNavModule = "Twitch" | "TikTok" | "Bluesky" | "YouTube" | "Patch Notes" | "Anime" | "Birthdays";
+export type FeatureNavModule = "Twitch" | "TikTok" | "Bluesky" | "YouTube" | "Steam News" | "Patch Notes" | "Anime" | "Birthdays";
 
 const modules: Array<{ label: FeatureNavModule; href: string; accent: string; icon: React.ReactNode }> = [
   { label: "Twitch", href: "twitch", accent: dashboardAccents.twitch, icon: <LiveTv fontSize="small" /> },
   { label: "TikTok", href: "tiktok", accent: dashboardAccents.tiktok, icon: <LiveTv fontSize="small" /> },
   { label: "Bluesky", href: "bluesky", accent: dashboardAccents.bluesky, icon: <AlternateEmail fontSize="small" /> },
   { label: "YouTube", href: "youtube", accent: dashboardAccents.youtube, icon: <YouTubeIcon fontSize="small" /> },
+  { label: "Steam News", href: "steam-news", accent: dashboardAccents.steam, icon: <SportsEsports fontSize="small" /> },
   { label: "Patch Notes", href: "patch-notes", accent: dashboardAccents.patchNotes, icon: <SpeakerNotes fontSize="small" /> },
   { label: "Anime", href: "anime", accent: dashboardAccents.anime, icon: <AutoStories fontSize="small" /> },
   { label: "Birthdays", href: "birthdays", accent: dashboardAccents.birthdays, icon: <Cake fontSize="small" /> },

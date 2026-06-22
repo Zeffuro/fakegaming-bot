@@ -8,6 +8,7 @@ function emptyInput() {
         youtube: [],
         tiktok: [],
         bluesky: [],
+        steamNews: [],
         patchNotes: [],
         anime: [],
         birthdays: [],
@@ -37,6 +38,34 @@ describe('notification setup export', () => {
                     discordChannelId: 'channel-2',
                 },
             ],
+            steamNews: [
+                {
+                    id: 5,
+                    steamAppId: 730,
+                    appName: 'Counter-Strike 2',
+                    discordChannelId: 'channel-5',
+                    paused: false,
+                    customMessage: 'Game news',
+                },
+            ],
+            anime: [
+                {
+                    id: 3,
+                    anilistId: 123,
+                    animeTitle: 'Airing Show',
+                    discordChannelId: 'channel-3',
+                    reminderMinutes: 45,
+                },
+            ],
+            birthdays: [
+                {
+                    userId: 'user-1',
+                    channelId: 'channel-4',
+                    day: 22,
+                    month: 6,
+                    year: 1994,
+                },
+            ],
         };
         const review = buildNotificationSetupReview(input);
 
@@ -50,7 +79,7 @@ describe('notification setup export', () => {
             guildId: 'guild-1',
             exportedAt: '2026-06-22T00:00:00.000Z',
             totals: {
-                records: 2,
+                records: 5,
                 duplicateRoutes: 0,
                 multiChannelFeeds: 0,
                 busyChannels: 0,
@@ -60,6 +89,7 @@ describe('notification setup export', () => {
                     provider: 'Twitch',
                     id: 1,
                     source: 'Streamer',
+                    sourceId: 'Streamer',
                     channelId: 'channel-1',
                     paused: true,
                     customMessage: 'Live now',
@@ -68,12 +98,68 @@ describe('notification setup export', () => {
                     quietHoursEnd: '07:00',
                 },
                 {
+                    provider: 'Steam News',
+                    id: 5,
+                    source: 'Counter-Strike 2',
+                    sourceId: '730',
+                    channelId: 'channel-5',
+                    paused: false,
+                    customMessage: 'Game news',
+                },
+                {
                     provider: 'Patch Notes',
                     id: 2,
                     source: 'League of Legends',
+                    sourceId: 'League of Legends',
                     channelId: 'channel-2',
                 },
+                {
+                    provider: 'Anime',
+                    id: 3,
+                    source: 'Airing Show',
+                    sourceId: '123',
+                    channelId: 'channel-3',
+                    reminderMinutes: 45,
+                },
+                {
+                    provider: 'Birthdays',
+                    source: 'user-1',
+                    sourceId: 'user-1',
+                    channelId: 'channel-4',
+                    birthday: {
+                        day: 22,
+                        month: 6,
+                        year: 1994,
+                    },
+                },
             ],
+        });
+    });
+
+    it('keeps YouTube channel identity separate from display labels for restore workflows', () => {
+        const input = {
+            ...emptyInput(),
+            youtube: [
+                {
+                    id: 3,
+                    youtubeChannelId: 'UC1234567890123456789012',
+                    youtubeChannelTitle: 'Video Archive',
+                    discordChannelId: 'channel-3',
+                },
+            ],
+        };
+        const review = buildNotificationSetupReview(input);
+
+        expect(buildNotificationSetupExport({
+            guildId: 'guild-1',
+            exportedAt: '2026-06-22T00:00:00.000Z',
+            review,
+            ...input,
+        }).records[0]).toMatchObject({
+            provider: 'YouTube',
+            source: 'Video Archive',
+            sourceId: 'UC1234567890123456789012',
+            channelId: 'channel-3',
         });
     });
 

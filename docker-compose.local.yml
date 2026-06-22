@@ -1,3 +1,10 @@
+x-app-runtime-hardening: &app-runtime-hardening
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
   # The postgres service is commented out as it's not needed for local testing
   # postgres:
@@ -26,6 +33,7 @@ services:
 
   # -------------------- BOT --------------------
   bot:
+    <<: *app-runtime-hardening
     # Use 'build' for local testing instead of 'image'
     build:
       context: .
@@ -50,6 +58,7 @@ services:
 
   # -------------------- API --------------------
   api:
+    <<: *app-runtime-hardening
     # Use 'build' for local testing instead of 'image'
     build:
       context: .
@@ -77,6 +86,7 @@ services:
 
   # -------------------- DASHBOARD --------------------
   dashboard:
+    <<: *app-runtime-hardening
     # Use 'build' for local testing instead of 'image'
     build:
       context: .

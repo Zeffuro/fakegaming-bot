@@ -14,6 +14,7 @@ export * from "./api/jobs";
 export * from "./api/integrationHealth";
 export * from "./api/notifications";
 export * from "./api/patchNotes";
+export * from "./api/steamNews";
 export * from "./api/quotes";
 export * from "./api/riotLinks";
 export * from "./api/tiktok";
@@ -30,6 +31,7 @@ import { jobsApi } from "./api/jobs";
 import { integrationHealthApi } from "./api/integrationHealth";
 import { notificationsApi } from "./api/notifications";
 import { patchNotesApi } from "./api/patchNotes";
+import { steamNewsApi } from "./api/steamNews";
 import { quotesApi } from "./api/quotes";
 import { riotLinksApi } from "./api/riotLinks";
 import { tiktokApi } from "./api/tiktok";
@@ -43,6 +45,7 @@ export const api = {
     ...blueskyApi,
     ...youtubeApi,
     ...patchNotesApi,
+    ...steamNewsApi,
     ...animeApi,
     ...quotesApi,
     ...birthdaysApi,

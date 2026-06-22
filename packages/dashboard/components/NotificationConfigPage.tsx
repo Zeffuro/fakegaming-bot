@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from "@mui/material";
@@ -16,6 +16,7 @@ import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useSt
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
 import { filterNotificationConfigs, type NotificationConfigStatusFilter } from "@/lib/notificationConfigFilters";
+import type { ConfigDialogItemOption } from "@/components/config-dialog/ConfigDialogFields";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -51,6 +52,7 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     showCustomMessage?: boolean;
     showNotificationControls?: boolean;
     itemNameOptions?: string[];
+    itemNameSearch?: (query: string) => Promise<ConfigDialogItemOption[]>;
     allowEdit?: boolean;
 }
 
@@ -70,6 +72,7 @@ export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
     | "showCustomMessage"
     | "showNotificationControls"
     | "itemNameOptions"
+    | "itemNameSearch"
     | "allowEdit"
 >;
 
@@ -78,12 +81,13 @@ function moduleDescription(moduleName: string, plural: string): string {
     if (moduleName === "TikTok") return "Track creators going live and keep noisy alerts under control with per-channel notification settings.";
     if (moduleName === "Bluesky") return "Watch Bluesky accounts for new posts and route announcements with cooldowns and quiet hours.";
     if (moduleName === "YouTube") return "Watch channels for new uploads and post clean video announcements where your server expects them.";
+    if (moduleName === "Steam News") return "Subscribe Discord channels to official Steam game announcements with cooldowns and quiet hours.";
     if (moduleName === "Patch Notes") return "Subscribe Discord channels to game update feeds so patch posts land in predictable places.";
     return `Configure ${moduleName} ${plural.toLowerCase()} for this server.`;
 }
 
 function toFeatureModule(moduleName: string): FeatureNavModule {
-    if (moduleName === "Twitch" || moduleName === "TikTok" || moduleName === "Bluesky" || moduleName === "YouTube" || moduleName === "Patch Notes" || moduleName === "Anime" || moduleName === "Birthdays") {
+    if (moduleName === "Twitch" || moduleName === "TikTok" || moduleName === "Bluesky" || moduleName === "YouTube" || moduleName === "Steam News" || moduleName === "Patch Notes" || moduleName === "Anime" || moduleName === "Birthdays") {
         return moduleName;
     }
     return "Twitch";
@@ -99,7 +103,15 @@ const statusFilterOptions: Array<{ label: string; value: NotificationConfigStatu
     { label: "Unknown", value: "unknown" },
 ];
 
-export default function NotificationConfigPage<T extends StreamingConfig>({
+export default function NotificationConfigPage<T extends StreamingConfig>(props: NotificationConfigPageProps<T>) {
+    return (
+        <Suspense fallback={<DashboardLayout guild={props.guild} currentModule={props.moduleName.toLowerCase()} maxWidth="xl" loading>{null}</DashboardLayout>}>
+            <NotificationConfigContent {...props} />
+        </Suspense>
+    );
+}
+
+function NotificationConfigContent<T extends StreamingConfig>({
     guildId,
     guild,
     configs,
@@ -126,6 +138,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
     showCustomMessage = true,
     showNotificationControls = true,
     itemNameOptions,
+    itemNameSearch,
     allowEdit = true,
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
@@ -172,10 +185,10 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
 
     const handleEditConfigChange = (field: string, value: any) => {
         if (!editingConfig) return;
-        setEditingConfig({
-            ...(editingConfig as any),
+        setEditingConfig((current) => current ? {
+            ...(current as any),
             [field]: value
-        });
+        } : current);
     };
 
     const currentTrail = guild ? [
@@ -357,6 +370,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                         showNotificationControls={showNotificationControls}
                         itemSingularLabel={singular}
                         itemNameOptions={itemNameOptions}
+                        itemNameSearch={itemNameSearch}
                     />
 
                     <EditConfigDialog
@@ -376,6 +390,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                         showCustomMessage={showCustomMessage}
                         showNotificationControls={showNotificationControls}
                         itemNameOptions={itemNameOptions}
+                        itemNameSearch={itemNameSearch}
                     />
                 </FeatureShell>
             )}

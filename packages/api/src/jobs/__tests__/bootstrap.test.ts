@@ -20,6 +20,7 @@ vi.mock('../youtube.js', () => ({ registerYouTubeJobs: vi.fn().mockResolvedValue
 vi.mock('../tiktok.js', () => ({ registerTikTokJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../bluesky.js', () => ({ registerBlueskyJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../anime.js', () => ({ registerAnimeJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../steamNews.js', () => ({ registerSteamNewsJobs: vi.fn().mockResolvedValue(undefined) }));
 
 import * as birthdays from '../birthdays.js';
 import * as reminders from '../reminders.js';
@@ -30,6 +31,7 @@ import * as youtube from '../youtube.js';
 import * as tiktok from '../tiktok.js';
 import * as bluesky from '../bluesky.js';
 import * as anime from '../anime.js';
+import * as steamNews from '../steamNews.js';
 
 async function importFresh<T = any>(modulePath: string): Promise<T> {
     vi.resetModules();
@@ -63,6 +65,7 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(tiktok).registerTikTokJobs).toHaveBeenCalled();
         expect(vi.mocked(bluesky).registerBlueskyJobs).toHaveBeenCalled();
         expect(vi.mocked(anime).registerAnimeJobs).toHaveBeenCalled();
+        expect(vi.mocked(steamNews).registerSteamNewsJobs).toHaveBeenCalled();
     });
 
     it('with pg-boss backend but wrong DB provider returns early', async () => {

@@ -17,6 +17,7 @@ export * from './animeManager.js';
 export * from './leagueManager.js';
 export * from './auditEventManager.js';
 export * from './integrationHealthManager.js';
+export * from './steamNewsManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

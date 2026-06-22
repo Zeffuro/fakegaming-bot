@@ -38,6 +38,7 @@ export {
   AnimeEpisode,
   AuditEvent,
   IntegrationHealth,
+  SteamNewsSubscriptionConfig,
   type AuditActorType,
   type AuditEventSeverity,
   type AuditEventStatus,
@@ -76,6 +77,7 @@ export {
   AnimeEpisodeManager,
   AuditEventManager,
   IntegrationHealthManager,
+  SteamNewsSubscriptionManager,
   type AuditEventInput,
   type AuditEventRecord,
   type AuditEventListOptions,
@@ -192,6 +194,9 @@ export * from './patchnotes/index.js';
 
 // Anime provider utilities (shared)
 export * from './anime/index.js';
+
+// Steam provider utilities (shared)
+export * from './steam/index.js';
 
 // TikTok utilities (shared)
 export * from './utils/tiktok.js';

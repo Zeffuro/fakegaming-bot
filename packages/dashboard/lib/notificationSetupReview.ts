@@ -31,6 +31,7 @@ interface BuildNotificationSetupReviewInput {
     youtube: Array<Record<string, unknown>>;
     tiktok: Array<Record<string, unknown>>;
     bluesky: Array<Record<string, unknown>>;
+    steamNews: Array<Record<string, unknown>>;
     patchNotes: Array<Record<string, unknown>>;
     anime: Array<Record<string, unknown>>;
     birthdays: Array<Record<string, unknown>>;
@@ -42,6 +43,7 @@ export function buildNotificationSetupReview(input: BuildNotificationSetupReview
         ...input.youtube.map((config) => toRecord("YouTube", config, "youtubeChannelId", "discordChannelId")),
         ...input.tiktok.map((config) => toRecord("TikTok", config, "tiktokUsername", "discordChannelId")),
         ...input.bluesky.map((config) => toRecord("Bluesky", config, "blueskyHandle", "discordChannelId")),
+        ...input.steamNews.map((config) => toRecord("Steam News", config, "steamAppId", "discordChannelId")),
         ...input.patchNotes.map((config) => toRecord("Patch Notes", config, "game", "discordChannelId")),
         ...input.anime.map((config) => toRecord("Anime", config, ["animeTitle", "title", "anilistId"], "discordChannelId")),
         ...input.birthdays.map((config) => toRecord("Birthdays", config, "userId", "channelId")),

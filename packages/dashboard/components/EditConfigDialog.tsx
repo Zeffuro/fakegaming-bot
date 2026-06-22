@@ -2,6 +2,7 @@ import React from "react";
 import { ConfigDialogShell } from "@/components/config-dialog/ConfigDialogShell";
 import {
     ConfigDialogFields,
+    type ConfigDialogItemOption,
     type ConfigDialogValue
 } from "@/components/config-dialog/ConfigDialogFields";
 import { StreamingConfig } from "@/components/hooks/useStreamingForm";
@@ -23,6 +24,7 @@ interface EditConfigDialogProps<T extends StreamingConfig> {
     showCustomMessage?: boolean;
     showNotificationControls?: boolean;
     itemNameOptions?: string[];
+    itemNameSearch?: (query: string) => Promise<ConfigDialogItemOption[]>;
 }
 
 export default function EditConfigDialog<T extends StreamingConfig>({
@@ -41,7 +43,8 @@ export default function EditConfigDialog<T extends StreamingConfig>({
     itemSingularLabel,
     showCustomMessage = true,
     showNotificationControls = true,
-    itemNameOptions
+    itemNameOptions,
+    itemNameSearch
 }: EditConfigDialogProps<T>) {
     if (!config) return null;
 
@@ -70,6 +73,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                 showCustomMessage={showCustomMessage}
                 showNotificationControls={showNotificationControls}
                 itemNameOptions={itemNameOptions}
+                itemNameSearch={itemNameSearch}
             />
         </ConfigDialogShell>
     );

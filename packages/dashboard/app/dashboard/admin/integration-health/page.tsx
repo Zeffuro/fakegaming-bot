@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
     Alert,
     Box,
@@ -25,18 +26,28 @@ import {
     WarningAmber,
 } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
-import { ADMIN_PROVIDER_OPTIONS } from "@/components/admin/providerOptions";
+import { getAdminProviderOptions, normalizeAdminProviderFilter } from "@/components/admin/providerOptions";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { api, type AdminIntegrationHealthResponse, type IntegrationHealthRecord, type IntegrationHealthStatus } from "@/lib/api-client";
 
 type StatusFilter = "" | IntegrationHealthStatus;
 
+const integrationHealthStatuses = new Set<string>(["unknown", "healthy", "warning", "error", "paused"]);
+
 function formatDateTime(value?: string | null): string {
     if (!value) return "Never";
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
     return parsed.toLocaleString();
+}
+
+function parseStatusFilter(value: string | null, fallback: StatusFilter): StatusFilter {
+    if (value === null) return fallback;
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "" || normalized === "all") return "";
+    if (integrationHealthStatuses.has(normalized)) return normalized as IntegrationHealthStatus;
+    return fallback;
 }
 
 function getStatusLabel(status: IntegrationHealthStatus, failures: number): string {
@@ -153,11 +164,13 @@ function InfoLine({ label, value }: { label: string; value: string }) {
     );
 }
 
-export default function AdminIntegrationHealthPage() {
+function AdminIntegrationHealthContent() {
     const accent = dashboardAccents.admin;
-    const [provider, setProvider] = useState("");
-    const [guildId, setGuildId] = useState("");
-    const [status, setStatus] = useState<StatusFilter>("error");
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
+    const [provider, setProvider] = useState(() => normalizeAdminProviderFilter(searchParams?.get("provider")));
+    const [guildId, setGuildId] = useState(() => searchParams?.get("guildId")?.trim() ?? "");
+    const [status, setStatus] = useState<StatusFilter>(() => parseStatusFilter(searchParams?.get("status") ?? null, "error"));
     const [offset, setOffset] = useState(0);
     const [data, setData] = useState<AdminIntegrationHealthResponse | null>(null);
     const [loading, setLoading] = useState(false);
@@ -170,6 +183,7 @@ export default function AdminIntegrationHealthPage() {
         limit: 50,
         offset,
     }), [guildId, offset, provider, status]);
+    const providerOptions = useMemo(() => getAdminProviderOptions(provider), [provider]);
 
     const load = useCallback(async () => {
         try {
@@ -186,6 +200,14 @@ export default function AdminIntegrationHealthPage() {
     useEffect(() => {
         void load();
     }, [load]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(searchParamString);
+        setProvider(normalizeAdminProviderFilter(params.get("provider")));
+        setGuildId(params.get("guildId")?.trim() ?? "");
+        setStatus(parseStatusFilter(params.get("status"), "error"));
+        setOffset(0);
+    }, [searchParamString]);
 
     const summary = data?.summary ?? { total: 0, healthy: 0, warning: 0, error: 0, paused: 0, unknown: 0 };
     const canGoBack = offset > 0;
@@ -237,7 +259,7 @@ export default function AdminIntegrationHealthPage() {
                                 onChange={(event) => { setProvider(event.target.value); setOffset(0); }}
                             >
                                 <MenuItem value="">All</MenuItem>
-                                {ADMIN_PROVIDER_OPTIONS.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
+                                {providerOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
                             </Select>
                         </FormControl>
 
@@ -304,5 +326,13 @@ export default function AdminIntegrationHealthPage() {
                 </FeaturePanel>
             </Stack>
         </AdminPage>
+    );
+}
+
+export default function AdminIntegrationHealthPage() {
+    return (
+        <Suspense fallback={<AdminPage title="Integration Health"><Typography>Loading integration health...</Typography></AdminPage>}>
+            <AdminIntegrationHealthContent />
+        </Suspense>
     );
 }

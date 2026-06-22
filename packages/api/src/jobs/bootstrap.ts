@@ -11,6 +11,7 @@ import { registerYouTubeJobs } from './youtube.js';
 import { registerTikTokJobs } from './tiktok.js';
 import { registerBlueskyJobs } from './bluesky.js';
 import { registerAnimeJobs } from './anime.js';
+import { registerSteamNewsJobs } from './steamNews.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -90,6 +91,7 @@ export async function bootstrapJobs(): Promise<void> {
     await registerTikTokJobs(queue);
     await registerBlueskyJobs(queue);
     await registerAnimeJobs(queue);
+    await registerSteamNewsJobs(queue);
 
     log.info({ backend: backendName }, 'Jobs bootstrap complete');
 }

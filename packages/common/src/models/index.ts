@@ -21,3 +21,4 @@ export * from './anime-subscription-config.js';
 export * from './anime-episode.js';
 export * from './audit-event.js';
 export * from './integration-health.js';
+export * from './steam-news-subscription-config.js';

@@ -28,6 +28,8 @@ import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useAdminCards } from "@/components/hooks/useAdmin";
 import { useAdminOverview, type AdminOverviewJobStatus } from "@/components/hooks/useAdminOverview";
+import { buildAdminOperationsHealth, type AdminOperationsHealth, type AdminOperationsStatus } from "@/lib/adminOperationsHealth";
+import { buildAdminProviderInsights, type AdminProviderInsight } from "@/lib/adminProviderInsights";
 import type {
     AdminNotificationRecord,
     AuditEventEntry,
@@ -57,13 +59,23 @@ export function AdminOverview() {
     } = useAdminOverview();
     const summary = integrationHealth?.summary ?? emptyHealthSummary;
     const jobFailures = jobs.reduce((count, job) => count + job.failedRecentRuns, 0);
+    const providerInsights = buildAdminProviderInsights({
+        healthRecords: integrationHealth?.records ?? [],
+        notificationProviders: notifications?.summary.byProvider ?? [],
+    });
+    const operationsHealth = buildAdminOperationsHealth({
+        integrationSummary: integrationHealth?.summary ?? null,
+        jobs,
+        heartbeat,
+        overviewError: error,
+    });
 
     return (
         <Stack spacing={2.5}>
             <FeaturePanel accent={dashboardAccents.admin} sx={{ p: 2.5 }}>
                 <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ position: "relative", alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between" }}>
                     <Box>
-                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.04em" }}>
+                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
                             Operations overview
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.60)", mt: 0.5 }}>
@@ -83,12 +95,16 @@ export function AdminOverview() {
                 </Alert>
             )}
 
+            <OperationsHealthPanel health={operationsHealth} />
+
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2 }}>
                 <OverviewMetric label="Health errors" value={summary.error} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
                 <OverviewMetric label="Warnings" value={summary.warning + summary.unknown} accent={dashboardAccents.patchNotes} icon={<WarningAmber />} />
                 <OverviewMetric label="Job failures" value={jobFailures} accent={jobFailures > 0 ? dashboardAccents.quotes : dashboardAccents.settings} icon={<WorkHistory />} />
                 <OverviewMetric label="Deliveries tracked" value={notifications?.summary.total ?? 0} accent={dashboardAccents.commands} icon={<NotificationsActive />} />
             </Box>
+
+            <ProviderInsightsPanel insights={providerInsights} />
 
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 2.5 }}>
                 <OverviewPanel
@@ -183,7 +199,7 @@ export function AdminOverview() {
             <FeaturePanel accent={dashboardAccents.admin}>
                 <Stack spacing={2} sx={{ position: "relative" }}>
                     <Stack spacing={0.5}>
-                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.04em" }}>
+                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
                             Admin tools
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
@@ -210,6 +226,142 @@ export function AdminOverview() {
     );
 }
 
+function ProviderInsightsPanel({ insights }: { insights: AdminProviderInsight[] }) {
+    return (
+        <FeaturePanel accent={dashboardAccents.commands} sx={{ p: 2.5 }}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "flex-start", md: "center" }, justifyContent: "space-between" }}>
+                    <Stack direction="row" spacing={1.2} sx={{ minWidth: 0, alignItems: "center" }}>
+                        <Box sx={{ color: dashboardAccents.commands, display: "grid", placeItems: "center" }}>
+                            <NotificationsActive />
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
+                                Provider drilldown
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
+                                Health errors and recent delivery volume grouped by provider.
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Button component={Link} href="/dashboard/admin/notifications" size="small" variant="outlined" sx={ghostActionButtonSx(dashboardAccents.commands)}>
+                        Open deliveries
+                    </Button>
+                </Stack>
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+                {insights.length > 0 ? (
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 1.4 }}>
+                        {insights.slice(0, 6).map((insight) => (
+                            <ProviderInsightRow key={insight.providerKey} insight={insight} />
+                        ))}
+                    </Box>
+                ) : (
+                    <EmptyState label="No provider health or delivery activity returned yet." />
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function ProviderInsightRow({ insight }: { insight: AdminProviderInsight }) {
+    const accent = insight.state === "needs-review" ? dashboardAccents.quotes : dashboardAccents.commands;
+    const chipLabel = insight.state === "needs-review" ? "needs review" : "active";
+    const actionLabel = insight.state === "needs-review" ? "Open errors" : "Open deliveries";
+    const icon = insight.state === "needs-review"
+        ? <ErrorOutlined sx={{ color: accent, fontSize: 17 }} />
+        : <NotificationsActive sx={{ color: accent, fontSize: 17 }} />;
+
+    return (
+        <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)", p: 1.35, minWidth: 0 }}>
+            <Stack spacing={1.1}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                    <Stack direction="row" spacing={0.8} sx={{ minWidth: 0, alignItems: "center" }}>
+                        {icon}
+                        <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {insight.provider}
+                        </Typography>
+                    </Stack>
+                    <Chip
+                        size="small"
+                        label={chipLabel}
+                        sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}`, flexShrink: 0 }}
+                    />
+                </Stack>
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
+                    {formatProviderInsightSummary(insight)}
+                </Typography>
+                <Button component={Link} href={insight.href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
+                    {actionLabel}
+                </Button>
+            </Stack>
+        </Box>
+    );
+}
+
+function OperationsHealthPanel({ health }: { health: AdminOperationsHealth }) {
+    const accent = getOperationsStatusAccent(health.status);
+    const icon = getOperationsStatusIcon(health.status);
+
+    return (
+        <FeaturePanel accent={accent} sx={{ p: 2.5 }}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "flex-start", md: "center" }, justifyContent: "space-between" }}>
+                    <Stack direction="row" spacing={1.4} sx={{ alignItems: "center", minWidth: 0 }}>
+                        <Box sx={{ color: accent, display: "grid", placeItems: "center" }}>
+                            {icon}
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 920, lineHeight: 1.15 }}>
+                                {health.title}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.60)", mt: 0.35 }}>
+                                {health.description}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.45)", display: "block", mt: 0.35 }}>
+                                {health.heartbeatAgeMinutes === null ? "Worker heartbeat age unknown." : `Worker heartbeat received ${health.heartbeatAgeMinutes}m ago.`}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Chip
+                        label={health.status}
+                        sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}`, fontWeight: 850, textTransform: "capitalize" }}
+                    />
+                </Stack>
+
+                {health.issues.length > 0 && (
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                        {health.issues.map((issue) => (
+                            issue.href ? (
+                                <Button
+                                    key={`${issue.label}-${issue.value}`}
+                                    component={Link}
+                                    href={issue.href}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={ghostActionButtonSx(getOperationsStatusAccent(issue.severity))}
+                                >
+                                    {issue.label}: {formatIssueValue(issue.label, issue.value)}
+                                </Button>
+                            ) : (
+                                <Chip
+                                    key={`${issue.label}-${issue.value}`}
+                                    label={`${issue.label}: ${formatIssueValue(issue.label, issue.value)}`}
+                                    size="small"
+                                    sx={{
+                                        bgcolor: alpha(getOperationsStatusAccent(issue.severity), 0.12),
+                                        color: "grey.100",
+                                        border: `1px solid ${alpha(getOperationsStatusAccent(issue.severity), 0.24)}`,
+                                    }}
+                                />
+                            )
+                        ))}
+                    </Stack>
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
 function OverviewMetric({
     label,
     value,
@@ -228,10 +380,10 @@ function OverviewMetric({
                     {icon}
                 </Box>
                 <Box>
-                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", fontWeight: 850, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", fontWeight: 850, letterSpacing: 0, textTransform: "uppercase" }}>
                         {label}
                     </Typography>
-                    <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.05em", lineHeight: 1.05 }}>
+                    <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0, lineHeight: 1.05 }}>
                         {value}
                     </Typography>
                 </Box>
@@ -294,7 +446,7 @@ function IntegrationHealthRow({ record }: { record: IntegrationHealthRecord }) {
         <InfoRow
             primary={`${record.provider} / ${record.configId}`}
             secondary={message}
-            meta={`guild ${record.guildId ?? "unknown"} • checked ${formatDateTime(record.lastCheckedAt)}`}
+            meta={`guild ${record.guildId ?? "unknown"} - checked ${formatDateTime(record.lastCheckedAt)}`}
             chipLabel={`x${Math.max(1, record.consecutiveFailures)}`}
             accent={dashboardAccents.quotes}
         />
@@ -334,7 +486,7 @@ function NotificationRow({ record }: { record: AdminNotificationRecord }) {
     return (
         <InfoRow
             primary={`${record.provider} / ${record.eventId}`}
-            secondary={`guild ${record.guildId ?? "unknown"} • channel ${record.channelId ?? "unknown"}`}
+            secondary={`guild ${record.guildId ?? "unknown"} - channel ${record.channelId ?? "unknown"}`}
             meta={`recorded ${formatDateTime(record.createdAt)}`}
             chipLabel={record.messageId ? "message saved" : "dedupe only"}
             accent={dashboardAccents.commands}
@@ -406,6 +558,36 @@ function EmptyState({ label }: { label: string }) {
             </Typography>
         </Box>
     );
+}
+
+function getOperationsStatusAccent(status: AdminOperationsStatus): string {
+    if (status === "critical") return dashboardAccents.quotes;
+    if (status === "warning") return dashboardAccents.patchNotes;
+    return dashboardAccents.settings;
+}
+
+function getOperationsStatusIcon(status: AdminOperationsStatus): React.ReactNode {
+    if (status === "critical") return <ErrorOutlined />;
+    if (status === "warning") return <WarningAmber />;
+    return <CheckCircle />;
+}
+
+function formatIssueValue(label: string, value: number): string {
+    if (label === "Stale worker heartbeat") return `${value}m`;
+    return String(value);
+}
+
+function formatProviderInsightSummary(insight: AdminProviderInsight): string {
+    if (insight.healthErrors > 0) {
+        const guilds = insight.affectedGuilds > 0 ? `${insight.affectedGuilds} ${pluralize("guild", insight.affectedGuilds)}` : "guild unknown";
+        return `${insight.healthErrors} error ${pluralize("config", insight.healthErrors)} - ${insight.consecutiveFailures} current ${pluralize("failure", insight.consecutiveFailures)} - ${guilds} - ${insight.deliveries} ${pluralize("delivery", insight.deliveries)}`;
+    }
+
+    return `No visible health errors - ${insight.deliveries} recent ${pluralize("delivery", insight.deliveries)}`;
+}
+
+function pluralize(label: string, value: number): string {
+    return value === 1 ? label : `${label}s`;
 }
 
 function formatDateTime(value?: string | null): string {

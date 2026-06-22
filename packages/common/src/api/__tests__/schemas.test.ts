@@ -12,6 +12,7 @@ import {
     reminderCreateRequestSchema,
     riotLinkUpdateRequestSchema,
     serverUpdateRequestSchema,
+    steamNewsSubscriptionRequestSchema,
     tiktokCreateRequestSchema,
     twitchCreateRequestSchema,
     twitchUpdateRequestSchema,
@@ -42,6 +43,7 @@ describe('api request schemas', () => {
             'RiotLinkUpdateRequest',
             'ServerCreateRequest',
             'ServerUpdateRequest',
+            'SteamNewsSubscriptionRequest',
             'TikTokCreateRequest',
             'TikTokUpdateRequest',
             'TwitchCreateRequest',
@@ -72,6 +74,13 @@ describe('api request schemas', () => {
             guildId: 'guild-1',
             paused: true,
         })).toMatchObject({ game: 'Overwatch' });
+        expect(steamNewsSubscriptionRequestSchema.parse({
+            steamAppId: '730',
+            appName: 'Counter-Strike 2',
+            discordChannelId: 'channel-1',
+            guildId: 'guild-1',
+            paused: true,
+        })).toMatchObject({ steamAppId: 730 });
         expect(quoteCreateRequestSchema.parse({
             guildId: 'guild-1',
             quote: 'hello',

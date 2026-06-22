@@ -1,8 +1,8 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
-import { AlternateEmail, AutoStories, Cake, Download, LiveTv, NotificationsActive, Search, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { Alert, Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { AlternateEmail, AutoStories, Cake, Download, LiveTv, NotificationsActive, Search, SpeakerNotes, SportsEsports, UploadFile, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -14,6 +14,7 @@ import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
+import { useSteamNewsConfigs } from "@/components/hooks/useSteamNews";
 import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
@@ -21,26 +22,42 @@ import { useAnimeConfigs } from "@/components/hooks/useAnime";
 import { buildNotificationSetupReview, type NotificationSetupReview, type NotificationReviewGroup, type NotificationChannelLoad } from "@/lib/notificationSetupReview";
 import { buildNotificationSetupExport, buildNotificationSetupExportFilename } from "@/lib/notificationSetupExport";
 import { buildNotificationChannelLinks, buildNotificationReviewGroupLink, type NotificationSetupLink } from "@/lib/notificationSetupLinks";
+import {
+    buildNotificationSetupImportCreatePayload,
+    buildNotificationSetupImportPlan,
+    parseNotificationSetupImportJson,
+    type NotificationSetupImportItem,
+    type NotificationSetupImportPlan,
+    type NotificationSetupImportSkippedItem,
+} from "@/lib/notificationSetupImport";
+import { api } from "@/lib/api-client";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const guildReady = Boolean(guild);
     const twitchApi = useTwitchConfigs(guildId as string);
     const youtubeApi = useYouTubeConfigs(guildId as string);
+    const steamNewsApi = useSteamNewsConfigs(guildId as string);
     const patchApi = usePatchSubscriptions(guildId as string);
     const tiktokApi = useTikTokConfigs(guildId as string);
     const blueskyApi = useBlueskyConfigs(guildId as string);
     const birthdayApi = useBirthdays(guildId as string, { enabled: guildReady });
     const animeApi = useAnimeConfigs(guildId as string, { enabled: guildReady });
+    const importInputRef = useRef<HTMLInputElement | null>(null);
+    const [importPlan, setImportPlan] = useState<NotificationSetupImportPlan | null>(null);
+    const [importError, setImportError] = useState<string | null>(null);
+    const [importResult, setImportResult] = useState<string | null>(null);
+    const [importing, setImporting] = useState(false);
 
-    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || blueskyApi.loading || birthdayApi.loading || animeApi.loading;
-    const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + blueskyApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
+    const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || steamNewsApi.loading || patchApi.loading || tiktokApi.loading || blueskyApi.loading || birthdayApi.loading || animeApi.loading;
+    const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + blueskyApi.configs.length + youtubeApi.configs.length + steamNewsApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
     const encodedGuildId = encodeURIComponent(guildId as string);
     const notificationRecords = useMemo(() => ({
         twitch: asReviewRecords(twitchApi.configs),
         youtube: asReviewRecords(youtubeApi.configs),
         tiktok: asReviewRecords(tiktokApi.configs),
         bluesky: asReviewRecords(blueskyApi.configs),
+        steamNews: asReviewRecords(steamNewsApi.configs),
         patchNotes: asReviewRecords(patchApi.configs),
         anime: asReviewRecords(animeApi.configs),
         birthdays: asReviewRecords(birthdayApi.birthdays),
@@ -49,6 +66,7 @@ export default function GuildNotificationsHubPage() {
         youtubeApi.configs,
         tiktokApi.configs,
         blueskyApi.configs,
+        steamNewsApi.configs,
         patchApi.configs,
         animeApi.configs,
         birthdayApi.birthdays,
@@ -56,14 +74,66 @@ export default function GuildNotificationsHubPage() {
     const setupReview = useMemo(() => buildNotificationSetupReview({
         ...notificationRecords,
     }), [notificationRecords]);
+    const setupExport = useMemo(() => buildNotificationSetupExport({
+        guildId: guildId as string,
+        review: setupReview,
+        ...notificationRecords,
+    }), [guildId, notificationRecords, setupReview]);
 
     const handleExportSetup = () => {
-        const exported = buildNotificationSetupExport({
-            guildId: guildId as string,
-            review: setupReview,
-            ...notificationRecords,
-        });
-        downloadJson(buildNotificationSetupExportFilename(guildId as string), exported);
+        downloadJson(buildNotificationSetupExportFilename(guildId as string), setupExport);
+    };
+
+    const handleImportFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0] ?? null;
+        event.target.value = "";
+        if (!file) return;
+
+        try {
+            setImportError(null);
+            setImportResult(null);
+            const text = await file.text();
+            const exportPayload = parseNotificationSetupImportJson(text);
+            setImportPlan(buildNotificationSetupImportPlan({
+                exportPayload,
+                currentGuildId: guildId as string,
+                currentRecords: setupExport.records,
+            }));
+        } catch (err) {
+            setImportPlan(null);
+            setImportError(err instanceof Error ? err.message : "Failed to read notification setup import.");
+        }
+    };
+
+    const handleImportMissing = async () => {
+        if (!importPlan || importPlan.ready.length === 0) return;
+
+        try {
+            setImporting(true);
+            setImportError(null);
+            setImportResult(null);
+
+            for (const item of importPlan.ready) {
+                await restoreNotificationRecord(guildId as string, item);
+            }
+
+            await Promise.all([
+                twitchApi.refreshConfigs(),
+                youtubeApi.refreshConfigs(),
+                steamNewsApi.refreshConfigs(),
+                patchApi.refreshConfigs(),
+                tiktokApi.refreshConfigs(),
+                blueskyApi.refreshConfigs(),
+                animeApi.refreshConfigs(),
+                birthdayApi.refresh(),
+            ]);
+            setImportResult(`Imported ${importPlan.ready.length} missing ${importPlan.ready.length === 1 ? "route" : "routes"}.`);
+            setImportPlan(null);
+        } catch (err) {
+            setImportError(err instanceof Error ? err.message : "Failed to import notification setup.");
+        } finally {
+            setImporting(false);
+        }
     };
 
     if (!guild && !guildsLoading) {
@@ -108,6 +178,15 @@ export default function GuildNotificationsHubPage() {
             actionLabel: "Manage YouTube",
         },
         {
+            title: "Steam News",
+            description: "Official Steam game announcements with destination channels, custom messages, cooldowns, and quiet hours.",
+            icon: <SportsEsports />,
+            accent: dashboardAccents.steam,
+            href: `/dashboard/steam-news/${encodedGuildId}`,
+            chipLabel: `${steamNewsApi.configs.length} Configured`,
+            actionLabel: "Manage Steam",
+        },
+        {
             title: "Patch Notes",
             description: "Subscribe channels to game update feeds so patch posts land where people expect them.",
             icon: <SpeakerNotes />,
@@ -144,12 +223,30 @@ export default function GuildNotificationsHubPage() {
                         icon={<NotificationsActive />}
                         eyebrow="Notifications"
                         title="Notification Command Center"
-                        description="One place to manage every server-facing notification feed: live streams, uploads, patch notes, anime episodes, and birthday announcements."
+                        description="One place to manage every server-facing notification feed: live streams, uploads, game news, patch notes, anime episodes, and birthday announcements."
                         accent={dashboardAccents.settings}
                         secondaryAccent={dashboardAccents.anime}
                         stats={[{ label: "Configured Feeds", value: totalConfigured }]}
                         actions={(
                             <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                                <input
+                                    ref={importInputRef}
+                                    type="file"
+                                    accept="application/json,.json"
+                                    hidden
+                                    onChange={(event) => {
+                                        void handleImportFile(event);
+                                    }}
+                                />
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<UploadFile />}
+                                    onClick={() => importInputRef.current?.click()}
+                                    disabled={importing}
+                                    sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                >
+                                    Import JSON
+                                </Button>
                                 <Button
                                     variant="outlined"
                                     startIcon={<Download />}
@@ -179,10 +276,161 @@ export default function GuildNotificationsHubPage() {
                         </Box>
                     </FeaturePanel>
 
+                    {(importPlan || importError || importResult) && (
+                        <ImportPreviewPanel
+                            plan={importPlan}
+                            error={importError}
+                            result={importResult}
+                            importing={importing}
+                            onImport={() => {
+                                void handleImportMissing();
+                            }}
+                        />
+                    )}
+
                     <SetupReviewPanel review={setupReview} guildId={guildId as string} />
                 </FeatureShell>
             )}
         </DashboardLayout>
+    );
+}
+
+function ImportPreviewPanel({
+    plan,
+    error,
+    result,
+    importing,
+    onImport,
+}: {
+    plan: NotificationSetupImportPlan | null;
+    error: string | null;
+    result: string | null;
+    importing: boolean;
+    onImport: () => void;
+}) {
+    return (
+        <FeaturePanel accent={dashboardAccents.settings} sx={{ mt: 3 }}>
+            <Stack spacing={2}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
+                            Import Preview
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
+                            Missing supported routes can be created without overwriting existing notification setup.
+                        </Typography>
+                    </Box>
+                    {plan && (
+                        <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                            <Chip label={`${plan.totals.ready} ready`} color={plan.totals.ready > 0 ? "success" : "default"} variant="outlined" />
+                            <Chip label={`${plan.skipped.length} skipped`} color={plan.skipped.length > 0 ? "warning" : "default"} variant="outlined" />
+                        </Stack>
+                    )}
+                </Box>
+
+                {error && (
+                    <Alert severity="error" sx={{ bgcolor: "rgba(255,107,154,0.12)", color: "grey.50", border: "1px solid rgba(255,107,154,0.24)" }}>
+                        {error}
+                    </Alert>
+                )}
+                {result && (
+                    <Alert severity="success" sx={{ bgcolor: "rgba(75, 222, 128, 0.12)", color: "grey.50", border: "1px solid rgba(75, 222, 128, 0.24)" }}>
+                        {result}
+                    </Alert>
+                )}
+
+                {plan && (
+                    <>
+                        {plan.warnings.map((warning) => (
+                            <Alert key={warning} severity="warning" sx={{ bgcolor: "rgba(255,179,71,0.12)", color: "grey.50", border: "1px solid rgba(255,179,71,0.24)" }}>
+                                {warning}
+                            </Alert>
+                        ))}
+
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2 }}>
+                            <ImportItemSection title="Ready To Import" items={plan.ready} emptyText="No missing supported routes were found." />
+                            <ImportSkippedSection items={plan.skipped} />
+                        </Box>
+
+                        <Box>
+                            <Button
+                                variant="contained"
+                                startIcon={<UploadFile />}
+                                onClick={onImport}
+                                disabled={importing || plan.ready.length === 0}
+                                sx={{
+                                    bgcolor: dashboardAccents.settings,
+                                    color: "#050816",
+                                    fontWeight: 850,
+                                    "&:hover": { bgcolor: dashboardAccents.settings },
+                                }}
+                            >
+                                {importing ? "Importing..." : `Import Missing (${plan.ready.length})`}
+                            </Button>
+                        </Box>
+                    </>
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function ImportItemSection({ title, items, emptyText }: { title: string; items: NotificationSetupImportItem[]; emptyText: string }) {
+    return (
+        <Box>
+            <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
+                {title}
+            </Typography>
+            {items.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
+                    {emptyText}
+                </Typography>
+            ) : (
+                <Stack spacing={0.75}>
+                    {items.slice(0, 8).map((item) => (
+                        <ImportLine key={item.key} primary={`${item.record.provider}: ${item.record.source}`} secondary={item.record.channelId} />
+                    ))}
+                </Stack>
+            )}
+        </Box>
+    );
+}
+
+function ImportSkippedSection({ items }: { items: NotificationSetupImportSkippedItem[] }) {
+    return (
+        <Box>
+            <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
+                Skipped
+            </Typography>
+            {items.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
+                    No skipped routes.
+                </Typography>
+            ) : (
+                <Stack spacing={0.75}>
+                    {items.slice(0, 8).map((item) => (
+                        <ImportLine
+                            key={`${item.reason}:${item.key}`}
+                            primary={`${item.record.provider}: ${item.record.source}`}
+                            secondary={`${item.message} Channel: ${item.record.channelId}`}
+                        />
+                    ))}
+                </Stack>
+            )}
+        </Box>
+    );
+}
+
+function ImportLine({ primary, secondary }: { primary: string; secondary: string }) {
+    return (
+        <Box sx={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 1.5, px: 1.25, py: 1, bgcolor: "rgba(255,255,255,0.035)" }}>
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750 }}>
+                {primary}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.55)" }}>
+                {secondary}
+            </Typography>
+        </Box>
     );
 }
 
@@ -328,4 +576,50 @@ function downloadJson(filename: string, value: unknown): void {
     anchor.download = filename;
     anchor.click();
     URL.revokeObjectURL(url);
+}
+
+async function restoreNotificationRecord(guildId: string, item: NotificationSetupImportItem): Promise<void> {
+    const create = buildNotificationSetupImportCreatePayload(guildId, item.record);
+    if (create.provider === "Twitch") {
+        await api.createTwitchStream(create.payload as Parameters<typeof api.createTwitchStream>[0]);
+        return;
+    }
+    if (create.provider === "YouTube") {
+        await api.createYouTubeChannel(create.payload as Parameters<typeof api.createYouTubeChannel>[0]);
+        return;
+    }
+    if (create.provider === "TikTok") {
+        await api.createTikTokStream(create.payload as Parameters<typeof api.createTikTokStream>[0]);
+        return;
+    }
+    if (create.provider === "Bluesky") {
+        await api.createBlueskyAccount(create.payload as Parameters<typeof api.createBlueskyAccount>[0]);
+        return;
+    }
+    if (create.provider === "Patch Notes") {
+        await api.createPatchSubscription(create.payload as Parameters<typeof api.createPatchSubscription>[0]);
+        return;
+    }
+    if (create.provider === "Steam News") {
+        await api.createSteamNewsSubscription(create.payload as Parameters<typeof api.createSteamNewsSubscription>[0]);
+        return;
+    }
+    if (create.provider === "Anime") {
+        await api.createAnimeSubscription(create.payload as Parameters<typeof api.createAnimeSubscription>[0]);
+        if (item.record.paused) {
+            const anilistId = Number(create.payload.anilistId);
+            const subscriptions = await api.getAnimeSubscriptions(guildId);
+            const restored = subscriptions.find((subscription) => (
+                subscription.anilistId === anilistId
+                && (subscription.channelId ?? subscription.discordChannelId) === item.record.channelId
+            ));
+            if (restored?.id) {
+                await api.setAnimeSubscriptionPaused(restored.id, true);
+            }
+        }
+        return;
+    }
+    if (create.provider === "Birthdays") {
+        await api.createBirthday(create.payload as unknown as Parameters<typeof api.createBirthday>[0]);
+    }
 }

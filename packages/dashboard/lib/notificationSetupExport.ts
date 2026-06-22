@@ -4,12 +4,19 @@ export interface NotificationSetupExportRecord {
     provider: string;
     id?: string | number;
     source: string;
+    sourceId?: string | null;
     channelId: string;
     paused?: boolean | null;
     customMessage?: string | null;
     cooldownMinutes?: number | null;
+    reminderMinutes?: number | null;
     quietHoursStart?: string | null;
     quietHoursEnd?: string | null;
+    birthday?: {
+        day: number;
+        month: number;
+        year?: number | null;
+    } | null;
 }
 
 export interface NotificationSetupExport {
@@ -34,6 +41,7 @@ interface BuildNotificationSetupExportInput {
     youtube: Array<Record<string, unknown>>;
     tiktok: Array<Record<string, unknown>>;
     bluesky: Array<Record<string, unknown>>;
+    steamNews: Array<Record<string, unknown>>;
     patchNotes: Array<Record<string, unknown>>;
     anime: Array<Record<string, unknown>>;
     birthdays: Array<Record<string, unknown>>;
@@ -42,12 +50,13 @@ interface BuildNotificationSetupExportInput {
 export function buildNotificationSetupExport(input: BuildNotificationSetupExportInput): NotificationSetupExport {
     const records = [
         ...input.twitch.map((config) => toExportRecord("Twitch", config, ["twitchUsername"], "discordChannelId")),
-        ...input.youtube.map((config) => toExportRecord("YouTube", config, ["youtubeChannelTitle", "youtubeChannelId"], "discordChannelId")),
+        ...input.youtube.map((config) => toExportRecord("YouTube", config, ["youtubeChannelTitle", "youtubeChannelId"], "discordChannelId", ["youtubeChannelId"])),
         ...input.tiktok.map((config) => toExportRecord("TikTok", config, ["tiktokUsername"], "discordChannelId")),
         ...input.bluesky.map((config) => toExportRecord("Bluesky", config, ["blueskyHandle"], "discordChannelId")),
+        ...input.steamNews.map((config) => toExportRecord("Steam News", config, ["appName", "youtubeChannelTitle", "steamAppId"], "discordChannelId", ["steamAppId"])),
         ...input.patchNotes.map((config) => toExportRecord("Patch Notes", config, ["game"], "discordChannelId")),
-        ...input.anime.map((config) => toExportRecord("Anime", config, ["animeTitle", "title", "anilistId"], "discordChannelId")),
-        ...input.birthdays.map((config) => toExportRecord("Birthdays", config, ["userId"], "channelId")),
+        ...input.anime.map((config) => withReminderMinutes(toExportRecord("Anime", config, ["animeTitle", "title", "anilistId"], "discordChannelId", ["anilistId", "animeTitle", "title"]), config)),
+        ...input.birthdays.map((config) => withBirthday(toExportRecord("Birthdays", config, ["userId"], "channelId"), config)),
     ].filter((record): record is NotificationSetupExportRecord => record !== null);
 
     return {
@@ -75,9 +84,11 @@ function toExportRecord(
     provider: string,
     config: Record<string, unknown>,
     sourceFields: string[],
-    channelField: string
+    channelField: string,
+    sourceIdFields: string[] = sourceFields
 ): NotificationSetupExportRecord | null {
     const source = sourceFields.map((field) => normalizeString(config[field])).find((value): value is string => Boolean(value)) ?? null;
+    const sourceId = sourceIdFields.map((field) => normalizeString(config[field])).find((value): value is string => Boolean(value)) ?? null;
     const channelId = normalizeString(config[channelField]);
     if (!source || !channelId) return null;
 
@@ -85,6 +96,7 @@ function toExportRecord(
         provider,
         ...optionalId(config.id),
         source,
+        sourceId,
         channelId,
         paused: typeof config.paused === "boolean" ? config.paused : null,
         customMessage: normalizeString(config.customMessage),
@@ -106,4 +118,31 @@ function normalizeString(value: unknown): string | null {
 
 function normalizeNumber(value: unknown): number | null {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function withReminderMinutes(record: NotificationSetupExportRecord | null, config: Record<string, unknown>): NotificationSetupExportRecord | null {
+    if (!record) return null;
+    return {
+        ...record,
+        reminderMinutes: normalizeNumber(config.reminderMinutes) ?? normalizeNumber(config.cooldownMinutes),
+    };
+}
+
+function withBirthday(record: NotificationSetupExportRecord | null, config: Record<string, unknown>): NotificationSetupExportRecord | null {
+    if (!record) return null;
+
+    const day = normalizeNumber(config.day);
+    const month = normalizeNumber(config.month);
+    if (day === null || month === null) {
+        return record;
+    }
+
+    return {
+        ...record,
+        birthday: {
+            day,
+            month,
+            year: normalizeNumber(config.year),
+        },
+    };
 }

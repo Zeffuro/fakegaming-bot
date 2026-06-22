@@ -2,6 +2,7 @@ import React from "react";
 import { ConfigDialogShell } from "@/components/config-dialog/ConfigDialogShell";
 import {
     ConfigDialogFields,
+    type ConfigDialogItemOption,
     getConfigStringValue,
     type ConfigDialogValue
 } from "@/components/config-dialog/ConfigDialogFields";
@@ -25,6 +26,7 @@ interface AddConfigDialogProps<T extends StreamingConfig> {
     showNotificationControls?: boolean;
     itemSingularLabel?: string;
     itemNameOptions?: string[];
+    itemNameSearch?: (query: string) => Promise<ConfigDialogItemOption[]>;
 }
 
 export default function AddConfigDialog<T extends StreamingConfig>({
@@ -43,7 +45,8 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     showCustomMessage = true,
     showNotificationControls = true,
     itemSingularLabel,
-    itemNameOptions
+    itemNameOptions,
+    itemNameSearch
 }: AddConfigDialogProps<T>) {
     const {
         newConfig,
@@ -61,7 +64,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     const nameValue = getConfigStringValue(configValue, channelNameField);
     const selectedChannelId = getConfigStringValue(configValue, "discordChannelId");
     const handleFieldChange = (field: string, value: unknown) => {
-        setNewConfig({ ...configValue, [field]: value });
+        setNewConfig((current: ConfigDialogValue) => ({ ...current, [field]: value }));
     };
     const title = itemSingularLabel ? `Add ${itemSingularLabel}` : `Add ${moduleName} ${moduleName === 'YouTube' ? 'Channel' : 'Streamer'}`;
 
@@ -89,6 +92,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                 showCustomMessage={showCustomMessage}
                 showNotificationControls={showNotificationControls}
                 itemNameOptions={itemNameOptions}
+                itemNameSearch={itemNameSearch}
             />
         </ConfigDialogShell>
     );

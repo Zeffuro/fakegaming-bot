@@ -7,6 +7,7 @@ export const dashboardAccents = {
   tiktok: "#00F2EA",
   bluesky: "#1185FE",
   youtube: "#FF3B30",
+  steam: "#66C0F4",
   patchNotes: "#8B5CF6",
   anime: "#02A9FF",
   birthdays: "#FFC857",

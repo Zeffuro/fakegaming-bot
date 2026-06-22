@@ -68,6 +68,10 @@
       "import": "./dist/anime/index.js",
       "types": "./dist/anime/index.d.ts"
     },
+    "./steam": {
+      "import": "./dist/steam/index.js",
+      "types": "./dist/steam/index.d.ts"
+    },
     "./api": {
       "import": "./dist/api/index.js",
       "types": "./dist/api/index.d.ts"
@@ -142,6 +146,9 @@
       ],
       "anime": [
         "dist/anime/index.d.ts"
+      ],
+      "steam": [
+        "dist/steam/index.d.ts"
       ],
       "api": [
         "dist/api/index.d.ts"

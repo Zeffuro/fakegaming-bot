@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
     YOUTUBE: "/api/external/youtube",
     PATCH_NOTES: "/api/external/patchNotes",
     PATCH_SUBSCRIPTIONS: "/api/external/patchSubscriptions",
+    STEAM_APPS: "/api/external/steamApps",
+    STEAM_NEWS_SUBSCRIPTIONS: "/api/external/steamNewsSubscriptions",
     ANIME: "/api/external/anime",
     QUOTES: "/api/external/quotes",
     BIRTHDAYS: "/api/external/birthdays",

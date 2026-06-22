@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Autocomplete,
     Box,
@@ -18,6 +18,13 @@ export interface DiscordChannelOption {
 }
 
 export type ConfigDialogValue = Record<string, unknown>;
+
+export interface ConfigDialogItemOption {
+    label: string;
+    value: string;
+    description?: string;
+    fieldValues?: Record<string, unknown>;
+}
 
 interface MessageTemplate {
     tokens: string[];
@@ -39,6 +46,7 @@ interface ConfigDialogFieldsProps {
     showCustomMessage: boolean;
     showNotificationControls: boolean;
     itemNameOptions?: string[];
+    itemNameSearch?: (query: string) => Promise<ConfigDialogItemOption[]>;
 }
 
 export function getConfigStringValue(value: ConfigDialogValue, field: string): string {
@@ -96,7 +104,8 @@ export function ConfigDialogFields({
     loadingChannels,
     showCustomMessage,
     showNotificationControls,
-    itemNameOptions
+    itemNameOptions,
+    itemNameSearch
 }: ConfigDialogFieldsProps) {
     const fieldSx = dashboardFieldSx(moduleColor);
     const nameValue = getConfigStringValue(value, channelNameField);
@@ -104,10 +113,131 @@ export function ConfigDialogFields({
     const selectedChannel = channels.find((channel) => channel.id === selectedChannelId) ?? null;
     const customMessage = getConfigStringValue(value, "customMessage");
     const template = getMessageTemplate(moduleName);
+    const [searchOptions, setSearchOptions] = useState<ConfigDialogItemOption[]>([]);
+    const [searchingItems, setSearchingItems] = useState(false);
+    const selectedItemOption = useMemo(() => (
+        searchOptions.find((option) => option.value === nameValue) ?? null
+    ), [nameValue, searchOptions]);
+
+    useEffect(() => {
+        if (!itemNameSearch) return;
+
+        const query = nameValue.trim();
+        if (query.length < 2) {
+            setSearchOptions([]);
+            setSearchingItems(false);
+            return;
+        }
+
+        let cancelled = false;
+        setSearchingItems(true);
+        const timer = window.setTimeout(() => {
+            itemNameSearch(query)
+                .then((options) => {
+                    if (!cancelled) setSearchOptions(options);
+                })
+                .catch(() => {
+                    if (!cancelled) setSearchOptions([]);
+                })
+                .finally(() => {
+                    if (!cancelled) setSearchingItems(false);
+                });
+        }, 250);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [itemNameSearch, nameValue]);
+
+    const applyFieldValues = (fieldValues: Record<string, unknown>) => {
+        for (const [field, fieldValue] of Object.entries(fieldValues)) {
+            onFieldChange(field, fieldValue);
+        }
+    };
 
     return (
         <Box sx={{ pt: 1 }}>
-            {itemNameOptions ? (
+            {itemNameSearch ? (
+                <Autocomplete<ConfigDialogItemOption, false, false, true>
+                    freeSolo
+                    fullWidth
+                    options={searchOptions}
+                    loading={searchingItems}
+                    inputValue={nameValue}
+                    value={selectedItemOption}
+                    filterOptions={(options) => options}
+                    getOptionLabel={(option) => typeof option === "string" ? option : option.label}
+                    isOptionEqualToValue={(option, selected) => typeof selected !== "string" && option.value === selected.value}
+                    onInputChange={(_event, nextValue, reason) => {
+                        if (reason !== "reset") {
+                            onFieldChange(channelNameField, nextValue);
+                        }
+                    }}
+                    onChange={(_event, nextValue) => {
+                        if (typeof nextValue === "string") {
+                            onFieldChange(channelNameField, nextValue);
+                            return;
+                        }
+                        if (!nextValue) return;
+
+                        applyFieldValues({
+                            [channelNameField]: nextValue.value,
+                            ...(nextValue.fieldValues ?? {}),
+                        });
+                    }}
+                    renderInput={(params) => {
+                        const inputSlotProps = params.slotProps.input;
+                        return (
+                            <TextField
+                                {...params}
+                                label={channelNameLabel}
+                                placeholder={channelNamePlaceholder}
+                                sx={[fieldSx, { mb: 2 }]}
+                                helperText={`Search ${moduleName} by name, App ID, or URL`}
+                                slotProps={{
+                                    ...params.slotProps,
+                                    input: {
+                                        ...inputSlotProps,
+                                        endAdornment: (
+                                            <>
+                                                {searchingItems ? <CircularProgress size={20} /> : null}
+                                                {inputSlotProps.endAdornment}
+                                            </>
+                                        )
+                                    }
+                                }}
+                            />
+                        );
+                    }}
+                    renderOption={(props, option) => (
+                        <li
+                            {...props}
+                            style={{
+                                ...props.style,
+                                backgroundColor: "rgb(66, 66, 66)",
+                                color: "rgb(245, 245, 245)",
+                                padding: "8px 16px",
+                                display: "block",
+                            }}
+                        >
+                            <Typography component="span" sx={{ display: "block", color: "grey.50", fontWeight: 700 }}>
+                                {option.label}
+                            </Typography>
+                            {option.description && (
+                                <Typography component="span" variant="caption" sx={{ display: "block", color: "grey.400" }}>
+                                    {option.description}
+                                </Typography>
+                            )}
+                        </li>
+                    )}
+                    noOptionsText={nameValue.trim().length < 2 ? "Type at least 2 characters" : "No games found"}
+                    sx={{
+                        "& .MuiAutocomplete-popupIndicator": { color: "grey.400" },
+                        "& .MuiAutocomplete-clearIndicator": { color: "grey.400" }
+                    }}
+                />
+            ) : itemNameOptions ? (
                 <Autocomplete
                     freeSolo
                     fullWidth

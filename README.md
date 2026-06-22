@@ -422,6 +422,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |---------|------|-------------|-------------|
 |`/add-bluesky-account`|Slash|Add a Bluesky account for post notifications|Administrator|
 |`/add-quote`|Slash|Add a quote|All users|
+|`/add-steam-news`|Slash|Add Steam game news notifications|Administrator|
 |`/add-tiktok-stream`|Slash|Add a TikTok account for live notifications|Administrator|
 |`/add-twitch-stream`|Slash|Add a Twitch stream for notifications|Administrator|
 |`/add-youtube-channel`|Slash|Add a Youtube Channel for new video notifications|Administrator|
@@ -438,6 +439,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/link-riot`|Slash|Link your Discord account or another user to a Riot account|All users|
 |`/manage-bluesky-accounts`|Slash|List, test, pause, resume, or remove Bluesky post notifications|Administrator|
 |`/manage-patchnotes`|Slash|List, test, pause, resume, or remove patch note subscriptions|All users|
+|`/manage-steam-news`|Slash|List, test, pause, resume, or remove Steam news notifications|Administrator|
 |`/manage-tiktok-streams`|Slash|List, test, pause, resume, or remove TikTok live notifications|Administrator|
 |`/manage-twitch-streams`|Slash|List, test, pause, resume, or remove Twitch stream notifications|Administrator|
 |`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|

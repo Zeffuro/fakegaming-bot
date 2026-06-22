@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 49 commands; 45 slash; 2 user context; 2 message context.
+Total: 51 commands; 47 slash; 2 user context; 2 message context.
 
 ## Anime
 
@@ -107,3 +107,10 @@ Total: 49 commands; 45 slash; 2 user context; 2 message context.
 | Slash | `/add-youtube-channel` | Add a Youtube Channel for new video notifications | Administrator |
 | Slash | `/manage-youtube-channels` | List, test, pause, resume, or remove YouTube video notifications | Administrator |
 | Slash | `/youtube-latest` | Show the latest video from a YouTube channel ID | All users |
+
+## Steam
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/add-steam-news` | Add Steam game news notifications | Administrator |
+| Slash | `/manage-steam-news` | List, test, pause, resume, or remove Steam news notifications | Administrator |

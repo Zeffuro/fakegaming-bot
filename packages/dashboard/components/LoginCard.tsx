@@ -1,5 +1,5 @@
 import React from "react";
-import {Box, Typography, Button, Link} from "@mui/material";
+import {Box, Typography, Button, Link, Stack} from "@mui/material";
 import FakegamingLogo from "@/components/FakegamingLogo";
 
 export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
@@ -48,9 +48,14 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
                     Login with Discord
                 </Button>
             )}
-            <Link href="/privacy" underline="hover" sx={{ mt: 2, fontSize: 13 }}>
-                Privacy and cookies
-            </Link>
+            <Stack direction="row" spacing={1.5} sx={{ mt: 2, fontSize: 13 }}>
+                <Link href="/privacy" underline="hover" sx={{ fontSize: 13 }}>
+                    Privacy and cookies
+                </Link>
+                <Link href="/terms" underline="hover" sx={{ fontSize: 13 }}>
+                    Terms
+                </Link>
+            </Stack>
         </Box>
     );
 }

@@ -125,6 +125,7 @@ RIOT_LEAGUE_API_KEY=your_riot_key
 TWITCH_CLIENT_ID=your_twitch_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_key
+STEAM_WEB_API_KEY=your_steam_web_api_key
 OPENWEATHER_API_KEY=your_weather_key
 
 # Optional token encryption
@@ -152,6 +153,7 @@ JWT_AUDIENCE=fakegaming-dashboard
 JWT_ISSUER=fakegaming
 
 SERVICE_API_TOKEN=CHANGE_THIS_SHARED_SECRET
+STEAM_WEB_API_KEY=your_steam_web_api_key
 
 # Optional: Enable background jobs
 JOBS_ENABLED=1
@@ -161,6 +163,14 @@ JOBS_ENABLED=1
 ```bash
 PORT=3000
 PUBLIC_URL=https://yourdomain.com
+
+NEXT_PUBLIC_PUBLIC_INSTANCE=true
+NEXT_PUBLIC_INSTANCE_NAME=Fakegaming Bot
+NEXT_PUBLIC_INSTANCE_DOMAIN=yourdomain.com
+NEXT_PUBLIC_OPERATOR_NAME=Fakegaming Bot operator
+NEXT_PUBLIC_OPERATOR_COUNTRY=Your country
+NEXT_PUBLIC_STORAGE_COUNTRIES=Your storage country
+NEXT_PUBLIC_PRIVACY_CONTACT=https://yourdomain.com/contact
 
 DISCORD_CLIENT_ID=your_discord_client_id
 DISCORD_CLIENT_SECRET=your_discord_client_secret
@@ -175,6 +185,17 @@ JWT_ISSUER=fakegaming
 
 DASHBOARD_ADMINS=123456789012345678,987654321098765432
 ```
+
+**Public legal URLs:**
+
+For a public hosted instance, expose the dashboard over HTTPS and set these URLs in the Discord Developer Portal application settings:
+
+```text
+Privacy Policy URL: https://yourdomain.com/privacy
+Terms of Service URL: https://yourdomain.com/terms
+```
+
+Keep `NEXT_PUBLIC_PRIVACY_CONTACT` pointed at a contact method controlled by this deployment operator. It can be a contact page, support form, Discord handle, issue tracker for this deployment, or email address.
 
 **Important Security Notes:**
 - Never commit `.env` files to git (they're in `.gitignore`)

@@ -55,7 +55,9 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
     itemSingularLabel,
     itemPluralLabel,
     showCustomMessage,
+    showNotificationControls,
     itemNameOptions,
+    itemNameSearch,
     allowEdit
 }: IntegrationConfigPageProps<T>) {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -103,7 +105,9 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
             itemSingularLabel={itemSingularLabel}
             itemPluralLabel={itemPluralLabel}
             showCustomMessage={showCustomMessage}
+            showNotificationControls={showNotificationControls}
             itemNameOptions={itemNameOptions}
+            itemNameSearch={itemNameSearch}
             allowEdit={allowEdit}
         />
     );

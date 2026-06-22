@@ -122,6 +122,14 @@ export const pausedStateRequestSchema = z.object({
     paused: z.boolean(),
 }).strict();
 
+export const steamNewsSubscriptionRequestSchema = z.object({
+    steamAppId: z.coerce.number().int().positive(),
+    appName: nonEmptyString.optional(),
+    discordChannelId: nonEmptyString,
+    guildId: nonEmptyString,
+    ...notificationFields,
+}).strict();
+
 export const quoteCreateRequestSchema = z.object({
     id: nonEmptyString.optional(),
     guildId: nonEmptyString,
@@ -255,6 +263,7 @@ export const apiRequestSchemas = {
     RiotLinkUpdateRequest: riotLinkUpdateRequestSchema,
     ServerCreateRequest: serverCreateRequestSchema,
     ServerUpdateRequest: serverUpdateRequestSchema,
+    SteamNewsSubscriptionRequest: steamNewsSubscriptionRequestSchema,
     TikTokCreateRequest: tiktokCreateRequestSchema,
     TikTokUpdateRequest: tiktokUpdateRequestSchema,
     TwitchCreateRequest: twitchCreateRequestSchema,

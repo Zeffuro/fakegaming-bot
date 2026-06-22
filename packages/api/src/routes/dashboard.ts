@@ -14,6 +14,7 @@ interface GuildDashboardSummaryCounts {
     tiktok: number;
     bluesky: number;
     youtube: number;
+    steamNews: number;
     patchSubscriptions: number;
     anime: number;
     birthdays: number;
@@ -24,6 +25,7 @@ function sumCounts(counts: GuildDashboardSummaryCounts): number {
         + counts.tiktok
         + counts.bluesky
         + counts.youtube
+        + counts.steamNews
         + counts.patchSubscriptions
         + counts.anime
         + counts.birthdays;
@@ -62,6 +64,7 @@ router.get('/guild/:guildId/summary', validateParams(guildSummaryParamsSchema), 
         tiktok,
         bluesky,
         youtube,
+        steamNews,
         patchSubscriptions,
         anime,
         birthdays,
@@ -70,6 +73,7 @@ router.get('/guild/:guildId/summary', validateParams(guildSummaryParamsSchema), 
         manager.tiktokManager.count({ guildId }),
         manager.blueskyManager.count({ guildId }),
         manager.youtubeManager.count({ guildId }),
+        manager.steamNewsSubscriptionManager.count({ guildId }),
         manager.patchSubscriptionManager.count({ guildId }),
         manager.animeManager.subscriptions.count({ guildId, targetType: 'channel' }),
         manager.birthdayManager.count({ guildId }),
@@ -80,6 +84,7 @@ router.get('/guild/:guildId/summary', validateParams(guildSummaryParamsSchema), 
         tiktok,
         bluesky,
         youtube,
+        steamNews,
         patchSubscriptions,
         anime,
         birthdays,

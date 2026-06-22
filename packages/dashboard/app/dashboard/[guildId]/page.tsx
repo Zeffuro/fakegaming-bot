@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, Timeline, YouTube } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, SportsEsports, Timeline, YouTube } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -13,11 +13,25 @@ import { useGuildDashboardSummary } from "@/components/hooks/useGuildDashboardSu
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import type { GuildDashboardSummaryCounts } from "@/lib/api-client";
 
+interface GuildDashboardModule {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  accent: string;
+  href?: string;
+  disabled?: boolean;
+  chipLabel?: string;
+  statusLabel?: string;
+  meta?: React.ReactNode;
+  actionLabel?: string;
+}
+
 const emptySummaryCounts: GuildDashboardSummaryCounts = {
   twitch: 0,
   tiktok: 0,
   bluesky: 0,
   youtube: 0,
+  steamNews: 0,
   patchSubscriptions: 0,
   anime: 0,
   birthdays: 0,
@@ -37,15 +51,15 @@ export default function GuildDashboard() {
     return <GuildAccessError />;
   }
 
-  const modules = [
+  const modules: GuildDashboardModule[] = [
     {
       title: "Notifications Hub",
-      description: "Central command center for Twitch, TikTok, Bluesky, YouTube, Patch Notes, Anime, and Birthday notifications.",
+      description: "Central command center for Twitch, TikTok, Bluesky, YouTube, Steam News, Patch Notes, Anime, and Birthday notifications.",
       icon: <NotificationsActive />,
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}/notifications`,
       chipLabel: notificationLoading ? "Loading..." : `${totalConfigured} Configured`,
-      meta: notificationLoading ? "Loading notification counts" : `Twitch ${counts.twitch} | TikTok ${counts.tiktok} | Bluesky ${counts.bluesky} | YouTube ${counts.youtube} | Patch ${counts.patchSubscriptions} | Anime ${counts.anime} | Birthdays ${counts.birthdays}`,
+      meta: notificationLoading ? "Loading notification counts" : `Twitch ${counts.twitch} | TikTok ${counts.tiktok} | Bluesky ${counts.bluesky} | YouTube ${counts.youtube} | Steam ${counts.steamNews} | Patch ${counts.patchSubscriptions} | Anime ${counts.anime} | Birthdays ${counts.birthdays}`,
       actionLabel: "Open Hub",
     },
     {
@@ -82,6 +96,15 @@ export default function GuildDashboard() {
       href: `/dashboard/youtube/${encodedGuildId}`,
       chipLabel: `${counts.youtube} Configured`,
       actionLabel: "Configure YouTube",
+    },
+    {
+      title: "Steam News",
+      description: "Subscribe channels to official Steam game announcements.",
+      icon: <SportsEsports />,
+      accent: dashboardAccents.steam,
+      href: `/dashboard/steam-news/${encodedGuildId}`,
+      chipLabel: `${counts.steamNews} Configured`,
+      actionLabel: "Configure Steam",
     },
     {
       title: "Twitch Live",
@@ -137,11 +160,11 @@ export default function GuildDashboard() {
     },
     {
       title: "Analytics",
-      description: "Server activity, member engagement, and bot usage analytics.",
+      description: "Notification delivery history, provider health, and setup coverage for this server.",
       icon: <Timeline />,
       accent: dashboardAccents.neutral,
-      disabled: true,
-      statusLabel: "planned",
+      href: `/dashboard/analytics/${encodedGuildId}`,
+      actionLabel: "Open Analytics",
     },
   ];
 

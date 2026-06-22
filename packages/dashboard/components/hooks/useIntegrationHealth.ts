@@ -12,7 +12,7 @@ export function useIntegrationHealth(guildId: string, provider?: string, options
     const [error, setError] = useState<string | null>(null);
 
     const load = useCallback(async () => {
-        if (!enabled || !guildId || !provider) {
+        if (!enabled || !guildId) {
             setRecords([]);
             setLoading(false);
             return;

@@ -66,6 +66,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "name": "youtube",
         "title": "Youtube",
         "description": "Youtube module"
+    },
+    {
+        "name": "steam",
+        "title": "Steam",
+        "description": "Steam game news notification commands"
     }
 ] as const;
 
@@ -555,6 +560,26 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "description": "Show the latest video from a YouTube channel ID",
         "module": "youtube",
         "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "add-steam-news",
+        "description": "Add Steam game news notifications",
+        "module": "steam",
+        "permissions": "Administrator",
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "manage-steam-news",
+        "description": "List, test, pause, resume, or remove Steam news notifications",
+        "module": "steam",
+        "permissions": "Administrator",
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
@@ -1153,6 +1178,35 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "description": "Show the latest video from a YouTube channel ID",
                 "module": "youtube",
                 "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "steam",
+            "title": "Steam",
+            "description": "Steam game news notification commands"
+        },
+        "commands": [
+            {
+                "name": "add-steam-news",
+                "description": "Add Steam game news notifications",
+                "module": "steam",
+                "permissions": "Administrator",
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "manage-steam-news",
+                "description": "List, test, pause, resume, or remove Steam news notifications",
+                "module": "steam",
+                "permissions": "Administrator",
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,

@@ -6,6 +6,7 @@ import {
   Toolbar,
   Typography,
   Button,
+  Link,
   IconButton,
   Tooltip
 } from "@mui/material";
@@ -149,6 +150,27 @@ export default function DashboardLayout({
       <Container maxWidth={maxWidth} sx={{ py: { xs: 3, md: 4 } }}>
         {loading ? <LoadingSkeleton /> : children}
       </Container>
+
+      <Box
+        component="footer"
+        sx={{
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          bgcolor: "rgba(5,7,11,0.62)",
+          py: 2.5,
+        }}
+      >
+        <Container maxWidth={maxWidth}>
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)" }}>
+            <Link href="/privacy" underline="hover" color="inherit">
+              Privacy and cookies
+            </Link>
+            {" · "}
+            <Link href="/terms" underline="hover" color="inherit">
+              Terms
+            </Link>
+          </Typography>
+        </Container>
+      </Box>
     </Box>
   );
 }

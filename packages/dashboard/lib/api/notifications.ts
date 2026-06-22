@@ -1,6 +1,6 @@
 import { API_ENDPOINTS, apiRequest } from "./core";
 
-export interface AdminNotificationRecord {
+export interface NotificationDeliveryRecord {
     id: number;
     provider: string;
     eventId: string;
@@ -16,15 +16,15 @@ export interface NotificationProviderSummary {
     count: number;
 }
 
-export interface AdminNotificationsQuery {
+export interface NotificationsQuery {
     provider?: string;
     guildId?: string;
     limit?: number;
     offset?: number;
 }
 
-export interface AdminNotificationsResponse {
-    records: AdminNotificationRecord[];
+export interface NotificationsResponse {
+    records: NotificationDeliveryRecord[];
     total: number;
     limit: number;
     offset: number;
@@ -33,6 +33,12 @@ export interface AdminNotificationsResponse {
         byProvider: NotificationProviderSummary[];
     };
 }
+
+export type AdminNotificationRecord = NotificationDeliveryRecord;
+export type AdminNotificationsQuery = NotificationsQuery;
+export type AdminNotificationsResponse = NotificationsResponse;
+export type GuildNotificationsQuery = Omit<NotificationsQuery, "guildId">;
+export type GuildNotificationsResponse = NotificationsResponse;
 
 export const notificationsApi = {
     getAdminNotifications: (query: AdminNotificationsQuery = {}) => {
@@ -45,5 +51,17 @@ export const notificationsApi = {
 
         const suffix = params.toString() ? `?${params.toString()}` : "";
         return apiRequest<AdminNotificationsResponse>(`${API_ENDPOINTS.NOTIFICATIONS}/admin${suffix}`);
+    },
+
+    getGuildNotifications: (guildId: string, query: GuildNotificationsQuery = {}) => {
+        const params = new URLSearchParams();
+        for (const [key, value] of Object.entries(query)) {
+            if (value !== undefined && value !== null && value !== "") {
+                params.set(key, String(value));
+            }
+        }
+
+        const suffix = params.toString() ? `?${params.toString()}` : "";
+        return apiRequest<GuildNotificationsResponse>(`${API_ENDPOINTS.NOTIFICATIONS}/guild/${encodeURIComponent(guildId)}${suffix}`);
     },
 };

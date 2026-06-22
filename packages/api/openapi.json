@@ -1220,6 +1220,72 @@
         },
         "additionalProperties": false
       },
+      "SteamNewsSubscriptionRequest": {
+        "type": "object",
+        "properties": {
+          "steamAppId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "appName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "customMessage": {
+            "type": "string"
+          },
+          "cooldownMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursStart": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quietHoursEnd": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "steamAppId",
+          "discordChannelId",
+          "guildId"
+        ],
+        "additionalProperties": false
+      },
       "TikTokCreateRequest": {
         "type": "object",
         "properties": {
@@ -3163,6 +3229,274 @@
         }
       }
     },
+    "/steamNewsSubscriptions": {
+      "get": {
+        "summary": "List Steam news subscriptions",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Steam news subscriptions"
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a Steam news subscription",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SteamNewsSubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "summary": "Upsert a Steam news subscription",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SteamNewsSubscriptionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/steamNewsSubscriptions/{id}": {
+      "get": {
+        "summary": "Get a Steam news subscription by id",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Steam news subscription config"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Pause or resume a Steam news subscription",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PausedStateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated Steam news subscription config"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a Steam news subscription by id",
+        "tags": [
+          "SteamNewsSubscriptions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/steamApps/search": {
+      "get": {
+        "summary": "Search Steam apps by name, App ID, or Steam app URL",
+        "tags": [
+          "SteamApps"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked Steam app search results"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/steamApps/resolve": {
+      "get": {
+        "summary": "Resolve one Steam app from a name, App ID, or Steam app URL",
+        "tags": [
+          "SteamApps"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved Steam app"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Multiple Steam apps matched the input"
+          }
+        }
+      }
+    },
     "/servers": {
       "get": {
         "summary": "List all servers",
@@ -4127,6 +4461,68 @@
         }
       }
     },
+    "/notifications/guild/{guildId}": {
+      "get": {
+        "summary": "List recent notification delivery records for a guild",
+        "tags": [
+          "Notifications"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild-scoped notification delivery records and provider counts"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
     "/notifications/admin": {
       "get": {
         "summary": "List recent notification delivery records",
@@ -4264,7 +4660,8 @@
                 "youtube",
                 "tiktok",
                 "bluesky",
-                "anime"
+                "anime",
+                "steamnews"
               ]
             }
           }
@@ -4312,7 +4709,8 @@
                 "youtube",
                 "tiktok",
                 "bluesky",
-                "anime"
+                "anime",
+                "steamnews"
               ]
             }
           }

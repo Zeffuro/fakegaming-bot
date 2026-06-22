@@ -1,3 +1,10 @@
+x-app-runtime-hardening: &app-runtime-hardening
+  init: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
 services:
   # -------------------- POSTGRES --------------------
   # Bundled Postgres for self-hosted deployments. Disable the bundled-postgres
@@ -52,6 +59,7 @@ services:
 
   # -------------------- API --------------------
   api:
+    <<: *app-runtime-hardening
     image: zeffuro/fakegaming-api:latest
     pull_policy: always
     container_name: fakegaming-api
@@ -94,6 +102,7 @@ services:
       TWITCH_TOKEN_ENC_KEY: ${TWITCH_TOKEN_ENC_KEY}
       YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
       YOUTUBE_ENRICH_EMBEDS: 0
+      STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY:-}
       TIKTOK_COOKIE: ${TIKTOK_COOKIE}
     depends_on:
       postgres:
@@ -111,6 +120,7 @@ services:
 
   # -------------------- BOT --------------------
   bot:
+    <<: *app-runtime-hardening
     image: zeffuro/fakegaming-bot:latest
     pull_policy: always
     container_name: fakegaming-bot
@@ -134,6 +144,7 @@ services:
       GUILD_ID: ${BOT_DISCORD_GUILD_ID}
       BOT_HEALTH_HOST: 0.0.0.0
       BOT_HEALTH_PORT: 8081
+      STEAM_WEB_API_KEY: ${STEAM_WEB_API_KEY:-}
       RIOT_LEAGUE_API_KEY: ${RIOT_LEAGUE_API_KEY}
       RIOT_TFT_API_KEY: ${RIOT_TFT_API_KEY}
       RIOT_DEV_API_KEY: ${RIOT_DEV_API_KEY}
@@ -155,6 +166,7 @@ services:
 
   # -------------------- DASHBOARD --------------------
   dashboard:
+    <<: *app-runtime-hardening
     image: zeffuro/fakegaming-dashboard:latest
     pull_policy: always
     container_name: fakegaming-dashboard
@@ -169,6 +181,13 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       HOSTNAME: 0.0.0.0
       PUBLIC_URL: ${PRODUCTION_DASHBOARD_URL}
+      NEXT_PUBLIC_PUBLIC_INSTANCE: ${NEXT_PUBLIC_PUBLIC_INSTANCE:-false}
+      NEXT_PUBLIC_INSTANCE_NAME: ${NEXT_PUBLIC_INSTANCE_NAME:-}
+      NEXT_PUBLIC_INSTANCE_DOMAIN: ${NEXT_PUBLIC_INSTANCE_DOMAIN:-}
+      NEXT_PUBLIC_OPERATOR_NAME: ${NEXT_PUBLIC_OPERATOR_NAME:-}
+      NEXT_PUBLIC_OPERATOR_COUNTRY: ${NEXT_PUBLIC_OPERATOR_COUNTRY:-}
+      NEXT_PUBLIC_STORAGE_COUNTRIES: ${NEXT_PUBLIC_STORAGE_COUNTRIES:-}
+      NEXT_PUBLIC_PRIVACY_CONTACT: ${NEXT_PUBLIC_PRIVACY_CONTACT:-}
       API_URL: 'http://api:3001/api'
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID}

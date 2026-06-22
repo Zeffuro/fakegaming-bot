@@ -12,6 +12,7 @@ beforeEach(async () => {
         configManager.tiktokManager.removeAll(),
         configManager.blueskyManager.removeAll(),
         configManager.youtubeManager.removeAll(),
+        configManager.steamNewsSubscriptionManager.removeAll(),
         configManager.patchSubscriptionManager.removeAll(),
         configManager.animeManager.subscriptions.removeAll(),
         configManager.birthdayManager.removeAll(),
@@ -23,6 +24,7 @@ beforeEach(async () => {
         configManager.tiktokManager.addPlain({ guildId, tiktokUsername: 'creator', discordChannelId: 'chan-tiktok' } as any),
         configManager.blueskyManager.addPlain({ guildId, blueskyHandle: 'user.bsky.social', discordChannelId: 'chan-bluesky' } as any),
         configManager.youtubeManager.addPlain({ guildId, youtubeChannelId: 'UCaaaaaaaaaaaaaaaaaaaaaa', discordChannelId: 'chan-youtube' } as any),
+        configManager.steamNewsSubscriptionManager.addPlain({ guildId, steamAppId: 730, appName: 'Counter-Strike 2', discordChannelId: 'chan-steam' } as any),
         configManager.patchSubscriptionManager.addPlain({ guildId, game: 'league', channelId: 'chan-patch' } as any),
         configManager.animeManager.subscriptions.addPlain({ guildId, targetType: 'channel', anilistId: 1, channelId: 'chan-anime', reminderMinutes: 30 } as any),
         configManager.birthdayManager.addPlain({ guildId, userId: 'birthday-user', channelId: 'chan-birthday', day: 12, month: 6 } as any),
@@ -43,11 +45,12 @@ describe('Dashboard summary API', () => {
                 tiktok: 1,
                 bluesky: 1,
                 youtube: 1,
+                steamNews: 1,
                 patchSubscriptions: 1,
                 anime: 1,
                 birthdays: 1,
             },
-            totalConfigured: 7,
+            totalConfigured: 8,
         });
     });
 

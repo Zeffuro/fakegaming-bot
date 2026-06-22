@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 102
+Operations: 111
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -47,6 +47,7 @@ Operations: 102
 | Jobs | GET | `/jobs/birthdays/today` | Get number of birthday notifications processed today | Bearer |
 | Jobs | GET | `/jobs/heartbeat/last` | Get the last heartbeat payload/time | Bearer |
 | Notifications | GET | `/notifications/admin` | List recent notification delivery records | Bearer |
+| Notifications | GET | `/notifications/guild/{guildId}` | List recent notification delivery records for a guild | Bearer |
 | PatchNotes | GET | `/patchNotes` | List all patch notes | Bearer |
 | PatchNotes | POST | `/patchNotes` | Upsert (add or update) a patch note | Bearer |
 | PatchNotes | GET | `/patchNotes/{game}` | Get the latest patch note for a game | Bearer |
@@ -77,6 +78,14 @@ Operations: 102
 | Servers | GET | `/servers/{serverId}` | Get a server by ID | Bearer |
 | Servers | PUT | `/servers/{serverId}` | Update a server by ID | Bearer |
 | Servers | DELETE | `/servers/{serverId}` | Delete a server by ID | Bearer |
+| SteamApps | GET | `/steamApps/resolve` | Resolve one Steam app from a name, App ID, or Steam app URL | Bearer |
+| SteamApps | GET | `/steamApps/search` | Search Steam apps by name, App ID, or Steam app URL | Bearer |
+| SteamNewsSubscriptions | GET | `/steamNewsSubscriptions` | List Steam news subscriptions | Bearer |
+| SteamNewsSubscriptions | POST | `/steamNewsSubscriptions` | Add a Steam news subscription | Bearer |
+| SteamNewsSubscriptions | PUT | `/steamNewsSubscriptions` | Upsert a Steam news subscription | Bearer |
+| SteamNewsSubscriptions | GET | `/steamNewsSubscriptions/{id}` | Get a Steam news subscription by id | Bearer |
+| SteamNewsSubscriptions | PATCH | `/steamNewsSubscriptions/{id}` | Pause or resume a Steam news subscription | Bearer |
+| SteamNewsSubscriptions | DELETE | `/steamNewsSubscriptions/{id}` | Delete a Steam news subscription by id | Bearer |
 | TikTok | GET | `/tiktok` | List all TikTok stream configs | Bearer |
 | TikTok | POST | `/tiktok` | Create a new TikTok stream config | Bearer |
 | TikTok | GET | `/tiktok/{id}` | Get a TikTok stream config by id | Bearer |

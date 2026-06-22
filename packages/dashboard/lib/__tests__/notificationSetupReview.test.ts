@@ -7,6 +7,7 @@ function emptyInput() {
         youtube: [],
         tiktok: [],
         bluesky: [],
+        steamNews: [],
         patchNotes: [],
         anime: [],
         birthdays: [],
@@ -48,14 +49,15 @@ describe('buildNotificationSetupReview', () => {
             youtube: [{ youtubeChannelId: 'b', discordChannelId: 'channel-busy' }],
             tiktok: [{ tiktokUsername: 'c', discordChannelId: 'channel-busy' }],
             bluesky: [{ blueskyHandle: 'd.test', discordChannelId: 'channel-busy' }],
+            steamNews: [{ steamAppId: 730, discordChannelId: 'channel-busy' }],
             patchNotes: [{ game: 'Game', discordChannelId: 'channel-busy' }],
         });
 
         expect(review.busyChannels).toEqual([
             {
                 channelId: 'channel-busy',
-                count: 5,
-                providers: ['Bluesky', 'Patch Notes', 'TikTok', 'Twitch', 'YouTube'],
+                count: 6,
+                providers: ['Bluesky', 'Patch Notes', 'Steam News', 'TikTok', 'Twitch', 'YouTube'],
             },
         ]);
     });

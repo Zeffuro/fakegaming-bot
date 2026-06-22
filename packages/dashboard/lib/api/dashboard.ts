@@ -5,6 +5,7 @@ export interface GuildDashboardSummaryCounts {
     tiktok: number;
     bluesky: number;
     youtube: number;
+    steamNews: number;
     patchSubscriptions: number;
     anime: number;
     birthdays: number;

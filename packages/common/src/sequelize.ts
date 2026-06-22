@@ -23,6 +23,7 @@ import {AnimeSubscriptionConfig} from './models/anime-subscription-config.js';
 import {AnimeEpisode} from './models/anime-episode.js';
 import {AuditEvent} from './models/audit-event.js';
 import {IntegrationHealth} from './models/integration-health.js';
+import {SteamNewsSubscriptionConfig} from './models/steam-news-subscription-config.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -78,7 +79,8 @@ export function getSequelize(useTest = false): Sequelize {
         AnimeSubscriptionConfig,
         AnimeEpisode,
         AuditEvent,
-        IntegrationHealth
+        IntegrationHealth,
+        SteamNewsSubscriptionConfig
     ]);
 
     return sequelize;
