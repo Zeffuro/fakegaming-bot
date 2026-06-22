@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Alert, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from "@mui/material";
 import { Add, FilterAltOutlined, PauseCircleOutlined, PlayCircleOutlined, Search } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -129,8 +130,10 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
     const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
-    const [query, setQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState<NotificationConfigStatusFilter>("all");
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
+    const [query, setQuery] = useState(() => searchParams?.get("q") ?? "");
+    const [statusFilter, setStatusFilter] = useState<NotificationConfigStatusFilter>(() => parseStatusFilter(searchParams?.get("status") ?? null));
 
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
@@ -160,6 +163,12 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
         channelNameField,
         guildId: guildId as string
     });
+
+    useEffect(() => {
+        const params = new URLSearchParams(searchParamString);
+        setQuery(params.get("q") ?? "");
+        setStatusFilter(parseStatusFilter(params.get("status")));
+    }, [searchParamString]);
 
     const handleEditConfigChange = (field: string, value: any) => {
         if (!editingConfig) return;
@@ -400,4 +409,11 @@ function filterFieldSx(accent: string) {
             color: "rgba(255,255,255,0.62)",
         },
     };
+}
+
+function parseStatusFilter(value: string | null): NotificationConfigStatusFilter {
+    const normalized = String(value ?? "");
+    return statusFilterOptions.some((option) => option.value === normalized)
+        ? normalized as NotificationConfigStatusFilter
+        : "all";
 }

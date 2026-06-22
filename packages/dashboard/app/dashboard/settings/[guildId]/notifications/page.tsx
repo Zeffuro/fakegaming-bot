@@ -2,7 +2,7 @@
 import React, { useMemo } from "react";
 import Link from "next/link";
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
-import { AlternateEmail, AutoStories, Cake, Download, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Cake, Download, LiveTv, NotificationsActive, Search, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -20,6 +20,7 @@ import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
 import { buildNotificationSetupReview, type NotificationSetupReview, type NotificationReviewGroup, type NotificationChannelLoad } from "@/lib/notificationSetupReview";
 import { buildNotificationSetupExport, buildNotificationSetupExportFilename } from "@/lib/notificationSetupExport";
+import { buildNotificationChannelLinks, buildNotificationReviewGroupLink, type NotificationSetupLink } from "@/lib/notificationSetupLinks";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -178,14 +179,14 @@ export default function GuildNotificationsHubPage() {
                         </Box>
                     </FeaturePanel>
 
-                    <SetupReviewPanel review={setupReview} />
+                    <SetupReviewPanel review={setupReview} guildId={guildId as string} />
                 </FeatureShell>
             )}
         </DashboardLayout>
     );
 }
 
-function SetupReviewPanel({ review }: { review: NotificationSetupReview }) {
+function SetupReviewPanel({ review, guildId }: { review: NotificationSetupReview; guildId: string }) {
     const totalFindings = review.duplicateRoutes.length + review.multiChannelFeeds.length + review.busyChannels.length;
 
     return (
@@ -213,9 +214,9 @@ function SetupReviewPanel({ review }: { review: NotificationSetupReview }) {
                     </Typography>
                 ) : (
                     <Stack spacing={1.5}>
-                        <ReviewGroupSection title="Duplicate Routes" groups={review.duplicateRoutes} />
-                        <ReviewGroupSection title="Same Feed, Multiple Channels" groups={review.multiChannelFeeds} />
-                        <BusyChannelSection channels={review.busyChannels} />
+                        <ReviewGroupSection title="Duplicate Routes" groups={review.duplicateRoutes} guildId={guildId} />
+                        <ReviewGroupSection title="Same Feed, Multiple Channels" groups={review.multiChannelFeeds} guildId={guildId} />
+                        <BusyChannelSection channels={review.busyChannels} guildId={guildId} />
                     </Stack>
                 )}
             </Stack>
@@ -223,7 +224,7 @@ function SetupReviewPanel({ review }: { review: NotificationSetupReview }) {
     );
 }
 
-function ReviewGroupSection({ title, groups }: { title: string; groups: NotificationReviewGroup[] }) {
+function ReviewGroupSection({ title, groups, guildId }: { title: string; groups: NotificationReviewGroup[]; guildId: string }) {
     if (groups.length === 0) return null;
 
     return (
@@ -237,6 +238,7 @@ function ReviewGroupSection({ title, groups }: { title: string; groups: Notifica
                         key={group.key}
                         primary={`${group.provider}: ${group.sourceLabel}`}
                         secondary={`${group.records.length} routes across ${group.channelIds.length} ${group.channelIds.length === 1 ? "channel" : "channels"}: ${group.channelIds.join(", ")}`}
+                        actions={toReviewActions(buildNotificationReviewGroupLink(guildId, group))}
                     />
                 ))}
             </Stack>
@@ -244,7 +246,7 @@ function ReviewGroupSection({ title, groups }: { title: string; groups: Notifica
     );
 }
 
-function BusyChannelSection({ channels }: { channels: NotificationChannelLoad[] }) {
+function BusyChannelSection({ channels, guildId }: { channels: NotificationChannelLoad[]; guildId: string }) {
     if (channels.length === 0) return null;
 
     return (
@@ -258,6 +260,7 @@ function BusyChannelSection({ channels }: { channels: NotificationChannelLoad[] 
                         key={channel.channelId}
                         primary={channel.channelId}
                         secondary={`${channel.count} feeds from ${channel.providers.join(", ")}`}
+                        actions={toReviewActions(buildNotificationChannelLinks(guildId, channel))}
                     />
                 ))}
             </Stack>
@@ -265,7 +268,7 @@ function BusyChannelSection({ channels }: { channels: NotificationChannelLoad[] 
     );
 }
 
-function ReviewLine({ primary, secondary }: { primary: string; secondary: string }) {
+function ReviewLine({ primary, secondary, actions }: { primary: string; secondary: string; actions?: React.ReactNode }) {
     return (
         <Box sx={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 1.5, px: 1.25, py: 1, bgcolor: "rgba(255,255,255,0.035)" }}>
             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750 }}>
@@ -274,7 +277,42 @@ function ReviewLine({ primary, secondary }: { primary: string; secondary: string
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.55)" }}>
                 {secondary}
             </Typography>
+            {actions && (
+                <Box sx={{ mt: 0.75 }}>
+                    {actions}
+                </Box>
+            )}
         </Box>
+    );
+}
+
+function toReviewActions(links: NotificationSetupLink | NotificationSetupLink[] | null): React.ReactNode {
+    if (!links) return undefined;
+    const normalizedLinks = Array.isArray(links) ? links : [links];
+    if (normalizedLinks.length === 0) return undefined;
+
+    return (
+        <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+            {normalizedLinks.map((link) => (
+                <Button
+                    key={link.href}
+                    component={Link}
+                    href={link.href}
+                    size="small"
+                    startIcon={<Search fontSize="small" />}
+                    sx={{
+                        color: dashboardAccents.settings,
+                        fontWeight: 800,
+                        minWidth: 0,
+                        px: 0.75,
+                        py: 0.25,
+                        textTransform: "none",
+                    }}
+                >
+                    {link.label}
+                </Button>
+            ))}
+        </Stack>
     );
 }
 
