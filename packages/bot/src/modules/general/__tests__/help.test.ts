@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { setupCommandTest, expectEphemeralReply, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
-import { CommandInteraction, Collection } from 'discord.js';
+import { ApplicationCommandType, CommandInteraction, Collection } from 'discord.js';
 
 describe('help command', () => {
     beforeEach(() => {
@@ -100,5 +100,52 @@ describe('help command', () => {
 
         expect(appleIndex).toBeLessThan(middleIndex);
         expect(middleIndex).toBeLessThan(zebraIndex);
+    });
+
+    it('formats context menu commands and sends long help in chunks', async () => {
+        const mockCommands = new Collection();
+        mockCommands.set('profile', {
+            data: {
+                name: 'profile',
+                toJSON: () => ({ type: ApplicationCommandType.User }),
+            },
+            description: 'Open profile actions',
+        });
+        mockCommands.set('save-message', {
+            data: {
+                name: 'save-message',
+                toJSON: () => ({ type: ApplicationCommandType.Message }),
+            },
+        });
+
+        for (let i = 0; i < 35; i += 1) {
+            mockCommands.set(`very-long-command-${i.toString().padStart(2, '0')}`, {
+                data: {
+                    name: `very-long-command-${i.toString().padStart(2, '0')}`,
+                    description: `Long description ${i} ${'x'.repeat(90)}`,
+                },
+            });
+        }
+
+        const { command, interaction } = await setupCommandTest(
+            'modules/general/commands/help.js',
+            {
+                interaction: {
+                    client: {
+                        commands: mockCommands,
+                    },
+                },
+            }
+        );
+
+        await command.execute(interaction as unknown as CommandInteraction);
+
+        expectReplyTextContains(interaction, 'User menu: profile');
+        expectReplyTextContains(interaction, 'Open profile actions');
+        expectReplyTextContains(interaction, 'Message menu: save-message');
+        expectReplyTextContains(interaction, 'No description available');
+        expect(interaction.followUp).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('**More Commands:**'),
+        }));
     });
 });
