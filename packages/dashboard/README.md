@@ -54,7 +54,7 @@ Web dashboard for guild administrators to configure and manage the bot without u
 
 ### Patch Notes Management
 - Subscribe channels to patch note announcements
-- Support for multiple games (League, Valorant, TFT)
+- Support for multiple games (League of Legends, VALORANT, Marvel Rivals, Overwatch 2)
 - Automatic announcements when new patches are released
 
 ## Technology Stack

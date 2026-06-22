@@ -1,10 +1,18 @@
-# Database Schema Documentation
+# Database Schema Overview
 
-This document provides a comprehensive overview of the database schema used by the fakegaming-bot monorepo.
+This document provides a high-level overview of the database schema used by the fakegaming-bot monorepo. It is not the column-level source of truth.
 
 ## Overview
 
-The database is managed using [Sequelize](https://sequelize.org/) ORM with TypeScript decorators. All models are defined in `packages/common/src/models/`.
+The database is managed using [Sequelize](https://sequelize.org/) ORM with TypeScript decorators. Live models are defined in `packages/common/src/models/`.
+
+## Source of Truth
+
+- Models: `packages/common/src/models/`
+- Model registration: `packages/common/src/sequelize.ts`
+- Migrations: `migrations/`
+- API validation schemas: `packages/common/src/api/schemas.ts`
+- Generated API docs: `docs/generated/api.md`
 
 ## Database Support
 
@@ -14,6 +22,8 @@ The database is managed using [Sequelize](https://sequelize.org/) ORM with TypeS
 ---
 
 ## Entity Relationship Diagram
+
+This diagram is intentionally condensed around the main configuration and operations tables. Inspect the model files and migrations for exact fields, indexes, and constraints.
 
 ```mermaid
 erDiagram
@@ -29,6 +39,8 @@ erDiagram
         int id PK
         string discordId FK "References UserConfig"
         string summonerName "League summoner name"
+        string riotIdGameName "Riot ID game name"
+        string riotIdTagLine "Riot ID tag line"
         string region "League region"
         string puuid "Player UUID"
     }
@@ -76,6 +88,8 @@ erDiagram
         string quietHoursEnd "Optional quiet-hours end in HH:mm"
         datetime lastNotifiedAt "Timestamp of last sent notification for cooldown"
         string guildId "Discord Guild ID"
+        boolean paused "Pause notifications"
+        boolean isLive "Last known live status"
     }
     
     YoutubeVideoConfig {
@@ -89,6 +103,7 @@ erDiagram
         string quietHoursEnd "Optional quiet-hours end in HH:mm"
         datetime lastNotifiedAt "Timestamp of last sent notification for cooldown"
         string guildId "Discord Guild ID"
+        boolean paused "Pause notifications"
     }
     
     PatchNoteConfig {
@@ -110,6 +125,7 @@ erDiagram
         string channelId "Discord Channel ID"
         string guildId "Discord Guild ID"
         bigint lastAnnouncedAt "Last announcement timestamp"
+        boolean paused "Pause announcements"
     }
     
     DisabledCommandConfig {
@@ -122,6 +138,105 @@ erDiagram
         int id PK
         string guildId "Discord Guild ID"
         string moduleName "Module to disable (e.g., 'fun', 'admin', 'riot')"
+    }
+
+    TikTokStreamConfig {
+        int id PK
+        string tiktokUsername "TikTok account"
+        string discordChannelId "Discord Channel ID"
+        string guildId "Discord Guild ID"
+        boolean paused "Pause notifications"
+    }
+
+    BlueskyPostConfig {
+        int id PK
+        string blueskyHandle "Bluesky account"
+        string discordChannelId "Discord Channel ID"
+        string guildId "Discord Guild ID"
+        boolean paused "Pause notifications"
+    }
+
+    SteamNewsSubscriptionConfig {
+        int id PK
+        int steamAppId "Steam app ID"
+        string appName "Steam app name"
+        string discordChannelId "Discord Channel ID"
+        string guildId "Discord Guild ID"
+        boolean paused "Pause notifications"
+    }
+
+    AnimeTitle {
+        int id PK
+        int anilistId "AniList title ID"
+        string titleRomaji "Romaji title"
+        string titleEnglish "English title"
+        bigint nextAiringAt "Next airing timestamp"
+    }
+
+    AnimeSubscriptionConfig {
+        int id PK
+        int anilistId "AniList title ID"
+        string targetType "DM or channel target"
+        string userId "Discord User ID"
+        string guildId "Discord Guild ID"
+        string channelId "Discord Channel ID"
+        boolean paused "Pause notifications"
+    }
+
+    AnimeEpisode {
+        int id PK
+        int anilistId "AniList title ID"
+        int episode "Episode number"
+        bigint airingAt "Episode air time"
+    }
+
+    Notification {
+        int id PK
+        string provider "Provider name"
+        string eventId "Provider event ID"
+        string guildId "Discord Guild ID"
+        string channelId "Discord Channel ID"
+        string messageId "Discord message ID"
+    }
+
+    JobRun {
+        int id PK
+        string name "Job name"
+        datetime startedAt "Run start"
+        datetime finishedAt "Run finish"
+        boolean ok "Run success flag"
+    }
+
+    AuditEvent {
+        int id PK
+        string guildId "Discord Guild ID"
+        string actorId "Discord actor ID"
+        string action "Action name"
+    }
+
+    IntegrationHealth {
+        int id PK
+        string provider "Provider name"
+        string configId "Provider config ID"
+        string guildId "Discord Guild ID"
+        string status "Health status"
+        datetime lastCheckedAt "Last check time"
+    }
+
+    UserNoteConfig {
+        string id PK
+        string discordId "Discord User ID"
+        string title "Note title"
+        text body "Note body"
+        boolean pinned "Pinned flag"
+    }
+
+    PatchNoteHistoryConfig {
+        int id PK
+        string game "Game name"
+        string title "Patch note title"
+        string url "Source URL"
+        bigint publishedAt "Unix timestamp"
     }
     
     CacheConfig {
@@ -168,6 +283,8 @@ Stores League of Legends account information linked to Discord users.
 - `id` (INTEGER, PK, auto-increment)
 - `discordId` (STRING, FK) - References UserConfig
 - `summonerName` (STRING) - League of Legends summoner name
+- `riotIdGameName` (STRING, nullable) - Riot ID game name
+- `riotIdTagLine` (STRING, nullable) - Riot ID tag line
 - `region` (STRING) - League region (e.g., "na1", "euw1")
 - `puuid` (STRING) - Riot Games Player UUID
 
@@ -272,6 +389,8 @@ Stores Twitch stream notification subscriptions.
 - `quietHoursEnd` (STRING, nullable) - Quiet-hours end in HH:mm
 - `lastNotifiedAt` (DATE, nullable) - Last sent notification timestamp
 - `guildId` (STRING) - Discord Guild ID
+- `paused` (BOOLEAN) - Pauses notifications without deleting the subscription
+- `isLive` (BOOLEAN) - Last known live state used by delivery jobs
 
 **Use Cases:**
 - Subscribe to Twitch stream notifications
@@ -296,6 +415,7 @@ Stores YouTube channel notification subscriptions.
 - `quietHoursEnd` (STRING, nullable) - Quiet-hours end in HH:mm
 - `lastNotifiedAt` (DATE, nullable) - Last sent notification timestamp
 - `guildId` (STRING) - Discord Guild ID
+- `paused` (BOOLEAN) - Pauses notifications without deleting the subscription
 
 **Use Cases:**
 - Subscribe to YouTube channel notifications
@@ -305,13 +425,13 @@ Stores YouTube channel notification subscriptions.
 ---
 
 ### PatchNoteConfig
-Stores game patch notes (League, Valorant, TFT, etc.).
+Stores game patch notes for the supported patch-note providers.
 
 **Primary Key:** `id` (auto-increment)
 
 **Fields:**
 - `id` (INTEGER, PK, auto-increment)
-- `game` (STRING) - Game identifier (e.g., "league", "valorant", "tft")
+- `game` (STRING) - Game identifier (currently League of Legends, VALORANT, Marvel Rivals, and Overwatch 2)
 - `title` (STRING) - Patch note title
 - `content` (TEXT) - Patch note content
 - `url` (STRING) - Source URL
@@ -343,6 +463,7 @@ Stores guild subscriptions to game patch notes.
 - `channelId` (STRING) - Discord Channel ID for announcements
 - `guildId` (STRING) - Discord Guild ID
 - `lastAnnouncedAt` (BIGINT, nullable) - Last announcement timestamp
+- `paused` (BOOLEAN) - Pauses automatic announcements without deleting the subscription
 
 **Use Cases:**
 - Subscribe channels to automatic patch note announcements
@@ -403,6 +524,18 @@ Generic key-value cache with expiration.
 
 ---
 
+## Additional Model Families
+
+The live model set has grown beyond the original command-only schema. These families are registered in `packages/common/src/sequelize.ts` and should be checked in source before making schema changes:
+
+- Provider notification configs: `TikTokStreamConfig`, `BlueskyPostConfig`, `SteamNewsSubscriptionConfig`, plus paused/cooldown/quiet-hours fields on provider subscriptions.
+- Delivery and operations records: `Notification`, `JobRun`, `AuditEvent`, and `IntegrationHealth`.
+- Patch-note history: `PatchNoteHistoryConfig` keeps fetched patch-note history separate from channel subscriptions.
+- Anime tracking: `AnimeTitle`, `AnimeSubscriptionConfig`, and `AnimeEpisode` store AniList-backed title metadata, subscriptions, and episode air times.
+- User notes: `UserNoteConfig` stores dashboard/user note records keyed by Discord user.
+
+---
+
 ## Runtime Enforcement (Commands & Modules)
 
 - Before executing any command, the bot checks both `DisabledModuleConfig` (by `moduleName`) and `DisabledCommandConfig` (by `commandName`) for the current `guildId`.
@@ -419,10 +552,11 @@ All schema changes are managed through migrations in the `migrations/` directory
 **Key Principles:**
 - Never modify models directly without a migration
 - All migrations must have `up` and `down` functions
-- Migrations run automatically on bot/API startup
+- Migrations run during service startup where enabled; production Compose disables bot-side migrations with `DB_MIGRATIONS_ENABLED=0` and lets the API own startup migrations.
 - Use descriptive migration names with dates
 
 **Related Migrations:**
+- Later migrations add provider health, delivery history, paused state, Steam news, anime tracking, user notes, and Riot ID fields. Check `migrations/` for the exact ordered history.
 - `20251016-create-disabled-module-config.ts` — Introduces `DisabledModuleConfig` with unique `(guildId, moduleName)`
 
 ---
@@ -437,21 +571,16 @@ All schema changes are managed through migrations in the `migrations/` directory
 
 ---
 
-## Indexing Strategy
+## Indexing Notes
 
-**Current Indexes:**
+Consult `migrations/` and the model decorators for the exact current index set. Common index and uniqueness patterns include:
+
 - Primary keys (automatic)
 - Unique constraints on `PatchNoteConfig(game, title)`
 - Unique constraints on `PatchSubscriptionConfig(game, channelId)`
 - Unique constraints on `DisabledModuleConfig(guildId, moduleName)`
-
-**Recommended Future Indexes** (for performance):
-- `QuoteConfig.guildId` - For fast quote retrieval by guild
-- `QuoteConfig.authorId` - For fast quote retrieval by author
-- `ReminderConfig.remindAt` - For fast due reminder queries
-- `TwitchStreamConfig.guildId` - For guild-specific stream lookups
-- `YoutubeVideoConfig.guildId` - For guild-specific video lookups
-- `DisabledCommandConfig(guildId, commandName)` - Composite index for fast command checks
+- Provider subscription uniqueness per guild/source/channel
+- Operational indexes on job runs, audit events, integration health, and user notes
 
 ---
 

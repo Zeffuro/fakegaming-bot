@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {getBaseUrl} from "@/lib/util/getBaseUrl";
 import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
-import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { getDiscordOAuthConfig, getJwtConfig } from "@/lib/env";
 import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
 import { sanitizeReturnTo } from "@/lib/util/sanitizeReturnTo";
@@ -17,7 +17,9 @@ export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
 
-    const tokenData = await exchangeCodeForToken(code, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_REDIRECT_URI);
+    const { clientId, clientSecret, redirectUri } = getDiscordOAuthConfig();
+    const { secret, audience, issuer } = getJwtConfig();
+    const tokenData = await exchangeCodeForToken(code, clientId, clientSecret, redirectUri);
     if (!tokenData.access_token) return NextResponse.json({ error: "Invalid code" }, { status: 400 });
 
     const user: APIUser = await fetchDiscordUser(tokenData.access_token);
@@ -45,7 +47,7 @@ export async function GET(req: NextRequest) {
         tokenData.expires_in ? tokenData.expires_in * 1000 : CACHE_TTL.ACCESS_TOKEN
     );
 
-    const jwtToken = issueJwt(userProfile, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER, {
+    const jwtToken = issueJwt(userProfile, secret, audience, issuer, {
         expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS
     });
     const refreshSession = await createRefreshSession({

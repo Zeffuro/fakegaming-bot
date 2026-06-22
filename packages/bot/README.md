@@ -4,7 +4,7 @@ Discord bot package for the fakegaming-bot monorepo.
 
 ## Overview
 
-The bot package contains all Discord.js bot functionality including slash commands, event handlers, and background services for Twitch/YouTube notifications, birthdays, and reminders.
+The bot package contains Discord.js functionality including slash commands, event handlers, and direct command integrations. Scheduled notification jobs for Twitch, YouTube, TikTok, Bluesky, Steam news, birthdays, reminders, and patch notes run from the API job system and use the shared database models.
 
 ## Features
 
@@ -15,20 +15,17 @@ The current command catalog is generated from module manifests:
 - [Generated command catalog](../../docs/generated/commands.md)
 - [Root README command table](../../README.md#available-commands)
 
-### Background Services
+### Notification Configuration
 
-- **Birthday Announcements** - Daily job checks for birthdays and posts announcements
-- **Twitch EventSub** - Real-time stream notifications via webhooks
-- **YouTube Polling** - Periodic check for new videos
-- **TikTok Polling** - Periodic check for live streams
-- **Reminder Service** - Checks for due reminders and sends them
-- **Patch Notes Fetcher** - Scrapes and stores patch notes for various games
+- Commands manage notification subscriptions and user settings.
+- API jobs perform scheduled delivery and polling when `JOBS_ENABLED=1`.
+- Shared models in `@zeffuro/fakegaming-common` keep command and job behavior aligned.
 
 ## Architecture
 
 ### Module Structure
 
-Commands are organized by feature module:
+Commands are organized by feature module. The generated command catalog is the source of truth; this tree is only a short example of the layout:
 
 ```
 src/modules/
@@ -45,12 +42,12 @@ src/modules/
 
 ### Services
 
-Background services in `src/services/`:
+Direct command helper services in `src/services/`:
 
-- `birthdayService.ts` - Birthday announcement logic
-- `scheduledReminderService.ts` - Reminder checking and sending
-- `patchNotesService.ts` - Patch notes scraping coordinator
-- `patchfetchers/` - Game-specific patch note fetchers
+- `riotService.ts` - Riot account, League, and TFT API access
+- `weatherService.ts` - OpenWeather/Open-Meteo weather lookup and fallback
+
+Scheduled notification delivery lives in `packages/api/src/jobs/`.
 
 ## Development
 
@@ -302,13 +299,13 @@ See [TROUBLESHOOTING.md](../../TROUBLESHOOTING.md) for more issues and solutions
 6. Command interacts with database via managers from `@zeffuro/fakegaming-common`
 7. Bot responds to interaction
 
-### Service Execution Flow
+### Scheduled Job Execution Flow
 
-1. Bot starts up
-2. Services initialize (`birthdayService`, `scheduledReminderService`, etc.)
-3. Services run on intervals (configurable)
-4. Services query database via managers
-5. Services send messages via Discord client
+1. API starts with `JOBS_ENABLED=1`
+2. Job bootstrap registers enabled provider jobs
+3. Jobs query shared database models and external providers
+4. Jobs send Discord notifications through bot credentials or Discord APIs
+5. Bot commands update the same subscription/configuration models
 
 ## Dependencies
 

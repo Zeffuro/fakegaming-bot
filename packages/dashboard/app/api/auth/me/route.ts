@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyJwt } from "@zeffuro/fakegaming-common";
-import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { getJwtConfig } from "@/lib/env";
 import { ACCESS_TOKEN_COOKIE_NAME } from "@/lib/auth/sessionConstants";
 
 export async function GET(req: NextRequest) {
@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
     if (!jwtToken) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
     try {
-        const user = verifyJwt(jwtToken, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER);
+        const { secret, audience, issuer } = getJwtConfig();
+        const user = verifyJwt(jwtToken, secret, audience, issuer);
         return NextResponse.json({ user });
     } catch (err) {
         return NextResponse.json({ error: "Invalid token", details: String(err) }, { status: 401 });

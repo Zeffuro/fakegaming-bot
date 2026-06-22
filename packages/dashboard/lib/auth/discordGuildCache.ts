@@ -8,7 +8,7 @@ import {
     refreshDiscordAccessToken,
     type MinimalGuildData
 } from "@zeffuro/fakegaming-common";
-import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } from "@/lib/env";
+import { getDiscordOAuthConfig } from "@/lib/env";
 import { getRefreshSession, updateRefreshSession } from "@/lib/auth/refreshSessions";
 import { REFRESH_SESSION_COOKIE_NAME } from "@/lib/auth/sessionConstants";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
@@ -35,10 +35,11 @@ export async function getUserAccessToken(req: NextRequest, userId: string): Prom
         return null;
     }
 
+    const { clientId, clientSecret } = getDiscordOAuthConfig();
     const tokenData = await refreshDiscordAccessToken(
         refreshSession.discordRefreshToken,
-        DISCORD_CLIENT_ID,
-        DISCORD_CLIENT_SECRET
+        clientId,
+        clientSecret
     );
 
     if (!tokenData.access_token) {

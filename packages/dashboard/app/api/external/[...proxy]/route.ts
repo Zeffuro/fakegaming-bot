@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'node:crypto';
-import { API_URL, JWT_SECRET, SERVICE_API_TOKEN } from "@/lib/env";
+import { API_URL, getJwtConfig, SERVICE_API_TOKEN } from "@/lib/env";
 import { enforceCsrf } from "@/lib/security/csrf";
 import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
@@ -24,7 +24,8 @@ const getJwt = (req: NextRequest): string | undefined => {
 };
 
 function signDashboardAdminAssertion(discordId: string, reqId: string): string {
-    return createHmac('sha256', JWT_SECRET)
+    const { secret } = getJwtConfig();
+    return createHmac('sha256', secret)
         .update(`${discordId}:${reqId}`)
         .digest('hex');
 }

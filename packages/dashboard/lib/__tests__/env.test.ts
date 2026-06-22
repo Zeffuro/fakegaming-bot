@@ -16,6 +16,7 @@ describe('env constants', () => {
         // Ensure required JWT env vars are present by default for non-throwing tests
         process.env.JWT_SECRET = 'supersecret';
         process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
+        process.env.JWT_ISSUER = 'fakegaming';
         delete process.env.API_URL;
         process.env.DISCORD_CLIENT_ID = 'cid';
         process.env.DISCORD_CLIENT_SECRET = 'csecret';
@@ -37,17 +38,42 @@ describe('env constants', () => {
         expect(mod.DISCORD_REDIRECT_URI).toBe('https://site.test/api/auth/discord/callback');
     });
 
-    it('throws when required JWT env missing', async () => {
-        vi.resetModules();
+    it('imports without runtime-only required env', async () => {
         delete process.env.JWT_SECRET;
         delete process.env.JWT_AUDIENCE;
-        await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable/);
+        delete process.env.JWT_ISSUER;
+        delete process.env.DISCORD_CLIENT_ID;
+        delete process.env.DISCORD_CLIENT_SECRET;
+
+        const mod = await importEnv();
+        expect(mod.PUBLIC_URL).toBe('http://localhost:3000');
     });
 
-    it('throws when required Discord OAuth env missing', async () => {
-        vi.resetModules();
+    it('throws when required JWT env missing at runtime config read', async () => {
+        delete process.env.JWT_SECRET;
+        delete process.env.JWT_AUDIENCE;
+        const mod = await importEnv();
+        expect(() => mod.getJwtConfig()).toThrow(/Missing required environment variable: JWT_SECRET/);
+    });
+
+    it('throws when required Discord OAuth env missing at runtime config read', async () => {
         delete process.env.DISCORD_CLIENT_ID;
-        await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable: DISCORD_CLIENT_ID/);
+        const mod = await importEnv();
+        expect(() => mod.getDiscordOAuthAuthorizeConfig()).toThrow(/Missing required environment variable: DISCORD_CLIENT_ID/);
+    });
+
+    it('reads Discord OAuth and JWT runtime config when present', async () => {
+        const mod = await importEnv();
+        expect(mod.getDiscordOAuthConfig()).toEqual({
+            clientId: 'cid',
+            clientSecret: 'csecret',
+            redirectUri: 'http://localhost:3000/api/auth/discord/callback'
+        });
+        expect(mod.getJwtConfig()).toEqual({
+            secret: 'supersecret',
+            audience: 'fakegaming-dashboard',
+            issuer: 'fakegaming'
+        });
     });
 
     it('API_URL defaults to the local API base path when env missing', async () => {

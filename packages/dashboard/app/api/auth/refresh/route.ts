@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { issueJwt } from "@zeffuro/fakegaming-common";
-import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { getJwtConfig } from "@/lib/env";
 import { enforceCsrf, generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import { rotateRefreshSession } from "@/lib/auth/refreshSessions";
 import {
@@ -25,7 +25,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const newToken = issueJwt(rotated.record.user, JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER, {
+    const { secret, audience, issuer } = getJwtConfig();
+    const newToken = issueJwt(rotated.record.user, secret, audience, issuer, {
         expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS
     });
     const res = NextResponse.json({ refreshed: true });

@@ -96,7 +96,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 - Twitch stream notifications (EventSub webhooks)
 - YouTube video announcements
 - TikTok live stream alerts
-- Game patch notes (League, Valorant, TFT)
+- Game patch notes (League of Legends, VALORANT, Marvel Rivals, Overwatch 2)
 - Cooldown and quiet hours support
 
 ### 🖥️ Web Dashboard
@@ -385,7 +385,7 @@ Notes:
 ## Database & Migrations
 
 - **Database models** are defined in `packages/common` (typically in `packages/common/src/models/`).
-- **Database schema:** See [SCHEMA.md](./SCHEMA.md) for a complete Entity Relationship Diagram and detailed documentation of all tables.
+- **Database schema:** See [SCHEMA.md](./SCHEMA.md) for a high-level overview. Live models and migrations are the source of truth.
 - **Schema changes:** Any change to the database schema (adding/removing fields, tables, etc.) requires a new migration
   script in the `migrations/` directory.
 - **Writing migrations:**
@@ -395,7 +395,7 @@ Notes:
     - Both `up` and `down` functions are required for rollback capability.
     - See [MIGRATIONS.md](./MIGRATIONS.md) for detailed migration guide with examples.
 - **Running migrations:**
-    - Migrations run automatically when the bot or API starts.
+    - Migrations run during service startup where enabled; production Compose disables bot-side migrations and lets the API own startup migrations.
     - The system uses Umzug to track which migrations have been applied.
     - See [MIGRATIONS.md](./MIGRATIONS.md) for manual execution and troubleshooting.
 
