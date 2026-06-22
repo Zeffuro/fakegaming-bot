@@ -96,4 +96,16 @@ describe('POST /auth/login', () => {
         expect(response.body.error.message).toBe('Failed to authenticate with Discord');
         expectErrorCode(response, 'INTERNAL_SERVER_ERROR');
     });
+
+    it('should return 500 when Discord OAuth env is missing', async () => {
+        delete process.env.DISCORD_CLIENT_SECRET;
+
+        const response = await request(app)
+            .post('/auth/login')
+            .send({ code: 'test-code' });
+
+        expectInternalServerError(response);
+        expect(response.body.error.message).toBe('Failed to authenticate with Discord');
+        expect(exchangeCodeForToken).not.toHaveBeenCalled();
+    });
 });

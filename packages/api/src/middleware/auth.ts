@@ -2,23 +2,9 @@ import {expressjwt} from 'express-jwt';
 import type {Request, Response, NextFunction} from 'express';
 import { isServiceRequest } from './serviceAuth.js';
 import { getLogger } from '@zeffuro/fakegaming-common';
+import { requireEnv } from '../utils/env.js';
 
 const log = getLogger({ name: 'api:auth' });
-
-/**
- * Throws if required JWT env vars are missing (except in test env).
- */
-function getRequiredEnv(name: string): string {
-    const value = process.env[name];
-    if (value) return value;
-    if (process.env.NODE_ENV === 'test') {
-        // Allow fallback for tests only
-        if (name === 'JWT_SECRET') return 'testsecret';
-        if (name === 'JWT_AUDIENCE') return 'fakegaming-dashboard';
-        if (name === 'JWT_ISSUER') return 'fakegaming';
-    }
-    throw new Error(`Missing required environment variable: ${name}`);
-}
 
 /**
  * Express middleware for JWT authentication.
@@ -29,9 +15,9 @@ export const jwtAuth = (req: Request, res: Response, next: NextFunction) => {
     let JWT_AUDIENCE: string;
     let JWT_ISSUER: string;
     try {
-        JWT_SECRET = getRequiredEnv('JWT_SECRET');
-        JWT_AUDIENCE = getRequiredEnv('JWT_AUDIENCE');
-        JWT_ISSUER = getRequiredEnv('JWT_ISSUER');
+        JWT_SECRET = requireEnv('JWT_SECRET', {allowTestFallback: true});
+        JWT_AUDIENCE = requireEnv('JWT_AUDIENCE', {allowTestFallback: true});
+        JWT_ISSUER = requireEnv('JWT_ISSUER', {allowTestFallback: true});
     } catch (err) {
         // Fail fast if required envs are missing
         return next(err);
@@ -67,5 +53,5 @@ export const jwtOrService = (req: Request, res: Response, next: NextFunction) =>
  * Returns the JWT secret, or throws if missing (except in test env).
  */
 export const getJwtSecret = (): string => {
-    return getRequiredEnv('JWT_SECRET');
+    return requireEnv('JWT_SECRET', {allowTestFallback: true});
 };

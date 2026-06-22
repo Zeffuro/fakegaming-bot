@@ -1,14 +1,38 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import axios from 'axios';
 
-vi.mock('axios');
+const axiosMocks = vi.hoisted(() => {
+    const get = vi.fn();
+    return {
+        create: vi.fn(() => ({get})),
+        get,
+    };
+});
 
-import { getCurrentWeather, getShortTermForecast } from '../weatherService.js';
+vi.mock('axios', () => ({
+    default: {
+        create: axiosMocks.create,
+    },
+}));
+
+import {
+    clearWeatherServiceCaches,
+    getCurrentWeather,
+    getShortTermForecast,
+} from '../weatherService.js';
 
 describe('weatherService', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        axiosMocks.get.mockReset();
+        clearWeatherServiceCaches();
         process.env.OPENWEATHER_API_KEY = 'test-api-key';
+    });
+
+    it('should configure a weather HTTP timeout', async () => {
+        axiosMocks.create.mockClear();
+        vi.resetModules();
+        await import('../weatherService.js');
+
+        expect(axiosMocks.create).toHaveBeenCalledWith({timeout: 5000});
     });
 
     describe('getCurrentWeather', () => {
@@ -27,7 +51,7 @@ describe('weatherService', () => {
                 },
             };
 
-            vi.mocked(axios.get).mockResolvedValue(mockResponse);
+            axiosMocks.get.mockResolvedValue(mockResponse);
 
             const result = await getCurrentWeather('London');
 
@@ -41,13 +65,13 @@ describe('weatherService', () => {
                 wind: 5.2,
             });
 
-            expect(axios.get).toHaveBeenCalledWith(
+            expect(axiosMocks.get).toHaveBeenCalledWith(
                 expect.stringContaining('q=London')
             );
         });
 
         it('should throw error for malformed API response', async () => {
-            vi.mocked(axios.get).mockResolvedValue({ data: {} });
+            axiosMocks.get.mockResolvedValue({ data: {} });
 
             await expect(getCurrentWeather('Invalid')).rejects.toThrow(
                 'Malformed weather API response'
@@ -56,7 +80,7 @@ describe('weatherService', () => {
 
         it('should use Open-Meteo fallback when API key is missing', async () => {
             delete process.env.OPENWEATHER_API_KEY;
-            vi.mocked(axios.get)
+            axiosMocks.get
                 .mockResolvedValueOnce({
                     data: {
                         results: [
@@ -87,14 +111,14 @@ describe('weatherService', () => {
                 humidity: 72,
                 wind: 12.2,
             });
-            expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('geocoding-api.open-meteo.com'));
-            expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('api.open-meteo.com'));
+            expect(axiosMocks.get).toHaveBeenCalledWith(expect.stringContaining('geocoding-api.open-meteo.com'));
+            expect(axiosMocks.get).toHaveBeenCalledWith(expect.stringContaining('api.open-meteo.com'));
         });
 
         it('should fall back to Open-Meteo when OpenWeather is unavailable', async () => {
             const networkError = new Error('Network Error');
             (networkError as any).isAxiosError = true;
-            vi.mocked(axios.get)
+            axiosMocks.get
                 .mockRejectedValueOnce(networkError)
                 .mockResolvedValueOnce({
                     data: {
@@ -118,16 +142,40 @@ describe('weatherService', () => {
             const result = await getCurrentWeather('Rotterdam');
 
             expect(result.description).toBe('rain');
-            expect(axios.get).toHaveBeenCalledTimes(3);
+            expect(axiosMocks.get).toHaveBeenCalledTimes(3);
         });
 
         it('should surface location-not-found from Open-Meteo fallback', async () => {
             delete process.env.OPENWEATHER_API_KEY;
-            vi.mocked(axios.get).mockResolvedValue({ data: { results: [] } });
+            axiosMocks.get.mockResolvedValue({ data: { results: [] } });
 
             await expect(getCurrentWeather('NotARealPlace')).rejects.toMatchObject({
                 response: { status: 404 },
             });
+        });
+
+        it('should reuse cached current weather by normalized location', async () => {
+            const mockResponse = {
+                data: {
+                    name: 'London',
+                    sys: { country: 'GB' },
+                    weather: [{ description: 'clear sky' }],
+                    main: {
+                        temp: 20.5,
+                        feels_like: 19.8,
+                        humidity: 65,
+                    },
+                    wind: { speed: 5.2 },
+                },
+            };
+
+            axiosMocks.get.mockResolvedValue(mockResponse);
+
+            const first = await getCurrentWeather('London');
+            const second = await getCurrentWeather(' london ');
+
+            expect(second).toEqual(first);
+            expect(axiosMocks.get).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -151,12 +199,20 @@ describe('weatherService', () => {
                 },
             };
 
-            vi.mocked(axios.get).mockResolvedValue(mockResponse);
+            axiosMocks.get.mockResolvedValue(mockResponse);
 
             const result = await getShortTermForecast('London', 2);
+            const expectedTime = new Intl.DateTimeFormat('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                weekday: 'short',
+                hour12: false,
+                timeZone: 'UTC',
+            }).format(new Date(1696780800 * 1000));
 
             expect(result).toHaveLength(2);
             expect(result[0]).toMatchObject({
+                time: expectedTime,
                 main: 'Rain',
                 description: 'light rain',
                 temp: 18.5,
@@ -182,7 +238,7 @@ describe('weatherService', () => {
                 },
             };
 
-            vi.mocked(axios.get).mockResolvedValue(mockResponse);
+            axiosMocks.get.mockResolvedValue(mockResponse);
 
             const result = await getShortTermForecast('London');
 
@@ -191,7 +247,7 @@ describe('weatherService', () => {
 
         it('should use Open-Meteo fallback when API key is missing', async () => {
             delete process.env.OPENWEATHER_API_KEY;
-            vi.mocked(axios.get)
+            axiosMocks.get
                 .mockResolvedValueOnce({
                     data: {
                         results: [
@@ -227,6 +283,34 @@ describe('weatherService', () => {
                 rain: '\ud83c\udf27\ufe0f 1.5mm',
                 emoji: '\ud83c\udf27\ufe0f',
             });
+        });
+
+        it('should reuse cached Open-Meteo forecast lookups by normalized location and period count', async () => {
+            delete process.env.OPENWEATHER_API_KEY;
+            axiosMocks.get
+                .mockResolvedValueOnce({
+                    data: {
+                        results: [
+                            { name: 'Rotterdam', country_code: 'NL', latitude: 51.92, longitude: 4.48 },
+                        ],
+                    },
+                })
+                .mockResolvedValueOnce({
+                    data: {
+                        hourly: {
+                            time: ['2026-06-22T12:00', '2026-06-22T15:00'],
+                            temperature_2m: [18.4, 19.1],
+                            precipitation: [0, 1.5],
+                            weather_code: [0, 61],
+                        },
+                    },
+                });
+
+            const first = await getShortTermForecast('Rotterdam', 2);
+            const second = await getShortTermForecast(' rotterdam ', 2);
+
+            expect(second).toEqual(first);
+            expect(axiosMocks.get).toHaveBeenCalledTimes(2);
         });
     });
 });

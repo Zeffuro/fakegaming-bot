@@ -13,3 +13,10 @@ if (!process.env.JWT_AUDIENCE || process.env.JWT_AUDIENCE.trim() === '') {
 if (!process.env.JWT_ISSUER || process.env.JWT_ISSUER.trim() === '') {
     process.env.JWT_ISSUER = 'fakegaming';
 }
+
+if (!process.env.DISCORD_CLIENT_ID || process.env.DISCORD_CLIENT_ID.trim() === '') {
+    process.env.DISCORD_CLIENT_ID = 'test-discord-client-id';
+}
+if (!process.env.DISCORD_CLIENT_SECRET || process.env.DISCORD_CLIENT_SECRET.trim() === '') {
+    process.env.DISCORD_CLIENT_SECRET = 'test-discord-client-secret';
+}

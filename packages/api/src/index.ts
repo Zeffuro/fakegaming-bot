@@ -10,22 +10,14 @@ import { scheduleRateLimitCleanup } from './middleware/rateLimit.js';
 import { bootstrapJobs } from './jobs/bootstrap.js';
 import { scheduleJobRunCleanup } from './jobs/status.js';
 import { scheduleAuditEventCleanup } from './utils/audit.js';
+import { requireEnv } from './utils/env.js';
 
 const log = getLogger({ name: 'api' });
 
-function requireEnv(name: string): string {
-    const val = process.env[name];
-    if (!val || val.trim() === '') {
-        // Fail fast in production and during startup if missing
-        throw new Error(`[api] Missing required environment variable: ${name}`);
-    }
-    return val;
-}
-
 // Security-critical env vars must be present
-requireEnv('JWT_SECRET');
-requireEnv('JWT_AUDIENCE');
-requireEnv('JWT_ISSUER');
+requireEnv('JWT_SECRET', {prefix: 'api'});
+requireEnv('JWT_AUDIENCE', {prefix: 'api'});
+requireEnv('JWT_ISSUER', {prefix: 'api'});
 
 const port = process.env.PORT || 3001;
 

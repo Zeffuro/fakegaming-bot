@@ -1,8 +1,4 @@
 export const PUBLIC_URL = (process.env.NEXT_PUBLIC_PUBLIC_URL || process.env.PUBLIC_URL || "http://localhost:3000").replace(/\/$/, "");
-export const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
-export const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET!;
-export const DISCORD_REDIRECT_URI =
-    process.env.DISCORD_REDIRECT_URI || `${PUBLIC_URL}/api/auth/discord/callback`;
 
 function requireEnv(name: string): string {
     const val = process.env[name];
@@ -11,6 +7,11 @@ function requireEnv(name: string): string {
     }
     return val;
 }
+
+export const DISCORD_CLIENT_ID = requireEnv("DISCORD_CLIENT_ID");
+export const DISCORD_CLIENT_SECRET = requireEnv("DISCORD_CLIENT_SECRET");
+export const DISCORD_REDIRECT_URI =
+    process.env.DISCORD_REDIRECT_URI || `${PUBLIC_URL}/api/auth/discord/callback`;
 
 // Security-critical: must be set explicitly
 export const JWT_SECRET = requireEnv("JWT_SECRET");

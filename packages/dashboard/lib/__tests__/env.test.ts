@@ -44,6 +44,12 @@ describe('env constants', () => {
         await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable/);
     });
 
+    it('throws when required Discord OAuth env missing', async () => {
+        vi.resetModules();
+        delete process.env.DISCORD_CLIENT_ID;
+        await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable: DISCORD_CLIENT_ID/);
+    });
+
     it('API_URL defaults to the local API base path when env missing', async () => {
         const mod = await importEnv();
         expect(mod.API_URL).toBe('http://localhost:3001/api');
