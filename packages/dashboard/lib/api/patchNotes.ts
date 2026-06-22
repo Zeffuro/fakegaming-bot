@@ -25,6 +25,9 @@ export const patchNotesApi = {
     upsertPatchSubscription: (data: PatchSubscriptionUpsertRequest) =>
         apiRequest<{ success: boolean }>(API_ENDPOINTS.PATCH_SUBSCRIPTIONS, { method: "PUT", body: data }),
 
+    setPatchSubscriptionPaused: (id: string | number, paused: boolean) =>
+        apiRequest<PatchSubscriptionConfig>(`${API_ENDPOINTS.PATCH_SUBSCRIPTIONS}/${id}`, { method: "PATCH", body: { paused } }),
+
     deletePatchSubscription: (id: string | number) =>
         apiRequest<{ success: boolean }>(`${API_ENDPOINTS.PATCH_SUBSCRIPTIONS}/${id}`, { method: "DELETE" }),
 };

@@ -50,6 +50,16 @@ export interface IntegrationHealthFailureInput {
     checkedAt?: Date;
 }
 
+export interface IntegrationHealthStatusInput {
+    provider: string;
+    configId: string | number;
+    guildId?: string | null;
+    channelId?: string | null;
+    status: IntegrationHealthStatus;
+    metadata?: IntegrationHealthMetadata | null;
+    checkedAt?: Date;
+}
+
 export interface IntegrationHealthListOptions {
     provider?: string;
     guildId?: string;
@@ -158,6 +168,28 @@ export class IntegrationHealthManager extends BaseManager<IntegrationHealth> {
             consecutiveFailures: (existing?.consecutiveFailures ?? 0) + 1,
             lastErrorCode: normalizeErrorCode(input.errorCode),
             lastErrorMessage: truncateErrorMessage(input.errorMessage),
+            metadata: input.metadata ?? existing?.metadata ?? null,
+        } as CreationAttributes<IntegrationHealth>;
+
+        await this.upsert(payload, ['provider', 'configId']);
+    }
+
+    async recordStatus(input: IntegrationHealthStatusInput): Promise<void> {
+        const checkedAt = input.checkedAt ?? new Date();
+        const existing = await this.getForConfig(input.provider, input.configId);
+        const payload: CreationAttributes<IntegrationHealth> = {
+            provider: input.provider,
+            configId: String(input.configId),
+            guildId: input.guildId ?? existing?.guildId ?? null,
+            channelId: input.channelId ?? existing?.channelId ?? null,
+            status: input.status,
+            lastCheckedAt: checkedAt,
+            lastSuccessAt: input.status === 'paused' ? existing?.lastSuccessAt ?? null : null,
+            lastFailureAt: input.status === 'error' ? checkedAt : null,
+            lastDeliveryAt: existing?.lastDeliveryAt ?? null,
+            consecutiveFailures: input.status === 'error' ? (existing?.consecutiveFailures ?? 0) : 0,
+            lastErrorCode: null,
+            lastErrorMessage: null,
             metadata: input.metadata ?? existing?.metadata ?? null,
         } as CreationAttributes<IntegrationHealth>;
 

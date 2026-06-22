@@ -103,6 +103,46 @@ describe('IntegrationHealthManager', () => {
         expect(new Date(String(record?.lastCheckedAt)).toISOString()).toBe('2026-06-20T12:05:00.000Z');
     });
 
+    it('records explicit paused and unknown statuses', async () => {
+        await manager.recordStatus({
+            provider: 'tiktok',
+            configId: 9,
+            guildId: 'guild-1',
+            channelId: 'channel-4',
+            status: 'paused',
+            metadata: { paused: true },
+            checkedAt: new Date('2026-06-20T13:00:00.000Z'),
+        });
+
+        let record = await manager.getForConfig('tiktok', 9);
+        expect(record).toMatchObject({
+            provider: 'tiktok',
+            configId: '9',
+            guildId: 'guild-1',
+            channelId: 'channel-4',
+            status: 'paused',
+            consecutiveFailures: 0,
+            metadata: { paused: true },
+        });
+
+        await manager.recordStatus({
+            provider: 'tiktok',
+            configId: 9,
+            status: 'unknown',
+            metadata: { paused: false },
+            checkedAt: new Date('2026-06-20T13:05:00.000Z'),
+        });
+
+        record = await manager.getForConfig('tiktok', 9);
+        expect(record).toMatchObject({
+            guildId: 'guild-1',
+            channelId: 'channel-4',
+            status: 'unknown',
+            consecutiveFailures: 0,
+            metadata: { paused: false },
+        });
+    });
+
     it('lists records with filtered totals and unfiltered status summary', async () => {
         await manager.recordSuccess({
             provider: 'twitch',

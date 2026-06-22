@@ -1,4 +1,4 @@
-import { Table, Column, Model, DataType, PrimaryKey, AutoIncrement, Unique } from 'sequelize-typescript';
+import { Table, Column, Model, DataType, PrimaryKey, AutoIncrement, Unique, Default } from 'sequelize-typescript';
 
 @Table
 export class BlueskyPostConfig extends Model {
@@ -38,4 +38,8 @@ export class BlueskyPostConfig extends Model {
     @Unique('unique_guild_bluesky_handle')
     @Column(DataType.STRING)
     declare guildId: string;
+
+    @Default(false)
+    @Column(DataType.BOOLEAN)
+    declare paused: boolean;
 }

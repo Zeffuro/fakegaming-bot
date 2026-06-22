@@ -83,6 +83,7 @@ export {
   type IntegrationHealthRecord,
   type IntegrationHealthSuccessInput,
   type IntegrationHealthFailureInput,
+  type IntegrationHealthStatusInput,
   type IntegrationHealthListOptions,
   type IntegrationHealthSummary,
   type IntegrationHealthListResult
@@ -177,6 +178,7 @@ export { SUPPORTED_GAMES } from './utils/supportedGames.js';
 export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js';
 export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';
 export { sanitizeAuditMetadata } from './utils/auditMetadata.js';
+export { parseRiotId, formatRiotId, type RiotIdParts } from './utils/riotId.js';
 
 // Register custom create/update schema overrides (executed on module import)
 registerSchemaOverrides();

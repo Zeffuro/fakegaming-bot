@@ -2,12 +2,13 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 100
+Operations: 102
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
 | Anime | GET | `/anime` | List anime channel subscriptions | Bearer |
 | Anime | POST | `/anime` | Subscribe a guild channel to anime episode notifications | Bearer |
+| Anime | PATCH | `/anime/{id}` | Pause or resume an anime subscription | Bearer |
 | Anime | DELETE | `/anime/{id}` | Delete an anime subscription | Bearer |
 | Anime | GET | `/anime/search` | Search AniList media | Bearer |
 | Anime | GET | `/anime/season` | List AniList titles for a season | Bearer |
@@ -54,6 +55,7 @@ Operations: 100
 | PatchSubscriptions | POST | `/patchSubscriptions` | Add a new patch subscription | Bearer |
 | PatchSubscriptions | PUT | `/patchSubscriptions` | Upsert a patch subscription | Bearer |
 | PatchSubscriptions | GET | `/patchSubscriptions/{id}` | Get a patch subscription by id | Bearer |
+| PatchSubscriptions | PATCH | `/patchSubscriptions/{id}` | Pause or resume a patch subscription | Bearer |
 | PatchSubscriptions | DELETE | `/patchSubscriptions/{id}` | Delete a patch subscription by id | Bearer |
 | Quotes | GET | `/quotes` | List all quotes | Bearer |
 | Quotes | POST | `/quotes` | Add a new quote | Bearer |

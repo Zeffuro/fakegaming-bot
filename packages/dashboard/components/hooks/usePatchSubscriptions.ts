@@ -15,6 +15,7 @@ export interface PatchSubscriptionUIConfig {
   guildId: string;
   discordChannelId: string;
   customMessage?: string;
+  paused?: boolean | null;
 }
 
 export function usePatchSubscriptions(guildId: string | string[], options: UsePatchSubscriptionsOptions = {}) {
@@ -29,6 +30,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
     game: sub.game,
     guildId: sub.guildId,
     discordChannelId: sub.channelId,
+    paused: sub.paused,
   });
 
   const fetchConfigs = useCallback(async () => {
@@ -62,6 +64,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
         game: config.game,
         channelId: config.discordChannelId,
         guildId: guildId as string,
+        paused: Boolean(config.paused),
       } as unknown as PatchSubscriptionCreateRequest;
       await api.createPatchSubscription(payload);
       await fetchConfigs();
@@ -81,6 +84,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
         game: config.game,
         channelId: config.discordChannelId,
         guildId: guildId as string,
+        paused: Boolean(config.paused),
       } as unknown as PatchSubscriptionUpsertRequest;
       await api.upsertPatchSubscription(payload);
       await fetchConfigs();
@@ -107,6 +111,39 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
     }
   };
 
+  const togglePausedConfig = async (config: PatchSubscriptionUIConfig) => {
+    try {
+      setSaving(true);
+      await api.setPatchSubscriptionPaused(config.id, !config.paused);
+      await fetchConfigs();
+      return true;
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to update subscription status');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const setAllPausedConfigs = async (paused: boolean) => {
+    const targets = configs.filter((config) => Boolean(config.id) && Boolean(config.paused) !== paused);
+    if (targets.length === 0) {
+      return true;
+    }
+
+    try {
+      setSaving(true);
+      await Promise.all(targets.map((config) => api.setPatchSubscriptionPaused(config.id, paused)));
+      await fetchConfigs();
+      return true;
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to update subscription statuses');
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (!enabled || !guildId) {
       setConfigs([]);
@@ -126,6 +163,8 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
     addConfig,
     updateConfig,
     deleteConfig,
+    togglePausedConfig,
+    setAllPausedConfigs,
     refreshConfigs: fetchConfigs
   };
 }

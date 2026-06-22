@@ -18,7 +18,7 @@ import {
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { animeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
+import { animeSubscribeRequestSchema, pausedStateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -93,6 +93,7 @@ async function serializeSubscription(sub: CreationAttributes<AnimeSubscriptionCo
     const title = await getConfigManager().animeManager.titles.getOnePlain({ anilistId: sub.anilistId });
     return {
         ...sub,
+        paused: Boolean(sub.paused),
         animeTitle: title?.titleEnglish ?? title?.titleRomaji ?? title?.titleNative ?? `AniList #${sub.anilistId}`,
         discordChannelId: sub.channelId ?? '',
         status: title?.status ?? null,
@@ -103,6 +104,47 @@ async function serializeSubscription(sub: CreationAttributes<AnimeSubscriptionCo
         nextAiringAt: title?.nextAiringAt ?? null,
         title,
     };
+}
+
+async function recordAnimeSubscriptionPausedStatus(
+    subscription: CreationAttributes<AnimeSubscriptionConfig>,
+    paused: boolean
+): Promise<void> {
+    const manager = getConfigManager().integrationHealthManager;
+    try {
+        await manager.recordStatus({
+            provider: 'anime',
+            configId: subscription.id ?? `${subscription.targetType}:${subscription.anilistId}:${subscription.channelId ?? subscription.userId ?? 'unknown'}`,
+            guildId: subscription.guildId ?? null,
+            channelId: subscription.channelId ?? null,
+            status: paused ? 'paused' : 'unknown',
+            metadata: {
+                anilistId: subscription.anilistId,
+                targetType: subscription.targetType,
+                paused,
+            },
+        });
+    } catch {
+        // Health status should not block a successful configuration update.
+    }
+}
+
+async function ensureAnimeSubscriptionAccess(
+    req: AuthenticatedRequest,
+    res: Parameters<typeof checkUserGuildAccess>[1],
+    subscription: CreationAttributes<AnimeSubscriptionConfig>
+): Promise<boolean> {
+    if (subscription.guildId) {
+        const access = await checkUserGuildAccess(req, res, subscription.guildId);
+        return access.authorized;
+    }
+
+    if (subscription.userId !== req.user.discordId) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized for this anime subscription' } });
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -323,6 +365,65 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
 /**
  * @openapi
  * /anime/{id}:
+ *   patch:
+ *     summary: Pause or resume an anime subscription
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PausedStateRequest'
+ *     responses:
+ *       200:
+ *         description: Updated anime subscription
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch('/:id', jwtAuth, validateParams(idParamSchema), validateBody(pausedStateRequestSchema), async (req, res) => {
+    const id = Number(req.params.id);
+    const body = req.body as z.infer<typeof pausedStateRequestSchema>;
+    const manager = getConfigManager().animeManager.subscriptions;
+    const subscription = await manager.findByPkPlain(id);
+    const hasAccess = await ensureAnimeSubscriptionAccess(req as AuthenticatedRequest, res, subscription);
+    if (!hasAccess) return;
+
+    await manager.setPaused(id, body.paused);
+    const updated = await manager.findByPkPlain(id);
+    await recordAnimeSubscriptionPausedStatus(updated, body.paused);
+    await recordAuditEvent(req, {
+        action: body.paused ? 'animeSubscription.pause' : 'animeSubscription.resume',
+        targetType: 'animeSubscription',
+        targetId: id,
+        guildId: updated.guildId ?? null,
+        metadata: {
+            anilistId: updated.anilistId,
+            channelId: updated.channelId,
+            targetType: updated.targetType,
+            paused: body.paused,
+        },
+    });
+    res.json(await serializeSubscription(updated));
+});
+
+/**
+ * @openapi
+ * /anime/{id}:
  *   delete:
  *     summary: Delete an anime subscription
  *     tags: [Anime]
@@ -350,12 +451,8 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const subscription = await getConfigManager().animeManager.subscriptions.findByPkPlain(Number(id));
-    if (subscription.guildId) {
-        const access = await checkUserGuildAccess(req, res, subscription.guildId);
-        if (!access.authorized) return;
-    } else if (subscription.userId !== (req as AuthenticatedRequest).user.discordId) {
-        return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized for this anime subscription' } });
-    }
+    const hasAccess = await ensureAnimeSubscriptionAccess(req as AuthenticatedRequest, res, subscription);
+    if (!hasAccess) return;
     await getConfigManager().animeManager.subscriptions.removeByPk(Number(id));
     await recordAuditEvent(req, {
         action: 'animeSubscription.delete',

@@ -12,6 +12,7 @@ const notificationFields = {
     cooldownMinutes: z.number().int().min(0).nullable().optional(),
     quietHoursStart: hhmmSchema.nullable().optional(),
     quietHoursEnd: hhmmSchema.nullable().optional(),
+    paused: z.boolean().optional(),
 };
 
 function hasAtLeastOneField(value: Record<string, unknown>): boolean {
@@ -114,6 +115,11 @@ export const patchSubscriptionRequestSchema = z.object({
     game: nonEmptyString,
     channelId: nonEmptyString,
     guildId: nonEmptyString,
+    paused: z.boolean().optional(),
+}).strict();
+
+export const pausedStateRequestSchema = z.object({
+    paused: z.boolean(),
 }).strict();
 
 export const quoteCreateRequestSchema = z.object({
@@ -136,6 +142,8 @@ export const reminderCreateRequestSchema = z.object({
 
 export const riotLinkUpdateRequestSchema = z.object({
     summonerName: nonEmptyString,
+    riotIdGameName: nonEmptyString.nullable().optional(),
+    riotIdTagLine: nonEmptyString.nullable().optional(),
     region: nonEmptyString,
     puuid: nonEmptyString,
 }).strict();
@@ -239,6 +247,7 @@ export const apiRequestSchemas = {
     DisabledModuleCreateRequest: disabledModuleCreateRequestSchema,
     DiscordResolveUsersRequest: discordResolveUsersRequestSchema,
     JobRunRequest: jobRunRequestSchema,
+    PausedStateRequest: pausedStateRequestSchema,
     PatchNoteCreateRequest: patchNoteCreateRequestSchema,
     PatchSubscriptionRequest: patchSubscriptionRequestSchema,
     QuoteCreateRequest: quoteCreateRequestSchema,

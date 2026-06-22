@@ -21,6 +21,7 @@ export interface AnimeSubscriptionDashboardConfig {
     averageScore?: number | null;
     nextEpisode?: number | null;
     nextAiringAt?: number | null;
+    paused?: boolean | null;
     customMessage?: string;
 }
 
@@ -52,6 +53,9 @@ export const animeApi = {
             API_ENDPOINTS.ANIME,
             { method: "POST", body: data },
         ),
+
+    setAnimeSubscriptionPaused: (id: string | number, paused: boolean) =>
+        apiRequest<AnimeSubscriptionDashboardConfig>(`${API_ENDPOINTS.ANIME}/${id}`, { method: "PATCH", body: { paused } }),
 
     deleteAnimeSubscription: (id: string | number) =>
         apiRequest<{ success: boolean }>(`${API_ENDPOINTS.ANIME}/${id}`, { method: "DELETE" }),

@@ -7,6 +7,12 @@ export class LeagueConfig extends Model {
     declare summonerName: string;
 
     @Column(DataType.STRING)
+    declare riotIdGameName?: string | null;
+
+    @Column(DataType.STRING)
+    declare riotIdTagLine?: string | null;
+
+    @Column(DataType.STRING)
     declare region: string;
 
     @Column(DataType.STRING)

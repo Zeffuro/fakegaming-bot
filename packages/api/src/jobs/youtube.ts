@@ -21,6 +21,7 @@ interface YoutubeChannelConfigPlain {
     quietHoursEnd?: string | null;
     cooldownMinutes?: number | null;
     lastNotifiedAt?: string | number | Date | null;
+    paused?: boolean | null;
 }
 
 interface YoutubeFeedItem {
@@ -209,7 +210,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
     };
     const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
-    const channels = await manager.getAllChannels();
+    const channels = (await manager.getAllChannels()).filter(cfg => !cfg.paused);
     if (!channels.length) return { processed: 0, errors: 0 };
 
     let processed = 0; let errors = 0;

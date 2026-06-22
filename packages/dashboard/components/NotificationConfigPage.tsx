@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import { Add } from "@mui/icons-material";
+import { Alert, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from "@mui/material";
+import { Add, FilterAltOutlined, PauseCircleOutlined, PlayCircleOutlined, Search } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import AddConfigDialog from "@/components/AddConfigDialog";
 import EditConfigDialog from "@/components/EditConfigDialog";
@@ -14,6 +14,7 @@ import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/
 import { useStreamingForm, type StreamingConfig } from "@/components/hooks/useStreamingForm";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
+import { filterNotificationConfigs, type NotificationConfigStatusFilter } from "@/lib/notificationConfigFilters";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -35,6 +36,8 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     onAdd: (config: Omit<T, 'id' | 'guildId'>) => Promise<boolean>;
     onUpdate: (config: T) => Promise<boolean>;
     onDelete: (config: T) => Promise<boolean>;
+    onTogglePaused?: (config: T) => Promise<boolean>;
+    onSetAllPaused?: (paused: boolean) => Promise<boolean>;
 
     renderChip?: (config: T) => {
         label: string;
@@ -45,6 +48,7 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     itemSingularLabel?: string;
     itemPluralLabel?: string;
     showCustomMessage?: boolean;
+    showNotificationControls?: boolean;
     itemNameOptions?: string[];
     allowEdit?: boolean;
 }
@@ -63,6 +67,7 @@ export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
     | "itemSingularLabel"
     | "itemPluralLabel"
     | "showCustomMessage"
+    | "showNotificationControls"
     | "itemNameOptions"
     | "allowEdit"
 >;
@@ -83,6 +88,16 @@ function toFeatureModule(moduleName: string): FeatureNavModule {
     return "Twitch";
 }
 
+const statusFilterOptions: Array<{ label: string; value: NotificationConfigStatusFilter }> = [
+    { label: "All", value: "all" },
+    { label: "Active", value: "active" },
+    { label: "Paused", value: "paused" },
+    { label: "Healthy", value: "healthy" },
+    { label: "Warning", value: "warning" },
+    { label: "Error", value: "error" },
+    { label: "Unknown", value: "unknown" },
+];
+
 export default function NotificationConfigPage<T extends StreamingConfig>({
     guildId,
     guild,
@@ -102,18 +117,34 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
     onAdd,
     onUpdate,
     onDelete,
+    onTogglePaused,
+    onSetAllPaused,
     renderChip,
     itemSingularLabel,
     itemPluralLabel,
     showCustomMessage = true,
+    showNotificationControls = true,
     itemNameOptions,
     allowEdit = true,
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
     const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
+    const [query, setQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState<NotificationConfigStatusFilter>("all");
 
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
+    const pausedCount = configs.filter((config) => Boolean(config.paused)).length;
+    const activeCount = configs.length - pausedCount;
+    const filtersActive = query.trim().length > 0 || statusFilter !== "all";
+    const filteredConfigs = useMemo(() => filterNotificationConfigs({
+        configs,
+        channelNameField,
+        getChannelName,
+        healthByConfigId: health.byConfigId,
+        query,
+        status: statusFilter,
+    }), [configs, channelNameField, getChannelName, health.byConfigId, query, statusFilter]);
 
     const {
         addDialogOpen,
@@ -193,27 +224,98 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                                     Configured {moduleName} {plural}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
-                                    Edit destinations, messages, cooldowns, and quiet hours from one place.
+                                    {filtersActive
+                                        ? `${filteredConfigs.length} of ${configs.length} shown.`
+                                        : "Edit destinations, messages, cooldowns, and quiet hours from one place."}
                                 </Typography>
                             </Box>
-                            <Button
-                                variant="contained"
-                                startIcon={<Add />}
-                                onClick={() => setAddDialogOpen(true)}
-                                disabled={saving}
-                                sx={primaryActionButtonSx(moduleColor)}
-                            >
-                                Add {singular}
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                                {onSetAllPaused && (
+                                    <>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<PauseCircleOutlined />}
+                                            onClick={() => void onSetAllPaused(true)}
+                                            disabled={saving || activeCount === 0}
+                                            sx={ghostActionButtonSx(moduleColor)}
+                                        >
+                                            Pause Active ({activeCount})
+                                        </Button>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<PlayCircleOutlined />}
+                                            onClick={() => void onSetAllPaused(false)}
+                                            disabled={saving || pausedCount === 0}
+                                            sx={ghostActionButtonSx(moduleColor)}
+                                        >
+                                            Resume Paused ({pausedCount})
+                                        </Button>
+                                    </>
+                                )}
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => setAddDialogOpen(true)}
+                                    disabled={saving}
+                                    sx={primaryActionButtonSx(moduleColor)}
+                                >
+                                    Add {singular}
+                                </Button>
+                            </Stack>
                         </Box>
 
+                        <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", md: "center" }, mb: 3 }}>
+                            <TextField
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                placeholder={`Search ${plural.toLowerCase()}`}
+                                size="small"
+                                sx={{ flex: 1, minWidth: { xs: "100%", md: 280 }, ...filterFieldSx(moduleColor) }}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <Search fontSize="small" sx={{ color: "rgba(255,255,255,0.62)" }} />
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                }}
+                            />
+                            <TextField
+                                select
+                                label="Status"
+                                value={statusFilter}
+                                onChange={(event) => setStatusFilter(event.target.value as NotificationConfigStatusFilter)}
+                                size="small"
+                                sx={{ minWidth: { xs: "100%", md: 180 }, ...filterFieldSx(moduleColor) }}
+                                slotProps={{
+                                    input: {
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <FilterAltOutlined fontSize="small" sx={{ color: "rgba(255,255,255,0.62)" }} />
+                                            </InputAdornment>
+                                        ),
+                                    },
+                                }}
+                            >
+                                {statusFilterOptions.map((option) => (
+                                    <MenuItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Stack>
+
                         <NotificationConfigList
-                            configs={configs}
+                            configs={filteredConfigs}
                             channelNameField={channelNameField}
                             channelNameLabel={channelNameLabel}
                             getChannelName={getChannelName}
                             onEdit={setEditingConfig as any}
                             onDelete={handleDeleteConfig}
+                            onTogglePaused={onTogglePaused ? (config) => {
+                                void onTogglePaused(config);
+                            } : undefined}
                             moduleName={moduleName}
                             moduleColor={moduleColor}
                             saving={saving}
@@ -224,6 +326,8 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                             itemSingularLabel={singular}
                             itemPluralLabel={plural}
                             canEdit={allowEdit}
+                            emptyTitle={filtersActive ? `No Matching ${moduleName} ${plural}` : undefined}
+                            emptyDescription={filtersActive ? "Adjust the search or status filter to show more configurations." : undefined}
                         />
                     </FeaturePanel>
 
@@ -241,6 +345,7 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                         loadingChannels={loadingChannels}
                         saving={saving}
                         showCustomMessage={showCustomMessage}
+                        showNotificationControls={showNotificationControls}
                         itemSingularLabel={singular}
                         itemNameOptions={itemNameOptions}
                     />
@@ -260,10 +365,39 @@ export default function NotificationConfigPage<T extends StreamingConfig>({
                         saving={saving}
                         itemSingularLabel={singular}
                         showCustomMessage={showCustomMessage}
+                        showNotificationControls={showNotificationControls}
                         itemNameOptions={itemNameOptions}
                     />
                 </FeatureShell>
             )}
         </DashboardLayout>
     );
+}
+
+function filterFieldSx(accent: string) {
+    return {
+        "& .MuiInputBase-root": {
+            bgcolor: "rgba(255,255,255,0.05)",
+            color: "grey.50",
+            borderRadius: 1.5,
+        },
+        "& .MuiInputLabel-root": {
+            color: "rgba(255,255,255,0.62)",
+        },
+        "& .MuiInputLabel-root.Mui-focused": {
+            color: accent,
+        },
+        "& .MuiOutlinedInput-notchedOutline": {
+            borderColor: "rgba(255,255,255,0.16)",
+        },
+        "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+            borderColor: "rgba(255,255,255,0.32)",
+        },
+        "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline": {
+            borderColor: accent,
+        },
+        "& .MuiSelect-icon": {
+            color: "rgba(255,255,255,0.62)",
+        },
+    };
 }

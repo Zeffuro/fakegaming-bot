@@ -72,7 +72,7 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
 export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "anime",
-        "description": "Search anime, subscribe to releases, and view upcoming episodes",
+        "description": "Search anime, manage subscriptions, and view upcoming episodes",
         "module": "anime",
         "permissions": null,
         "dm_permission": null,
@@ -152,7 +152,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "manage-bluesky-accounts",
-        "description": "List or remove Bluesky post notifications",
+        "description": "List, test, pause, resume, or remove Bluesky post notifications",
         "module": "bluesky",
         "permissions": "Administrator",
         "dm_permission": null,
@@ -331,6 +331,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null
     },
     {
+        "name": "manage-patchnotes",
+        "description": "List, test, pause, resume, or remove patch note subscriptions",
+        "module": "patchnotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
         "name": "add-quote",
         "description": "Add a quote",
         "module": "quotes",
@@ -482,7 +492,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "manage-tiktok-streams",
-        "description": "List or remove TikTok live notifications",
+        "description": "List, test, pause, resume, or remove TikTok live notifications",
         "module": "tiktok",
         "permissions": "Administrator",
         "dm_permission": null,
@@ -502,7 +512,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "manage-twitch-streams",
-        "description": "List or remove Twitch stream notifications",
+        "description": "List, test, pause, resume, or remove Twitch stream notifications",
         "module": "twitch",
         "permissions": "Administrator",
         "dm_permission": null,
@@ -532,7 +542,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "manage-youtube-channels",
-        "description": "List or remove YouTube video notifications",
+        "description": "List, test, pause, resume, or remove YouTube video notifications",
         "module": "youtube",
         "permissions": "Administrator",
         "dm_permission": null,
@@ -562,7 +572,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
         "commands": [
             {
                 "name": "anime",
-                "description": "Search anime, subscribe to releases, and view upcoming episodes",
+                "description": "Search anime, manage subscriptions, and view upcoming episodes",
                 "module": "anime",
                 "permissions": null,
                 "dm_permission": null,
@@ -660,7 +670,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "manage-bluesky-accounts",
-                "description": "List or remove Bluesky post notifications",
+                "description": "List, test, pause, resume, or remove Bluesky post notifications",
                 "module": "bluesky",
                 "permissions": "Administrator",
                 "dm_permission": null,
@@ -864,6 +874,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "default_member_permissions": null,
                 "testOnly": null,
                 "type": null
+            },
+            {
+                "name": "manage-patchnotes",
+                "description": "List, test, pause, resume, or remove patch note subscriptions",
+                "module": "patchnotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
             }
         ]
     },
@@ -1052,7 +1072,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "manage-tiktok-streams",
-                "description": "List or remove TikTok live notifications",
+                "description": "List, test, pause, resume, or remove TikTok live notifications",
                 "module": "tiktok",
                 "permissions": "Administrator",
                 "dm_permission": null,
@@ -1081,7 +1101,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "manage-twitch-streams",
-                "description": "List or remove Twitch stream notifications",
+                "description": "List, test, pause, resume, or remove Twitch stream notifications",
                 "module": "twitch",
                 "permissions": "Administrator",
                 "dm_permission": null,
@@ -1120,7 +1140,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "manage-youtube-channels",
-                "description": "List or remove YouTube video notifications",
+                "description": "List, test, pause, resume, or remove YouTube video notifications",
                 "module": "youtube",
                 "permissions": "Administrator",
                 "dm_permission": null,

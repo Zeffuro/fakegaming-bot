@@ -3,6 +3,7 @@ import { api } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 
 type TwitchCreateRequest = Parameters<typeof api.createTwitchStream>[0];
+type TwitchUpdateRequest = Parameters<typeof api.updateTwitchStream>[1];
 
 interface UseTwitchConfigsOptions {
   enabled?: boolean;
@@ -32,6 +33,10 @@ export function useTwitchConfigs(guildId: string | string[], options: UseTwitchC
         guildId: resolvedGuildId,
         ...buildNotificationTimingPayload(config),
       } as unknown as TwitchCreateRequest);
+    },
+    setPaused: async (config, paused) => {
+      const body = { paused } satisfies TwitchUpdateRequest;
+      await api.updateTwitchStream(config.id, body);
     },
     deleteConfig: async (config) => {
       await api.deleteTwitchStream(config.id.toString());

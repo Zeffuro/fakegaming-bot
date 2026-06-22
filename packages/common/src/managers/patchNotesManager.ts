@@ -56,6 +56,10 @@ export class PatchSubscriptionManager extends BaseManager<PatchSubscriptionConfi
         return this.getMany({ game }, { raw: true });
     }
 
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<PatchSubscriptionConfig> as never, { id } as never);
+    }
+
     async upsertSubscription(sub: Partial<PatchSubscriptionConfig> | PatchSubscriptionConfig) {
         const data = sub instanceof PatchSubscriptionConfig ? sub.get({ plain: true }) : sub;
         await this.upsert(data, ['game', 'channelId']);

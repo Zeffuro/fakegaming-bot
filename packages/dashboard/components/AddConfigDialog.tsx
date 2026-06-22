@@ -22,6 +22,7 @@ interface AddConfigDialogProps<T extends StreamingConfig> {
     loadingChannels: boolean;
     saving: boolean;
     showCustomMessage?: boolean;
+    showNotificationControls?: boolean;
     itemSingularLabel?: string;
     itemNameOptions?: string[];
 }
@@ -40,6 +41,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     loadingChannels,
     saving,
     showCustomMessage = true,
+    showNotificationControls = true,
     itemSingularLabel,
     itemNameOptions
 }: AddConfigDialogProps<T>) {
@@ -85,6 +87,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                 channels={channels}
                 loadingChannels={loadingChannels}
                 showCustomMessage={showCustomMessage}
+                showNotificationControls={showNotificationControls}
                 itemNameOptions={itemNameOptions}
             />
         </ConfigDialogShell>

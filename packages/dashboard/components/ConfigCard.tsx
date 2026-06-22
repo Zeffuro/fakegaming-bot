@@ -1,8 +1,9 @@
 import React from "react";
 import { Box, Button, Card, CardActions, CardContent, Chip, IconButton, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { Delete, Edit } from "@mui/icons-material";
+import { Delete, Edit, PauseCircleOutlined, PlayCircleOutlined } from "@mui/icons-material";
 import { dashboardAccents, dashboardCardSx, dangerActionButtonSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import type { ConfigNotificationInfo } from "@/lib/notificationTiming";
 
 export interface ConfigStatusChip {
   label: string;
@@ -27,8 +28,11 @@ interface ConfigCardProps {
   statusChip?: ConfigStatusChip;
   extraStatusChips?: ConfigStatusChip[];
   healthInfo?: ConfigHealthInfo;
+  notificationInfo?: ConfigNotificationInfo;
   onEdit: () => void;
   onDelete: () => void;
+  onTogglePaused?: () => void;
+  paused?: boolean;
   saving?: boolean;
   showEdit?: boolean;
 }
@@ -42,12 +46,17 @@ export default function ConfigCard({
   statusChip,
   extraStatusChips = [],
   healthInfo,
+  notificationInfo,
   onEdit,
   onDelete,
+  onTogglePaused,
+  paused = false,
   saving = false,
   showEdit = true,
 }: ConfigCardProps) {
   const chips = [statusChip, ...extraStatusChips].filter((chip): chip is ConfigStatusChip => Boolean(chip));
+  const pauseLabel = paused ? "Resume" : "Pause";
+  const PauseIcon = paused ? PlayCircleOutlined : PauseCircleOutlined;
 
   return (
     <Card sx={{ ...dashboardCardSx(accent), display: "flex", flexDirection: "column" }}>
@@ -86,6 +95,11 @@ export default function ConfigCard({
                 Custom message: {customMessage}
               </Typography>
             )}
+            {notificationInfo && notificationInfo.lines.map((line) => (
+              <Typography key={line} variant="caption" sx={{ color: "rgba(255,255,255,0.54)", display: "block", mt: 0.75 }}>
+                {line}
+              </Typography>
+            ))}
           </Box>
 
           {healthInfo && (
@@ -105,11 +119,19 @@ export default function ConfigCard({
         </Stack>
       </CardContent>
       <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2, pt: 0, mt: "auto" }}>
-        {showEdit ? (
-          <Button size="small" variant="outlined" startIcon={<Edit />} onClick={onEdit} sx={ghostActionButtonSx(accent)}>
-            Edit
-          </Button>
-        ) : <Box />}
+        <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          {onTogglePaused && (
+            <Button size="small" variant="outlined" startIcon={<PauseIcon />} disabled={saving} onClick={onTogglePaused} sx={ghostActionButtonSx(accent)}>
+              {pauseLabel}
+            </Button>
+          )}
+          {showEdit && (
+            <Button size="small" variant="outlined" startIcon={<Edit />} onClick={onEdit} sx={ghostActionButtonSx(accent)}>
+              Edit
+            </Button>
+          )}
+          {!onTogglePaused && !showEdit && <Box />}
+        </Stack>
         <IconButton color="error" size="small" onClick={onDelete} disabled={saving} sx={dangerActionButtonSx}>
           <Delete />
         </IconButton>

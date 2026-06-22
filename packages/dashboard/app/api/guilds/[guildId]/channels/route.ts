@@ -16,7 +16,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
     }
     const user = authResult.user!;
 
-    const guildAccess = await checkGuildAccess(user, guildId);
+    const guildAccess = await checkGuildAccess(user, guildId, req);
     if (!guildAccess.hasAccess) {
         return NextResponse.json(
             { error: guildAccess.error || "Not authorized for this guild" },

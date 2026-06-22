@@ -2,6 +2,8 @@ import type { BlueskyPostConfig } from "@zeffuro/fakegaming-common";
 import { api, type BlueskyCreateRequest } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 
+type BlueskyUpdateRequest = Parameters<typeof api.updateBlueskyAccount>[1];
+
 function buildPayload(config: Omit<BlueskyPostConfig, 'id' | 'guildId'> | BlueskyPostConfig, guildId: string): BlueskyCreateRequest {
   return {
     blueskyHandle: String((config as any).blueskyHandle ?? '').trim().replace(/^@/, ''),
@@ -29,6 +31,10 @@ export function useBlueskyConfigs(guildId: string | string[], options: UseBluesk
     update: async (config, resolvedGuildId) => {
       await api.deleteBlueskyAccount(String(config.id));
       await api.createBlueskyAccount(buildPayload(config, resolvedGuildId));
+    },
+    setPaused: async (config, paused) => {
+      const body = { paused } satisfies BlueskyUpdateRequest;
+      await api.updateBlueskyAccount(config.id, body);
     },
     deleteConfig: async (config) => {
       await api.deleteBlueskyAccount(String(config.id));

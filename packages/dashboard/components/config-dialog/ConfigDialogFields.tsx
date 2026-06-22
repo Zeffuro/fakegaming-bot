@@ -4,7 +4,9 @@ import {
     Box,
     Chip,
     CircularProgress,
+    FormControlLabel,
     Stack,
+    Switch,
     TextField,
     Typography
 } from "@mui/material";
@@ -35,6 +37,7 @@ interface ConfigDialogFieldsProps {
     channels: DiscordChannelOption[];
     loadingChannels: boolean;
     showCustomMessage: boolean;
+    showNotificationControls: boolean;
     itemNameOptions?: string[];
 }
 
@@ -92,6 +95,7 @@ export function ConfigDialogFields({
     channels,
     loadingChannels,
     showCustomMessage,
+    showNotificationControls,
     itemNameOptions
 }: ConfigDialogFieldsProps) {
     const fieldSx = dashboardFieldSx(moduleColor);
@@ -227,37 +231,51 @@ export function ConfigDialogFields({
                 </>
             )}
 
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mt: 2 }}>
-                <TextField
-                    label="Cooldown (minutes)"
-                    type="number"
-                    value={value.cooldownMinutes ?? ""}
-                    onChange={(event) => onFieldChange("cooldownMinutes", parseOptionalMinutes(event.target.value))}
-                    slotProps={{ htmlInput: { min: 0 } }}
-                    sx={fieldSx}
-                    helperText="Minimum minutes between notifications (optional)"
-                />
-                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                    <TextField
-                        label="Quiet Start"
-                        type="time"
-                        value={value.quietHoursStart ?? ""}
-                        onChange={(event) => onFieldChange("quietHoursStart", event.target.value)}
-                        slotProps={{ htmlInput: { step: 60 } }}
-                        sx={fieldSx}
-                        helperText="HH:mm (24h)"
+            {showNotificationControls && (
+                <>
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mt: 2 }}>
+                        <TextField
+                            label="Cooldown (minutes)"
+                            type="number"
+                            value={value.cooldownMinutes ?? ""}
+                            onChange={(event) => onFieldChange("cooldownMinutes", parseOptionalMinutes(event.target.value))}
+                            slotProps={{ htmlInput: { min: 0 } }}
+                            sx={fieldSx}
+                            helperText="Minimum minutes between notifications (optional)"
+                        />
+                        <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+                            <TextField
+                                label="Quiet Start"
+                                type="time"
+                                value={value.quietHoursStart ?? ""}
+                                onChange={(event) => onFieldChange("quietHoursStart", event.target.value)}
+                                slotProps={{ htmlInput: { step: 60 } }}
+                                sx={fieldSx}
+                                helperText="HH:mm (24h)"
+                            />
+                            <TextField
+                                label="Quiet End"
+                                type="time"
+                                value={value.quietHoursEnd ?? ""}
+                                onChange={(event) => onFieldChange("quietHoursEnd", event.target.value)}
+                                slotProps={{ htmlInput: { step: 60 } }}
+                                sx={fieldSx}
+                                helperText="HH:mm (24h)"
+                            />
+                        </Box>
+                    </Box>
+                    <FormControlLabel
+                        sx={{ mt: 2, color: "grey.200" }}
+                        control={(
+                            <Switch
+                                checked={Boolean(value.paused)}
+                                onChange={(event) => onFieldChange("paused", event.target.checked)}
+                            />
+                        )}
+                        label="Paused"
                     />
-                    <TextField
-                        label="Quiet End"
-                        type="time"
-                        value={value.quietHoursEnd ?? ""}
-                        onChange={(event) => onFieldChange("quietHoursEnd", event.target.value)}
-                        slotProps={{ htmlInput: { step: 60 } }}
-                        sx={fieldSx}
-                        helperText="HH:mm (24h)"
-                    />
-                </Box>
-            </Box>
+                </>
+            )}
         </Box>
     );
 }

@@ -17,6 +17,8 @@ export interface ConfigHookResult<T extends StreamingConfig> {
     addConfig: (config: Omit<T, 'id' | 'guildId'>) => Promise<boolean>;
     updateConfig: (config: T) => Promise<boolean>;
     deleteConfig: (config: T) => Promise<boolean>;
+    togglePausedConfig?: (config: T) => Promise<boolean>;
+    setAllPausedConfigs?: (paused: boolean) => Promise<boolean>;
 }
 
 /**
@@ -66,7 +68,9 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
         setError,
         addConfig,
         updateConfig,
-        deleteConfig
+        deleteConfig,
+        togglePausedConfig,
+        setAllPausedConfigs
     } = api;
 
     if (!guild && !guildsLoading) {
@@ -93,6 +97,8 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
             onAdd={addConfig}
             onUpdate={updateConfig}
             onDelete={deleteConfig}
+            onTogglePaused={togglePausedConfig}
+            onSetAllPaused={setAllPausedConfigs}
             renderChip={renderChip}
             itemSingularLabel={itemSingularLabel}
             itemPluralLabel={itemPluralLabel}

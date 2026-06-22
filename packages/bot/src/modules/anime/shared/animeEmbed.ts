@@ -111,7 +111,7 @@ export function buildAnimeEmbed(anime: AniListTitle): EmbedBuilder {
 }
 
 export function buildAnimeListEmbed(
-    subscriptions: Array<{ title: CreationAttributes<AnimeTitle>; reminderMinutes: number }>,
+    subscriptions: Array<{ title: CreationAttributes<AnimeTitle>; reminderMinutes: number; paused?: boolean | null }>,
     options: { page?: number; total?: number; startIndex?: number } = {},
 ): EmbedBuilder {
     const startIndex = options.startIndex ?? 0;
@@ -119,7 +119,8 @@ export function buildAnimeListEmbed(
         ? subscriptions.map((sub, index) => {
             const status = sub.title.status ? ` - ${formatAniListStatus(sub.title.status)}` : '';
             const next = sub.title.nextAiringAt ? ` - next ${formatAiringTimestamp(Number(sub.title.nextAiringAt))}` : '';
-            return `**${startIndex + index + 1}. ${formatAnimeTitle(sub.title)}**\n${sub.reminderMinutes} min reminder${status}${next}`;
+            const paused = sub.paused ? ' - paused' : '';
+            return `**${startIndex + index + 1}. ${formatAnimeTitle(sub.title)}**\n${sub.reminderMinutes} min reminder${status}${next}${paused}`;
         }).join('\n\n')
         : 'No anime subscriptions yet.';
 

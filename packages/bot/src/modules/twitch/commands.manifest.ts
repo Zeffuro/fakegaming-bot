@@ -1,7 +1,7 @@
 // Static metadata for twitch module commands. No runtime deps.
 
 export const addTwitchStream = { name: 'add-twitch-stream', description: 'Add a Twitch stream for notifications', permissions: 'Administrator' } as const;
-export const manageTwitchStreams = { name: 'manage-twitch-streams', description: 'List or remove Twitch stream notifications', permissions: 'Administrator' } as const;
+export const manageTwitchStreams = { name: 'manage-twitch-streams', description: 'List, test, pause, resume, or remove Twitch stream notifications', permissions: 'Administrator' } as const;
 export const streamStatus = { name: 'stream-status', description: 'Check whether a Twitch channel is live' } as const;
 
 export const COMMANDS = [addTwitchStream, manageTwitchStreams, streamStatus] as const;

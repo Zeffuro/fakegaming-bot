@@ -22,6 +22,7 @@ interface BlueskyPostConfigPlain {
     quietHoursEnd?: string | null;
     cooldownMinutes?: number | null;
     lastNotifiedAt?: string | number | Date | null;
+    paused?: boolean | null;
 }
 
 interface BlueskyActorProfile {
@@ -284,7 +285,7 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
     const manager = cm.blueskyManager as unknown as { getAllAccounts: () => Promise<BlueskyPostConfigPlain[]> };
     const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
-    const configs = await manager.getAllAccounts();
+    const configs = (await manager.getAllAccounts()).filter(cfg => !cfg.paused);
     if (!configs.length) return { processed: 0, errors: 0 };
 
     let processed = 0;

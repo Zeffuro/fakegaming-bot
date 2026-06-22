@@ -8,6 +8,7 @@ import {manageYoutubeChannels as META} from '../commands.manifest.js';
 
 interface YoutubeManagementRecord extends IntegrationManagementRecord {
     youtubeChannelId: string;
+    paused?: boolean | null;
 }
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<YoutubeManagementRecord>({
@@ -25,12 +26,25 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<YoutubeMana
     removeRecord: async (id) => {
         await getConfigManager().youtubeManager.removeByPk(id);
     },
+    setPausedRecord: async (id, paused) => {
+        await getConfigManager().youtubeManager.setPaused(id, paused);
+    },
     formatRecord: (record) => `${inlineCode(String(record.id))} ${inlineCode(record.youtubeChannelId)} -> <#${record.discordChannelId}>`,
     describeRecord: (record) => `${inlineCode(record.youtubeChannelId)} from <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'youtube.delete',
         targetType: 'youtubeConfig',
         metadata: (record) => ({channelId: record.discordChannelId, youtubeChannelId: record.youtubeChannelId}),
+    },
+    auditPause: {
+        pauseAction: 'youtube.pause',
+        resumeAction: 'youtube.resume',
+        targetType: 'youtubeConfig',
+        metadata: (record, paused) => ({channelId: record.discordChannelId, youtubeChannelId: record.youtubeChannelId, paused}),
+    },
+    health: {
+        provider: 'youtube',
+        metadata: (record, paused) => ({youtubeChannelId: record.youtubeChannelId, paused}),
     },
 });
 

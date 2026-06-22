@@ -20,6 +20,7 @@ import {
     type AniListSeasonScope,
     type AniListTitle,
 } from '@zeffuro/fakegaming-common/anime';
+import type { IntegrationHealthRecord } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { requireAdmin } from '../../../utils/permissions.js';
@@ -31,6 +32,17 @@ import { buildAnimeEmbed, buildAnimeListEmbed, buildAnimeNextEmbed, buildAnimeSe
 import { formatAnimeTitle } from '../shared/animeFormatters.js';
 
 const ANIME_PAGE_SIZE = 10;
+
+type AnimeSubscriptionRecord = {
+    id?: number;
+    anilistId: number;
+    targetType: 'dm' | 'channel';
+    userId?: string | null;
+    guildId?: string | null;
+    channelId?: string | null;
+    reminderMinutes: number;
+    paused?: boolean | null;
+};
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
@@ -81,6 +93,51 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
                     option
                         .setName('channel')
                         .setDescription('Optional public notification channel subscription to remove (admin only)')
+                        .setRequired(false)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('pause')
+                .setDescription('Pause anime episode reminders')
+                .addStringOption((option) =>
+                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                )
+                .addChannelOption((option) =>
+                    option
+                        .setName('channel')
+                        .setDescription('Optional public notification channel subscription to pause (admin only)')
+                        .setRequired(false)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('resume')
+                .setDescription('Resume anime episode reminders')
+                .addStringOption((option) =>
+                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                )
+                .addChannelOption((option) =>
+                    option
+                        .setName('channel')
+                        .setDescription('Optional public notification channel subscription to resume (admin only)')
+                        .setRequired(false)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                )
+        )
+        .addSubcommand((subcommand) =>
+            subcommand
+                .setName('test')
+                .setDescription('Show latest health for anime episode reminders')
+                .addStringOption((option) =>
+                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                )
+                .addChannelOption((option) =>
+                    option
+                        .setName('channel')
+                        .setDescription('Optional public notification channel subscription to inspect (admin only)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
@@ -184,7 +241,7 @@ async function buildAnimeListPayload(userId: string, requestedPage = 1) {
     const rows = [];
     for (const subscription of pageSubscriptions) {
         const title = await getCachedOrRemoteTitle(subscription.anilistId);
-        if (title) rows.push({ title, reminderMinutes: subscription.reminderMinutes });
+        if (title) rows.push({ title, reminderMinutes: subscription.reminderMinutes, paused: subscription.paused });
     }
 
     return {
@@ -199,6 +256,26 @@ async function buildAnimeListPayload(userId: string, requestedPage = 1) {
             })
             : [],
     };
+}
+
+async function recordAnimePausedHealth(subscription: AnimeSubscriptionRecord, paused: boolean): Promise<void> {
+    if (!subscription.id) return;
+    try {
+        await getConfigManager().integrationHealthManager.recordStatus({
+            provider: 'anime',
+            configId: subscription.id,
+            guildId: subscription.guildId ?? null,
+            channelId: subscription.channelId ?? null,
+            status: paused ? 'paused' : 'unknown',
+            metadata: {
+                anilistId: subscription.anilistId,
+                targetType: subscription.targetType,
+                paused,
+            },
+        });
+    } catch {
+        // Health status should not block the Discord management action.
+    }
 }
 
 async function executeSearch(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -338,6 +415,131 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
     }
 }
 
+async function executeSetPaused(interaction: ChatInputCommandInteraction, paused: boolean): Promise<void> {
+    const input = interaction.options.getString('title', true);
+    const channel = interaction.options.getChannel('channel', false);
+    const anime = await resolveAnime(input);
+    if (!anime) {
+        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    const manager = getConfigManager().animeManager.subscriptions;
+    let subscription: AnimeSubscriptionRecord | null;
+    let targetDescription: string;
+
+    if (channel) {
+        if (!(await requireAdmin(interaction))) return;
+        const guildId = interaction.guildId;
+        if (!guildId) {
+            await interaction.reply({ content: 'Channel subscriptions can only be managed in a server.', flags: MessageFlags.Ephemeral });
+            return;
+        }
+        subscription = await manager.getOnePlain({
+            anilistId: anime.id,
+            targetType: 'channel',
+            guildId,
+            channelId: channel.id,
+        }) as unknown as AnimeSubscriptionRecord | null;
+        targetDescription = `<#${channel.id}> reminders`;
+    } else {
+        subscription = await manager.getOnePlain({
+            anilistId: anime.id,
+            targetType: 'dm',
+            userId: interaction.user.id,
+        }) as unknown as AnimeSubscriptionRecord | null;
+        targetDescription = 'your DM reminders';
+    }
+
+    if (!subscription?.id) {
+        await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    if (Boolean(subscription.paused) === paused) {
+        await interaction.reply({
+            content: `${targetDescription} for **${formatAnimeTitle(anime)}** are already ${paused ? 'paused' : 'active'}.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    await manager.setPaused(subscription.id, paused);
+    await recordBotAuditEvent(interaction, {
+        action: paused ? 'animeSubscription.pause' : 'animeSubscription.resume',
+        targetType: 'animeSubscription',
+        targetId: subscription.id,
+        guildId: subscription.guildId ?? null,
+        metadata: {
+            anilistId: anime.id,
+            channelId: subscription.channelId ?? null,
+            targetType: subscription.targetType,
+            paused,
+        },
+    });
+    await recordAnimePausedHealth(subscription, paused);
+    await interaction.reply({
+        content: `${paused ? 'Paused' : 'Resumed'} ${targetDescription} for **${formatAnimeTitle(anime)}**.`,
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
+async function executeTestHealth(interaction: ChatInputCommandInteraction): Promise<void> {
+    const input = interaction.options.getString('title', true);
+    const channel = interaction.options.getChannel('channel', false);
+    const anime = await resolveAnime(input);
+    if (!anime) {
+        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    const manager = getConfigManager().animeManager.subscriptions;
+    let subscription: AnimeSubscriptionRecord | null;
+    let targetDescription: string;
+
+    if (channel) {
+        if (!(await requireAdmin(interaction))) return;
+        const guildId = interaction.guildId;
+        if (!guildId) {
+            await interaction.reply({ content: 'Channel subscriptions can only be inspected in a server.', flags: MessageFlags.Ephemeral });
+            return;
+        }
+        subscription = await manager.getOnePlain({
+            anilistId: anime.id,
+            targetType: 'channel',
+            guildId,
+            channelId: channel.id,
+        }) as unknown as AnimeSubscriptionRecord | null;
+        targetDescription = `<#${channel.id}> reminders`;
+    } else {
+        subscription = await manager.getOnePlain({
+            anilistId: anime.id,
+            targetType: 'dm',
+            userId: interaction.user.id,
+        }) as unknown as AnimeSubscriptionRecord | null;
+        targetDescription = 'your DM reminders';
+    }
+
+    if (!subscription?.id) {
+        await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        return;
+    }
+
+    const health = await getConfigManager().integrationHealthManager.getForConfig('anime', subscription.id);
+    if (!health) {
+        await interaction.reply({
+            content: `No health record has been recorded yet for ${targetDescription} for **${formatAnimeTitle(anime)}**. The next worker poll will populate it.`,
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
+
+    await interaction.reply({
+        content: formatAnimeHealthReply(targetDescription, formatAnimeTitle(anime), health),
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
 function getSubscriptionAuditTargetId(subscription: { id?: unknown } | null, fallback: number): string | number {
     const id = subscription?.id;
     if (typeof id === 'string' || typeof id === 'number') return id;
@@ -346,7 +548,8 @@ function getSubscriptionAuditTargetId(subscription: { id?: unknown } | null, fal
 
 async function executeNext(interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-    const subscriptions = await getConfigManager().animeManager.subscriptions.getUserSubscriptions(interaction.user.id);
+    const subscriptions = (await getConfigManager().animeManager.subscriptions.getUserSubscriptions(interaction.user.id))
+        .filter((subscription) => !subscription.paused);
     const schedules = await getAniListNextAiring(subscriptions.map((sub) => sub.anilistId));
     for (const item of schedules) {
         if (item.media) {
@@ -424,6 +627,18 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     }
     if (subcommand === 'unsubscribe') {
         await executeUnsubscribe(interaction);
+        return;
+    }
+    if (subcommand === 'pause') {
+        await executeSetPaused(interaction, true);
+        return;
+    }
+    if (subcommand === 'resume') {
+        await executeSetPaused(interaction, false);
+        return;
+    }
+    if (subcommand === 'test') {
+        await executeTestHealth(interaction);
         return;
     }
     if (subcommand === 'next') {
@@ -505,3 +720,39 @@ const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
 export default { data, execute, testOnly, autocomplete, handleComponent };
+
+function formatAnimeHealthReply(targetDescription: string, title: string, health: IntegrationHealthRecord): string {
+    const lines = [
+        `Latest health for ${targetDescription} for **${title}**:`,
+        `Status: \`${escapeInlineCode(health.status)}\``,
+        `Last checked: ${formatHealthDate(health.lastCheckedAt)}`,
+        `Last success: ${formatHealthDate(health.lastSuccessAt)}`,
+        `Last failure: ${formatHealthDate(health.lastFailureAt)}`,
+        `Last delivery: ${formatHealthDate(health.lastDeliveryAt)}`,
+        `Consecutive failures: ${health.consecutiveFailures}`,
+    ];
+
+    if (health.lastErrorCode || health.lastErrorMessage) {
+        const code = health.lastErrorCode ? `\`${escapeInlineCode(health.lastErrorCode)}\` ` : '';
+        lines.push(`Last error: ${code}${truncateHealthLine(health.lastErrorMessage ?? 'Unknown error')}`);
+    }
+
+    return lines.join('\n');
+}
+
+function formatHealthDate(value?: Date | string | null): string {
+    if (!value) return 'Never';
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toISOString();
+}
+
+function escapeInlineCode(value: string): string {
+    return value.replace(/`/g, "'");
+}
+
+function truncateHealthLine(value: string): string {
+    const normalized = value.trim();
+    if (normalized.length <= 180) return normalized;
+    return `${normalized.slice(0, 177)}...`;
+}

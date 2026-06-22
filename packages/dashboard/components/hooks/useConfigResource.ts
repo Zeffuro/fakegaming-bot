@@ -9,12 +9,18 @@ interface ResourceMessages {
     deleteFailed: string;
 }
 
-interface UseConfigResourceOptions<TConfig, TCreate> {
+interface PausableConfig {
+    id?: string | number | null;
+    paused?: boolean | null;
+}
+
+interface UseConfigResourceOptions<TConfig extends PausableConfig, TCreate> {
     guildId: GuildIdParam;
     enabled?: boolean;
     load: (guildId: string) => Promise<TConfig[]>;
     create: (config: TCreate, guildId: string) => Promise<void>;
     update: (config: TConfig, guildId: string) => Promise<void>;
+    setPaused?: (config: TConfig, paused: boolean) => Promise<void>;
     deleteConfig: (config: TConfig) => Promise<void>;
     removeById: (configId: string) => Promise<void>;
     validateCreate?: (config: TCreate) => string | null;
@@ -26,6 +32,7 @@ interface NotificationTimingInput {
     cooldownMinutes?: unknown;
     quietHoursStart?: unknown;
     quietHoursEnd?: unknown;
+    paused?: unknown;
 }
 
 export function resolveGuildId(guildId: GuildIdParam): string | null {
@@ -42,21 +49,30 @@ export function buildNotificationTimingPayload(config: NotificationTimingInput):
     cooldownMinutes: number | null;
     quietHoursStart: string | null;
     quietHoursEnd: string | null;
+    paused: boolean;
 } {
     return {
         customMessage: config.customMessage,
         cooldownMinutes: typeof config.cooldownMinutes === "number" ? config.cooldownMinutes : null,
         quietHoursStart: config.quietHoursStart ? String(config.quietHoursStart) : null,
-        quietHoursEnd: config.quietHoursEnd ? String(config.quietHoursEnd) : null
+        quietHoursEnd: config.quietHoursEnd ? String(config.quietHoursEnd) : null,
+        paused: Boolean(config.paused)
     };
 }
 
-export function useConfigResource<TConfig, TCreate>({
+function getConfigId(config: PausableConfig): string | null {
+    if (config.id === undefined || config.id === null) return null;
+    const id = String(config.id);
+    return id.length > 0 ? id : null;
+}
+
+export function useConfigResource<TConfig extends PausableConfig, TCreate>({
     guildId,
     enabled = true,
     load,
     create,
     update,
+    setPaused,
     deleteConfig,
     removeById,
     validateCreate,
@@ -131,6 +147,43 @@ export function useConfigResource<TConfig, TCreate>({
         }
     };
 
+    const togglePausedConfig = setPaused ? async (config: TConfig) => {
+        const configId = getConfigId(config);
+        if (!configId) {
+            setError(messages.updateFailed);
+            return false;
+        }
+
+        try {
+            setSaving(true);
+            await setPaused(config, !Boolean(config.paused));
+            await fetchConfigs();
+            return true;
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, messages.updateFailed));
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    } : undefined;
+
+    const setAllPausedConfigs = setPaused ? async (paused: boolean) => {
+        const targets = configs.filter((config) => getConfigId(config) && Boolean(config.paused) !== paused);
+        if (targets.length === 0) return true;
+
+        try {
+            setSaving(true);
+            await Promise.all(targets.map((config) => setPaused(config, paused)));
+            await fetchConfigs();
+            return true;
+        } catch (err: unknown) {
+            setError(getErrorMessage(err, messages.updateFailed));
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    } : undefined;
+
     const deleteExistingConfig = async (config: TConfig) => {
         try {
             setSaving(true);
@@ -177,6 +230,8 @@ export function useConfigResource<TConfig, TCreate>({
         setError,
         addConfig,
         updateConfig,
+        togglePausedConfig,
+        setAllPausedConfigs,
         deleteConfig: deleteExistingConfig,
         removeConfig,
         refreshConfigs: fetchConfigs

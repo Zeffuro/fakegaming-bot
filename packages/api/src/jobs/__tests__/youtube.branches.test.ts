@@ -30,6 +30,19 @@ describe('YouTube job branches', () => {
     });
     afterEach(() => { process.env = { ...ORIGINAL_ENV }; vi.restoreAllMocks(); });
 
+    it('skips paused configs', async () => {
+        const cfg = { id: 'yc-paused', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC-paused', lastVideoId: null, paused: true } as any;
+        manager.youtubeManager.getAllChannels.mockResolvedValueOnce([cfg]);
+
+        const { discord } = await prepareDiscord();
+        const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
+
+        expect(done).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(recordIfNew).not.toHaveBeenCalled();
+        expect(upsert).not.toHaveBeenCalled();
+    });
+
     it('suppresses by quiet hours/cooldown and still updates lastVideoId', async () => {
         const cfg = { id: 'yc1', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC1', lastVideoId: null, quietHoursStart: '00:00', quietHoursEnd: '23:59', cooldownMinutes: 10, lastNotifiedAt: new Date().toISOString() } as any;
         manager.youtubeManager.getAllChannels.mockResolvedValueOnce([cfg]);

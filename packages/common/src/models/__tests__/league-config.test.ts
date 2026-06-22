@@ -16,13 +16,17 @@ describe('LeagueConfig Model', () => {
 
     const league = await LeagueConfig.create({
       discordId: 'discord-123',
-      summonerName: 'TestSummoner',
+      summonerName: 'TestSummoner#NA1',
+      riotIdGameName: 'TestSummoner',
+      riotIdTagLine: 'NA1',
       region: 'na1',
       puuid: 'test-puuid-123',
     });
 
     expect(league.discordId).toBe('discord-123');
-    expect(league.summonerName).toBe('TestSummoner');
+    expect(league.summonerName).toBe('TestSummoner#NA1');
+    expect(league.riotIdGameName).toBe('TestSummoner');
+    expect(league.riotIdTagLine).toBe('NA1');
     expect(league.region).toBe('na1');
     expect(league.puuid).toBe('test-puuid-123');
   });

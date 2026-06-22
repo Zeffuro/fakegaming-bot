@@ -36,6 +36,7 @@ describe('api request schemas', () => {
             'JobRunRequest',
             'PatchNoteCreateRequest',
             'PatchSubscriptionRequest',
+            'PausedStateRequest',
             'QuoteCreateRequest',
             'ReminderCreateRequest',
             'RiotLinkUpdateRequest',
@@ -69,6 +70,7 @@ describe('api request schemas', () => {
             game: 'Overwatch',
             channelId: 'channel-1',
             guildId: 'guild-1',
+            paused: true,
         })).toMatchObject({ game: 'Overwatch' });
         expect(quoteCreateRequestSchema.parse({
             guildId: 'guild-1',
@@ -84,7 +86,9 @@ describe('api request schemas', () => {
             timestamp: 123,
         })).toMatchObject({ message: 'ping' });
         expect(riotLinkUpdateRequestSchema.parse({
-            summonerName: 'Zeffuro',
+            summonerName: 'Zeffuro#EUW',
+            riotIdGameName: 'Zeffuro',
+            riotIdTagLine: 'EUW',
             region: 'EUW',
             puuid: 'puuid-1',
         })).toMatchObject({ region: 'EUW' });

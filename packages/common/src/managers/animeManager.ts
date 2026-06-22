@@ -80,6 +80,7 @@ export class AnimeSubscriptionManager extends BaseManager<AnimeSubscriptionConfi
             reminderMinutes: args.reminderMinutes ?? 30,
             lastNotifiedEpisode: null,
             lastNotifiedAiringAt: null,
+            paused: false,
         } as CreationAttributes<AnimeSubscriptionConfig>);
         return true;
     }
@@ -123,6 +124,10 @@ export class AnimeSubscriptionManager extends BaseManager<AnimeSubscriptionConfi
 
     async getGuildChannelSubscriptions(guildId: string): Promise<CreationAttributes<AnimeSubscriptionConfig>[]> {
         return this.getManyPlain({ targetType: 'channel', guildId });
+    }
+
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<AnimeSubscriptionConfig> as never, { id } as never);
     }
 
     async unsubscribeUser(args: { anilistId: number; userId: string }): Promise<number> {

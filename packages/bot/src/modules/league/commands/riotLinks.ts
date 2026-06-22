@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { formatRiotId } from '@zeffuro/fakegaming-common/utils';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { requireAdmin } from '../../../utils/permissions.js';
 import { riotLinks as META } from '../commands.manifest.js';
@@ -7,6 +8,8 @@ import { riotLinks as META } from '../commands.manifest.js';
 interface LinkedRiotAccountPlain {
     discordId: string;
     summonerName: string;
+    riotIdGameName?: string | null;
+    riotIdTagLine?: string | null;
     region: string;
     puuid: string;
 }
@@ -44,7 +47,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
 );
 
 function formatLink(link: LinkedRiotAccountPlain): string {
-    return `<@${link.discordId}>: ${link.summonerName} [${link.region}]`;
+    return `<@${link.discordId}>: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)} [${link.region}]`;
 }
 
 function formatPuuid(puuid: string): string {
@@ -84,7 +87,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
         await interaction.editReply([
             `Linked Riot account for ${user}:`,
-            `Riot ID: ${link.summonerName}`,
+            `Riot ID: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)}`,
             `Region: ${link.region}`,
             `PUUID: ${formatPuuid(link.puuid)}`,
         ].join('\n'));
@@ -99,7 +102,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         }
 
         await manager.removeLinkedAccount(user.id);
-        await interaction.editReply(`Removed linked Riot account for ${user}: ${link.summonerName} [${link.region}]`);
+        await interaction.editReply(`Removed linked Riot account for ${user}: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)} [${link.region}]`);
         return;
     }
 

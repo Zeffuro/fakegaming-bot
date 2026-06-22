@@ -2,9 +2,11 @@ import { z } from 'zod';
 import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
 import { riotLinkUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { formatRiotId, parseRiotId } from '@zeffuro/fakegaming-common/utils';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import { validateRiotAccountLink } from '../utils/riotAccountValidation.js';
 
 const router = createBaseRouter();
 
@@ -85,8 +87,12 @@ router.get('/:discordId', requireDashboardAdmin, validateParams(discordIdParamSc
  *     responses:
  *       200:
  *         description: Updated linked Riot account
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
  *       403:
  *         $ref: '#/components/responses/Forbidden'
+ *       503:
+ *         description: Riot Account API validation is unavailable
  */
 router.put(
     '/:discordId',
@@ -96,15 +102,46 @@ router.put(
     async (req, res) => {
         const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const body = req.body as z.infer<typeof riotLinkUpdateRequestSchema>;
+        const riotId = parseRiotId(formatRiotId(body.riotIdGameName, body.riotIdTagLine, body.summonerName));
+        if (!riotId?.tagLine) {
+            return res.status(400).json({
+                error: {
+                    code: 'BAD_REQUEST',
+                    message: 'Riot ID must include a tag line for Account-V1 validation.',
+                },
+            });
+        }
+
+        const validation = await validateRiotAccountLink({
+            gameName: riotId.gameName,
+            tagLine: riotId.tagLine,
+            region: body.region,
+            puuid: body.puuid,
+        });
+        if (!validation.ok) {
+            return res.status(validation.statusCode).json({
+                error: {
+                    code: validation.code,
+                    message: validation.message,
+                },
+            });
+        }
+
         const link = await getConfigManager().leagueManager.setLinkedAccount({
             discordId,
             ...body,
+            summonerName: `${riotId.gameName}#${riotId.tagLine}`,
+            riotIdGameName: riotId.gameName,
+            riotIdTagLine: riotId.tagLine,
+            puuid: validation.puuid,
         });
         await recordAuditEvent(req, {
             action: 'riotLink.upsert',
             targetType: 'riotLink',
             targetId: discordId,
             metadata: {
+                riotIdGameName: riotId.gameName,
+                riotIdTagLine: riotId.tagLine,
                 region: body.region,
             },
         });

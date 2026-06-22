@@ -3,7 +3,6 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {leagueRegionChoices} from '../constants/leagueRegions.js';
 import {resolveLeagueIdentity} from '../../../services/riotService.js';
 import {getRegionCodeFromName} from '../utils/leagueUtils.js';
-import {LeagueConfig} from '@zeffuro/fakegaming-common/models';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { linkRiot as META } from '../commands.manifest.js';
 
@@ -48,32 +47,12 @@ async function execute(interaction: ChatInputCommandInteraction) {
         return;
     }
 
-    let user = await getConfigManager().userManager.getUserWithLeague(userId);
-
-    if (user) {
-        if (user.league) {
-            await user.league.update({
-                summonerName: identity.summoner,
-                region: identity.region,
-                puuid: identity.puuid
-            });
-        } else {
-            await LeagueConfig.create({
-                discordId: userId,
-                summonerName: identity.summoner,
-                region: identity.region,
-                puuid: identity.puuid
-            });
-        }
-    } else {
-        await getConfigManager().userManager.add({ discordId: userId });
-        await LeagueConfig.create({
-            discordId: userId,
-            summonerName: identity.summoner,
-            region: identity.region,
-            puuid: identity.puuid
-        });
-    }
+    await getConfigManager().leagueManager.setLinkedAccount({
+        discordId: userId,
+        summonerName: identity.summoner,
+        region: identity.region,
+        puuid: identity.puuid,
+    });
     await interaction.editReply(`Linked <@${userId}> to Riot ID: ${identity.summoner} [${identity.region}]`);
 }
 

@@ -4,6 +4,8 @@ import { API_ENDPOINTS, apiRequest } from "./core";
 type BlueskyListResponse = ApiJsonResponse<"/bluesky", "get", 200>;
 export type BlueskyCreateRequest = ApiSchema<"BlueskyCreateRequest">;
 type BlueskyCreateResponse = ApiJsonResponse<"/bluesky", "post", 200 | 201>;
+type BlueskyUpdateRequest = ApiSchema<"BlueskyUpdateRequest">;
+type BlueskyUpdateResponse = ApiJsonResponse<"/bluesky/{id}", "put", 200>;
 type BlueskyDeleteResponse = ApiJsonResponse<"/bluesky/{id}", "delete", 200>;
 export type BlueskyProfileResponse = ApiJsonResponse<"/bluesky/profile", "get", 200>;
 
@@ -16,6 +18,9 @@ export const blueskyApi = {
 
     createBlueskyAccount: (data: BlueskyCreateRequest) =>
         apiRequest<BlueskyCreateResponse>(API_ENDPOINTS.BLUESKY, { method: "POST", body: data }),
+
+    updateBlueskyAccount: (id: string | number, data: BlueskyUpdateRequest) =>
+        apiRequest<BlueskyUpdateResponse>(`${API_ENDPOINTS.BLUESKY}/${id}`, { method: "PUT", body: data }),
 
     deleteBlueskyAccount: (id: string | number) =>
         apiRequest<BlueskyDeleteResponse>(`${API_ENDPOINTS.BLUESKY}/${id}`, { method: "DELETE" }),

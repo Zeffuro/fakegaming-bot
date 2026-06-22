@@ -1,6 +1,7 @@
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {RiotApi, LolApi, TftApi} from 'twisted';
 import {LeagueConfig} from "@zeffuro/fakegaming-common/models";
+import {formatRiotId, parseRiotId} from '@zeffuro/fakegaming-common/utils';
 import {
     AccountAPIRegionGroups,
     Regions,
@@ -232,17 +233,21 @@ export async function resolveLeagueIdentity(options: {
 
     if (!summoner && !region && userConfig && userConfig.league) {
         const leagueConfig: LeagueConfig = userConfig.league;
-        summoner = leagueConfig.summonerName;
+        summoner = formatRiotId(
+            leagueConfig.riotIdGameName,
+            leagueConfig.riotIdTagLine,
+            leagueConfig.summonerName
+        );
         region = leagueConfig.region as Regions;
         if (leagueConfig.puuid) {
             puuid = leagueConfig.puuid;
         }
 
-        if (summoner.includes('#')) {
-            const [gameName, tagLine] = summoner.split('#');
+        const riotId = parseRiotId(summoner);
+        if (riotId?.tagLine) {
             try {
                 const accountRegion = safeAccountRegionGroup(region);
-                const refreshedPuuid = await getPUUIDByRiotId(gameName, tagLine, accountRegion, { bypassCache: true });
+                const refreshedPuuid = await getPUUIDByRiotId(riotId.gameName, riotId.tagLine, accountRegion, { bypassCache: true });
                 if (refreshedPuuid && refreshedPuuid !== puuid) {
                     puuid = refreshedPuuid;
                     if (typeof leagueConfig.update === 'function') {
@@ -260,14 +265,10 @@ export async function resolveLeagueIdentity(options: {
     }
 
     if (!puuid) {
-        let gameName = summoner;
-        let tagLine = '';
-        if (summoner.includes('#')) {
-            [gameName, tagLine] = summoner.split('#');
-        }
-        if (tagLine) {
+        const riotId = parseRiotId(summoner);
+        if (riotId?.tagLine) {
             const accountRegion = safeAccountRegionGroup(region);
-            puuid = await getPUUIDByRiotId(gameName, tagLine, accountRegion);
+            puuid = await getPUUIDByRiotId(riotId.gameName, riotId.tagLine, accountRegion);
         } else {
             // We require Riot ID with tagline for unlinked users, since name-only lookup is not supported in our Twisted version
             throw new Error('Riot ID must include a tagline (e.g., Name#EUW) or link your account first');

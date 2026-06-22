@@ -34,4 +34,8 @@ export class BlueskyManager extends BaseManager<BlueskyPostConfig> {
     async removeAccount(blueskyHandle: string, discordChannelId: string, guildId: string) {
         await this.remove({ blueskyHandle, discordChannelId, guildId });
     }
+
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<BlueskyPostConfig> as never, { id } as never);
+    }
 }

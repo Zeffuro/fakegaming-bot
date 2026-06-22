@@ -169,6 +169,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *       - bearerAuth: []
  *     description: |
  *       Creates or updates a Bluesky post configuration for a guild+handle pair.
+ *       Accepts notification controls including customMessage, cooldownMinutes, quietHoursStart, quietHoursEnd, and paused.
  *       Read-only fields: lastPostUri, lastPostCid, lastNotifiedAt.
  *     requestBody:
  *       required: true

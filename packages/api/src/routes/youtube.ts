@@ -332,6 +332,7 @@ router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
  *       - cooldownMinutes (integer >= 0 or null, optional)
  *       - quietHoursStart (HH:mm or null, optional)
  *       - quietHoursEnd (HH:mm or null, optional)
+ *       - paused (boolean, optional)
  *
  *       Read-only fields (ignored if provided): lastVideoId, lastNotifiedAt.
  *     requestBody:
@@ -485,6 +486,7 @@ router.put('/', jwtAuth, validateBody(youtubeChannelRequestSchema), requireGuild
  *       - cooldownMinutes (integer >= 0 or null)
  *       - quietHoursStart (HH:mm or null)
  *       - quietHoursEnd (HH:mm or null)
+ *       - paused (boolean)
  *
  *       Read-only fields: lastVideoId, lastNotifiedAt.
  *     parameters:

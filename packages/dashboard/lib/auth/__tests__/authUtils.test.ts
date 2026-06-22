@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
-import { withCacheMocks, mockCacheGet, setupCacheMocks, signTestJwt, expectUnauthorized, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
+import { withCacheMocks, mockCacheGet, mockCacheSet, setupCacheMocks, signTestJwt, expectUnauthorized, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
 
 // Preserve original env and module state across tests
 const OLD_ENV = { ...process.env };
@@ -19,12 +19,17 @@ describe('authUtils', () => {
     beforeEach(() => {
         process.env = { ...OLD_ENV };
         process.env.JWT_SECRET = 'supersecret';
+        process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
+        process.env.JWT_ISSUER = 'fakegaming';
+        process.env.DISCORD_CLIENT_ID = 'discord-client';
+        process.env.DISCORD_CLIENT_SECRET = 'discord-secret';
         delete process.env.DASHBOARD_ADMINS;
     });
 
     afterEach(() => {
         process.env = { ...OLD_ENV };
         vi.restoreAllMocks();
+        vi.unstubAllGlobals();
     });
 
     describe('authenticateUser', () => {
@@ -88,12 +93,66 @@ describe('authUtils', () => {
             expect(result.isAdmin).toBe(false);
         });
 
-        it('returns 503 when guilds not cached (redis unavailable)', async () => {
+        it('returns 503 when guilds are not cached and no request can refresh them', async () => {
             mockCacheGet.mockResolvedValueOnce(null);
             const { checkGuildAccess } = await importAuthUtils();
             const result = await checkGuildAccess({ discordId: 'user2' }, 'guild1');
             expect(result.hasAccess).toBe(false);
             expectServiceUnavailable(result as any);
+        });
+
+        it('rehydrates guild access from Discord when the cache is missing', async () => {
+            mockCacheGet.mockImplementation(async (key: string) => {
+                if (key === 'user:user2:guilds') return null;
+                if (key === 'user:user2:access_token') return null;
+                if (key.startsWith('dashboard:refresh-session:')) {
+                    return {
+                        version: 1,
+                        user: { id: 'user2', username: 'User Two' },
+                        createdAt: Date.now(),
+                        updatedAt: Date.now(),
+                        absoluteExpiresAt: Date.now() + 60_000,
+                        discordRefreshToken: 'discord-refresh-token'
+                    };
+                }
+                return null;
+            });
+            const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+                const url = String(input);
+                if (url === 'https://discord.com/api/oauth2/token') {
+                    expect(init?.method).toBe('POST');
+                    return new Response(JSON.stringify({ access_token: 'fresh-discord-token', expires_in: 3600 }), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+                if (url === 'https://discord.com/api/users/@me/guilds') {
+                    expect((init?.headers as Record<string, string>).Authorization).toBe('Bearer fresh-discord-token');
+                    return new Response(JSON.stringify([
+                        { id: 'guild-fresh', owner: true, permissions: '0' }
+                    ]), {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                }
+                throw new Error(`Unexpected fetch: ${url}`);
+            });
+            vi.stubGlobal('fetch', fetchSpy);
+
+            const req = {
+                cookies: {
+                    get: (name: string) => name === 'refresh_session' ? { value: 'refresh-token' } : undefined
+                }
+            } as unknown as NextRequest;
+
+            const { checkGuildAccess } = await importAuthUtils();
+            const result = await checkGuildAccess({ discordId: 'user2' }, 'guild-fresh', req);
+
+            expect(result).toEqual({ hasAccess: true, isAdmin: false });
+            expect(mockCacheSet).toHaveBeenCalledWith('user:user2:access_token', 'fresh-discord-token', 3_600_000);
+            expect(mockCacheSet).toHaveBeenCalledWith('user:user2:guilds', [
+                { id: 'guild-fresh', owner: true, permissions: '0' }
+            ], 3_600_000);
         });
     });
 });

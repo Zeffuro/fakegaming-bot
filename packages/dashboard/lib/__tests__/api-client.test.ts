@@ -30,6 +30,15 @@ describe('api-client', () => {
         expect(result).toEqual(response);
     });
 
+    it('updateTwitchStream performs PUT with body', async () => {
+        const payload = { paused: true };
+        const response = { id: 123, paused: true };
+        mockOkJsonOnce(response);
+        const result = await api.updateTwitchStream('123', payload);
+        expectFetchCalledWith(`${API_ENDPOINTS.TWITCH}/123`, { method: 'PUT', body: JSON.stringify(payload) });
+        expect(result).toEqual(response);
+    });
+
     it('getYouTubeConfigs performs GET', async () => {
         const payload = { items: [] };
         mockOkJsonOnce(payload);
@@ -53,6 +62,21 @@ describe('api-client', () => {
         const result = await api.deleteYouTubeChannel('abc');
         expectFetchCalledWith(`${API_ENDPOINTS.YOUTUBE}/abc`, { method: 'DELETE' });
         expect(result).toEqual(response);
+    });
+
+    it('update social provider configs performs PUT with body', async () => {
+        const payload = { paused: false };
+        mockOkJsonOnce({ id: 1, paused: false });
+        await api.updateYouTubeChannel('1', payload);
+        expectFetchCalledWith(`${API_ENDPOINTS.YOUTUBE}/1`, { method: 'PUT', body: JSON.stringify(payload) });
+
+        mockOkJsonOnce({ id: 2, paused: false });
+        await api.updateTikTokStream('2', payload);
+        expectFetchCalledWith(`${API_ENDPOINTS.TIKTOK}/2`, { method: 'PUT', body: JSON.stringify(payload) });
+
+        mockOkJsonOnce({ id: 3, paused: false });
+        await api.updateBlueskyAccount('3', payload);
+        expectFetchCalledWith(`${API_ENDPOINTS.BLUESKY}/3`, { method: 'PUT', body: JSON.stringify(payload) });
     });
 
     it('getSupportedGames performs GET and returns string[]', async () => {

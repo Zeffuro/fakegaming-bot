@@ -13,6 +13,7 @@ type YouTubeDashboardConfig = YouTubeConfig & {
   youtubeChannelUrl?: string | null;
 };
 type YouTubeChannelMetadata = Awaited<ReturnType<typeof api.getYouTubeChannelMetadata>>;
+type YouTubeUpdateRequest = Parameters<typeof api.updateYouTubeChannel>[1];
 
 interface UseYouTubeConfigsOptions {
   enabled?: boolean;
@@ -77,6 +78,10 @@ export function useYouTubeConfigs(guildId: string | string[], options: UseYouTub
         guildId: resolvedGuildId,
         ...buildNotificationTimingPayload(config),
       } as unknown as YouTubeCreateRequest);
+    },
+    setPaused: async (config, paused) => {
+      const body = { paused } satisfies YouTubeUpdateRequest;
+      await api.updateYouTubeChannel(config.id, body);
     },
     deleteConfig: async (config) => {
       await api.deleteYouTubeChannel(config.id.toString());

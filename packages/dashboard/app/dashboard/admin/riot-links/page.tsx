@@ -29,14 +29,39 @@ import { Delete, Edit, Refresh } from "@mui/icons-material";
 interface EditForm {
     discordId: string;
     summonerName: string;
+    riotIdGameName: string;
+    riotIdTagLine: string;
     region: string;
     puuid: string;
 }
 
+function parseRiotId(value: string): Pick<EditForm, "riotIdGameName" | "riotIdTagLine"> {
+    const trimmed = value.trim();
+    const separatorIndex = trimmed.indexOf("#");
+    if (separatorIndex === -1) {
+        return { riotIdGameName: trimmed, riotIdTagLine: "" };
+    }
+
+    return {
+        riotIdGameName: trimmed.slice(0, separatorIndex).trim(),
+        riotIdTagLine: trimmed.slice(separatorIndex + 1).trim(),
+    };
+}
+
+function displayRiotId(link: Pick<RiotLinkEntry, "summonerName" | "riotIdGameName" | "riotIdTagLine">): string {
+    const gameName = link.riotIdGameName?.trim();
+    const tagLine = link.riotIdTagLine?.trim();
+    if (gameName && tagLine) return `${gameName}#${tagLine}`;
+    return link.summonerName;
+}
+
 function toForm(link: RiotLinkEntry): EditForm {
+    const parsed = parseRiotId(link.summonerName);
     return {
         discordId: link.discordId,
         summonerName: link.summonerName,
+        riotIdGameName: link.riotIdGameName ?? parsed.riotIdGameName,
+        riotIdTagLine: link.riotIdTagLine ?? parsed.riotIdTagLine,
         region: link.region,
         puuid: link.puuid,
     };
@@ -77,7 +102,9 @@ export default function AdminRiotLinksPage() {
         if (!needle) return links;
         return links.filter(link =>
             link.discordId.toLowerCase().includes(needle)
-            || link.summonerName.toLowerCase().includes(needle)
+            || displayRiotId(link).toLowerCase().includes(needle)
+            || (link.riotIdGameName?.toLowerCase().includes(needle) ?? false)
+            || (link.riotIdTagLine?.toLowerCase().includes(needle) ?? false)
             || link.region.toLowerCase().includes(needle)
             || link.puuid.toLowerCase().includes(needle)
         );
@@ -88,8 +115,15 @@ export default function AdminRiotLinksPage() {
         setSaving(true);
         setError(null);
         try {
+            const riotIdGameName = editing.riotIdGameName.trim() || null;
+            const riotIdTagLine = editing.riotIdTagLine.trim() || null;
+            const summonerName = riotIdGameName && riotIdTagLine
+                ? `${riotIdGameName}#${riotIdTagLine}`
+                : editing.summonerName.trim();
             const updated = await api.updateRiotLink(editing.discordId, {
-                summonerName: editing.summonerName.trim(),
+                summonerName,
+                riotIdGameName,
+                riotIdTagLine,
                 region: editing.region.trim(),
                 puuid: editing.puuid.trim(),
             });
@@ -107,7 +141,7 @@ export default function AdminRiotLinksPage() {
     };
 
     const deleteLink = async (link: RiotLinkEntry) => {
-        const ok = window.confirm(`Remove Riot link for ${link.summonerName} (${link.discordId})?`);
+        const ok = window.confirm(`Remove Riot link for ${displayRiotId(link)} (${link.discordId})?`);
         if (!ok) return;
         setSaving(true);
         setError(null);
@@ -120,6 +154,11 @@ export default function AdminRiotLinksPage() {
             setSaving(false);
         }
     };
+
+    const canSaveEdit = !!editing
+        && !!(editing.summonerName.trim() || (editing.riotIdGameName.trim() && editing.riotIdTagLine.trim()))
+        && !!editing.region.trim()
+        && !!editing.puuid.trim();
 
     return (
         <AdminPage title="Admin Riot Links" trail={[{ label: "Riot Links", href: "/dashboard/admin/riot-links" }]}>
@@ -165,7 +204,7 @@ export default function AdminRiotLinksPage() {
                                 {filteredLinks.map(link => (
                                     <TableRow key={link.discordId} hover>
                                         <TableCell sx={{ fontFamily: "monospace" }}>{link.discordId}</TableCell>
-                                        <TableCell>{link.summonerName}</TableCell>
+                                        <TableCell>{displayRiotId(link)}</TableCell>
                                         <TableCell>{link.region}</TableCell>
                                         <TableCell sx={{ fontFamily: "monospace" }}>
                                             <Tooltip title={link.puuid}>
@@ -222,6 +261,20 @@ export default function AdminRiotLinksPage() {
                                 onChange={(event) => setEditing({ ...editing, summonerName: event.target.value })}
                                 fullWidth
                             />
+                            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                                <TextField
+                                    label="Game name"
+                                    value={editing.riotIdGameName}
+                                    onChange={(event) => setEditing({ ...editing, riotIdGameName: event.target.value })}
+                                    fullWidth
+                                />
+                                <TextField
+                                    label="Tag line"
+                                    value={editing.riotIdTagLine}
+                                    onChange={(event) => setEditing({ ...editing, riotIdTagLine: event.target.value })}
+                                    fullWidth
+                                />
+                            </Stack>
                             <TextField
                                 label="Region"
                                 value={editing.region}
@@ -239,7 +292,7 @@ export default function AdminRiotLinksPage() {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
-                    <Button onClick={() => void saveEdit()} variant="contained" disabled={saving || !editing?.summonerName.trim() || !editing?.region.trim() || !editing?.puuid.trim()}>
+                    <Button onClick={() => void saveEdit()} variant="contained" disabled={saving || !canSaveEdit}>
                         Save
                     </Button>
                 </DialogActions>

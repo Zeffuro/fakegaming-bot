@@ -51,6 +51,7 @@ describe('AnimeManager', () => {
         expect(subscriptions).toHaveLength(1);
         expect(subscriptions[0].targetType).toBe('dm');
         expect(subscriptions[0].reminderMinutes).toBe(45);
+        expect(Boolean(subscriptions[0].paused)).toBe(false);
     });
 
     it('creates, updates, queries, and removes channel subscriptions', async () => {
@@ -79,6 +80,23 @@ describe('AnimeManager', () => {
         expect(subscriptions[0].targetType).toBe('channel');
         expect(subscriptions[0].reminderMinutes).toBe(10);
         expect(deleted).toBe(1);
+    });
+
+    it('pauses and resumes subscriptions', async () => {
+        await animeManager.subscriptions.subscribeUser({
+            anilistId: 4,
+            userId: 'user-3',
+            reminderMinutes: 30,
+        });
+        const [subscription] = await animeManager.subscriptions.getUserSubscriptions('user-3');
+
+        await animeManager.subscriptions.setPaused(subscription.id!, true);
+        const paused = await animeManager.subscriptions.findByPkPlain(subscription.id!);
+        await animeManager.subscriptions.setPaused(subscription.id!, false);
+        const resumed = await animeManager.subscriptions.findByPkPlain(subscription.id!);
+
+        expect(Boolean(paused.paused)).toBe(true);
+        expect(Boolean(resumed.paused)).toBe(false);
     });
 
     it('removes user subscriptions and upserts episode records', async () => {

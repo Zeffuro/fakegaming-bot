@@ -18,7 +18,9 @@ describe('riot-links command', () => {
         const getLinkedAccountsPlain = vi.fn().mockResolvedValue([
             {
                 discordId: 'user-1',
-                summonerName: 'Player#EUW',
+                summonerName: 'LegacyPlayer',
+                riotIdGameName: 'Player',
+                riotIdTagLine: 'EUW',
                 region: 'euw1',
                 puuid: 'puuid-1',
             },
@@ -45,7 +47,9 @@ describe('riot-links command', () => {
 
         const getLinkedAccountPlain = vi.fn().mockResolvedValue({
             discordId: 'target-user',
-            summonerName: 'Target#NA1',
+            summonerName: 'LegacyTarget',
+            riotIdGameName: 'Target',
+            riotIdTagLine: 'NA1',
             region: 'na1',
             puuid: '1234567890abcdef1234567890abcdef',
         });
@@ -72,7 +76,9 @@ describe('riot-links command', () => {
 
         const getLinkedAccountPlain = vi.fn().mockResolvedValue({
             discordId: 'target-user',
-            summonerName: 'Target#NA1',
+            summonerName: 'LegacyTarget',
+            riotIdGameName: 'Target',
+            riotIdTagLine: 'NA1',
             region: 'na1',
             puuid: 'puuid-1',
         });

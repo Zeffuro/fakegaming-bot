@@ -26,6 +26,7 @@ interface PatchSubscriptionPlain {
     channelId: string;
     guildId: string;
     lastAnnouncedAt?: number | string | Date | null;
+    paused?: boolean | null;
 }
 
 /**
@@ -78,7 +79,8 @@ async function processPatchNotesAnnouncements(log = getLogger({ name: 'api:jobs:
     let errors = 0;
 
     for (const note of notes) {
-        const subs = await cm.patchSubscriptionManager.getSubscriptionsForGame(note.game) as unknown as PatchSubscriptionPlain[];
+        const subs = (await cm.patchSubscriptionManager.getSubscriptionsForGame(note.game) as unknown as PatchSubscriptionPlain[])
+            .filter((sub) => !sub.paused);
         const noteTime = toMillis(note.publishedAt);
         for (const sub of subs) {
             const subTime = toMillis(sub.lastAnnouncedAt ?? null);

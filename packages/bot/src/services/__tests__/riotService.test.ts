@@ -260,6 +260,30 @@ describe('riotService helpers', () => {
         expect(update).toHaveBeenCalledWith({ puuid: 'fresh-puuid' });
     });
 
+    it('prefers stored split Riot ID fields over the legacy display field', async () => {
+        mockRiotApi.Account.getByRiotId.mockResolvedValueOnce({ response: { puuid: 'split-puuid' } });
+        createMockConfigManager({
+            userManager: {
+                getUserWithLeague: vi.fn().mockResolvedValue(createMockUserWithLeague({
+                    league: {
+                        summonerName: 'LegacyName',
+                        riotIdGameName: 'SplitName',
+                        riotIdTagLine: 'EUW',
+                        region: 'euw1',
+                        puuid: 'split-puuid',
+                    } as any
+                }))
+            }
+        });
+
+        await expect(resolveLeagueIdentity({ userId: 'discord-split' })).resolves.toEqual({
+            summoner: 'SplitName#EUW',
+            region: 'euw1',
+            puuid: 'split-puuid'
+        });
+        expect(mockRiotApi.Account.getByRiotId).toHaveBeenCalledWith('SplitName', 'EUW', expect.any(String));
+    });
+
     it('falls back to the stored linked PUUID when refresh fails', async () => {
         mockRiotApi.Account.getByRiotId.mockRejectedValueOnce(new Error('riot down'));
         createMockConfigManager({

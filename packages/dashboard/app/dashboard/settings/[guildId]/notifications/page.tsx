@@ -1,8 +1,8 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
-import { Box, Button } from "@mui/material";
-import { AlternateEmail, AutoStories, Cake, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { AlternateEmail, AutoStories, Cake, Download, LiveTv, NotificationsActive, SpeakerNotes, YouTube as YouTubeIcon } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -18,6 +18,8 @@ import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
+import { buildNotificationSetupReview, type NotificationSetupReview, type NotificationReviewGroup, type NotificationChannelLoad } from "@/lib/notificationSetupReview";
+import { buildNotificationSetupExport, buildNotificationSetupExportFilename } from "@/lib/notificationSetupExport";
 
 export default function GuildNotificationsHubPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
@@ -33,6 +35,35 @@ export default function GuildNotificationsHubPage() {
     const loading = guildsLoading || twitchApi.loading || youtubeApi.loading || patchApi.loading || tiktokApi.loading || blueskyApi.loading || birthdayApi.loading || animeApi.loading;
     const totalConfigured = twitchApi.configs.length + tiktokApi.configs.length + blueskyApi.configs.length + youtubeApi.configs.length + patchApi.configs.length + animeApi.configs.length + birthdayApi.birthdays.length;
     const encodedGuildId = encodeURIComponent(guildId as string);
+    const notificationRecords = useMemo(() => ({
+        twitch: asReviewRecords(twitchApi.configs),
+        youtube: asReviewRecords(youtubeApi.configs),
+        tiktok: asReviewRecords(tiktokApi.configs),
+        bluesky: asReviewRecords(blueskyApi.configs),
+        patchNotes: asReviewRecords(patchApi.configs),
+        anime: asReviewRecords(animeApi.configs),
+        birthdays: asReviewRecords(birthdayApi.birthdays),
+    }), [
+        twitchApi.configs,
+        youtubeApi.configs,
+        tiktokApi.configs,
+        blueskyApi.configs,
+        patchApi.configs,
+        animeApi.configs,
+        birthdayApi.birthdays,
+    ]);
+    const setupReview = useMemo(() => buildNotificationSetupReview({
+        ...notificationRecords,
+    }), [notificationRecords]);
+
+    const handleExportSetup = () => {
+        const exported = buildNotificationSetupExport({
+            guildId: guildId as string,
+            review: setupReview,
+            ...notificationRecords,
+        });
+        downloadJson(buildNotificationSetupExportFilename(guildId as string), exported);
+    };
 
     if (!guild && !guildsLoading) {
         return <GuildAccessError />;
@@ -117,14 +148,25 @@ export default function GuildNotificationsHubPage() {
                         secondaryAccent={dashboardAccents.anime}
                         stats={[{ label: "Configured Feeds", value: totalConfigured }]}
                         actions={(
-                            <Button
-                                component={Link}
-                                href={`/dashboard/settings/${encodedGuildId}`}
-                                variant="outlined"
-                                sx={ghostActionButtonSx(dashboardAccents.settings)}
-                            >
-                                Back To Settings
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<Download />}
+                                    onClick={handleExportSetup}
+                                    disabled={totalConfigured === 0}
+                                    sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                >
+                                    Export JSON
+                                </Button>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/settings/${encodedGuildId}`}
+                                    variant="outlined"
+                                    sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                >
+                                    Back To Settings
+                                </Button>
+                            </Stack>
                         )}
                     />
 
@@ -135,8 +177,117 @@ export default function GuildNotificationsHubPage() {
                             ))}
                         </Box>
                     </FeaturePanel>
+
+                    <SetupReviewPanel review={setupReview} />
                 </FeatureShell>
             )}
         </DashboardLayout>
     );
+}
+
+function SetupReviewPanel({ review }: { review: NotificationSetupReview }) {
+    const totalFindings = review.duplicateRoutes.length + review.multiChannelFeeds.length + review.busyChannels.length;
+
+    return (
+        <FeaturePanel accent={dashboardAccents.settings} sx={{ mt: 3 }}>
+            <Stack spacing={2}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
+                            Setup Review
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
+                            Duplicate routes, cross-channel feed overlap, and high-volume notification channels.
+                        </Typography>
+                    </Box>
+                    <Chip
+                        label={totalFindings === 0 ? "No findings" : `${totalFindings} ${totalFindings === 1 ? "finding" : "findings"}`}
+                        color={totalFindings === 0 ? "success" : "warning"}
+                        variant="outlined"
+                    />
+                </Box>
+
+                {totalFindings === 0 ? (
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
+                        No duplicate notification routes or crowded destination channels were detected.
+                    </Typography>
+                ) : (
+                    <Stack spacing={1.5}>
+                        <ReviewGroupSection title="Duplicate Routes" groups={review.duplicateRoutes} />
+                        <ReviewGroupSection title="Same Feed, Multiple Channels" groups={review.multiChannelFeeds} />
+                        <BusyChannelSection channels={review.busyChannels} />
+                    </Stack>
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function ReviewGroupSection({ title, groups }: { title: string; groups: NotificationReviewGroup[] }) {
+    if (groups.length === 0) return null;
+
+    return (
+        <Box>
+            <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
+                {title}
+            </Typography>
+            <Stack spacing={0.75}>
+                {groups.slice(0, 5).map((group) => (
+                    <ReviewLine
+                        key={group.key}
+                        primary={`${group.provider}: ${group.sourceLabel}`}
+                        secondary={`${group.records.length} routes across ${group.channelIds.length} ${group.channelIds.length === 1 ? "channel" : "channels"}: ${group.channelIds.join(", ")}`}
+                    />
+                ))}
+            </Stack>
+        </Box>
+    );
+}
+
+function BusyChannelSection({ channels }: { channels: NotificationChannelLoad[] }) {
+    if (channels.length === 0) return null;
+
+    return (
+        <Box>
+            <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
+                Busy Channels
+            </Typography>
+            <Stack spacing={0.75}>
+                {channels.slice(0, 5).map((channel) => (
+                    <ReviewLine
+                        key={channel.channelId}
+                        primary={channel.channelId}
+                        secondary={`${channel.count} feeds from ${channel.providers.join(", ")}`}
+                    />
+                ))}
+            </Stack>
+        </Box>
+    );
+}
+
+function ReviewLine({ primary, secondary }: { primary: string; secondary: string }) {
+    return (
+        <Box sx={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 1.5, px: 1.25, py: 1, bgcolor: "rgba(255,255,255,0.035)" }}>
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750 }}>
+                {primary}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.55)" }}>
+                {secondary}
+            </Typography>
+        </Box>
+    );
+}
+
+function asReviewRecords(value: unknown): Array<Record<string, unknown>> {
+    return Array.isArray(value) ? value as Array<Record<string, unknown>> : [];
+}
+
+function downloadJson(filename: string, value: unknown): void {
+    const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
 }

@@ -9,6 +9,7 @@ import {manageTwitchStreams as META} from '../commands.manifest.js';
 interface TwitchManagementRecord extends IntegrationManagementRecord {
     twitchUsername: string;
     isLive?: boolean | null;
+    paused?: boolean | null;
 }
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<TwitchManagementRecord>({
@@ -26,6 +27,9 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TwitchManag
     removeRecord: async (id) => {
         await getConfigManager().twitchManager.removeByPk(id);
     },
+    setPausedRecord: async (id, paused) => {
+        await getConfigManager().twitchManager.setPaused(id, paused);
+    },
     formatRecord: (record) => {
         const liveState = record.isLive ? ' live' : '';
         return `${inlineCode(String(record.id))} ${inlineCode(record.twitchUsername)} -> <#${record.discordChannelId}>${liveState}`;
@@ -35,6 +39,16 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TwitchManag
         action: 'twitch.delete',
         targetType: 'twitchConfig',
         metadata: (record) => ({channelId: record.discordChannelId, twitchUsername: record.twitchUsername}),
+    },
+    auditPause: {
+        pauseAction: 'twitch.pause',
+        resumeAction: 'twitch.resume',
+        targetType: 'twitchConfig',
+        metadata: (record, paused) => ({channelId: record.discordChannelId, twitchUsername: record.twitchUsername, paused}),
+    },
+    health: {
+        provider: 'twitch',
+        metadata: (record, paused) => ({twitchUsername: record.twitchUsername, paused}),
     },
 });
 

@@ -14,7 +14,7 @@ describe('LeagueManager', () => {
     it('creates a user row when linking a Riot account', async () => {
         const linked = await leagueManager.setLinkedAccount({
             discordId: 'discord-1',
-            summonerName: 'FirstSummoner',
+            summonerName: 'FirstSummoner#EUW',
             region: 'EUW',
             puuid: 'puuid-1',
         });
@@ -26,7 +26,9 @@ describe('LeagueManager', () => {
         expect(user).not.toBeNull();
         expect(plain).toMatchObject({
             discordId: 'discord-1',
-            summonerName: 'FirstSummoner',
+            summonerName: 'FirstSummoner#EUW',
+            riotIdGameName: 'FirstSummoner',
+            riotIdTagLine: 'EUW',
             region: 'EUW',
             puuid: 'puuid-1',
         });
@@ -43,14 +45,31 @@ describe('LeagueManager', () => {
         const updated = await leagueManager.setLinkedAccount({
             discordId: 'discord-2',
             summonerName: 'NewSummoner',
+            riotIdGameName: 'NewSummoner',
+            riotIdTagLine: 'NA1',
             region: 'NA',
             puuid: 'new-puuid',
         });
         const linked = await leagueManager.getLinkedAccount('discord-2');
 
         expect(updated.discordId).toBe('discord-2');
-        expect(linked?.summonerName).toBe('NewSummoner');
+        expect(linked?.summonerName).toBe('NewSummoner#NA1');
+        expect(linked?.riotIdGameName).toBe('NewSummoner');
+        expect(linked?.riotIdTagLine).toBe('NA1');
         expect(linked?.puuid).toBe('new-puuid');
+    });
+
+    it('keeps name-only legacy links compatible', async () => {
+        const linked = await leagueManager.setLinkedAccount({
+            discordId: 'discord-legacy',
+            summonerName: 'LegacySummoner',
+            region: 'NA',
+            puuid: 'legacy-puuid',
+        });
+
+        expect(linked.summonerName).toBe('LegacySummoner');
+        expect(linked.riotIdGameName).toBe('LegacySummoner');
+        expect(linked.riotIdTagLine).toBeNull();
     });
 
     it('lists and removes linked Riot accounts', async () => {

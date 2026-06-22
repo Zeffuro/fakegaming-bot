@@ -7,6 +7,8 @@ export interface RiotLinkEntry {
     id?: number;
     discordId: string;
     summonerName: string;
+    riotIdGameName?: string | null;
+    riotIdTagLine?: string | null;
     region: string;
     puuid: string;
     createdAt?: string;

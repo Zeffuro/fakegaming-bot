@@ -18,6 +18,7 @@ interface TwitchStreamConfigPlain {
     quietHoursEnd?: string | null;
     cooldownMinutes?: number | null;
     lastNotifiedAt?: string | number | Date | null;
+    paused?: boolean | null;
 }
 
 interface HelixUser { id: string; login: string; display_name?: string; profile_image_url?: string }
@@ -187,7 +188,7 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' })): 
     };
     const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
-    const streams = await manager.getAllStreams();
+    const streams = (await manager.getAllStreams()).filter(cfg => !cfg.paused);
     if (!streams.length) return { processed: 0, errors: 0 };
 
     const clientId = process.env.TWITCH_CLIENT_ID ?? '';

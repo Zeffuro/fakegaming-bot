@@ -27,6 +27,7 @@ export default function GuildPatchNotesPage() {
       channelNameLabel="Game"
       channelNamePlaceholder="League of Legends"
       showCustomMessage={false}
+      showNotificationControls={false}
       itemSingularLabel="Game Subscription"
       itemPluralLabel="Game Subscriptions"
       itemNameOptions={games}

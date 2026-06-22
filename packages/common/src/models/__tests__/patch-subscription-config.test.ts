@@ -18,6 +18,7 @@ describe('PatchSubscriptionConfig Model', () => {
     expect(subscription.channelId).toBe('channel-123');
     expect(subscription.guildId).toBe('guild-456');
     expect(subscription.lastAnnouncedAt).toBeUndefined();
+    expect(subscription.paused).toBe(false);
   });
 
   it('should create a patch subscription with lastAnnouncedAt', async () => {
@@ -113,6 +114,22 @@ describe('PatchSubscriptionConfig Model', () => {
 
     const updated = await PatchSubscriptionConfig.findByPk(subscription.id);
     expect(updated?.lastAnnouncedAt).toBe(newTimestamp);
+  });
+
+  it('should pause and resume a subscription', async () => {
+    const subscription = await PatchSubscriptionConfig.create({
+      game: 'league',
+      channelId: 'channel-pause',
+      guildId: 'guild-pause',
+    });
+
+    await configManager.patchSubscriptionManager.setPaused(subscription.id, true);
+    const paused = await PatchSubscriptionConfig.findByPk(subscription.id);
+    await configManager.patchSubscriptionManager.setPaused(subscription.id, false);
+    const resumed = await PatchSubscriptionConfig.findByPk(subscription.id);
+
+    expect(paused?.paused).toBe(true);
+    expect(resumed?.paused).toBe(false);
   });
 
   it('should delete a subscription', async () => {

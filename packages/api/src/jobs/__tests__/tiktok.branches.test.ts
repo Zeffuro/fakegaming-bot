@@ -61,6 +61,23 @@ describe('tiktok job branches', () => {
     });
     afterEach(() => { vi.clearAllMocks(); });
 
+    it('skips paused configs', async () => {
+        const { TikTokLiveConnection } = await import('tiktok-live-connector');
+        (TikTokLiveConnection as any).mockClear();
+        hoisted.getAllStreams.mockResolvedValue([makeCfg({ paused: true })]);
+
+        const q = makeQueue();
+        await registerTikTokJobs(q);
+        const h = q.handlers.get('tiktok:poll')!;
+        const done = vi.fn();
+        await h({ data: {}, done });
+
+        expect(done).toHaveBeenCalled();
+        expect(TikTokLiveConnection).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.upsert).not.toHaveBeenCalled();
+    });
+
     it('suppresses when already notified', async () => {
         hoisted.getAllStreams.mockResolvedValue([makeCfg()]);
         hoisted.notificationsHas.mockResolvedValue(true);

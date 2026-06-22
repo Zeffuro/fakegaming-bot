@@ -38,5 +38,9 @@ export class TikTokManager extends BaseManager<TikTokStreamConfig> {
     async removeStream(tiktokUsername: string, discordChannelId: string, guildId: string) {
         await this.remove({ tiktokUsername, discordChannelId, guildId });
     }
+
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<TikTokStreamConfig> as never, { id } as never);
+    }
 }
 

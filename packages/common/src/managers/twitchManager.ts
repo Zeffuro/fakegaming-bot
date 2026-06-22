@@ -38,4 +38,8 @@ export class TwitchManager extends BaseManager<TwitchStreamConfig> {
     async removeStream(twitchUsername: string, discordChannelId: string, guildId: string) {
         await this.remove({ twitchUsername, discordChannelId, guildId });
     }
+
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<TwitchStreamConfig> as never, { id } as never);
+    }
 }

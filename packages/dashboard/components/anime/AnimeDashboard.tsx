@@ -118,6 +118,9 @@ export function AnimeDashboard() {
               personalSubs={anime.personalSubs}
               saving={anime.saving}
               getChannelName={getChannelName}
+              onTogglePaused={anime.togglePausedSubscription}
+              onSetServerPaused={anime.setServerSubscriptionsPaused}
+              onSetPersonalPaused={anime.setPersonalSubscriptionsPaused}
               onDelete={anime.deleteSubscription}
             />
           </Stack>

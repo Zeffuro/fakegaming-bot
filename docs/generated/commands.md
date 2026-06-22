@@ -2,13 +2,13 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 48 commands; 44 slash; 2 user context; 2 message context.
+Total: 49 commands; 45 slash; 2 user context; 2 message context.
 
 ## Anime
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/anime` | Search anime, subscribe to releases, and view upcoming episodes | All users |
+| Slash | `/anime` | Search anime, manage subscriptions, and view upcoming episodes | All users |
 | Slash | `/manga` | Search manga, manhwa, webtoons, and light novels on AniList | All users |
 
 ## Birthdays
@@ -26,7 +26,7 @@ Total: 48 commands; 44 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/add-bluesky-account` | Add a Bluesky account for post notifications | Administrator |
-| Slash | `/manage-bluesky-accounts` | List or remove Bluesky post notifications | Administrator |
+| Slash | `/manage-bluesky-accounts` | List, test, pause, resume, or remove Bluesky post notifications | Administrator |
 
 ## General
 
@@ -57,6 +57,7 @@ Total: 48 commands; 44 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/get-patchnotes` | Get the latest patch notes for a game | All users |
+| Slash | `/manage-patchnotes` | List, test, pause, resume, or remove patch note subscriptions | All users |
 | Slash | `/patchnotes-history` | Show stored patch note history for a game | All users |
 | Slash | `/subscribe-patchnotes` | Subscribe a channel to patch notes for a game | All users |
 
@@ -89,14 +90,14 @@ Total: 48 commands; 44 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/add-tiktok-stream` | Add a TikTok account for live notifications | Administrator |
-| Slash | `/manage-tiktok-streams` | List or remove TikTok live notifications | Administrator |
+| Slash | `/manage-tiktok-streams` | List, test, pause, resume, or remove TikTok live notifications | Administrator |
 
 ## Twitch
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/add-twitch-stream` | Add a Twitch stream for notifications | Administrator |
-| Slash | `/manage-twitch-streams` | List or remove Twitch stream notifications | Administrator |
+| Slash | `/manage-twitch-streams` | List, test, pause, resume, or remove Twitch stream notifications | Administrator |
 | Slash | `/stream-status` | Check whether a Twitch channel is live | All users |
 
 ## Youtube
@@ -104,5 +105,5 @@ Total: 48 commands; 44 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/add-youtube-channel` | Add a Youtube Channel for new video notifications | Administrator |
-| Slash | `/manage-youtube-channels` | List or remove YouTube video notifications | Administrator |
+| Slash | `/manage-youtube-channels` | List, test, pause, resume, or remove YouTube video notifications | Administrator |
 | Slash | `/youtube-latest` | Show the latest video from a YouTube channel ID | All users |

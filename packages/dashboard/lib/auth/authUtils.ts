@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import type { MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { isGuildAdmin as commonIsGuildAdmin, defaultCacheManager, CACHE_KEYS, verifyJwt } from "@zeffuro/fakegaming-common";
 import { JWT_SECRET, JWT_AUDIENCE, JWT_ISSUER } from "@/lib/env";
+import { getUserGuilds } from "@/lib/auth/discordGuildCache";
 
 const DASHBOARD_ADMINS = (process.env.DASHBOARD_ADMINS || "").split(",").map(id => id.trim()).filter(Boolean);
 
@@ -50,12 +51,31 @@ export function isDashboardAdmin(discordId: string): boolean {
 /**
  * Check if user has access to a specific guild
  */
-export async function checkGuildAccess(user: AuthenticatedUser, guildId: string): Promise<GuildAccessResult> {
+export async function checkGuildAccess(user: AuthenticatedUser, guildId: string, req?: NextRequest): Promise<GuildAccessResult> {
     if (isDashboardAdmin(user.discordId)) {
         return { hasAccess: true, isAdmin: true };
     }
 
-    const guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(user.discordId));
+    let guilds: MinimalGuildData[] | null = null;
+    try {
+        guilds = await defaultCacheManager.get<MinimalGuildData[]>(CACHE_KEYS.userGuilds(user.discordId));
+    } catch {
+        guilds = null;
+    }
+
+    if (!guilds && req) {
+        try {
+            guilds = await getUserGuilds(req, user.discordId, true);
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to refresh guild access";
+            return {
+                hasAccess: false,
+                isAdmin: false,
+                error: message,
+                statusCode: message === "Discord authorization expired" ? 401 : 503
+            };
+        }
+    }
 
     if (!guilds) {
         return {

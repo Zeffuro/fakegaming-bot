@@ -425,7 +425,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/add-tiktok-stream`|Slash|Add a TikTok account for live notifications|Administrator|
 |`/add-twitch-stream`|Slash|Add a Twitch stream for notifications|Administrator|
 |`/add-youtube-channel`|Slash|Add a Youtube Channel for new video notifications|Administrator|
-|`/anime`|Slash|Search anime, subscribe to releases, and view upcoming episodes|All users|
+|`/anime`|Slash|Search anime, manage subscriptions, and view upcoming episodes|All users|
 |`/birthday`|Slash|Show your or another user's birthday|All users|
 |`/birthdays`|Slash|Show upcoming birthdays in this server|All users|
 |`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
@@ -436,10 +436,11 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/league-history`|Slash|Get recent League of Legends match history by Riot ID or linked user|All users|
 |`/league-stats`|Slash|Get League of Legends stats by Riot ID or linked user|All users|
 |`/link-riot`|Slash|Link your Discord account or another user to a Riot account|All users|
-|`/manage-bluesky-accounts`|Slash|List or remove Bluesky post notifications|Administrator|
-|`/manage-tiktok-streams`|Slash|List or remove TikTok live notifications|Administrator|
-|`/manage-twitch-streams`|Slash|List or remove Twitch stream notifications|Administrator|
-|`/manage-youtube-channels`|Slash|List or remove YouTube video notifications|Administrator|
+|`/manage-bluesky-accounts`|Slash|List, test, pause, resume, or remove Bluesky post notifications|Administrator|
+|`/manage-patchnotes`|Slash|List, test, pause, resume, or remove patch note subscriptions|All users|
+|`/manage-tiktok-streams`|Slash|List, test, pause, resume, or remove TikTok live notifications|Administrator|
+|`/manage-twitch-streams`|Slash|List, test, pause, resume, or remove Twitch stream notifications|Administrator|
+|`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|

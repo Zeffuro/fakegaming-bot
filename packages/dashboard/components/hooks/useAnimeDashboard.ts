@@ -36,6 +36,9 @@ export interface UseAnimeDashboardResult {
   seasonLoading: boolean;
   fetchSubscriptions: () => Promise<void>;
   addSubscription: (anime?: AnimeSearchResult) => Promise<void>;
+  togglePausedSubscription: (config: AnimeSubscriptionDashboardConfig) => Promise<void>;
+  setServerSubscriptionsPaused: (paused: boolean) => Promise<void>;
+  setPersonalSubscriptionsPaused: (paused: boolean) => Promise<void>;
   deleteSubscription: (config: AnimeSubscriptionDashboardConfig) => Promise<void>;
 }
 
@@ -227,6 +230,46 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     }
   }, [fetchSubscriptions]);
 
+  const togglePausedSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
+    if (!config.id) return;
+    try {
+      setSaving(true);
+      await api.setAnimeSubscriptionPaused(config.id, !config.paused);
+      await fetchSubscriptions();
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to update anime subscription status"));
+    } finally {
+      setSaving(false);
+    }
+  }, [fetchSubscriptions]);
+
+  const setSubscriptionsPaused = useCallback(async (
+    subscriptions: AnimeSubscriptionDashboardConfig[],
+    paused: boolean,
+    failureMessage: string,
+  ) => {
+    const targets = subscriptions.filter((config) => config.id && Boolean(config.paused) !== paused);
+    if (targets.length === 0) return;
+
+    try {
+      setSaving(true);
+      await Promise.all(targets.map((config) => api.setAnimeSubscriptionPaused(config.id!, paused)));
+      await fetchSubscriptions();
+    } catch (err: unknown) {
+      setError(errorMessage(err, failureMessage));
+    } finally {
+      setSaving(false);
+    }
+  }, [fetchSubscriptions]);
+
+  const setServerSubscriptionsPaused = useCallback(async (paused: boolean) => {
+    await setSubscriptionsPaused(serverSubs, paused, "Failed to update server anime subscriptions");
+  }, [serverSubs, setSubscriptionsPaused]);
+
+  const setPersonalSubscriptionsPaused = useCallback(async (paused: boolean) => {
+    await setSubscriptionsPaused(personalSubs, paused, "Failed to update personal anime subscriptions");
+  }, [personalSubs, setSubscriptionsPaused]);
+
   return useMemo(() => ({
     serverSubs,
     personalSubs,
@@ -260,6 +303,9 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     seasonLoading,
     fetchSubscriptions,
     addSubscription,
+    togglePausedSubscription,
+    setServerSubscriptionsPaused,
+    setPersonalSubscriptionsPaused,
     deleteSubscription,
   }), [
     serverSubs,
@@ -291,6 +337,9 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     seasonLoading,
     fetchSubscriptions,
     addSubscription,
+    togglePausedSubscription,
+    setServerSubscriptionsPaused,
+    setPersonalSubscriptionsPaused,
     deleteSubscription,
   ]);
 }

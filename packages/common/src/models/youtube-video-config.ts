@@ -1,4 +1,4 @@
-import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement, Unique} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey, AutoIncrement, Unique, Default} from 'sequelize-typescript';
 
 @Table
 export class YoutubeVideoConfig extends Model {
@@ -37,4 +37,8 @@ export class YoutubeVideoConfig extends Model {
     @Unique('unique_guild_youtube_channel')
     @Column(DataType.STRING)
     declare guildId: string;
+
+    @Default(false)
+    @Column(DataType.BOOLEAN)
+    declare paused: boolean;
 }

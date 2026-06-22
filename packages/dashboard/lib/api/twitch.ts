@@ -4,6 +4,8 @@ import { API_ENDPOINTS, apiRequest } from "./core";
 type TwitchListResponse = ApiJsonResponse<"/twitch", "get", 200>;
 type TwitchCreateRequest = ApiSchema<"TwitchCreateRequest">;
 type TwitchCreateResponse = ApiJsonResponse<"/twitch", "post", 200 | 201>;
+type TwitchUpdateRequest = ApiSchema<"TwitchUpdateRequest">;
+type TwitchUpdateResponse = ApiJsonResponse<"/twitch/{id}", "put", 200>;
 
 export const twitchApi = {
     getTwitchConfigs: (guildId?: string) =>
@@ -11,6 +13,9 @@ export const twitchApi = {
 
     createTwitchStream: (data: TwitchCreateRequest) =>
         apiRequest<TwitchCreateResponse>(API_ENDPOINTS.TWITCH, { method: "POST", body: data }),
+
+    updateTwitchStream: (id: string | number, data: TwitchUpdateRequest) =>
+        apiRequest<TwitchUpdateResponse>(`${API_ENDPOINTS.TWITCH}/${id}`, { method: "PUT", body: data }),
 
     deleteTwitchStream: (id: string) =>
         apiRequest<{ success: boolean }>(`${API_ENDPOINTS.TWITCH}/${id}`, { method: "DELETE" }),

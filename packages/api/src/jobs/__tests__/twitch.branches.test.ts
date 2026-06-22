@@ -33,6 +33,19 @@ describe('Twitch job branches', () => {
     });
     afterEach(() => { process.env = { ...ORIGINAL_ENV }; vi.restoreAllMocks(); });
 
+    it('skips paused configs before fetching Twitch credentials', async () => {
+        manager.twitchManager.getAllStreams.mockResolvedValueOnce([
+            { id: 't-paused', guildId: 'g', discordChannelId: 'chan', twitchUsername: 'streamer', isLive: false, paused: true },
+        ]);
+        mockFetch.mockReset();
+
+        const { done } = await runJobOnce('twitch:poll', registerTwitchJobs);
+
+        expect(done).toHaveBeenCalled();
+        expect(mockFetch).not.toHaveBeenCalled();
+        expect(upsert).not.toHaveBeenCalled();
+    });
+
     it('suppresses notification during quiet hours and cooldown, but updates live status', async () => {
         const cfg = { id: 't2', guildId: 'g', discordChannelId: 'chan', twitchUsername: 'streamer', isLive: false, quietHoursStart: '00:00', quietHoursEnd: '23:59', cooldownMinutes: 10, lastNotifiedAt: new Date().toISOString() } as any;
         manager.twitchManager.getAllStreams.mockResolvedValueOnce([cfg]);

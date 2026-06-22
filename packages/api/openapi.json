@@ -193,6 +193,60 @@
           "updatedAt"
         ]
       },
+      "AnimeSubscriptionConfig": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "anilistId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "guildId": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string"
+          },
+          "reminderMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastNotifiedEpisode": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastNotifiedAiringAt": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "paused",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "PatchNoteConfig": {
         "type": "object",
         "properties": {
@@ -264,6 +318,9 @@
             "type": "integer",
             "format": "int64"
           },
+          "paused": {
+            "type": "boolean"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -275,6 +332,7 @@
         },
         "required": [
           "id",
+          "paused",
           "createdAt",
           "updatedAt"
         ]
@@ -413,6 +471,9 @@
           "guildId": {
             "type": "string"
           },
+          "paused": {
+            "type": "boolean"
+          },
           "isLive": {
             "type": "boolean"
           },
@@ -463,6 +524,9 @@
           },
           "guildId": {
             "type": "string"
+          },
+          "paused": {
+            "type": "boolean"
           },
           "isLive": {
             "type": "boolean"
@@ -520,6 +584,9 @@
           },
           "guildId": {
             "type": "string"
+          },
+          "paused": {
+            "type": "boolean"
           },
           "createdAt": {
             "type": "string",
@@ -601,6 +668,9 @@
           },
           "guildId": {
             "type": "string"
+          },
+          "paused": {
+            "type": "boolean"
           },
           "createdAt": {
             "type": "string",
@@ -781,6 +851,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -839,6 +912,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -913,6 +989,18 @@
         },
         "additionalProperties": false
       },
+      "PausedStateRequest": {
+        "type": "object",
+        "properties": {
+          "paused": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "paused"
+        ],
+        "additionalProperties": false
+      },
       "PatchNoteCreateRequest": {
         "type": "object",
         "properties": {
@@ -966,6 +1054,9 @@
           "guildId": {
             "type": "string",
             "minLength": 1
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1055,6 +1146,28 @@
           "summonerName": {
             "type": "string",
             "minLength": 1
+          },
+          "riotIdGameName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "riotIdTagLine": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "region": {
             "type": "string",
@@ -1156,6 +1269,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1214,6 +1330,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1267,6 +1386,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1325,6 +1447,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1462,6 +1587,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -1520,6 +1648,9 @@
                 "type": "null"
               }
             ]
+          },
+          "paused": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false
@@ -1696,7 +1827,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "Creates a YouTube video configuration for a guild+channel pair.\nAllowed fields in request body:\n- youtubeChannelId (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n\nRead-only fields (ignored if provided): lastVideoId, lastNotifiedAt.\n",
+        "description": "Creates a YouTube video configuration for a guild+channel pair.\nAllowed fields in request body:\n- youtubeChannelId (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n- paused (boolean, optional)\n\nRead-only fields (ignored if provided): lastVideoId, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2005,7 +2136,7 @@
         "tags": [
           "YouTube"
         ],
-        "description": "Updates a YouTube configuration by id. Allowed fields in request body:\n- youtubeChannelId (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n\nRead-only fields: lastVideoId, lastNotifiedAt.\n",
+        "description": "Updates a YouTube configuration by id. Allowed fields in request body:\n- youtubeChannelId (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n- paused (boolean)\n\nRead-only fields: lastVideoId, lastNotifiedAt.\n",
         "parameters": [
           {
             "in": "path",
@@ -2386,7 +2517,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "Creates or updates a Twitch stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- twitchUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
+        "description": "Creates or updates a Twitch stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- twitchUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n- paused (boolean, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2583,7 +2714,7 @@
         "tags": [
           "Twitch"
         ],
-        "description": "Updates a Twitch stream configuration by id. Allowed fields in request body:\n- twitchUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
+        "description": "Updates a Twitch stream configuration by id. Allowed fields in request body:\n- twitchUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n- paused (boolean)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
         "parameters": [
           {
             "in": "path",
@@ -2716,7 +2847,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "Creates or updates a TikTok stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- tiktokUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
+        "description": "Creates or updates a TikTok stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- tiktokUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n- paused (boolean, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -2936,7 +3067,7 @@
         "tags": [
           "TikTok"
         ],
-        "description": "Updates a TikTok stream configuration by id. Allowed fields in request body:\n- tiktokUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
+        "description": "Updates a TikTok stream configuration by id. Allowed fields in request body:\n- tiktokUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n- paused (boolean)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
         "parameters": [
           {
             "in": "path",
@@ -3265,8 +3396,14 @@
           "200": {
             "description": "Updated linked Riot account"
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "description": "Riot Account API validation is unavailable"
           }
         }
       },
@@ -3792,6 +3929,54 @@
         "responses": {
           "200": {
             "description": "Patch subscription config"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Pause or resume a patch subscription",
+        "tags": [
+          "PatchSubscriptions"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PausedStateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated patch subscription config"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -4920,7 +5105,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "Creates or updates a Bluesky post configuration for a guild+handle pair.\nRead-only fields: lastPostUri, lastPostCid, lastNotifiedAt.\n",
+        "description": "Creates or updates a Bluesky post configuration for a guild+handle pair.\nAccepts notification controls including customMessage, cooldownMinutes, quietHoursStart, quietHoursEnd, and paused.\nRead-only fields: lastPostUri, lastPostCid, lastNotifiedAt.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -5646,6 +5831,55 @@
       }
     },
     "/anime/{id}": {
+      "patch": {
+        "summary": "Pause or resume an anime subscription",
+        "tags": [
+          "Anime"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PausedStateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated anime subscription"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
       "delete": {
         "summary": "Delete an anime subscription",
         "tags": [

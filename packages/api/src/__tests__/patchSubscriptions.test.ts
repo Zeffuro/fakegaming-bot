@@ -29,10 +29,33 @@ describe('PatchSubscriptions API', () => {
         const res = await request(app).put('/api/patchSubscriptions').set('Authorization', `Bearer ${token}`).send({
             game: 'patchsubgame1',
             channelId: 'patchsubchan1',
-            guildId: 'testguild1'
+            guildId: 'testguild1',
+            paused: true
         });
         expectOk(res);
         expect(res.body.success).toBe(true);
+    });
+
+    it('should pause and resume a patch subscription by id', async () => {
+        const created = await configManager.patchSubscriptionManager.addPlain({
+            game: 'pausable-game',
+            channelId: 'chan-pause',
+            guildId: 'testguild1',
+        });
+
+        const pauseRes = await request(app)
+            .patch(`/api/patchSubscriptions/${created.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ paused: true });
+        expectOk(pauseRes);
+        expect(pauseRes.body.paused).toBe(true);
+
+        const resumeRes = await request(app)
+            .patch(`/api/patchSubscriptions/${created.id}`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ paused: false });
+        expectOk(resumeRes);
+        expect(resumeRes.body.paused).toBe(false);
     });
 
     it('should return 400 for GET /api/patchSubscriptions/:id with invalid id', async () => {

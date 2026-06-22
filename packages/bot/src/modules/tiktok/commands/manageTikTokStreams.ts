@@ -9,6 +9,7 @@ import {manageTikTokStreams as META} from '../commands.manifest.js';
 interface TikTokManagementRecord extends IntegrationManagementRecord {
     tiktokUsername: string;
     isLive?: boolean | null;
+    paused?: boolean | null;
 }
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<TikTokManagementRecord>({
@@ -26,6 +27,9 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TikTokManag
     removeRecord: async (id) => {
         await getConfigManager().tiktokManager.removeByPk(id);
     },
+    setPausedRecord: async (id, paused) => {
+        await getConfigManager().tiktokManager.setPaused(id, paused);
+    },
     formatRecord: (record) => {
         const liveState = record.isLive ? ' live' : '';
         return `${inlineCode(String(record.id))} ${inlineCode(record.tiktokUsername)} -> <#${record.discordChannelId}>${liveState}`;
@@ -35,6 +39,16 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TikTokManag
         action: 'tiktok.delete',
         targetType: 'tiktokConfig',
         metadata: (record) => ({channelId: record.discordChannelId, tiktokUsername: record.tiktokUsername}),
+    },
+    auditPause: {
+        pauseAction: 'tiktok.pause',
+        resumeAction: 'tiktok.resume',
+        targetType: 'tiktokConfig',
+        metadata: (record, paused) => ({channelId: record.discordChannelId, tiktokUsername: record.tiktokUsername, paused}),
+    },
+    health: {
+        provider: 'tiktok',
+        metadata: (record, paused) => ({tiktokUsername: record.tiktokUsername, paused}),
     },
 });
 

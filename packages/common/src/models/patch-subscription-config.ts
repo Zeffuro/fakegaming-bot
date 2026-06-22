@@ -20,4 +20,7 @@ export class PatchSubscriptionConfig extends Model {
 
     @Column(DataType.BIGINT)
     declare lastAnnouncedAt?: number;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare paused: boolean;
 }

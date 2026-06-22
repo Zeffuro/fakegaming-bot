@@ -54,7 +54,8 @@ async function sendReminder(subscription: CreationAttributes<AnimeSubscriptionCo
 
 async function processAnimeNotifications(log = getLogger({ name: 'api:jobs:anime' })): Promise<{ processed: number; errors: number; checked: number; removedFinished: number }> {
     const cm = getConfigManager();
-    const subscriptions = await cm.animeManager.subscriptions.getAllPlain();
+    const subscriptions = (await cm.animeManager.subscriptions.getAllPlain())
+        .filter((subscription) => !subscription.paused);
     const mediaIds = Array.from(new Set(subscriptions.map((sub) => sub.anilistId)));
     const schedules = await getAniListNextAiring(mediaIds);
     const byMediaId = new Map<number, AniListAiringScheduleItem>();

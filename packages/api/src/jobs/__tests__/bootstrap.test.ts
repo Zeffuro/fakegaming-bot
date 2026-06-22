@@ -17,6 +17,9 @@ vi.mock('../patchNotes.js', () => ({ registerPatchNotesJobs: vi.fn().mockResolve
 vi.mock('../patchNotesScan.js', () => ({ registerPatchNotesScanJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../twitch.js', () => ({ registerTwitchJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../youtube.js', () => ({ registerYouTubeJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../tiktok.js', () => ({ registerTikTokJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../bluesky.js', () => ({ registerBlueskyJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../anime.js', () => ({ registerAnimeJobs: vi.fn().mockResolvedValue(undefined) }));
 
 import * as birthdays from '../birthdays.js';
 import * as reminders from '../reminders.js';
@@ -24,6 +27,9 @@ import * as patchNotes from '../patchNotes.js';
 import * as patchNotesScan from '../patchNotesScan.js';
 import * as twitch from '../twitch.js';
 import * as youtube from '../youtube.js';
+import * as tiktok from '../tiktok.js';
+import * as bluesky from '../bluesky.js';
+import * as anime from '../anime.js';
 
 async function importFresh<T = any>(modulePath: string): Promise<T> {
     vi.resetModules();
@@ -54,6 +60,9 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(patchNotesScan).registerPatchNotesScanJobs).toHaveBeenCalled();
         expect(vi.mocked(twitch).registerTwitchJobs).toHaveBeenCalled();
         expect(vi.mocked(youtube).registerYouTubeJobs).toHaveBeenCalled();
+        expect(vi.mocked(tiktok).registerTikTokJobs).toHaveBeenCalled();
+        expect(vi.mocked(bluesky).registerBlueskyJobs).toHaveBeenCalled();
+        expect(vi.mocked(anime).registerAnimeJobs).toHaveBeenCalled();
     });
 
     it('with pg-boss backend but wrong DB provider returns early', async () => {

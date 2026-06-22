@@ -56,6 +56,7 @@ export function createMockTwitchStream(overrides: Partial<TwitchStreamConfig> = 
         guildId: 'guild-123',
         lastAnnounceDate: Date.now() - 86400000, // 1 day ago
         isLive: false,
+        paused: false,
         streamTitle: 'Test Stream',
         customMessage: 'Now streaming!',
         save: vi.fn(async function(this: any) { return this; }),
@@ -75,6 +76,7 @@ export function createMockYoutubeChannel(overrides: Partial<YoutubeVideoConfig> 
         guildId: 'guild-123',
         lastVideoId: 'video123',
         lastAnnounceDate: Date.now() - 86400000, // 1 day ago
+        paused: false,
         customMessage: 'New video!',
         ...overrides
     } as YoutubeVideoConfig;
@@ -105,6 +107,9 @@ export function createMockLeague(overrides: Partial<LeagueConfig> = {}): LeagueC
         accountId: 'account-123',
         puuid: 'puuid-123',
         region: 'euw1',
+        summonerName: 'TestSummoner#EUW',
+        riotIdGameName: 'TestSummoner',
+        riotIdTagLine: 'EUW',
         name: 'TestSummoner',
         ...overrides
     } as LeagueConfig;
@@ -149,6 +154,7 @@ export function createMockPatchSubscription(overrides: Partial<PatchSubscription
         channelId: 'channel-123',
         guildId: 'guild-123',
         lastAnnouncedAt: new Date(Date.now() - 86400000), // 1 day ago
+        paused: false,
         ...overrides
     } as PatchSubscriptionConfig;
 }

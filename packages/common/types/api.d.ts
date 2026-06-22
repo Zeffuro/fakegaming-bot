@@ -75,6 +75,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null, optional)
          *     - quietHoursStart (HH:mm or null, optional)
          *     - quietHoursEnd (HH:mm or null, optional)
+         *     - paused (boolean, optional)
          *
          *     Read-only fields (ignored if provided): lastVideoId, lastNotifiedAt.
          */
@@ -307,6 +308,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null)
          *     - quietHoursStart (HH:mm or null)
          *     - quietHoursEnd (HH:mm or null)
+         *     - paused (boolean)
          *
          *     Read-only fields: lastVideoId, lastNotifiedAt.
          */
@@ -643,6 +645,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null, optional)
          *     - quietHoursStart (HH:mm or null, optional)
          *     - quietHoursEnd (HH:mm or null, optional)
+         *     - paused (boolean, optional)
          *
          *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
          */
@@ -820,6 +823,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null)
          *     - quietHoursStart (HH:mm or null)
          *     - quietHoursEnd (HH:mm or null)
+         *     - paused (boolean)
          *
          *     Read-only fields: isLive, lastNotifiedAt.
          */
@@ -926,6 +930,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null, optional)
          *     - quietHoursStart (HH:mm or null, optional)
          *     - quietHoursEnd (HH:mm or null, optional)
+         *     - paused (boolean, optional)
          *
          *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
          */
@@ -1108,6 +1113,7 @@ export interface paths {
          *     - cooldownMinutes (integer >= 0 or null)
          *     - quietHoursStart (HH:mm or null)
          *     - quietHoursEnd (HH:mm or null)
+         *     - paused (boolean)
          *
          *     Read-only fields: isLive, lastNotifiedAt.
          */
@@ -1405,7 +1411,15 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["BadRequest"];
                 403: components["responses"]["Forbidden"];
+                /** @description Riot Account API validation is unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         post?: never;
@@ -1941,7 +1955,35 @@ export interface paths {
         };
         options?: never;
         head?: never;
-        patch?: never;
+        /** Pause or resume a patch subscription */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PausedStateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated patch subscription config */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         trace?: never;
     };
     "/patchNotes": {
@@ -2069,6 +2111,47 @@ export interface paths {
                     };
                 };
                 404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List recent notification delivery records */
+        get: {
+            parameters: {
+                query?: {
+                    provider?: string;
+                    guildId?: string;
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Recent notification delivery records and provider counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
             };
         };
         put?: never;
@@ -2264,6 +2347,88 @@ export interface paths {
                     };
                     content?: never;
                 };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrationHealth/admin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List integration health across guilds */
+        get: {
+            parameters: {
+                query?: {
+                    provider?: string;
+                    guildId?: string;
+                    status?: "unknown" | "healthy" | "warning" | "error" | "paused";
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Integration health records and summary counts */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrationHealth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List integration health for a guild */
+        get: {
+            parameters: {
+                query: {
+                    guildId: string;
+                    provider?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Integration health records for the guild */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
             };
@@ -2717,6 +2882,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dashboard/guild/{guildId}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get dashboard summary counts for a guild */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Guild dashboard summary */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bluesky": {
         parameters: {
             query?: never;
@@ -2749,6 +2952,7 @@ export interface paths {
         /**
          * Create a new Bluesky post config
          * @description Creates or updates a Bluesky post configuration for a guild+handle pair.
+         *     Accepts notification controls including customMessage, cooldownMinutes, quietHoursStart, quietHoursEnd, and paused.
          *     Read-only fields: lastPostUri, lastPostCid, lastNotifiedAt.
          */
         post: {
@@ -3246,11 +3450,195 @@ export interface paths {
             responses: never;
         };
         put?: never;
+        /** Subscribe a guild channel to anime episode notifications */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["AnimeSubscribeRequest"];
+                };
+            };
+            responses: {
+                /** @description Existing subscription updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Subscription created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/anime/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search AniList media */
+        get: {
+            parameters: {
+                query: {
+                    q: string;
+                    type?: "anime" | "manga";
+                    page?: number;
+                    perPage?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Search results with page info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/anime/season": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List AniList titles for a season */
+        get: {
+            parameters: {
+                query: {
+                    season: "current" | "next" | "WINTER" | "SPRING" | "SUMMER" | "FALL";
+                    scope?: "airing" | "chart" | "tv" | "all";
+                    year?: number;
+                    page?: number;
+                    perPage?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Seasonal AniList titles with page info */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/anime/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an anime subscription */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Subscription deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /** Pause or resume an anime subscription */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PausedStateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated anime subscription */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         trace?: never;
     };
 }
@@ -3315,6 +3703,27 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        AnimeSubscriptionConfig: {
+            /** Format: int64 */
+            id: number;
+            /** Format: int64 */
+            anilistId?: number;
+            targetType?: string;
+            userId?: string;
+            guildId?: string;
+            channelId?: string;
+            /** Format: int64 */
+            reminderMinutes?: number;
+            /** Format: int64 */
+            lastNotifiedEpisode?: number;
+            /** Format: int64 */
+            lastNotifiedAiringAt?: number;
+            paused: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
         PatchNoteConfig: {
             /** Format: int64 */
             id: number;
@@ -3342,6 +3751,7 @@ export interface components {
             guildId?: string;
             /** Format: int64 */
             lastAnnouncedAt?: number;
+            paused: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3395,6 +3805,7 @@ export interface components {
             /** Format: date-time */
             lastNotifiedAt?: string;
             guildId?: string;
+            paused?: boolean;
             isLive?: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -3414,6 +3825,7 @@ export interface components {
             /** Format: date-time */
             lastNotifiedAt?: string;
             guildId?: string;
+            paused?: boolean;
             isLive?: boolean;
             /** Format: date-time */
             createdAt: string;
@@ -3435,6 +3847,7 @@ export interface components {
             /** Format: date-time */
             lastNotifiedAt?: string;
             guildId?: string;
+            paused?: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3464,6 +3877,7 @@ export interface components {
             /** Format: date-time */
             lastNotifiedAt?: string;
             guildId?: string;
+            paused?: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -3501,6 +3915,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         BlueskyUpdateRequest: {
             blueskyHandle?: string;
@@ -3510,6 +3925,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         DisabledCommandCreateRequest: {
             guildId: string;
@@ -3527,6 +3943,9 @@ export interface components {
             date?: string;
             force?: boolean;
         };
+        PausedStateRequest: {
+            paused: boolean;
+        };
         PatchNoteCreateRequest: {
             game: string;
             title: string;
@@ -3539,6 +3958,7 @@ export interface components {
             game: string;
             channelId: string;
             guildId: string;
+            paused?: boolean;
         };
         QuoteCreateRequest: {
             id?: string;
@@ -3558,6 +3978,8 @@ export interface components {
         };
         RiotLinkUpdateRequest: {
             summonerName: string;
+            riotIdGameName?: string | null;
+            riotIdTagLine?: string | null;
             region: string;
             puuid: string;
         };
@@ -3578,6 +4000,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         TikTokUpdateRequest: {
             tiktokUsername?: string;
@@ -3587,6 +4010,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         TwitchCreateRequest: {
             twitchUsername: string;
@@ -3596,6 +4020,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         TwitchUpdateRequest: {
             twitchUsername?: string;
@@ -3605,6 +4030,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         UserCreateRequest: {
             discordId: string;
@@ -3634,6 +4060,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         YoutubeUpdateRequest: {
             youtubeChannelId?: string;
@@ -3643,6 +4070,7 @@ export interface components {
             cooldownMinutes?: number | null;
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
+            paused?: boolean;
         };
         RateLimitError: {
             error: {

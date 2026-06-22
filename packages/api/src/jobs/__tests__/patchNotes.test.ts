@@ -1,17 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
 
+const hoisted = vi.hoisted(() => ({
+    getAllPlain: vi.fn(),
+    getSubscriptionsForGame: vi.fn(),
+    upsert: vi.fn(),
+    sendChannelMessagePayload: vi.fn(),
+}));
+
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({
     getConfigManager: () => ({
-        patchNotesManager: { getAllPlain: vi.fn().mockResolvedValue([{ game: 'Game', title: 'T', content: 'C', url: 'https://x', publishedAt: Date.now(), logoUrl: null, imageUrl: null, version: '1.0', accentColor: 42 }]) },
+        patchNotesManager: { getAllPlain: hoisted.getAllPlain },
         patchSubscriptionManager: {
-            getSubscriptionsForGame: vi.fn().mockResolvedValue([{ id: '1', game: 'Game', channelId: 'chan', guildId: 'g', lastAnnouncedAt: 0 }]),
-            upsert: vi.fn().mockResolvedValue(null),
+            getSubscriptionsForGame: hoisted.getSubscriptionsForGame,
+            upsert: hoisted.upsert,
         },
     })
 }));
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mockResolvedValue({ id: 'msg' }) }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: hoisted.sendChannelMessagePayload }));
 vi.mock('@zeffuro/fakegaming-common/jobs', () => ({
     scheduleSingleton: vi.fn().mockResolvedValue('jobid'),
     formatMinuteKey: (d: Date) => `${d.getUTCFullYear()}${(d.getUTCMonth()+1).toString().padStart(2,'0')}${d.getUTCDate().toString().padStart(2,'0')}${d.getUTCHours().toString().padStart(2,'0')}${d.getUTCMinutes().toString().padStart(2,'0')}`,
@@ -45,7 +52,17 @@ describe('jobs/patchNotes helpers', () => {
 });
 
 describe('jobs/patchNotes register handler', () => {
-    beforeEach(() => vi.useFakeTimers());
+    beforeEach(() => {
+        vi.useFakeTimers();
+        hoisted.getAllPlain.mockReset();
+        hoisted.getSubscriptionsForGame.mockReset();
+        hoisted.upsert.mockReset();
+        hoisted.sendChannelMessagePayload.mockReset();
+        hoisted.getAllPlain.mockResolvedValue([{ game: 'Game', title: 'T', content: 'C', url: 'https://x', publishedAt: Date.now(), logoUrl: null, imageUrl: null, version: '1.0', accentColor: 42 }]);
+        hoisted.getSubscriptionsForGame.mockResolvedValue([{ id: '1', game: 'Game', channelId: 'chan', guildId: 'g', lastAnnouncedAt: 0 }]);
+        hoisted.upsert.mockResolvedValue(null);
+        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'msg' });
+    });
 
     it('registers handler and processes announcements', async () => {
         const q = new TestJobQueue();
@@ -53,5 +70,16 @@ describe('jobs/patchNotes register handler', () => {
         await registerPatchNotesJobs(q as any, now);
         const { done } = await runJobHandler(q, 'patchnotes:run', {});
         expect(done).toHaveBeenCalled();
+    });
+
+    it('skips paused subscriptions', async () => {
+        hoisted.getSubscriptionsForGame.mockResolvedValue([{ id: '1', game: 'Game', channelId: 'chan', guildId: 'g', lastAnnouncedAt: 0, paused: true }]);
+        const q = new TestJobQueue();
+
+        await registerPatchNotesJobs(q as any, new Date('2025-01-01T00:00:00Z'));
+        await runJobHandler(q, 'patchnotes:run', {});
+
+        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.upsert).not.toHaveBeenCalled();
     });
 });

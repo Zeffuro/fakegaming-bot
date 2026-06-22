@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
 import type { IntegrationHealthRecord } from "@/lib/api-client";
+import { getNotificationInfo } from "@/lib/notificationTiming";
 
 interface NotificationConfigListProps<T extends StreamingConfig> {
     configs: T[];
@@ -13,6 +14,7 @@ interface NotificationConfigListProps<T extends StreamingConfig> {
     getChannelName: (channelId: string) => string;
     onEdit: (config: T) => void;
     onDelete: (config: T) => void;
+    onTogglePaused?: (config: T) => void;
     moduleName: string;
     moduleColor?: string;
     saving: boolean;
@@ -23,6 +25,8 @@ interface NotificationConfigListProps<T extends StreamingConfig> {
     itemSingularLabel?: string;
     itemPluralLabel?: string;
     canEdit?: boolean;
+    emptyTitle?: string;
+    emptyDescription?: string;
 }
 
 export default function NotificationConfigList<T extends StreamingConfig>({
@@ -32,6 +36,7 @@ export default function NotificationConfigList<T extends StreamingConfig>({
     getChannelName,
     onEdit,
     onDelete,
+    onTogglePaused,
     moduleName,
     moduleColor = dashboardAccents.neutral,
     saving,
@@ -42,6 +47,8 @@ export default function NotificationConfigList<T extends StreamingConfig>({
     itemSingularLabel,
     itemPluralLabel,
     canEdit = true,
+    emptyTitle,
+    emptyDescription,
 }: NotificationConfigListProps<T>) {
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
@@ -50,8 +57,8 @@ export default function NotificationConfigList<T extends StreamingConfig>({
         return (
             <EmptyState
                 icon={emptyStateIcon}
-                title={`No ${moduleName} ${plural} Configured`}
-                description={`Add your first ${moduleName} ${singular.toLowerCase()} to start receiving notifications.`}
+                title={emptyTitle ?? `No ${moduleName} ${plural} Configured`}
+                description={emptyDescription ?? `Add your first ${moduleName} ${singular.toLowerCase()} to start receiving notifications.`}
                 accent={moduleColor}
             />
         );
@@ -62,9 +69,18 @@ export default function NotificationConfigList<T extends StreamingConfig>({
             {configs.map((config) => {
                 const value = String((config as any)[channelNameField] ?? "").trim();
                 const displayTitle = String((config as any).youtubeChannelTitle ?? (value || `${moduleName} ${singular}`));
+                const configPaused = Boolean((config as { paused?: unknown }).paused);
                 const health = getHealthForConfig(config, healthByConfigId);
-                const healthChip = getHealthChip(health, healthLoading);
+                const healthChip = configPaused ? null : getHealthChip(health, healthLoading);
                 const healthInfo = getHealthInfo(health);
+                const notificationInfo = getNotificationInfo(config as {
+                    cooldownMinutes?: unknown;
+                    quietHoursStart?: unknown;
+                    quietHoursEnd?: unknown;
+                });
+                const statusChip = configPaused
+                    ? { label: "Paused", color: "info" as const, variant: "outlined" as const }
+                    : renderChip?.(config);
                 return (
                     <ConfigCard
                         key={(config as any).id || `${value}-${(config as any).discordChannelId}`}
@@ -76,11 +92,14 @@ export default function NotificationConfigList<T extends StreamingConfig>({
                         }}
                         discordChannel={getChannelName((config as any).discordChannelId)}
                         customMessage={(config as any).customMessage}
-                        statusChip={renderChip ? renderChip(config) : undefined}
+                        statusChip={statusChip}
                         extraStatusChips={healthChip ? [healthChip] : []}
                         healthInfo={healthInfo}
+                        notificationInfo={notificationInfo}
                         onEdit={() => onEdit(config)}
                         onDelete={() => onDelete(config)}
+                        onTogglePaused={onTogglePaused ? () => onTogglePaused(config) : undefined}
+                        paused={configPaused}
                         saving={saving}
                         showEdit={canEdit}
                     />

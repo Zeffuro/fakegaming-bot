@@ -2,8 +2,6 @@ packages:
   - packages/*
   - scripts
 
-minimumReleaseAge: 0
-
 overrides:
   postcss: '8.5.15'
   protobufjs: '8.6.1'

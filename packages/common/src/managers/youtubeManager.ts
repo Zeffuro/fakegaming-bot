@@ -38,4 +38,8 @@ export class YoutubeManager extends BaseManager<YoutubeVideoConfig> {
     async removeVideoChannel(youtubeChannelId: string, discordChannelId: string, guildId: string) {
         await this.remove({ youtubeChannelId, discordChannelId, guildId });
     }
+
+    async setPaused(id: number, paused: boolean): Promise<void> {
+        await this.update({ paused } as Partial<YoutubeVideoConfig> as never, { id } as never);
+    }
 }

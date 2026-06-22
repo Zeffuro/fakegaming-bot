@@ -4,6 +4,8 @@ import { API_ENDPOINTS, apiRequest } from "./core";
 type TikTokListResponse = ApiJsonResponse<"/tiktok", "get", 200>;
 type TikTokCreateRequest = ApiSchema<"TikTokCreateRequest">;
 type TikTokCreateResponse = ApiJsonResponse<"/tiktok", "post", 200 | 201>;
+type TikTokUpdateRequest = ApiSchema<"TikTokUpdateRequest">;
+type TikTokUpdateResponse = ApiJsonResponse<"/tiktok/{id}", "put", 200>;
 type TikTokDeleteResponse = ApiJsonResponse<"/tiktok/{id}", "delete", 200>;
 
 export interface TikTokLiveResponse {
@@ -30,6 +32,9 @@ export const tiktokApi = {
 
     createTikTokStream: (data: TikTokCreateRequest) =>
         apiRequest<TikTokCreateResponse>(API_ENDPOINTS.TIKTOK, { method: "POST", body: data }),
+
+    updateTikTokStream: (id: string | number, data: TikTokUpdateRequest) =>
+        apiRequest<TikTokUpdateResponse>(`${API_ENDPOINTS.TIKTOK}/${id}`, { method: "PUT", body: data }),
 
     deleteTikTokStream: (id: string | number) =>
         apiRequest<TikTokDeleteResponse>(`${API_ENDPOINTS.TIKTOK}/${id}`, { method: "DELETE" }),

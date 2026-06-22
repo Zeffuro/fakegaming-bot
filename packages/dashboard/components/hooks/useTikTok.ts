@@ -2,6 +2,8 @@ import type { TikTokStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 
+type TikTokUpdateRequest = Parameters<typeof api.updateTikTokStream>[1];
+
 interface UseTikTokConfigsOptions {
   enabled?: boolean;
 }
@@ -30,6 +32,10 @@ export function useTikTokConfigs(guildId: string | string[], options: UseTikTokC
         guildId: resolvedGuildId,
         ...buildNotificationTimingPayload(config),
       });
+    },
+    setPaused: async (config, paused) => {
+      const body = { paused } satisfies TikTokUpdateRequest;
+      await api.updateTikTokStream(config.id, body);
     },
     deleteConfig: async (config) => {
       await api.deleteTikTokStream(String(config.id));

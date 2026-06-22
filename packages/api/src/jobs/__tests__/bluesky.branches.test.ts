@@ -82,6 +82,17 @@ describe('bluesky job branches', () => {
         vi.restoreAllMocks();
     });
 
+    it('skips paused configs', async () => {
+        hoisted.getAllAccounts.mockResolvedValue([makeCfg({ paused: true })]);
+
+        const { done } = await runOnce();
+
+        expect(done).toHaveBeenCalled();
+        expect(globalThis.fetch).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.upsert).not.toHaveBeenCalled();
+    });
+
     it('announces a new post and persists the latest pointer', async () => {
         const cfg = makeCfg({ customMessage: 'Post from {author}: {text}' });
         hoisted.getAllAccounts.mockResolvedValue([cfg]);

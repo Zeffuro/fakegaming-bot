@@ -6,6 +6,7 @@ export interface StreamingConfig {
   discordChannelId: string;
   guildId: string;
   customMessage?: string;
+  paused?: boolean | null;
 }
 
 interface UseStreamingFormProps<T extends StreamingConfig> {
@@ -32,7 +33,8 @@ export function useStreamingForm<T extends StreamingConfig>({
     // New optional suppression controls
     cooldownMinutes: null,
     quietHoursStart: '',
-    quietHoursEnd: ''
+    quietHoursEnd: '',
+    paused: false
   });
 
   const handleAddConfig = async () => {
@@ -44,7 +46,8 @@ export function useStreamingForm<T extends StreamingConfig>({
         customMessage: '',
         cooldownMinutes: null,
         quietHoursStart: '',
-        quietHoursEnd: ''
+        quietHoursEnd: '',
+        paused: false
       });
       setAddDialogOpen(false);
     }
@@ -106,7 +109,8 @@ export function useStreamingForm<T extends StreamingConfig>({
       customMessage: '',
       cooldownMinutes: null,
       quietHoursStart: '',
-      quietHoursEnd: ''
+      quietHoursEnd: '',
+      paused: false
     });
   };
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import React, { act } from 'react';
 import { useTwitchConfigs } from '@/components/hooks/useTwitch';
 import { api } from '@/lib/api-client';
@@ -8,9 +8,13 @@ import { mountWithSnapshots, createHookProbe1 } from '../testing/reactTesting';
 const HookProbe = createHookProbe1((arg: string) => useTwitchConfigs(arg));
 
 describe('useTwitchConfigs', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('loads and filters configs by guildId', async () => {
         const guildId = '123';
-        const apiSpy = vi.spyOn(api, 'getTwitchConfigs').mockResolvedValueOnce([
+        vi.spyOn(api, 'getTwitchConfigs').mockResolvedValueOnce([
             { id: 1, guildId: '123', twitchUsername: 'a', discordChannelId: 'c1' },
             { id: 2, guildId: '999', twitchUsername: 'b', discordChannelId: 'c2' },
         ] as any);
@@ -26,7 +30,6 @@ describe('useTwitchConfigs', () => {
         expect(final?.error).toBeNull();
 
         unmount();
-        apiSpy.mockRestore();
     });
 
     it('validates addConfig required fields and sets error', async () => {
@@ -53,6 +56,34 @@ describe('useTwitchConfigs', () => {
         expect(createSpy).not.toHaveBeenCalled();
 
         unmount();
-        createSpy.mockRestore();
+    });
+
+    it('bulk pauses only active configs and refreshes once', async () => {
+        const guildId = 'g1';
+        const configs = [
+            { id: 1, guildId, twitchUsername: 'active-one', discordChannelId: 'c1', paused: false },
+            { id: 2, guildId, twitchUsername: 'paused-one', discordChannelId: 'c2', paused: true },
+            { id: 3, guildId, twitchUsername: 'active-two', discordChannelId: 'c3', paused: false },
+        ];
+        const loadSpy = vi.spyOn(api, 'getTwitchConfigs').mockResolvedValue(configs as any);
+        const updateSpy = vi.spyOn(api, 'updateTwitchStream').mockResolvedValue({} as any);
+
+        const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
+            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+        );
+
+        let result = false;
+        await act(async () => {
+            result = await (last() as any).setAllPausedConfigs(true);
+        });
+        await flush();
+
+        expect(result).toBe(true);
+        expect(updateSpy).toHaveBeenCalledTimes(2);
+        expect(updateSpy).toHaveBeenCalledWith(1, { paused: true });
+        expect(updateSpy).toHaveBeenCalledWith(3, { paused: true });
+        expect(loadSpy).toHaveBeenCalledTimes(2);
+
+        unmount();
     });
 });

@@ -19,6 +19,7 @@ interface TikTokStreamConfigPlain {
     quietHoursEnd?: string | null;
     cooldownMinutes?: number | null;
     lastNotifiedAt?: string | number | Date | null;
+    paused?: boolean | null;
 }
 
 interface TikTokLiveInfo {
@@ -163,7 +164,7 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
     };
     const notifications = cm.notificationsManager as unknown as JobNotificationManager;
 
-    const streams = await manager.getAllStreams();
+    const streams = (await manager.getAllStreams()).filter(cfg => !cfg.paused);
     if (!streams.length) return { processed: 0, errors: 0 };
 
     let processed = 0; let errors = 0;

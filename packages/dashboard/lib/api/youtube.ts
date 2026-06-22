@@ -4,6 +4,8 @@ import { API_ENDPOINTS, apiRequest } from "./core";
 type YouTubeListResponse = ApiJsonResponse<"/youtube", "get", 200>;
 type YouTubeCreateRequest = ApiSchema<"YoutubeCreateRequest">;
 type YouTubeCreateResponse = ApiJsonResponse<"/youtube", "post", 201>;
+type YouTubeUpdateRequest = ApiSchema<"YoutubeUpdateRequest">;
+type YouTubeUpdateResponse = ApiJsonResponse<"/youtube/{id}", "put", 200>;
 
 export interface YouTubeMetadataResponse {
     channelId: string;
@@ -28,6 +30,9 @@ export const youtubeApi = {
 
     createYouTubeChannel: (data: YouTubeCreateRequest) =>
         apiRequest<YouTubeCreateResponse>(API_ENDPOINTS.YOUTUBE, { method: "POST", body: data }),
+
+    updateYouTubeChannel: (id: string | number, data: YouTubeUpdateRequest) =>
+        apiRequest<YouTubeUpdateResponse>(`${API_ENDPOINTS.YOUTUBE}/${id}`, { method: "PUT", body: data }),
 
     deleteYouTubeChannel: (id: string) =>
         apiRequest<{ success: boolean }>(`${API_ENDPOINTS.YOUTUBE}/${id}`, { method: "DELETE" }),

@@ -1,31 +1,20 @@
 import {NextRequest, NextResponse} from "next/server";
 import {
     getDiscordGuilds,
-    refreshDiscordAccessToken,
-    type MinimalGuildData,
     isGuildAdmin,
     CACHE_KEYS,
     CACHE_TTL,
     getCachedData,
-    defaultCacheManager
+    defaultCacheManager,
+    type MinimalGuildData
 } from "@zeffuro/fakegaming-common";
 import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
 import type { APIGuild } from "discord-api-types/v10";
-import { DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET } from "@/lib/env";
-import { getRefreshSession, updateRefreshSession } from "@/lib/auth/refreshSessions";
-import { REFRESH_SESSION_COOKIE_NAME } from "@/lib/auth/sessionConstants";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
+import { getUserGuilds } from "@/lib/auth/discordGuildCache";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 const log = createSimpleLogger("dashboard:guilds-api");
-
-function toMinimalGuilds(guilds: APIGuild[]): MinimalGuildData[] {
-    return guilds.map((guild: APIGuild): MinimalGuildData => ({
-        id: guild.id,
-        permissions: guild.permissions,
-        owner: guild.owner
-    }));
-}
 
 async function fetchBotGuilds(): Promise<APIGuild[]> {
     if (!BOT_TOKEN) {
@@ -47,67 +36,6 @@ async function getBotGuilds(forceRefresh: boolean): Promise<APIGuild[] | null> {
         CACHE_KEYS.botGuilds(),
         fetchBotGuilds,
         CACHE_TTL.BOT_GUILDS
-    );
-}
-
-async function getUserAccessToken(req: NextRequest, userId: string): Promise<string | null> {
-    const cachedAccessToken = await defaultCacheManager.get<string>(CACHE_KEYS.userAccessToken(userId));
-    if (cachedAccessToken) {
-        return cachedAccessToken;
-    }
-
-    const refreshToken = req.cookies.get(REFRESH_SESSION_COOKIE_NAME)?.value;
-    const refreshSession = await getRefreshSession(refreshToken);
-    if (!refreshSession?.discordRefreshToken || refreshSession.user.id !== userId) {
-        return null;
-    }
-
-    const tokenData = await refreshDiscordAccessToken(
-        refreshSession.discordRefreshToken,
-        DISCORD_CLIENT_ID,
-        DISCORD_CLIENT_SECRET
-    );
-
-    if (!tokenData.access_token) {
-        return null;
-    }
-
-    await defaultCacheManager.set(
-        CACHE_KEYS.userAccessToken(userId),
-        tokenData.access_token,
-        tokenData.expires_in ? tokenData.expires_in * 1000 : CACHE_TTL.ACCESS_TOKEN
-    );
-
-    if (tokenData.refresh_token) {
-        await updateRefreshSession(refreshToken, {
-            discordRefreshToken: tokenData.refresh_token
-        });
-    }
-
-    return tokenData.access_token;
-}
-
-async function fetchUserGuilds(req: NextRequest, userId: string): Promise<MinimalGuildData[]> {
-    const userAccessToken = await getUserAccessToken(req, userId);
-    if (!userAccessToken) {
-        throw new Error("Discord authorization expired");
-    }
-
-    const guilds = await getDiscordGuilds(userAccessToken, "Bearer") as APIGuild[];
-    return toMinimalGuilds(guilds);
-}
-
-async function getUserGuilds(req: NextRequest, userId: string, forceRefresh: boolean): Promise<MinimalGuildData[] | null> {
-    if (forceRefresh) {
-        const freshGuilds = await fetchUserGuilds(req, userId);
-        await defaultCacheManager.set(CACHE_KEYS.userGuilds(userId), freshGuilds, CACHE_TTL.USER_GUILDS);
-        return freshGuilds;
-    }
-
-    return await getCachedData(
-        CACHE_KEYS.userGuilds(userId),
-        () => fetchUserGuilds(req, userId),
-        CACHE_TTL.USER_GUILDS
     );
 }
 

@@ -37,5 +37,9 @@ export class TwitchStreamConfig extends Model {
 
     @Default(false)
     @Column(DataType.BOOLEAN)
+    declare paused: boolean;
+
+    @Default(false)
+    @Column(DataType.BOOLEAN)
     declare isLive: boolean;
 }
