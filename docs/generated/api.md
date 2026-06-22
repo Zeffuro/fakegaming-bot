@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 111
+Operations: 116
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -100,6 +100,11 @@ Operations: 111
 | Twitch | DELETE | `/twitch/{id}` | Delete a Twitch stream config by id | Bearer |
 | Twitch | GET | `/twitch/exists` | Check if a Twitch stream config exists | Bearer |
 | Twitch | GET | `/twitch/verify` | Verify a Twitch username exists | Bearer |
+| UserNotes | GET | `/userNotes` | List notes for the authenticated dashboard user | Bearer |
+| UserNotes | POST | `/userNotes` | Create a note for the authenticated dashboard user | Bearer |
+| UserNotes | GET | `/userNotes/{id}` | Get one note for the authenticated dashboard user | Bearer |
+| UserNotes | PUT | `/userNotes/{id}` | Update one note for the authenticated dashboard user | Bearer |
+| UserNotes | DELETE | `/userNotes/{id}` | Delete one note for the authenticated dashboard user | Bearer |
 | Users | GET | `/users` | List all users | Bearer |
 | Users | POST | `/users` | Create a new user | Bearer |
 | Users | GET | `/users/{discordId}` | Get a user by Discord ID | Bearer |

@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { Add, Search } from "@mui/icons-material";
-import { Alert, Autocomplete, Box, Button, CircularProgress, Divider, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import { Add, Refresh, Search } from "@mui/icons-material";
+import { Alert, Autocomplete, Box, Button, CircularProgress, Divider, IconButton, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
 import { AnimeMediaRow } from "@/components/anime/AnimeMediaRow";
 import { fieldSx, panelSx, primaryButtonSx } from "@/components/anime/animeTheme";
 import { canSubscribe, formatAnimeTitle, getSubscribeHint } from "@/components/anime/animeUtils";
@@ -26,6 +26,7 @@ interface AnimeSetupPanelProps {
   onChannelChange: (value: string) => void;
   onReminderMinutesChange: (value: number) => void;
   onSubscribe: () => void | Promise<void>;
+  onRefreshChannels?: () => void | Promise<void>;
   notificationChannelInputRef?: React.RefObject<HTMLInputElement | null>;
   onSearchMediaTypeChange: (value: AnimeSearchMediaType) => void;
 }
@@ -57,6 +58,7 @@ export function AnimeSetupPanel({
   onChannelChange,
   onReminderMinutesChange,
   onSubscribe,
+  onRefreshChannels,
   notificationChannelInputRef,
 }: AnimeSetupPanelProps) {
   const hasAnimeInput = Boolean(selectedAnime || searchInput.trim());
@@ -147,30 +149,47 @@ export function AnimeSetupPanel({
 
         <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
-        <Autocomplete
-          fullWidth
-          openOnFocus
-          options={channels}
-          loading={loadingChannels}
-          value={selectedChannel}
-          onChange={(_event, value) => onChannelChange(value?.id ?? "")}
-          isOptionEqualToValue={(option, value) => option.id === value.id}
-          getOptionLabel={(option) => `#${option.name}`}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Notification Channel"
-              inputRef={notificationChannelInputRef}
-              helperText={channelId ? "Season browse subscribe buttons will use this channel too." : "Required for server subscriptions."}
-              sx={{
-                ...fieldSx,
-                ...(needsChannel ? {
-                  "& .MuiOutlinedInput-root fieldset": { borderColor: "rgba(255,200,87,0.55)" },
-                } : {}),
-              }}
-            />
+        <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+          <Autocomplete
+            fullWidth
+            openOnFocus
+            options={channels}
+            loading={loadingChannels}
+            value={selectedChannel}
+            onChange={(_event, value) => onChannelChange(value?.id ?? "")}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            getOptionLabel={(option) => `#${option.name}`}
+            sx={{ flex: 1 }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Notification Channel"
+                inputRef={notificationChannelInputRef}
+                helperText={channelId ? "Season browse subscribe buttons will use this channel too." : "Required for server subscriptions."}
+                sx={{
+                  ...fieldSx,
+                  ...(needsChannel ? {
+                    "& .MuiOutlinedInput-root fieldset": { borderColor: "rgba(255,200,87,0.55)" },
+                  } : {}),
+                }}
+              />
+            )}
+          />
+          {onRefreshChannels && (
+            <Tooltip title="Refresh channels">
+              <span>
+                <IconButton
+                  aria-label="Refresh channels"
+                  onClick={() => void onRefreshChannels()}
+                  disabled={loadingChannels}
+                  sx={{ mt: 0.5, color: "grey.200", border: "1px solid rgba(255,255,255,0.14)" }}
+                >
+                  <Refresh fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
           )}
-        />
+        </Stack>
 
         <TextField
           fullWidth

@@ -2,6 +2,7 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { formatMinuteKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
+import { getSteamAppById } from '@zeffuro/fakegaming-common/steam';
 import { getNotificationSuppression } from './notificationSuppression.js';
 import { sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
@@ -19,6 +20,7 @@ export interface SteamNewsItem {
     feedlabel?: string;
     feedname?: string;
     author?: string;
+    appid?: number;
 }
 
 interface SteamNewsSubscriptionPlain {
@@ -71,7 +73,7 @@ export async function fetchSteamNewsForApp(appId: number, count = 5): Promise<St
         .sort((a, b) => a.date - b.date);
 }
 
-export function buildSteamNewsEmbedPayload(subscription: SteamNewsSubscriptionPlain, item: SteamNewsItem): Record<string, unknown> {
+export function buildSteamNewsEmbedPayload(subscription: SteamNewsSubscriptionPlain, item: SteamNewsItem, imageUrl?: string | null): Record<string, unknown> {
     const appName = subscription.appName?.trim() || `Steam app ${subscription.steamAppId}`;
     const description = formatSteamNewsDescription(item.contents);
     const embed: Record<string, unknown> = {
@@ -86,6 +88,7 @@ export function buildSteamNewsEmbedPayload(subscription: SteamNewsSubscriptionPl
         footer: {
             text: item.feedlabel || 'Steam News',
         },
+        ...(imageUrl ? { image: { url: imageUrl } } : {}),
     };
 
     return {
@@ -105,35 +108,36 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
     for (const subscription of subscriptions) {
         checked += 1;
         try {
-            const items = await fetchSteamNewsForApp(subscription.steamAppId);
+            const enrichedSubscription = await enrichSteamNewsSubscription(subscription, log);
+            const items = await fetchSteamNewsForApp(enrichedSubscription.steamAppId);
             const nextItem = selectNextSteamNewsItem(items, subscription.lastNewsGid);
             if (!nextItem) {
                 await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                    id: subscription.id,
-                    guildId: subscription.guildId,
-                    channelId: subscription.discordChannelId,
+                    id: enrichedSubscription.id,
+                    guildId: enrichedSubscription.guildId,
+                    channelId: enrichedSubscription.discordChannelId,
                 }, {
                     metadata: {
-                        steamAppId: subscription.steamAppId,
-                        appName: subscription.appName ?? null,
+                        steamAppId: enrichedSubscription.steamAppId,
+                        appName: enrichedSubscription.appName ?? null,
                     },
                 });
                 continue;
             }
 
             const suppression = getNotificationSuppression({
-                ...subscription,
-                lastNotifiedAt: subscription.lastAnnouncedAt ?? null,
+                ...enrichedSubscription,
+                lastNotifiedAt: enrichedSubscription.lastAnnouncedAt ?? null,
             }, new Date());
 
             if (suppression.shouldSuppress) {
                 await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                    id: subscription.id,
-                    guildId: subscription.guildId,
-                    channelId: subscription.discordChannelId,
+                    id: enrichedSubscription.id,
+                    guildId: enrichedSubscription.guildId,
+                    channelId: enrichedSubscription.discordChannelId,
                 }, {
                     metadata: {
-                        steamAppId: subscription.steamAppId,
+                        steamAppId: enrichedSubscription.steamAppId,
                         suppressedByQuiet: suppression.suppressedByQuiet,
                         suppressedByCooldown: suppression.suppressedByCooldown,
                     },
@@ -141,41 +145,46 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
                 continue;
             }
 
-            const eventId = buildSteamNewsEventId(subscription, nextItem);
+            const eventId = buildSteamNewsEventId(enrichedSubscription, nextItem);
+            const imageUrl = await fetchSteamNewsImageUrl(nextItem).catch((err: unknown) => {
+                log.debug({ err, newsUrl: nextItem.url }, 'Failed to fetch Steam news image metadata');
+                return null;
+            });
             const sent = await sendJobNotification({
                 manager: notifications,
                 provider: STEAM_NEWS_PROVIDER,
                 eventId,
-                channelId: subscription.discordChannelId,
-                guildId: subscription.guildId,
-                payload: buildSteamNewsEmbedPayload(subscription, nextItem),
+                channelId: enrichedSubscription.discordChannelId,
+                guildId: enrichedSubscription.guildId,
+                payload: buildSteamNewsEmbedPayload(enrichedSubscription, nextItem, imageUrl),
             });
 
             if (!sent) {
                 throw new Error('Discord send returned no message id');
             }
 
-            const { id: rawSubscriptionId, ...subscriptionData } = subscription;
+            const { id: rawSubscriptionId, ...subscriptionData } = enrichedSubscription;
             const subscriptionId = typeof rawSubscriptionId === 'number' ? rawSubscriptionId : Number(rawSubscriptionId);
             await cm.steamNewsSubscriptionManager.upsertSubscription({
                 ...subscriptionData,
                 ...(Number.isFinite(subscriptionId) ? { id: subscriptionId } : {}),
-                paused: Boolean(subscription.paused),
+                paused: Boolean(enrichedSubscription.paused),
                 lastNewsGid: nextItem.gid,
                 lastAnnouncedAt: nextItem.date * 1000,
             });
             processed += 1;
             await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                id: subscription.id,
-                guildId: subscription.guildId,
-                channelId: subscription.discordChannelId,
+                id: enrichedSubscription.id,
+                guildId: enrichedSubscription.guildId,
+                channelId: enrichedSubscription.discordChannelId,
             }, {
                 delivered: true,
                 metadata: {
-                    steamAppId: subscription.steamAppId,
-                    appName: subscription.appName ?? null,
+                    steamAppId: enrichedSubscription.steamAppId,
+                    appName: enrichedSubscription.appName ?? null,
                     newsGid: nextItem.gid,
                     newsUrl: nextItem.url,
+                    imageUrl,
                 },
             });
         } catch (err) {
@@ -196,6 +205,37 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
     }
 
     return { processed, checked, errors };
+}
+
+export async function fetchSteamNewsImageUrl(item: SteamNewsItem, fetchImpl: typeof fetch = fetch): Promise<string | null> {
+    const contentImage = extractSteamNewsImageUrl(item.contents ?? '');
+    if (contentImage) return contentImage;
+
+    if (!isHttpUrl(item.url)) return null;
+    const response = await fetchImpl(item.url);
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    return extractSteamNewsImageUrl(html);
+}
+
+export function extractSteamNewsImageUrl(value: string): string | null {
+    const patterns = [
+        /<meta\s+[^>]*(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+        /<meta\s+[^>]*content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*>/i,
+        /<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i,
+        /\[img\]([^\]]+)\[\/img\]/i,
+        /(https?:\/\/[^\s\]"'<>]+\.(?:jpe?g|png|gif|webp))(?:[?#][^\s\]"'<>]*)?/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = pattern.exec(value);
+        const rawUrl = match?.[1]?.trim();
+        const normalized = normalizeSteamImageUrl(rawUrl);
+        if (normalized) return normalized;
+    }
+
+    return null;
 }
 
 export function selectNextSteamNewsItem(items: SteamNewsItem[], lastNewsGid?: string | null): SteamNewsItem | null {
@@ -235,6 +275,24 @@ function buildSteamNewsEventId(subscription: SteamNewsSubscriptionPlain, item: S
     return `${subscription.steamAppId}:${item.gid}:${subscription.guildId}:${subscription.discordChannelId}`;
 }
 
+async function enrichSteamNewsSubscription(subscription: SteamNewsSubscriptionPlain, log = getLogger({ name: 'api:jobs:steamnews' })): Promise<SteamNewsSubscriptionPlain> {
+    const appName = subscription.appName?.trim();
+    if (appName) return { ...subscription, appName };
+
+    try {
+        const app = await getSteamAppById(subscription.steamAppId);
+        const resolvedName = app?.name?.trim();
+        if (!resolvedName) return subscription;
+
+        const enriched = { ...subscription, appName: resolvedName };
+        await getConfigManager().steamNewsSubscriptionManager.upsertSubscription(enriched as never);
+        return enriched;
+    } catch (err) {
+        log.debug({ err, steamAppId: subscription.steamAppId }, 'Failed to resolve Steam app name for subscription');
+        return subscription;
+    }
+}
+
 function formatSteamNewsDescription(value: string | undefined): string {
     const text = stripSteamMarkup(value ?? '').replace(/\s+/g, ' ').trim();
     if (text.length === 0) return 'New Steam announcement published.';
@@ -248,6 +306,31 @@ function stripSteamMarkup(value: string): string {
         .replace(/\[[^\]]+\]/g, ' ')
         .replace(/&quot;/g, '"')
         .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>');
+}
+
+function normalizeSteamImageUrl(value: string | undefined): string | null {
+    if (!value) return null;
+    const decoded = decodeHtmlEntities(value);
+    if (!isHttpUrl(decoded)) return null;
+    return decoded;
+}
+
+function isHttpUrl(value: string): boolean {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' || url.protocol === 'http:';
+    } catch {
+        return false;
+    }
+}
+
+function decodeHtmlEntities(value: string): string {
+    return value
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>');
 }

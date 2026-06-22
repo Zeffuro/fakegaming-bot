@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { Add, Cake, CalendarMonth, Close, Delete, Edit, Save } from "@mui/icons-material";
+import { Add, Cake, CalendarMonth, Close, Delete, Edit, Refresh, Save } from "@mui/icons-material";
 import type { BirthdayConfig } from "@zeffuro/fakegaming-common";
 import DashboardLayout from "@/components/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -140,7 +140,7 @@ function toPayload(form: typeof emptyForm): BirthdayFormData | null {
 export default function BirthdayConfigPage() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const guildReady = Boolean(guild);
-  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: guildReady });
+  const { channels, loading: loadingChannels, getChannelName, refetch: refetchChannels } = useGuildChannels(guildId, { enabled: guildReady });
   const {
     birthdays,
     userMap,
@@ -430,9 +430,18 @@ export default function BirthdayConfigPage() {
                 </TextField>
                 <TextField label="Day" type="number" size="small" value={form.day} onChange={(event) => setForm(prev => ({ ...prev, day: event.target.value }))} slotProps={{ htmlInput: { min: 1, max: 31 } }} sx={fieldSx} />
                 <TextField label="Year" type="number" size="small" value={form.year} onChange={(event) => setForm(prev => ({ ...prev, year: event.target.value }))} helperText="Optional" slotProps={{ htmlInput: { min: 1900, max: 9999 } }} sx={fieldSx} />
-                <TextField select label="Announcement Channel" size="small" value={form.channelId} disabled={loadingChannels} onChange={(event) => setForm(prev => ({ ...prev, channelId: event.target.value }))} sx={fieldSx}>
-                  {channels.map(channel => <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>)}
-                </TextField>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start" }}>
+                  <TextField select label="Announcement Channel" size="small" value={form.channelId} disabled={loadingChannels} onChange={(event) => setForm(prev => ({ ...prev, channelId: event.target.value }))} sx={{ flex: 1, ...fieldSx }}>
+                    {channels.map(channel => <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>)}
+                  </TextField>
+                  <Tooltip title="Refresh channels">
+                    <span>
+                      <IconButton aria-label="Refresh channels" onClick={() => void refetchChannels({ refresh: true })} disabled={loadingChannels} sx={{ color: "grey.200", border: "1px solid rgba(255,255,255,0.14)" }}>
+                        <Refresh fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </Stack>
                 <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: "flex-start", lg: "flex-end" } }}>
                   <Button variant="contained" startIcon={editingUserId ? <Save /> : <Add />} disabled={saving} onClick={() => void handleSubmit()} sx={primaryActionButtonSx(accent)}>
                     {editingUserId ? "Save" : "Add"}

@@ -10,21 +10,27 @@ interface UseGuildChannelsOptions {
   enabled?: boolean;
 }
 
+interface FetchChannelsOptions {
+  refresh?: boolean;
+}
+
 export function useGuildChannels(guildId: string | string[], options: UseGuildChannelsOptions = {}) {
   const enabled = options.enabled ?? true;
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchChannels = async () => {
-    if (!enabled || !guildId) {
+  const fetchChannels = async (fetchOptions: FetchChannelsOptions = {}) => {
+    const guildIdValue = getGuildIdValue(guildId);
+    if (!enabled || !guildIdValue) {
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/guilds/${guildId}/channels`, {
+      const refreshParam = fetchOptions.refresh ? "?refresh=1" : "";
+      const response = await fetch(`/api/guilds/${encodeURIComponent(guildIdValue)}/channels${refreshParam}`, {
         credentials: 'include'
       });
 
@@ -64,4 +70,8 @@ export function useGuildChannels(guildId: string | string[], options: UseGuildCh
     getChannelName,
     refetch: fetchChannels
   };
+}
+
+function getGuildIdValue(guildId: string | string[]): string {
+  return Array.isArray(guildId) ? guildId[0] ?? "" : guildId;
 }

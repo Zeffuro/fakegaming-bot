@@ -68,6 +68,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Youtube module"
     },
     {
+        "name": "notes",
+        "title": "Notes",
+        "description": "Personal note commands"
+    },
+    {
         "name": "steam",
         "title": "Steam",
         "description": "Steam game news notification commands"
@@ -559,6 +564,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "name": "youtube-latest",
         "description": "Show the latest video from a YouTube channel ID",
         "module": "youtube",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "notes",
+        "description": "Add, list, show, and delete your personal notes",
+        "module": "notes",
         "permissions": null,
         "dm_permission": null,
         "default_member_permissions": null,
@@ -1177,6 +1192,25 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "name": "youtube-latest",
                 "description": "Show the latest video from a YouTube channel ID",
                 "module": "youtube",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "notes",
+            "title": "Notes",
+            "description": "Personal note commands"
+        },
+        "commands": [
+            {
+                "name": "notes",
+                "description": "Add, list, show, and delete your personal notes",
+                "module": "notes",
                 "permissions": null,
                 "dm_permission": null,
                 "default_member_permissions": null,

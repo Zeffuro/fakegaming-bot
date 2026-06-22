@@ -21,6 +21,7 @@ interface AddConfigDialogProps<T extends StreamingConfig> {
     moduleColor: string;
     channels: { id: string; name: string }[];
     loadingChannels: boolean;
+    onRefreshChannels?: () => Promise<void> | void;
     saving: boolean;
     showCustomMessage?: boolean;
     showNotificationControls?: boolean;
@@ -41,6 +42,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     moduleColor,
     channels,
     loadingChannels,
+    onRefreshChannels,
     saving,
     showCustomMessage = true,
     showNotificationControls = true,
@@ -89,6 +91,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                 moduleColor={moduleColor}
                 channels={channels}
                 loadingChannels={loadingChannels}
+                onRefreshChannels={onRefreshChannels}
                 showCustomMessage={showCustomMessage}
                 showNotificationControls={showNotificationControls}
                 itemNameOptions={itemNameOptions}

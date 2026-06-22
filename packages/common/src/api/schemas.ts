@@ -222,6 +222,22 @@ export const userDefaultReminderTimeSpanUpdateRequestSchema = z.object({
     timespan: nonEmptyString,
 }).strict();
 
+export const userNoteCreateRequestSchema = z.object({
+    title: z.string().trim().max(160).optional(),
+    body: z.string().max(20000).optional(),
+    pinned: z.boolean().optional(),
+}).strict().refine((value) => Boolean(value.title?.trim() || value.body?.trim()), {
+    message: 'title or body is required',
+});
+
+export const userNoteUpdateRequestSchema = z.object({
+    title: z.string().trim().max(160).optional(),
+    body: z.string().max(20000).optional(),
+    pinned: z.boolean().optional(),
+}).strict().refine(hasAtLeastOneField, {
+    message: 'At least one field must be provided',
+});
+
 export const youtubeChannelRequestSchema = z.object({
     youtubeChannelId: nonEmptyString,
     discordChannelId: nonEmptyString,
@@ -270,6 +286,8 @@ export const apiRequestSchemas = {
     TwitchUpdateRequest: twitchUpdateRequestSchema,
     UserCreateRequest: userCreateRequestSchema,
     UserDefaultReminderTimeSpanUpdateRequest: userDefaultReminderTimeSpanUpdateRequestSchema,
+    UserNoteCreateRequest: userNoteCreateRequestSchema,
+    UserNoteUpdateRequest: userNoteUpdateRequestSchema,
     UserTimezoneUpdateRequest: userTimezoneUpdateRequestSchema,
     UserUpdateRequest: userUpdateRequestSchema,
     YoutubeChannelRequest: youtubeChannelRequestSchema,

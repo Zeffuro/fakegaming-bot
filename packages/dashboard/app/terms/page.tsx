@@ -159,10 +159,11 @@ export default function TermsPage() {
 
                 <TermsSection title="Content and configuration">
                     <Typography>
-                        Server administrators and users may submit configuration, notification messages, quotes, reminders,
-                        birthdays, linked game identities, and other feature data. You are responsible for content you
-                        submit and for making sure your server has the right to use channel names, messages, identifiers,
-                        and third-party account handles configured in the service.
+                        Server administrators and users may submit configuration, notification messages, personal notes,
+                        quotes, reminders, birthdays, linked game identities, and other feature data. You are responsible
+                        for content you submit and for making sure your server has the right to use channel names,
+                        messages, identifiers, and third-party account handles configured in the service. Do not store
+                        passwords, API keys, access tokens, recovery codes, private keys, or other secrets in notes.
                     </Typography>
                     <Typography>
                         Public data from services such as Discord, Riot Games, YouTube, Twitch, Steam, OpenWeather,

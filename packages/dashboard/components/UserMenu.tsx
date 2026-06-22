@@ -41,6 +41,11 @@ export default function UserMenu() {
     handleClose();
   };
 
+  const handleProfile = () => {
+    router.push("/dashboard/me");
+    handleClose();
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -98,11 +103,11 @@ export default function UserMenu() {
           }
         }}
       >
-        <MenuItem onClick={handleClose} sx={{ color: "grey.300" }}>
+        <MenuItem onClick={handleProfile} sx={{ color: "grey.300" }}>
           <ListItemIcon>
             <Person sx={{ color: "grey.400" }} />
           </ListItemIcon>
-          <ListItemText primary="Profile" />
+          <ListItemText primary="Your dashboard" />
         </MenuItem>
         {isAdmin && (
           <MenuItem onClick={handleAdmin} sx={{ color: "grey.200" }}>

@@ -19,6 +19,7 @@ interface EditConfigDialogProps<T extends StreamingConfig> {
     moduleColor: string;
     channels: { id: string; name: string }[];
     loadingChannels: boolean;
+    onRefreshChannels?: () => Promise<void> | void;
     saving: boolean;
     itemSingularLabel?: string;
     showCustomMessage?: boolean;
@@ -39,6 +40,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
     moduleColor,
     channels,
     loadingChannels,
+    onRefreshChannels,
     saving,
     itemSingularLabel,
     showCustomMessage = true,
@@ -70,6 +72,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                 moduleColor={moduleColor}
                 channels={channels}
                 loadingChannels={loadingChannels}
+                onRefreshChannels={onRefreshChannels}
                 showCustomMessage={showCustomMessage}
                 showNotificationControls={showNotificationControls}
                 itemNameOptions={itemNameOptions}

@@ -375,9 +375,12 @@ export default function PrivacyPage() {
                     </Typography>
                     <Typography>
                         User-submitted bot data, such as quotes, reminders, birthdays, linked Riot accounts, and anime
-                        subscriptions, is stored only for the feature that received it. Server administrators can remove
-                        many server-scoped configurations through the dashboard or bot management commands. Operators
-                        control database backups, logs, retention windows, and storage location for their own deployment.
+                        subscriptions, is stored only for the feature that received it. Personal dashboard notes are
+                        stored under the Discord user ID that created them and are not tied to a Discord server. Do not
+                        store passwords, API keys, tokens, recovery codes, private keys, or other secrets in notes.
+                        Server administrators can remove many server-scoped configurations through the dashboard or bot
+                        management commands. Operators control database backups, logs, retention windows, and storage
+                        location for their own deployment.
                     </Typography>
                 </PolicySection>
 
@@ -408,8 +411,9 @@ export default function PrivacyPage() {
                     <Typography>
                         Login cookies and cached Discord login data expire according to the durations above or are cleared
                         during logout where supported. Notification settings, bot feature data, audit events, delivery
-                        records, dedupe records, and backups remain until removed by server administrators, retention
-                        cleanup, or the deployment operator. For this instance, privacy requests can be sent to{" "}
+                        records, dedupe records, personal notes, and backups remain until removed by users, server
+                        administrators where applicable, retention cleanup, or the deployment operator. For this
+                        instance, privacy requests can be sent to{" "}
                         <ContactValue value={legalConfig.privacyContact} />.
                     </Typography>
                 </PolicySection>

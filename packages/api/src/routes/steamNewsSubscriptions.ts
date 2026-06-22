@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getConfigManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { pausedStateRequestSchema, steamNewsSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
+import { getSteamAppById } from '@zeffuro/fakegaming-common/steam';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { checkUserGuildAccess, requireGuildAdmin } from '../utils/authHelpers.js';
@@ -51,6 +52,19 @@ async function recordSteamNewsPausedStatus(subscription: SteamNewsSubscriptionRe
         });
     } catch {
         // Health status should not block a successful configuration update.
+    }
+}
+
+async function withResolvedAppName(body: z.infer<typeof steamNewsSubscriptionRequestSchema>): Promise<z.infer<typeof steamNewsSubscriptionRequestSchema>> {
+    const appName = body.appName?.trim();
+    if (appName) return { ...body, appName };
+
+    try {
+        const app = await getSteamAppById(body.steamAppId);
+        const resolvedName = app?.name?.trim();
+        return resolvedName ? { ...body, appName: resolvedName } : body;
+    } catch {
+        return body;
     }
 }
 
@@ -129,7 +143,8 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.post('/', jwtAuth, validateBody(steamNewsSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
-    const created = await getConfigManager().steamNewsSubscriptionManager.addPlain(req.body);
+    const body = await withResolvedAppName(req.body as z.infer<typeof steamNewsSubscriptionRequestSchema>);
+    const created = await getConfigManager().steamNewsSubscriptionManager.addPlain(body);
     await recordAuditEvent(req, {
         action: 'steamNewsSubscription.create',
         targetType: 'steamNewsSubscription',
@@ -168,7 +183,7 @@ router.post('/', jwtAuth, validateBody(steamNewsSubscriptionRequestSchema), requ
  *         $ref: '#/components/responses/Unauthorized'
  */
 router.put('/', jwtAuth, validateBody(steamNewsSubscriptionRequestSchema), requireGuildAdmin, async (req, res) => {
-    const body = req.body as z.infer<typeof steamNewsSubscriptionRequestSchema>;
+    const body = await withResolvedAppName(req.body as z.infer<typeof steamNewsSubscriptionRequestSchema>);
     await getConfigManager().steamNewsSubscriptionManager.upsertSubscription(body);
     await recordAuditEvent(req, {
         action: 'steamNewsSubscription.upsert',

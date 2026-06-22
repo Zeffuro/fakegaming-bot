@@ -16,6 +16,8 @@ import {
     tiktokCreateRequestSchema,
     twitchCreateRequestSchema,
     twitchUpdateRequestSchema,
+    userNoteCreateRequestSchema,
+    userNoteUpdateRequestSchema,
     userUpdateRequestSchema,
     youtubeChannelRequestSchema,
     youtubeCreateRequestSchema,
@@ -50,6 +52,8 @@ describe('api request schemas', () => {
             'TwitchUpdateRequest',
             'UserCreateRequest',
             'UserDefaultReminderTimeSpanUpdateRequest',
+            'UserNoteCreateRequest',
+            'UserNoteUpdateRequest',
             'UserTimezoneUpdateRequest',
             'UserUpdateRequest',
             'YoutubeChannelRequest',
@@ -101,6 +105,14 @@ describe('api request schemas', () => {
             region: 'EUW',
             puuid: 'puuid-1',
         })).toMatchObject({ region: 'EUW' });
+        expect(userNoteCreateRequestSchema.parse({
+            title: 'Build notes',
+            body: 'Remember deployment steps',
+            pinned: true,
+        })).toMatchObject({ title: 'Build notes', pinned: true });
+        expect(userNoteCreateRequestSchema.parse({
+            body: 'Command-created note',
+        })).toMatchObject({ body: 'Command-created note' });
     });
 
     it('rejects unknown fields on strict request DTOs', () => {
@@ -173,10 +185,13 @@ describe('api request schemas', () => {
         expect(youtubeUpdateRequestSchema.parse({ cooldownMinutes: 10 })).toMatchObject({ cooldownMinutes: 10 });
         expect(serverUpdateRequestSchema.parse({ prefix: '!' })).toMatchObject({ prefix: '!' });
         expect(userUpdateRequestSchema.parse({ timezone: 'Europe/Amsterdam' })).toMatchObject({ timezone: 'Europe/Amsterdam' });
+        expect(userNoteUpdateRequestSchema.parse({ pinned: false })).toMatchObject({ pinned: false });
 
         expect(() => twitchUpdateRequestSchema.parse({})).toThrow();
         expect(() => youtubeUpdateRequestSchema.parse({})).toThrow();
         expect(() => userUpdateRequestSchema.parse({})).toThrow();
+        expect(() => userNoteUpdateRequestSchema.parse({})).toThrow();
+        expect(() => userNoteCreateRequestSchema.parse({ title: '', body: '' })).toThrow();
     });
 
     it('validates job and Discord helper requests', () => {

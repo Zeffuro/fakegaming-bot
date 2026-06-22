@@ -9,6 +9,7 @@ const log = createSimpleLogger("dashboard:channels-api");
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ guildId: string }> }) {
     const { guildId } = await params;
+    const forceRefresh = isRefreshRequest(req);
 
     const authResult = await authenticateUser(req);
     if (!authResult.success) {
@@ -25,8 +26,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
     }
 
     try {
+        const cacheKey = CACHE_KEYS.guildChannels(guildId);
+        if (forceRefresh) {
+            await defaultCacheManager.del(cacheKey);
+            log.debug({ guildId }, "Cleared guild channel cache before refresh");
+        }
+
         const channels = await defaultCacheManager.getCachedData<APIChannel[]>(
-            CACHE_KEYS.guildChannels(guildId),
+            cacheKey,
             async () => {
                 if (!BOT_TOKEN) {
                     throw new Error("Discord bot token not configured");
@@ -47,4 +54,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
         log.error({ err: error, guildId }, "Error fetching guild channels");
         return NextResponse.json({ error: "Failed to fetch guild channels" }, { status: 500 });
     }
+}
+
+function isRefreshRequest(req: NextRequest): boolean {
+    const value = req.nextUrl.searchParams.get("refresh");
+    return value === "1" || value === "true";
 }

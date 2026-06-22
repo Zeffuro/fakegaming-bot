@@ -108,4 +108,66 @@ describe('Steam app resolver', () => {
             },
         });
     });
+
+    it('falls back to Steam Store search when the public app list returns 404', async () => {
+        const fetchImpl = vi.fn<SteamFetch>()
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 404,
+                json: async () => ({}),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    total: 2,
+                    items: [
+                        { id: 620, name: 'Portal 2' },
+                        { id: 400, name: 'Portal' },
+                    ],
+                }),
+            });
+
+        const result = await searchSteamApps('portal', { fetchImpl });
+
+        expect(fetchImpl).toHaveBeenCalledTimes(2);
+        expect(fetchImpl.mock.calls[0]?.[0]).toBe('https://api.steampowered.com/ISteamApps/GetAppList/v2/');
+        expect(String(fetchImpl.mock.calls[1]?.[0])).toContain('https://store.steampowered.com/api/storesearch/');
+        expect(result.map((app) => app.steamAppId)).toEqual([400, 620]);
+    });
+
+    it('uses appdetails as a direct-id fallback when the public app list fails', async () => {
+        const fetchImpl = vi.fn<SteamFetch>()
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 404,
+                json: async () => ({}),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({
+                    730: {
+                        success: true,
+                        data: {
+                            steam_appid: 730,
+                            name: 'Counter-Strike 2',
+                        },
+                    },
+                }),
+            });
+
+        const result = await resolveSteamAppInput('730', { fetchImpl });
+
+        expect(fetchImpl).toHaveBeenCalledTimes(2);
+        expect(String(fetchImpl.mock.calls[1]?.[0])).toContain('https://store.steampowered.com/api/appdetails');
+        expect(result).toEqual({
+            status: 'resolved',
+            app: {
+                steamAppId: 730,
+                appName: 'Counter-Strike 2',
+                score: 1000,
+            },
+        });
+    });
 });

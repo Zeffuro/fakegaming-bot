@@ -141,7 +141,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
     itemNameSearch,
     allowEdit = true,
 }: NotificationConfigPageProps<T>) {
-    const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: Boolean(guild) });
+    const { channels, loading: loadingChannels, getChannelName, refetch: refetchChannels } = useGuildChannels(guildId, { enabled: Boolean(guild) });
     const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
     const searchParams = useSearchParams();
     const searchParamString = searchParams?.toString() ?? "";
@@ -190,6 +190,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
             [field]: value
         } : current);
     };
+    const handleRefreshChannels = () => refetchChannels({ refresh: true });
 
     const currentTrail = guild ? [
         { label: "Settings", href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
@@ -365,6 +366,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                         moduleColor={moduleColor}
                         channels={channels}
                         loadingChannels={loadingChannels}
+                        onRefreshChannels={handleRefreshChannels}
                         saving={saving}
                         showCustomMessage={showCustomMessage}
                         showNotificationControls={showNotificationControls}
@@ -385,6 +387,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                         moduleColor={moduleColor}
                         channels={channels}
                         loadingChannels={loadingChannels}
+                        onRefreshChannels={handleRefreshChannels}
                         saving={saving}
                         itemSingularLabel={singular}
                         showCustomMessage={showCustomMessage}

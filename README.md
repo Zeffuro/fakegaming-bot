@@ -444,6 +444,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manage-twitch-streams`|Slash|List, test, pause, resume, or remove Twitch stream notifications|Administrator|
 |`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
+|`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|
 |`/quote-leaderboard`|Slash|Show the most quoted users in this server|All users|

@@ -18,7 +18,7 @@ export function AnimeDashboard() {
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const guildReady = Boolean(guild);
   const anime = useAnimeDashboard(guildId, { enabled: guildReady });
-  const { channels, loading: loadingChannels, getChannelName } = useGuildChannels(guildId, { enabled: guildReady });
+  const { channels, loading: loadingChannels, getChannelName, refetch: refetchChannels } = useGuildChannels(guildId, { enabled: guildReady });
   const notificationChannelInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedChannel = useMemo(
@@ -89,6 +89,7 @@ export function AnimeDashboard() {
               onChannelChange={anime.setChannelId}
               onReminderMinutesChange={anime.setReminderMinutes}
               onSubscribe={handleSubscribe}
+              onRefreshChannels={() => refetchChannels({ refresh: true })}
               notificationChannelInputRef={notificationChannelInputRef}
             />
 

@@ -19,6 +19,7 @@ export * from "./api/quotes";
 export * from "./api/riotLinks";
 export * from "./api/tiktok";
 export * from "./api/twitch";
+export * from "./api/userNotes";
 export * from "./api/youtube";
 
 import { animeApi } from "./api/anime";
@@ -36,6 +37,7 @@ import { quotesApi } from "./api/quotes";
 import { riotLinksApi } from "./api/riotLinks";
 import { tiktokApi } from "./api/tiktok";
 import { twitchApi } from "./api/twitch";
+import { userNotesApi } from "./api/userNotes";
 import { youtubeApi } from "./api/youtube";
 
 export const api = {
@@ -55,4 +57,5 @@ export const api = {
     ...integrationHealthApi,
     ...notificationsApi,
     ...riotLinksApi,
+    ...userNotesApi,
 };

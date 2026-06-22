@@ -164,7 +164,7 @@ export default function DashboardLayout({
             <Link href="/privacy" underline="hover" color="inherit">
               Privacy and cookies
             </Link>
-            {" · "}
+            {" | "}
             <Link href="/terms" underline="hover" color="inherit">
               Terms
             </Link>

@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/external/dashboard",
     INTEGRATION_HEALTH: "/api/external/integrationHealth",
     NOTIFICATIONS: "/api/external/notifications",
+    USER_NOTES: "/api/external/userNotes",
 };
 
 export interface ApiOptions {

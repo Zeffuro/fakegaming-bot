@@ -19,6 +19,7 @@ import {LeagueManager} from './leagueManager.js';
 import {AuditEventManager} from './auditEventManager.js';
 import {IntegrationHealthManager} from './integrationHealthManager.js';
 import {SteamNewsSubscriptionManager} from './steamNewsManager.js';
+import {UserNoteManager} from './userNoteManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -48,6 +49,7 @@ export class ConfigManager {
     auditEventManager = new AuditEventManager();
     integrationHealthManager = new IntegrationHealthManager();
     steamNewsSubscriptionManager = new SteamNewsSubscriptionManager();
+    userNoteManager = new UserNoteManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

@@ -41,7 +41,9 @@ interface SteamAppListCache {
 }
 
 const PUBLIC_APP_LIST_URL = 'https://api.steampowered.com/ISteamApps/GetAppList/v2/';
-const STORE_SERVICE_APP_LIST_URL = 'https://partner.steam-api.com/IStoreService/GetAppList/v1/';
+const STORE_SERVICE_APP_LIST_URL = 'https://api.steampowered.com/IStoreService/GetAppList/v1/';
+const STORE_SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
+const STORE_APP_DETAILS_URL = 'https://store.steampowered.com/api/appdetails';
 const DEFAULT_APP_LIST_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_SEARCH_LIMIT = 10;
 const MAX_SEARCH_LIMIT = 25;
@@ -109,7 +111,7 @@ export async function searchSteamApps(query: string, options: SteamAppResolverOp
     const normalizedQuery = normalizeSteamAppName(query);
     if (!normalizedQuery) return [];
 
-    const apps = await getSteamAppList(options);
+    const apps = await getSteamAppListForSearch(query, options);
     const queryTokens = normalizedQuery.split(' ').filter(Boolean);
     const compactQuery = compactName(normalizedQuery);
     const scored = new Map<number, SteamAppSearchResult>();
@@ -173,8 +175,19 @@ export async function resolveSteamAppInput(input: string, options: SteamAppResol
 
 export async function getSteamAppById(steamAppId: number, options: SteamAppResolverOptions = {}): Promise<SteamAppEntry | null> {
     if (!Number.isInteger(steamAppId) || steamAppId <= 0) return null;
-    const apps = await getSteamAppList(options);
-    return apps.find((app) => app.appid === steamAppId) ?? null;
+    try {
+        const apps = await getSteamAppList(options);
+        const app = apps.find((entry) => entry.appid === steamAppId);
+        if (app) return app;
+    } catch {
+        // Fall through to the public store appdetails endpoint.
+    }
+
+    try {
+        return await fetchStoreAppDetails(steamAppId, options.fetchImpl ?? defaultSteamFetch);
+    } catch {
+        return null;
+    }
 }
 
 export async function getSteamAppList(options: SteamAppResolverOptions = {}): Promise<SteamAppEntry[]> {
@@ -282,7 +295,7 @@ function scoreSteamApp(normalizedQuery: string, compactQuery: string, queryToken
 }
 
 async function loadSteamAppList(options: SteamAppResolverOptions): Promise<SteamAppEntry[]> {
-    const fetchImpl = options.fetchImpl ?? ((url, init) => fetch(url, init) as Promise<SteamFetchResponse>);
+    const fetchImpl = options.fetchImpl ?? defaultSteamFetch;
     const apiKey = normalizeApiKey(options.apiKey ?? process.env.STEAM_WEB_API_KEY ?? process.env.STEAM_API_KEY);
 
     if (apiKey) {
@@ -295,6 +308,25 @@ async function loadSteamAppList(options: SteamAppResolverOptions): Promise<Steam
     }
 
     return fetchPublicAppList(fetchImpl);
+}
+
+async function getSteamAppListForSearch(query: string, options: SteamAppResolverOptions): Promise<SteamAppEntry[]> {
+    try {
+        const apps = await getSteamAppList(options);
+        if (apps.length > 0) return apps;
+    } catch {
+        // Fall through to Steam Store search. The old public Web API app-list endpoint can return 404.
+    }
+
+    try {
+        return await fetchStoreSearchApps(query, options.fetchImpl ?? defaultSteamFetch);
+    } catch {
+        return [];
+    }
+}
+
+function defaultSteamFetch(url: string, init?: RequestInit): Promise<SteamFetchResponse> {
+    return fetch(url, init) as Promise<SteamFetchResponse>;
 }
 
 function normalizeApiKey(value: string | null | undefined): string | null {
@@ -317,18 +349,18 @@ async function fetchStoreServiceAppList(fetchImpl: SteamFetch, apiKey: string): 
     let lastAppId = 0;
 
     for (let page = 0; page < 10; page += 1) {
-        const inputJson = JSON.stringify({
-            include_games: true,
-            include_dlc: false,
-            include_software: false,
-            include_videos: false,
-            max_results: 50000,
-            ...(lastAppId > 0 ? { last_appid: lastAppId } : {}),
-        });
         const url = new URL(STORE_SERVICE_APP_LIST_URL);
         url.searchParams.set('key', apiKey);
         url.searchParams.set('format', 'json');
-        url.searchParams.set('input_json', inputJson);
+        url.searchParams.set('include_games', 'true');
+        url.searchParams.set('include_dlc', 'false');
+        url.searchParams.set('include_software', 'false');
+        url.searchParams.set('include_videos', 'false');
+        url.searchParams.set('include_hardware', 'false');
+        url.searchParams.set('max_results', '50000');
+        if (lastAppId > 0) {
+            url.searchParams.set('last_appid', String(lastAppId));
+        }
 
         const response = await fetchImpl(url.toString());
         if (!response.ok) {
@@ -350,6 +382,35 @@ async function fetchStoreServiceAppList(fetchImpl: SteamFetch, apiKey: string): 
     return apps;
 }
 
+async function fetchStoreSearchApps(query: string, fetchImpl: SteamFetch): Promise<SteamAppEntry[]> {
+    const url = new URL(STORE_SEARCH_URL);
+    url.searchParams.set('term', query);
+    url.searchParams.set('l', 'english');
+    url.searchParams.set('cc', 'US');
+
+    const response = await fetchImpl(url.toString());
+    if (!response.ok) {
+        throw new Error(`Steam store search request failed with status ${response.status}`);
+    }
+
+    const body = await response.json();
+    return normalizeSteamApps(readStoreSearchItems(body));
+}
+
+async function fetchStoreAppDetails(steamAppId: number, fetchImpl: SteamFetch): Promise<SteamAppEntry | null> {
+    const url = new URL(STORE_APP_DETAILS_URL);
+    url.searchParams.set('appids', String(steamAppId));
+    url.searchParams.set('filters', 'basic');
+
+    const response = await fetchImpl(url.toString());
+    if (!response.ok) {
+        throw new Error(`Steam appdetails request failed with status ${response.status}`);
+    }
+
+    const body = await response.json();
+    return readStoreAppDetails(body, steamAppId);
+}
+
 function readPublicApps(body: unknown): unknown[] {
     if (!isRecord(body)) return [];
     const applist = body.applist;
@@ -369,12 +430,25 @@ function readStoreServiceResponse(body: unknown): { apps: unknown[]; lastAppId: 
     return { apps, lastAppId, haveMoreResults };
 }
 
+function readStoreSearchItems(body: unknown): unknown[] {
+    if (!isRecord(body) || !Array.isArray(body.items)) return [];
+    return body.items;
+}
+
+function readStoreAppDetails(body: unknown, steamAppId: number): SteamAppEntry | null {
+    if (!isRecord(body)) return null;
+    const entry = body[String(steamAppId)];
+    if (!isRecord(entry) || entry.success !== true || !isRecord(entry.data)) return null;
+    const apps = normalizeSteamApps([entry.data]);
+    return apps[0] ?? null;
+}
+
 function normalizeSteamApps(rawApps: unknown[]): SteamAppEntry[] {
     const apps = new Map<number, SteamAppEntry>();
 
     for (const rawApp of rawApps) {
         if (!isRecord(rawApp)) continue;
-        const rawAppId = rawApp.appid ?? rawApp.app_id ?? rawApp.appId;
+        const rawAppId = rawApp.appid ?? rawApp.steam_appid ?? rawApp.app_id ?? rawApp.appId ?? rawApp.id;
         const rawName = rawApp.name ?? rawApp.app_name ?? rawApp.title;
         if (typeof rawAppId !== 'number' || !Number.isInteger(rawAppId) || rawAppId <= 0) continue;
         if (typeof rawName !== 'string' || rawName.trim().length === 0) continue;

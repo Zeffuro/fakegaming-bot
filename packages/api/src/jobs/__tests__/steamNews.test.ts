@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
     buildSteamNewsEmbedPayload,
+    extractSteamNewsImageUrl,
+    fetchSteamNewsImageUrl,
     fetchSteamNewsForApp,
     selectNextSteamNewsItem,
     type SteamNewsItem,
@@ -94,5 +96,40 @@ describe('steam news jobs', () => {
                 },
             ],
         });
+    });
+
+    it('adds an embed image when Steam news image metadata is available', () => {
+        const payload = buildSteamNewsEmbedPayload({
+            id: 1,
+            steamAppId: 227300,
+            appName: 'Euro Truck Simulator 2',
+            discordChannelId: 'channel-1',
+            guildId: 'guild-1',
+        }, baseItem, 'https://clan.fastly.steamstatic.com/images/4419325/post.jpg');
+
+        expect(payload).toMatchObject({
+            embeds: [
+                {
+                    image: {
+                        url: 'https://clan.fastly.steamstatic.com/images/4419325/post.jpg',
+                    },
+                },
+            ],
+        });
+    });
+
+    it('extracts Steam news images from OpenGraph metadata and body markup', () => {
+        expect(extractSteamNewsImageUrl('<meta property="og:image" content="https://cdn.example.test/post.jpg">')).toBe('https://cdn.example.test/post.jpg');
+        expect(extractSteamNewsImageUrl('[img]https://cdn.example.test/body.png[/img]')).toBe('https://cdn.example.test/body.png');
+    });
+
+    it('fetches article metadata when the news item body has no image', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            text: async () => '<html><head><meta property="og:image" content="https://cdn.example.test/article.jpg"></head></html>',
+        });
+
+        await expect(fetchSteamNewsImageUrl(baseItem, fetchMock as unknown as typeof fetch)).resolves.toBe('https://cdn.example.test/article.jpg');
+        expect(fetchMock).toHaveBeenCalledWith(baseItem.url);
     });
 });
