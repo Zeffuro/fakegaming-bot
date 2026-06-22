@@ -22,6 +22,8 @@ export const API_ENDPOINTS = {
     INTEGRATION_HEALTH: "/api/external/integrationHealth",
     NOTIFICATIONS: "/api/external/notifications",
     USER_NOTES: "/api/external/userNotes",
+    USER_REMINDERS: "/api/external/userReminders",
+    USER_SETTINGS: "/api/external/userSettings",
 };
 
 export interface ApiOptions {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { expectCreated, expectNotFound, expectOk, expectUnauthorized, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
+import { expectBadRequest, expectCreated, expectNotFound, expectOk, expectUnauthorized, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 
@@ -84,8 +84,8 @@ describe('User notes API', () => {
     it('validates note bodies and requires authentication', async () => {
         const client = givenAuthenticatedClient(app, { discordId: 'note-user' });
 
-        const invalid = await client.post('/api/userNotes', { title: '', body: 'Missing title' });
-        expect(invalid.status).toBe(400);
+        const invalid = await client.post('/api/userNotes', { title: '', body: '' });
+        expectBadRequest(invalid);
 
         const noAuth = await client.raw.get('/api/userNotes');
         expectUnauthorized(noAuth);

@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 116
+Operations: 123
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -105,6 +105,11 @@ Operations: 116
 | UserNotes | GET | `/userNotes/{id}` | Get one note for the authenticated dashboard user | Bearer |
 | UserNotes | PUT | `/userNotes/{id}` | Update one note for the authenticated dashboard user | Bearer |
 | UserNotes | DELETE | `/userNotes/{id}` | Delete one note for the authenticated dashboard user | Bearer |
+| UserReminders | GET | `/userReminders` | List reminders for the authenticated dashboard user | Bearer |
+| UserReminders | POST | `/userReminders` | Create a reminder for the authenticated dashboard user | Bearer |
+| UserReminders | GET | `/userReminders/{id}` | Get one reminder for the authenticated dashboard user | Bearer |
+| UserReminders | DELETE | `/userReminders/{id}` | Delete one reminder for the authenticated dashboard user | Bearer |
+| UserReminders | PATCH | `/userReminders/{id}/snooze` | Snooze one reminder for the authenticated dashboard user | Bearer |
 | Users | GET | `/users` | List all users | Bearer |
 | Users | POST | `/users` | Create a new user | Bearer |
 | Users | GET | `/users/{discordId}` | Get a user by Discord ID | Bearer |
@@ -112,6 +117,8 @@ Operations: 116
 | Users | DELETE | `/users/{discordId}` | Delete a user by Discord ID | Bearer |
 | Users | PUT | `/users/{discordId}/defaultReminderTimeSpan` | Set default reminder timespan for a user | Bearer |
 | Users | PUT | `/users/{discordId}/timezone` | Set timezone for a user | Bearer |
+| UserSettings | GET | `/userSettings` | Get personal settings for the authenticated dashboard user | Bearer |
+| UserSettings | PATCH | `/userSettings` | Update personal settings for the authenticated dashboard user | Bearer |
 | YouTube | GET | `/youtube` | List all YouTube video configs | Bearer |
 | YouTube | POST | `/youtube` | Create a new YouTube video config | Bearer |
 | YouTube | PUT | `/youtube` | Upsert a YouTube video config by channel | Bearer |

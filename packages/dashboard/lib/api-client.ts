@@ -20,6 +20,8 @@ export * from "./api/riotLinks";
 export * from "./api/tiktok";
 export * from "./api/twitch";
 export * from "./api/userNotes";
+export * from "./api/userReminders";
+export * from "./api/userSettings";
 export * from "./api/youtube";
 
 import { animeApi } from "./api/anime";
@@ -38,6 +40,8 @@ import { riotLinksApi } from "./api/riotLinks";
 import { tiktokApi } from "./api/tiktok";
 import { twitchApi } from "./api/twitch";
 import { userNotesApi } from "./api/userNotes";
+import { userRemindersApi } from "./api/userReminders";
+import { userSettingsApi } from "./api/userSettings";
 import { youtubeApi } from "./api/youtube";
 
 export const api = {
@@ -58,4 +62,6 @@ export const api = {
     ...notificationsApi,
     ...riotLinksApi,
     ...userNotesApi,
+    ...userRemindersApi,
+    ...userSettingsApi,
 };

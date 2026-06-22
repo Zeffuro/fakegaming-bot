@@ -44,9 +44,9 @@ describe('env constants', () => {
         await expect(import('@/lib/env')).rejects.toThrow(/Missing required environment variable/);
     });
 
-    it('API_URL defaults to http://localhost:3001 when env missing', async () => {
+    it('API_URL defaults to the local API base path when env missing', async () => {
         const mod = await importEnv();
-        expect(mod.API_URL).toBe('http://localhost:3001');
+        expect(mod.API_URL).toBe('http://localhost:3001/api');
     });
 
     it('API_URL uses env value as-is (no trimming) when provided', async () => {

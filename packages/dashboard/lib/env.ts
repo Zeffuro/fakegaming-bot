@@ -17,5 +17,5 @@ export const JWT_SECRET = requireEnv("JWT_SECRET");
 export const JWT_AUDIENCE = requireEnv("JWT_AUDIENCE");
 export const JWT_ISSUER = requireEnv("JWT_ISSUER");
 
-export const API_URL = (process.env.API_URL || "http://localhost:3001");
+export const API_URL = (process.env.API_URL || "http://localhost:3001/api");
 export const SERVICE_API_TOKEN = process.env.SERVICE_API_TOKEN || process.env.INTERNAL_API_TOKEN || process.env.API_SERVICE_TOKEN || "";

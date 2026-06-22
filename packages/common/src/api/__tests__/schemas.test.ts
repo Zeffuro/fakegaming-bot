@@ -18,6 +18,8 @@ import {
     twitchUpdateRequestSchema,
     userNoteCreateRequestSchema,
     userNoteUpdateRequestSchema,
+    userReminderCreateRequestSchema,
+    userReminderSnoozeRequestSchema,
     userUpdateRequestSchema,
     youtubeChannelRequestSchema,
     youtubeCreateRequestSchema,
@@ -54,6 +56,8 @@ describe('api request schemas', () => {
             'UserDefaultReminderTimeSpanUpdateRequest',
             'UserNoteCreateRequest',
             'UserNoteUpdateRequest',
+            'UserReminderCreateRequest',
+            'UserReminderSnoozeRequest',
             'UserTimezoneUpdateRequest',
             'UserUpdateRequest',
             'YoutubeChannelRequest',
@@ -113,6 +117,13 @@ describe('api request schemas', () => {
         expect(userNoteCreateRequestSchema.parse({
             body: 'Command-created note',
         })).toMatchObject({ body: 'Command-created note' });
+        expect(userReminderCreateRequestSchema.parse({
+            message: 'Check deployment',
+            timespan: '1h',
+        })).toMatchObject({ message: 'Check deployment' });
+        expect(userReminderSnoozeRequestSchema.parse({
+            timespan: '10m',
+        })).toMatchObject({ timespan: '10m' });
     });
 
     it('rejects unknown fields on strict request DTOs', () => {

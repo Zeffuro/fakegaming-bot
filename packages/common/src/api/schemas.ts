@@ -222,6 +222,15 @@ export const userDefaultReminderTimeSpanUpdateRequestSchema = z.object({
     timespan: nonEmptyString,
 }).strict();
 
+export const userReminderCreateRequestSchema = z.object({
+    message: z.string().trim().min(1).max(2000),
+    timespan: nonEmptyString,
+}).strict();
+
+export const userReminderSnoozeRequestSchema = z.object({
+    timespan: nonEmptyString,
+}).strict();
+
 export const userNoteCreateRequestSchema = z.object({
     title: z.string().trim().max(160).optional(),
     body: z.string().max(20000).optional(),
@@ -288,6 +297,8 @@ export const apiRequestSchemas = {
     UserDefaultReminderTimeSpanUpdateRequest: userDefaultReminderTimeSpanUpdateRequestSchema,
     UserNoteCreateRequest: userNoteCreateRequestSchema,
     UserNoteUpdateRequest: userNoteUpdateRequestSchema,
+    UserReminderCreateRequest: userReminderCreateRequestSchema,
+    UserReminderSnoozeRequest: userReminderSnoozeRequestSchema,
     UserTimezoneUpdateRequest: userTimezoneUpdateRequestSchema,
     UserUpdateRequest: userUpdateRequestSchema,
     YoutubeChannelRequest: youtubeChannelRequestSchema,
