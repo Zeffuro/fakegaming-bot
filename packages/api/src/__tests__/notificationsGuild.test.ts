@@ -37,7 +37,7 @@ describe('Guild notification history API', () => {
     const client = givenAuthenticatedClient(app);
 
     it('returns guild-scoped notification delivery history', async () => {
-        const res = await client.get(`/api/notifications/guild/${guildId}`);
+        const res = await client.get(`/api/notifications/guild/${guildId}?days=3`);
 
         expectOk(res);
         expect(res.body).toMatchObject({
@@ -51,6 +51,8 @@ describe('Guild notification history API', () => {
             },
         });
         expect(res.body.records).toHaveLength(2);
+        expect(res.body.summary.trend).toHaveLength(3);
+        expect(res.body.summary.trend.reduce((total: number, point: { count: number }) => total + point.count, 0)).toBe(2);
         expect(res.body.records).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 provider: 'twitch',

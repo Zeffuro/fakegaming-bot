@@ -7,6 +7,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import { validateRiotAccountLink } from '../utils/riotAccountValidation.js';
+import type { AuthenticatedRequest } from '../types/express.js';
 
 const router = createBaseRouter();
 
@@ -31,6 +32,26 @@ const discordIdParamSchema = z.object({
 router.get('/', requireDashboardAdmin, async (_req, res) => {
     const links = await getConfigManager().leagueManager.getLinkedAccountsPlain();
     res.json({ links });
+});
+
+/**
+ * @openapi
+ * /riotLinks/me:
+ *   get:
+ *     summary: Get the authenticated dashboard user's linked Riot account
+ *     tags: [Riot Links]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Linked Riot account for the authenticated user, or null when not linked
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+router.get('/me', async (req, res) => {
+    const discordId = (req as AuthenticatedRequest).user.discordId;
+    const link = await getConfigManager().leagueManager.getLinkedAccountPlain(discordId);
+    res.json({ link });
 });
 
 /**

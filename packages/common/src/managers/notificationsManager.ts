@@ -1,5 +1,5 @@
 import type { Attributes, CreationAttributes, WhereOptions } from 'sequelize';
-import { col, fn } from 'sequelize';
+import { col, fn, Op } from 'sequelize';
 import { BaseManager } from './baseManager.js';
 import { Notification } from '../models/notification.js';
 
@@ -19,10 +19,17 @@ export interface NotificationListOptions {
     guildId?: string;
     limit?: number;
     offset?: number;
+    days?: number;
+    now?: Date;
 }
 
 export interface NotificationProviderSummary {
     provider: string;
+    count: number;
+}
+
+export interface NotificationDailyTrendPoint {
+    date: string;
     count: number;
 }
 
@@ -34,6 +41,7 @@ export interface NotificationListResult {
     summary: {
         total: number;
         byProvider: NotificationProviderSummary[];
+        trend: NotificationDailyTrendPoint[];
     };
 }
 
@@ -41,6 +49,13 @@ interface NotificationProviderSummaryRow {
     provider: string;
     count: number | string;
 }
+
+interface NotificationTrendRow {
+    createdAt?: Date | string | null;
+}
+
+const defaultTrendDays = 7;
+const maxTrendDays = 90;
 
 export class NotificationsManager extends BaseManager<Notification> {
     constructor() {
@@ -50,9 +65,10 @@ export class NotificationsManager extends BaseManager<Notification> {
     async list(options: NotificationListOptions = {}): Promise<NotificationListResult> {
         const limit = clampLimit(options.limit);
         const offset = Math.max(0, Math.floor(options.offset ?? 0));
+        const trendDays = clampTrendDays(options.days);
         const where = buildWhere(options);
 
-        const [result, providerSummary] = await Promise.all([
+        const [result, providerSummary, trend] = await Promise.all([
             this.model.findAndCountAll({
                 where,
                 order: [
@@ -64,6 +80,7 @@ export class NotificationsManager extends BaseManager<Notification> {
                 raw: true,
             }),
             this.getProviderSummary(where),
+            this.getDailyTrend(where, trendDays, options.now ?? new Date()),
         ]);
 
         return {
@@ -74,6 +91,7 @@ export class NotificationsManager extends BaseManager<Notification> {
             summary: {
                 total: result.count,
                 byProvider: providerSummary,
+                trend,
             },
         };
     }
@@ -135,6 +153,40 @@ export class NotificationsManager extends BaseManager<Notification> {
             count: Number(row.count),
         }));
     }
+
+    private async getDailyTrend(
+        where: WhereOptions<Attributes<Notification>>,
+        days: number,
+        now: Date
+    ): Promise<NotificationDailyTrendPoint[]> {
+        const window = buildTrendWindow(now, days);
+        const counts = new Map(window.dates.map((date): [string, number] => [date, 0]));
+        const trendWhere = {
+            ...(where as Record<string, unknown>),
+            createdAt: {
+                [Op.gte]: window.start,
+                [Op.lt]: window.endExclusive,
+            },
+        } as WhereOptions<Attributes<Notification>>;
+
+        const rows = await this.model.findAll({
+            attributes: ['createdAt'],
+            where: trendWhere,
+            order: [['createdAt', 'ASC']],
+            raw: true,
+        });
+
+        for (const row of rows as unknown as NotificationTrendRow[]) {
+            if (!row.createdAt) continue;
+            const parsed = new Date(row.createdAt);
+            if (Number.isNaN(parsed.getTime())) continue;
+            const key = formatUtcDate(parsed);
+            if (!counts.has(key)) continue;
+            counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+
+        return [...counts.entries()].map(([date, count]) => ({ date, count }));
+    }
 }
 
 function buildWhere(options: NotificationListOptions): WhereOptions<Attributes<Notification>> {
@@ -150,6 +202,12 @@ function clampLimit(value: number | undefined): number {
     return Math.max(1, Math.min(100, Math.floor(value)));
 }
 
+function clampTrendDays(value: number | undefined): number {
+    if (value === undefined) return defaultTrendDays;
+    if (!Number.isFinite(value)) return defaultTrendDays;
+    return Math.max(1, Math.min(maxTrendDays, Math.floor(value)));
+}
+
 function normalizeRecord(record: NotificationRecord): NotificationRecord {
     return {
         ...record,
@@ -157,4 +215,31 @@ function normalizeRecord(record: NotificationRecord): NotificationRecord {
         channelId: record.channelId ?? null,
         messageId: record.messageId ?? null,
     };
+}
+
+function buildTrendWindow(now: Date, days: number): { start: Date; endExclusive: Date; dates: string[] } {
+    const safeNow = Number.isNaN(now.getTime()) ? new Date() : now;
+    const end = startOfUtcDay(safeNow);
+    const start = new Date(end);
+    start.setUTCDate(end.getUTCDate() - days + 1);
+
+    const endExclusive = new Date(end);
+    endExclusive.setUTCDate(end.getUTCDate() + 1);
+
+    const dates: string[] = [];
+    for (let index = 0; index < days; index += 1) {
+        const date = new Date(start);
+        date.setUTCDate(start.getUTCDate() + index);
+        dates.push(formatUtcDate(date));
+    }
+
+    return { start, endExclusive, dates };
+}
+
+function startOfUtcDay(value: Date): Date {
+    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
+}
+
+function formatUtcDate(value: Date): string {
+    return value.toISOString().slice(0, 10);
 }

@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Avatar, Box, Button, Card, CardActions, CardContent, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { dashboardAccents, dashboardCardSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { dashboardAccents, dashboardCardSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 
 interface FeatureCardProps {
   title: string;
@@ -12,7 +12,6 @@ interface FeatureCardProps {
   icon: React.ReactNode;
   accent?: string;
   href?: string;
-  disabled?: boolean;
   chipLabel?: string;
   statusLabel?: string;
   meta?: React.ReactNode;
@@ -25,14 +24,13 @@ export function FeatureCard({
   icon,
   accent = dashboardAccents.neutral,
   href,
-  disabled,
   chipLabel,
   statusLabel,
   meta,
   actionLabel = "Open",
 }: FeatureCardProps) {
   return (
-    <Card sx={{ ...dashboardCardSx(accent), opacity: disabled ? 0.62 : 1, display: "flex", flexDirection: "column" }}>
+    <Card sx={{ ...dashboardCardSx(accent), display: "flex", flexDirection: "column" }}>
       <CardContent sx={{ pb: 1.5, flex: 1 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center" }}>
@@ -65,14 +63,13 @@ export function FeatureCard({
       </CardContent>
       <CardActions sx={{ px: 2, pb: 2, pt: 0, mt: "auto" }}>
         <Button
-          component={href && !disabled ? Link : "button"}
-          href={href && !disabled ? href : undefined}
-          disabled={disabled}
+          component={href ? Link : "button"}
+          href={href}
           fullWidth
-          variant={disabled ? "outlined" : "contained"}
-          sx={disabled ? ghostActionButtonSx(accent) : primaryActionButtonSx(accent)}
+          variant="contained"
+          sx={primaryActionButtonSx(accent)}
         >
-          {disabled ? "Coming soon" : actionLabel}
+          {actionLabel}
         </Button>
       </CardActions>
     </Card>

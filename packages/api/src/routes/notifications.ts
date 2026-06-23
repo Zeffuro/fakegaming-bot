@@ -15,6 +15,7 @@ const notificationsGuildQuerySchema = z.object({
     provider: z.string().trim().min(1).max(64).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     offset: z.coerce.number().int().min(0).max(10000).optional(),
+    days: z.coerce.number().int().min(1).max(90).optional(),
 }).strict();
 
 const notificationsAdminQuerySchema = z.object({
@@ -22,6 +23,7 @@ const notificationsAdminQuerySchema = z.object({
     guildId: z.string().trim().min(1).max(255).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
     offset: z.coerce.number().int().min(0).max(10000).optional(),
+    days: z.coerce.number().int().min(1).max(90).optional(),
 }).strict();
 
 /**
@@ -57,6 +59,14 @@ const notificationsAdminQuerySchema = z.object({
  *           type: integer
  *           minimum: 0
  *           maximum: 10000
+ *       - in: query
+ *         name: days
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 90
+ *         description: Number of UTC days to include in the delivery trend summary
  *     responses:
  *       200:
  *         description: Guild-scoped notification delivery records and provider counts
@@ -112,6 +122,14 @@ router.get('/guild/:guildId', validateParams(notificationsGuildParamsSchema), va
  *           type: integer
  *           minimum: 0
  *           maximum: 10000
+ *       - in: query
+ *         name: days
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 90
+ *         description: Number of UTC days to include in the delivery trend summary
  *     responses:
  *       200:
  *         description: Recent notification delivery records and provider counts

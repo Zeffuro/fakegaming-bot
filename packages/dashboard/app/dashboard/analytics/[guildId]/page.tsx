@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Box, Button, Chip, Divider, LinearProgress, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Chip, Divider, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
     BarChart,
@@ -37,6 +37,7 @@ import {
     type GuildAnalyticsProvider,
     type GuildAnalyticsTrendPoint,
 } from "@/lib/guildNotificationAnalytics";
+import type { IntegrationHealthRecord, NotificationDeliveryRecord } from "@/lib/api-client";
 
 interface AnalyticsSourceConfig {
     id?: string | number | null;
@@ -55,8 +56,11 @@ const providerRoutes = new Map<string, string>([
     ["birthday", "birthdays"],
 ]);
 
+const deliveryTrendDays = 30;
+
 export default function GuildAnalyticsPage() {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
+    const [selectedProviderKey, setSelectedProviderKey] = useState<string | null>(null);
     const resolvedGuildId = guildId as string;
     const encodedGuildId = encodeURIComponent(resolvedGuildId);
     const guildReady = Boolean(guild);
@@ -69,7 +73,13 @@ export default function GuildAnalyticsPage() {
     const animeApi = useAnimeConfigs(resolvedGuildId, { enabled: guildReady });
     const birthdayApi = useBirthdays(resolvedGuildId, { enabled: guildReady });
     const healthApi = useIntegrationHealth(resolvedGuildId, undefined, { enabled: guildReady });
-    const historyApi = useGuildNotificationHistory(resolvedGuildId, { enabled: guildReady, limit: 100 });
+    const historyApi = useGuildNotificationHistory(resolvedGuildId, { enabled: guildReady, limit: 100, days: deliveryTrendDays });
+    const providerHistoryApi = useGuildNotificationHistory(resolvedGuildId, {
+        enabled: guildReady && selectedProviderKey !== null,
+        limit: 20,
+        days: deliveryTrendDays,
+        provider: selectedProviderKey,
+    });
 
     const configs = useMemo<GuildAnalyticsConfigRecord[]>(() => [
         ...toAnalyticsConfigRecords("twitch", "Twitch", twitchApi.configs),
@@ -95,7 +105,22 @@ export default function GuildAnalyticsPage() {
         healthRecords: healthApi.records,
         notificationRecords: historyApi.history?.records ?? [],
         notificationProviders: historyApi.history?.summary.byProvider ?? [],
+        notificationTrend: historyApi.history?.summary.trend ?? [],
     }), [configs, healthApi.records, historyApi.history]);
+    const selectedProvider = useMemo(() => {
+        if (!selectedProviderKey) return null;
+        return analytics.providers.find((provider) => provider.providerKey === selectedProviderKey) ?? null;
+    }, [analytics.providers, selectedProviderKey]);
+    const selectedProviderTrend = useMemo<GuildAnalyticsTrendPoint[]>(() => (
+        providerHistoryApi.history?.summary.trend ?? []
+    ).map((point) => ({
+        date: point.date,
+        deliveries: Math.max(0, Math.floor(point.count)),
+    })), [providerHistoryApi.history]);
+    const selectedProviderHealthRecords = useMemo(() => {
+        if (!selectedProviderKey) return [];
+        return healthApi.records.filter((record) => normalizeProviderKey(record.provider) === selectedProviderKey);
+    }, [healthApi.records, selectedProviderKey]);
     const loading = guildsLoading
         || twitchApi.loading
         || youtubeApi.loading
@@ -104,9 +129,9 @@ export default function GuildAnalyticsPage() {
         || tiktokApi.loading
         || blueskyApi.loading
         || animeApi.loading
-        || birthdayApi.loading
-        || healthApi.loading
-        || historyApi.loading;
+                        || birthdayApi.loading
+                        || healthApi.loading
+                        || historyApi.loading;
     const errors = [
         twitchApi.error,
         youtubeApi.error,
@@ -172,9 +197,26 @@ export default function GuildAnalyticsPage() {
                     </Box>
 
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 0.95fr) minmax(0, 1.35fr)" }, gap: 2.5 }}>
-                        <DeliveryTrendPanel trend={analytics.trend} />
-                        <ProviderAnalyticsPanel guildId={resolvedGuildId} providers={analytics.providers} />
+                        <DeliveryTrendPanel trend={analytics.trend} days={deliveryTrendDays} />
+                        <ProviderAnalyticsPanel
+                            guildId={resolvedGuildId}
+                            providers={analytics.providers}
+                            selectedProviderKey={selectedProviderKey}
+                            onSelectProvider={setSelectedProviderKey}
+                        />
                     </Box>
+                    {selectedProvider && (
+                        <ProviderDrilldownPanel
+                            guildId={resolvedGuildId}
+                            provider={selectedProvider}
+                            trend={selectedProviderTrend}
+                            records={providerHistoryApi.history?.records ?? []}
+                            healthRecords={selectedProviderHealthRecords}
+                            loading={providerHistoryApi.loading}
+                            error={providerHistoryApi.error}
+                            onClear={() => setSelectedProviderKey(null)}
+                        />
+                    )}
                 </FeatureShell>
             )}
         </DashboardLayout>
@@ -211,8 +253,8 @@ function MetricPanel({
     );
 }
 
-function DeliveryTrendPanel({ trend }: { trend: GuildAnalyticsTrendPoint[] }) {
-    const maxDeliveries = Math.max(1, ...trend.map((item) => item.deliveries));
+function DeliveryTrendPanel({ trend, days }: { trend: GuildAnalyticsTrendPoint[]; days: number }) {
+    const totalDeliveries = trend.reduce((total, point) => total + point.deliveries, 0);
 
     return (
         <FeaturePanel accent={dashboardAccents.commands} sx={{ p: 2.5, minHeight: 360 }}>
@@ -224,32 +266,86 @@ function DeliveryTrendPanel({ trend }: { trend: GuildAnalyticsTrendPoint[] }) {
                             Delivery trend
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                            Recent notification records grouped by UTC day.
+                            Last {trend.length || days} UTC days, independent of the recent-record page size.
                         </Typography>
                     </Box>
                 </Stack>
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-                <Stack spacing={1.1} sx={{ flex: 1, justifyContent: "center" }}>
-                    {trend.map((point) => (
-                        <Stack key={point.date} direction="row" spacing={1.2} sx={{ alignItems: "center" }}>
-                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", width: 76, flexShrink: 0 }}>
-                                {formatShortDate(point.date)}
-                            </Typography>
-                            <Box sx={{ flex: 1, minWidth: 0, height: 12, borderRadius: 999, bgcolor: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                                <Box sx={{ width: `${Math.max(4, (point.deliveries / maxDeliveries) * 100)}%`, height: "100%", borderRadius: 999, bgcolor: dashboardAccents.commands }} />
-                            </Box>
-                            <Typography variant="caption" sx={{ color: "grey.100", width: 28, textAlign: "right", flexShrink: 0, fontWeight: 800 }}>
-                                {point.deliveries}
-                            </Typography>
-                        </Stack>
-                    ))}
-                </Stack>
+                {trend.length > 0 ? (
+                    <TrendBarStrip trend={trend} accent={dashboardAccents.commands} totalLabel={`${totalDeliveries} deliveries`} />
+                ) : (
+                    <EmptyState label="No delivery trend data is available yet." />
+                )}
             </Stack>
         </FeaturePanel>
     );
 }
 
-function ProviderAnalyticsPanel({ guildId, providers }: { guildId: string; providers: GuildAnalyticsProvider[] }) {
+function TrendBarStrip({ trend, accent, totalLabel }: { trend: GuildAnalyticsTrendPoint[]; accent: string; totalLabel: string }) {
+    const maxDeliveries = Math.max(1, ...trend.map((item) => item.deliveries));
+    const firstDate = trend[0]?.date ?? null;
+    const lastDate = trend[trend.length - 1]?.date ?? null;
+
+    return (
+        <Stack spacing={1.6} sx={{ flex: 1, justifyContent: "center", minHeight: 0 }}>
+            <Box
+                sx={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${trend.length}, minmax(6px, 1fr))`,
+                    gap: 0.65,
+                    alignItems: "end",
+                    height: 200,
+                    px: 0.5,
+                }}
+            >
+                {trend.map((point) => {
+                    const height = point.deliveries === 0
+                        ? 4
+                        : Math.max(8, (point.deliveries / maxDeliveries) * 100);
+
+                    return (
+                        <Tooltip key={point.date} title={`${formatShortDate(point.date)}: ${point.deliveries} deliveries`} arrow>
+                            <Box
+                                sx={{
+                                    height: `${height}%`,
+                                    minHeight: 4,
+                                    borderRadius: 999,
+                                    bgcolor: point.deliveries > 0 ? accent : "rgba(255,255,255,0.12)",
+                                    border: `1px solid ${point.deliveries > 0 ? alpha(accent, 0.35) : "rgba(255,255,255,0.08)"}`,
+                                }}
+                            />
+                        </Tooltip>
+                    );
+                })}
+            </Box>
+            <Stack direction="row" spacing={1.2} sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", minWidth: 72 }}>
+                    {firstDate ? formatShortDate(firstDate) : ""}
+                </Typography>
+                <Chip
+                    size="small"
+                    label={totalLabel}
+                    sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
+                />
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", minWidth: 72, textAlign: "right" }}>
+                    {lastDate ? formatShortDate(lastDate) : ""}
+                </Typography>
+            </Stack>
+        </Stack>
+    );
+}
+
+function ProviderAnalyticsPanel({
+    guildId,
+    providers,
+    selectedProviderKey,
+    onSelectProvider,
+}: {
+    guildId: string;
+    providers: GuildAnalyticsProvider[];
+    selectedProviderKey: string | null;
+    onSelectProvider: (providerKey: string | null) => void;
+}) {
     return (
         <FeaturePanel accent={dashboardAccents.settings} sx={{ p: 2.5, minHeight: 360 }}>
             <Stack spacing={2} sx={{ position: "relative" }}>
@@ -274,7 +370,13 @@ function ProviderAnalyticsPanel({ guildId, providers }: { guildId: string; provi
                 {providers.length > 0 ? (
                     <Stack spacing={1.2}>
                         {providers.map((provider) => (
-                            <ProviderAnalyticsRow key={provider.providerKey} guildId={guildId} provider={provider} />
+                            <ProviderAnalyticsRow
+                                key={provider.providerKey}
+                                guildId={guildId}
+                                provider={provider}
+                                selected={provider.providerKey === selectedProviderKey}
+                                onSelectProvider={onSelectProvider}
+                            />
                         ))}
                     </Stack>
                 ) : (
@@ -285,13 +387,23 @@ function ProviderAnalyticsPanel({ guildId, providers }: { guildId: string; provi
     );
 }
 
-function ProviderAnalyticsRow({ guildId, provider }: { guildId: string; provider: GuildAnalyticsProvider }) {
+function ProviderAnalyticsRow({
+    guildId,
+    provider,
+    selected,
+    onSelectProvider,
+}: {
+    guildId: string;
+    provider: GuildAnalyticsProvider;
+    selected: boolean;
+    onSelectProvider: (providerKey: string | null) => void;
+}) {
     const accent = getStatusAccent(provider.status);
     const route = providerRoutes.get(provider.providerKey);
     const href = route ? `/dashboard/${route}/${encodeURIComponent(guildId)}` : `/dashboard/settings/${encodeURIComponent(guildId)}/notifications`;
 
     return (
-        <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)", p: 1.35 }}>
+        <Box sx={{ borderRadius: 2.5, bgcolor: selected ? alpha(accent, 0.1) : "rgba(255,255,255,0.045)", border: `1px solid ${selected ? alpha(accent, 0.35) : "rgba(255,255,255,0.08)"}`, p: 1.35 }}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: 1 }}>
                 <Box sx={{ minWidth: 0 }}>
                     <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", minWidth: 0 }}>
@@ -310,11 +422,147 @@ function ProviderAnalyticsRow({ guildId, provider }: { guildId: string; provider
                         label={formatStatusLabel(provider)}
                         sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
                     />
+                    <Button
+                        onClick={() => onSelectProvider(selected ? null : provider.providerKey)}
+                        size="small"
+                        variant={selected ? "contained" : "outlined"}
+                        sx={selected ? { bgcolor: accent, color: "grey.950", fontWeight: 850, "&:hover": { bgcolor: accent } } : ghostActionButtonSx(accent)}
+                    >
+                        Details
+                    </Button>
                     <Button component={Link} href={href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
                         Manage
                     </Button>
                 </Stack>
             </Stack>
+        </Box>
+    );
+}
+
+function ProviderDrilldownPanel({
+    guildId,
+    provider,
+    trend,
+    records,
+    healthRecords,
+    loading,
+    error,
+    onClear,
+}: {
+    guildId: string;
+    provider: GuildAnalyticsProvider;
+    trend: GuildAnalyticsTrendPoint[];
+    records: NotificationDeliveryRecord[];
+    healthRecords: IntegrationHealthRecord[];
+    loading: boolean;
+    error: string | null;
+    onClear: () => void;
+}) {
+    const accent = getStatusAccent(provider.status);
+    const route = providerRoutes.get(provider.providerKey);
+    const href = route ? `/dashboard/${route}/${encodeURIComponent(guildId)}` : `/dashboard/settings/${encodeURIComponent(guildId)}/notifications`;
+    const totalDeliveries = trend.reduce((total, point) => total + point.deliveries, 0);
+
+    return (
+        <FeaturePanel accent={accent} sx={{ p: 2.5, mt: 2.5 }}>
+            <Stack spacing={2.2} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.4} sx={{ alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between", gap: 1 }}>
+                    <Stack direction="row" spacing={1.2} sx={{ alignItems: "center", minWidth: 0 }}>
+                        {getStatusIcon(provider.status, accent)}
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
+                                {provider.providerLabel} details
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
+                                {provider.configured} configured - {provider.active} active - {provider.paused} paused - {provider.deliveries} total deliveries
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", md: "flex-end" }, flexWrap: "wrap", rowGap: 0.8 }}>
+                        <Chip
+                            size="small"
+                            label={formatStatusLabel(provider)}
+                            sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
+                        />
+                        <Button component={Link} href={href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
+                            Manage
+                        </Button>
+                        <Button onClick={onClear} size="small" variant="outlined" sx={ghostActionButtonSx(dashboardAccents.neutral)}>
+                            Close
+                        </Button>
+                    </Stack>
+                </Stack>
+                {loading && <LinearProgress sx={{ borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)" }} />}
+                {error && (
+                    <Alert severity="warning" icon={<WarningAmber />} sx={{ bgcolor: alpha(dashboardAccents.patchNotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.patchNotes, 0.25)}` }}>
+                        {error}
+                    </Alert>
+                )}
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.1fr) minmax(0, 0.9fr)" }, gap: 2.2 }}>
+                    <Stack spacing={1.5}>
+                        <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
+                            Delivery trend
+                        </Typography>
+                        {trend.length > 0 ? (
+                            <TrendBarStrip trend={trend} accent={accent} totalLabel={`${totalDeliveries} provider deliveries`} />
+                        ) : (
+                            <EmptyState label="No delivery trend data is available for this provider yet." />
+                        )}
+                    </Stack>
+                    <Stack spacing={1.5}>
+                        <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
+                            Current health
+                        </Typography>
+                        {healthRecords.length > 0 ? (
+                            <Stack spacing={1}>
+                                {healthRecords.slice(0, 5).map((record) => (
+                                    <ProviderDetailLine
+                                        key={`${record.provider}:${record.configId}`}
+                                        primary={`${record.status} - ${record.configId}`}
+                                        secondary={record.lastErrorMessage || `Last checked ${formatRelativeTimestamp(record.lastCheckedAt ?? null)}`}
+                                        accent={getStatusAccent(record.status === "error" ? "critical" : record.status === "warning" || record.status === "unknown" ? "warning" : "healthy")}
+                                    />
+                                ))}
+                            </Stack>
+                        ) : (
+                            <EmptyState label="No health records have been reported for this provider." />
+                        )}
+                    </Stack>
+                </Box>
+                <Stack spacing={1.2}>
+                    <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
+                        Recent deliveries
+                    </Typography>
+                    {records.length > 0 ? (
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
+                            {records.slice(0, 6).map((record) => (
+                                <ProviderDetailLine
+                                    key={`${record.provider}:${record.id}:${record.eventId}`}
+                                    primary={record.eventId}
+                                    secondary={`${record.channelId ?? "unknown channel"} - ${formatRelativeTimestamp(record.createdAt ?? null)}`}
+                                    accent={accent}
+                                />
+                            ))}
+                        </Box>
+                    ) : (
+                        <EmptyState label="No recent delivery records match this provider." />
+                    )}
+                </Stack>
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function ProviderDetailLine({ primary, secondary, accent }: { primary: string; secondary: string; accent: string }) {
+    return (
+        <Box sx={{ borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: `1px solid ${alpha(accent, 0.18)}`, p: 1.2, minWidth: 0 }}>
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {primary}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {secondary}
+            </Typography>
         </Box>
     );
 }
@@ -386,4 +634,11 @@ function formatShortDate(value: string): string {
     const parsed = new Date(`${value}T00:00:00.000Z`);
     if (Number.isNaN(parsed.getTime())) return value;
     return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function normalizeProviderKey(provider: string): string {
+    const normalized = provider.trim().toLowerCase().replace(/[\s_-]+/g, "");
+    if (normalized === "patchnote" || normalized === "patchnotes") return "patchnotes";
+    if (normalized === "birthdays") return "birthday";
+    return normalized || "unknown";
 }

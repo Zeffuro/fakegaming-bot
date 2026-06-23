@@ -19,6 +19,9 @@ export const riotLinksApi = {
     getRiotLinks: () =>
         apiRequest<{ links: RiotLinkEntry[] }>(API_ENDPOINTS.RIOT_LINKS),
 
+    getMyRiotLink: () =>
+        apiRequest<{ link: RiotLinkEntry | null }>(`${API_ENDPOINTS.RIOT_LINKS}/me`),
+
     updateRiotLink: (discordId: string, data: RiotLinkUpdateRequest) =>
         apiRequest<RiotLinkEntry>(
             `${API_ENDPOINTS.RIOT_LINKS}/${encodeURIComponent(discordId)}`,

@@ -19,7 +19,6 @@ interface GuildDashboardModule {
   icon: React.ReactNode;
   accent: string;
   href?: string;
-  disabled?: boolean;
   chipLabel?: string;
   statusLabel?: string;
   meta?: React.ReactNode;
@@ -46,6 +45,7 @@ export default function GuildDashboard() {
   const counts = summaryApi.summary?.counts ?? emptySummaryCounts;
   const notificationLoading = summaryApi.loading;
   const totalConfigured = summaryApi.summary?.totalConfigured ?? 0;
+  const configuredNotificationTypes = Object.values(counts).filter(count => count > 0).length;
 
   if (!guild && !guildsLoading) {
     return <GuildAccessError />;
@@ -135,7 +135,7 @@ export default function GuildDashboard() {
     },
     {
       title: "Server Settings",
-      description: "Configure bot behavior, permissions, and general server settings.",
+      description: "Jump into notification setup, delivery analytics, command controls, and live management surfaces.",
       icon: <Settings />,
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}`,
@@ -182,7 +182,7 @@ export default function GuildDashboard() {
             stats={[
               { label: "Members", value: guild.member_count || "N/A" },
               { label: "Configured Notifications", value: notificationLoading ? "..." : totalConfigured },
-              { label: "Available Pages", value: modules.filter(module => !module.disabled).length },
+              { label: "Management Pages", value: modules.length },
             ]}
           />
 
@@ -190,9 +190,9 @@ export default function GuildDashboard() {
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }, gap: 2, position: "relative" }}>
               {[
                 { label: "Members", value: guild.member_count || "N/A", color: dashboardAccents.settings },
-                { label: "Active Pages", value: modules.filter(module => !module.disabled).length, color: dashboardAccents.commands },
+                { label: "Management Pages", value: modules.length, color: dashboardAccents.commands },
                 { label: "Notification Configs", value: notificationLoading ? "..." : totalConfigured, color: dashboardAccents.anime },
-                { label: "Coming Soon", value: modules.filter(module => module.disabled).length, color: dashboardAccents.neutral },
+                { label: "Configured Types", value: notificationLoading ? "..." : configuredNotificationTypes, color: dashboardAccents.neutral },
               ].map((stat) => (
                 <Box key={stat.label} sx={{ textAlign: "center", p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <Typography variant="h5" sx={{ fontWeight: 900, color: stat.color }}>{stat.value}</Typography>

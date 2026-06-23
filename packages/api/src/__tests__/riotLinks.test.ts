@@ -147,6 +147,27 @@ describe('Riot links admin routes', () => {
         expect(res.body.links).toHaveLength(1);
     });
 
+    it('returns the authenticated user Riot link without dashboard admin access', async () => {
+        const res = await givenAuthenticatedClient(app, { discordId: 'discord-1' }).get('/api/riotLinks/me');
+
+        expectOk(res);
+        expect(res.body.link).toMatchObject({
+            discordId: 'discord-1',
+            summonerName: 'Linked#EUW',
+            riotIdGameName: 'Linked',
+            riotIdTagLine: 'EUW',
+            region: 'euw1',
+            puuid: 'puuid-1',
+        });
+    });
+
+    it('returns a null authenticated user Riot link when the user is not linked', async () => {
+        const res = await givenAuthenticatedClient(app, { discordId: 'regular-user' }).get('/api/riotLinks/me');
+
+        expectOk(res);
+        expect(res.body).toEqual({ link: null });
+    });
+
     it('does not trust a dashboard admin assertion without service authentication', async () => {
         const res = await nonAdmin.raw
             .get('/api/riotLinks')

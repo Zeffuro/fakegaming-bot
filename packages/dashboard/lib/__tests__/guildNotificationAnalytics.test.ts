@@ -125,4 +125,24 @@ describe('buildGuildNotificationAnalytics', () => {
             },
         ]);
     });
+
+    it('uses server-provided delivery trend when available', () => {
+        const analytics = buildGuildNotificationAnalytics({
+            notificationRecords: [
+                notificationRecord({ provider: 'twitch', createdAt: '2026-06-22T09:00:00.000Z' }),
+            ],
+            notificationTrend: [
+                { date: '2026-06-20', count: 3 },
+                { date: '2026-06-21', count: 0 },
+                { date: '2026-06-22', count: 5 },
+            ],
+            now: new Date('2026-06-22T12:00:00.000Z'),
+        });
+
+        expect(analytics.trend).toEqual([
+            { date: '2026-06-20', deliveries: 3 },
+            { date: '2026-06-21', deliveries: 0 },
+            { date: '2026-06-22', deliveries: 5 },
+        ]);
+    });
 });

@@ -4,7 +4,7 @@ Next.js dashboard for managing the fakegaming Discord bot.
 
 ## Overview
 
-Web dashboard for guild administrators to configure and manage the bot without using Discord commands. Built with Next.js 16, React, and TypeScript.
+Web dashboard for guild administrators to manage the bot surfaces that are currently backed by API routes and persisted configuration. Built with Next.js 16, React, and TypeScript.
 
 ## Features
 
@@ -17,8 +17,8 @@ Web dashboard for guild administrators to configure and manage the bot without u
 
 ### Guild Management
 - View and select guilds where you have administrator permissions
-- Per-guild configuration pages
-- Real-time guild and channel data from Discord API
+- Per-guild dashboard index with links to live management pages
+- Discord guild and channel data from the dashboard API routes
 
 ### Quote Management
 - List all quotes in a guild
@@ -27,24 +27,11 @@ Web dashboard for guild administrators to configure and manage the bot without u
 - Search and filter functionality
 - Author/submitter resolution with Discord profile data
 
-### Twitch Integration
-- Configure Twitch stream notifications
-- Set custom messages per stream
-- Configure cooldown periods
-- Set quiet hours (optional)
-- View and edit existing configurations
-
-### YouTube Integration
-- Configure YouTube channel notifications
-- Set custom messages per channel
-- Configure cooldown periods
-- Set quiet hours (optional)
-- View and edit existing configurations
-
-### TikTok Integration
-- Configure TikTok account live notifications
-- Manage notification settings
-- View active configurations
+### Notification Integrations
+- Configure Twitch, TikTok, Bluesky, YouTube, Steam News, Patch Notes, anime, and birthday notifications
+- Set destination channels, custom messages, cooldown periods, quiet hours, and pause state where supported
+- Import/export notification setup and review duplicate or crowded routes
+- View and edit existing provider configurations
 
 ### Command Management
 - Disable/enable specific commands per guild
@@ -52,10 +39,16 @@ Web dashboard for guild administrators to configure and manage the bot without u
 - View all available commands
 - Organized by module
 
-### Patch Notes Management
-- Subscribe channels to patch note announcements
-- Support for multiple games (League of Legends, VALORANT, Marvel Rivals, Overwatch 2)
-- Automatic announcements when new patches are released
+### Analytics
+- View guild notification delivery history
+- Review provider health and delivery rates
+- Drill into provider-specific 30-day delivery trends
+
+### Account Tools
+- Manage user notes, personal reminders, user settings, and DM anime subscriptions
+
+### Admin Tools
+- Review jobs, audit events, delivery history, integration health, Riot links, and provider credential diagnostics
 
 ## Technology Stack
 
@@ -149,7 +142,7 @@ pnpm typecheck
 pnpm test
 
 # Generate API types from OpenAPI spec
-pnpm generate:api-types
+pnpm -w run gen:api-types
 ```
 
 ## Architecture
@@ -158,32 +151,34 @@ pnpm generate:api-types
 
 ```
 app/
-├── api/                      # API routes (Next.js API)
-│   ├── auth/                # Discord OAuth endpoints
-│   │   ├── discord/         # OAuth initiation
-│   │   │   └── callback/    # OAuth callback
-│   │   ├── me/              # Get current user
-│   │   └── logout/          # Logout endpoint
-│   ├── external/            # Proxy to Express API
-│   │   └── [...proxy]/      # Dynamic proxy route
-│   ├── guilds/              # Guild data endpoints
-│   └── health/              # Health check
-├── dashboard/               # Dashboard pages
-│   ├── admin/               # Admin-only pages
-│   ├── quotes/              # Quote management
-│   │   └── [guildId]/       # Guild-specific quotes
-│   ├── twitch/              # Twitch config
-│   │   └── [guildId]/
-│   ├── youtube/             # YouTube config
-│   │   └── [guildId]/
-│   ├── tiktok/              # TikTok config
-│   │   └── [guildId]/
-│   ├── commands/            # Command management
-│   │   └── [guildId]/
-│   └── patchnotes/          # Patch subscriptions
-│       └── [guildId]/
-├── login/                   # Login page
-└── layout.tsx               # Root layout
+api/
+  auth/discord/                # OAuth initiation and callback
+  auth/logout/                 # Logout endpoint
+  auth/me/                     # Current auth session
+  auth/refresh/                # Refresh session
+  external/[...proxy]/         # Signed proxy to Express API
+  guilds/                      # Guild list
+  guilds/[guildId]/channels/   # Guild channel list
+  healthz/                     # Health check
+  user/                        # Current user profile
+dashboard/
+  [guildId]/                   # Guild dashboard index
+  admin/                       # Admin overview and tools
+  analytics/[guildId]/         # Guild notification analytics
+  anime/[guildId]/             # Anime episode subscriptions
+  birthdays/[guildId]/         # Birthday announcements
+  bluesky/[guildId]/           # Bluesky post notifications
+  commands/[guildId]/          # Command/module availability
+  me/                          # User notes, reminders, and settings
+  patch-notes/[guildId]/       # Patch note subscriptions
+  quotes/[guildId]/            # Quote management
+  settings/[guildId]/          # Server control center
+  settings/[guildId]/notifications/
+  steam-news/[guildId]/        # Steam news subscriptions
+  tiktok/[guildId]/            # TikTok live notifications
+  twitch/[guildId]/            # Twitch live notifications
+  youtube/[guildId]/           # YouTube upload notifications
+layout.tsx                     # Root layout
 ```
 
 ### API Routes (Next.js)
@@ -198,54 +193,48 @@ Next.js API routes handle:
 
 ```
 components/
-├── hooks/                   # Custom React hooks
-│   ├── useAuth.ts          # Authentication hook
-│   ├── useGuilds.ts        # Guild data hook
-│   ├── useQuotes.ts        # Quotes data hook
-│   ├── useTwitch.ts        # Twitch config hook
-│   └── useYouTube.ts       # YouTube config hook
-├── ui/                      # UI components
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Input.tsx
-│   └── ...
-└── layout/                  # Layout components
-    ├── Sidebar.tsx
-    └── Navigation.tsx
+dashboard/                     # Shared dashboard panels, cards, and theme helpers
+config-dialog/                 # Shared notification configuration dialog fields
+admin/                         # Admin overview and audit components
+anime/                         # Anime dashboard components
+hooks/                         # Dashboard data hooks
+Commands/                      # Command/module controls
+Guild/                         # Guild selection UI
+NotificationConfigPage.tsx     # Shared provider notification CRUD page
+BirthdayConfigPage.tsx         # Birthday announcement page shell
+DashboardLayout.tsx            # Authenticated dashboard layout
 ```
 
 ### Custom Hooks Pattern
 
-Data fetching and state management is handled by custom hooks:
+Data fetching and state management is handled by custom hooks backed by typed API wrappers in `lib/api/`:
 
 ```typescript
 // components/hooks/useQuotes.ts
+import { useCallback, useEffect, useState } from "react";
+import type { ApiSchema } from "@zeffuro/fakegaming-common/api-helpers";
+import { api } from "@/lib/api-client";
+
+type Quote = ApiSchema<"QuoteConfig">;
+
 export function useQuotes(guildId: string) {
-    const [quotes, setQuotes] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [quotes, setQuotes] = useState<Quote[]>([]);
+    const [loading, setLoading] = useState(false);
 
-    const addQuote = async (quote) => {
-        // API call with CSRF
-    };
+    const refresh = useCallback(async () => {
+        setLoading(true);
+        try {
+            setQuotes(await api.getQuotesByGuild(guildId));
+        } finally {
+            setLoading(false);
+        }
+    }, [guildId]);
 
-    const deleteQuote = async (id) => {
-        // API call with CSRF
-    };
+    useEffect(() => {
+        void refresh();
+    }, [refresh]);
 
-    return { quotes, loading, addQuote, deleteQuote };
-}
-```
-
-Usage in page components:
-
-```typescript
-// app/dashboard/quotes/[guildId]/page.tsx
-export default function QuotesPage({ params }) {
-    const { quotes, loading, addQuote } = useQuotes(params.guildId);
-    
-    if (loading) return <Spinner />;
-    
-    return <QuotesList quotes={quotes} onAdd={addQuote} />;
+    return { quotes, loading, refresh };
 }
 ```
 
@@ -319,39 +308,29 @@ export async function POST(req: NextRequest) {
 
 ### Type-Safe API Calls
 
-Use generated types from OpenAPI spec:
+Use generated OpenAPI schema helpers through domain wrappers in `lib/api/`:
 
 ```typescript
-import type { paths } from '@zeffuro/fakegaming-common/types/api';
+// lib/api/quotes.ts
+import type { ApiSchema } from "@zeffuro/fakegaming-common/api-helpers";
+import { API_ENDPOINTS, apiRequest } from "./core";
 
-type QuotesResponse = paths['/quotes']['get']['responses']['200']['content']['application/json'];
+type QuoteResponse = ApiSchema<"QuoteConfig">;
 
-async function getQuotes(guildId: string): Promise<QuotesResponse> {
-    const res = await fetch(`/api/external/quotes?guildId=${guildId}`);
-    return res.json();
-}
+export const quotesApi = {
+    getQuotesByGuild: (guildId: string) =>
+        apiRequest<QuoteResponse[]>(`${API_ENDPOINTS.QUOTES}/guild/${encodeURIComponent(guildId)}`),
+};
 ```
 
 ## CSRF Protection
 
-All mutating requests require CSRF tokens:
+All mutating requests require CSRF tokens. Use `apiRequest` for dashboard client calls so cookies, JSON serialization, and CSRF headers stay consistent:
 
 ```typescript
-// Get CSRF token from cookie
-const csrfToken = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('csrf='))
-    ?.split('=')[1];
-
-// Send with request
-await fetch('/api/external/quotes', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'x-csrf-token': csrfToken
-    },
-    credentials: 'include',
-    body: JSON.stringify(data)
+await apiRequest<QuoteResponse>(API_ENDPOINTS.QUOTES, {
+    method: "POST",
+    body: data,
 });
 ```
 

@@ -16,11 +16,17 @@ export interface NotificationProviderSummary {
     count: number;
 }
 
+export interface NotificationTrendPoint {
+    date: string;
+    count: number;
+}
+
 export interface NotificationsQuery {
     provider?: string;
     guildId?: string;
     limit?: number;
     offset?: number;
+    days?: number;
 }
 
 export interface NotificationsResponse {
@@ -31,6 +37,7 @@ export interface NotificationsResponse {
     summary: {
         total: number;
         byProvider: NotificationProviderSummary[];
+        trend: NotificationTrendPoint[];
     };
 }
 

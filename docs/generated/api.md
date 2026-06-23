@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 123
+Operations: 124
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -73,6 +73,7 @@ Operations: 123
 | Riot Links | GET | `/riotLinks/{discordId}` | Get linked Riot account by Discord user ID | Bearer |
 | Riot Links | PUT | `/riotLinks/{discordId}` | Create or update a linked Riot account for a Discord user | Bearer |
 | Riot Links | DELETE | `/riotLinks/{discordId}` | Remove a linked Riot account for a Discord user | Bearer |
+| Riot Links | GET | `/riotLinks/me` | Get the authenticated dashboard user's linked Riot account | Bearer |
 | Servers | GET | `/servers` | List all servers | Bearer |
 | Servers | POST | `/servers` | Create a new server | Bearer |
 | Servers | GET | `/servers/{serverId}` | Get a server by ID | Bearer |

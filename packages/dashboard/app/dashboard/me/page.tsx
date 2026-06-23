@@ -30,6 +30,7 @@ import {
     Save,
     Schedule,
     Search,
+    SportsEsports,
     WarningAmber,
 } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
@@ -45,11 +46,12 @@ import {
     primaryActionButtonSx,
 } from "@/components/dashboard/dashboardTheme";
 import { subscriptionMeta, subscriptionTitle } from "@/components/anime/animeUtils";
+import { useMyRiotLink } from "@/components/hooks/useMyRiotLink";
 import { useUserAnimeSubscriptions } from "@/components/hooks/useUserAnimeSubscriptions";
 import { useUserNotes } from "@/components/hooks/useUserNotes";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
-import type { AnimeSubscriptionDashboardConfig, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import type { AnimeSubscriptionDashboardConfig, RiotLinkEntry, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
 
 const emptyNoteForm = {
     title: "",
@@ -97,6 +99,11 @@ export default function PersonalDashboardPage() {
         error: settingsError,
         updateSettings,
     } = useUserSettings();
+    const {
+        link: riotLink,
+        loading: riotLoading,
+        error: riotError,
+    } = useMyRiotLink();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [noteForm, setNoteForm] = useState<NoteFormState>(emptyNoteForm);
     const [reminderForm, setReminderForm] = useState<ReminderFormState>(emptyReminderForm);
@@ -125,8 +132,8 @@ export default function PersonalDashboardPage() {
         );
     }, [noteQuery, notes]);
 
-    const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError;
-    const loading = notesLoading || remindersLoading || animeLoading || settingsLoading;
+    const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError ?? riotError;
+    const loading = notesLoading || remindersLoading || animeLoading || settingsLoading || riotLoading;
     const saving = notesSaving || remindersSaving || animeSaving || settingsSaving;
 
     const resetNoteForm = () => {
@@ -277,6 +284,7 @@ export default function PersonalDashboardPage() {
                         { label: "pinned", value: notes.filter((note) => note.pinned).length },
                         { label: "reminders", value: reminders.length },
                         { label: "anime subs", value: animeSubscriptions.length },
+                        { label: "Riot link", value: riotLink ? "linked" : "none" },
                     ]}
                     actions={(
                         <Button
@@ -508,6 +516,8 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
+                            <RiotLinkPanel link={riotLink} />
+
                             <FeaturePanel accent={dashboardAccents.birthdays}>
                                 <Stack spacing={2.25} sx={{ position: "relative" }}>
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -594,6 +604,12 @@ export default function PersonalDashboardPage() {
                                         accent={dashboardAccents.anime}
                                     />
                                     <PersonalFeatureRow
+                                        icon={<SportsEsports />}
+                                        title="Riot link"
+                                        body={riotLink ? displayRiotId(riotLink) : "No linked Riot account"}
+                                        accent={dashboardAccents.patchNotes}
+                                    />
+                                    <PersonalFeatureRow
                                         icon={<ManageAccounts />}
                                         title="Settings"
                                         body={`Timezone ${settings?.timezone ?? "not set"}; reminders ${settings?.defaultReminderTimeSpan ?? "not set"}`}
@@ -606,6 +622,64 @@ export default function PersonalDashboardPage() {
                 </Stack>
             </FeatureShell>
         </DashboardLayout>
+    );
+}
+
+function RiotLinkPanel({ link }: { link: RiotLinkEntry | null }) {
+    return (
+        <FeaturePanel accent={dashboardAccents.patchNotes}>
+            <Stack spacing={2.25} sx={{ position: "relative" }}>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                    <Box>
+                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                            Riot linked account
+                        </Typography>
+                        <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                            League and TFT identity used by bot commands.
+                        </Typography>
+                    </Box>
+                    <SportsEsports sx={{ color: alpha(dashboardAccents.patchNotes, 0.86) }} />
+                </Stack>
+
+                {link ? (
+                    <Stack spacing={1.25}>
+                        <RiotLinkInfoRow label="Riot ID" value={displayRiotId(link)} />
+                        <RiotLinkInfoRow label="Region" value={formatRiotRegion(link.region)} />
+                        <RiotLinkInfoRow label="PUUID" value={shortenPuuid(link.puuid)} />
+                        <RiotLinkInfoRow label="Updated" value={formatDate(link.updatedAt ?? link.createdAt ?? null)} />
+                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
+                            Account changes are handled through the existing Riot link flows.
+                        </Typography>
+                    </Stack>
+                ) : (
+                    <EmptyPersonalState icon={<SportsEsports />} title="No Riot account linked" accent={dashboardAccents.patchNotes} />
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function RiotLinkInfoRow({ label, value }: { label: string; value: string }) {
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 2,
+                px: 1.5,
+                py: 1.2,
+                borderRadius: 2,
+                bgcolor: "rgba(255,255,255,0.045)",
+                border: "1px solid rgba(255,255,255,0.08)",
+            }}
+        >
+            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
+                {label}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 800, textAlign: "right", overflowWrap: "anywhere" }}>
+                {value}
+            </Typography>
+        </Box>
     );
 }
 
@@ -806,6 +880,22 @@ function PersonalFeatureRow({ icon, title, body, accent }: { icon: React.ReactNo
             </Box>
         </Stack>
     );
+}
+
+function displayRiotId(link: Pick<RiotLinkEntry, "summonerName" | "riotIdGameName" | "riotIdTagLine">): string {
+    const gameName = link.riotIdGameName?.trim();
+    const tagLine = link.riotIdTagLine?.trim();
+    if (gameName && tagLine) return `${gameName}#${tagLine}`;
+    return link.summonerName;
+}
+
+function formatRiotRegion(region: string): string {
+    return region.trim().toUpperCase() || "Unknown";
+}
+
+function shortenPuuid(puuid: string): string {
+    if (puuid.length <= 16) return puuid;
+    return `${puuid.slice(0, 8)}...${puuid.slice(-6)}`;
 }
 
 function formatDate(value: string | null): string {

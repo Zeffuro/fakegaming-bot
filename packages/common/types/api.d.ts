@@ -1971,6 +1971,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/riotLinks/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated dashboard user's linked Riot account */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Linked Riot account for the authenticated user, or null when not linked */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/riotLinks/{discordId}": {
         parameters: {
             query?: never;
@@ -2748,6 +2783,8 @@ export interface paths {
                     provider?: string;
                     limit?: number;
                     offset?: number;
+                    /** @description Number of UTC days to include in the delivery trend summary */
+                    days?: number;
                 };
                 header?: never;
                 path: {
@@ -2791,6 +2828,8 @@ export interface paths {
                     guildId?: string;
                     limit?: number;
                     offset?: number;
+                    /** @description Number of UTC days to include in the delivery trend summary */
+                    days?: number;
                 };
                 header?: never;
                 path?: never;

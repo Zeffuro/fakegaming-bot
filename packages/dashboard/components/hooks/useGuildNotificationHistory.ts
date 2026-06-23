@@ -4,11 +4,15 @@ import { api, type GuildNotificationsResponse } from "@/lib/api-client";
 interface UseGuildNotificationHistoryOptions {
     enabled?: boolean;
     limit?: number;
+    days?: number;
+    provider?: string | null;
 }
 
 export function useGuildNotificationHistory(guildId: string, options: UseGuildNotificationHistoryOptions = {}) {
     const enabled = options.enabled ?? true;
     const limit = options.limit ?? 100;
+    const days = options.days;
+    const provider = options.provider;
     const [history, setHistory] = useState<GuildNotificationsResponse | null>(null);
     const [loading, setLoading] = useState(enabled);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +26,7 @@ export function useGuildNotificationHistory(guildId: string, options: UseGuildNo
 
         try {
             setLoading(true);
-            setHistory(await api.getGuildNotifications(guildId, { limit }));
+            setHistory(await api.getGuildNotifications(guildId, { limit, days, provider: provider ?? undefined }));
             setError(null);
         } catch (err: unknown) {
             setHistory(null);
@@ -30,7 +34,7 @@ export function useGuildNotificationHistory(guildId: string, options: UseGuildNo
         } finally {
             setLoading(false);
         }
-    }, [enabled, guildId, limit]);
+    }, [days, enabled, guildId, limit, provider]);
 
     useEffect(() => {
         void refresh();

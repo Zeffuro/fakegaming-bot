@@ -100,6 +100,14 @@ describe('api-client', () => {
         await expect(api.getYouTubeConfigs()).rejects.toThrow('Bad stuff');
     });
 
+    it('getMyRiotLink performs GET for the authenticated user Riot link', async () => {
+        const payload = { link: { discordId: 'user-1', summonerName: 'Player#EUW', region: 'euw1', puuid: 'puuid-1' } };
+        mockOkJsonOnce(payload);
+        const result = await api.getMyRiotLink();
+        expectFetchCalledWith(`${API_ENDPOINTS.RIOT_LINKS}/me`, { method: 'GET' });
+        expect(result).toEqual(payload);
+    });
+
     it('apiRequest throws with generic message if no json', async () => {
         getFetchMock().mockResolvedValueOnce({ ok: false, status: 500, json: async () => { throw new Error('no json'); } });
         await expect(api.getTwitchConfigs()).rejects.toThrow('API request failed with status: 500');

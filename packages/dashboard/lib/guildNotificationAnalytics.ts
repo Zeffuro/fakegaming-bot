@@ -2,6 +2,7 @@ import type {
     IntegrationHealthRecord,
     NotificationDeliveryRecord,
     NotificationProviderSummary,
+    NotificationTrendPoint,
 } from "@/lib/api-client";
 
 export type GuildAnalyticsHealthStatus = "healthy" | "warning" | "critical" | "quiet";
@@ -52,6 +53,7 @@ export function buildGuildNotificationAnalytics(input: {
     healthRecords?: IntegrationHealthRecord[];
     notificationRecords?: NotificationDeliveryRecord[];
     notificationProviders?: NotificationProviderSummary[];
+    notificationTrend?: NotificationTrendPoint[];
     now?: Date;
     trendDays?: number;
 }): GuildNotificationAnalytics {
@@ -115,7 +117,9 @@ export function buildGuildNotificationAnalytics(input: {
         healthWarnings: providers.reduce((total, provider) => total + provider.healthWarnings + provider.healthUnknown, 0),
         lastDeliveryAt: notificationRecords.reduce<string | null>((latest, record) => getLatestIsoTimestamp(latest, record.createdAt ?? null), null),
         providers,
-        trend: buildDeliveryTrend(notificationRecords, input.now ?? new Date(), input.trendDays ?? defaultTrendDays),
+        trend: input.notificationTrend && input.notificationTrend.length > 0
+            ? normalizeDeliveryTrend(input.notificationTrend)
+            : buildDeliveryTrend(notificationRecords, input.now ?? new Date(), input.trendDays ?? defaultTrendDays),
     };
 }
 
@@ -207,6 +211,13 @@ function buildDeliveryTrend(records: NotificationDeliveryRecord[], now: Date, da
     }
 
     return [...counts.entries()].map(([date, deliveries]) => ({ date, deliveries }));
+}
+
+function normalizeDeliveryTrend(points: NotificationTrendPoint[]): GuildAnalyticsTrendPoint[] {
+    return points.map((point) => ({
+        date: point.date,
+        deliveries: Math.max(0, Math.floor(point.count)),
+    }));
 }
 
 function compareProviders(a: GuildAnalyticsProvider, b: GuildAnalyticsProvider): number {
