@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api-client";
 import { useResolvedUsers } from "@/components/hooks/useResolvedUsers";
+import { filterQuotesForCuration } from "@/lib/quoteCuration";
 
 export interface QuoteItem {
     id: string;
@@ -25,8 +26,8 @@ export function useQuotes(guildId: string) {
             const data = await api.getQuotesByGuild(guildId);
             setQuotes(data as QuoteItem[]);
             setError(null);
-        } catch (e: any) {
-            setError(e?.message ?? "Failed to load quotes");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to load quotes");
         } finally {
             setLoading(false);
         }
@@ -44,19 +45,17 @@ export function useQuotes(guildId: string) {
         try {
             setSaving(true);
             await api.createQuote({
-                // do not send id; let server generate one (UUID)
                 guildId,
                 quote: payload.quote,
                 authorId: payload.authorId,
-                // do not send submitterId; server derives from JWT
                 timestamp: payload.timestamp ?? Date.now()
-            } as any);
+            });
             await refresh();
             // Resolve the two users for display
             await resolveUsers([payload.authorId]);
             return true;
-        } catch (e: any) {
-            setError(e?.message ?? 'Failed to add quote');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to add quote');
             return false;
         } finally {
             setSaving(false);
@@ -69,8 +68,8 @@ export function useQuotes(guildId: string) {
             await api.deleteQuote(id);
             await refresh();
             return true;
-        } catch (e: any) {
-            setError(e?.message ?? 'Failed to delete quote');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to delete quote');
             return false;
         } finally {
             setSaving(false);
@@ -78,10 +77,8 @@ export function useQuotes(guildId: string) {
     }, [refresh]);
 
     const filtered = useMemo(() => {
-        if (!search) return quotes;
-        const q = search.toLowerCase();
-        return quotes.filter(item => item.quote.toLowerCase().includes(q));
-    }, [quotes, search]);
+        return filterQuotesForCuration(quotes, search, userMap);
+    }, [quotes, search, userMap]);
 
     useEffect(() => {
         if (!guildId) return;

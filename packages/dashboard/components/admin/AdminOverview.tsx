@@ -30,6 +30,7 @@ import { useAdminCards } from "@/components/hooks/useAdmin";
 import { useAdminOverview, type AdminOverviewJobStatus } from "@/components/hooks/useAdminOverview";
 import { buildAdminOperationsHealth, type AdminOperationsHealth, type AdminOperationsStatus } from "@/lib/adminOperationsHealth";
 import { buildAdminProviderInsights, type AdminProviderInsight } from "@/lib/adminProviderInsights";
+import { buildAdminReviewQueue, type AdminReviewQueueItem, type AdminReviewSeverity, type AdminReviewSource } from "@/lib/adminReviewQueue";
 import type {
     AdminNotificationRecord,
     AuditEventEntry,
@@ -69,6 +70,12 @@ export function AdminOverview() {
         heartbeat,
         overviewError: error,
     });
+    const reviewQueue = buildAdminReviewQueue({
+        operationsHealth,
+        healthRecords: integrationHealth?.records ?? [],
+        jobs,
+        auditEvents,
+    });
 
     return (
         <Stack spacing={2.5}>
@@ -96,6 +103,8 @@ export function AdminOverview() {
             )}
 
             <OperationsHealthPanel health={operationsHealth} />
+
+            <AdminReviewQueuePanel items={reviewQueue} />
 
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2 }}>
                 <OverviewMetric label="Health errors" value={summary.error} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
@@ -223,6 +232,92 @@ export function AdminOverview() {
                 </Stack>
             </FeaturePanel>
         </Stack>
+    );
+}
+
+function AdminReviewQueuePanel({ items }: { items: AdminReviewQueueItem[] }) {
+    const criticalCount = items.filter(item => item.severity === "critical").length;
+    const warningCount = items.filter(item => item.severity === "warning").length;
+    const panelSeverity: AdminReviewSeverity = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : "info";
+    const accent = getReviewSeverityAccent(panelSeverity);
+
+    return (
+        <FeaturePanel accent={accent} sx={{ p: 2.5 }}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "flex-start", md: "center" }, justifyContent: "space-between" }}>
+                    <Stack direction="row" spacing={1.2} sx={{ minWidth: 0, alignItems: "center" }}>
+                        <Box sx={{ color: accent, display: "grid", placeItems: "center" }}>
+                            {getReviewSeverityIcon(panelSeverity, accent)}
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
+                                Review queue
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
+                                Highest-priority admin signals from health checks, jobs, and audit failures.
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
+                        <Chip
+                            size="small"
+                            label={`${criticalCount} critical`}
+                            sx={{ bgcolor: alpha(dashboardAccents.quotes, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.quotes, 0.24)}` }}
+                        />
+                        <Chip
+                            size="small"
+                            label={`${warningCount} warning`}
+                            sx={{ bgcolor: alpha(dashboardAccents.patchNotes, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.patchNotes, 0.24)}` }}
+                        />
+                    </Stack>
+                </Stack>
+                <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+                {items.length > 0 ? (
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" }, gap: 1.35 }}>
+                        {items.map(item => (
+                            <AdminReviewQueueRow key={item.id} item={item} />
+                        ))}
+                    </Box>
+                ) : (
+                    <EmptyState label="No admin review items queued." />
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
+    const accent = getReviewSeverityAccent(item.severity);
+
+    return (
+        <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)", p: 1.35, minWidth: 0 }}>
+            <Stack spacing={1.1}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 1 }}>
+                    <Stack direction="row" spacing={0.85} sx={{ minWidth: 0, alignItems: "center" }}>
+                        {getReviewSeverityIcon(item.severity, accent)}
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {item.title}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)", display: "block", mt: 0.15 }}>
+                                {formatReviewSource(item.source)} - {item.timestamp ? formatDateTime(item.timestamp) : "current signal"}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Chip
+                        size="small"
+                        label={item.severity}
+                        sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}`, flexShrink: 0 }}
+                    />
+                </Stack>
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.60)", overflowWrap: "anywhere" }}>
+                    {item.detail}
+                </Typography>
+                <Button component={Link} href={item.href} size="small" variant="outlined" sx={{ ...ghostActionButtonSx(accent), alignSelf: "flex-start" }}>
+                    Review
+                </Button>
+            </Stack>
+        </Box>
     );
 }
 
@@ -570,6 +665,25 @@ function getOperationsStatusIcon(status: AdminOperationsStatus): React.ReactNode
     if (status === "critical") return <ErrorOutlined />;
     if (status === "warning") return <WarningAmber />;
     return <CheckCircle />;
+}
+
+function getReviewSeverityAccent(severity: AdminReviewSeverity): string {
+    if (severity === "critical") return dashboardAccents.quotes;
+    if (severity === "warning") return dashboardAccents.patchNotes;
+    return dashboardAccents.settings;
+}
+
+function getReviewSeverityIcon(severity: AdminReviewSeverity, accent: string): React.ReactNode {
+    if (severity === "critical") return <ErrorOutlined sx={{ color: accent, fontSize: 17 }} />;
+    if (severity === "warning") return <WarningAmber sx={{ color: accent, fontSize: 17 }} />;
+    return <CheckCircle sx={{ color: accent, fontSize: 17 }} />;
+}
+
+function formatReviewSource(source: AdminReviewSource): string {
+    if (source === "integration-health") return "Integration health";
+    if (source === "jobs") return "Jobs";
+    if (source === "audit") return "Audit";
+    return "Operations";
 }
 
 function formatIssueValue(label: string, value: number): string {

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useMemo, useRef } from "react";
 import { Alert, Box, Stack } from "@mui/material";
+import { AnimeAiringSchedulePanel } from "@/components/anime/AnimeAiringSchedulePanel";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AnimePageHeader } from "@/components/anime/AnimePageHeader";
 import { AnimeSeasonBrowser } from "@/components/anime/AnimeSeasonBrowser";
@@ -77,6 +78,7 @@ export function AnimeDashboard() {
               searchResults={anime.searchResults}
               selectedAnime={anime.selectedAnime}
               searchLoading={anime.searchLoading}
+              lookupHistory={anime.lookupHistory}
               channels={channels as AnimeDashboardChannel[]}
               selectedChannel={selectedChannel}
               loadingChannels={loadingChannels}
@@ -86,6 +88,8 @@ export function AnimeDashboard() {
               onSearchInputChange={anime.setSearchInput}
               onSearchMediaTypeChange={anime.setSearchMediaType}
               onSelectedAnimeChange={anime.setSelectedAnime}
+              onUseLookupHistory={anime.useLookupHistoryEntry}
+              onClearLookupHistory={anime.clearLookupHistory}
               onChannelChange={anime.setChannelId}
               onReminderMinutesChange={anime.setReminderMinutes}
               onSubscribe={handleSubscribe}
@@ -114,15 +118,21 @@ export function AnimeDashboard() {
           </Box>
 
           <Stack spacing={3}>
+            <AnimeAiringSchedulePanel
+              serverSubs={anime.serverSubs}
+              personalSubs={anime.personalSubs}
+              getChannelName={getChannelName}
+            />
+
             <AnimeSubscriptionsPanel
               serverSubs={anime.serverSubs}
               personalSubs={anime.personalSubs}
               saving={anime.saving}
               getChannelName={getChannelName}
               onTogglePaused={anime.togglePausedSubscription}
-              onSetServerPaused={anime.setServerSubscriptionsPaused}
-              onSetPersonalPaused={anime.setPersonalSubscriptionsPaused}
+              onSetPaused={anime.setSelectedSubscriptionsPaused}
               onDelete={anime.deleteSubscription}
+              onDeleteMany={anime.deleteSubscriptions}
             />
           </Stack>
         </Box>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import React, { act } from 'react';
 import { useAnimeDashboard } from '@/components/hooks/useAnimeDashboard';
 import { api } from '@/lib/api-client';
@@ -7,6 +7,11 @@ import { createHookProbe1, mountWithSnapshots } from '../testing/reactTesting';
 const HookProbe = createHookProbe1((arg: string) => useAnimeDashboard(arg));
 
 describe('useAnimeDashboard', () => {
+    beforeEach(() => {
+        vi.restoreAllMocks();
+        window.localStorage.clear();
+    });
+
     it('bulk updates server and personal subscription paused states separately', async () => {
         const serverSubs = [
             { id: 11, anilistId: 101, animeTitle: 'Airing One', guildId: 'guild-1', channelId: 'channel-1', discordChannelId: 'channel-1', reminderMinutes: 30, paused: false },
@@ -50,6 +55,44 @@ describe('useAnimeDashboard', () => {
 
         expect(pauseSpy).toHaveBeenCalledTimes(1);
         expect(pauseSpy).toHaveBeenCalledWith(21, false);
+
+        unmount();
+    });
+
+    it('deletes selected subscriptions and skips entries without ids', async () => {
+        const serverSubs = [
+            { id: 11, anilistId: 101, animeTitle: 'Airing One', guildId: 'guild-1', channelId: 'channel-1', discordChannelId: 'channel-1', reminderMinutes: 30, paused: false },
+            { id: 12, anilistId: 102, animeTitle: 'Airing Two', guildId: 'guild-1', channelId: 'channel-2', discordChannelId: 'channel-2', reminderMinutes: 15, paused: false },
+        ];
+
+        vi.spyOn(api, 'getAnimeSubscriptions').mockResolvedValue(serverSubs as any);
+        vi.spyOn(api, 'getMyAnimeSubscriptions').mockResolvedValue([]);
+        vi.spyOn(api, 'getAnimeSeason').mockResolvedValue({
+            season: 'SUMMER',
+            year: 2026,
+            scope: 'airing',
+            scopeLabel: 'Airing / Upcoming',
+            results: [],
+            pageInfo: { hasNextPage: false },
+        } as any);
+        const deleteSpy = vi.spyOn(api, 'deleteAnimeSubscription').mockResolvedValue({ success: true });
+
+        const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
+            React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot })
+        );
+
+        await act(async () => {
+            await (last() as any).deleteSubscriptions([
+                serverSubs[0],
+                { anilistId: 999, animeTitle: 'Unsaved', guildId: 'guild-1', discordChannelId: 'channel-3', reminderMinutes: 30 },
+                serverSubs[1],
+            ]);
+        });
+        await flush();
+
+        expect(deleteSpy).toHaveBeenCalledTimes(2);
+        expect(deleteSpy).toHaveBeenCalledWith(11);
+        expect(deleteSpy).toHaveBeenCalledWith(12);
 
         unmount();
     });

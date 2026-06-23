@@ -1,13 +1,14 @@
 "use client";
 
 import React from "react";
-import { Add, Refresh, Search } from "@mui/icons-material";
-import { Alert, Autocomplete, Box, Button, CircularProgress, Divider, IconButton, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
+import { Add, DeleteSweep, History, Refresh, Search } from "@mui/icons-material";
+import { Alert, Autocomplete, Box, Button, Chip, CircularProgress, Divider, IconButton, MenuItem, Paper, Stack, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
 import { AnimeMediaRow } from "@/components/anime/AnimeMediaRow";
 import { fieldSx, panelSx, primaryButtonSx } from "@/components/anime/animeTheme";
 import { canSubscribe, formatAnimeTitle, getSubscribeHint } from "@/components/anime/animeUtils";
 import type { AnimeDashboardChannel } from "@/components/anime/types";
 import type { AnimeSearchMediaType, AnimeSearchResult } from "@/lib/api-client";
+import type { AnimeLookupHistoryEntry } from "@/lib/animeLookupHistory";
 
 interface AnimeSetupPanelProps {
   searchInput: string;
@@ -15,6 +16,7 @@ interface AnimeSetupPanelProps {
   searchResults: AnimeSearchResult[];
   selectedAnime: AnimeSearchResult | null;
   searchLoading: boolean;
+  lookupHistory: AnimeLookupHistoryEntry[];
   channels: AnimeDashboardChannel[];
   selectedChannel: AnimeDashboardChannel | null;
   loadingChannels: boolean;
@@ -23,6 +25,8 @@ interface AnimeSetupPanelProps {
   saving: boolean;
   onSearchInputChange: (value: string) => void;
   onSelectedAnimeChange: (value: AnimeSearchResult | null) => void;
+  onUseLookupHistory: (entry: AnimeLookupHistoryEntry) => void;
+  onClearLookupHistory: () => void;
   onChannelChange: (value: string) => void;
   onReminderMinutesChange: (value: number) => void;
   onSubscribe: () => void | Promise<void>;
@@ -40,12 +44,78 @@ function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResul
   return "Add Channel Subscription";
 }
 
+function historyTypeLabel(mediaType: AnimeSearchMediaType): string {
+  return mediaType === "manga" ? "Manga" : "Anime";
+}
+
+function LookupHistoryPanel({
+  history,
+  mediaType,
+  onUse,
+  onClear,
+}: {
+  history: AnimeLookupHistoryEntry[];
+  mediaType: AnimeSearchMediaType;
+  onUse: (entry: AnimeLookupHistoryEntry) => void;
+  onClear: () => void;
+}) {
+  const visibleHistory = history.filter((entry) => entry.mediaType === mediaType).slice(0, 5);
+
+  if (history.length === 0) return null;
+
+  return (
+    <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+      <Stack spacing={1.25}>
+        <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", gap: 1 }}>
+          <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 850, display: "flex", alignItems: "center", gap: 0.75 }}>
+            <History fontSize="small" />
+            Recent {historyTypeLabel(mediaType)} Lookups
+          </Typography>
+          <Tooltip title="Clear recent lookups">
+            <span>
+              <IconButton size="small" aria-label="Clear recent lookups" onClick={onClear} sx={{ color: "rgba(255,255,255,0.62)" }}>
+                <DeleteSweep fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Stack>
+
+        {visibleHistory.length === 0 ? (
+          <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
+            No recent {historyTypeLabel(mediaType).toLowerCase()} lookups.
+          </Typography>
+        ) : (
+          <Stack spacing={0.75}>
+            {visibleHistory.map((entry) => (
+              <Box key={`${entry.mediaType}:${entry.id}`} sx={{ display: "flex", gap: 1, alignItems: "center", justifyContent: "space-between", minWidth: 0 }}>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, overflowWrap: "anywhere" }}>
+                    {entry.title}
+                  </Typography>
+                  <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75, mt: 0.5 }}>
+                    <Chip size="small" label={`AniList #${entry.id}`} variant="outlined" sx={{ color: "rgba(255,255,255,0.62)", borderColor: "rgba(255,255,255,0.14)" }} />
+                    <Chip size="small" label={entry.subscribable ? "Subscribable" : "Lookup Only"} sx={{ bgcolor: entry.subscribable ? "rgba(104,215,255,0.12)" : "rgba(255,200,87,0.12)", color: "rgba(255,255,255,0.76)" }} />
+                  </Stack>
+                </Box>
+                <Button size="small" variant="outlined" onClick={() => onUse(entry)} sx={{ textTransform: "none", color: "grey.100", borderColor: "rgba(255,255,255,0.16)", flex: "0 0 auto" }}>
+                  Search
+                </Button>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
 export function AnimeSetupPanel({
   searchInput,
   searchMediaType,
   searchResults,
   selectedAnime,
   searchLoading,
+  lookupHistory,
   channels,
   selectedChannel,
   loadingChannels,
@@ -55,6 +125,8 @@ export function AnimeSetupPanel({
   onSearchInputChange,
   onSearchMediaTypeChange,
   onSelectedAnimeChange,
+  onUseLookupHistory,
+  onClearLookupHistory,
   onChannelChange,
   onReminderMinutesChange,
   onSubscribe,
@@ -139,6 +211,13 @@ export function AnimeSetupPanel({
               }}
             />
           )}
+        />
+
+        <LookupHistoryPanel
+          history={lookupHistory}
+          mediaType={searchMediaType}
+          onUse={onUseLookupHistory}
+          onClear={onClearLookupHistory}
         />
 
         {selectedAnime && (

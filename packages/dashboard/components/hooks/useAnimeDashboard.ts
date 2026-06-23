@@ -2,6 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type AnimeSearchMediaType, type AnimeSearchResult, type AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
 import { canSubscribe, errorMessage, formatAnimeTitle, formatStatus } from "@/components/anime/animeUtils";
 import { ANIME_SEASON_PAGE_SIZE, type AnimeSeasonOption, type AnimeSeasonScope } from "@/components/anime/animeTheme";
+import {
+  addAnimeLookupHistoryEntry,
+  createAnimeLookupHistoryEntry,
+  parseAnimeLookupHistory,
+  type AnimeLookupHistoryEntry,
+} from "@/lib/animeLookupHistory";
+
+const animeLookupHistoryStorageKey = "fakegaming:animeLookupHistory:v1";
 
 export interface UseAnimeDashboardResult {
   serverSubs: AnimeSubscriptionDashboardConfig[];
@@ -18,6 +26,9 @@ export interface UseAnimeDashboardResult {
   selectedAnime: AnimeSearchResult | null;
   setSelectedAnime: (value: AnimeSearchResult | null) => void;
   searchLoading: boolean;
+  lookupHistory: AnimeLookupHistoryEntry[];
+  useLookupHistoryEntry: (entry: AnimeLookupHistoryEntry) => void;
+  clearLookupHistory: () => void;
   channelId: string;
   setChannelId: (value: string) => void;
   reminderMinutes: number;
@@ -37,9 +48,11 @@ export interface UseAnimeDashboardResult {
   fetchSubscriptions: () => Promise<void>;
   addSubscription: (anime?: AnimeSearchResult) => Promise<void>;
   togglePausedSubscription: (config: AnimeSubscriptionDashboardConfig) => Promise<void>;
+  setSelectedSubscriptionsPaused: (configs: AnimeSubscriptionDashboardConfig[], paused: boolean) => Promise<void>;
   setServerSubscriptionsPaused: (paused: boolean) => Promise<void>;
   setPersonalSubscriptionsPaused: (paused: boolean) => Promise<void>;
   deleteSubscription: (config: AnimeSubscriptionDashboardConfig) => Promise<void>;
+  deleteSubscriptions: (configs: AnimeSubscriptionDashboardConfig[]) => Promise<void>;
 }
 
 interface UseAnimeDashboardOptions {
@@ -59,6 +72,7 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
   const [searchResults, setSearchResults] = useState<AnimeSearchResult[]>([]);
   const [selectedAnime, setSelectedAnimeState] = useState<AnimeSearchResult | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [lookupHistory, setLookupHistory] = useState<AnimeLookupHistoryEntry[]>([]);
   const [channelId, setChannelId] = useState("");
   const [reminderMinutes, setReminderMinutes] = useState(30);
 
@@ -101,6 +115,25 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     void fetchSubscriptions();
   }, [enabled, fetchSubscriptions]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setLookupHistory(parseAnimeLookupHistory(window.localStorage.getItem(animeLookupHistoryStorageKey)));
+  }, []);
+
+  const persistLookupHistory = useCallback((entries: AnimeLookupHistoryEntry[]) => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(animeLookupHistoryStorageKey, JSON.stringify(entries));
+  }, []);
+
+  const recordLookupHistory = useCallback((anime: AnimeSearchResult, mediaType: AnimeSearchMediaType = searchMediaType) => {
+    const entry = createAnimeLookupHistoryEntry(anime, mediaType);
+    setLookupHistory((current) => {
+      const next = addAnimeLookupHistoryEntry(current, entry);
+      persistLookupHistory(next);
+      return next;
+    });
+  }, [persistLookupHistory, searchMediaType]);
+
   const setSearchInput = useCallback((value: string) => {
     setSearchInputState(value);
     setSelectedAnimeState((current) => current && formatAnimeTitle(current) !== value ? null : current);
@@ -109,6 +142,21 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
   const setSelectedAnime = useCallback((value: AnimeSearchResult | null) => {
     setSelectedAnimeState(value);
     setSearchInputState(value ? formatAnimeTitle(value) : "");
+    if (value) recordLookupHistory(value);
+  }, [recordLookupHistory]);
+
+  const useLookupHistoryEntry = useCallback((entry: AnimeLookupHistoryEntry) => {
+    setSearchMediaTypeState(entry.mediaType);
+    setSelectedAnimeState(null);
+    setSearchResults([]);
+    setSearchInputState(entry.title);
+  }, []);
+
+  const clearLookupHistory = useCallback(() => {
+    setLookupHistory([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(animeLookupHistoryStorageKey);
+    }
   }, []);
 
   const setSearchMediaType = useCallback((value: AnimeSearchMediaType) => {
@@ -201,6 +249,7 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
 
     try {
       setSaving(true);
+      if (target) recordLookupHistory(target);
       await api.createAnimeSubscription({
         ...(target ? { anilistId: target.id } : { anilistId: numericId }),
         guildId,
@@ -215,20 +264,26 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     } finally {
       setSaving(false);
     }
-  }, [channelId, fetchSubscriptions, guildId, reminderMinutes, searchInput, searchMediaType, selectedAnime, setSelectedAnime]);
+  }, [channelId, fetchSubscriptions, guildId, recordLookupHistory, reminderMinutes, searchInput, searchMediaType, selectedAnime, setSelectedAnime]);
 
-  const deleteSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
-    if (!config.id) return;
+  const deleteSubscriptions = useCallback(async (configs: AnimeSubscriptionDashboardConfig[]) => {
+    const targets = configs.filter((config): config is AnimeSubscriptionDashboardConfig & { id: number } => config.id !== undefined && config.id !== null);
+    if (targets.length === 0) return;
+
     try {
       setSaving(true);
-      await api.deleteAnimeSubscription(config.id);
+      await Promise.all(targets.map((config) => api.deleteAnimeSubscription(config.id)));
       await fetchSubscriptions();
     } catch (err: unknown) {
-      setError(errorMessage(err, "Failed to delete anime subscription"));
+      setError(errorMessage(err, targets.length === 1 ? "Failed to delete anime subscription" : "Failed to delete anime subscriptions"));
     } finally {
       setSaving(false);
     }
   }, [fetchSubscriptions]);
+
+  const deleteSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
+    await deleteSubscriptions([config]);
+  }, [deleteSubscriptions]);
 
   const togglePausedSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
     if (!config.id) return;
@@ -270,6 +325,10 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     await setSubscriptionsPaused(personalSubs, paused, "Failed to update personal anime subscriptions");
   }, [personalSubs, setSubscriptionsPaused]);
 
+  const setSelectedSubscriptionsPaused = useCallback(async (configs: AnimeSubscriptionDashboardConfig[], paused: boolean) => {
+    await setSubscriptionsPaused(configs, paused, "Failed to update selected anime subscriptions");
+  }, [setSubscriptionsPaused]);
+
   return useMemo(() => ({
     serverSubs,
     personalSubs,
@@ -285,6 +344,9 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     selectedAnime,
     setSelectedAnime,
     searchLoading,
+    lookupHistory,
+    useLookupHistoryEntry,
+    clearLookupHistory,
     channelId,
     setChannelId,
     reminderMinutes,
@@ -304,9 +366,11 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     fetchSubscriptions,
     addSubscription,
     togglePausedSubscription,
+    setSelectedSubscriptionsPaused,
     setServerSubscriptionsPaused,
     setPersonalSubscriptionsPaused,
     deleteSubscription,
+    deleteSubscriptions,
   }), [
     serverSubs,
     personalSubs,
@@ -321,6 +385,9 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     selectedAnime,
     setSelectedAnime,
     searchLoading,
+    lookupHistory,
+    useLookupHistoryEntry,
+    clearLookupHistory,
     channelId,
     reminderMinutes,
     season,
@@ -338,8 +405,10 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     fetchSubscriptions,
     addSubscription,
     togglePausedSubscription,
+    setSelectedSubscriptionsPaused,
     setServerSubscriptionsPaused,
     setPersonalSubscriptionsPaused,
     deleteSubscription,
+    deleteSubscriptions,
   ]);
 }
