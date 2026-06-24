@@ -4,6 +4,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
+import { recordAuditEvent } from '../utils/audit.js';
 
 const router = createBaseRouter();
 
@@ -42,6 +43,7 @@ interface IntegrationHealthRouteRecord {
 }
 
 interface IntegrationHealthRouteManager {
+    getForConfig(provider: string, configId: string | number): Promise<IntegrationHealthRouteRecord | null>;
     listForGuild(guildId: string, provider?: string): Promise<IntegrationHealthRouteRecord[]>;
     list(options?: {
         provider?: string;
@@ -63,6 +65,16 @@ interface IntegrationHealthRouteManager {
             unknown: number;
         };
     }>;
+    recordSuccess(input: {
+        provider: string;
+        configId: string | number;
+        guildId?: string | null;
+        channelId?: string | null;
+        delivered?: boolean;
+        status?: Exclude<z.infer<typeof integrationHealthStatusSchema>, 'error'>;
+        metadata?: Record<string, unknown> | null;
+        checkedAt?: Date;
+    }): Promise<void>;
 }
 
 /**
@@ -121,6 +133,76 @@ router.get('/admin', jwtOrService, requireDashboardAdmin, validateQuery(integrat
         ...result,
         records: result.records.map(serializeRecord),
     });
+});
+
+/**
+ * @openapi
+ * /integrationHealth/admin/{provider}/{configId}/resolve:
+ *   post:
+ *     summary: Mark a stale integration health finding as resolved
+ *     tags: [IntegrationHealth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Integration health record marked resolved
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         description: Health record not found
+ */
+router.post('/admin/:provider/:configId/resolve', jwtOrService, requireDashboardAdmin, async (req, res) => {
+    const provider = String(req.params.provider ?? '').trim();
+    const configId = String(req.params.configId ?? '').trim();
+    if (!provider || !configId) {
+        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Provider and config ID are required' } });
+    }
+
+    const manager = (getConfigManager() as unknown as { integrationHealthManager: IntegrationHealthRouteManager }).integrationHealthManager;
+    const existing = await manager.getForConfig(provider, configId);
+    if (!existing) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Integration health record not found' } });
+    }
+
+    const resolvedAt = new Date();
+    await manager.recordSuccess({
+        provider: existing.provider,
+        configId: existing.configId,
+        guildId: existing.guildId ?? null,
+        channelId: existing.channelId ?? null,
+        delivered: false,
+        metadata: {
+            ...(existing.metadata ?? {}),
+            manualResolution: {
+                resolvedAt: resolvedAt.toISOString(),
+                previousStatus: existing.status,
+                previousConsecutiveFailures: existing.consecutiveFailures,
+                previousErrorCode: existing.lastErrorCode ?? null,
+            },
+        },
+        checkedAt: resolvedAt,
+    });
+
+    await recordAuditEvent(req, {
+        action: 'integrationHealth.resolve',
+        targetType: 'integrationHealth',
+        targetId: `${existing.provider}:${existing.configId}`,
+        guildId: existing.guildId ?? null,
+        severity: 'info',
+        status: 'success',
+        metadata: {
+            provider: existing.provider,
+            configId: existing.configId,
+            previousStatus: existing.status,
+            previousConsecutiveFailures: existing.consecutiveFailures,
+            previousErrorCode: existing.lastErrorCode ?? null,
+        },
+    });
+
+    const updated = await manager.getForConfig(existing.provider, existing.configId);
+    res.json({ record: updated ? serializeRecord(updated) : null });
 });
 
 /**

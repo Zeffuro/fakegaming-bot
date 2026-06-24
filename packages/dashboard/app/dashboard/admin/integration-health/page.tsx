@@ -97,6 +97,10 @@ function getStatusIcon(status: IntegrationHealthStatus): React.ReactNode {
     return <HelpOutlined />;
 }
 
+function getHealthRecordKey(record: IntegrationHealthRecord): string {
+    return `${record.provider}:${record.configId}`;
+}
+
 function HealthStat({
     label,
     value,
@@ -120,11 +124,20 @@ function HealthStat({
     );
 }
 
-function HealthCard({ record }: { record: IntegrationHealthRecord }) {
+function HealthCard({
+    record,
+    resolving,
+    onResolve,
+}: {
+    record: IntegrationHealthRecord;
+    resolving: boolean;
+    onResolve: (record: IntegrationHealthRecord) => void | Promise<void>;
+}) {
     const accent = getStatusAccent(record.status);
     const cooldown = getAdminProviderCooldownHint(record);
     const playbook = getAdminProviderPlaybookHint(record);
     const dashboardLinks = getAdminProviderDashboardLinks(record);
+    const canResolve = record.status === "error" || record.status === "warning" || record.status === "unknown";
 
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.25 }}>
@@ -174,6 +187,18 @@ function HealthCard({ record }: { record: IntegrationHealthRecord }) {
                         ))}
                     </Stack>
                 )}
+
+                {canResolve ? (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={resolving}
+                        onClick={() => void onResolve(record)}
+                        sx={ghostActionButtonSx(dashboardAccents.settings)}
+                    >
+                        {resolving ? "Resolving..." : "Mark resolved"}
+                    </Button>
+                ) : null}
 
                 {(record.lastErrorCode || record.lastErrorMessage) && (
                     <Box sx={{ borderRadius: 2.5, bgcolor: alpha(dashboardAccents.quotes, 0.10), border: `1px solid ${alpha(dashboardAccents.quotes, 0.22)}`, p: 1.25 }}>
@@ -261,6 +286,7 @@ function AdminIntegrationHealthContent() {
     const [data, setData] = useState<AdminIntegrationHealthResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resolvingKey, setResolvingKey] = useState<string | null>(null);
 
     const query = useMemo(() => ({
         provider: provider || undefined,
@@ -318,6 +344,20 @@ function AdminIntegrationHealthContent() {
 
     const clearFilters = () => {
         commitFilters({ provider: "", guildId: "", status: "error" });
+    };
+
+    const resolveHealthRecord = async (record: IntegrationHealthRecord) => {
+        const key = getHealthRecordKey(record);
+        try {
+            setResolvingKey(key);
+            setError(null);
+            await api.resolveAdminIntegrationHealth(record.provider, record.configId);
+            await load();
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "Failed to mark integration health as resolved");
+        } finally {
+            setResolvingKey(null);
+        }
     };
 
     return (
@@ -425,7 +465,14 @@ function AdminIntegrationHealthContent() {
 
                         {data && data.records.length > 0 ? (
                             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
-                                {data.records.map(record => <HealthCard key={`${record.provider}:${record.configId}`} record={record} />)}
+                                {data.records.map(record => (
+                                    <HealthCard
+                                        key={getHealthRecordKey(record)}
+                                        record={record}
+                                        resolving={resolvingKey === getHealthRecordKey(record)}
+                                        onResolve={resolveHealthRecord}
+                                    />
+                                ))}
                             </Box>
                         ) : (
                             <Stack spacing={1} sx={{ minHeight: 140, alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.56)", textAlign: "center" }}>

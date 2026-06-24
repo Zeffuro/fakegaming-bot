@@ -99,6 +99,38 @@ describe('Integration health API', () => {
         });
     });
 
+    it('lets dashboard admins mark stale health records as resolved', async () => {
+        process.env.DASHBOARD_ADMINS = 'admin-user';
+        await configManager.integrationHealthManager.recordFailure({
+            provider: 'youtube',
+            configId: 91,
+            guildId,
+            channelId: 'chan-2',
+            errorCode: 'YOUTUBE_FEED_UNAVAILABLE',
+            errorMessage: 'Feed unavailable',
+            checkedAt: new Date('2026-06-20T12:00:00.000Z'),
+        });
+
+        const res = await admin.post('/api/integrationHealth/admin/youtube/91/resolve').send({});
+
+        expectOk(res);
+        expect(res.body.record).toMatchObject({
+            provider: 'youtube',
+            configId: '91',
+            guildId,
+            channelId: 'chan-2',
+            status: 'healthy',
+            consecutiveFailures: 0,
+            lastErrorCode: null,
+            lastErrorMessage: null,
+        });
+        expect(res.body.record.metadata.manualResolution).toMatchObject({
+            previousStatus: 'error',
+            previousConsecutiveFailures: 1,
+            previousErrorCode: 'YOUTUBE_FEED_UNAVAILABLE',
+        });
+    });
+
     it('requires dashboard admin access for the admin health list', async () => {
         process.env.DASHBOARD_ADMINS = 'admin-user';
 

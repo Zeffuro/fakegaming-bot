@@ -587,6 +587,69 @@ export default function PersonalDashboardPage() {
                                     )}
                                 </Stack>
                             </FeaturePanel>
+
+                            <FeaturePanel accent={dashboardAccents.birthdays}>
+                                <Stack spacing={2.25} sx={{ position: "relative" }}>
+                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                                                Reminders
+                                            </Typography>
+                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                                                {pausedReminderCount > 0 ? `${activeReminderCount} active, ${pausedReminderCount} paused` : `${activeReminderCount} active`}
+                                            </Typography>
+                                        </Box>
+                                        <NotificationsActive sx={{ color: alpha(dashboardAccents.birthdays, 0.86) }} />
+                                    </Stack>
+                                    {reminders.length === 0 ? (
+                                        <EmptyPersonalState icon={<Schedule />} title="No reminders pending" accent={dashboardAccents.birthdays} />
+                                    ) : (
+                                        <Stack spacing={1.5}>
+                                            {reminders.map((reminder) => (
+                                                <ReminderCard
+                                                    key={reminder.id}
+                                                    reminder={reminder}
+                                                    saving={saving}
+                                                    onSnooze={snoozeReminderBy}
+                                                    onTogglePaused={toggleReminderPaused}
+                                                    onDelete={removeReminder}
+                                                />
+                                            ))}
+                                        </Stack>
+                                    )}
+                                </Stack>
+                            </FeaturePanel>
+
+                            <FeaturePanel accent={dashboardAccents.anime}>
+                                <Stack spacing={2.25} sx={{ position: "relative" }}>
+                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                                                Anime DM subscriptions
+                                            </Typography>
+                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                                                {animeSubscriptions.length} personal reminders
+                                            </Typography>
+                                        </Box>
+                                        <Movie sx={{ color: alpha(dashboardAccents.anime, 0.86) }} />
+                                    </Stack>
+                                    {animeSubscriptions.length === 0 ? (
+                                        <EmptyPersonalState icon={<Movie />} title="No anime DM subscriptions" accent={dashboardAccents.anime} />
+                                    ) : (
+                                        <Stack spacing={1.5}>
+                                            {animeSubscriptions.map((subscription) => (
+                                                <AnimeSubscriptionCard
+                                                    key={subscription.id ?? subscription.anilistId}
+                                                    subscription={subscription}
+                                                    saving={saving}
+                                                    onTogglePaused={toggleAnimePaused}
+                                                    onDelete={removeAnimeSubscription}
+                                                />
+                                            ))}
+                                        </Stack>
+                                    )}
+                                </Stack>
+                            </FeaturePanel>
                         </Stack>
 
                         <Stack spacing={3} sx={{ minWidth: 0 }}>
@@ -825,69 +888,6 @@ export default function PersonalDashboardPage() {
                                 loading={activityLoading}
                                 onRefresh={refreshActivity}
                             />
-
-                            <FeaturePanel accent={dashboardAccents.birthdays}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Reminders
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {pausedReminderCount > 0 ? `${activeReminderCount} active, ${pausedReminderCount} paused` : `${activeReminderCount} active`}
-                                            </Typography>
-                                        </Box>
-                                        <NotificationsActive sx={{ color: alpha(dashboardAccents.birthdays, 0.86) }} />
-                                    </Stack>
-                                    {reminders.length === 0 ? (
-                                        <EmptyPersonalState icon={<Schedule />} title="No reminders pending" accent={dashboardAccents.birthdays} />
-                                    ) : (
-                                        <Stack spacing={1.5}>
-                                            {reminders.map((reminder) => (
-                                                <ReminderCard
-                                                    key={reminder.id}
-                                                    reminder={reminder}
-                                                    saving={saving}
-                                                    onSnooze={snoozeReminderBy}
-                                                    onTogglePaused={toggleReminderPaused}
-                                                    onDelete={removeReminder}
-                                                />
-                                            ))}
-                                        </Stack>
-                                    )}
-                                </Stack>
-                            </FeaturePanel>
-
-                            <FeaturePanel accent={dashboardAccents.anime}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Anime DM subscriptions
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {animeSubscriptions.length} personal reminders
-                                            </Typography>
-                                        </Box>
-                                        <Movie sx={{ color: alpha(dashboardAccents.anime, 0.86) }} />
-                                    </Stack>
-                                    {animeSubscriptions.length === 0 ? (
-                                        <EmptyPersonalState icon={<Movie />} title="No anime DM subscriptions" accent={dashboardAccents.anime} />
-                                    ) : (
-                                        <Stack spacing={1.5}>
-                                            {animeSubscriptions.map((subscription) => (
-                                                <AnimeSubscriptionCard
-                                                    key={subscription.id ?? subscription.anilistId}
-                                                    subscription={subscription}
-                                                    saving={saving}
-                                                    onTogglePaused={toggleAnimePaused}
-                                                    onDelete={removeAnimeSubscription}
-                                                />
-                                            ))}
-                                        </Stack>
-                                    )}
-                                </Stack>
-                            </FeaturePanel>
 
                         </Stack>
                     </Box>

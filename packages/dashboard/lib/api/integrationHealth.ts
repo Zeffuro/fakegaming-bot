@@ -50,6 +50,10 @@ export interface AdminIntegrationHealthResponse {
     summary: IntegrationHealthSummary;
 }
 
+export interface AdminIntegrationHealthResolveResponse {
+    record: IntegrationHealthRecord | null;
+}
+
 export const integrationHealthApi = {
     getIntegrationHealth: (guildId: string, provider?: string) => {
         const query = new URLSearchParams({ guildId });
@@ -67,4 +71,10 @@ export const integrationHealthApi = {
         const suffix = params.toString() ? `?${params.toString()}` : "";
         return apiRequest<AdminIntegrationHealthResponse>(`${API_ENDPOINTS.INTEGRATION_HEALTH}/admin${suffix}`);
     },
+
+    resolveAdminIntegrationHealth: (provider: string, configId: string) =>
+        apiRequest<AdminIntegrationHealthResolveResponse>(
+            `${API_ENDPOINTS.INTEGRATION_HEALTH}/admin/${encodeURIComponent(provider)}/${encodeURIComponent(configId)}/resolve`,
+            { method: "POST" },
+        ),
 };

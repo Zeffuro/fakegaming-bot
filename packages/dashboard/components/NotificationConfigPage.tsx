@@ -2,7 +2,7 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Alert, Box, Button, InputAdornment, MenuItem, Stack, TextField, Typography } from "@mui/material";
-import { Add, FilterAltOutlined, PauseCircleOutlined, PlayCircleOutlined, Search } from "@mui/icons-material";
+import { Add, FilterAltOutlined, PauseCircleOutlined, PlayCircleOutlined, Search, SwapHoriz } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import AddConfigDialog from "@/components/AddConfigDialog";
 import EditConfigDialog from "@/components/EditConfigDialog";
@@ -147,6 +147,8 @@ function NotificationConfigContent<T extends StreamingConfig>({
     const searchParamString = searchParams?.toString() ?? "";
     const [query, setQuery] = useState(() => searchParams?.get("q") ?? "");
     const [statusFilter, setStatusFilter] = useState<NotificationConfigStatusFilter>(() => parseStatusFilter(searchParams?.get("status") ?? null));
+    const [bulkChannelId, setBulkChannelId] = useState("");
+    const [bulkMoving, setBulkMoving] = useState(false);
 
     const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
     const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
@@ -161,6 +163,10 @@ function NotificationConfigContent<T extends StreamingConfig>({
         query,
         status: statusFilter,
     }), [configs, channelNameField, getChannelName, health.byConfigId, query, statusFilter]);
+    const bulkMoveTargets = useMemo(() => {
+        if (!bulkChannelId) return [];
+        return filteredConfigs.filter((config) => String((config as Record<string, unknown>)[channelNameField] ?? "") !== bulkChannelId);
+    }, [bulkChannelId, channelNameField, filteredConfigs]);
 
     const {
         addDialogOpen,
@@ -191,6 +197,35 @@ function NotificationConfigContent<T extends StreamingConfig>({
         } : current);
     };
     const handleRefreshChannels = () => refetchChannels({ refresh: true });
+
+    const handleBulkMoveChannel = async () => {
+        if (!bulkChannelId) {
+            onSetError("Choose the destination Discord channel before moving configurations.");
+            return;
+        }
+        if (bulkMoveTargets.length === 0) {
+            onSetError("No visible configurations need to move to that channel.");
+            return;
+        }
+        const channelLabel = getChannelName(bulkChannelId);
+        if (!window.confirm(`Move ${bulkMoveTargets.length} visible ${moduleName} ${bulkMoveTargets.length === 1 ? singular.toLowerCase() : plural.toLowerCase()} to ${channelLabel}?`)) return;
+
+        try {
+            setBulkMoving(true);
+            onSetError(null);
+            for (const config of bulkMoveTargets) {
+                const updated = {
+                    ...(config as Record<string, unknown>),
+                    [channelNameField]: bulkChannelId,
+                } as unknown as T;
+                const ok = await onUpdate(updated);
+                if (!ok) return;
+            }
+            setBulkChannelId("");
+        } finally {
+            setBulkMoving(false);
+        }
+    };
 
     const currentTrail = guild ? [
         { label: "Settings", href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
@@ -328,6 +363,46 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                 ))}
                             </TextField>
                         </Stack>
+
+                        {allowEdit ? (
+                            <Box
+                                sx={{
+                                    display: "grid",
+                                    gridTemplateColumns: { xs: "1fr", md: "minmax(240px, 0.8fr) auto" },
+                                    gap: 1.5,
+                                    alignItems: "center",
+                                    mb: 3,
+                                    p: 1.5,
+                                    borderRadius: 2,
+                                    bgcolor: "rgba(255,255,255,0.045)",
+                                    border: "1px solid rgba(255,255,255,0.08)",
+                                }}
+                            >
+                                <TextField
+                                    select
+                                    label="Move visible configs to channel"
+                                    value={bulkChannelId}
+                                    onChange={(event) => setBulkChannelId(event.target.value)}
+                                    size="small"
+                                    disabled={loadingChannels || saving || bulkMoving}
+                                    sx={filterFieldSx(moduleColor)}
+                                >
+                                    <MenuItem value="">Choose channel</MenuItem>
+                                    {channels.map((channel) => (
+                                        <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>
+                                    ))}
+                                </TextField>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<SwapHoriz />}
+                                    disabled={saving || bulkMoving || !bulkChannelId || bulkMoveTargets.length === 0}
+                                    onClick={() => void handleBulkMoveChannel()}
+                                    sx={ghostActionButtonSx(moduleColor)}
+                                >
+                                    {bulkMoving ? "Moving..." : `Move visible (${bulkMoveTargets.length})`}
+                                </Button>
+                            </Box>
+                        ) : null}
 
                         <NotificationConfigList
                             configs={filteredConfigs}

@@ -184,6 +184,14 @@ describe('api-client', () => {
         expect(result).toEqual(payload);
     });
 
+    it('marks admin integration health records resolved', async () => {
+        const payload = { record: { provider: 'youtube', configId: '91', status: 'healthy' } };
+        mockOkJsonOnce(payload);
+        const result = await api.resolveAdminIntegrationHealth('you tube', '91/legacy');
+        expectFetchCalledWith(`${API_ENDPOINTS.INTEGRATION_HEALTH}/admin/you%20tube/91%2Flegacy/resolve`, { method: 'POST' });
+        expect(result).toEqual(payload);
+    });
+
     it('apiRequest throws with generic message if no json', async () => {
         getFetchMock().mockResolvedValueOnce({ ok: false, status: 500, json: async () => { throw new Error('no json'); } });
         await expect(api.getTwitchConfigs()).rejects.toThrow('API request failed with status: 500');
