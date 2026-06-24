@@ -1,33 +1,41 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Stack } from "@mui/material";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Alert, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { ErrorOutlined } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { AuditEventFilters } from "@/components/admin/audit/AuditEventFilters";
 import { AuditEventsList } from "@/components/admin/audit/AuditEventsList";
+import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
 import {
     DEFAULT_AUDIT_EVENTS_LIMIT,
     getAuditEvents,
     type AuditEventEntry,
     type AuditEventsQuery,
 } from "@/lib/api/audit";
+import {
+    countAdminAuditFilters,
+    createDefaultAdminAuditFilters,
+    parseAdminAuditFilters,
+    serializeAdminAuditFilters,
+} from "@/lib/adminAuditFilters";
+import { adminAuditCsvHeaders, buildAdminAuditCsvRows } from "@/lib/adminAnalyticsExports";
+import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 
-const FILTER_KEYS: Array<keyof AuditEventsQuery> = [
-    "action",
-    "scope",
-    "provider",
-    "targetType",
-    "actorId",
-    "guildId",
-    "severity",
-    "status",
+const auditSavedViewPresets: AdminSavedViewPreset[] = [
+    { id: "audit:failed", label: "Failed events", query: "status=failure" },
+    { id: "audit:error", label: "Error failures", query: "severity=error&status=failure" },
+    { id: "audit:integrations", label: "Integration failures", query: "scope=integrations&status=failure" },
 ];
 
-export default function AdminAuditPage() {
-    const [filters, setFilters] = useState<AuditEventsQuery>({ limit: DEFAULT_AUDIT_EVENTS_LIMIT, offset: 0 });
+function AdminAuditContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
+    const [filters, setFilters] = useState<AuditEventsQuery>(() => parseAdminAuditFilters(new URLSearchParams(searchParamString)));
     const [events, setEvents] = useState<AuditEventEntry[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -37,6 +45,10 @@ export default function AdminAuditPage() {
     const limit = filters.limit ?? DEFAULT_AUDIT_EVENTS_LIMIT;
     const canGoBack = offset > 0;
     const canGoNext = offset + limit < total;
+
+    useEffect(() => {
+        setFilters(parseAdminAuditFilters(new URLSearchParams(searchParamString)));
+    }, [searchParamString]);
 
     const loadEvents = useCallback(async () => {
         try {
@@ -56,21 +68,39 @@ export default function AdminAuditPage() {
         void loadEvents();
     }, [loadEvents]);
 
+    const commitFilters = useCallback((nextFilters: AuditEventsQuery) => {
+        setFilters(nextFilters);
+        const query = serializeAdminAuditFilters(nextFilters);
+        router.replace(query ? `/dashboard/admin/audit?${query}` : "/dashboard/admin/audit", { scroll: false });
+    }, [router]);
+
     const updateFilter = useCallback(<K extends keyof AuditEventsQuery>(key: K, value: AuditEventsQuery[K] | undefined) => {
-        setFilters(current => ({
-            ...current,
+        const nextFilters: AuditEventsQuery = {
+            ...filters,
             [key]: value,
             offset: 0,
-        }));
-    }, []);
+        };
+        if (value === undefined || value === "") delete nextFilters[key];
+        if (key === "provider" && value) nextFilters.scope = "integrations";
+        if (key === "scope" && !value) delete nextFilters.provider;
+        commitFilters(nextFilters);
+    }, [commitFilters, filters]);
 
     const clearFilters = () => {
-        setFilters({ limit: DEFAULT_AUDIT_EVENTS_LIMIT, offset: 0 });
+        commitFilters(createDefaultAdminAuditFilters());
     };
 
     const activeFilterCount = useMemo(() => {
-        return FILTER_KEYS.filter(key => filters[key] !== undefined && filters[key] !== "").length;
+        return countAdminAuditFilters(filters);
     }, [filters]);
+    const savedViewQuery = useMemo(() => serializeAdminAuditFilters(filters), [filters]);
+    const exportEvents = useCallback(() => {
+        downloadCsv(
+            createCsvFilename("admin-audit-events"),
+            adminAuditCsvHeaders,
+            buildAdminAuditCsvRows(events),
+        );
+    }, [events]);
 
     return (
         <AdminPage title="Audit Events" trail={[{ label: "Audit Events", href: "/dashboard/admin/audit" }]}>
@@ -82,6 +112,14 @@ export default function AdminAuditPage() {
                     onRefresh={() => void loadEvents()}
                     onClear={clearFilters}
                     onUpdateFilter={updateFilter}
+                />
+
+                <AdminSavedViews
+                    scope="audit"
+                    basePath="/dashboard/admin/audit"
+                    currentQuery={savedViewQuery}
+                    defaultLabel={activeFilterCount > 0 ? `${activeFilterCount} audit filters` : "Audit view"}
+                    presets={auditSavedViewPresets}
                 />
 
                 {error && (
@@ -97,11 +135,20 @@ export default function AdminAuditPage() {
                     loading={loading}
                     canGoBack={canGoBack}
                     canGoNext={canGoNext}
-                    onLimitChange={(nextLimit) => updateFilter("limit", nextLimit)}
-                    onPrevious={() => setFilters(current => ({ ...current, offset: Math.max(0, (current.offset ?? 0) - limit) }))}
-                    onNext={() => setFilters(current => ({ ...current, offset: (current.offset ?? 0) + limit }))}
+                    onLimitChange={(nextLimit) => commitFilters({ ...filters, limit: nextLimit, offset: 0 })}
+                    onPrevious={() => commitFilters({ ...filters, offset: Math.max(0, offset - limit) })}
+                    onNext={() => commitFilters({ ...filters, offset: offset + limit })}
+                    onExport={exportEvents}
                 />
             </Stack>
         </AdminPage>
+    );
+}
+
+export default function AdminAuditPage() {
+    return (
+        <Suspense fallback={<AdminPage title="Audit Events"><Typography>Loading audit events...</Typography></AdminPage>}>
+            <AdminAuditContent />
+        </Suspense>
     );
 }

@@ -1,5 +1,6 @@
 import {BaseManager} from './baseManager.js';
 import {ReminderConfig} from '../models/reminder-config.js';
+import type {ReminderRecurrenceUnit} from '../utils/reminderRecurrence.js';
 
 export interface UserReminderCreateInput {
     id: string;
@@ -7,11 +8,19 @@ export interface UserReminderCreateInput {
     message: string;
     timespan: string;
     timestamp: number;
+    recurrenceUnit?: ReminderRecurrenceUnit | null;
+    recurrenceInterval?: number | null;
+    recurrenceTimezone?: string | null;
 }
 
 export interface UserReminderSnoozeInput {
     timespan: string;
     timestamp: number;
+}
+
+export interface UserReminderPausedInput {
+    paused: boolean;
+    timestamp?: number;
 }
 
 export class ReminderManager extends BaseManager<ReminderConfig> {
@@ -49,6 +58,10 @@ export class ReminderManager extends BaseManager<ReminderConfig> {
             timespan: input.timespan,
             timestamp: input.timestamp,
             completed: false,
+            recurrenceUnit: input.recurrenceUnit ?? null,
+            recurrenceInterval: input.recurrenceInterval ?? null,
+            recurrenceTimezone: input.recurrenceTimezone ?? null,
+            lastTriggeredAt: null,
         });
     }
 
@@ -59,6 +72,25 @@ export class ReminderManager extends BaseManager<ReminderConfig> {
         await this.updatePlain({
             timespan: input.timespan,
             timestamp: input.timestamp,
+        } as never, { id, userId } as never);
+        return this.getForUser(id, userId);
+    }
+
+    async rescheduleRecurringReminder(id: string, timestamp: number, lastTriggeredAt: number) {
+        await this.updatePlain({
+            timestamp,
+            lastTriggeredAt,
+            completed: false,
+        } as never, { id } as never);
+    }
+
+    async setPausedForUser(id: string, userId: string, input: UserReminderPausedInput) {
+        const existing = await this.getForUser(id, userId);
+        if (!existing) return null;
+
+        await this.updatePlain({
+            completed: input.paused,
+            ...(input.timestamp !== undefined ? { timestamp: input.timestamp } : {}),
         } as never, { id, userId } as never);
         return this.getForUser(id, userId);
     }

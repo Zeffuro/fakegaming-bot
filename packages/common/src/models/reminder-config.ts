@@ -20,4 +20,16 @@ export class ReminderConfig extends Model {
 
     @Column(DataType.BOOLEAN)
     declare completed?: boolean;
+
+    @Column(DataType.STRING)
+    declare recurrenceUnit?: string | null;
+
+    @Column(DataType.INTEGER)
+    declare recurrenceInterval?: number | null;
+
+    @Column(DataType.STRING)
+    declare recurrenceTimezone?: string | null;
+
+    @Column(DataType.BIGINT)
+    declare lastTriggeredAt?: number | null;
 }

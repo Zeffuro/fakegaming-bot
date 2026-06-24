@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPage } from "@/components/AdminPage";
+import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import {
     dashboardAccents,
@@ -10,6 +12,8 @@ import {
     primaryActionButtonSx,
 } from "@/components/dashboard/dashboardTheme";
 import { api, type JobRunEntry } from "@/lib/api-client";
+import { adminJobRunsCsvHeaders, buildAdminJobRunCsvRows } from "@/lib/adminAnalyticsExports";
+import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 import {
     Alert,
     Box,
@@ -30,6 +34,7 @@ import {
 import { alpha } from "@mui/material/styles";
 import {
     CheckCircle,
+    Download,
     ErrorOutlined,
     Favorite,
     MonitorHeart,
@@ -52,11 +57,31 @@ interface JobInfo {
     supportsForce: boolean;
 }
 
+type RunFilter = "all" | "failed";
+
+const jobSavedViewPresets: AdminSavedViewPreset[] = [
+    { id: "jobs:failed", label: "Failed runs", query: "result=failed" },
+    { id: "jobs:birthdays", label: "Birthday failures", query: "job=birthdays&result=failed" },
+    { id: "jobs:heartbeat", label: "Heartbeat failures", query: "job=heartbeat&result=failed" },
+];
+
 function formatDateTime(value?: string | null): string {
     if (!value) return "Unknown";
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString();
+}
+
+function parseRunFilter(value: string | null): RunFilter {
+    return value === "failed" ? "failed" : "all";
+}
+
+function serializeJobFilters(input: { job: string; result: RunFilter }): string {
+    const params = new URLSearchParams();
+    const job = input.job.trim();
+    if (job && job !== "birthdays") params.set("job", job);
+    if (input.result === "failed") params.set("result", input.result);
+    return params.toString();
 }
 
 function StatPanel({
@@ -92,15 +117,19 @@ function StatPanel({
     );
 }
 
-export default function AdminJobsPage() {
+function AdminJobsContent() {
     const accent = dashboardAccents.admin;
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
     const fallbackJobs: JobInfo[] = useMemo(() => ([
         { name: "birthdays", supportsDate: true, supportsForce: true },
         { name: "heartbeat", supportsDate: false, supportsForce: false },
     ]), []);
 
     const [jobs, setJobs] = useState<JobInfo[]>(fallbackJobs);
-    const [selectedJob, setSelectedJob] = useState<string>("birthdays");
+    const [selectedJob, setSelectedJob] = useState<string>(() => searchParams?.get("job")?.trim() || "birthdays");
+    const [resultFilter, setResultFilter] = useState<RunFilter>(() => parseRunFilter(searchParams?.get("result") ?? null));
     const [date, setDate] = useState<string>("");
     const [force, setForce] = useState<boolean>(false);
     const [submitting, setSubmitting] = useState(false);
@@ -116,6 +145,15 @@ export default function AdminJobsPage() {
     const [loadingBirthdaysToday, setLoadingBirthdaysToday] = useState<boolean>(false);
 
     const selectedMeta = useMemo(() => jobs.find((j) => j.name === selectedJob), [jobs, selectedJob]);
+    const savedViewQuery = useMemo(() => serializeJobFilters({ job: selectedJob, result: resultFilter }), [resultFilter, selectedJob]);
+    const visibleRuns = useMemo(() => resultFilter === "failed" ? runs.filter(run => run.ok === false) : runs, [resultFilter, runs]);
+    const exportVisibleRuns = useCallback(() => {
+        downloadCsv(
+            createCsvFilename(`admin-${selectedJob}-job-runs`),
+            adminJobRunsCsvHeaders,
+            buildAdminJobRunCsvRows(selectedJob, visibleRuns),
+        );
+    }, [selectedJob, visibleRuns]);
 
     const loadJobs = async () => {
         try {
@@ -174,14 +212,32 @@ export default function AdminJobsPage() {
     }, []);
 
     useEffect(() => {
-        void loadStatus(selectedJob);
-    }, [selectedJob]);
-
-    const handleJobChange = (e: SelectChangeEvent<string>) => {
-        setSelectedJob(e.target.value as string);
+        const params = new URLSearchParams(searchParamString);
+        const nextJob = params.get("job")?.trim();
+        const nextSelectedJob = nextJob && jobs.some(job => job.name === nextJob) ? nextJob : "birthdays";
+        setSelectedJob(nextSelectedJob);
+        setResultFilter(parseRunFilter(params.get("result")));
         setResult(null);
         setForce(false);
         setDate("");
+    }, [jobs, searchParamString]);
+
+    useEffect(() => {
+        void loadStatus(selectedJob);
+    }, [selectedJob]);
+
+    const commitJobFilters = useCallback((nextFilters: { job: string; result: RunFilter }) => {
+        setSelectedJob(nextFilters.job);
+        setResultFilter(nextFilters.result);
+        setResult(null);
+        setForce(false);
+        setDate("");
+        const queryString = serializeJobFilters(nextFilters);
+        router.replace(queryString ? `/dashboard/admin/jobs?${queryString}` : "/dashboard/admin/jobs", { scroll: false });
+    }, [router]);
+
+    const handleJobChange = (e: SelectChangeEvent<string>) => {
+        commitJobFilters({ job: e.target.value, result: resultFilter });
     };
 
     const handleTrigger = async () => {
@@ -235,7 +291,16 @@ export default function AdminJobsPage() {
 
     return (
         <AdminPage title="Admin Jobs" trail={[{ label: "Jobs", href: "/dashboard/admin/jobs" }]}>
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(340px, 0.95fr) minmax(0, 1.55fr)" }, gap: 2.5 }}>
+            <Stack spacing={2.5}>
+                <AdminSavedViews
+                    scope="jobs"
+                    basePath="/dashboard/admin/jobs"
+                    currentQuery={savedViewQuery}
+                    defaultLabel={resultFilter === "failed" ? `${selectedJob} failures` : `${selectedJob} runs`}
+                    presets={jobSavedViewPresets}
+                />
+
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(340px, 0.95fr) minmax(0, 1.55fr)" }, gap: 2.5 }}>
                 <FeaturePanel accent={accent} sx={{ p: 3, alignSelf: "start" }}>
                     <Stack spacing={2.4} sx={{ position: "relative" }}>
                         <Stack spacing={0.6}>
@@ -359,22 +424,49 @@ export default function AdminJobsPage() {
                                     </Stack>
                                 </Box>
                             </Stack>
-                            <Button size="small" variant="outlined" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-                                Refresh
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                                <Button size="small" variant="outlined" onClick={exportVisibleRuns} disabled={loadingStatus || visibleRuns.length === 0} startIcon={<Download />} sx={ghostActionButtonSx(accent)}>
+                                    Export CSV
+                                </Button>
+                                <Button size="small" variant="outlined" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
+                                    Refresh
+                                </Button>
+                            </Stack>
                         </Stack>
 
-                        {runs.length === 0 ? (
-                            <EmptyStatus icon={<WorkHistory />} text="No recent runs for this job." />
+                        <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 170, mb: 2 }}>
+                            <InputLabel id="job-result-filter-label">Runs</InputLabel>
+                            <Select
+                                labelId="job-result-filter-label"
+                                label="Runs"
+                                value={resultFilter}
+                                onChange={(event) => commitJobFilters({ job: selectedJob, result: event.target.value as RunFilter })}
+                            >
+                                <MenuItem value="all">All runs</MenuItem>
+                                <MenuItem value="failed">Failed only</MenuItem>
+                            </Select>
+                        </FormControl>
+
+                        {visibleRuns.length === 0 ? (
+                            <EmptyStatus icon={<WorkHistory />} text={resultFilter === "failed" ? "No failed recent runs for this job." : "No recent runs for this job."} />
                         ) : (
                             <Stack sx={{ position: "relative" }}>
-                                {runs.map((run, idx) => renderRunSummary(run, idx))}
+                                {visibleRuns.map((run, idx) => renderRunSummary(run, idx))}
                             </Stack>
                         )}
                     </FeaturePanel>
                 </Box>
-            </Box>
+                </Box>
+            </Stack>
         </AdminPage>
+    );
+}
+
+export default function AdminJobsPage() {
+    return (
+        <Suspense fallback={<AdminPage title="Admin Jobs"><Typography>Loading admin jobs...</Typography></AdminPage>}>
+            <AdminJobsContent />
+        </Suspense>
     );
 }
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Box, Button, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Stack, Typography } from "@mui/material";
-import { History, ShieldOutlined } from "@mui/icons-material";
+import { Download, History, ShieldOutlined } from "@mui/icons-material";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import type { AuditEventEntry } from "@/lib/api/audit";
@@ -18,6 +18,7 @@ interface AuditEventsListProps {
     onLimitChange: (limit: number) => void;
     onPrevious: () => void;
     onNext: () => void;
+    onExport: () => void;
 }
 
 export function AuditEventsList({
@@ -30,6 +31,7 @@ export function AuditEventsList({
     onLimitChange,
     onPrevious,
     onNext,
+    onExport,
 }: AuditEventsListProps) {
     const accent = dashboardAccents.admin;
 
@@ -47,7 +49,7 @@ export function AuditEventsList({
                         </Typography>
                     </Box>
                 </Stack>
-                <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
                     <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 110 }}>
                         <InputLabel id="limit-filter-label">Rows</InputLabel>
                         <Select
@@ -62,6 +64,9 @@ export function AuditEventsList({
                             <MenuItem value="200">200</MenuItem>
                         </Select>
                     </FormControl>
+                    <Button variant="outlined" disabled={loading || events.length === 0} onClick={onExport} startIcon={<Download />} sx={ghostActionButtonSx(accent)}>
+                        Export CSV
+                    </Button>
                     <Button variant="outlined" disabled={loading || !canGoBack} onClick={onPrevious} sx={ghostActionButtonSx(accent)}>
                         Prev
                     </Button>

@@ -92,6 +92,47 @@ describe('NotificationsManager', () => {
         });
     });
 
+    it('lists birthday deliveries for one user from event ID segments', async () => {
+        await manager.recordIfNew({ provider: 'birthday', eventId: 'guild-1:user-1:2026-06-24', guildId: 'guild-1' });
+        await manager.recordIfNew({ provider: 'birthday', eventId: 'guild-2:user-2:2026-06-24', guildId: 'guild-2' });
+        await manager.recordIfNew({ provider: 'youtube', eventId: 'guild-1:user-1:2026-06-24', guildId: 'guild-1' });
+
+        const result = await manager.listBirthdayDeliveriesForUser({ userId: 'user-1', limit: 10 });
+
+        expect(result.total).toBe(1);
+        expect(result.records).toEqual([
+            expect.objectContaining({
+                provider: 'birthday',
+                eventId: 'guild-1:user-1:2026-06-24',
+                guildId: 'guild-1',
+            }),
+        ]);
+    });
+
+    it('does not use unsafe user IDs in delivery lookup patterns', async () => {
+        await manager.recordIfNew({ provider: 'birthday', eventId: 'guild-1:user-1:2026-06-24', guildId: 'guild-1' });
+
+        const result = await manager.listBirthdayDeliveriesForUser({
+            userId: 'user_%',
+            limit: 10,
+            days: 2,
+            now: new Date('2026-06-24T12:00:00.000Z'),
+        });
+
+        expect(result).toMatchObject({
+            total: 0,
+            records: [],
+            summary: {
+                total: 0,
+                byProvider: [],
+                trend: [
+                    { date: '2026-06-23', count: 0 },
+                    { date: '2026-06-24', count: 0 },
+                ],
+            },
+        });
+    });
+
     it('builds a bounded daily trend independent of pagination', async () => {
         await manager.addPlain({
             provider: 'twitch',

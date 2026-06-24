@@ -25,6 +25,25 @@ describe('ReminderConfig Model', () => {
     expect(reminder.timestamp).toBeTypeOf('number');
   });
 
+  it('should create a recurring reminder with recurrence fields', async () => {
+    const reminder = await ReminderConfig.create({
+      id: 'reminder-recurring',
+      userId: 'user-recurring',
+      message: 'Recurring reminder',
+      timespan: '1h',
+      timestamp: Date.now(),
+      recurrenceUnit: 'week',
+      recurrenceInterval: 1,
+      recurrenceTimezone: 'Europe/Amsterdam',
+      lastTriggeredAt: null,
+    });
+
+    expect(reminder.recurrenceUnit).toBe('week');
+    expect(reminder.recurrenceInterval).toBe(1);
+    expect(reminder.recurrenceTimezone).toBe('Europe/Amsterdam');
+    expect(reminder.lastTriggeredAt).toBeNull();
+  });
+
   it('should find reminders by userId', async () => {
     await ReminderConfig.create({
       id: 'reminder-1',

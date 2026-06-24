@@ -18,6 +18,7 @@ const testQuote = {
 beforeEach(async () => {
     // Clean up quotes table before each test
     await configManager.quoteManager.removeAll();
+    await configManager.quoteOfDayManager.removeAll();
     const created = await configManager.quoteManager.addPlain(testQuote);
     quoteId = created.id;
 });
@@ -70,10 +71,46 @@ describe('Quotes API', () => {
             authorId: 'testauthor2',
             submitterId: 'testsubmitter2',
             quote: 'Another test quote.',
-            timestamp: 1700000000001
+            timestamp: 1700000000001,
+            tags: ['Funny', '#Raid Night'],
+            source: 'voice chat',
+            context: 'Before the pull',
         });
         expectCreated(res);
         expect(res.body.quote).toBe('Another test quote.');
+        expect(res.body).toMatchObject({
+            moderationStatus: 'pending',
+            tags: ['funny', 'raid-night'],
+            source: 'voice chat',
+            context: 'Before the pull',
+        });
+    });
+
+    it('should search quote metadata and return normalized tags', async () => {
+        await configManager.quoteManager.addPlain({
+            id: 'test-quote-meta',
+            guildId: testQuote.guildId,
+            authorId: 'testauthor-meta',
+            submitterId: 'testsubmitter-meta',
+            quote: 'Metadata searchable quote.',
+            timestamp: 1700000000003,
+            tags: '["raid-night","funny"]',
+            source: 'Twitch clip',
+            context: 'After the clear',
+        });
+
+        const res = await request(app).get('/api/quotes/search').set('Authorization', `Bearer ${token}`)
+            .query({ guildId: testQuote.guildId, text: 'raid-night' });
+
+        expectOk(res);
+        expect(res.body).toEqual([
+            expect.objectContaining({
+                id: 'test-quote-meta',
+                tags: ['raid-night', 'funny'],
+                source: 'Twitch clip',
+                context: 'After the clear',
+            }),
+        ]);
     });
     it('should delete a quote by id', async () => {
         // Add a quote to delete
@@ -89,6 +126,80 @@ describe('Quotes API', () => {
         expectOk(res);
         expect(res.body.success).toBe(true);
     });
+    it('should update quote moderation status', async () => {
+        const res = await request(app)
+            .patch(`/api/quotes/${quoteId}/moderation`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ moderationStatus: 'approved' });
+
+        expectOk(res);
+        expect(res.body).toMatchObject({
+            id: quoteId,
+            moderationStatus: 'approved',
+        });
+
+        const updated = await configManager.quoteManager.getOnePlain({ id: quoteId });
+        expect(updated?.moderationStatus).toBe('approved');
+    });
+
+    it('should reject invalid quote moderation status', async () => {
+        const res = await request(app)
+            .patch(`/api/quotes/${quoteId}/moderation`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ moderationStatus: 'hidden' });
+
+        expectBadRequest(res);
+    });
+
+    it('should save quote-of-the-day settings for a guild', async () => {
+        const res = await request(app)
+            .put(`/api/quotes/guild/${testQuote.guildId}/quote-of-day/settings`)
+            .set('Authorization', `Bearer ${token}`)
+            .send({ channelId: 'channel-quote-day', enabled: true, runHourUtc: 9 });
+
+        expectOk(res);
+        expect(res.body).toMatchObject({
+            guildId: testQuote.guildId,
+            channelId: 'channel-quote-day',
+            enabled: true,
+            runHourUtc: 9,
+        });
+
+        const saved = await configManager.quoteOfDayManager.getForGuild(testQuote.guildId);
+        expect(saved).toMatchObject({ enabled: true, channelId: 'channel-quote-day' });
+    });
+
+    it('should preview the deterministic quote of the day from approved quotes', async () => {
+        await configManager.quoteManager.updateModerationStatus(quoteId, 'approved');
+        await configManager.quoteManager.addPlain({
+            id: 'test-quote-pending',
+            guildId: testQuote.guildId,
+            authorId: 'pending-author',
+            submitterId: 'pending-submitter',
+            quote: 'Pending quote',
+            timestamp: 1700000000004,
+        });
+        await configManager.quoteOfDayManager.upsertForGuild({
+            guildId: testQuote.guildId,
+            channelId: 'channel-quote-day',
+            enabled: true,
+            runHourUtc: 9,
+        });
+
+        const res = await request(app)
+            .get(`/api/quotes/guild/${testQuote.guildId}/quote-of-day`)
+            .set('Authorization', `Bearer ${token}`)
+            .query({ date: '2026-06-24' });
+
+        expectOk(res);
+        expect(res.body).toMatchObject({
+            date: '2026-06-24',
+            eligibleCount: 1,
+            quote: expect.objectContaining({ id: quoteId, moderationStatus: 'approved' }),
+            settings: expect.objectContaining({ enabled: true, channelId: 'channel-quote-day' }),
+        });
+    });
+
     it('should return 404 for non-existent quote', async () => {
         const res = await request(app).get('/api/quotes/nonexistentid').set('Authorization', `Bearer ${token}`);
         expectNotFound(res);

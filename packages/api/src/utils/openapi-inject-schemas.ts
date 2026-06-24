@@ -5,6 +5,7 @@ import {
     PatchNoteConfig,
     PatchSubscriptionConfig,
     QuoteConfig,
+    QuoteOfDayConfig,
     ReminderConfig,
     ServerConfig,
     TwitchStreamConfig,
@@ -41,6 +42,7 @@ const modelSchemaSources: SchemaSource[] = [
     ['PatchNoteConfig', PatchNoteConfig as ModelCtor<Model>],
     ['PatchSubscriptionConfig', PatchSubscriptionConfig as ModelCtor<Model>],
     ['QuoteConfig', QuoteConfig as ModelCtor<Model>],
+    ['QuoteOfDayConfig', QuoteOfDayConfig as ModelCtor<Model>],
     ['ReminderConfig', ReminderConfig as ModelCtor<Model>],
     ['ServerConfig', ServerConfig as ModelCtor<Model>],
     ['TwitchStreamConfig', TwitchStreamConfig as ModelCtor<Model>],
@@ -57,7 +59,34 @@ function buildModelSchemas(): Record<string, unknown> {
         schemas[name] = modelToOpenApiSchema(model, { mode: 'full' });
     }
 
+    schemas.QuoteConfig = patchQuoteConfigSchema(schemas.QuoteConfig);
+
     return schemas;
+}
+
+function patchQuoteConfigSchema(schema: unknown): unknown {
+    if (!schema || typeof schema !== 'object') return schema;
+    const quoteSchema = schema as { properties?: Record<string, unknown> };
+    quoteSchema.properties = {
+        ...quoteSchema.properties,
+        tags: {
+            type: 'array',
+            items: { type: 'string' },
+        },
+        source: {
+            type: 'string',
+            nullable: true,
+        },
+        context: {
+            type: 'string',
+            nullable: true,
+        },
+        moderationStatus: {
+            type: 'string',
+            enum: ['pending', 'approved', 'rejected'],
+        },
+    };
+    return quoteSchema;
 }
 
 function buildApiRequestSchemas(): Record<string, unknown> {

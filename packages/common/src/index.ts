@@ -20,6 +20,7 @@ export {
   LeagueConfig,
   ServerConfig,
   QuoteConfig,
+  QuoteOfDayConfig,
   TwitchStreamConfig,
   YoutubeVideoConfig,
   ReminderConfig,
@@ -39,6 +40,7 @@ export {
   AuditEvent,
   IntegrationHealth,
   SteamNewsSubscriptionConfig,
+  UserDigestSubscriptionConfig,
   type AuditActorType,
   type AuditEventSeverity,
   type AuditEventStatus,
@@ -58,6 +60,8 @@ export {
   UserManager,
   ServerManager,
   QuoteManager,
+  QuoteOfDayManager,
+  type QuoteOfDayConfigRecord,
   TwitchManager,
   YoutubeManager,
   ReminderManager,
@@ -67,6 +71,7 @@ export {
   NotificationsManager,
   type NotificationRecord,
   type NotificationListOptions,
+  type UserBirthdayDeliveryListOptions,
   type NotificationProviderSummary,
   type NotificationListResult,
   TikTokManager,
@@ -78,6 +83,7 @@ export {
   AuditEventManager,
   IntegrationHealthManager,
   SteamNewsSubscriptionManager,
+  UserDigestSubscriptionManager,
   type AuditEventInput,
   type AuditEventRecord,
   type AuditEventListOptions,
@@ -181,6 +187,25 @@ export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js'
 export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';
 export { sanitizeAuditMetadata } from './utils/auditMetadata.js';
 export { parseRiotId, formatRiotId, type RiotIdParts } from './utils/riotId.js';
+export {
+    parseReminderRecurrence,
+    getNextRecurringReminderTimestamp,
+    formatReminderRecurrence,
+    type ReminderRecurrenceRule,
+    type ReminderRecurrenceUnit,
+    type NextRecurringReminderInput
+} from './utils/reminderRecurrence.js';
+export {
+    computeNextDigestRunAt,
+    getDigestWindowMs,
+    isValidDigestSchedule,
+    normalizeDigestCategories,
+    parseDigestCategories,
+    serializeDigestCategories,
+    type DigestCategory,
+    type DigestFrequency,
+    type NextDigestRunInput
+} from './utils/digestSchedule.js';
 
 // Register custom create/update schema overrides (executed on module import)
 registerSchemaOverrides();

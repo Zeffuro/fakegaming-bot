@@ -6,7 +6,7 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { idParamSchema, existsQuerySchema, liveQuerySchema } from './tiktok.schemas.js';
-import { resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
+import { buildTikTokDebugMeta, resolveTikTokLive as _resolveLive } from '../jobs/tiktok.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import {
     channelAuditMetadata,
@@ -135,9 +135,10 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdm
 router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(liveQuerySchema), async (req, res) => {
     const { username, debug, mode } = req.query as unknown as z.output<typeof liveQuerySchema>;
     if (mode === 'light') {
-        const { live, debugMeta } = await _resolveLive(username, undefined, { mode: 'light' } as any);
+        const info = await _resolveLive(username, undefined, { mode: 'light' } as any);
+        const { live } = info;
         const payload: Record<string, unknown> = { live };
-        if (debug) payload.debugMeta = debugMeta ?? null;
+        if (debug) payload.debugMeta = buildTikTokDebugMeta(info);
         return res.json(payload);
     }
     const info = await _resolveLive(username);
@@ -148,7 +149,7 @@ router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(
         startedAt: info.startedAt ?? null,
         viewers: info.viewers ?? null,
         cover: info.cover ?? null,
-        ...(debug ? { debugMeta: info.debugMeta ?? null } : {})
+        ...(debug ? { debugMeta: buildTikTokDebugMeta(info) } : {})
     });
 });
 

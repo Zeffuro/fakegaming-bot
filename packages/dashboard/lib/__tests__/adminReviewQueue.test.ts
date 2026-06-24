@@ -43,7 +43,7 @@ function auditEvent(partial: Partial<AuditEventEntry>): AuditEventEntry {
 }
 
 describe('buildAdminReviewQueue', () => {
-    it('ranks operational issues before detailed failing records', () => {
+    it('groups operational integration summaries with detailed failing records', () => {
         const queue = buildAdminReviewQueue({
             operationsHealth: {
                 issues: [
@@ -84,16 +84,32 @@ describe('buildAdminReviewQueue', () => {
 
         expect(queue.map(item => item.id)).toEqual([
             'operations:integration-errors',
-            'integration-health:Patch Notes:patch-1',
             'jobs:anime-digest:failed',
             'audit:44',
             'operations:health-warnings',
         ]);
+        expect(queue[0]).toMatchObject({
+            detail: '2 integration records currently failing. Includes 1 visible detail, plus 1 more summarized by the overview.',
+            relatedItems: [
+                expect.objectContaining({
+                    id: 'integration-health:Patch Notes:patch-1',
+                    title: 'Patch Notes config patch-1',
+                    detail: 'Remote feed timed out - 2 consecutive failures - Next: Retry after a short interval and check provider status if failures continue.',
+                    href: '/dashboard/admin/integration-health?status=error&provider=patchnotes&guildId=guild-1',
+                }),
+            ],
+        });
         expect(queue[1]).toMatchObject({
+            id: 'jobs:anime-digest:failed',
+        });
+        expect(queue[0].relatedItems?.[0]).toMatchObject({
             title: 'Patch Notes config patch-1',
-            detail: 'Remote feed timed out - 2 consecutive failures',
-            severity: 'critical',
+            detail: 'Remote feed timed out - 2 consecutive failures - Next: Retry after a short interval and check provider status if failures continue.',
             href: '/dashboard/admin/integration-health?status=error&provider=patchnotes&guildId=guild-1',
+        });
+        expect(queue[2]).toMatchObject({
+            id: 'audit:44',
+            href: '/dashboard/admin/audit?status=failure&action=integration.delete&guildId=guild-1&severity=error',
         });
     });
 
@@ -127,9 +143,83 @@ describe('buildAdminReviewQueue', () => {
             expect.objectContaining({
                 id: 'integration-health:youtube:youtube-1',
                 severity: 'warning',
-                detail: 'FETCH_FAILED - No consecutive failures recorded',
+                detail: 'FETCH_FAILED - No consecutive failures recorded - Next: Retry after a short interval and check provider status if failures continue.',
                 href: '/dashboard/admin/integration-health?status=unknown&provider=youtube&guildId=guild-1',
             }),
+        ]);
+    });
+
+    it('includes cooldown state in provider health details', () => {
+        const queue = buildAdminReviewQueue({
+            healthRecords: [
+                healthRecord({
+                    status: 'warning',
+                    consecutiveFailures: 1,
+                    lastErrorMessage: 'Delivery suppressed',
+                    metadata: { suppressedByCooldown: true },
+                }),
+            ],
+        });
+
+        expect(queue).toEqual([
+            expect.objectContaining({
+                id: 'integration-health:twitch:config-1',
+                detail: 'Delivery suppressed - 1 consecutive failure - Cooldown: last delivery suppressed - Next: Retry after a short interval and check provider status if failures continue.',
+            }),
+        ]);
+    });
+
+    it('groups failed and unavailable job details under matching operation summaries', () => {
+        const queue = buildAdminReviewQueue({
+            operationsHealth: {
+                issues: [
+                    { label: 'Failed job runs', value: 3, severity: 'critical', href: '/dashboard/admin/jobs' },
+                    { label: 'Job status unavailable', value: 1, severity: 'critical', href: '/dashboard/admin/jobs' },
+                ],
+            },
+            jobs: [
+                {
+                    name: 'twitch',
+                    latestRun: {
+                        startedAt: '2026-06-22T11:00:00.000Z',
+                        finishedAt: '2026-06-22T11:01:00.000Z',
+                        ok: false,
+                        error: 'Token expired',
+                    },
+                    failedRecentRuns: 2,
+                    totalRecentRuns: 5,
+                },
+                {
+                    name: 'youtube',
+                    latestRun: {
+                        startedAt: '2026-06-22T11:05:00.000Z',
+                        finishedAt: '2026-06-22T11:06:00.000Z',
+                        ok: false,
+                    },
+                    failedRecentRuns: 1,
+                    totalRecentRuns: 5,
+                },
+                {
+                    name: 'jobs-api',
+                    latestRun: null,
+                    failedRecentRuns: 0,
+                    totalRecentRuns: 0,
+                    error: 'Failed to load status',
+                },
+            ],
+        });
+
+        expect(queue.map(item => item.id)).toEqual([
+            'operations:failed-job-runs',
+            'operations:job-status-unavailable',
+        ]);
+        expect(queue[0].relatedItems?.map(item => item.id)).toEqual([
+            'jobs:youtube:failed',
+            'jobs:twitch:failed',
+        ]);
+        expect(queue[0].detail).toBe('3 recent job runs failed. Includes 2 visible details, plus 1 more summarized by the overview.');
+        expect(queue[1].relatedItems?.map(item => item.id)).toEqual([
+            'jobs:jobs-api:unavailable',
         ]);
     });
 

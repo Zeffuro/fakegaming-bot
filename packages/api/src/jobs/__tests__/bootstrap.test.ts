@@ -21,6 +21,8 @@ vi.mock('../tiktok.js', () => ({ registerTikTokJobs: vi.fn().mockResolvedValue(u
 vi.mock('../bluesky.js', () => ({ registerBlueskyJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../anime.js', () => ({ registerAnimeJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../steamNews.js', () => ({ registerSteamNewsJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../userDigests.js', () => ({ registerUserDigestJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../quoteOfDay.js', () => ({ registerQuoteOfDayJobs: vi.fn().mockResolvedValue(undefined) }));
 
 import * as birthdays from '../birthdays.js';
 import * as reminders from '../reminders.js';
@@ -32,6 +34,8 @@ import * as tiktok from '../tiktok.js';
 import * as bluesky from '../bluesky.js';
 import * as anime from '../anime.js';
 import * as steamNews from '../steamNews.js';
+import * as userDigests from '../userDigests.js';
+import * as quoteOfDay from '../quoteOfDay.js';
 
 async function importFresh<T = any>(modulePath: string): Promise<T> {
     vi.resetModules();
@@ -58,6 +62,8 @@ describe('jobs/bootstrap', () => {
         expect(getActiveJobQueue()).not.toBeNull();
         expect(vi.mocked(birthdays).registerBirthdaysJobs).toHaveBeenCalled();
         expect(vi.mocked(reminders).registerRemindersJobs).toHaveBeenCalled();
+        expect(vi.mocked(userDigests).registerUserDigestJobs).toHaveBeenCalled();
+        expect(vi.mocked(quoteOfDay).registerQuoteOfDayJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotes).registerPatchNotesJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotesScan).registerPatchNotesScanJobs).toHaveBeenCalled();
         expect(vi.mocked(twitch).registerTwitchJobs).toHaveBeenCalled();

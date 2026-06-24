@@ -16,8 +16,20 @@ export interface TikTokLiveResponse {
     viewers: number | null;
     cover: string | null;
     debugMeta?: {
-        method: "fetchIsLive" | "getRoomInfo" | "connect" | "unknown";
-        raw?: unknown;
+        method: "connect" | "unknown";
+        fetchStatus: "live" | "connect-failed" | "offline";
+        errorCode: string | null;
+        cachedOffline: boolean;
+        offlineBackoffUntil: string | null;
+        checkedAt: string;
+        session: {
+            cookieConfigured: boolean;
+            cookiePairCount: number;
+            likelySessionCookiePresent: boolean;
+            freshness: "not-configured" | "unknown";
+            connectorUsesCookie: boolean;
+            summary: string;
+        };
     };
 }
 

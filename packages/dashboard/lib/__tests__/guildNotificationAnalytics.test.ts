@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildGuildNotificationAnalytics } from '@/lib/guildNotificationAnalytics';
+import {
+    buildGuildNotificationAnalytics,
+    buildGuildNotificationAnalyticsCsvRows,
+    parseGuildAnalyticsWindowDays,
+    serializeGuildAnalyticsWindowDays,
+} from '@/lib/guildNotificationAnalytics';
 import type { IntegrationHealthRecord, NotificationDeliveryRecord } from '@/lib/api-client';
 
 function healthRecord(partial: Partial<IntegrationHealthRecord>): IntegrationHealthRecord {
@@ -145,4 +150,116 @@ describe('buildGuildNotificationAnalytics', () => {
             { date: '2026-06-22', deliveries: 5 },
         ]);
     });
+
+    it('summarizes provider outcomes from health and delivery records', () => {
+        const analytics = buildGuildNotificationAnalytics({
+            healthRecords: [
+                healthRecord({
+                    provider: 'twitch',
+                    configId: 'twitch-1',
+                    status: 'error',
+                    consecutiveFailures: 3,
+                    lastFailureAt: '2026-06-21T10:00:00.000Z',
+                    lastDeliveryAt: '2026-06-20T10:00:00.000Z',
+                }),
+                healthRecord({
+                    provider: 'twitch',
+                    configId: 'twitch-2',
+                    status: 'warning',
+                    consecutiveFailures: 2,
+                    lastFailureAt: '2026-06-22T08:00:00.000Z',
+                }),
+                healthRecord({
+                    provider: 'youtube',
+                    configId: 'youtube-1',
+                    status: 'healthy',
+                    lastDeliveryAt: '2026-06-22T12:00:00.000Z',
+                }),
+            ],
+            notificationProviders: [
+                { provider: 'twitch', count: 6 },
+                { provider: 'youtube', count: 2 },
+            ],
+            notificationRecords: [
+                notificationRecord({ provider: 'twitch', createdAt: '2026-06-22T09:00:00.000Z' }),
+                notificationRecord({ provider: 'youtube', createdAt: '2026-06-21T09:00:00.000Z' }),
+            ],
+        });
+
+        expect(analytics.providers.find(provider => provider.providerKey === 'twitch')).toMatchObject({
+            healthErrors: 1,
+            healthWarnings: 1,
+            consecutiveFailures: 5,
+            lastFailureAt: '2026-06-22T08:00:00.000Z',
+            lastDeliveryAt: '2026-06-22T09:00:00.000Z',
+            deliveries: 6,
+        });
+        expect(analytics.providers.find(provider => provider.providerKey === 'youtube')).toMatchObject({
+            healthHealthy: 1,
+            consecutiveFailures: 0,
+            lastFailureAt: null,
+            lastDeliveryAt: '2026-06-22T12:00:00.000Z',
+            deliveries: 2,
+        });
+    });
+
+    it('maps summary, provider, and trend rows for CSV export', () => {
+        const analytics = buildGuildNotificationAnalytics({
+            configs: [
+                { providerKey: 'twitch', providerLabel: 'Twitch', configId: '1' },
+            ],
+            healthRecords: [
+                healthRecord({
+                    provider: 'twitch',
+                    configId: '1',
+                    status: 'error',
+                    consecutiveFailures: 2,
+                    lastFailureAt: '2026-06-22T08:00:00.000Z',
+                }),
+            ],
+            notificationProviders: [
+                { provider: 'twitch', count: 4 },
+            ],
+            notificationTrend: [
+                { date: '2026-06-21', count: 1 },
+                { date: '2026-06-22', count: 3 },
+            ],
+        });
+
+        expect(buildGuildNotificationAnalyticsCsvRows(analytics, 30)).toEqual([
+            ['summary', 30, '', '', 'totalConfigured', 1, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'activeConfigs', 1, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'pausedConfigs', 0, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'totalDeliveries', 4, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'healthErrors', 1, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'healthWarnings', 0, '', '', '', '', '', '', '', '', '', '', ''],
+            ['summary', 30, '', '', 'lastDeliveryAt', null, '', '', '', '', '', '', '', '', '', '', null],
+            ['provider', 30, 'Twitch', '', 'providerSummary', '', 'critical', 1, 1, 0, 4, 1, 0, 0, 2, '2026-06-22T08:00:00.000Z', null],
+            ['trend', 30, '', '2026-06-21', 'deliveries', 1, '', '', '', '', 1, '', '', '', '', '', ''],
+            ['trend', 30, '', '2026-06-22', 'deliveries', 3, '', '', '', '', 3, '', '', '', '', '', ''],
+        ]);
+    });
 });
+
+describe('guild analytics window params', () => {
+    it('parses supported dashboard analytics windows', () => {
+        expect(parseGuildAnalyticsWindowDays(params('days=7'))).toBe(7);
+        expect(parseGuildAnalyticsWindowDays(params('days=30'))).toBe(30);
+        expect(parseGuildAnalyticsWindowDays(params('days=90'))).toBe(90);
+    });
+
+    it('falls back to the default window for unsupported values', () => {
+        expect(parseGuildAnalyticsWindowDays(params(''))).toBe(30);
+        expect(parseGuildAnalyticsWindowDays(params('days=14'))).toBe(30);
+        expect(parseGuildAnalyticsWindowDays(params('days=bad'))).toBe(30);
+    });
+
+    it('serializes non-default windows while preserving unrelated params', () => {
+        expect(serializeGuildAnalyticsWindowDays(params('provider=twitch'), 7)).toBe('provider=twitch&days=7');
+        expect(serializeGuildAnalyticsWindowDays(params('provider=twitch&days=90'), 30)).toBe('provider=twitch');
+    });
+});
+
+function params(value: string): URLSearchParams {
+    return new URLSearchParams(value);
+}

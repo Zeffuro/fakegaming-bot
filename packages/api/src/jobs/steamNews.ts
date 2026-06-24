@@ -112,11 +112,7 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
             const items = await fetchSteamNewsForApp(enrichedSubscription.steamAppId);
             const nextItem = selectNextSteamNewsItem(items, subscription.lastNewsGid);
             if (!nextItem) {
-                await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                    id: enrichedSubscription.id,
-                    guildId: enrichedSubscription.guildId,
-                    channelId: enrichedSubscription.discordChannelId,
-                }, {
+                await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, enrichedSubscription, {
                     metadata: {
                         steamAppId: enrichedSubscription.steamAppId,
                         appName: enrichedSubscription.appName ?? null,
@@ -132,9 +128,8 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
 
             if (suppression.shouldSuppress) {
                 await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                    id: enrichedSubscription.id,
-                    guildId: enrichedSubscription.guildId,
-                    channelId: enrichedSubscription.discordChannelId,
+                    ...enrichedSubscription,
+                    lastNotifiedAt: enrichedSubscription.lastAnnouncedAt ?? null,
                 }, {
                     metadata: {
                         steamAppId: enrichedSubscription.steamAppId,
@@ -173,11 +168,7 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
                 lastAnnouncedAt: nextItem.date * 1000,
             });
             processed += 1;
-            await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, {
-                id: enrichedSubscription.id,
-                guildId: enrichedSubscription.guildId,
-                channelId: enrichedSubscription.discordChannelId,
-            }, {
+            await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, enrichedSubscription, {
                 delivered: true,
                 metadata: {
                     steamAppId: enrichedSubscription.steamAppId,
@@ -189,11 +180,7 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
             });
         } catch (err) {
             errors += 1;
-            await recordIntegrationFailure(STEAM_NEWS_PROVIDER, {
-                id: subscription.id,
-                guildId: subscription.guildId,
-                channelId: subscription.discordChannelId,
-            }, err, {
+            await recordIntegrationFailure(STEAM_NEWS_PROVIDER, subscription, err, {
                 errorCode: 'STEAM_NEWS_POLL_FAILED',
                 metadata: {
                     steamAppId: subscription.steamAppId,

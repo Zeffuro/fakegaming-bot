@@ -24,6 +24,8 @@ export const API_ENDPOINTS = {
     USER_NOTES: "/api/external/userNotes",
     USER_REMINDERS: "/api/external/userReminders",
     USER_SETTINGS: "/api/external/userSettings",
+    USER_DIGEST_SUBSCRIPTION: "/api/external/userDigestSubscription",
+    USER_ACTIVITY: "/api/external/userActivity",
 };
 
 export interface ApiOptions {

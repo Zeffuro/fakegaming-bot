@@ -2,6 +2,7 @@ export * from './baseManager.js';
 export * from './userManager.js';
 export * from './serverManager.js';
 export * from './quoteManager.js';
+export * from './quoteOfDayManager.js';
 export * from './twitchManager.js';
 export * from './youtubeManager.js';
 export * from './reminderManager.js';
@@ -19,6 +20,7 @@ export * from './auditEventManager.js';
 export * from './integrationHealthManager.js';
 export * from './steamNewsManager.js';
 export * from './userNoteManager.js';
+export * from './userDigestSubscriptionManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

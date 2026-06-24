@@ -452,7 +452,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "reminders",
-        "description": "List your pending reminders",
+        "description": "List your active and paused reminders",
         "module": "reminders",
         "permissions": null,
         "dm_permission": null,
@@ -483,6 +483,26 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "snooze-reminder",
         "description": "Snooze one of your pending reminders",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "pause-reminder",
+        "description": "Pause one of your recurring reminders",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "resume-reminder",
+        "description": "Resume one of your recurring reminders",
         "module": "reminders",
         "permissions": null,
         "dm_permission": null,
@@ -1045,7 +1065,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "reminders",
-                "description": "List your pending reminders",
+                "description": "List your active and paused reminders",
                 "module": "reminders",
                 "permissions": null,
                 "dm_permission": null,
@@ -1076,6 +1096,26 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "snooze-reminder",
                 "description": "Snooze one of your pending reminders",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "pause-reminder",
+                "description": "Pause one of your recurring reminders",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "resume-reminder",
+                "description": "Resume one of your recurring reminders",
                 "module": "reminders",
                 "permissions": null,
                 "dm_permission": null,

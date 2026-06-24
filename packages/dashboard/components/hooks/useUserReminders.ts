@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, type UserReminder, type UserReminderInput, type UserReminderSnoozeInput } from "@/lib/api-client";
+import { api, type UserReminder, type UserReminderInput, type UserReminderPausedInput, type UserReminderSnoozeInput } from "@/lib/api-client";
 
 export function useUserReminders() {
     const [reminders, setReminders] = useState<UserReminder[]>([]);
@@ -55,6 +55,22 @@ export function useUserReminders() {
         }
     }, []);
 
+    const setReminderPaused = useCallback(async (id: string, input: UserReminderPausedInput) => {
+        setSaving(true);
+        try {
+            const reminder = await api.setUserReminderPaused(id, input);
+            setReminders((current) => current.map((item) => item.id === id ? reminder : item).sort(compareReminders));
+            setError(null);
+            return reminder;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to update reminder";
+            setError(message);
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, []);
+
     const deleteReminder = useCallback(async (id: string) => {
         setSaving(true);
         try {
@@ -82,10 +98,12 @@ export function useUserReminders() {
         refresh,
         createReminder,
         snoozeReminder,
+        setReminderPaused,
         deleteReminder,
     };
 }
 
 function compareReminders(left: UserReminder, right: UserReminder): number {
-    return left.timestamp - right.timestamp;
+    if (left.completed !== right.completed) return left.completed ? 1 : -1;
+    return (left.nextPreviewAt ?? left.timestamp) - (right.nextPreviewAt ?? right.timestamp);
 }

@@ -1,25 +1,54 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Box, Button, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
     ArrowForward,
     Block,
     Cake,
+    CheckCircle,
+    Download,
+    ErrorOutlined,
     FormatQuote,
+    InfoOutlined,
     NotificationsActive,
+    PowerSettingsNew,
     Settings,
     Timeline,
     Tune,
+    UploadFile,
+    WarningAmber,
 } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useAnimeConfigs } from "@/components/hooks/useAnime";
+import { useBirthdays } from "@/components/hooks/useBirthdays";
+import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
+import { useGuildCommands } from "@/components/hooks/useGuildCommands";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
+import { useGuildModules } from "@/components/hooks/useGuildModules";
+import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
+import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
+import { useSteamNewsConfigs } from "@/components/hooks/useSteamNews";
+import { useTikTokConfigs } from "@/components/hooks/useTikTok";
+import { useTwitchConfigs } from "@/components/hooks/useTwitch";
+import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
+import { BOT_TREE } from "@/lib/commands";
+import { buildNotificationSetupReview } from "@/lib/notificationSetupReview";
+import {
+    buildServerSettingsStatus,
+    type ServerModuleState,
+    type ServerModuleStatus,
+    type ServerProviderConfigInput,
+    type ServerProviderState,
+    type ServerProviderStatus,
+    type ServerSettingsStatus,
+} from "@/lib/serverSettingsStatus";
 import { SettingsCard } from "@/components/SettingsCard";
 
 interface SettingsDestination {
@@ -32,16 +61,108 @@ interface SettingsDestination {
     chipLabel?: string;
 }
 
-interface ReviewStep {
-    label: string;
-    detail: string;
-    href: string;
-    accent: string;
-}
-
 export default function GuildSettingsPage() {
     const { guild, guildsLoading, guildId } = useGuildFromParams();
+    const guildReady = Boolean(guild);
     const encodedGuildId = encodeURIComponent(guildId as string);
+    const notificationSetupHref = `/dashboard/settings/${encodedGuildId}/notifications`;
+    const notificationTransferHref = `${notificationSetupHref}#notification-transfer`;
+    const commandsApi = useGuildCommands(guildId as string);
+    const modulesApi = useGuildModules(guildId as string);
+    const integrationHealth = useIntegrationHealth(guildId as string, undefined, { enabled: guildReady });
+    const twitchApi = useTwitchConfigs(guildId as string, { enabled: guildReady });
+    const youtubeApi = useYouTubeConfigs(guildId as string, { enabled: guildReady });
+    const steamNewsApi = useSteamNewsConfigs(guildId as string, { enabled: guildReady });
+    const patchApi = usePatchSubscriptions(guildId as string, { enabled: guildReady });
+    const tiktokApi = useTikTokConfigs(guildId as string, { enabled: guildReady });
+    const blueskyApi = useBlueskyConfigs(guildId as string, { enabled: guildReady });
+    const birthdayApi = useBirthdays(guildId as string, { enabled: guildReady });
+    const animeApi = useAnimeConfigs(guildId as string, { enabled: guildReady });
+
+    useEffect(() => {
+        if (!guildReady || !guildId) return;
+        void commandsApi.fetchDisabledCommands();
+        void modulesApi.fetchDisabledModules();
+    }, [commandsApi.fetchDisabledCommands, guildId, guildReady, modulesApi.fetchDisabledModules]);
+
+    const notificationRecords = useMemo(() => ({
+        twitch: asReviewRecords(twitchApi.configs),
+        youtube: asReviewRecords(youtubeApi.configs),
+        tiktok: asReviewRecords(tiktokApi.configs),
+        bluesky: asReviewRecords(blueskyApi.configs),
+        steamNews: asReviewRecords(steamNewsApi.configs),
+        patchNotes: asReviewRecords(patchApi.configs),
+        anime: asReviewRecords(animeApi.configs),
+        birthdays: asReviewRecords(birthdayApi.birthdays),
+    }), [
+        animeApi.configs,
+        birthdayApi.birthdays,
+        blueskyApi.configs,
+        patchApi.configs,
+        steamNewsApi.configs,
+        tiktokApi.configs,
+        twitchApi.configs,
+        youtubeApi.configs,
+    ]);
+    const setupReview = useMemo(() => buildNotificationSetupReview(notificationRecords), [notificationRecords]);
+    const providerConfigs = useMemo<ServerProviderConfigInput[]>(() => ([
+        toProviderConfig("twitch", "Twitch", "twitch", twitchApi.configs, `/dashboard/twitch/${encodedGuildId}`),
+        toProviderConfig("youtube", "YouTube", "youtube", youtubeApi.configs, `/dashboard/youtube/${encodedGuildId}`),
+        toProviderConfig("tiktok", "TikTok", "tiktok", tiktokApi.configs, `/dashboard/tiktok/${encodedGuildId}`),
+        toProviderConfig("bluesky", "Bluesky", "bluesky", blueskyApi.configs, `/dashboard/bluesky/${encodedGuildId}`),
+        toProviderConfig("steamnews", "Steam News", "steam", steamNewsApi.configs, `/dashboard/steam-news/${encodedGuildId}`),
+        toProviderConfig("patchnotes", "Patch Notes", "patchnotes", patchApi.configs, `/dashboard/patch-notes/${encodedGuildId}`),
+        toProviderConfig("anime", "Anime", "anime", animeApi.configs, `/dashboard/anime/${encodedGuildId}`),
+        toProviderConfig("birthday", "Birthdays", "birthdays", birthdayApi.birthdays, `/dashboard/birthdays/${encodedGuildId}`),
+    ]), [
+        animeApi.configs,
+        birthdayApi.birthdays,
+        blueskyApi.configs,
+        encodedGuildId,
+        patchApi.configs,
+        steamNewsApi.configs,
+        tiktokApi.configs,
+        twitchApi.configs,
+        youtubeApi.configs,
+    ]);
+    const serverStatus = useMemo(() => buildServerSettingsStatus({
+        tree: BOT_TREE,
+        disabledModules: modulesApi.disabledModules,
+        disabledCommands: commandsApi.disabledCommands,
+        providerConfigs,
+        healthRecords: integrationHealth.records,
+        notificationReview: setupReview,
+        guildId: guildId as string,
+    }), [
+        commandsApi.disabledCommands,
+        guildId,
+        integrationHealth.records,
+        modulesApi.disabledModules,
+        providerConfigs,
+        setupReview,
+    ]);
+    const statusLoading = twitchApi.loading
+        || youtubeApi.loading
+        || steamNewsApi.loading
+        || patchApi.loading
+        || tiktokApi.loading
+        || blueskyApi.loading
+        || birthdayApi.loading
+        || animeApi.loading
+        || integrationHealth.loading;
+    const statusErrors = [
+        commandsApi.error,
+        modulesApi.error,
+        integrationHealth.error,
+        twitchApi.error,
+        youtubeApi.error,
+        steamNewsApi.error,
+        patchApi.error,
+        tiktokApi.error,
+        blueskyApi.error,
+        birthdayApi.error,
+        animeApi.error,
+    ].filter((message): message is string => Boolean(message));
 
     if (!guild && !guildsLoading) {
         return <GuildAccessError />;
@@ -51,7 +172,7 @@ export default function GuildSettingsPage() {
         {
             title: "Notification Setup",
             description: "Manage feed routing, cooldowns, quiet hours, import/export, and duplicate setup review.",
-            href: `/dashboard/settings/${encodedGuildId}/notifications`,
+            href: notificationSetupHref,
             accent: dashboardAccents.settings,
             icon: <NotificationsActive />,
             actionLabel: "Open Notifications",
@@ -59,7 +180,7 @@ export default function GuildSettingsPage() {
         },
         {
             title: "Delivery Analytics",
-            description: "Review notification history, provider health, delivery rates, and 30-day provider trends.",
+            description: "Review notification history, provider health, delivery rates, and provider trends.",
             href: `/dashboard/analytics/${encodedGuildId}`,
             accent: dashboardAccents.neutral,
             icon: <Timeline />,
@@ -104,33 +225,6 @@ export default function GuildSettingsPage() {
         },
     ];
 
-    const reviewSteps: ReviewStep[] = [
-        {
-            label: "Notification routing",
-            detail: "Check where configured feeds post and clean up duplicate destinations.",
-            href: `/dashboard/settings/${encodedGuildId}/notifications`,
-            accent: dashboardAccents.settings,
-        },
-        {
-            label: "Delivery health",
-            detail: "Confirm recent sends and provider-specific failure patterns.",
-            href: `/dashboard/analytics/${encodedGuildId}`,
-            accent: dashboardAccents.neutral,
-        },
-        {
-            label: "Command availability",
-            detail: "Limit modules that should not be usable in this server.",
-            href: `/dashboard/commands/${encodedGuildId}`,
-            accent: dashboardAccents.commands,
-        },
-        {
-            label: "Community content",
-            detail: "Keep quotes and birthday announcements current.",
-            href: `/dashboard/quotes/${encodedGuildId}`,
-            accent: dashboardAccents.quotes,
-        },
-    ];
-
     return (
         <DashboardLayout guild={guild} currentModule="settings" maxWidth="xl" loading={guildsLoading}>
             {!guildsLoading && guild && (
@@ -143,13 +237,15 @@ export default function GuildSettingsPage() {
                         accent={dashboardAccents.settings}
                         secondaryAccent={dashboardAccents.commands}
                         stats={[
-                            { label: "Live Destinations", value: destinations.length },
+                            { label: "Commands Enabled", value: `${serverStatus.summary.enabledCommands}/${serverStatus.summary.totalCommands}` },
+                            { label: "Configured Feeds", value: serverStatus.summary.configuredIntegrations },
+                            { label: "Review Findings", value: serverStatus.summary.notificationFindings },
                             { label: "Members", value: guild.member_count ?? "N/A" },
                         ]}
                         actions={(
                             <Button
                                 component={Link}
-                                href={`/dashboard/settings/${encodedGuildId}/notifications`}
+                                href={notificationSetupHref}
                                 variant="contained"
                                 startIcon={<NotificationsActive />}
                                 sx={primaryActionButtonSx(dashboardAccents.settings)}
@@ -180,14 +276,53 @@ export default function GuildSettingsPage() {
                             </SettingsCard>
 
                             <SettingsCard
-                                title="Review Path"
-                                description="Use this order when checking whether the bot setup still matches how the server is run."
+                                title="Live Module Status"
+                                description="Effective command availability by module, including disabled modules and per-command overrides."
                                 accent={dashboardAccents.commands}
                             >
-                                <Stack spacing={1.25}>
-                                    {reviewSteps.map((step, index) => (
-                                        <ReviewStepRow key={step.label} index={index + 1} step={step} />
-                                    ))}
+                                <LiveModuleStatus status={serverStatus} loading={statusLoading} errors={statusErrors} />
+                            </SettingsCard>
+
+                            <SettingsCard
+                                title="Integration Setup"
+                                description="Configured notification providers with paused routes and health signals."
+                                accent={dashboardAccents.settings}
+                            >
+                                <IntegrationSetupStatus status={serverStatus} loading={statusLoading} />
+                            </SettingsCard>
+
+                            <SettingsCard
+                                title="Notification Review"
+                                description="Duplicate routes, same-feed multi-channel overlap, and crowded destination channels."
+                                accent={dashboardAccents.settings}
+                            >
+                                <NotificationReviewStatus status={serverStatus} href={notificationSetupHref} />
+                            </SettingsCard>
+
+                            <SettingsCard
+                                title="Notification Transfer"
+                                description="Jump to the notification setup import and export controls."
+                                accent={dashboardAccents.settings}
+                            >
+                                <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                                    <Button
+                                        component={Link}
+                                        href={notificationTransferHref}
+                                        variant="outlined"
+                                        startIcon={<UploadFile />}
+                                        sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                    >
+                                        Import JSON
+                                    </Button>
+                                    <Button
+                                        component={Link}
+                                        href={notificationTransferHref}
+                                        variant="outlined"
+                                        startIcon={<Download />}
+                                        sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                    >
+                                        Export JSON
+                                    </Button>
                                 </Stack>
                             </SettingsCard>
                         </Stack>
@@ -195,6 +330,103 @@ export default function GuildSettingsPage() {
                 </FeatureShell>
             )}
         </DashboardLayout>
+    );
+}
+
+function LiveModuleStatus({ status, loading, errors }: { status: ServerSettingsStatus; loading: boolean; errors: string[] }) {
+    return (
+        <Stack spacing={1.25}>
+            <StatusLoadingBar loading={loading} />
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                <StatusChip label={`${status.summary.activeModules} active`} accent={dashboardAccents.settings} />
+                <StatusChip label={`${status.summary.partialModules} review`} accent={dashboardAccents.patchNotes} />
+                <StatusChip label={`${status.summary.disabledModules} disabled`} accent={dashboardAccents.quotes} />
+            </Stack>
+            {errors.length > 0 ? (
+                <Typography variant="caption" sx={{ color: dashboardAccents.patchNotes, display: "block" }}>
+                    {errors[0]}
+                </Typography>
+            ) : null}
+            {status.modules.map((module) => (
+                <ModuleStatusRow key={module.moduleName} module={module} />
+            ))}
+        </Stack>
+    );
+}
+
+function ModuleStatusRow({ module }: { module: ServerModuleStatus }) {
+    const accent = getModuleStateAccent(module.state);
+    return (
+        <StatusRow
+            icon={getModuleStateIcon(module.state)}
+            accent={accent}
+            title={module.title}
+            detail={module.detail}
+            chipLabel={module.statusLabel}
+            href={module.href}
+            ariaLabel={`Open command controls for ${module.title}`}
+        />
+    );
+}
+
+function IntegrationSetupStatus({ status, loading }: { status: ServerSettingsStatus; loading: boolean }) {
+    return (
+        <Stack spacing={1.25}>
+            <StatusLoadingBar loading={loading} />
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                <StatusChip label={`${status.summary.activeIntegrations} active`} accent={dashboardAccents.settings} />
+                <StatusChip label={`${status.summary.pausedIntegrations} paused`} accent={dashboardAccents.patchNotes} />
+                <StatusChip label={`${status.summary.healthIssues} health`} accent={status.summary.healthIssues > 0 ? dashboardAccents.quotes : dashboardAccents.neutral} />
+            </Stack>
+            {status.providers.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
+                    No notification integrations are configured yet.
+                </Typography>
+            ) : (
+                status.providers.map((provider) => (
+                    <ProviderStatusRow key={provider.providerKey} provider={provider} />
+                ))
+            )}
+        </Stack>
+    );
+}
+
+function ProviderStatusRow({ provider }: { provider: ServerProviderStatus }) {
+    const accent = getProviderStateAccent(provider.state);
+    const healthIssues = provider.healthErrors + provider.healthWarnings + provider.healthUnknown;
+    return (
+        <StatusRow
+            icon={getProviderStateIcon(provider.state)}
+            accent={accent}
+            title={provider.providerLabel}
+            detail={`${provider.active}/${provider.configured} active${provider.paused > 0 ? `, ${provider.paused} paused` : ""}${healthIssues > 0 ? `, ${healthIssues} health ${healthIssues === 1 ? "issue" : "issues"}` : ""}.`}
+            chipLabel={getProviderStateLabel(provider.state)}
+            href={provider.href}
+            ariaLabel={`Open ${provider.providerLabel} setup`}
+        />
+    );
+}
+
+function NotificationReviewStatus({ status, href }: { status: ServerSettingsStatus; href: string }) {
+    const review = status.notificationReview;
+    const accent = review.totalFindings > 0 ? dashboardAccents.patchNotes : dashboardAccents.settings;
+    return (
+        <Stack spacing={1.25}>
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                <StatusChip label={`${review.duplicateRoutes} duplicates`} accent={review.duplicateRoutes > 0 ? dashboardAccents.patchNotes : dashboardAccents.neutral} />
+                <StatusChip label={`${review.multiChannelFeeds} overlaps`} accent={review.multiChannelFeeds > 0 ? dashboardAccents.patchNotes : dashboardAccents.neutral} />
+                <StatusChip label={`${review.busyChannels} busy`} accent={review.busyChannels > 0 ? dashboardAccents.patchNotes : dashboardAccents.neutral} />
+            </Stack>
+            <StatusRow
+                icon={review.totalFindings > 0 ? <WarningAmber fontSize="small" /> : <CheckCircle fontSize="small" />}
+                accent={accent}
+                title={review.totalFindings === 0 ? "No setup findings" : "Setup review needs attention"}
+                detail={review.totalFindings === 0 ? "No duplicate routes or crowded destination channels were detected." : `${review.statusLabel} detected across notification routing.`}
+                chipLabel={review.statusLabel}
+                href={href}
+                ariaLabel="Open notification setup review"
+            />
+        </Stack>
     );
 }
 
@@ -273,53 +505,149 @@ function SnapshotRow({ label, value }: { label: string; value: string }) {
     );
 }
 
-function ReviewStepRow({ index, step }: { index: number; step: ReviewStep }) {
+function StatusRow({
+    icon,
+    accent,
+    title,
+    detail,
+    chipLabel,
+    href,
+    ariaLabel,
+}: {
+    icon: React.ReactNode;
+    accent: string;
+    title: string;
+    detail: string;
+    chipLabel: string;
+    href: string;
+    ariaLabel: string;
+}) {
     return (
-        <Box
-            sx={{
-                display: "grid",
-                gridTemplateColumns: "32px minmax(0, 1fr) auto",
-                alignItems: "center",
-                gap: 1.5,
-                px: 1.5,
-                py: 1.25,
-                borderRadius: 2,
-                bgcolor: "rgba(255,255,255,0.045)",
-                border: "1px solid rgba(255,255,255,0.08)",
-            }}
-        >
-            <Box
-                sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    display: "grid",
-                    placeItems: "center",
-                    color: step.accent,
-                    bgcolor: alpha(step.accent, 0.12),
-                    border: `1px solid ${alpha(step.accent, 0.24)}`,
-                    fontWeight: 900,
-                }}
-            >
-                {index}
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-                <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 850 }}>
-                    {step.label}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-                    {step.detail}
-                </Typography>
-            </Box>
+        <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 1.5, px: 1.5, py: 1.25, borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start", minWidth: 0 }}>
+                <Box sx={{ color: accent, mt: 0.1, flexShrink: 0, display: "grid", placeItems: "center" }}>
+                    {icon}
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.5 }}>
+                        <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 850, overflowWrap: "anywhere" }}>
+                            {title}
+                        </Typography>
+                        <Chip
+                            size="small"
+                            label={chipLabel}
+                            sx={{
+                                height: 22,
+                                color: "rgba(255,255,255,0.78)",
+                                bgcolor: alpha(accent, 0.10),
+                                border: `1px solid ${alpha(accent, 0.20)}`,
+                            }}
+                        />
+                    </Stack>
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", display: "block", mt: 0.25, overflowWrap: "anywhere" }}>
+                        {detail}
+                    </Typography>
+                </Box>
+            </Stack>
             <Button
                 component={Link}
-                href={step.href}
+                href={href}
                 variant="text"
-                aria-label={`Open ${step.label}`}
-                sx={{ ...ghostActionButtonSx(step.accent), minWidth: 40, px: 1.25 }}
+                aria-label={ariaLabel}
+                sx={{ ...ghostActionButtonSx(accent), minWidth: 40, px: 1.25 }}
             >
                 <ArrowForward fontSize="small" />
             </Button>
         </Box>
     );
+}
+
+function StatusChip({ label, accent }: { label: string; accent: string }) {
+    return (
+        <Chip
+            size="small"
+            label={label}
+            sx={{
+                color: "rgba(255,255,255,0.78)",
+                bgcolor: alpha(accent, 0.10),
+                border: `1px solid ${alpha(accent, 0.20)}`,
+            }}
+        />
+    );
+}
+
+function StatusLoadingBar({ loading }: { loading: boolean }) {
+    return loading ? (
+        <LinearProgress
+            sx={{
+                height: 4,
+                borderRadius: 999,
+                bgcolor: "rgba(255,255,255,0.08)",
+                "& .MuiLinearProgress-bar": { bgcolor: dashboardAccents.settings },
+            }}
+        />
+    ) : null;
+}
+
+function getModuleStateAccent(state: ServerModuleState): string {
+    if (state === "active") return dashboardAccents.settings;
+    if (state === "partial") return dashboardAccents.patchNotes;
+    if (state === "disabled") return dashboardAccents.quotes;
+    return dashboardAccents.neutral;
+}
+
+function getModuleStateIcon(state: ServerModuleState): React.ReactNode {
+    if (state === "active") return <CheckCircle fontSize="small" />;
+    if (state === "partial") return <WarningAmber fontSize="small" />;
+    if (state === "disabled") return <PowerSettingsNew fontSize="small" />;
+    return <InfoOutlined fontSize="small" />;
+}
+
+function getProviderStateAccent(state: ServerProviderState): string {
+    if (state === "active") return dashboardAccents.settings;
+    if (state === "warning") return dashboardAccents.patchNotes;
+    if (state === "critical") return dashboardAccents.quotes;
+    if (state === "paused") return dashboardAccents.neutral;
+    return dashboardAccents.neutral;
+}
+
+function getProviderStateIcon(state: ServerProviderState): React.ReactNode {
+    if (state === "active") return <CheckCircle fontSize="small" />;
+    if (state === "warning") return <WarningAmber fontSize="small" />;
+    if (state === "critical") return <ErrorOutlined fontSize="small" />;
+    if (state === "paused") return <PowerSettingsNew fontSize="small" />;
+    return <InfoOutlined fontSize="small" />;
+}
+
+function getProviderStateLabel(state: ServerProviderState): string {
+    if (state === "active") return "Active";
+    if (state === "warning") return "Warning";
+    if (state === "critical") return "Critical";
+    if (state === "paused") return "Paused";
+    return "Not configured";
+}
+
+function toProviderConfig(
+    providerKey: string,
+    providerLabel: string,
+    moduleName: string,
+    configs: readonly unknown[],
+    href: string
+): ServerProviderConfigInput {
+    return {
+        providerKey,
+        providerLabel,
+        moduleName,
+        configured: configs.length,
+        paused: countPaused(configs),
+        href,
+    };
+}
+
+function countPaused(configs: readonly unknown[]): number {
+    return configs.filter((config) => Boolean((config as { paused?: unknown }).paused)).length;
+}
+
+function asReviewRecords(value: unknown): Array<Record<string, unknown>> {
+    return Array.isArray(value) ? value as Array<Record<string, unknown>> : [];
 }

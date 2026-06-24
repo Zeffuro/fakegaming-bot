@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { parseHHmmToMinutes } from '../utils/time.js';
 
 const nonEmptyString = z.string().min(1);
+const recurrenceUnitSchema = z.enum(['day', 'week', 'month']);
+const digestFrequencySchema = z.enum(['daily', 'weekly']);
+const digestCategorySchema = z.enum(['reminders', 'anime']);
+const quoteTagSchema = z.string().trim().min(1).max(32);
+export const quoteModerationStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 
 const hhmmSchema = z.string().refine((value) => parseHHmmToMinutes(value) !== null, {
     message: 'Expected time in HH:mm',
@@ -137,6 +142,19 @@ export const quoteCreateRequestSchema = z.object({
     authorId: nonEmptyString,
     submitterId: nonEmptyString.optional(),
     timestamp: z.number().int(),
+    tags: z.array(quoteTagSchema).max(12).optional(),
+    source: z.string().trim().max(255).nullable().optional(),
+    context: z.string().trim().max(2000).nullable().optional(),
+}).strict();
+
+export const quoteModerationUpdateRequestSchema = z.object({
+    moderationStatus: quoteModerationStatusSchema,
+}).strict();
+
+export const quoteOfDaySettingsRequestSchema = z.object({
+    channelId: nonEmptyString,
+    enabled: z.boolean(),
+    runHourUtc: z.coerce.number().int().min(0).max(23).optional(),
 }).strict();
 
 export const reminderCreateRequestSchema = z.object({
@@ -146,6 +164,10 @@ export const reminderCreateRequestSchema = z.object({
     timespan: nonEmptyString,
     timestamp: z.number().int(),
     completed: z.boolean().optional(),
+    recurrenceUnit: recurrenceUnitSchema.nullable().optional(),
+    recurrenceInterval: z.number().int().min(1).max(365).nullable().optional(),
+    recurrenceTimezone: nonEmptyString.nullable().optional(),
+    lastTriggeredAt: z.number().int().nullable().optional(),
 }).strict();
 
 export const riotLinkUpdateRequestSchema = z.object({
@@ -222,10 +244,28 @@ export const userDefaultReminderTimeSpanUpdateRequestSchema = z.object({
     timespan: nonEmptyString,
 }).strict();
 
+export const userDigestSubscriptionRequestSchema = z.object({
+    frequency: digestFrequencySchema,
+    timezone: nonEmptyString,
+    runAt: hhmmSchema,
+    dayOfWeek: z.number().int().min(0).max(6).nullable().optional(),
+    categories: z.array(digestCategorySchema).min(1).optional(),
+    paused: z.boolean().optional(),
+}).strict();
+
+export const userDigestSubscriptionPausedRequestSchema = z.object({
+    paused: z.boolean(),
+}).strict();
+
 export const userReminderCreateRequestSchema = z.object({
     message: z.string().trim().min(1).max(2000),
     timespan: nonEmptyString,
-}).strict();
+    recurrence: nonEmptyString.optional(),
+    recurrenceTimezone: nonEmptyString.optional(),
+}).strict().refine((value) => !value.recurrence || Boolean(value.recurrenceTimezone), {
+    message: 'recurrenceTimezone is required when recurrence is set',
+    path: ['recurrenceTimezone'],
+});
 
 export const userReminderSnoozeRequestSchema = z.object({
     timespan: nonEmptyString,
@@ -284,6 +324,8 @@ export const apiRequestSchemas = {
     PatchNoteCreateRequest: patchNoteCreateRequestSchema,
     PatchSubscriptionRequest: patchSubscriptionRequestSchema,
     QuoteCreateRequest: quoteCreateRequestSchema,
+    QuoteModerationUpdateRequest: quoteModerationUpdateRequestSchema,
+    QuoteOfDaySettingsRequest: quoteOfDaySettingsRequestSchema,
     ReminderCreateRequest: reminderCreateRequestSchema,
     RiotLinkUpdateRequest: riotLinkUpdateRequestSchema,
     ServerCreateRequest: serverCreateRequestSchema,
@@ -295,6 +337,8 @@ export const apiRequestSchemas = {
     TwitchUpdateRequest: twitchUpdateRequestSchema,
     UserCreateRequest: userCreateRequestSchema,
     UserDefaultReminderTimeSpanUpdateRequest: userDefaultReminderTimeSpanUpdateRequestSchema,
+    UserDigestSubscriptionRequest: userDigestSubscriptionRequestSchema,
+    UserDigestSubscriptionPausedRequest: userDigestSubscriptionPausedRequestSchema,
     UserNoteCreateRequest: userNoteCreateRequestSchema,
     UserNoteUpdateRequest: userNoteUpdateRequestSchema,
     UserReminderCreateRequest: userReminderCreateRequestSchema,

@@ -4,6 +4,7 @@ import {UserConfig} from './models/user-config.js';
 import {LeagueConfig} from './models/league-config.js';
 import {ServerConfig} from './models/server-config.js';
 import {QuoteConfig} from './models/quote-config.js';
+import {QuoteOfDayConfig} from './models/quote-of-day-config.js';
 import {TwitchStreamConfig} from './models/twitch-stream-config.js';
 import {YoutubeVideoConfig} from './models/youtube-video-config.js';
 import {ReminderConfig} from './models/reminder-config.js';
@@ -25,6 +26,7 @@ import {AuditEvent} from './models/audit-event.js';
 import {IntegrationHealth} from './models/integration-health.js';
 import {SteamNewsSubscriptionConfig} from './models/steam-news-subscription-config.js';
 import {UserNoteConfig} from './models/user-note-config.js';
+import {UserDigestSubscriptionConfig} from './models/user-digest-subscription-config.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -62,6 +64,7 @@ export function getSequelize(useTest = false): Sequelize {
         LeagueConfig,
         ServerConfig,
         QuoteConfig,
+        QuoteOfDayConfig,
         TwitchStreamConfig,
         YoutubeVideoConfig,
         ReminderConfig,
@@ -82,7 +85,8 @@ export function getSequelize(useTest = false): Sequelize {
         AuditEvent,
         IntegrationHealth,
         SteamNewsSubscriptionConfig,
-        UserNoteConfig
+        UserNoteConfig,
+        UserDigestSubscriptionConfig
     ]);
 
     return sequelize;

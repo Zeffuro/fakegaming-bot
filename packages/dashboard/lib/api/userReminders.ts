@@ -7,6 +7,11 @@ export interface UserReminder {
     timespan: string;
     timestamp: number;
     completed: boolean;
+    recurrenceUnit: "day" | "week" | "month" | null;
+    recurrenceInterval: number | null;
+    recurrenceTimezone: string | null;
+    lastTriggeredAt: number | null;
+    nextPreviewAt: number | null;
     createdAt: string | null;
     updatedAt: string | null;
 }
@@ -18,10 +23,16 @@ export interface UserReminderListResponse {
 export interface UserReminderInput {
     message: string;
     timespan: string;
+    recurrence?: string;
+    recurrenceTimezone?: string;
 }
 
 export interface UserReminderSnoozeInput {
     timespan: string;
+}
+
+export interface UserReminderPausedInput {
+    paused: boolean;
 }
 
 export const userRemindersApi = {
@@ -36,6 +47,12 @@ export const userRemindersApi = {
 
     snoozeUserReminder: (id: string, input: UserReminderSnoozeInput) =>
         apiRequest<UserReminder>(`${API_ENDPOINTS.USER_REMINDERS}/${encodeURIComponent(id)}/snooze`, {
+            method: "PATCH",
+            body: input,
+        }),
+
+    setUserReminderPaused: (id: string, input: UserReminderPausedInput) =>
+        apiRequest<UserReminder>(`${API_ENDPOINTS.USER_REMINDERS}/${encodeURIComponent(id)}/paused`, {
             method: "PATCH",
             body: input,
         }),

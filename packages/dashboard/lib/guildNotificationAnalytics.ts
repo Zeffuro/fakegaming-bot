@@ -4,6 +4,7 @@ import type {
     NotificationProviderSummary,
     NotificationTrendPoint,
 } from "@/lib/api-client";
+import type { CsvRow } from "@/lib/csvExport";
 
 export type GuildAnalyticsHealthStatus = "healthy" | "warning" | "critical" | "quiet";
 
@@ -25,6 +26,8 @@ export interface GuildAnalyticsProvider {
     healthWarnings: number;
     healthUnknown: number;
     healthHealthy: number;
+    consecutiveFailures: number;
+    lastFailureAt: string | null;
     lastDeliveryAt: string | null;
     status: GuildAnalyticsHealthStatus;
 }
@@ -46,7 +49,55 @@ export interface GuildNotificationAnalytics {
     trend: GuildAnalyticsTrendPoint[];
 }
 
+export const guildNotificationAnalyticsCsvHeaders = [
+    "section",
+    "windowDays",
+    "provider",
+    "date",
+    "metric",
+    "value",
+    "status",
+    "configured",
+    "active",
+    "paused",
+    "deliveries",
+    "healthErrors",
+    "healthWarnings",
+    "healthUnknown",
+    "consecutiveFailures",
+    "lastFailureAt",
+    "lastDeliveryAt",
+] as const;
+
+export interface GuildAnalyticsSearchParamsReader {
+    get: (name: string) => string | null;
+}
+
+export const guildAnalyticsWindowDaysOptions = [7, 30, 90] as const;
+export type GuildAnalyticsWindowDays = typeof guildAnalyticsWindowDaysOptions[number];
+export const defaultGuildAnalyticsWindowDays: GuildAnalyticsWindowDays = 30;
+
 const defaultTrendDays = 7;
+
+export function isGuildAnalyticsWindowDays(value: number): value is GuildAnalyticsWindowDays {
+    return guildAnalyticsWindowDaysOptions.includes(value as GuildAnalyticsWindowDays);
+}
+
+export function parseGuildAnalyticsWindowDays(params: GuildAnalyticsSearchParamsReader): GuildAnalyticsWindowDays {
+    const value = Number.parseInt(params.get("days") ?? "", 10);
+    return isGuildAnalyticsWindowDays(value) ? value : defaultGuildAnalyticsWindowDays;
+}
+
+export function serializeGuildAnalyticsWindowDays(params: URLSearchParams, days: GuildAnalyticsWindowDays): string {
+    const nextParams = new URLSearchParams(params);
+    if (days === defaultGuildAnalyticsWindowDays) {
+        nextParams.delete("days");
+    } else {
+        nextParams.set("days", String(days));
+    }
+
+    return nextParams.toString();
+}
 
 export function buildGuildNotificationAnalytics(input: {
     configs?: GuildAnalyticsConfigRecord[];
@@ -80,7 +131,7 @@ export function buildGuildNotificationAnalytics(input: {
 
         const health = healthByProviderConfig.get(getProviderConfigKey(config.providerKey, config.configId));
         if (health) {
-            addProviderHealth(provider, health.status);
+            addProviderHealth(provider, health);
         }
     }
 
@@ -90,7 +141,7 @@ export function buildGuildNotificationAnalytics(input: {
         }
 
         const provider = getProviderAccumulator(providerStats, record.provider, getProviderLabel(record.provider));
-        addProviderHealth(provider, record.status);
+        addProviderHealth(provider, record);
     }
 
     for (const item of notificationProviders) {
@@ -123,6 +174,56 @@ export function buildGuildNotificationAnalytics(input: {
     };
 }
 
+export function buildGuildNotificationAnalyticsCsvRows(analytics: GuildNotificationAnalytics, windowDays: number): CsvRow[] {
+    return [
+        ["summary", windowDays, "", "", "totalConfigured", analytics.totalConfigured, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "activeConfigs", analytics.activeConfigs, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "pausedConfigs", analytics.pausedConfigs, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "totalDeliveries", analytics.totalDeliveries, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "healthErrors", analytics.healthErrors, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "healthWarnings", analytics.healthWarnings, "", "", "", "", "", "", "", "", "", "", ""],
+        ["summary", windowDays, "", "", "lastDeliveryAt", analytics.lastDeliveryAt, "", "", "", "", "", "", "", "", "", "", analytics.lastDeliveryAt],
+        ...analytics.providers.map((provider) => [
+            "provider",
+            windowDays,
+            provider.providerLabel,
+            "",
+            "providerSummary",
+            "",
+            provider.status,
+            provider.configured,
+            provider.active,
+            provider.paused,
+            provider.deliveries,
+            provider.healthErrors,
+            provider.healthWarnings,
+            provider.healthUnknown,
+            provider.consecutiveFailures,
+            provider.lastFailureAt,
+            provider.lastDeliveryAt,
+        ] satisfies CsvRow),
+        ...analytics.trend.map((point) => [
+            "trend",
+            windowDays,
+            "",
+            point.date,
+            "deliveries",
+            point.deliveries,
+            "",
+            "",
+            "",
+            "",
+            point.deliveries,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ] satisfies CsvRow),
+    ];
+}
+
 interface GuildAnalyticsProviderAccumulator {
     providerKey: string;
     providerLabel: string;
@@ -134,6 +235,8 @@ interface GuildAnalyticsProviderAccumulator {
     healthWarnings: number;
     healthUnknown: number;
     healthHealthy: number;
+    consecutiveFailures: number;
+    lastFailureAt: string | null;
     lastDeliveryAt: string | null;
 }
 
@@ -157,20 +260,26 @@ function getProviderAccumulator(
         healthWarnings: 0,
         healthUnknown: 0,
         healthHealthy: 0,
+        consecutiveFailures: 0,
+        lastFailureAt: null,
         lastDeliveryAt: null,
     };
     providers.set(normalizedKey, provider);
     return provider;
 }
 
-function addProviderHealth(provider: GuildAnalyticsProviderAccumulator, status: IntegrationHealthRecord["status"]): void {
-    if (status === "error") {
+function addProviderHealth(provider: GuildAnalyticsProviderAccumulator, record: IntegrationHealthRecord): void {
+    provider.consecutiveFailures += Math.max(0, record.consecutiveFailures);
+    provider.lastFailureAt = getLatestIsoTimestamp(provider.lastFailureAt, record.lastFailureAt ?? null);
+    provider.lastDeliveryAt = getLatestIsoTimestamp(provider.lastDeliveryAt, record.lastDeliveryAt ?? null);
+
+    if (record.status === "error") {
         provider.healthErrors += 1;
-    } else if (status === "warning") {
+    } else if (record.status === "warning") {
         provider.healthWarnings += 1;
-    } else if (status === "unknown") {
+    } else if (record.status === "unknown") {
         provider.healthUnknown += 1;
-    } else if (status === "healthy") {
+    } else if (record.status === "healthy") {
         provider.healthHealthy += 1;
     }
 }

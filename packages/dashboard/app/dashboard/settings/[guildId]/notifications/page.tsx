@@ -228,7 +228,7 @@ export default function GuildNotificationsHubPage() {
                         secondaryAccent={dashboardAccents.anime}
                         stats={[{ label: "Configured Feeds", value: totalConfigured }]}
                         actions={(
-                            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+                            <Stack id="notification-transfer" direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1, scrollMarginTop: 96 }}>
                                 <input
                                     ref={importInputRef}
                                     type="file"

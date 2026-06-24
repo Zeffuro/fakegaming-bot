@@ -446,12 +446,14 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
+|`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|
 |`/quote-leaderboard`|Slash|Show the most quoted users in this server|All users|
 |`/quotes`|Slash|Get all quotes for a user|All users|
 |`/random-quote`|Slash|Get a random quote from the server|All users|
-|`/reminders`|Slash|List your pending reminders|All users|
+|`/reminders`|Slash|List your active and paused reminders|All users|
 |`/remove-birthday`|Slash|Remove your birthday or another user's birthday (admins only)|All users|
+|`/resume-reminder`|Slash|Resume one of your recurring reminders|All users|
 |`/riot-links`|Slash|Manage linked Riot accounts|All users|
 |`/roll`|Slash|Roll dice or generate a random number|All users|
 |`/search-quote`|Slash|Search quotes by text|All users|

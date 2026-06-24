@@ -22,6 +22,8 @@ export * from "./api/twitch";
 export * from "./api/userNotes";
 export * from "./api/userReminders";
 export * from "./api/userSettings";
+export * from "./api/userDigestSubscription";
+export * from "./api/userActivity";
 export * from "./api/youtube";
 
 import { animeApi } from "./api/anime";
@@ -42,6 +44,8 @@ import { twitchApi } from "./api/twitch";
 import { userNotesApi } from "./api/userNotes";
 import { userRemindersApi } from "./api/userReminders";
 import { userSettingsApi } from "./api/userSettings";
+import { userDigestSubscriptionApi } from "./api/userDigestSubscription";
+import { userActivityApi } from "./api/userActivity";
 import { youtubeApi } from "./api/youtube";
 
 export const api = {
@@ -64,4 +68,6 @@ export const api = {
     ...userNotesApi,
     ...userRemindersApi,
     ...userSettingsApi,
+    ...userDigestSubscriptionApi,
+    ...userActivityApi,
 };

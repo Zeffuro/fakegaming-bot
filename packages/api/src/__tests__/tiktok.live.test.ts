@@ -47,6 +47,15 @@ describe('GET /api/tiktok/live', () => {
         expectOk(res);
         expect(res.body).toHaveProperty('live');
         expect(res.body).toHaveProperty('debugMeta');
+        expect(res.body.debugMeta).toMatchObject({
+            fetchStatus: 'live',
+            errorCode: null,
+            session: expect.objectContaining({
+                cookieConfigured: expect.any(Boolean),
+                connectorUsesCookie: false,
+            }),
+        });
+        expect('raw' in res.body.debugMeta).toBe(false);
     });
 
     it('returns enriched payload in default mode without debug', async () => {
@@ -68,5 +77,10 @@ describe('GET /api/tiktok/live', () => {
         expectOk(res);
         expect(res.body.live).toBe(false);
         expect(res.body).toHaveProperty('debugMeta');
+        expect(res.body.debugMeta).toMatchObject({
+            fetchStatus: 'connect-failed',
+            errorCode: 'TIKTOK_ROOM_UNAVAILABLE',
+        });
+        expect('raw' in res.body.debugMeta).toBe(false);
     });
 });

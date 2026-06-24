@@ -136,6 +136,39 @@ describe('QuoteManager', () => {
             expect(quotes).toEqual([]);
         });
 
+        it('should search quote metadata', async () => {
+            await QuoteConfig.create({
+                id: 'quote-metadata-1',
+                guildId: 'guild-1',
+                authorId: 'author-1',
+                quote: 'Pull timer quote',
+                submitterId: 'quoter-1',
+                timestamp: Date.now(),
+                tags: '["raid-night","funny"]',
+                source: 'voice chat',
+                context: 'Before the final boss',
+            });
+            await QuoteConfig.create({
+                id: 'quote-metadata-2',
+                guildId: 'guild-1',
+                authorId: 'author-2',
+                quote: 'Unrelated',
+                submitterId: 'quoter-2',
+                timestamp: Date.now(),
+                tags: '["misc"]',
+            });
+
+            await expect(quoteManager.searchQuotes('guild-1', 'raid-night')).resolves.toEqual([
+                expect.objectContaining({ id: 'quote-metadata-1' }),
+            ]);
+            await expect(quoteManager.searchQuotes('guild-1', 'voice chat')).resolves.toEqual([
+                expect.objectContaining({ id: 'quote-metadata-1' }),
+            ]);
+            await expect(quoteManager.searchQuotes('guild-1', 'final boss')).resolves.toEqual([
+                expect.objectContaining({ id: 'quote-metadata-1' }),
+            ]);
+        });
+
         it('should be case-insensitive', async () => {
             await QuoteConfig.create({
                 id: 'quote-11',
@@ -185,6 +218,30 @@ describe('QuoteManager', () => {
             });
             expect(updated.created).toBe(false);
             expect(updated.record?.quote).toBe('Updated quote');
+        });
+    });
+
+    describe('updateModerationStatus', () => {
+        it('updates quote moderation status', async () => {
+            await QuoteConfig.create({
+                id: 'quote-moderation',
+                guildId: 'guild-1',
+                authorId: 'author-1',
+                quote: 'Needs review',
+                submitterId: 'submitter-1',
+                timestamp: Date.now(),
+            });
+
+            const updated = await quoteManager.updateModerationStatus('quote-moderation', 'approved');
+
+            expect(updated).toMatchObject({
+                id: 'quote-moderation',
+                moderationStatus: 'approved',
+            });
+        });
+
+        it('returns null when the quote does not exist', async () => {
+            await expect(quoteManager.updateModerationStatus('missing-quote', 'rejected')).resolves.toBeNull();
         });
     });
 });

@@ -13,3 +13,7 @@ export * from './template.js';
 export * from './tiktok.js';
 export * from './auditMetadata.js';
 export * from './riotId.js';
+export * from './quoteMetadata.js';
+export * from './quoteOfDay.js';
+export * from './reminderRecurrence.js';
+export * from './digestSchedule.js';

@@ -17,6 +17,15 @@ export interface NotificationRecord {
 export interface NotificationListOptions {
     provider?: string;
     guildId?: string;
+    eventIdLike?: string;
+    limit?: number;
+    offset?: number;
+    days?: number;
+    now?: Date;
+}
+
+export interface UserBirthdayDeliveryListOptions {
+    userId: string;
     limit?: number;
     offset?: number;
     days?: number;
@@ -94,6 +103,20 @@ export class NotificationsManager extends BaseManager<Notification> {
                 trend,
             },
         };
+    }
+
+    async listBirthdayDeliveriesForUser(options: UserBirthdayDeliveryListOptions): Promise<NotificationListResult> {
+        const userId = normalizeEventIdSegment(options.userId);
+        if (!userId) return buildEmptyListResult(options);
+
+        return this.list({
+            provider: 'birthday',
+            eventIdLike: `%:${userId}:%`,
+            limit: options.limit,
+            offset: options.offset,
+            days: options.days,
+            now: options.now,
+        });
     }
 
     async has(provider: string, eventId: string): Promise<boolean> {
@@ -193,7 +216,33 @@ function buildWhere(options: NotificationListOptions): WhereOptions<Attributes<N
     const where: Partial<Record<keyof Attributes<Notification>, unknown>> = {};
     if (options.provider) where.provider = options.provider;
     if (options.guildId) where.guildId = options.guildId;
+    if (options.eventIdLike) where.eventId = { [Op.like]: options.eventIdLike };
     return where as WhereOptions<Attributes<Notification>>;
+}
+
+function buildEmptyListResult(options: Omit<UserBirthdayDeliveryListOptions, 'userId'>): NotificationListResult {
+    const limit = clampLimit(options.limit);
+    const offset = Math.max(0, Math.floor(options.offset ?? 0));
+    const trendDays = clampTrendDays(options.days);
+    const window = buildTrendWindow(options.now ?? new Date(), trendDays);
+
+    return {
+        records: [],
+        total: 0,
+        limit,
+        offset,
+        summary: {
+            total: 0,
+            byProvider: [],
+            trend: window.dates.map(date => ({ date, count: 0 })),
+        },
+    };
+}
+
+function normalizeEventIdSegment(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed || /[%_:]/.test(trimmed)) return null;
+    return trimmed;
 }
 
 function clampLimit(value: number | undefined): number {

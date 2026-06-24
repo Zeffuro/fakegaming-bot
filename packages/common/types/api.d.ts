@@ -825,6 +825,48 @@ export interface paths {
         };
         trace?: never;
     };
+    "/userReminders/{id}/paused": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Pause or resume one recurring reminder for the authenticated dashboard user */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["PausedStateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated reminder */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        trace?: never;
+    };
     "/userNotes": {
         parameters: {
             query?: never;
@@ -959,6 +1001,140 @@ export interface paths {
                 404: components["responses"]["NotFound"];
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/userDigestSubscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the authenticated user's digest subscription */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Personal digest subscription */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /** Create or update the authenticated user's digest subscription */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserDigestSubscriptionRequest"];
+                };
+            };
+            responses: {
+                /** @description Saved digest subscription */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/userDigestSubscription/paused": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Pause or resume the authenticated user's digest subscription */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserDigestSubscriptionPausedRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated digest subscription */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        trace?: never;
+    };
+    "/userActivity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get recent account activity for the authenticated dashboard user */
+        get: {
+            parameters: {
+                query?: {
+                    auditLimit?: number;
+                    deliveryLimit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description User-scoped audit events and delivery records */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2364,6 +2540,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/quotes/guild/{guildId}/quote-of-day/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Create or update quote-of-the-day delivery settings */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["QuoteOfDaySettingsRequest"];
+                };
+            };
+            responses: {
+                /** @description Saved quote-of-the-day settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotes/guild/{guildId}/quote-of-day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview the deterministic quote-of-the-day selection */
+        get: {
+            parameters: {
+                query?: {
+                    date?: string;
+                };
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Quote-of-the-day preview and settings */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/quotes/guild/{guildId}/author/{authorId}": {
         parameters: {
             query?: never;
@@ -2463,6 +2722,50 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/quotes/{id}/moderation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update quote moderation status */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["QuoteModerationUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated quote */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
         trace?: never;
     };
     "/patchSubscriptions": {
@@ -2941,7 +3244,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews" | "quoteofday";
                 };
                 cookie?: never;
             };
@@ -2982,7 +3285,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews";
+                    name: "birthdays" | "heartbeat" | "reminders" | "patchnotes" | "twitch" | "youtube" | "tiktok" | "bluesky" | "anime" | "steamnews" | "quoteofday";
                 };
                 cookie?: never;
             };
@@ -4459,6 +4762,22 @@ export interface components {
             submitterId?: string;
             /** Format: int64 */
             timestamp?: number;
+            tags?: string[];
+            source?: string | null;
+            context?: string | null;
+            /** @enum {string} */
+            moderationStatus?: "pending" | "approved" | "rejected";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        QuoteOfDayConfig: {
+            guildId: string;
+            channelId?: string;
+            enabled?: boolean;
+            /** Format: int64 */
+            runHourUtc?: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -4472,6 +4791,12 @@ export interface components {
             /** Format: int64 */
             timestamp?: number;
             completed?: boolean;
+            recurrenceUnit?: string;
+            /** Format: int64 */
+            recurrenceInterval?: number;
+            recurrenceTimezone?: string;
+            /** Format: int64 */
+            lastTriggeredAt?: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -4661,6 +4986,18 @@ export interface components {
             authorId: string;
             submitterId?: string;
             timestamp: number;
+            tags?: string[];
+            source?: string | null;
+            context?: string | null;
+        };
+        QuoteModerationUpdateRequest: {
+            /** @enum {string} */
+            moderationStatus: "pending" | "approved" | "rejected";
+        };
+        QuoteOfDaySettingsRequest: {
+            channelId: string;
+            enabled: boolean;
+            runHourUtc?: number;
         };
         ReminderCreateRequest: {
             id: string;
@@ -4669,6 +5006,10 @@ export interface components {
             timespan: string;
             timestamp: number;
             completed?: boolean;
+            recurrenceUnit?: ("day" | "week" | "month") | null;
+            recurrenceInterval?: number | null;
+            recurrenceTimezone?: string | null;
+            lastTriggeredAt?: number | null;
         };
         RiotLinkUpdateRequest: {
             summonerName: string;
@@ -4745,6 +5086,18 @@ export interface components {
         UserDefaultReminderTimeSpanUpdateRequest: {
             timespan: string;
         };
+        UserDigestSubscriptionRequest: {
+            /** @enum {string} */
+            frequency: "daily" | "weekly";
+            timezone: string;
+            runAt: string;
+            dayOfWeek?: number | null;
+            categories?: ("reminders" | "anime")[];
+            paused?: boolean;
+        };
+        UserDigestSubscriptionPausedRequest: {
+            paused: boolean;
+        };
         UserNoteCreateRequest: {
             title?: string;
             body?: string;
@@ -4758,6 +5111,8 @@ export interface components {
         UserReminderCreateRequest: {
             message: string;
             timespan: string;
+            recurrence?: string;
+            recurrenceTimezone?: string;
         };
         UserReminderSnoozeRequest: {
             timespan: string;

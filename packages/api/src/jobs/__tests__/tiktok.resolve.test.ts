@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { resolveTikTokLive } from '../tiktok.js';
+import {
+  buildTikTokDebugMeta,
+  buildTikTokHealthMetadata,
+  getTikTokSessionDiagnostics,
+  resolveTikTokLive,
+} from '../tiktok.js';
 
 // The TikTokLiveConnection is used internally; we won't import it directly, but we can mock its constructor via module mocking
 
@@ -59,5 +64,66 @@ describe('resolveTikTokLive', () => {
     expect(info.startedAt ?? null).toBeNull();
     expect(info.viewers ?? null).toBeNull();
     expect(info.cover ?? null).toBeNull();
+  });
+
+  it('builds sanitized session diagnostics without exposing cookie values', () => {
+    const diagnostics = getTikTokSessionDiagnostics('sessionid=secret-value; ttwid=another-secret; theme=dark');
+
+    expect(diagnostics).toMatchObject({
+      cookieConfigured: true,
+      cookiePairCount: 3,
+      likelySessionCookiePresent: true,
+      freshness: 'unknown',
+      connectorUsesCookie: false,
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain('secret-value');
+    expect(JSON.stringify(diagnostics)).not.toContain('another-secret');
+  });
+
+  it('classifies fetch diagnostics without exposing raw connector errors', () => {
+    const diagnostics = buildTikTokDebugMeta({
+      live: false,
+      debugMeta: { method: 'unknown', raw: 'Request failed with 403 and expired session cookie SECRET' },
+    }, {
+      now: new Date('2026-06-23T10:00:00.000Z'),
+      cookieHeader: 'sessionid=SECRET',
+    });
+
+    expect(diagnostics).toMatchObject({
+      method: 'unknown',
+      fetchStatus: 'connect-failed',
+      errorCode: 'TIKTOK_AUTH_REQUIRED',
+      cachedOffline: false,
+      checkedAt: '2026-06-23T10:00:00.000Z',
+    });
+    expect(JSON.stringify(diagnostics)).not.toContain('SECRET');
+    expect(JSON.stringify(diagnostics)).not.toContain('expired session cookie');
+  });
+
+  it('formats poll health metadata from safe diagnostics', () => {
+    const metadata = buildTikTokHealthMetadata('creator', {
+      live: true,
+      roomId: 'room-1',
+      debugMeta: { method: 'connect' },
+    }, {
+      eventId: 'room-1',
+      now: new Date('2026-06-23T10:00:00.000Z'),
+      cookieHeader: '',
+    });
+
+    expect(metadata).toMatchObject({
+      username: 'creator',
+      isLive: true,
+      eventId: 'room-1',
+      lastFetchStatus: 'live',
+      lastFetchErrorCode: null,
+      lastFetchMethod: 'connect',
+      cachedOffline: false,
+      offlineBackoffUntil: null,
+      tiktokSession: expect.objectContaining({
+        cookieConfigured: false,
+        connectorUsesCookie: false,
+      }),
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { BaseManager } from './baseManager.js';
-import { QuoteConfig } from '../models/quote-config.js';
-import { WhereOptions, Op } from 'sequelize';
+import { QuoteConfig, type QuoteModerationStatus } from '../models/quote-config.js';
+import { Op, type CreationAttributes } from 'sequelize';
 
 export class QuoteManager extends BaseManager<QuoteConfig> {
     constructor() {
@@ -19,9 +19,15 @@ export class QuoteManager extends BaseManager<QuoteConfig> {
 
     /** Search quotes by text in a guild */
     async searchQuotes(guildId: string, text: string) {
+        const pattern = `%${text}%`;
         return this.getMany({
             guildId,
-            quote: { [Op.like]: `%${text}%` } as unknown as WhereOptions<QuoteConfig>,
+            [Op.or]: [
+                { quote: { [Op.like]: pattern } },
+                { tags: { [Op.like]: pattern } },
+                { source: { [Op.like]: pattern } },
+                { context: { [Op.like]: pattern } },
+            ],
         }, { raw: true });
     }
 
@@ -36,5 +42,13 @@ export class QuoteManager extends BaseManager<QuoteConfig> {
         // fetch fresh record as plain object
         const record = await this.getOne({ id: data.id }, { raw: true });
         return { record, created };
+    }
+
+    async updateModerationStatus(id: string, moderationStatus: QuoteModerationStatus) {
+        const existing = await this.getOnePlain({ id });
+        if (!existing) return null;
+
+        await this.updatePlain({ moderationStatus } as CreationAttributes<QuoteConfig>, { id });
+        return this.getOnePlain({ id });
     }
 }

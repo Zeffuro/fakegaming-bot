@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 124
+Operations: 132
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -62,8 +62,11 @@ Operations: 124
 | Quotes | POST | `/quotes` | Add a new quote | Bearer |
 | Quotes | GET | `/quotes/{id}` | Get a quote by id | Bearer |
 | Quotes | DELETE | `/quotes/{id}` | Delete a quote by id | Bearer |
+| Quotes | PATCH | `/quotes/{id}/moderation` | Update quote moderation status | Bearer |
 | Quotes | GET | `/quotes/guild/{guildId}` | Get quotes by guild | Bearer |
 | Quotes | GET | `/quotes/guild/{guildId}/author/{authorId}` | Get quotes by author in guild | Bearer |
+| Quotes | GET | `/quotes/guild/{guildId}/quote-of-day` | Preview the deterministic quote-of-the-day selection | Bearer |
+| Quotes | PUT | `/quotes/guild/{guildId}/quote-of-day/settings` | Create or update quote-of-the-day delivery settings | Bearer |
 | Quotes | GET | `/quotes/search` | Search quotes by text and guildId | Bearer |
 | Reminders | GET | `/reminders` | List all reminders | Bearer |
 | Reminders | POST | `/reminders` | Add a new reminder | Bearer |
@@ -101,6 +104,10 @@ Operations: 124
 | Twitch | DELETE | `/twitch/{id}` | Delete a Twitch stream config by id | Bearer |
 | Twitch | GET | `/twitch/exists` | Check if a Twitch stream config exists | Bearer |
 | Twitch | GET | `/twitch/verify` | Verify a Twitch username exists | Bearer |
+| UserActivity | GET | `/userActivity` | Get recent account activity for the authenticated dashboard user | Bearer |
+| UserDigestSubscription | GET | `/userDigestSubscription` | Get the authenticated user's digest subscription | Bearer |
+| UserDigestSubscription | PUT | `/userDigestSubscription` | Create or update the authenticated user's digest subscription | Bearer |
+| UserDigestSubscription | PATCH | `/userDigestSubscription/paused` | Pause or resume the authenticated user's digest subscription | Bearer |
 | UserNotes | GET | `/userNotes` | List notes for the authenticated dashboard user | Bearer |
 | UserNotes | POST | `/userNotes` | Create a note for the authenticated dashboard user | Bearer |
 | UserNotes | GET | `/userNotes/{id}` | Get one note for the authenticated dashboard user | Bearer |
@@ -110,6 +117,7 @@ Operations: 124
 | UserReminders | POST | `/userReminders` | Create a reminder for the authenticated dashboard user | Bearer |
 | UserReminders | GET | `/userReminders/{id}` | Get one reminder for the authenticated dashboard user | Bearer |
 | UserReminders | DELETE | `/userReminders/{id}` | Delete one reminder for the authenticated dashboard user | Bearer |
+| UserReminders | PATCH | `/userReminders/{id}/paused` | Pause or resume one recurring reminder for the authenticated dashboard user | Bearer |
 | UserReminders | PATCH | `/userReminders/{id}/snooze` | Snooze one reminder for the authenticated dashboard user | Bearer |
 | Users | GET | `/users` | List all users | Bearer |
 | Users | POST | `/users` | Create a new user | Bearer |

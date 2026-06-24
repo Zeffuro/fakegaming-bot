@@ -108,6 +108,82 @@ describe('api-client', () => {
         expect(result).toEqual(payload);
     });
 
+    it('setUserReminderPaused performs PATCH with paused state', async () => {
+        const payload = { id: 'reminder-1', completed: true };
+        mockOkJsonOnce(payload);
+        const result = await api.setUserReminderPaused('reminder-1', { paused: true });
+        expectFetchCalledWith(`${API_ENDPOINTS.USER_REMINDERS}/reminder-1/paused`, { method: 'PATCH', body: JSON.stringify({ paused: true }) });
+        expect(result).toEqual(payload);
+    });
+
+    it('setQuoteModerationStatus performs PATCH with moderation status', async () => {
+        const payload = { id: 'quote-1', moderationStatus: 'approved' };
+        mockOkJsonOnce(payload);
+        const result = await api.setQuoteModerationStatus('quote-1', 'approved');
+        expectFetchCalledWith(`${API_ENDPOINTS.QUOTES}/quote-1/moderation`, {
+            method: 'PATCH',
+            body: JSON.stringify({ moderationStatus: 'approved' }),
+        });
+        expect(result).toEqual(payload);
+    });
+
+    it('loads and saves quote-of-the-day settings', async () => {
+        const preview = { date: '2026-06-24', quote: null, eligibleCount: 0, settings: null };
+        mockOkJsonOnce(preview);
+        const loaded = await api.getQuoteOfDayPreview('guild-1', '2026-06-24');
+        expectFetchCalledWith(`${API_ENDPOINTS.QUOTES}/guild/guild-1/quote-of-day?date=2026-06-24`, { method: 'GET' });
+        expect(loaded).toEqual(preview);
+
+        const settings = { guildId: 'guild-1', channelId: 'channel-1', enabled: true, runHourUtc: 9 };
+        mockOkJsonOnce(settings);
+        const saved = await api.updateQuoteOfDaySettings('guild-1', {
+            channelId: 'channel-1',
+            enabled: true,
+            runHourUtc: 9,
+        });
+        expectFetchCalledWith(`${API_ENDPOINTS.QUOTES}/guild/guild-1/quote-of-day/settings`, {
+            method: 'PUT',
+            body: JSON.stringify({ channelId: 'channel-1', enabled: true, runHourUtc: 9 }),
+        });
+        expect(saved).toEqual(settings);
+    });
+
+    it('saves and pauses user digest subscriptions', async () => {
+        const payload = { subscription: { id: 'digest-1', frequency: 'daily', paused: false } };
+        mockOkJsonOnce(payload);
+        const saved = await api.saveUserDigestSubscription({
+            frequency: 'daily',
+            timezone: 'UTC',
+            runAt: '09:00',
+            categories: ['reminders', 'anime'],
+        });
+        expectFetchCalledWith(API_ENDPOINTS.USER_DIGEST_SUBSCRIPTION, {
+            method: 'PUT',
+            body: JSON.stringify({
+                frequency: 'daily',
+                timezone: 'UTC',
+                runAt: '09:00',
+                categories: ['reminders', 'anime'],
+            }),
+        });
+        expect(saved).toEqual(payload);
+
+        mockOkJsonOnce({ subscription: { id: 'digest-1', paused: true } });
+        await api.setUserDigestSubscriptionPaused({ paused: true });
+        expectFetchCalledWith(`${API_ENDPOINTS.USER_DIGEST_SUBSCRIPTION}/paused`, {
+            method: 'PATCH',
+            body: JSON.stringify({ paused: true }),
+        });
+    });
+
+    it('gets user activity with bounded query params', async () => {
+        const payload = { auditEvents: [], deliveries: [], summary: { auditTotal: 0, deliveryTotal: 0 } };
+        mockOkJsonOnce(payload);
+        const result = await api.getUserActivity({ auditLimit: 8, deliveryLimit: 5 });
+        expectFetchCalledWith(`${API_ENDPOINTS.USER_ACTIVITY}?auditLimit=8&deliveryLimit=5`, { method: 'GET' });
+        expect(result).toEqual(payload);
+    });
+
     it('apiRequest throws with generic message if no json', async () => {
         getFetchMock().mockResolvedValueOnce({ ok: false, status: 500, json: async () => { throw new Error('no json'); } });
         await expect(api.getTwitchConfigs()).rejects.toThrow('API request failed with status: 500');

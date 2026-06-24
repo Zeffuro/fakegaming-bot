@@ -31,12 +31,10 @@ export function AuditEventFilters({
     const accent = dashboardAccents.admin;
     const updateScope = (value: AuditEventScope | undefined) => {
         onUpdateFilter("scope", value);
-        if (!value) onUpdateFilter("provider", undefined);
     };
 
     const updateProvider = (value: AuditIntegrationProvider | undefined) => {
         onUpdateFilter("provider", value);
-        if (value) onUpdateFilter("scope", "integrations");
     };
 
     return (

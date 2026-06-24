@@ -9,6 +9,8 @@ import {
     jobRunRequestSchema,
     patchSubscriptionRequestSchema,
     quoteCreateRequestSchema,
+    quoteModerationUpdateRequestSchema,
+    quoteOfDaySettingsRequestSchema,
     reminderCreateRequestSchema,
     riotLinkUpdateRequestSchema,
     serverUpdateRequestSchema,
@@ -16,6 +18,8 @@ import {
     tiktokCreateRequestSchema,
     twitchCreateRequestSchema,
     twitchUpdateRequestSchema,
+    userDigestSubscriptionPausedRequestSchema,
+    userDigestSubscriptionRequestSchema,
     userNoteCreateRequestSchema,
     userNoteUpdateRequestSchema,
     userReminderCreateRequestSchema,
@@ -43,6 +47,8 @@ describe('api request schemas', () => {
             'PatchSubscriptionRequest',
             'PausedStateRequest',
             'QuoteCreateRequest',
+            'QuoteModerationUpdateRequest',
+            'QuoteOfDaySettingsRequest',
             'ReminderCreateRequest',
             'RiotLinkUpdateRequest',
             'ServerCreateRequest',
@@ -54,6 +60,8 @@ describe('api request schemas', () => {
             'TwitchUpdateRequest',
             'UserCreateRequest',
             'UserDefaultReminderTimeSpanUpdateRequest',
+            'UserDigestSubscriptionPausedRequest',
+            'UserDigestSubscriptionRequest',
             'UserNoteCreateRequest',
             'UserNoteUpdateRequest',
             'UserReminderCreateRequest',
@@ -94,13 +102,28 @@ describe('api request schemas', () => {
             quote: 'hello',
             authorId: 'author-1',
             timestamp: 123,
-        })).toMatchObject({ quote: 'hello' });
+            tags: ['funny', 'raid-night'],
+            source: 'voice chat',
+            context: 'Before the pull',
+        })).toMatchObject({ quote: 'hello', tags: ['funny', 'raid-night'], source: 'voice chat' });
+        expect(quoteModerationUpdateRequestSchema.parse({
+            moderationStatus: 'approved',
+        })).toMatchObject({ moderationStatus: 'approved' });
+        expect(quoteOfDaySettingsRequestSchema.parse({
+            channelId: 'channel-1',
+            enabled: true,
+            runHourUtc: '9',
+        })).toMatchObject({ channelId: 'channel-1', enabled: true, runHourUtc: 9 });
         expect(reminderCreateRequestSchema.parse({
             id: 'reminder-1',
             userId: 'user-1',
             message: 'ping',
             timespan: '1h',
             timestamp: 123,
+            recurrenceUnit: 'week',
+            recurrenceInterval: 2,
+            recurrenceTimezone: 'UTC',
+            lastTriggeredAt: 100,
         })).toMatchObject({ message: 'ping' });
         expect(riotLinkUpdateRequestSchema.parse({
             summonerName: 'Zeffuro#EUW',
@@ -120,10 +143,23 @@ describe('api request schemas', () => {
         expect(userReminderCreateRequestSchema.parse({
             message: 'Check deployment',
             timespan: '1h',
+            recurrence: 'weekly',
+            recurrenceTimezone: 'Europe/Amsterdam',
         })).toMatchObject({ message: 'Check deployment' });
         expect(userReminderSnoozeRequestSchema.parse({
             timespan: '10m',
         })).toMatchObject({ timespan: '10m' });
+        expect(userDigestSubscriptionRequestSchema.parse({
+            frequency: 'weekly',
+            timezone: 'Europe/Amsterdam',
+            runAt: '08:30',
+            dayOfWeek: 1,
+            categories: ['reminders', 'anime'],
+            paused: true,
+        })).toMatchObject({ frequency: 'weekly', runAt: '08:30' });
+        expect(userDigestSubscriptionPausedRequestSchema.parse({
+            paused: false,
+        })).toMatchObject({ paused: false });
     });
 
     it('rejects unknown fields on strict request DTOs', () => {
@@ -149,6 +185,21 @@ describe('api request schemas', () => {
         expect(() => animeSubscribeRequestSchema.parse({
             guildId: 'guild-1',
             channelId: 'channel-1',
+        })).toThrow();
+        expect(() => userReminderCreateRequestSchema.parse({
+            message: 'No timezone',
+            timespan: '1h',
+            recurrence: 'daily',
+        })).toThrow();
+        expect(() => userDigestSubscriptionRequestSchema.parse({
+            frequency: 'daily',
+            timezone: 'UTC',
+            runAt: '24:00',
+        })).toThrow();
+        expect(() => quoteOfDaySettingsRequestSchema.parse({
+            channelId: 'channel-1',
+            enabled: true,
+            runHourUtc: 24,
         })).toThrow();
 
         expect(birthdayCreateRequestSchema.parse({

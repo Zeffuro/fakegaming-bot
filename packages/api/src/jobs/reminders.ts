@@ -3,7 +3,7 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, computeNextMinuteBoundaryDelaySeconds, formatMinuteKey, computeBackoffWithNearWindow } from '@zeffuro/fakegaming-common/jobs';
 import { sendDirectMessage } from '../utils/discord.js';
-import { formatElapsed, parseTimespan } from '@zeffuro/fakegaming-common/utils';
+import { formatElapsed, getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurrenceRule, type ReminderRecurrenceUnit } from '@zeffuro/fakegaming-common/utils';
 import { recordJobRun } from './status.js';
 
 interface ReminderPlain {
@@ -11,7 +11,12 @@ interface ReminderPlain {
     userId: string;
     message: string;
     timespan?: string | null;
-    timestamp: number; // ms epoch
+    timestamp: number | string; // ms epoch
+    completed?: boolean | number | string | null;
+    recurrenceUnit?: string | null;
+    recurrenceInterval?: number | string | null;
+    recurrenceTimezone?: string | null;
+    lastTriggeredAt?: number | string | null;
 }
 
 /**
@@ -35,24 +40,35 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
     const cm = getConfigManager();
     const all = await cm.reminderManager.getAllPlain() as unknown as ReminderPlain[];
     const nowMs = now.getTime();
-    const due = all.filter(r => r.timestamp <= nowMs);
+    const due = all.filter((r) => isDueReminder(r, nowMs));
 
     let processed = 0;
     let errors = 0;
 
     for (const r of due) {
+        const timestamp = normalizeTimestamp(r.timestamp);
+        if (timestamp === null) continue;
+
         try {
-            const baseMs = (r.timestamp) - (parseTimespan(r.timespan ?? '') ?? 0);
+            const baseMs = timestamp - getReminderTimespanMs(r.timespan);
             const elapsed = formatElapsed(Math.max(0, nowMs - baseMs));
             const content = `⏰ Reminder: ${r.message}\n(set ${elapsed})`;
             const sent = await sendDirectMessage(r.userId, content);
             if (sent) {
+                const nextTimestamp = getNextRecurringTimestamp(r, timestamp, nowMs);
+                if (nextTimestamp !== null) {
+                    await cm.reminderManager.rescheduleRecurringReminder(r.id, nextTimestamp, nowMs);
+                    processed += 1;
+                    log.info({ id: r.id, userId: r.userId, nextTimestamp }, 'Recurring reminder sent and rescheduled');
+                    continue;
+                }
+
                 await cm.reminderManager.removeReminder(r.id);
                 processed += 1;
                 log.info({ id: r.id, userId: r.userId }, 'Reminder sent and removed');
             } else {
                 // Push timestamp into the future with exponential backoff
-                const delay = computeReminderRetryBackoffSeconds(now, r.timestamp);
+                const delay = computeReminderRetryBackoffSeconds(now, timestamp);
                 const nextTs = nowMs + delay * 1000;
                 await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as any, { id: r.id } as any);
                 errors += 1;
@@ -60,7 +76,7 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
             }
         } catch (err) {
             // On error, apply backoff similarly
-            const delay = computeReminderRetryBackoffSeconds(now, r.timestamp);
+            const delay = computeReminderRetryBackoffSeconds(now, timestamp);
             const nextTs = nowMs + delay * 1000;
             try {
                 await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as any, { id: r.id } as any);
@@ -73,6 +89,56 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
     }
 
     return { processed, errors };
+}
+
+function isDueReminder(reminder: ReminderPlain, nowMs: number): boolean {
+    if (isReminderPaused(reminder.completed)) return false;
+    const timestamp = normalizeTimestamp(reminder.timestamp);
+    return timestamp !== null && timestamp <= nowMs;
+}
+
+function isReminderPaused(value: unknown): boolean {
+    return value === true || value === 1 || value === '1';
+}
+
+function normalizeTimestamp(value: number | string): number | null {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getNextRecurringTimestamp(reminder: ReminderPlain, previousTimestamp: number, nowMs: number): number | null {
+    const unit = normalizeRecurrenceUnit(reminder.recurrenceUnit);
+    const interval = normalizePositiveInteger(reminder.recurrenceInterval);
+    const timezone = reminder.recurrenceTimezone?.trim();
+    if (!unit || !interval || !timezone) return null;
+
+    const rule: ReminderRecurrenceRule = { unit, interval, timezone };
+    return getNextRecurringReminderTimestamp({
+        rule,
+        previousTimestamp,
+        afterTimestamp: nowMs,
+    });
+}
+
+function normalizeRecurrenceUnit(value: string | null | undefined): ReminderRecurrenceUnit | null {
+    if (value === 'day' || value === 'week' || value === 'month') return value;
+    return null;
+}
+
+function normalizePositiveInteger(value: number | string | null | undefined): number | null {
+    if (value === null || value === undefined) return null;
+    const parsed = typeof value === 'number' ? value : Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getReminderTimespanMs(timespan: string | null | undefined): number {
+    if (!timespan) return 0;
+
+    try {
+        return parseTimespan(timespan) ?? 0;
+    } catch {
+        return 0;
+    }
 }
 
 /**

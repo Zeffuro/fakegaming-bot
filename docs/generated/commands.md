@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 52 commands; 48 slash; 2 user context; 2 message context.
+Total: 54 commands; 50 slash; 2 user context; 2 message context.
 
 ## Anime
 
@@ -79,7 +79,9 @@ Total: 52 commands; 48 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/delete-reminder` | Delete one of your pending reminders | All users |
-| Slash | `/reminders` | List your pending reminders | All users |
+| Slash | `/pause-reminder` | Pause one of your recurring reminders | All users |
+| Slash | `/reminders` | List your active and paused reminders | All users |
+| Slash | `/resume-reminder` | Resume one of your recurring reminders | All users |
 | Slash | `/set-reminder` | Set a reminder | All users |
 | Slash | `/set-timezone` | Set your timezone | All users |
 | Slash | `/snooze-reminder` | Snooze one of your pending reminders | All users |

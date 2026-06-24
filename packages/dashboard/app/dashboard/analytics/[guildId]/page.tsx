@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { Alert, Box, Button, Chip, Divider, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Alert, Box, Button, Chip, Divider, LinearProgress, Stack, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
     BarChart,
     CheckCircle,
+    Download,
     ErrorOutlined,
     NotificationsActive,
     PauseCircle,
@@ -32,11 +34,19 @@ import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useYouTubeConfigs } from "@/components/hooks/useYouTube";
 import {
     buildGuildNotificationAnalytics,
+    buildGuildNotificationAnalyticsCsvRows,
+    guildAnalyticsWindowDaysOptions,
+    guildNotificationAnalyticsCsvHeaders,
+    isGuildAnalyticsWindowDays,
+    parseGuildAnalyticsWindowDays,
+    serializeGuildAnalyticsWindowDays,
     type GuildAnalyticsConfigRecord,
     type GuildAnalyticsHealthStatus,
     type GuildAnalyticsProvider,
     type GuildAnalyticsTrendPoint,
+    type GuildAnalyticsWindowDays,
 } from "@/lib/guildNotificationAnalytics";
+import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 import type { IntegrationHealthRecord, NotificationDeliveryRecord } from "@/lib/api-client";
 
 interface AnalyticsSourceConfig {
@@ -56,13 +66,22 @@ const providerRoutes = new Map<string, string>([
     ["birthday", "birthdays"],
 ]);
 
-const deliveryTrendDays = 30;
-
-export default function GuildAnalyticsPage() {
+function GuildAnalyticsContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const searchParamString = searchParams?.toString() ?? "";
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const [selectedProviderKey, setSelectedProviderKey] = useState<string | null>(null);
     const resolvedGuildId = guildId as string;
     const encodedGuildId = encodeURIComponent(resolvedGuildId);
+    const analyticsWindowDays = useMemo(() => (
+        parseGuildAnalyticsWindowDays(new URLSearchParams(searchParamString))
+    ), [searchParamString]);
+    const updateAnalyticsWindowDays = useCallback((days: GuildAnalyticsWindowDays) => {
+        const query = serializeGuildAnalyticsWindowDays(new URLSearchParams(searchParamString), days);
+        const path = `/dashboard/analytics/${encodedGuildId}`;
+        router.replace(query ? `${path}?${query}` : path, { scroll: false });
+    }, [encodedGuildId, router, searchParamString]);
     const guildReady = Boolean(guild);
     const twitchApi = useTwitchConfigs(resolvedGuildId, { enabled: guildReady });
     const youtubeApi = useYouTubeConfigs(resolvedGuildId, { enabled: guildReady });
@@ -73,11 +92,11 @@ export default function GuildAnalyticsPage() {
     const animeApi = useAnimeConfigs(resolvedGuildId, { enabled: guildReady });
     const birthdayApi = useBirthdays(resolvedGuildId, { enabled: guildReady });
     const healthApi = useIntegrationHealth(resolvedGuildId, undefined, { enabled: guildReady });
-    const historyApi = useGuildNotificationHistory(resolvedGuildId, { enabled: guildReady, limit: 100, days: deliveryTrendDays });
+    const historyApi = useGuildNotificationHistory(resolvedGuildId, { enabled: guildReady, limit: 100, days: analyticsWindowDays });
     const providerHistoryApi = useGuildNotificationHistory(resolvedGuildId, {
         enabled: guildReady && selectedProviderKey !== null,
         limit: 20,
-        days: deliveryTrendDays,
+        days: analyticsWindowDays,
         provider: selectedProviderKey,
     });
 
@@ -107,6 +126,13 @@ export default function GuildAnalyticsPage() {
         notificationProviders: historyApi.history?.summary.byProvider ?? [],
         notificationTrend: historyApi.history?.summary.trend ?? [],
     }), [configs, healthApi.records, historyApi.history]);
+    const exportAnalytics = useCallback(() => {
+        downloadCsv(
+            createCsvFilename(`guild-${resolvedGuildId}-notification-analytics-${analyticsWindowDays}d`),
+            guildNotificationAnalyticsCsvHeaders,
+            buildGuildNotificationAnalyticsCsvRows(analytics, analyticsWindowDays),
+        );
+    }, [analytics, analyticsWindowDays, resolvedGuildId]);
     const selectedProvider = useMemo(() => {
         if (!selectedProviderKey) return null;
         return analytics.providers.find((provider) => provider.providerKey === selectedProviderKey) ?? null;
@@ -129,9 +155,9 @@ export default function GuildAnalyticsPage() {
         || tiktokApi.loading
         || blueskyApi.loading
         || animeApi.loading
-                        || birthdayApi.loading
-                        || healthApi.loading
-                        || historyApi.loading;
+        || birthdayApi.loading
+        || healthApi.loading
+        || historyApi.loading;
     const errors = [
         twitchApi.error,
         youtubeApi.error,
@@ -171,14 +197,25 @@ export default function GuildAnalyticsPage() {
                             { label: "Health Issues", value: loading ? "..." : analytics.healthErrors + analytics.healthWarnings },
                         ]}
                         actions={(
-                            <Button
-                                component={Link}
-                                href={`/dashboard/settings/${encodedGuildId}/notifications`}
-                                variant="outlined"
-                                sx={ghostActionButtonSx(dashboardAccents.commands)}
-                            >
-                                Open Notifications
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                                <Button
+                                    component={Link}
+                                    href={`/dashboard/settings/${encodedGuildId}/notifications`}
+                                    variant="outlined"
+                                    sx={ghostActionButtonSx(dashboardAccents.commands)}
+                                >
+                                    Open Notifications
+                                </Button>
+                                <Button
+                                    disabled={loading}
+                                    onClick={exportAnalytics}
+                                    startIcon={<Download />}
+                                    variant="outlined"
+                                    sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                >
+                                    Export CSV
+                                </Button>
+                            </Stack>
                         )}
                     />
 
@@ -189,6 +226,8 @@ export default function GuildAnalyticsPage() {
                         </Alert>
                     )}
 
+                    <AnalyticsWindowSelector value={analyticsWindowDays} onChange={updateAnalyticsWindowDays} />
+
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2, mb: 2.5 }}>
                         <MetricPanel label="Active feeds" value={analytics.activeConfigs} accent={dashboardAccents.settings} icon={<CheckCircle />} />
                         <MetricPanel label="Paused feeds" value={analytics.pausedConfigs} accent={dashboardAccents.commands} icon={<PauseCircle />} />
@@ -197,7 +236,7 @@ export default function GuildAnalyticsPage() {
                     </Box>
 
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 0.95fr) minmax(0, 1.35fr)" }, gap: 2.5 }}>
-                        <DeliveryTrendPanel trend={analytics.trend} days={deliveryTrendDays} />
+                        <DeliveryTrendPanel trend={analytics.trend} days={analyticsWindowDays} />
                         <ProviderAnalyticsPanel
                             guildId={resolvedGuildId}
                             providers={analytics.providers}
@@ -220,6 +259,14 @@ export default function GuildAnalyticsPage() {
                 </FeatureShell>
             )}
         </DashboardLayout>
+    );
+}
+
+export default function GuildAnalyticsPage() {
+    return (
+        <Suspense fallback={<DashboardLayout maxWidth="xl" loading><span /></DashboardLayout>}>
+            <GuildAnalyticsContent />
+        </Suspense>
     );
 }
 
@@ -250,6 +297,62 @@ function MetricPanel({
                 </Box>
             </Stack>
         </FeaturePanel>
+    );
+}
+
+function AnalyticsWindowSelector({
+    value,
+    onChange,
+}: {
+    value: GuildAnalyticsWindowDays;
+    onChange: (days: GuildAnalyticsWindowDays) => void;
+}) {
+    const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: unknown): void => {
+        if (typeof nextValue !== "number" || !isGuildAnalyticsWindowDays(nextValue)) return;
+        onChange(nextValue);
+    };
+
+    return (
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 2.5 }}>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 850, letterSpacing: 0, textTransform: "uppercase" }}>
+                Analytics window
+            </Typography>
+            <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={value}
+                onChange={handleChange}
+                aria-label="Analytics window"
+                sx={{
+                    alignSelf: { xs: "flex-start", sm: "center" },
+                    bgcolor: "rgba(255,255,255,0.045)",
+                    borderRadius: 999,
+                    p: 0.35,
+                    "& .MuiToggleButton-root": {
+                        minWidth: 58,
+                        border: 0,
+                        borderRadius: 999,
+                        color: "rgba(255,255,255,0.68)",
+                        fontWeight: 850,
+                        textTransform: "none",
+                        px: 1.5,
+                        "&.Mui-selected": {
+                            bgcolor: alpha(dashboardAccents.commands, 0.22),
+                            color: "grey.50",
+                        },
+                        "&.Mui-selected:hover": {
+                            bgcolor: alpha(dashboardAccents.commands, 0.28),
+                        },
+                    },
+                }}
+            >
+                {guildAnalyticsWindowDaysOptions.map((days) => (
+                    <ToggleButton key={days} value={days} aria-label={`${days} day analytics window`}>
+                        {days}d
+                    </ToggleButton>
+                ))}
+            </ToggleButtonGroup>
+        </Stack>
     );
 }
 
@@ -413,7 +516,7 @@ function ProviderAnalyticsRow({
                         </Typography>
                     </Stack>
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                        {provider.configured} configured - {provider.active} active - {provider.deliveries} deliveries - last {formatRelativeTimestamp(provider.lastDeliveryAt)}
+                        {formatProviderSummaryLine(provider)}
                     </Typography>
                 </Box>
                 <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" }, flexWrap: "wrap", rowGap: 0.8 }}>
@@ -499,6 +602,7 @@ function ProviderDrilldownPanel({
                     </Alert>
                 )}
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+                <ProviderOutcomeSummary provider={provider} accent={accent} />
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.1fr) minmax(0, 0.9fr)" }, gap: 2.2 }}>
                     <Stack spacing={1.5}>
                         <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
@@ -551,6 +655,33 @@ function ProviderDrilldownPanel({
                 </Stack>
             </Stack>
         </FeaturePanel>
+    );
+}
+
+function ProviderOutcomeSummary({ provider, accent }: { provider: GuildAnalyticsProvider; accent: string }) {
+    const outcomes = [
+        { label: "Deliveries", value: String(provider.deliveries), detail: `last ${formatRelativeTimestamp(provider.lastDeliveryAt)}` },
+        { label: "Failing configs", value: String(provider.healthErrors), detail: `${provider.healthWarnings + provider.healthUnknown} warning state${provider.healthWarnings + provider.healthUnknown === 1 ? "" : "s"}` },
+        { label: "Current failures", value: String(provider.consecutiveFailures), detail: "from integration health" },
+        { label: "Last failure", value: formatRelativeTimestamp(provider.lastFailureAt), detail: provider.lastFailureAt ? "most recent provider failure" : "no failures recorded" },
+    ];
+
+    return (
+        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" }, gap: 1 }}>
+            {outcomes.map((item) => (
+                <Box key={item.label} sx={{ borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: `1px solid ${alpha(accent, 0.16)}`, p: 1.2, minWidth: 0 }}>
+                    <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.46)", fontWeight: 850, textTransform: "uppercase", letterSpacing: 0 }}>
+                        {item.label}
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.value}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.54)", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.detail}
+                    </Typography>
+                </Box>
+            ))}
+        </Box>
     );
 }
 
@@ -616,6 +747,21 @@ function formatStatusLabel(provider: GuildAnalyticsProvider): string {
     if (provider.healthWarnings + provider.healthUnknown > 0) return `${provider.healthWarnings + provider.healthUnknown} warnings`;
     if (provider.paused > 0) return `${provider.paused} paused`;
     return provider.status;
+}
+
+function formatProviderSummaryLine(provider: GuildAnalyticsProvider): string {
+    const parts = [
+        `${provider.configured} configured`,
+        `${provider.active} active`,
+        `${provider.deliveries} deliveries`,
+    ];
+
+    if (provider.healthErrors > 0) parts.push(`${provider.healthErrors} failing`);
+    if (provider.consecutiveFailures > 0) parts.push(`${provider.consecutiveFailures} current failures`);
+    if (provider.lastFailureAt) parts.push(`last failure ${formatRelativeTimestamp(provider.lastFailureAt)}`);
+    parts.push(`last delivery ${formatRelativeTimestamp(provider.lastDeliveryAt)}`);
+
+    return parts.join(" - ");
 }
 
 function formatRelativeTimestamp(value: string | null): string {

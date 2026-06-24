@@ -10,6 +10,7 @@ import {
     Divider,
     IconButton,
     InputAdornment,
+    MenuItem,
     Stack,
     Switch,
     TextField,
@@ -27,6 +28,9 @@ import {
     NotificationsActive,
     Movie,
     PushPin,
+    PauseCircle,
+    PlayArrow,
+    Refresh,
     Save,
     Schedule,
     Search,
@@ -48,10 +52,13 @@ import {
 import { subscriptionMeta, subscriptionTitle } from "@/components/anime/animeUtils";
 import { useMyRiotLink } from "@/components/hooks/useMyRiotLink";
 import { useUserAnimeSubscriptions } from "@/components/hooks/useUserAnimeSubscriptions";
+import { useUserActivity } from "@/components/hooks/useUserActivity";
+import { useUserDigestSubscription } from "@/components/hooks/useUserDigestSubscription";
 import { useUserNotes } from "@/components/hooks/useUserNotes";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
-import type { AnimeSubscriptionDashboardConfig, RiotLinkEntry, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import type { AnimeSubscriptionDashboardConfig, RiotLinkEntry, UserDigestCategory, UserDigestFrequency, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import { buildUserActivityFeed, type UserActivityFeedItem } from "@/lib/userActivityFeed";
 
 const emptyNoteForm = {
     title: "",
@@ -62,6 +69,8 @@ const emptyNoteForm = {
 const emptyReminderForm = {
     message: "",
     timespan: "1h",
+    recurrence: "",
+    recurrenceTimezone: "",
 };
 
 const emptySettingsForm = {
@@ -69,9 +78,29 @@ const emptySettingsForm = {
     defaultReminderTimeSpan: "",
 };
 
+const emptyDigestForm = {
+    frequency: "daily" as UserDigestFrequency,
+    timezone: "",
+    runAt: "09:00",
+    dayOfWeek: "1",
+    includeReminders: true,
+    includeAnime: false,
+};
+
+const weekdayOptions = [
+    { value: "0", label: "Sunday" },
+    { value: "1", label: "Monday" },
+    { value: "2", label: "Tuesday" },
+    { value: "3", label: "Wednesday" },
+    { value: "4", label: "Thursday" },
+    { value: "5", label: "Friday" },
+    { value: "6", label: "Saturday" },
+];
+
 type NoteFormState = typeof emptyNoteForm;
 type ReminderFormState = typeof emptyReminderForm;
 type SettingsFormState = typeof emptySettingsForm;
+type DigestFormState = typeof emptyDigestForm;
 
 export default function PersonalDashboardPage() {
     const { notes, loading: notesLoading, saving: notesSaving, error: notesError, createNote, updateNote, deleteNote } = useUserNotes();
@@ -82,6 +111,7 @@ export default function PersonalDashboardPage() {
         error: remindersError,
         createReminder,
         snoozeReminder,
+        setReminderPaused,
         deleteReminder,
     } = useUserReminders();
     const {
@@ -100,6 +130,20 @@ export default function PersonalDashboardPage() {
         updateSettings,
     } = useUserSettings();
     const {
+        subscription: digestSubscription,
+        loading: digestLoading,
+        saving: digestSaving,
+        error: digestError,
+        saveSubscription: saveDigestSubscription,
+        setPaused: setDigestPaused,
+    } = useUserDigestSubscription();
+    const {
+        activity,
+        loading: activityLoading,
+        error: activityError,
+        refresh: refreshActivity,
+    } = useUserActivity();
+    const {
         link: riotLink,
         loading: riotLoading,
         error: riotError,
@@ -108,10 +152,12 @@ export default function PersonalDashboardPage() {
     const [noteForm, setNoteForm] = useState<NoteFormState>(emptyNoteForm);
     const [reminderForm, setReminderForm] = useState<ReminderFormState>(emptyReminderForm);
     const [settingsForm, setSettingsForm] = useState<SettingsFormState>(emptySettingsForm);
+    const [digestForm, setDigestForm] = useState<DigestFormState>(emptyDigestForm);
     const [noteQuery, setNoteQuery] = useState("");
     const [noteLocalError, setNoteLocalError] = useState<string | null>(null);
     const [reminderLocalError, setReminderLocalError] = useState<string | null>(null);
     const [settingsLocalError, setSettingsLocalError] = useState<string | null>(null);
+    const [digestLocalError, setDigestLocalError] = useState<string | null>(null);
 
     useEffect(() => {
         setSettingsForm({
@@ -119,6 +165,17 @@ export default function PersonalDashboardPage() {
             defaultReminderTimeSpan: settings?.defaultReminderTimeSpan ?? "",
         });
     }, [settings]);
+
+    useEffect(() => {
+        setDigestForm({
+            frequency: digestSubscription?.frequency ?? "daily",
+            timezone: digestSubscription?.timezone ?? settings?.timezone ?? "",
+            runAt: digestSubscription?.runAt ?? "09:00",
+            dayOfWeek: String(digestSubscription?.dayOfWeek ?? 1),
+            includeReminders: digestSubscription?.categories.includes("reminders") ?? true,
+            includeAnime: digestSubscription?.categories.includes("anime") ?? false,
+        });
+    }, [digestSubscription, settings?.timezone]);
 
     const editingNote = useMemo(
         () => notes.find((note) => note.id === editingId) ?? null,
@@ -132,9 +189,17 @@ export default function PersonalDashboardPage() {
         );
     }, [noteQuery, notes]);
 
-    const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError ?? riotError;
-    const loading = notesLoading || remindersLoading || animeLoading || settingsLoading || riotLoading;
-    const saving = notesSaving || remindersSaving || animeSaving || settingsSaving;
+    const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? digestLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError ?? digestError ?? activityError ?? riotError;
+    const loading = notesLoading || remindersLoading || animeLoading || settingsLoading || digestLoading || activityLoading || riotLoading;
+    const saving = notesSaving || remindersSaving || animeSaving || settingsSaving || digestSaving;
+    const pausedReminderCount = reminders.filter(isPausedRecurringReminder).length;
+    const activeReminderCount = reminders.length - pausedReminderCount;
+    const digestStatus = digestSubscription ? (digestSubscription.paused ? "paused" : "active") : "off";
+    const activityFeed = useMemo(() => buildUserActivityFeed({
+        auditEvents: activity?.auditEvents ?? [],
+        deliveries: activity?.deliveries ?? [],
+        limit: 8,
+    }), [activity]);
 
     const resetNoteForm = () => {
         setEditingId(null);
@@ -193,7 +258,18 @@ export default function PersonalDashboardPage() {
         }
 
         try {
-            await createReminder({ message, timespan });
+            const recurrence = reminderForm.recurrence.trim();
+            const recurrenceTimezone = reminderForm.recurrenceTimezone.trim() || settings?.timezone?.trim() || "";
+            if (recurrence && !recurrenceTimezone) {
+                setReminderLocalError("Add a timezone for recurring reminders, such as Europe/Amsterdam.");
+                return;
+            }
+
+            await createReminder({
+                message,
+                timespan,
+                ...(recurrence ? { recurrence, recurrenceTimezone } : {}),
+            });
             setReminderForm(emptyReminderForm);
             setReminderLocalError(null);
         } catch {
@@ -220,6 +296,56 @@ export default function PersonalDashboardPage() {
         }
     };
 
+    const submitDigestForm = async () => {
+        const timezone = digestForm.timezone.trim();
+        const runAt = digestForm.runAt.trim();
+        const frequency = digestForm.frequency === "weekly" ? "weekly" : "daily";
+        if (!timezone) {
+            setDigestLocalError("Add a timezone for digest delivery.");
+            return;
+        }
+        if (!runAt) {
+            setDigestLocalError("Add a digest delivery time.");
+            return;
+        }
+        if (!digestForm.includeReminders && !digestForm.includeAnime) {
+            setDigestLocalError("Select at least one digest category.");
+            return;
+        }
+
+        try {
+            const categories: UserDigestCategory[] = [
+                ...(digestForm.includeReminders ? ["reminders" as const] : []),
+                ...(digestForm.includeAnime ? ["anime" as const] : []),
+            ];
+            await saveDigestSubscription({
+                frequency,
+                timezone,
+                runAt,
+                dayOfWeek: frequency === "weekly" ? Number(digestForm.dayOfWeek) : null,
+                categories,
+                paused: digestSubscription?.paused ?? false,
+            });
+            setDigestLocalError(null);
+        } catch {
+            // Hook exposes the error state.
+        }
+    };
+
+    const toggleDigestPaused = async () => {
+        if (!digestSubscription) {
+            setDigestLocalError("Save a digest schedule before pausing it.");
+            return;
+        }
+
+        try {
+            await setDigestPaused({ paused: !digestSubscription.paused });
+            setDigestLocalError(null);
+        } catch {
+            // Hook exposes the error state.
+        }
+    };
+
     const togglePinned = async (note: UserNote) => {
         try {
             await updateNote(note.id, { pinned: !note.pinned });
@@ -241,6 +367,15 @@ export default function PersonalDashboardPage() {
     const snoozeReminderBy = async (reminder: UserReminder, timespan: string) => {
         try {
             await snoozeReminder(reminder.id, { timespan });
+            setReminderLocalError(null);
+        } catch {
+            // Hook exposes the error state.
+        }
+    };
+
+    const toggleReminderPaused = async (reminder: UserReminder) => {
+        try {
+            await setReminderPaused(reminder.id, { paused: !reminder.completed });
             setReminderLocalError(null);
         } catch {
             // Hook exposes the error state.
@@ -282,8 +417,9 @@ export default function PersonalDashboardPage() {
                     stats={[
                         { label: "notes", value: notes.length },
                         { label: "pinned", value: notes.filter((note) => note.pinned).length },
-                        { label: "reminders", value: reminders.length },
+                        { label: "reminders", value: activeReminderCount },
                         { label: "anime subs", value: animeSubscriptions.length },
+                        { label: "digest", value: digestStatus },
                         { label: "Riot link", value: riotLink ? "linked" : "none" },
                     ]}
                     actions={(
@@ -461,6 +597,23 @@ export default function PersonalDashboardPage() {
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.birthdays)}
                                     />
+                                    <TextField
+                                        label="Repeat (optional)"
+                                        value={reminderForm.recurrence}
+                                        onChange={(event) => setReminderForm((current) => ({ ...current, recurrence: event.target.value }))}
+                                        helperText="Examples: daily, weekly, monthly, every 2 weeks"
+                                        fullWidth
+                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
+                                    />
+                                    <TextField
+                                        label="Repeat timezone"
+                                        value={reminderForm.recurrenceTimezone}
+                                        onChange={(event) => setReminderForm((current) => ({ ...current, recurrenceTimezone: event.target.value }))}
+                                        placeholder={settings?.timezone ?? "Europe/Amsterdam"}
+                                        helperText={settings?.timezone ? `Defaults to ${settings.timezone}` : "Required when Repeat is set"}
+                                        fullWidth
+                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
+                                    />
                                     <Button
                                         variant="contained"
                                         startIcon={<AlarmAdd />}
@@ -516,7 +669,139 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
+                            <FeaturePanel accent={dashboardAccents.settings}>
+                                <Stack spacing={2.25} sx={{ position: "relative" }}>
+                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                                        <Box>
+                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                                                Personal digest
+                                            </Typography>
+                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                                                {formatDigestStatus(digestStatus)}
+                                            </Typography>
+                                        </Box>
+                                        <NotificationsActive sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
+                                    </Stack>
+                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                                        <Chip
+                                            label={formatDigestStatus(digestStatus)}
+                                            size="small"
+                                            sx={{
+                                                bgcolor: digestStatus === "active" ? alpha(dashboardAccents.settings, 0.16) : "rgba(255,255,255,0.08)",
+                                                color: "grey.50",
+                                            }}
+                                        />
+                                        {digestSubscription?.nextRunAt ? (
+                                            <Chip
+                                                label={`Next: ${formatDateTime(digestSubscription.nextRunAt)}`}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
+                                            />
+                                        ) : null}
+                                        {digestSubscription?.lastSentAt ? (
+                                            <Chip
+                                                label={`Last sent: ${formatDateTime(digestSubscription.lastSentAt)}`}
+                                                size="small"
+                                                variant="outlined"
+                                                sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
+                                            />
+                                        ) : null}
+                                    </Stack>
+                                    <TextField
+                                        select
+                                        label="Frequency"
+                                        value={digestForm.frequency}
+                                        onChange={(event) => setDigestForm((current) => ({ ...current, frequency: event.target.value === "weekly" ? "weekly" : "daily" }))}
+                                        fullWidth
+                                        sx={dashboardFieldSx(dashboardAccents.settings)}
+                                    >
+                                        <MenuItem value="daily">Daily</MenuItem>
+                                        <MenuItem value="weekly">Weekly</MenuItem>
+                                    </TextField>
+                                    {digestForm.frequency === "weekly" ? (
+                                        <TextField
+                                            select
+                                            label="Weekday"
+                                            value={digestForm.dayOfWeek}
+                                            onChange={(event) => setDigestForm((current) => ({ ...current, dayOfWeek: event.target.value }))}
+                                            fullWidth
+                                            sx={dashboardFieldSx(dashboardAccents.settings)}
+                                        >
+                                            {weekdayOptions.map((option) => (
+                                                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                                            ))}
+                                        </TextField>
+                                    ) : null}
+                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                                        <TextField
+                                            label="Delivery time"
+                                            value={digestForm.runAt}
+                                            onChange={(event) => setDigestForm((current) => ({ ...current, runAt: event.target.value }))}
+                                            placeholder="09:00"
+                                            fullWidth
+                                            sx={dashboardFieldSx(dashboardAccents.settings)}
+                                        />
+                                        <TextField
+                                            label="Timezone"
+                                            value={digestForm.timezone}
+                                            onChange={(event) => setDigestForm((current) => ({ ...current, timezone: event.target.value }))}
+                                            placeholder={settings?.timezone ?? "Europe/Amsterdam"}
+                                            fullWidth
+                                            sx={dashboardFieldSx(dashboardAccents.settings)}
+                                        />
+                                    </Stack>
+                                    <Stack spacing={1.25}>
+                                        <Typography sx={{ color: "grey.300", fontWeight: 800 }}>Digest categories</Typography>
+                                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                                            <DigestCategoryToggle
+                                                label="Reminders"
+                                                checked={digestForm.includeReminders}
+                                                accent={dashboardAccents.birthdays}
+                                                onChange={(checked) => setDigestForm((current) => ({ ...current, includeReminders: checked }))}
+                                            />
+                                            <DigestCategoryToggle
+                                                label="Anime"
+                                                checked={digestForm.includeAnime}
+                                                accent={dashboardAccents.anime}
+                                                onChange={(checked) => setDigestForm((current) => ({ ...current, includeAnime: checked }))}
+                                            />
+                                        </Stack>
+                                    </Stack>
+                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
+                                        <Button
+                                            variant="contained"
+                                            startIcon={<Save />}
+                                            disabled={saving}
+                                            onClick={() => void submitDigestForm()}
+                                            sx={primaryActionButtonSx(dashboardAccents.settings)}
+                                        >
+                                            Save digest
+                                        </Button>
+                                        {digestSubscription ? (
+                                            <Button
+                                                variant="outlined"
+                                                startIcon={digestSubscription.paused ? <PlayArrow /> : <PauseCircle />}
+                                                disabled={saving}
+                                                onClick={() => void toggleDigestPaused()}
+                                                sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                            >
+                                                {digestSubscription.paused ? "Resume" : "Pause"}
+                                            </Button>
+                                        ) : null}
+                                    </Stack>
+                                </Stack>
+                            </FeaturePanel>
+
                             <RiotLinkPanel link={riotLink} />
+
+                            <UserActivityPanel
+                                items={activityFeed}
+                                auditTotal={activity?.summary.auditTotal ?? 0}
+                                deliveryTotal={activity?.summary.deliveryTotal ?? 0}
+                                loading={activityLoading}
+                                onRefresh={refreshActivity}
+                            />
 
                             <FeaturePanel accent={dashboardAccents.birthdays}>
                                 <Stack spacing={2.25} sx={{ position: "relative" }}>
@@ -526,7 +811,7 @@ export default function PersonalDashboardPage() {
                                                 Reminders
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {reminders.length} pending
+                                                {pausedReminderCount > 0 ? `${activeReminderCount} active, ${pausedReminderCount} paused` : `${activeReminderCount} active`}
                                             </Typography>
                                         </Box>
                                         <NotificationsActive sx={{ color: alpha(dashboardAccents.birthdays, 0.86) }} />
@@ -541,6 +826,7 @@ export default function PersonalDashboardPage() {
                                                     reminder={reminder}
                                                     saving={saving}
                                                     onSnooze={snoozeReminderBy}
+                                                    onTogglePaused={toggleReminderPaused}
                                                     onDelete={removeReminder}
                                                 />
                                             ))}
@@ -594,7 +880,7 @@ export default function PersonalDashboardPage() {
                                     <PersonalFeatureRow
                                         icon={<Schedule />}
                                         title="Reminders"
-                                        body={`${reminders.length} pending`}
+                                        body={pausedReminderCount > 0 ? `${activeReminderCount} active; ${pausedReminderCount} paused` : `${activeReminderCount} active`}
                                         accent={dashboardAccents.birthdays}
                                     />
                                     <PersonalFeatureRow
@@ -602,6 +888,12 @@ export default function PersonalDashboardPage() {
                                         title="Anime"
                                         body={`${animeSubscriptions.length} DM subscriptions`}
                                         accent={dashboardAccents.anime}
+                                    />
+                                    <PersonalFeatureRow
+                                        icon={<NotificationsActive />}
+                                        title="Digest"
+                                        body={digestSubscription ? `${formatDigestStatus(digestStatus)}; next ${formatDateTime(digestSubscription.nextRunAt)}` : "Not configured"}
+                                        accent={dashboardAccents.settings}
                                     />
                                     <PersonalFeatureRow
                                         icon={<SportsEsports />}
@@ -656,6 +948,93 @@ function RiotLinkPanel({ link }: { link: RiotLinkEntry | null }) {
                 )}
             </Stack>
         </FeaturePanel>
+    );
+}
+
+function UserActivityPanel({
+    items,
+    auditTotal,
+    deliveryTotal,
+    loading,
+    onRefresh,
+}: {
+    items: UserActivityFeedItem[];
+    auditTotal: number;
+    deliveryTotal: number;
+    loading: boolean;
+    onRefresh: () => void | Promise<void>;
+}) {
+    const summary = loading
+        ? "Loading recent activity"
+        : `${auditTotal} account ${auditTotal === 1 ? "event" : "events"}; ${deliveryTotal} birthday ${deliveryTotal === 1 ? "delivery" : "deliveries"}`;
+
+    return (
+        <FeaturePanel accent={dashboardAccents.commands}>
+            <Stack spacing={2.25} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}>
+                    <Box>
+                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                            Account activity
+                        </Typography>
+                        <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                            {summary}
+                        </Typography>
+                    </Box>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Refresh />}
+                        disabled={loading}
+                        onClick={() => void onRefresh()}
+                        sx={ghostActionButtonSx(dashboardAccents.commands)}
+                    >
+                        Refresh
+                    </Button>
+                </Stack>
+
+                {items.length === 0 ? (
+                    <EmptyPersonalState icon={<AccessTime />} title={loading ? "Loading activity" : "No activity recorded"} accent={dashboardAccents.commands} />
+                ) : (
+                    <Stack spacing={1.25}>
+                        {items.map(item => <UserActivityCard key={item.id} item={item} />)}
+                    </Stack>
+                )}
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function UserActivityCard({ item }: { item: UserActivityFeedItem }) {
+    const accent = item.type === "delivery"
+        ? dashboardAccents.birthdays
+        : item.status === "failure" ? dashboardAccents.quotes : dashboardAccents.commands;
+    const label = item.type === "delivery"
+        ? "Delivery"
+        : item.status === "failure" ? "Failed" : "Audit";
+
+    return (
+        <Box sx={{ ...dashboardCardSx(accent), p: 1.75 }}>
+            <Stack spacing={1} sx={{ position: "relative" }}>
+                <Stack direction="row" spacing={1.2} sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ color: "grey.50", fontWeight: 850, overflowWrap: "anywhere" }}>
+                            {item.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35, overflowWrap: "anywhere" }}>
+                            {item.detail}
+                        </Typography>
+                    </Box>
+                    <Chip
+                        label={label}
+                        size="small"
+                        sx={{ bgcolor: alpha(accent, 0.16), color: "grey.50", flexShrink: 0 }}
+                    />
+                </Stack>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
+                    {formatDate(item.timestamp)}
+                </Typography>
+            </Stack>
+        </Box>
     );
 }
 
@@ -801,13 +1180,17 @@ function NoteCard({ note, onTogglePinned, onEdit, onDelete }: {
     );
 }
 
-function ReminderCard({ reminder, saving, onSnooze, onDelete }: {
+function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: {
     reminder: UserReminder;
     saving: boolean;
     onSnooze: (reminder: UserReminder, timespan: string) => void | Promise<void>;
+    onTogglePaused: (reminder: UserReminder) => void | Promise<void>;
     onDelete: (reminder: UserReminder) => void | Promise<void>;
 }) {
-    const due = reminder.timestamp <= Date.now();
+    const recurring = isRecurringReminder(reminder);
+    const paused = isPausedRecurringReminder(reminder);
+    const nextPreviewAt = reminder.nextPreviewAt ?? reminder.timestamp;
+    const due = !paused && reminder.timestamp <= Date.now();
 
     return (
         <Box sx={{ ...dashboardCardSx(dashboardAccents.birthdays), p: 2 }}>
@@ -820,16 +1203,40 @@ function ReminderCard({ reminder, saving, onSnooze, onDelete }: {
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 0.75, flexWrap: "wrap", rowGap: 0.75 }}>
                             <Chip
                                 icon={<AccessTime fontSize="small" />}
-                                label={formatReminderRelative(reminder.timestamp)}
+                                label={paused ? "Paused" : formatReminderRelative(reminder.timestamp)}
                                 size="small"
                                 sx={{
-                                    bgcolor: due ? "rgba(255,107,154,0.16)" : alpha(dashboardAccents.birthdays, 0.16),
+                                    bgcolor: paused
+                                        ? "rgba(104,215,255,0.14)"
+                                        : due ? "rgba(255,107,154,0.16)" : alpha(dashboardAccents.birthdays, 0.16),
                                     color: "grey.50",
                                 }}
                             />
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
                                 {formatDateTime(reminder.timestamp)}
                             </Typography>
+                            {reminder.recurrenceUnit && reminder.recurrenceInterval && reminder.recurrenceTimezone ? (
+                                <Chip
+                                    icon={<Schedule fontSize="small" />}
+                                    label={formatReminderRecurrenceLabel(reminder)}
+                                    size="small"
+                                    sx={{
+                                        bgcolor: alpha(dashboardAccents.settings, 0.14),
+                                        color: "grey.50",
+                                    }}
+                                />
+                            ) : null}
+                            {recurring ? (
+                                <Chip
+                                    label={`${paused ? "Next after resume" : "Next run"}: ${formatDateTime(nextPreviewAt)}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{
+                                        color: "rgba(255,255,255,0.72)",
+                                        borderColor: "rgba(255,255,255,0.16)",
+                                    }}
+                                />
+                            ) : null}
                         </Stack>
                     </Box>
                     <Tooltip title="Delete">
@@ -839,12 +1246,24 @@ function ReminderCard({ reminder, saving, onSnooze, onDelete }: {
                     </Tooltip>
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                    {recurring ? (
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={paused ? <PlayArrow /> : <PauseCircle />}
+                            disabled={saving}
+                            onClick={() => void onTogglePaused(reminder)}
+                            sx={ghostActionButtonSx(dashboardAccents.settings)}
+                        >
+                            {paused ? "Resume" : "Pause"}
+                        </Button>
+                    ) : null}
                     {["10m", "1h", "1d"].map((timespan) => (
                         <Button
                             key={timespan}
                             size="small"
                             variant="outlined"
-                            disabled={saving}
+                            disabled={saving || paused}
                             onClick={() => void onSnooze(reminder, timespan)}
                             sx={ghostActionButtonSx(dashboardAccents.birthdays)}
                         >
@@ -853,6 +1272,52 @@ function ReminderCard({ reminder, saving, onSnooze, onDelete }: {
                     ))}
                 </Stack>
             </Stack>
+        </Box>
+    );
+}
+
+function isRecurringReminder(reminder: UserReminder): boolean {
+    return Boolean(reminder.recurrenceUnit && reminder.recurrenceInterval && reminder.recurrenceTimezone);
+}
+
+function isPausedRecurringReminder(reminder: UserReminder): boolean {
+    return reminder.completed && isRecurringReminder(reminder);
+}
+
+function formatDigestStatus(status: "active" | "paused" | "off"): string {
+    if (status === "active") return "Active";
+    if (status === "paused") return "Paused";
+    return "Not configured";
+}
+
+function DigestCategoryToggle({ label, checked, accent, onChange }: {
+    label: string;
+    checked: boolean;
+    accent: string;
+    onChange: (checked: boolean) => void;
+}) {
+    return (
+        <Box
+            component="label"
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1.5,
+                minWidth: { sm: 180 },
+                px: 1.5,
+                py: 1.15,
+                borderRadius: 2,
+                cursor: "pointer",
+                bgcolor: checked ? alpha(accent, 0.14) : "rgba(255,255,255,0.045)",
+                border: `1px solid ${checked ? alpha(accent, 0.34) : "rgba(255,255,255,0.08)"}`,
+            }}
+        >
+            <Typography sx={{ color: "grey.50", fontWeight: 800 }}>{label}</Typography>
+            <Switch
+                checked={checked}
+                onChange={(event) => onChange(event.target.checked)}
+            />
         </Box>
     );
 }
@@ -915,6 +1380,13 @@ function formatDateTime(value: number): string {
         dateStyle: "medium",
         timeStyle: "short",
     }).format(date);
+}
+
+function formatReminderRecurrenceLabel(reminder: UserReminder): string {
+    if (!reminder.recurrenceUnit || !reminder.recurrenceInterval || !reminder.recurrenceTimezone) return "One-off";
+    const unit = reminder.recurrenceInterval === 1 ? reminder.recurrenceUnit : `${reminder.recurrenceUnit}s`;
+    const cadence = reminder.recurrenceInterval === 1 ? `Every ${reminder.recurrenceUnit}` : `Every ${reminder.recurrenceInterval} ${unit}`;
+    return `${cadence} - ${reminder.recurrenceTimezone}`;
 }
 
 function formatReminderRelative(timestamp: number): string {

@@ -12,6 +12,8 @@ import { registerTikTokJobs } from './tiktok.js';
 import { registerBlueskyJobs } from './bluesky.js';
 import { registerAnimeJobs } from './anime.js';
 import { registerSteamNewsJobs } from './steamNews.js';
+import { registerUserDigestJobs } from './userDigests.js';
+import { registerQuoteOfDayJobs } from './quoteOfDay.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -78,6 +80,12 @@ export async function bootstrapJobs(): Promise<void> {
 
     // Register and schedule reminders job
     await registerRemindersJobs(queue);
+
+    // Register and schedule personal digest summaries
+    await registerUserDigestJobs(queue);
+
+    // Register and schedule quote-of-the-day announcements
+    await registerQuoteOfDayJobs(queue);
 
     // Register and schedule patch notes announcements
     await registerPatchNotesJobs(queue);

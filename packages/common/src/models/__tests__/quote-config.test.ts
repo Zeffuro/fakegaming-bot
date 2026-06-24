@@ -16,6 +16,10 @@ describe('QuoteConfig Model', () => {
       authorId: 'author-789',
       submitterId: 'submitter-101',
       timestamp: Date.now(),
+      tags: '["funny","raid-night"]',
+      source: 'voice chat',
+      context: 'Before the pull',
+      moderationStatus: 'approved',
     });
 
     expect(quote.id).toBe('quote-123');
@@ -24,6 +28,23 @@ describe('QuoteConfig Model', () => {
     expect(quote.authorId).toBe('author-789');
     expect(quote.submitterId).toBe('submitter-101');
     expect(quote.timestamp).toBeTypeOf('number');
+    expect(quote.tags).toBe('["funny","raid-night"]');
+    expect(quote.source).toBe('voice chat');
+    expect(quote.context).toBe('Before the pull');
+    expect(quote.moderationStatus).toBe('approved');
+  });
+
+  it('should default moderation status to pending', async () => {
+    const quote = await QuoteConfig.create({
+      id: 'quote-pending',
+      guildId: 'guild-456',
+      quote: 'Pending quote',
+      authorId: 'author-789',
+      submitterId: 'submitter-101',
+      timestamp: Date.now(),
+    });
+
+    expect(quote.moderationStatus).toBe('pending');
   });
 
   it('should find quotes by guildId', async () => {

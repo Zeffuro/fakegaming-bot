@@ -66,6 +66,10 @@ describe('User reminders API', () => {
             .patch(`/api/userReminders/${created.body.id}/snooze`)
             .set('Authorization', `Bearer ${other.token}`)
             .send({ timespan: '1h' }));
+        expectNotFound(await other.raw
+            .patch(`/api/userReminders/${created.body.id}/paused`)
+            .set('Authorization', `Bearer ${other.token}`)
+            .send({ paused: true }));
         expectNotFound(await other.delete(`/api/userReminders/${created.body.id}`));
     });
 
@@ -77,11 +81,98 @@ describe('User reminders API', () => {
             timespan: 'not a time',
         }));
         expectBadRequest(await client.post('/api/userReminders', {
+            message: 'Missing recurrence timezone',
+            timespan: '1h',
+            recurrence: 'daily',
+        }));
+        expectBadRequest(await client.post('/api/userReminders', {
+            message: 'Invalid recurrence',
+            timespan: '1h',
+            recurrence: 'weekdays',
+            recurrenceTimezone: 'UTC',
+        }));
+        expectBadRequest(await client.post('/api/userReminders', {
             message: '',
             timespan: '1h',
         }));
+        const oneOff = await client.post('/api/userReminders', {
+            message: 'One-off',
+            timespan: '1h',
+        });
+        expectCreated(oneOff);
+        expectBadRequest(await client.raw
+            .patch(`/api/userReminders/${oneOff.body.id}/paused`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .send({ paused: true }));
 
         const noAuth = await client.raw.get('/api/userReminders');
         expectUnauthorized(noAuth);
+    });
+
+    it('creates recurring reminders for the authenticated user', async () => {
+        const client = givenAuthenticatedClient(app, { discordId: 'recurring-user' });
+
+        const created = await client.post('/api/userReminders', {
+            message: 'Take out trash',
+            timespan: '30m',
+            recurrence: 'weekly',
+            recurrenceTimezone: 'Europe/Amsterdam',
+        });
+        expectCreated(created);
+        expect(created.body).toMatchObject({
+            userId: 'recurring-user',
+            message: 'Take out trash',
+            timespan: '30m',
+            recurrenceUnit: 'week',
+            recurrenceInterval: 1,
+            recurrenceTimezone: 'Europe/Amsterdam',
+            lastTriggeredAt: null,
+        });
+
+        const listed = await client.get('/api/userReminders');
+        expectOk(listed);
+        expect(listed.body.reminders[0]).toMatchObject({
+            id: created.body.id,
+            recurrenceUnit: 'week',
+            recurrenceInterval: 1,
+            recurrenceTimezone: 'Europe/Amsterdam',
+        });
+    });
+
+    it('pauses and resumes recurring reminders without replaying missed runs', async () => {
+        const client = givenAuthenticatedClient(app, { discordId: 'pause-user' });
+
+        const created = await client.post('/api/userReminders', {
+            message: 'Standup',
+            timespan: '30m',
+            recurrence: 'daily',
+            recurrenceTimezone: 'UTC',
+        });
+        expectCreated(created);
+
+        const paused = await client.raw
+            .patch(`/api/userReminders/${created.body.id}/paused`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .send({ paused: true });
+        expectOk(paused);
+        expect(paused.body).toMatchObject({
+            id: created.body.id,
+            completed: true,
+            nextPreviewAt: created.body.timestamp,
+        });
+
+        await configManager.reminderManager.updatePlain({
+            timestamp: Date.now() - 60_000,
+            completed: true,
+        } as never, { id: created.body.id } as never);
+
+        const resumed = await client.raw
+            .patch(`/api/userReminders/${created.body.id}/paused`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .send({ paused: false });
+        expectOk(resumed);
+        expect(resumed.body.completed).toBe(false);
+        expect(resumed.body.timestamp).toBeGreaterThan(Date.now());
+        expect(resumed.body.nextPreviewAt).toBe(resumed.body.timestamp);
     });
 });

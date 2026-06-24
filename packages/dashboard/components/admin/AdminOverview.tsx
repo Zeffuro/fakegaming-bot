@@ -313,11 +313,41 @@ function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.60)", overflowWrap: "anywhere" }}>
                     {item.detail}
                 </Typography>
+                {item.relatedItems?.length ? (
+                    <Stack spacing={0.8} sx={{ borderLeft: `2px solid ${alpha(accent, 0.42)}`, pl: 1.15 }}>
+                        {item.relatedItems.slice(0, 3).map((relatedItem) => (
+                            <AdminReviewQueueRelatedRow key={relatedItem.id} item={relatedItem} />
+                        ))}
+                        {item.relatedItems.length > 3 && (
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)" }}>
+                                +{item.relatedItems.length - 3} more detail {pluralize("row", item.relatedItems.length - 3)}
+                            </Typography>
+                        )}
+                    </Stack>
+                ) : null}
                 <Button component={Link} href={item.href} size="small" variant="outlined" sx={{ ...ghostActionButtonSx(accent), alignSelf: "flex-start" }}>
                     Review
                 </Button>
             </Stack>
         </Box>
+    );
+}
+
+function AdminReviewQueueRelatedRow({ item }: { item: NonNullable<AdminReviewQueueItem["relatedItems"]>[number] }) {
+    return (
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={0.8} sx={{ alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 1, minWidth: 0 }}>
+            <Box sx={{ minWidth: 0 }}>
+                <Typography variant="caption" sx={{ color: "grey.100", fontWeight: 800, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.title}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", display: "block", overflowWrap: "anywhere" }}>
+                    {item.detail}
+                </Typography>
+            </Box>
+            <Button component={Link} href={item.href} size="small" variant="text" sx={{ color: "grey.200", minWidth: 0, px: 0.6, flexShrink: 0 }}>
+                Open
+            </Button>
+        </Stack>
     );
 }
 

@@ -1,4 +1,6 @@
 import type { AdminOperationsHealth, AdminOperationsHealthIssue } from "@/lib/adminOperationsHealth";
+import { formatAdminProviderCooldownSummary, getAdminProviderCooldownHint } from "@/lib/adminProviderCooldown";
+import { formatAdminProviderPlaybookSummary, getAdminProviderPlaybookHint } from "@/lib/adminProviderPlaybooks";
 import type { AuditEventEntry, IntegrationHealthRecord, IntegrationHealthStatus, JobRunEntry } from "@/lib/api-client";
 
 export type AdminReviewSeverity = "critical" | "warning" | "info";
@@ -10,6 +12,15 @@ export interface AdminReviewQueueItem {
     detail: string;
     severity: AdminReviewSeverity;
     source: AdminReviewSource;
+    href: string;
+    timestamp?: string | null;
+    relatedItems?: AdminReviewQueueRelatedItem[];
+}
+
+export interface AdminReviewQueueRelatedItem {
+    id: string;
+    title: string;
+    detail: string;
     href: string;
     timestamp?: string | null;
 }
@@ -45,14 +56,112 @@ const sourceRank: Record<AdminReviewSource, number> = {
 };
 
 export function buildAdminReviewQueue(input: BuildAdminReviewQueueInput): AdminReviewQueueItem[] {
+    const operationsItems = buildOperationsItems(input.operationsHealth?.issues ?? []);
+    const healthItems = buildHealthItems(input.healthRecords ?? []);
+    const jobItems = buildJobItems(input.jobs ?? []);
     const items: AdminReviewQueueItem[] = [
-        ...buildOperationsItems(input.operationsHealth?.issues ?? []),
-        ...buildHealthItems(input.healthRecords ?? []),
-        ...buildJobItems(input.jobs ?? []),
+        ...groupOperationsWithDetails(operationsItems, healthItems, jobItems),
         ...buildAuditItems(input.auditEvents ?? []),
     ];
     const limit = Number.isInteger(input.limit) && input.limit !== undefined ? Math.max(0, input.limit) : defaultLimit;
     return items.sort(compareReviewItems).slice(0, limit);
+}
+
+function groupOperationsWithDetails(
+    operationsItems: AdminReviewQueueItem[],
+    healthItems: AdminReviewQueueItem[],
+    jobItems: AdminReviewQueueItem[],
+): AdminReviewQueueItem[] {
+    const ungroupedHealth = new Set(healthItems.map(item => item.id));
+    const ungroupedJobs = new Set(jobItems.map(item => item.id));
+    const groupedOperations = operationsItems.map(item => {
+        const relatedItems = getRelatedItemsForOperation(item, healthItems, jobItems);
+        if (relatedItems.length === 0) return item;
+
+        for (const relatedItem of relatedItems) {
+            ungroupedHealth.delete(relatedItem.id);
+            ungroupedJobs.delete(relatedItem.id);
+        }
+
+        return {
+            ...item,
+            detail: formatGroupedOperationsDetail(item, relatedItems),
+            timestamp: item.timestamp ?? getLatestRelatedTimestamp(relatedItems),
+            relatedItems,
+        };
+    });
+
+    return [
+        ...groupedOperations,
+        ...healthItems.filter(item => ungroupedHealth.has(item.id)),
+        ...jobItems.filter(item => ungroupedJobs.has(item.id)),
+    ];
+}
+
+function getRelatedItemsForOperation(
+    operation: AdminReviewQueueItem,
+    healthItems: AdminReviewQueueItem[],
+    jobItems: AdminReviewQueueItem[],
+): AdminReviewQueueRelatedItem[] {
+    if (operation.id === "operations:integration-errors") {
+        return healthItems
+            .filter(item => item.severity === "critical")
+            .sort(compareReviewItems)
+            .map(toRelatedItem);
+    }
+    if (operation.id === "operations:health-warnings") {
+        return healthItems
+            .filter(item => item.severity === "warning")
+            .sort(compareReviewItems)
+            .map(toRelatedItem);
+    }
+    if (operation.id === "operations:failed-job-runs") {
+        return jobItems
+            .filter(item => item.id.endsWith(":failed"))
+            .sort(compareReviewItems)
+            .map(toRelatedItem);
+    }
+    if (operation.id === "operations:job-status-unavailable") {
+        return jobItems
+            .filter(item => item.id.endsWith(":unavailable"))
+            .sort(compareReviewItems)
+            .map(toRelatedItem);
+    }
+
+    return [];
+}
+
+function toRelatedItem(item: AdminReviewQueueItem): AdminReviewQueueRelatedItem {
+    const relatedItem: AdminReviewQueueRelatedItem = {
+        id: item.id,
+        title: item.title,
+        detail: item.detail,
+        href: item.href,
+    };
+    if (item.timestamp !== undefined) {
+        relatedItem.timestamp = item.timestamp;
+    }
+    return relatedItem;
+}
+
+function formatGroupedOperationsDetail(item: AdminReviewQueueItem, relatedItems: AdminReviewQueueRelatedItem[]): string {
+    const relatedCount = relatedItems.length;
+    const extraCount = Math.max(0, getOperationIssueValue(item) - relatedCount);
+    const visibleText = relatedCount === 1
+        ? "1 visible detail"
+        : `${relatedCount} visible details`;
+    const extraText = extraCount > 0 ? `, plus ${extraCount} more summarized by the overview` : "";
+    return `${item.detail} Includes ${visibleText}${extraText}.`;
+}
+
+function getOperationIssueValue(item: AdminReviewQueueItem): number {
+    const match = item.detail.match(/^(\d+)/);
+    return match ? Number(match[1]) : 0;
+}
+
+function getLatestRelatedTimestamp(relatedItems: AdminReviewQueueRelatedItem[]): string | null {
+    const sorted = [...relatedItems].sort((left, right) => getTimestampMs(right.timestamp) - getTimestampMs(left.timestamp));
+    return sorted[0]?.timestamp ?? null;
 }
 
 function buildOperationsItems(issues: AdminOperationsHealthIssue[]): AdminReviewQueueItem[] {
@@ -75,11 +184,13 @@ function buildHealthItems(records: IntegrationHealthRecord[]): AdminReviewQueueI
             const failureText = failures > 0
                 ? `${failures} consecutive ${pluralize("failure", failures)}`
                 : "No consecutive failures recorded";
+            const cooldownSummary = formatAdminProviderCooldownSummary(getAdminProviderCooldownHint(record));
+            const playbookSummary = formatAdminProviderPlaybookSummary(getAdminProviderPlaybookHint(record));
 
             return {
                 id: `integration-health:${record.provider}:${record.configId}`,
                 title: `${formatProviderLabel(record.provider)} config ${record.configId}`,
-                detail: `${issue} - ${failureText}`,
+                detail: [issue, failureText, cooldownSummary, playbookSummary].filter(Boolean).join(" - "),
                 severity: record.status === "error" ? "critical" : "warning",
                 source: "integration-health",
                 href: buildIntegrationHealthHref(record),
@@ -131,7 +242,7 @@ function buildAuditItems(events: AuditEventEntry[]): AdminReviewQueueItem[] {
             detail: `${formatAuditActor(event)} -> ${formatAuditTarget(event)}`,
             severity: event.severity === "error" ? "critical" : "warning",
             source: "audit",
-            href: "/dashboard/admin/audit",
+            href: buildAuditHref(event),
             timestamp: event.timestamp,
         }));
 }
@@ -175,6 +286,14 @@ function buildIntegrationHealthHref(record: IntegrationHealthRecord): string {
     if (provider) params.set("provider", provider);
     if (record.guildId) params.set("guildId", record.guildId);
     return `/dashboard/admin/integration-health?${params.toString()}`;
+}
+
+function buildAuditHref(event: AuditEventEntry): string {
+    const params = new URLSearchParams({ status: "failure" });
+    if (event.action.trim()) params.set("action", event.action.trim());
+    if (event.guildId) params.set("guildId", event.guildId);
+    if (event.severity) params.set("severity", event.severity);
+    return `/dashboard/admin/audit?${params.toString()}`;
 }
 
 function normalizeProviderFilter(value: string): string {

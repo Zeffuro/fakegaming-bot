@@ -2,6 +2,7 @@ import {getSequelize} from '../sequelize.js';
 import {runMigrations} from '../migrate.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
+import {QuoteOfDayManager} from './quoteOfDayManager.js';
 import {ServerManager} from './serverManager.js';
 import {TwitchManager} from './twitchManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
@@ -20,6 +21,7 @@ import {AuditEventManager} from './auditEventManager.js';
 import {IntegrationHealthManager} from './integrationHealthManager.js';
 import {SteamNewsSubscriptionManager} from './steamNewsManager.js';
 import {UserNoteManager} from './userNoteManager.js';
+import {UserDigestSubscriptionManager} from './userDigestSubscriptionManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -30,6 +32,7 @@ const log = getLogger({ name: 'common:config' });
 export class ConfigManager {
     userManager = new UserManager();
     quoteManager = new QuoteManager();
+    quoteOfDayManager = new QuoteOfDayManager();
     serverManager = new ServerManager();
     twitchManager = new TwitchManager();
     youtubeManager = new YoutubeManager();
@@ -50,6 +53,7 @@ export class ConfigManager {
     integrationHealthManager = new IntegrationHealthManager();
     steamNewsSubscriptionManager = new SteamNewsSubscriptionManager();
     userNoteManager = new UserNoteManager();
+    userDigestSubscriptionManager = new UserDigestSubscriptionManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).
