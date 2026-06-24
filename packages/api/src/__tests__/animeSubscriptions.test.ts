@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { signTestJwt, expectOk } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectCreated, expectOk } from '@zeffuro/fakegaming-common/testing';
 import { configManager } from '../vitest.setup.js';
 import { getAniListAnimeById, type AniListTitle } from '@zeffuro/fakegaming-common/anime';
 
@@ -20,7 +20,7 @@ const animeResult: AniListTitle = {
     title: {
         english: 'Frieren: Beyond Journey\'s End',
         romaji: 'Sousou no Frieren',
-        native: '葬送のフリーレン',
+        native: null,
     },
     description: null,
     siteUrl: 'https://anilist.co/anime/101',
@@ -59,7 +59,7 @@ describe('Anime subscriptions API', () => {
             .set('Authorization', `Bearer ${token}`)
             .send({ anilistId: 101, reminderMinutes: 15 });
 
-        expect(res.status).toBe(201);
+        expectCreated(res);
         expect(res.body).toMatchObject({ success: true, created: true, anilistId: 101 });
 
         const subscriptions = await configManager.animeManager.subscriptions.getUserSubscriptions('testuser');

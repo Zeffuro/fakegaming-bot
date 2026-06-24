@@ -24,8 +24,11 @@ function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf
                 return undefined;
             }
         },
-        json: async () => body,
-        text: async () => JSON.stringify(body),
+        json: async () => {
+            if (body === undefined) throw new SyntaxError('Unexpected end of JSON input');
+            return body;
+        },
+        text: async () => body === undefined ? '' : JSON.stringify(body),
         url: 'http://dashboard.local/api/external/test'
     } as any;
 }
@@ -73,6 +76,22 @@ describe('external proxy route CSRF', () => {
         expectOk(res);
         const body = await res.json();
         expect(body.ok).toBe(true);
+    });
+
+    it('forwards empty JSON POST bodies without parsing them', async () => {
+        const jwt = signTestJwt({ discordId: 'admin-id' }, 'supersecret');
+        const res = await POST(
+            makeReq({ method: 'POST', jwt, csrf: 't123', headerCsrf: 't123', requestId: 'req-resolve-1' }),
+            { params: Promise.resolve({ proxy: ['integrationHealth', 'admin', 'youtube', '91', 'resolve'] }) } as any
+        );
+
+        expectOk(res);
+        expect(fetchMock).toHaveBeenCalledWith(
+            'http://api.local/integrationHealth/admin/youtube/91/resolve',
+            expect.any(Object)
+        );
+        const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        expect(init.body).toBeUndefined();
     });
 
     it('forwards service-authenticated dashboard admin assertions for admin endpoints', async () => {

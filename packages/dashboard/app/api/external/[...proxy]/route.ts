@@ -151,11 +151,9 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         };
 
         if (['POST', 'PUT', 'PATCH'].includes(method)) {
-            const contentType = req.headers.get('content-type') || '';
-            if (contentType.includes('application/json')) {
-                options.body = JSON.stringify(await req.json());
-            } else {
-                options.body = await req.text();
+            const bodyText = await req.text();
+            if (bodyText.length > 0) {
+                options.body = bodyText;
             }
         }
 
