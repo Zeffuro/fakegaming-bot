@@ -40,6 +40,21 @@ export function useUserAnimeSubscriptions() {
         }
     }, []);
 
+    const createSubscription = useCallback(async (input: { anilistId?: number; title?: string; reminderMinutes?: number }) => {
+        setSaving(true);
+        try {
+            await api.createMyAnimeSubscription(input);
+            await refresh();
+            setError(null);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to create anime subscription";
+            setError(message);
+            throw err;
+        } finally {
+            setSaving(false);
+        }
+    }, [refresh]);
+
     const deleteSubscription = useCallback(async (subscription: AnimeSubscriptionDashboardConfig) => {
         if (!subscription.id) return;
         setSaving(true);
@@ -66,6 +81,7 @@ export function useUserAnimeSubscriptions() {
         saving,
         error,
         refresh,
+        createSubscription,
         togglePaused,
         deleteSubscription,
     };

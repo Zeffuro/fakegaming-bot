@@ -54,6 +54,12 @@ export const animeApi = {
             { method: "POST", body: data },
         ),
 
+    createMyAnimeSubscription: (data: { anilistId?: number; title?: string; reminderMinutes?: number }) =>
+        apiRequest<{ success: boolean; created: boolean; anilistId: number }>(
+            `${API_ENDPOINTS.ANIME}/me`,
+            { method: "POST", body: data },
+        ),
+
     setAnimeSubscriptionPaused: (id: string | number, paused: boolean) =>
         apiRequest<AnimeSubscriptionDashboardConfig>(`${API_ENDPOINTS.ANIME}/${id}`, { method: "PATCH", body: { paused } }),
 

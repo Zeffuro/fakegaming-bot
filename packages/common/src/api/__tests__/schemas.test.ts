@@ -20,6 +20,7 @@ import {
     twitchUpdateRequestSchema,
     userDigestSubscriptionPausedRequestSchema,
     userDigestSubscriptionRequestSchema,
+    userAnimeSubscribeRequestSchema,
     userNoteCreateRequestSchema,
     userNoteUpdateRequestSchema,
     userReminderCreateRequestSchema,
@@ -58,6 +59,7 @@ describe('api request schemas', () => {
             'TikTokUpdateRequest',
             'TwitchCreateRequest',
             'TwitchUpdateRequest',
+            'UserAnimeSubscribeRequest',
             'UserCreateRequest',
             'UserDefaultReminderTimeSpanUpdateRequest',
             'UserDigestSubscriptionPausedRequest',
@@ -160,6 +162,10 @@ describe('api request schemas', () => {
         expect(userDigestSubscriptionPausedRequestSchema.parse({
             paused: false,
         })).toMatchObject({ paused: false });
+        expect(userAnimeSubscribeRequestSchema.parse({
+            anilistId: '123',
+            reminderMinutes: '15',
+        })).toMatchObject({ anilistId: 123, reminderMinutes: 15 });
     });
 
     it('rejects unknown fields on strict request DTOs', () => {
@@ -186,6 +192,10 @@ describe('api request schemas', () => {
             guildId: 'guild-1',
             channelId: 'channel-1',
         })).toThrow();
+        expect(userAnimeSubscribeRequestSchema.parse({
+            title: 'Frieren',
+        })).toMatchObject({ title: 'Frieren' });
+        expect(() => userAnimeSubscribeRequestSchema.parse({})).toThrow();
         expect(() => userReminderCreateRequestSchema.parse({
             message: 'No timezone',
             timespan: '1h',

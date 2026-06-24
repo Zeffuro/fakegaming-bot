@@ -4,9 +4,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
     Alert,
     AlertTitle,
+    Autocomplete,
     Box,
     Button,
     Chip,
+    CircularProgress,
     Divider,
     IconButton,
     InputAdornment,
@@ -49,7 +51,8 @@ import {
     ghostActionButtonSx,
     primaryActionButtonSx,
 } from "@/components/dashboard/dashboardTheme";
-import { subscriptionMeta, subscriptionTitle } from "@/components/anime/animeUtils";
+import { AnimeMediaRow } from "@/components/anime/AnimeMediaRow";
+import { canSubscribe, errorMessage, formatAnimeTitle, formatStatus, subscriptionMeta, subscriptionTitle } from "@/components/anime/animeUtils";
 import { useMyRiotLink } from "@/components/hooks/useMyRiotLink";
 import { useUserAnimeSubscriptions } from "@/components/hooks/useUserAnimeSubscriptions";
 import { useUserActivity } from "@/components/hooks/useUserActivity";
@@ -57,7 +60,7 @@ import { useUserDigestSubscription } from "@/components/hooks/useUserDigestSubsc
 import { useUserNotes } from "@/components/hooks/useUserNotes";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
-import type { AnimeSubscriptionDashboardConfig, UserDigestCategory, UserDigestFrequency, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import { api, type AnimeSearchResult, type AnimeSubscriptionDashboardConfig, type UserDigestCategory, type UserDigestFrequency, type UserNote, type UserReminder, type UserSettingsUpdateInput } from "@/lib/api-client";
 import { buildPersonalRiotSummary, type PersonalRiotSummary, type PersonalRiotSummaryTone } from "@/lib/personalRiotSummary";
 import {
     buildPersonalSubscriptionOverview,
@@ -125,6 +128,7 @@ export default function PersonalDashboardPage() {
         loading: animeLoading,
         saving: animeSaving,
         error: animeError,
+        createSubscription: createAnimeSubscription,
         togglePaused: toggleAnimePaused,
         deleteSubscription: deleteAnimeSubscription,
     } = useUserAnimeSubscriptions();
@@ -633,6 +637,11 @@ export default function PersonalDashboardPage() {
                                         </Box>
                                         <Movie sx={{ color: alpha(dashboardAccents.anime, 0.86) }} />
                                     </Stack>
+                                    <PersonalAnimeSubscribeForm
+                                        saving={animeSaving}
+                                        onSubscribe={createAnimeSubscription}
+                                    />
+                                    <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
                                     {animeSubscriptions.length === 0 ? (
                                         <EmptyPersonalState icon={<Movie />} title="No anime DM subscriptions" accent={dashboardAccents.anime} />
                                     ) : (
@@ -1139,6 +1148,171 @@ function RiotLinkInfoRow({ label, value, tone }: { label: string; value: string;
             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 800, textAlign: "right", overflowWrap: "anywhere" }}>
                 {value}
             </Typography>
+        </Box>
+    );
+}
+
+function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
+    saving: boolean;
+    onSubscribe: (input: { anilistId?: number; title?: string; reminderMinutes?: number }) => void | Promise<void>;
+}) {
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState<AnimeSearchResult[]>([]);
+    const [selectedAnime, setSelectedAnime] = useState<AnimeSearchResult | null>(null);
+    const [reminderMinutes, setReminderMinutes] = useState(30);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const trimmed = query.trim();
+        if (trimmed.length < 2 || (selectedAnime && formatAnimeTitle(selectedAnime) === trimmed)) {
+            if (trimmed.length < 2) setResults([]);
+            return;
+        }
+
+        const handle = window.setTimeout(() => {
+            setSearchLoading(true);
+            api.searchAnime(trimmed, 1, 8, "anime")
+                .then((response) => {
+                    setResults(response.results);
+                    setLocalError(null);
+                })
+                .catch((err: unknown) => setLocalError(errorMessage(err, "Anime search failed")))
+                .finally(() => setSearchLoading(false));
+        }, 250);
+
+        return () => window.clearTimeout(handle);
+    }, [query, selectedAnime]);
+
+    const invalidSelectedAnime = Boolean(selectedAnime && !canSubscribe(selectedAnime));
+    const submitDisabled = saving || !query.trim() || invalidSelectedAnime;
+
+    const submit = async () => {
+        const trimmed = query.trim();
+        if (!trimmed) {
+            setLocalError("Pick an anime or enter an AniList ID.");
+            return;
+        }
+        if (selectedAnime && !canSubscribe(selectedAnime)) {
+            setLocalError(`${formatStatus(selectedAnime.status)} anime cannot receive episode reminders.`);
+            return;
+        }
+
+        const numericId = Number(trimmed);
+        const input = selectedAnime
+            ? { anilistId: selectedAnime.id, reminderMinutes }
+            : Number.isInteger(numericId) && numericId > 0
+                ? { anilistId: numericId, reminderMinutes }
+                : { title: trimmed, reminderMinutes };
+
+        try {
+            await onSubscribe(input);
+            setQuery("");
+            setResults([]);
+            setSelectedAnime(null);
+            setLocalError(null);
+        } catch {
+            // Hook exposes the error state.
+        }
+    };
+
+    return (
+        <Box sx={{ ...dashboardCardSx(dashboardAccents.anime), p: 2 }}>
+            <Stack spacing={1.5} sx={{ position: "relative" }}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1.25} sx={{ alignItems: { md: "flex-start" } }}>
+                    <Autocomplete
+                        fullWidth
+                        options={results}
+                        loading={searchLoading}
+                        value={selectedAnime}
+                        inputValue={query}
+                        onInputChange={(_event, value) => {
+                            setQuery(value);
+                            setSelectedAnime((current) => current && formatAnimeTitle(current) !== value ? null : current);
+                        }}
+                        onChange={(_event, value) => {
+                            setSelectedAnime(value);
+                            if (value) setQuery(formatAnimeTitle(value));
+                        }}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        getOptionLabel={(option) => formatAnimeTitle(option)}
+                        noOptionsText={query.trim().length < 2 ? "Type at least 2 characters" : "No AniList results"}
+                        renderOption={(props, option) => (
+                            <Box component="li" {...props} key={option.id} sx={{ bgcolor: "rgba(18,24,34,0.98)", color: "grey.100", py: 1 }}>
+                                <AnimeMediaRow anime={option} dense />
+                            </Box>
+                        )}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label="Anime"
+                                placeholder="Frieren or AniList ID"
+                                helperText={invalidSelectedAnime ? `${formatStatus(selectedAnime?.status)} anime cannot receive episode reminders.` : " "}
+                                sx={dashboardFieldSx(dashboardAccents.anime)}
+                                slotProps={{
+                                    ...params.slotProps,
+                                    input: {
+                                        ...params.slotProps.input,
+                                        startAdornment: (
+                                            <>
+                                                <InputAdornment position="start">
+                                                    <Search fontSize="small" />
+                                                </InputAdornment>
+                                                {params.slotProps.input.startAdornment}
+                                            </>
+                                        ),
+                                        endAdornment: (
+                                            <>
+                                                {searchLoading ? <CircularProgress size={18} /> : null}
+                                                {params.slotProps.input.endAdornment}
+                                            </>
+                                        ),
+                                    },
+                                    formHelperText: {
+                                        sx: { color: invalidSelectedAnime ? "warning.light" : "rgba(255,255,255,0.36)" },
+                                    },
+                                }}
+                            />
+                        )}
+                    />
+                    <TextField
+                        select
+                        label="Reminder"
+                        value={reminderMinutes}
+                        onChange={(event) => setReminderMinutes(Number(event.target.value))}
+                        sx={{ ...dashboardFieldSx(dashboardAccents.anime), minWidth: { md: 180 } }}
+                    >
+                        {[0, 5, 10, 15, 30, 60, 120, 360].map((minutes) => (
+                            <MenuItem key={minutes} value={minutes}>
+                                {minutes === 0 ? "At air time" : `${minutes} min before`}
+                            </MenuItem>
+                        ))}
+                    </TextField>
+                </Stack>
+
+                {selectedAnime ? (
+                    <Box sx={{ p: 1.25, borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                        <AnimeMediaRow anime={selectedAnime} dense />
+                    </Box>
+                ) : null}
+
+                {localError ? (
+                    <Alert severity="warning" sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50", border: "1px solid rgba(255,200,87,0.30)" }}>
+                        {localError}
+                    </Alert>
+                ) : null}
+
+                <Button
+                    fullWidth
+                    variant="contained"
+                    startIcon={<Add />}
+                    disabled={submitDisabled}
+                    onClick={() => void submit()}
+                    sx={primaryActionButtonSx(dashboardAccents.anime)}
+                >
+                    {saving ? "Saving..." : "Add DM subscription"}
+                </Button>
+            </Stack>
         </Box>
     );
 }

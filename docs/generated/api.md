@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 132
+Operations: 134
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -10,6 +10,7 @@ Operations: 132
 | Anime | POST | `/anime` | Subscribe a guild channel to anime episode notifications | Bearer |
 | Anime | PATCH | `/anime/{id}` | Pause or resume an anime subscription | Bearer |
 | Anime | DELETE | `/anime/{id}` | Delete an anime subscription | Bearer |
+| Anime | POST | `/anime/me` | Subscribe the authenticated user to anime episode DM reminders | Bearer |
 | Anime | GET | `/anime/search` | Search AniList media | Bearer |
 | Anime | GET | `/anime/season` | List AniList titles for a season | Bearer |
 | Audit | GET | `/auditEvents` | List recent admin audit events | Bearer |
@@ -41,6 +42,7 @@ Operations: 132
 | Discord | POST | `/discord/users/resolve` | Resolve minimal user profiles and guild nicknames | Bearer |
 | IntegrationHealth | GET | `/integrationHealth` | List integration health for a guild | Bearer |
 | IntegrationHealth | GET | `/integrationHealth/admin` | List integration health across guilds | Bearer |
+| IntegrationHealth | POST | `/integrationHealth/admin/{provider}/{configId}/resolve` | Mark a stale integration health finding as resolved | Bearer |
 | Jobs | GET | `/jobs` | List allowed jobs and their capabilities | Bearer |
 | Jobs | POST | `/jobs/{name}/run` | Manually trigger a job by name | Bearer |
 | Jobs | GET | `/jobs/{name}/status` | Get recent runs for a job | Bearer |

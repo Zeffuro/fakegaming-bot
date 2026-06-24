@@ -18,7 +18,7 @@ import {
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
-import { animeSubscribeRequestSchema, pausedStateRequestSchema } from '@zeffuro/fakegaming-common/api';
+import { animeSubscribeRequestSchema, pausedStateRequestSchema, userAnimeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -299,6 +299,67 @@ router.get('/season', jwtAuth, validateQuery(seasonQuerySchema), async (req, res
     };
     await defaultCacheManager.set(cacheKey, payload, ANIME_SEASON_CACHE_TTL_MS);
     return res.json(payload);
+});
+
+/**
+ * @openapi
+ * /anime/me:
+ *   post:
+ *     summary: Subscribe the authenticated user to anime episode DM reminders
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserAnimeSubscribeRequest'
+ *     responses:
+ *       200:
+ *         description: Existing personal subscription updated
+ *       201:
+ *         description: Personal subscription created
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.post('/me', jwtAuth, validateBody(userAnimeSubscribeRequestSchema), async (req, res) => {
+    const body = req.body as z.infer<typeof userAnimeSubscribeRequestSchema>;
+    const anime = await resolveAnime(body);
+    if (!anime) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Anime not found' } });
+    }
+    if (!isAniListSubscribable(anime)) {
+        return res.status(400).json({
+            error: {
+                code: 'ANIME_NOT_SUBSCRIBABLE',
+                message: `${anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`} is ${anime.status?.toLowerCase() ?? 'not subscribable'}.`,
+            },
+        });
+    }
+
+    const userId = (req as AuthenticatedRequest).user.discordId;
+    const created = await getConfigManager().animeManager.subscriptions.subscribeUser({
+        anilistId: anime.id,
+        userId,
+        reminderMinutes: body.reminderMinutes ?? 30,
+    });
+    await recordAuditEvent(req, {
+        action: created ? 'animeSubscription.create' : 'animeSubscription.update',
+        targetType: 'animeSubscription',
+        targetId: anime.id,
+        guildId: null,
+        metadata: {
+            anilistId: anime.id,
+            targetType: 'dm',
+            reminderMinutes: body.reminderMinutes ?? 30,
+        },
+    });
+    res.status(created ? 201 : 200).json({ success: true, created, anilistId: anime.id });
 });
 
 /**

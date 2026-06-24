@@ -1707,6 +1707,26 @@
         },
         "additionalProperties": false
       },
+      "UserAnimeSubscribeRequest": {
+        "type": "object",
+        "properties": {
+          "anilistId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reminderMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          }
+        },
+        "additionalProperties": false
+      },
       "UserCreateRequest": {
         "type": "object",
         "properties": {
@@ -5880,6 +5900,33 @@
         }
       }
     },
+    "/integrationHealth/admin/{provider}/{configId}/resolve": {
+      "post": {
+        "summary": "Mark a stale integration health finding as resolved",
+        "tags": [
+          "IntegrationHealth"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integration health record marked resolved"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "description": "Health record not found"
+          }
+        }
+      }
+    },
     "/integrationHealth": {
       "get": {
         "summary": "List integration health for a guild",
@@ -7259,6 +7306,46 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/anime/me": {
+      "post": {
+        "summary": "Subscribe the authenticated user to anime episode DM reminders",
+        "tags": [
+          "Anime"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserAnimeSubscribeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing personal subscription updated"
+          },
+          "201": {
+            "description": "Personal subscription created"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           }
         }
       }

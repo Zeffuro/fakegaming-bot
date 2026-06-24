@@ -3398,6 +3398,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integrationHealth/admin/{provider}/{configId}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a stale integration health finding as resolved */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Integration health record marked resolved */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Health record not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/integrationHealth": {
         parameters: {
             query?: never;
@@ -4570,6 +4613,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anime/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subscribe the authenticated user to anime episode DM reminders */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["UserAnimeSubscribeRequest"];
+                };
+            };
+            responses: {
+                /** @description Existing personal subscription updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Personal subscription created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/anime/{id}": {
         parameters: {
             query?: never;
@@ -5077,6 +5168,11 @@ export interface components {
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
             paused?: boolean;
+        };
+        UserAnimeSubscribeRequest: {
+            anilistId?: number;
+            title?: string;
+            reminderMinutes?: number;
         };
         UserCreateRequest: {
             discordId: string;

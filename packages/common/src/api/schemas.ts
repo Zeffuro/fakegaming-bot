@@ -53,6 +53,15 @@ export const animeSubscribeRequestSchema = z.object({
     path: ['anilistId'],
 });
 
+export const userAnimeSubscribeRequestSchema = z.object({
+    anilistId: z.coerce.number().int().positive().optional(),
+    title: nonEmptyString.optional(),
+    reminderMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+}).strict().refine((value) => value.anilistId || value.title, {
+    message: 'anilistId or title is required',
+    path: ['anilistId'],
+});
+
 export const birthdayCreateRequestSchema = birthdayDateFieldsSchema.extend({
     userId: nonEmptyString,
     guildId: nonEmptyString,
@@ -335,6 +344,7 @@ export const apiRequestSchemas = {
     TikTokUpdateRequest: tiktokUpdateRequestSchema,
     TwitchCreateRequest: twitchCreateRequestSchema,
     TwitchUpdateRequest: twitchUpdateRequestSchema,
+    UserAnimeSubscribeRequest: userAnimeSubscribeRequestSchema,
     UserCreateRequest: userCreateRequestSchema,
     UserDefaultReminderTimeSpanUpdateRequest: userDefaultReminderTimeSpanUpdateRequestSchema,
     UserDigestSubscriptionRequest: userDigestSubscriptionRequestSchema,

@@ -64,6 +64,15 @@ describe('api-client', () => {
         expect(result).toEqual(response);
     });
 
+    it('createMyAnimeSubscription performs POST to the personal anime endpoint', async () => {
+        const payload = { anilistId: 101, reminderMinutes: 15 };
+        const response = { success: true, created: true, anilistId: 101 };
+        mockOkJsonOnce(response);
+        const result = await api.createMyAnimeSubscription(payload);
+        expectFetchCalledWith(`${API_ENDPOINTS.ANIME}/me`, { method: 'POST', body: JSON.stringify(payload) });
+        expect(result).toEqual(response);
+    });
+
     it('update social provider configs performs PUT with body', async () => {
         const payload = { paused: false };
         mockOkJsonOnce({ id: 1, paused: false });
