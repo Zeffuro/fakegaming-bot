@@ -93,5 +93,6 @@ describe('buildAdminOperationsHealth', () => {
             { label: 'Job status unavailable', value: 1, severity: 'critical' },
             { label: 'Stale worker heartbeat', value: 18, severity: 'critical' },
         ]);
+        expect(health.issues.find(issue => issue.label === 'Failed job runs')?.href).toBe('/dashboard/admin/jobs?result=failed');
     });
 });

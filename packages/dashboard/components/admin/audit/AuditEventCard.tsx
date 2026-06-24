@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
+import { ManageSearch } from "@mui/icons-material";
+import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import type { AuditEventEntry, AuditEventSeverity } from "@/lib/api/audit";
 
 function formatDateTime(value: string): string {
@@ -18,17 +20,13 @@ function severityColor(severity: AuditEventSeverity): string {
     return dashboardAccents.settings;
 }
 
-function compactMetadata(metadata: Record<string, unknown> | null): string {
-    if (!metadata || Object.keys(metadata).length === 0) return "No metadata";
-    return JSON.stringify(metadata, null, 2);
-}
-
 function targetLabel(event: AuditEventEntry): string {
     return event.targetId ? `${event.targetType}:${event.targetId}` : event.targetType;
 }
 
-export function AuditEventCard({ event }: { event: AuditEventEntry }) {
+export function AuditEventCard({ event, onInspect }: { event: AuditEventEntry; onInspect: (event: AuditEventEntry) => void }) {
     const color = severityColor(event.severity);
+    const metadata = buildAdminAuditMetadataView(event.metadata);
 
     return (
         <Box sx={{ borderRadius: 3, p: 1.6, bgcolor: "rgba(255,255,255,0.045)", border: `1px solid ${alpha(color, 0.22)}` }}>
@@ -52,24 +50,20 @@ export function AuditEventCard({ event }: { event: AuditEventEntry }) {
                 <AuditDetail label="Request" value={event.requestId ?? "None"} />
             </Box>
 
-            <Box
-                component="pre"
-                sx={{
-                    mt: 1.2,
-                    mb: 0,
-                    p: 1.2,
-                    borderRadius: 2.5,
-                    bgcolor: "rgba(0,0,0,0.22)",
-                    color: "rgba(255,255,255,0.70)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    fontSize: 12,
-                    overflowX: "auto",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                }}
-            >
-                {compactMetadata(event.metadata)}
-            </Box>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mt: 1.25 }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)", overflowWrap: "anywhere" }}>
+                    {metadata.summary}
+                </Typography>
+                <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => onInspect(event)}
+                    startIcon={<ManageSearch />}
+                    sx={ghostActionButtonSx(color)}
+                >
+                    Inspect
+                </Button>
+            </Stack>
         </Box>
     );
 }

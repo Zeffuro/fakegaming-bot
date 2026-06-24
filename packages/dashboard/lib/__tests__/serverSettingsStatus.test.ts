@@ -154,4 +154,86 @@ describe("buildServerSettingsStatus", () => {
         });
         expect(status.summary.notificationFindings).toBe(3);
     });
+
+    it("returns a ready capability checklist when no setup issues are present", () => {
+        const status = buildServerSettingsStatus({
+            tree,
+            guildId: "guild-1",
+        });
+
+        expect(status.capabilityChecklist).toMatchObject({
+            issueCount: 0,
+            statusLabel: "Ready",
+            items: [
+                expect.objectContaining({
+                    id: "ready",
+                    severity: "success",
+                    statusLabel: "Ready",
+                    href: "/dashboard/guild-1",
+                }),
+            ],
+        });
+    });
+
+    it("builds capability checklist warnings for missing channels, health, review, paused routes, and commands", () => {
+        const status = buildServerSettingsStatus({
+            tree,
+            disabledCommands: ["manage-twitch-streams"],
+            providerConfigs: [
+                provider({ configured: 3, paused: 1, missingChannels: 2 }),
+                provider({
+                    providerKey: "steam-news",
+                    providerLabel: "Steam News",
+                    moduleName: "steam",
+                    configured: 1,
+                    href: "/dashboard/steam-news/guild-1",
+                }),
+            ],
+            healthRecords: [
+                health({ provider: "twitch", status: "warning" }),
+                health({ provider: "steamnews", status: "error" }),
+            ],
+            notificationReview: review({
+                busyChannels: [{ channelId: "1", count: 4, providers: ["Twitch"] }],
+            }),
+            guildId: "guild-1",
+        });
+
+        expect(status.providers.find((item) => item.providerKey === "twitch")).toMatchObject({
+            configured: 3,
+            active: 0,
+            paused: 1,
+            missingChannels: 2,
+            state: "critical",
+        });
+        expect(status.modules.find((module) => module.moduleName === "twitch")).toMatchObject({
+            activeIntegrations: 0,
+            missingChannels: 2,
+            state: "partial",
+        });
+        expect(status.summary).toMatchObject({
+            missingChannels: 2,
+            healthIssues: 2,
+            notificationFindings: 1,
+            disabledCommands: 1,
+        });
+        expect(status.capabilityChecklist.issueCount).toBe(5);
+        expect(status.capabilityChecklist.items.map((item) => item.id)).toEqual([
+            "missing-channels",
+            "provider-health",
+            "notification-review",
+            "paused-integrations",
+            "command-access",
+        ]);
+        expect(status.capabilityChecklist.items[0]).toMatchObject({
+            severity: "critical",
+            statusLabel: "2 missing",
+            href: "/dashboard/settings/guild-1/notifications",
+        });
+        expect(status.capabilityChecklist.items[1]).toMatchObject({
+            severity: "critical",
+            statusLabel: "2 issues",
+            href: "/dashboard/analytics/guild-1",
+        });
+    });
 });

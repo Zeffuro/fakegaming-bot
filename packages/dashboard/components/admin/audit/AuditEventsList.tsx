@@ -19,6 +19,7 @@ interface AuditEventsListProps {
     onPrevious: () => void;
     onNext: () => void;
     onExport: () => void;
+    onInspectEvent: (event: AuditEventEntry) => void;
 }
 
 export function AuditEventsList({
@@ -32,6 +33,7 @@ export function AuditEventsList({
     onPrevious,
     onNext,
     onExport,
+    onInspectEvent,
 }: AuditEventsListProps) {
     const accent = dashboardAccents.admin;
 
@@ -84,7 +86,7 @@ export function AuditEventsList({
             ) : (
                 <Stack spacing={1.4} sx={{ position: "relative" }}>
                     {events.map(event => (
-                        <AuditEventCard key={event.id} event={event} />
+                        <AuditEventCard key={event.id} event={event} onInspect={onInspectEvent} />
                     ))}
                 </Stack>
             )}

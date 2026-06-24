@@ -13,6 +13,7 @@ import {
 } from "@/components/dashboard/dashboardTheme";
 import { api, type JobRunEntry } from "@/lib/api-client";
 import { adminJobRunsCsvHeaders, buildAdminJobRunCsvRows } from "@/lib/adminAnalyticsExports";
+import { buildAdminJobRetryPayload, canRetryAdminJobRun } from "@/lib/adminJobRetry";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 import {
     Alert,
@@ -70,6 +71,10 @@ function formatDateTime(value?: string | null): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString();
+}
+
+function getRunKey(run: JobRunEntry, index: number): string {
+    return `${run.startedAt}:${run.finishedAt}:${index}`;
 }
 
 function parseRunFilter(value: string | null): RunFilter {
@@ -133,6 +138,7 @@ function AdminJobsContent() {
     const [date, setDate] = useState<string>("");
     const [force, setForce] = useState<boolean>(false);
     const [submitting, setSubmitting] = useState(false);
+    const [retryingRunKey, setRetryingRunKey] = useState<string | null>(null);
     const [result, setResult] = useState<TriggerResult | null>(null);
 
     const [lastHeartbeat, setLastHeartbeat] = useState<{ startedAt: string; backend: string; receivedAt: string } | null>(null);
@@ -259,11 +265,33 @@ function AdminJobsContent() {
         }
     };
 
+    const handleRetryRun = async (run: JobRunEntry, runKey: string) => {
+        if (!selectedMeta || !canRetryAdminJobRun(run)) return;
+        setRetryingRunKey(runKey);
+        setResult(null);
+        try {
+            const payload = buildAdminJobRetryPayload(selectedMeta, run);
+            const res = await api.triggerJob(selectedJob, payload.date, payload.force);
+            setResult({ ok: true, jobId: res.jobId });
+            setTimeout(() => { void loadStatus(selectedJob); }, 500);
+            if (selectedJob === "heartbeat") {
+                setTimeout(() => { void loadLastHeartbeat(); }, 300);
+            }
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Unknown error";
+            setResult({ ok: false, error: message });
+        } finally {
+            setRetryingRunKey(null);
+        }
+    };
+
     const renderRunSummary = (r: JobRunEntry, idx: number) => {
         const details = getRunDetails(r, selectedJob);
+        const runKey = getRunKey(r, idx);
+        const retrying = retryingRunKey === runKey;
 
         return (
-            <Box key={`${r.finishedAt}-${idx}`} sx={{ position: "relative" }}>
+            <Box key={runKey} sx={{ position: "relative" }}>
                 {idx > 0 && <Divider sx={{ my: 1.2, borderColor: "rgba(255,255,255,0.08)" }} />}
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" } }}>
                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0 }}>
@@ -284,6 +312,18 @@ function AdminJobsContent() {
                             sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.74)", border: "1px solid rgba(255,255,255,0.08)" }}
                         />
                     )}
+                    {selectedMeta && canRetryAdminJobRun(r) ? (
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => void handleRetryRun(r, runKey)}
+                            disabled={submitting || retryingRunKey !== null}
+                            startIcon={<RestartAlt />}
+                            sx={ghostActionButtonSx(dashboardAccents.quotes)}
+                        >
+                            {retrying ? "Retrying..." : "Retry"}
+                        </Button>
+                    ) : null}
                 </Stack>
             </Box>
         );

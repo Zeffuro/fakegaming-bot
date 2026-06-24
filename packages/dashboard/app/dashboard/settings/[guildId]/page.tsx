@@ -42,6 +42,8 @@ import { BOT_TREE } from "@/lib/commands";
 import { buildNotificationSetupReview } from "@/lib/notificationSetupReview";
 import {
     buildServerSettingsStatus,
+    type ServerCapabilityChecklistItem,
+    type ServerCapabilitySeverity,
     type ServerModuleState,
     type ServerModuleStatus,
     type ServerProviderConfigInput,
@@ -276,6 +278,14 @@ export default function GuildSettingsPage() {
                             </SettingsCard>
 
                             <SettingsCard
+                                title="Capability Checklist"
+                                description="Missing destinations, provider health, setup review, paused routes, and command overrides."
+                                accent={serverStatus.capabilityChecklist.issueCount > 0 ? dashboardAccents.patchNotes : dashboardAccents.settings}
+                            >
+                                <CapabilityChecklist status={serverStatus} />
+                            </SettingsCard>
+
+                            <SettingsCard
                                 title="Live Module Status"
                                 description="Effective command availability by module, including disabled modules and per-command overrides."
                                 accent={dashboardAccents.commands}
@@ -330,6 +340,35 @@ export default function GuildSettingsPage() {
                 </FeatureShell>
             )}
         </DashboardLayout>
+    );
+}
+
+function CapabilityChecklist({ status }: { status: ServerSettingsStatus }) {
+    return (
+        <Stack spacing={1.25}>
+            <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
+                <StatusChip label={status.capabilityChecklist.statusLabel} accent={status.capabilityChecklist.issueCount > 0 ? dashboardAccents.patchNotes : dashboardAccents.settings} />
+                <StatusChip label={`${status.summary.missingChannels} missing channels`} accent={status.summary.missingChannels > 0 ? dashboardAccents.quotes : dashboardAccents.neutral} />
+                <StatusChip label={`${status.summary.healthIssues} health`} accent={status.summary.healthIssues > 0 ? dashboardAccents.patchNotes : dashboardAccents.neutral} />
+            </Stack>
+            {status.capabilityChecklist.items.map((item) => (
+                <CapabilityChecklistRow key={item.id} item={item} />
+            ))}
+        </Stack>
+    );
+}
+
+function CapabilityChecklistRow({ item }: { item: ServerCapabilityChecklistItem }) {
+    return (
+        <StatusRow
+            icon={getCapabilitySeverityIcon(item.severity)}
+            accent={getCapabilitySeverityAccent(item.severity)}
+            title={item.title}
+            detail={item.detail}
+            chipLabel={item.statusLabel}
+            href={item.href}
+            ariaLabel={`Open ${item.title}`}
+        />
     );
 }
 
@@ -399,7 +438,7 @@ function ProviderStatusRow({ provider }: { provider: ServerProviderStatus }) {
             icon={getProviderStateIcon(provider.state)}
             accent={accent}
             title={provider.providerLabel}
-            detail={`${provider.active}/${provider.configured} active${provider.paused > 0 ? `, ${provider.paused} paused` : ""}${healthIssues > 0 ? `, ${healthIssues} health ${healthIssues === 1 ? "issue" : "issues"}` : ""}.`}
+            detail={`${provider.active}/${provider.configured} active${provider.paused > 0 ? `, ${provider.paused} paused` : ""}${provider.missingChannels > 0 ? `, ${provider.missingChannels} missing ${provider.missingChannels === 1 ? "channel" : "channels"}` : ""}${healthIssues > 0 ? `, ${healthIssues} health ${healthIssues === 1 ? "issue" : "issues"}` : ""}.`}
             chipLabel={getProviderStateLabel(provider.state)}
             href={provider.href}
             ariaLabel={`Open ${provider.providerLabel} setup`}
@@ -589,6 +628,18 @@ function StatusLoadingBar({ loading }: { loading: boolean }) {
     ) : null;
 }
 
+function getCapabilitySeverityAccent(severity: ServerCapabilitySeverity): string {
+    if (severity === "critical") return dashboardAccents.quotes;
+    if (severity === "warning") return dashboardAccents.patchNotes;
+    return dashboardAccents.settings;
+}
+
+function getCapabilitySeverityIcon(severity: ServerCapabilitySeverity): React.ReactNode {
+    if (severity === "critical") return <ErrorOutlined fontSize="small" />;
+    if (severity === "warning") return <WarningAmber fontSize="small" />;
+    return <CheckCircle fontSize="small" />;
+}
+
 function getModuleStateAccent(state: ServerModuleState): string {
     if (state === "active") return dashboardAccents.settings;
     if (state === "partial") return dashboardAccents.patchNotes;
@@ -640,12 +691,23 @@ function toProviderConfig(
         moduleName,
         configured: configs.length,
         paused: countPaused(configs),
+        missingChannels: countMissingChannels(configs),
         href,
     };
 }
 
 function countPaused(configs: readonly unknown[]): number {
     return configs.filter((config) => Boolean((config as { paused?: unknown }).paused)).length;
+}
+
+function countMissingChannels(configs: readonly unknown[]): number {
+    return configs.filter((config) => {
+        const record = config as { channelId?: unknown; discordChannelId?: unknown; targetType?: unknown };
+        if (record.targetType === "dm") return false;
+        const channelId = record.discordChannelId ?? record.channelId;
+        if (typeof channelId === "string") return channelId.trim().length === 0;
+        return channelId === null || channelId === undefined;
+    }).length;
 }
 
 function asReviewRecords(value: unknown): Array<Record<string, unknown>> {

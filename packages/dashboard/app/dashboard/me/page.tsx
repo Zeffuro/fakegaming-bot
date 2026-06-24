@@ -57,7 +57,13 @@ import { useUserDigestSubscription } from "@/components/hooks/useUserDigestSubsc
 import { useUserNotes } from "@/components/hooks/useUserNotes";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
-import type { AnimeSubscriptionDashboardConfig, RiotLinkEntry, UserDigestCategory, UserDigestFrequency, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import type { AnimeSubscriptionDashboardConfig, UserDigestCategory, UserDigestFrequency, UserNote, UserReminder, UserSettingsUpdateInput } from "@/lib/api-client";
+import { buildPersonalRiotSummary, type PersonalRiotSummary, type PersonalRiotSummaryTone } from "@/lib/personalRiotSummary";
+import {
+    buildPersonalSubscriptionOverview,
+    type PersonalSubscriptionOverview,
+    type PersonalSubscriptionOverviewItem,
+} from "@/lib/personalSubscriptionOverview";
 import { buildUserActivityFeed, type UserActivityFeedItem } from "@/lib/userActivityFeed";
 
 const emptyNoteForm = {
@@ -147,6 +153,7 @@ export default function PersonalDashboardPage() {
         link: riotLink,
         loading: riotLoading,
         error: riotError,
+        refresh: refreshRiotLink,
     } = useMyRiotLink();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [noteForm, setNoteForm] = useState<NoteFormState>(emptyNoteForm);
@@ -195,6 +202,20 @@ export default function PersonalDashboardPage() {
     const pausedReminderCount = reminders.filter(isPausedRecurringReminder).length;
     const activeReminderCount = reminders.length - pausedReminderCount;
     const digestStatus = digestSubscription ? (digestSubscription.paused ? "paused" : "active") : "off";
+    const riotSummary = useMemo(
+        () => buildPersonalRiotSummary(riotLink, formatDate),
+        [riotLink],
+    );
+    const subscriptionOverview = useMemo(
+        () => buildPersonalSubscriptionOverview({
+            reminders,
+            animeSubscriptions,
+            digestSubscription,
+            settings,
+            formatDateTime,
+        }),
+        [animeSubscriptions, digestSubscription, reminders, settings],
+    );
     const activityFeed = useMemo(() => buildUserActivityFeed({
         auditEvents: activity?.auditEvents ?? [],
         deliveries: activity?.deliveries ?? [],
@@ -420,7 +441,7 @@ export default function PersonalDashboardPage() {
                         { label: "reminders", value: activeReminderCount },
                         { label: "anime subs", value: animeSubscriptions.length },
                         { label: "digest", value: digestStatus },
-                        { label: "Riot link", value: riotLink ? "linked" : "none" },
+                        { label: "Riot link", value: riotSummary.linked ? "linked" : "none" },
                     ]}
                     actions={(
                         <Button
@@ -626,6 +647,8 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
+                            <PersonalSubscriptionOverviewPanel overview={subscriptionOverview} />
+
                             <FeaturePanel accent={dashboardAccents.settings}>
                                 <Stack spacing={2.25} sx={{ position: "relative" }}>
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
@@ -793,7 +816,7 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
-                            <RiotLinkPanel link={riotLink} />
+                            <RiotLinkPanel summary={riotSummary} loading={riotLoading} onRefresh={refreshRiotLink} />
 
                             <UserActivityPanel
                                 items={activityFeed}
@@ -866,49 +889,6 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
-                            <FeaturePanel accent={dashboardAccents.settings}>
-                                <Stack spacing={2} sx={{ position: "relative" }}>
-                                    <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                        Personal features
-                                    </Typography>
-                                    <PersonalFeatureRow
-                                        icon={<NoteAlt />}
-                                        title="Notes"
-                                        body={`${notes.length} saved`}
-                                        accent={dashboardAccents.commands}
-                                    />
-                                    <PersonalFeatureRow
-                                        icon={<Schedule />}
-                                        title="Reminders"
-                                        body={pausedReminderCount > 0 ? `${activeReminderCount} active; ${pausedReminderCount} paused` : `${activeReminderCount} active`}
-                                        accent={dashboardAccents.birthdays}
-                                    />
-                                    <PersonalFeatureRow
-                                        icon={<Movie />}
-                                        title="Anime"
-                                        body={`${animeSubscriptions.length} DM subscriptions`}
-                                        accent={dashboardAccents.anime}
-                                    />
-                                    <PersonalFeatureRow
-                                        icon={<NotificationsActive />}
-                                        title="Digest"
-                                        body={digestSubscription ? `${formatDigestStatus(digestStatus)}; next ${formatDateTime(digestSubscription.nextRunAt)}` : "Not configured"}
-                                        accent={dashboardAccents.settings}
-                                    />
-                                    <PersonalFeatureRow
-                                        icon={<SportsEsports />}
-                                        title="Riot link"
-                                        body={riotLink ? displayRiotId(riotLink) : "No linked Riot account"}
-                                        accent={dashboardAccents.patchNotes}
-                                    />
-                                    <PersonalFeatureRow
-                                        icon={<ManageAccounts />}
-                                        title="Settings"
-                                        body={`Timezone ${settings?.timezone ?? "not set"}; reminders ${settings?.defaultReminderTimeSpan ?? "not set"}`}
-                                        accent={dashboardAccents.settings}
-                                    />
-                                </Stack>
-                            </FeaturePanel>
                         </Stack>
                     </Box>
                 </Stack>
@@ -917,7 +897,11 @@ export default function PersonalDashboardPage() {
     );
 }
 
-function RiotLinkPanel({ link }: { link: RiotLinkEntry | null }) {
+function RiotLinkPanel({ summary, loading, onRefresh }: {
+    summary: PersonalRiotSummary;
+    loading: boolean;
+    onRefresh: () => void | Promise<void>;
+}) {
     return (
         <FeaturePanel accent={dashboardAccents.patchNotes}>
             <Stack spacing={2.25} sx={{ position: "relative" }}>
@@ -927,28 +911,121 @@ function RiotLinkPanel({ link }: { link: RiotLinkEntry | null }) {
                             Riot linked account
                         </Typography>
                         <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                            League and TFT identity used by bot commands.
+                            {summary.helperText}
                         </Typography>
                     </Box>
-                    <SportsEsports sx={{ color: alpha(dashboardAccents.patchNotes, 0.86) }} />
+                    <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+                        <Chip
+                            label={summary.badgeLabel}
+                            size="small"
+                            sx={{
+                                bgcolor: alpha(summary.linked ? dashboardAccents.settings : dashboardAccents.neutral, 0.16),
+                                color: "grey.50",
+                            }}
+                        />
+                        <Tooltip title="Refresh Riot link">
+                            <IconButton
+                                aria-label="Refresh Riot linked account"
+                                disabled={loading}
+                                onClick={() => void onRefresh()}
+                                sx={{ color: alpha(dashboardAccents.patchNotes, 0.86) }}
+                            >
+                                <Refresh fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
                 </Stack>
 
-                {link ? (
+                {summary.linked ? (
                     <Stack spacing={1.25}>
-                        <RiotLinkInfoRow label="Riot ID" value={displayRiotId(link)} />
-                        <RiotLinkInfoRow label="Region" value={formatRiotRegion(link.region)} />
-                        <RiotLinkInfoRow label="PUUID" value={shortenPuuid(link.puuid)} />
-                        <RiotLinkInfoRow label="Updated" value={formatDate(link.updatedAt ?? link.createdAt ?? null)} />
-                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
+                        {summary.rows.map((row) => (
+                            <RiotLinkInfoRow key={row.label} label={row.label} value={row.value} tone={row.tone} />
+                        ))}
+                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", overflowWrap: "anywhere" }}>
                             Account changes are handled through the existing Riot link flows.
                         </Typography>
                     </Stack>
                 ) : (
-                    <EmptyPersonalState icon={<SportsEsports />} title="No Riot account linked" accent={dashboardAccents.patchNotes} />
+                    <EmptyPersonalState icon={<SportsEsports />} title={summary.summaryText} accent={dashboardAccents.patchNotes} />
                 )}
             </Stack>
         </FeaturePanel>
     );
+}
+
+function PersonalSubscriptionOverviewPanel({ overview }: { overview: PersonalSubscriptionOverview }) {
+    return (
+        <FeaturePanel accent={dashboardAccents.settings}>
+            <Stack spacing={2.25} sx={{ position: "relative" }}>
+                <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
+                    <Box>
+                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
+                            Subscription overview
+                        </Typography>
+                        <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
+                            {overview.summary}
+                        </Typography>
+                    </Box>
+                    <NotificationsActive sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
+                </Stack>
+
+                <Stack spacing={1.25}>
+                    {overview.items.map((item) => (
+                        <PersonalSubscriptionOverviewCard key={item.id} item={item} />
+                    ))}
+                </Stack>
+            </Stack>
+        </FeaturePanel>
+    );
+}
+
+function PersonalSubscriptionOverviewCard({ item }: { item: PersonalSubscriptionOverviewItem }) {
+    const accent = getSubscriptionOverviewAccent(item);
+
+    return (
+        <Box sx={{ ...dashboardCardSx(accent), height: "auto", p: 1.6 }}>
+            <Stack spacing={1.1} sx={{ position: "relative" }}>
+                <Stack direction="row" spacing={1.25} sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1.5 }}>
+                    <Stack direction="row" spacing={1.2} sx={{ minWidth: 0, alignItems: "flex-start" }}>
+                        <Box sx={{ width: 36, height: 36, borderRadius: 2, display: "grid", placeItems: "center", color: "grey.50", bgcolor: alpha(accent, 0.16), flexShrink: 0 }}>
+                            {getSubscriptionOverviewIcon(item)}
+                        </Box>
+                        <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ color: "grey.50", fontWeight: 850, overflowWrap: "anywhere" }}>
+                                {item.title}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.25, overflowWrap: "anywhere" }}>
+                                {item.detail}
+                            </Typography>
+                        </Box>
+                    </Stack>
+                    <Chip
+                        label={item.statusLabel}
+                        size="small"
+                        sx={{ bgcolor: alpha(accent, 0.16), color: "grey.50", flexShrink: 0 }}
+                    />
+                </Stack>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", overflowWrap: "anywhere" }}>
+                    {item.meta}
+                </Typography>
+            </Stack>
+        </Box>
+    );
+}
+
+function getSubscriptionOverviewIcon(item: PersonalSubscriptionOverviewItem): React.ReactNode {
+    if (item.id === "anime") return <Movie fontSize="small" />;
+    if (item.id === "digest") return <NotificationsActive fontSize="small" />;
+    if (item.id === "preferences") return <ManageAccounts fontSize="small" />;
+    return <Schedule fontSize="small" />;
+}
+
+function getSubscriptionOverviewAccent(item: PersonalSubscriptionOverviewItem): string {
+    if (item.status === "attention") return dashboardAccents.birthdays;
+    if (item.id === "anime") return dashboardAccents.anime;
+    if (item.id === "reminders") return dashboardAccents.birthdays;
+    if (item.id === "digest") return dashboardAccents.settings;
+    return dashboardAccents.commands;
 }
 
 function UserActivityPanel({
@@ -1038,7 +1115,11 @@ function UserActivityCard({ item }: { item: UserActivityFeedItem }) {
     );
 }
 
-function RiotLinkInfoRow({ label, value }: { label: string; value: string }) {
+function RiotLinkInfoRow({ label, value, tone }: { label: string; value: string; tone: PersonalRiotSummaryTone }) {
+    const accent = tone === "success"
+        ? dashboardAccents.settings
+        : tone === "warning" ? dashboardAccents.birthdays : dashboardAccents.patchNotes;
+
     return (
         <Box
             sx={{
@@ -1048,8 +1129,8 @@ function RiotLinkInfoRow({ label, value }: { label: string; value: string }) {
                 px: 1.5,
                 py: 1.2,
                 borderRadius: 2,
-                bgcolor: "rgba(255,255,255,0.045)",
-                border: "1px solid rgba(255,255,255,0.08)",
+                bgcolor: alpha(accent, tone === "default" ? 0.045 : 0.10),
+                border: `1px solid ${alpha(accent, tone === "default" ? 0.14 : 0.28)}`,
             }}
         >
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
@@ -1331,36 +1412,6 @@ function EmptyPersonalState({ icon, title, accent }: { icon: React.ReactNode; ti
             <Typography sx={{ fontWeight: 800 }}>{title}</Typography>
         </Box>
     );
-}
-
-function PersonalFeatureRow({ icon, title, body, accent }: { icon: React.ReactNode; title: string; body: string; accent: string }) {
-    return (
-        <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", p: 1.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <Box sx={{ width: 38, height: 38, borderRadius: 2, display: "grid", placeItems: "center", color: "grey.50", bgcolor: alpha(accent, 0.16) }}>
-                {icon}
-            </Box>
-            <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ color: "grey.50", fontWeight: 850 }}>{title}</Typography>
-                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>{body}</Typography>
-            </Box>
-        </Stack>
-    );
-}
-
-function displayRiotId(link: Pick<RiotLinkEntry, "summonerName" | "riotIdGameName" | "riotIdTagLine">): string {
-    const gameName = link.riotIdGameName?.trim();
-    const tagLine = link.riotIdTagLine?.trim();
-    if (gameName && tagLine) return `${gameName}#${tagLine}`;
-    return link.summonerName;
-}
-
-function formatRiotRegion(region: string): string {
-    return region.trim().toUpperCase() || "Unknown";
-}
-
-function shortenPuuid(puuid: string): string {
-    if (puuid.length <= 16) return puuid;
-    return `${puuid.slice(0, 8)}...${puuid.slice(-6)}`;
 }
 
 function formatDate(value: string | null): string {

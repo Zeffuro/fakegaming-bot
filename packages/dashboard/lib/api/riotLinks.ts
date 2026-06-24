@@ -11,8 +11,8 @@ export interface RiotLinkEntry {
     riotIdTagLine?: string | null;
     region: string;
     puuid: string;
-    createdAt?: string;
-    updatedAt?: string;
+    createdAt?: string | null;
+    updatedAt?: string | null;
 }
 
 export const riotLinksApi = {

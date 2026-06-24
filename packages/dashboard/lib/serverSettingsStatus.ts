@@ -4,6 +4,7 @@ import type { NotificationSetupReview } from "@/lib/notificationSetupReview";
 
 export type ServerModuleState = "active" | "partial" | "disabled" | "quiet";
 export type ServerProviderState = "active" | "warning" | "critical" | "paused" | "unconfigured";
+export type ServerCapabilitySeverity = "success" | "warning" | "critical";
 
 export interface ServerProviderConfigInput {
     providerKey: string;
@@ -11,6 +12,7 @@ export interface ServerProviderConfigInput {
     moduleName: string;
     configured: number;
     paused?: number;
+    missingChannels?: number;
     href: string;
 }
 
@@ -25,6 +27,7 @@ export interface ServerModuleStatus {
     configuredIntegrations: number;
     activeIntegrations: number;
     pausedIntegrations: number;
+    missingChannels: number;
     healthIssues: number;
     state: ServerModuleState;
     statusLabel: string;
@@ -39,6 +42,7 @@ export interface ServerProviderStatus {
     configured: number;
     active: number;
     paused: number;
+    missingChannels: number;
     healthErrors: number;
     healthWarnings: number;
     healthUnknown: number;
@@ -54,6 +58,21 @@ export interface ServerNotificationReviewStatus {
     statusLabel: string;
 }
 
+export interface ServerCapabilityChecklistItem {
+    id: string;
+    title: string;
+    detail: string;
+    severity: ServerCapabilitySeverity;
+    statusLabel: string;
+    href: string;
+}
+
+export interface ServerCapabilityChecklist {
+    items: ServerCapabilityChecklistItem[];
+    issueCount: number;
+    statusLabel: string;
+}
+
 export interface ServerSettingsStatusSummary {
     totalModules: number;
     activeModules: number;
@@ -65,6 +84,7 @@ export interface ServerSettingsStatusSummary {
     configuredIntegrations: number;
     activeIntegrations: number;
     pausedIntegrations: number;
+    missingChannels: number;
     healthIssues: number;
     notificationFindings: number;
 }
@@ -73,6 +93,7 @@ export interface ServerSettingsStatus {
     modules: ServerModuleStatus[];
     providers: ServerProviderStatus[];
     notificationReview: ServerNotificationReviewStatus;
+    capabilityChecklist: ServerCapabilityChecklist;
     summary: ServerSettingsStatusSummary;
 }
 
@@ -100,11 +121,18 @@ export function buildServerSettingsStatus(input: {
             guildId: input.guildId,
         }));
     const notificationReview = buildNotificationReviewStatus(input.notificationReview);
+    const capabilityChecklist = buildCapabilityChecklist({
+        modules,
+        providers,
+        notificationReview,
+        guildId: input.guildId,
+    });
 
     return {
         modules,
         providers,
         notificationReview,
+        capabilityChecklist,
         summary: buildSummary(modules, providers, notificationReview),
     };
 }
@@ -124,6 +152,7 @@ function buildModuleStatus(input: {
     const enabledCommands = disabledByModule ? 0 : Math.max(0, totalCommands - individuallyDisabled);
     const configuredIntegrations = input.providers.reduce((total, provider) => total + provider.configured, 0);
     const pausedIntegrations = input.providers.reduce((total, provider) => total + provider.paused, 0);
+    const missingChannels = input.providers.reduce((total, provider) => total + provider.missingChannels, 0);
     const activeIntegrations = input.providers.reduce((total, provider) => total + provider.active, 0);
     const healthIssues = input.providers.reduce((total, provider) => total + provider.healthErrors + provider.healthWarnings + provider.healthUnknown, 0);
     const state = getModuleState({
@@ -134,6 +163,7 @@ function buildModuleStatus(input: {
         configuredIntegrations,
         activeIntegrations,
         pausedIntegrations,
+        missingChannels,
         healthIssues,
     });
 
@@ -148,6 +178,7 @@ function buildModuleStatus(input: {
         configuredIntegrations,
         activeIntegrations,
         pausedIntegrations,
+        missingChannels,
         healthIssues,
         state,
         statusLabel: getModuleStatusLabel(state),
@@ -158,6 +189,7 @@ function buildModuleStatus(input: {
             configuredIntegrations,
             activeIntegrations,
             pausedIntegrations,
+            missingChannels,
             healthIssues,
         }),
         href: `/dashboard/commands/${encodeURIComponent(input.guildId)}`,
@@ -174,6 +206,7 @@ function buildProviderStatuses(
         const provider = getProviderAccumulator(providers, config.providerKey, config.providerLabel, config.moduleName, config.href);
         provider.configured += Math.max(0, Math.floor(config.configured));
         provider.paused += Math.max(0, Math.floor(config.paused ?? 0));
+        provider.missingChannels += Math.max(0, Math.floor(config.missingChannels ?? 0));
     }
 
     for (const record of healthRecords) {
@@ -190,7 +223,7 @@ function buildProviderStatuses(
 
     return [...providers.values()]
         .map((provider) => {
-            const active = Math.max(0, provider.configured - provider.paused);
+            const active = Math.max(0, provider.configured - provider.paused - provider.missingChannels);
             return {
                 providerKey: provider.providerKey,
                 providerLabel: provider.providerLabel,
@@ -198,6 +231,7 @@ function buildProviderStatuses(
                 configured: provider.configured,
                 active,
                 paused: provider.paused,
+                missingChannels: provider.missingChannels,
                 healthErrors: provider.healthErrors,
                 healthWarnings: provider.healthWarnings,
                 healthUnknown: provider.healthUnknown,
@@ -216,6 +250,7 @@ interface ServerProviderStatusAccumulator {
     href: string;
     configured: number;
     paused: number;
+    missingChannels: number;
     healthErrors: number;
     healthWarnings: number;
     healthUnknown: number;
@@ -228,6 +263,7 @@ function normalizeProviderConfigs(providerConfigs: readonly ServerProviderConfig
         moduleName: config.moduleName.trim() || getDefaultModuleForProvider(config.providerKey),
         configured: Math.max(0, Math.floor(config.configured)),
         paused: Math.max(0, Math.min(Math.floor(config.paused ?? 0), Math.floor(config.configured))),
+        missingChannels: Math.max(0, Math.min(Math.floor(config.missingChannels ?? 0), Math.floor(config.configured))),
     }));
 }
 
@@ -252,6 +288,7 @@ function getProviderAccumulator(
         href,
         configured: 0,
         paused: 0,
+        missingChannels: 0,
         healthErrors: 0,
         healthWarnings: 0,
         healthUnknown: 0,
@@ -292,6 +329,113 @@ function buildNotificationReviewStatus(review?: NotificationSetupReview): Server
     };
 }
 
+function buildCapabilityChecklist(input: {
+    modules: readonly ServerModuleStatus[];
+    providers: readonly ServerProviderStatus[];
+    notificationReview: ServerNotificationReviewStatus;
+    guildId: string;
+}): ServerCapabilityChecklist {
+    const encodedGuildId = encodeURIComponent(input.guildId);
+    const notificationSetupHref = `/dashboard/settings/${encodedGuildId}/notifications`;
+    const analyticsHref = `/dashboard/analytics/${encodedGuildId}`;
+    const commandsHref = `/dashboard/commands/${encodedGuildId}`;
+    const missingChannels = input.providers.reduce((total, provider) => total + provider.missingChannels, 0);
+    const pausedIntegrations = input.providers.reduce((total, provider) => total + provider.paused, 0);
+    const healthErrors = input.providers.reduce((total, provider) => total + provider.healthErrors, 0);
+    const healthWarnings = input.providers.reduce((total, provider) => total + provider.healthWarnings, 0);
+    const healthUnknown = input.providers.reduce((total, provider) => total + provider.healthUnknown, 0);
+    const disabledModules = input.modules.filter((module) => module.disabledByModule).length;
+    const disabledCommands = input.modules.reduce((total, module) => total + module.disabledCommands, 0);
+    const items: ServerCapabilityChecklistItem[] = [];
+
+    if (missingChannels > 0) {
+        items.push({
+            id: "missing-channels",
+            title: "Missing delivery channels",
+            detail: `${formatCount(missingChannels, "route")} cannot deliver until a Discord channel is selected.`,
+            severity: "critical",
+            statusLabel: `${missingChannels} missing`,
+            href: notificationSetupHref,
+        });
+    }
+
+    if (healthErrors > 0 || healthWarnings > 0 || healthUnknown > 0) {
+        const healthIssues = healthErrors + healthWarnings + healthUnknown;
+        items.push({
+            id: "provider-health",
+            title: healthErrors > 0 ? "Provider health failures" : "Provider health warnings",
+            detail: buildProviderHealthDetail({ healthErrors, healthWarnings, healthUnknown }),
+            severity: healthErrors > 0 ? "critical" : "warning",
+            statusLabel: `${healthIssues} ${healthIssues === 1 ? "issue" : "issues"}`,
+            href: analyticsHref,
+        });
+    }
+
+    if (input.notificationReview.totalFindings > 0) {
+        items.push({
+            id: "notification-review",
+            title: "Notification setup review",
+            detail: `${input.notificationReview.statusLabel} found across duplicate routes, overlaps, or crowded channels.`,
+            severity: "warning",
+            statusLabel: input.notificationReview.statusLabel,
+            href: notificationSetupHref,
+        });
+    }
+
+    if (pausedIntegrations > 0) {
+        items.push({
+            id: "paused-integrations",
+            title: "Paused integrations",
+            detail: `${formatCount(pausedIntegrations, "route")} will not send until resumed.`,
+            severity: "warning",
+            statusLabel: `${pausedIntegrations} paused`,
+            href: notificationSetupHref,
+        });
+    }
+
+    if (disabledModules > 0 || disabledCommands > 0) {
+        items.push({
+            id: "command-access",
+            title: "Command access overrides",
+            detail: `${formatCount(disabledCommands, "command")} unavailable${disabledModules > 0 ? ` across ${formatCount(disabledModules, "module")}` : ""}.`,
+            severity: "warning",
+            statusLabel: `${disabledCommands} disabled`,
+            href: commandsHref,
+        });
+    }
+
+    if (items.length === 0) {
+        items.push({
+            id: "ready",
+            title: "Server capabilities look ready",
+            detail: "Commands, configured routes, provider health, and notification routing have no current warnings.",
+            severity: "success",
+            statusLabel: "Ready",
+            href: `/dashboard/${encodedGuildId}`,
+        });
+    }
+
+    const sortedItems = [...items].sort(compareCapabilityItems);
+    const issueCount = sortedItems.filter((item) => item.severity !== "success").length;
+    return {
+        items: sortedItems,
+        issueCount,
+        statusLabel: issueCount === 0 ? "Ready" : `${issueCount} ${issueCount === 1 ? "issue" : "issues"}`,
+    };
+}
+
+function buildProviderHealthDetail(input: {
+    healthErrors: number;
+    healthWarnings: number;
+    healthUnknown: number;
+}): string {
+    const parts: string[] = [];
+    if (input.healthErrors > 0) parts.push(`${formatCount(input.healthErrors, "failure")}`);
+    if (input.healthWarnings > 0) parts.push(`${formatCount(input.healthWarnings, "warning")}`);
+    if (input.healthUnknown > 0) parts.push(`${formatCount(input.healthUnknown, "unknown state")}`);
+    return `${parts.join(", ")} need review in delivery analytics.`;
+}
+
 function buildSummary(
     modules: readonly ServerModuleStatus[],
     providers: readonly ServerProviderStatus[],
@@ -308,6 +452,7 @@ function buildSummary(
         configuredIntegrations: providers.reduce((total, provider) => total + provider.configured, 0),
         activeIntegrations: providers.reduce((total, provider) => total + provider.active, 0),
         pausedIntegrations: providers.reduce((total, provider) => total + provider.paused, 0),
+        missingChannels: providers.reduce((total, provider) => total + provider.missingChannels, 0),
         healthIssues: providers.reduce((total, provider) => total + provider.healthErrors + provider.healthWarnings + provider.healthUnknown, 0),
         notificationFindings: notificationReview.totalFindings,
     };
@@ -321,17 +466,19 @@ function getModuleState(input: {
     configuredIntegrations: number;
     activeIntegrations: number;
     pausedIntegrations: number;
+    missingChannels: number;
     healthIssues: number;
 }): ServerModuleState {
     if (input.disabledByModule || input.enabledCommands === 0) return "disabled";
     if (input.totalCommands === 0) return "quiet";
-    if (input.disabledCommands > 0 || input.healthIssues > 0) return "partial";
+    if (input.disabledCommands > 0 || input.healthIssues > 0 || input.missingChannels > 0) return "partial";
     if (input.configuredIntegrations > 0 && input.activeIntegrations === 0 && input.pausedIntegrations > 0) return "partial";
     return "active";
 }
 
 function getProviderState(provider: ServerProviderStatusAccumulator, active: number): ServerProviderState {
     if (provider.healthErrors > 0) return "critical";
+    if (provider.missingChannels > 0) return "critical";
     if (provider.healthWarnings > 0 || provider.healthUnknown > 0) return "warning";
     if (provider.configured === 0) return "unconfigured";
     if (active === 0 && provider.paused > 0) return "paused";
@@ -352,6 +499,7 @@ function buildModuleDetail(input: {
     configuredIntegrations: number;
     activeIntegrations: number;
     pausedIntegrations: number;
+    missingChannels: number;
     healthIssues: number;
 }): string {
     if (input.disabledByModule) return `Module disabled. 0/${input.totalCommands} commands enabled.`;
@@ -361,6 +509,9 @@ function buildModuleDetail(input: {
     }
     if (input.pausedIntegrations > 0) {
         parts.push(`${input.pausedIntegrations} paused`);
+    }
+    if (input.missingChannels > 0) {
+        parts.push(`${input.missingChannels} missing ${input.missingChannels === 1 ? "channel" : "channels"}`);
     }
     if (input.healthIssues > 0) {
         parts.push(`${input.healthIssues} health ${input.healthIssues === 1 ? "issue" : "issues"}`);
@@ -372,6 +523,31 @@ function compareProviders(left: ServerProviderStatus, right: ServerProviderStatu
     return getProviderRank(right.state) - getProviderRank(left.state)
         || right.configured - left.configured
         || left.providerLabel.localeCompare(right.providerLabel);
+}
+
+function compareCapabilityItems(left: ServerCapabilityChecklistItem, right: ServerCapabilityChecklistItem): number {
+    return getCapabilitySeverityRank(right.severity) - getCapabilitySeverityRank(left.severity)
+        || getCapabilityItemOrder(left.id) - getCapabilityItemOrder(right.id)
+        || left.title.localeCompare(right.title);
+}
+
+function getCapabilitySeverityRank(severity: ServerCapabilitySeverity): number {
+    if (severity === "critical") return 2;
+    if (severity === "warning") return 1;
+    return 0;
+}
+
+function getCapabilityItemOrder(id: string): number {
+    if (id === "missing-channels") return 0;
+    if (id === "provider-health") return 1;
+    if (id === "notification-review") return 2;
+    if (id === "paused-integrations") return 3;
+    if (id === "command-access") return 4;
+    return 5;
+}
+
+function formatCount(count: number, singular: string): string {
+    return `${count} ${count === 1 ? singular : `${singular}s`}`;
 }
 
 function getProviderRank(state: ServerProviderState): number {

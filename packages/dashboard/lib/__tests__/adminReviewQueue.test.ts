@@ -101,6 +101,7 @@ describe('buildAdminReviewQueue', () => {
         });
         expect(queue[1]).toMatchObject({
             id: 'jobs:anime-digest:failed',
+            href: '/dashboard/admin/jobs?job=anime-digest&result=failed',
         });
         expect(queue[0].relatedItems?.[0]).toMatchObject({
             title: 'Patch Notes config patch-1',
@@ -217,9 +218,16 @@ describe('buildAdminReviewQueue', () => {
             'jobs:youtube:failed',
             'jobs:twitch:failed',
         ]);
+        expect(queue[0].relatedItems?.map(item => item.href)).toEqual([
+            '/dashboard/admin/jobs?job=youtube&result=failed',
+            '/dashboard/admin/jobs?job=twitch&result=failed',
+        ]);
         expect(queue[0].detail).toBe('3 recent job runs failed. Includes 2 visible details, plus 1 more summarized by the overview.');
         expect(queue[1].relatedItems?.map(item => item.id)).toEqual([
             'jobs:jobs-api:unavailable',
+        ]);
+        expect(queue[1].relatedItems?.map(item => item.href)).toEqual([
+            '/dashboard/admin/jobs?job=jobs-api',
         ]);
     });
 

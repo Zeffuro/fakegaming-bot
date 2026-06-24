@@ -210,7 +210,7 @@ function buildJobItems(jobs: AdminReviewQueueJob[]): AdminReviewQueueItem[] {
                 detail: job.error,
                 severity: "critical",
                 source: "jobs",
-                href: "/dashboard/admin/jobs",
+                href: buildJobHref(job.name),
             });
             continue;
         }
@@ -225,7 +225,7 @@ function buildJobItems(jobs: AdminReviewQueueJob[]): AdminReviewQueueItem[] {
             detail: `${job.failedRecentRuns}/${job.totalRecentRuns} recent ${pluralize("run", job.totalRecentRuns)} failed${latestError}`,
             severity: "critical",
             source: "jobs",
-            href: "/dashboard/admin/jobs",
+            href: buildJobHref(job.name, "failed"),
             timestamp: job.latestRun?.finishedAt ?? null,
         });
     }
@@ -294,6 +294,15 @@ function buildAuditHref(event: AuditEventEntry): string {
     if (event.guildId) params.set("guildId", event.guildId);
     if (event.severity) params.set("severity", event.severity);
     return `/dashboard/admin/audit?${params.toString()}`;
+}
+
+function buildJobHref(name: string, result?: "failed"): string {
+    const params = new URLSearchParams();
+    const jobName = name.trim();
+    if (jobName) params.set("job", jobName);
+    if (result) params.set("result", result);
+    const query = params.toString();
+    return query ? `/dashboard/admin/jobs?${query}` : "/dashboard/admin/jobs";
 }
 
 function normalizeProviderFilter(value: string): string {

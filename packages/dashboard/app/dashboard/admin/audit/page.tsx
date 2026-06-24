@@ -8,6 +8,7 @@ import { ErrorOutlined } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { AuditEventFilters } from "@/components/admin/audit/AuditEventFilters";
+import { AuditEventDetailDialog } from "@/components/admin/audit/AuditEventDetailDialog";
 import { AuditEventsList } from "@/components/admin/audit/AuditEventsList";
 import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
 import {
@@ -40,6 +41,7 @@ function AdminAuditContent() {
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedEvent, setSelectedEvent] = useState<AuditEventEntry | null>(null);
 
     const offset = filters.offset ?? 0;
     const limit = filters.limit ?? DEFAULT_AUDIT_EVENTS_LIMIT;
@@ -139,6 +141,12 @@ function AdminAuditContent() {
                     onPrevious={() => commitFilters({ ...filters, offset: Math.max(0, offset - limit) })}
                     onNext={() => commitFilters({ ...filters, offset: offset + limit })}
                     onExport={exportEvents}
+                    onInspectEvent={setSelectedEvent}
+                />
+                <AuditEventDetailDialog
+                    event={selectedEvent}
+                    open={selectedEvent !== null}
+                    onClose={() => setSelectedEvent(null)}
                 />
             </Stack>
         </AdminPage>

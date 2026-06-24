@@ -71,7 +71,7 @@ export function buildAdminOperationsHealth(input: {
             label: "Failed job runs",
             value: failedJobRuns,
             severity: "critical",
-            href: "/dashboard/admin/jobs",
+            href: "/dashboard/admin/jobs?result=failed",
         });
     }
     if (unavailableJobStatuses > 0) {

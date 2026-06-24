@@ -75,15 +75,15 @@ describe('external proxy route CSRF', () => {
         expect(body.ok).toBe(true);
     });
 
-    it('forwards service-authenticated dashboard admin assertions', async () => {
+    it('forwards service-authenticated dashboard admin assertions for admin endpoints', async () => {
         const jwt = signTestJwt({ discordId: 'admin-id' }, 'supersecret');
         const res = await GET(
             makeReq({ method: 'GET', jwt, requestId: 'req-admin-1', search: '?guildId=guild-1' }),
-            { params: Promise.resolve({ proxy: ['admin', 'riot-links'] }) } as any
+            { params: Promise.resolve({ proxy: ['jobs'] }) } as any
         );
 
         expectOk(res);
-        expect(fetchMock).toHaveBeenCalledWith('http://api.local/admin/riot-links?guildId=guild-1', expect.any(Object));
+        expect(fetchMock).toHaveBeenCalledWith('http://api.local/jobs?guildId=guild-1', expect.any(Object));
         const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
         const headers = init.headers as Record<string, string>;
         expect(headers.Authorization).toBe(`Bearer ${jwt}`);
@@ -93,5 +93,35 @@ describe('external proxy route CSRF', () => {
         expect(headers['x-dashboard-admin-signature']).toBe(
             createHmac('sha256', 'supersecret').update('admin-id:req-admin-1').digest('hex')
         );
+    });
+
+    it('keeps dashboard admin personal endpoints scoped to the user JWT', async () => {
+        const jwt = signTestJwt({ discordId: 'admin-id' }, 'supersecret');
+        const personalRoutes = [
+            ['userNotes'],
+            ['userReminders'],
+            ['userSettings'],
+            ['userDigestSubscription'],
+            ['userActivity'],
+            ['riotLinks', 'me'],
+        ];
+
+        for (const proxy of personalRoutes) {
+            const res = await GET(
+                makeReq({ method: 'GET', jwt, requestId: `req-${proxy.join('-')}` }),
+                { params: Promise.resolve({ proxy }) } as any
+            );
+            expectOk(res);
+        }
+
+        for (const call of fetchMock.mock.calls) {
+            const init = call[1] as RequestInit;
+            const headers = init.headers as Record<string, string>;
+            expect(headers.Authorization).toBe(`Bearer ${jwt}`);
+            expect(headers['x-service-token']).toBeUndefined();
+            expect(headers['x-dashboard-admin-user']).toBeUndefined();
+            expect(headers['x-dashboard-admin-request']).toBeUndefined();
+            expect(headers['x-dashboard-admin-signature']).toBeUndefined();
+        }
     });
 });

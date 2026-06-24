@@ -30,6 +30,26 @@ function signDashboardAdminAssertion(discordId: string, reqId: string): string {
         .digest('hex');
 }
 
+function shouldForwardDashboardAdminAssertion(apiPath: string): boolean {
+    const normalizedPath = apiPath.replace(/\/+$/, '') || '/';
+
+    return normalizedPath === '/jobs'
+        || normalizedPath.startsWith('/jobs/')
+        || normalizedPath === '/auditEvents'
+        || normalizedPath.startsWith('/auditEvents/')
+        || normalizedPath === '/notifications/admin'
+        || normalizedPath.startsWith('/notifications/admin/')
+        || normalizedPath === '/integrationHealth/admin'
+        || normalizedPath.startsWith('/integrationHealth/admin/')
+        || normalizedPath === '/riotLinks'
+        || (normalizedPath.startsWith('/riotLinks/') && normalizedPath !== '/riotLinks/me')
+        || normalizedPath === '/twitch/verify'
+        || normalizedPath === '/youtube/resolve'
+        || normalizedPath === '/tiktok/live'
+        || normalizedPath === '/admin'
+        || normalizedPath.startsWith('/admin/');
+}
+
 function summarizeApiError(body: unknown): Record<string, unknown> {
     if (typeof body !== 'object' || body === null) {
         return {
@@ -102,11 +122,13 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         ? authResult.user.discordId
         : undefined;
 
-    if (dashboardAdminId && SERVICE_API_TOKEN) {
+    const shouldForwardAdminAssertion = Boolean(dashboardAdminId) && shouldForwardDashboardAdminAssertion(apiPath);
+
+    if (shouldForwardAdminAssertion && SERVICE_API_TOKEN) {
         headers['x-service-token'] = SERVICE_API_TOKEN;
     }
 
-    if (dashboardAdminId) {
+    if (shouldForwardAdminAssertion && dashboardAdminId) {
         headers['x-dashboard-admin-user'] = dashboardAdminId;
         headers['x-dashboard-admin-request'] = reqId;
         headers['x-dashboard-admin-signature'] = signDashboardAdminAssertion(dashboardAdminId, reqId);
