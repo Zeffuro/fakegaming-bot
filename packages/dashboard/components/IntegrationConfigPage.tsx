@@ -58,7 +58,8 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
     showNotificationControls,
     itemNameOptions,
     itemNameSearch,
-    allowEdit
+    allowEdit,
+    extraContent
 }: IntegrationConfigPageProps<T>) {
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const api = configsApi ?? useConfigs(guildId as string);
@@ -109,6 +110,7 @@ export function IntegrationConfigPage<T extends StreamingConfig>({
             itemNameOptions={itemNameOptions}
             itemNameSearch={itemNameSearch}
             allowEdit={allowEdit}
+            extraContent={extraContent}
         />
     );
 }

@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { Alert, Box, Stack } from "@mui/material";
 import { AnimeAiringSchedulePanel } from "@/components/anime/AnimeAiringSchedulePanel";
+import { AnimeCalendarExportPanel } from "@/components/anime/AnimeCalendarExportPanel";
 import DashboardLayout from "@/components/DashboardLayout";
 import { AnimePageHeader } from "@/components/anime/AnimePageHeader";
 import { AnimeSeasonBrowser } from "@/components/anime/AnimeSeasonBrowser";
@@ -118,6 +119,8 @@ export function AnimeDashboard() {
           </Box>
 
           <Stack spacing={3}>
+            <AnimeCalendarExportPanel personalCount={anime.personalSubs.length} />
+
             <AnimeAiringSchedulePanel
               serverSubs={anime.serverSubs}
               personalSubs={anime.personalSubs}

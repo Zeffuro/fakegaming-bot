@@ -86,6 +86,36 @@ router.get('/heartbeat/last', ...requireJobsAdmin, async (_req, res) => {
 
 /**
  * @openapi
+ * /jobs/patchnotes/storage:
+ *   get:
+ *     summary: Get patch-note history storage usage and retention status
+ *     tags: [Jobs]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Patch-note history storage summary
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/patchnotes/storage', ...requireJobsAdmin, async (_req, res) => {
+    const cm = getConfigManager();
+    const summary = await cm.patchNoteHistoryManager.getStorageSummary();
+    const latestScan = await JobRun.findOne({
+        where: { name: 'patchnotes-scan' },
+        order: [['startedAt', 'DESC']],
+    });
+
+    res.json({
+        ...summary,
+        lastScan: latestScan ? serializePatchNotesScanRun(latestScan) : null,
+    });
+});
+
+/**
+ * @openapi
  * /jobs/{name}/status:
  *   get:
  *     summary: Get recent runs for a job
@@ -244,5 +274,28 @@ router.get('/birthdays/today', ...requireJobsAdmin, async (_req, res) => {
     });
     res.json({ processed: count });
 });
+
+function serializePatchNotesScanRun(run: JobRun): {
+    error?: string;
+    finishedAt: string;
+    historyPrunedRows: number;
+    historyTruncated: number;
+    ok: boolean;
+    startedAt: string;
+} {
+    const meta = (run.meta as Record<string, unknown> | null) ?? {};
+    return {
+        error: run.error ?? undefined,
+        finishedAt: run.finishedAt?.toISOString?.() ?? new Date(run.get('finishedAt') as string | number | Date).toISOString(),
+        historyPrunedRows: readNumber(meta.historyPrunedRows),
+        historyTruncated: readNumber(meta.historyTruncated),
+        ok: run.ok,
+        startedAt: run.startedAt?.toISOString?.() ?? new Date(run.get('startedAt') as string | number | Date).toISOString(),
+    };
+}
+
+function readNumber(value: unknown): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
 
 export { router };

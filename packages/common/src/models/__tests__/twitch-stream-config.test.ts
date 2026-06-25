@@ -31,6 +31,21 @@ describe('TwitchStreamConfig Model', () => {
     expect(config.customMessage).toBe('{username} is now live!');
   });
 
+  it('should store VOD follow-up state', async () => {
+    const config = await TwitchStreamConfig.create({
+      twitchUsername: 'streamer-vod',
+      discordChannelId: 'channel-vod',
+      guildId: 'guild-vod',
+      vodFollowupEnabled: true,
+      vodFollowupDelayMinutes: 20,
+      lastVodId: 'vod-1',
+    });
+
+    expect(config.vodFollowupEnabled).toBe(true);
+    expect(config.vodFollowupDelayMinutes).toBe(20);
+    expect(config.lastVodId).toBe('vod-1');
+  });
+
   it('should find configs by guildId', async () => {
     await TwitchStreamConfig.create({
       twitchUsername: 'streamer1',

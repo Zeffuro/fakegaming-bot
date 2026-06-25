@@ -20,6 +20,11 @@ const notificationFields = {
     paused: z.boolean().optional(),
 };
 
+const twitchVodFollowupFields = {
+    vodFollowupEnabled: z.boolean().optional(),
+    vodFollowupDelayMinutes: z.number().int().min(1).max(1440).nullable().optional(),
+};
+
 function hasAtLeastOneField(value: Record<string, unknown>): boolean {
     return Object.keys(value).length > 0;
 }
@@ -221,6 +226,7 @@ export const twitchCreateRequestSchema = z.object({
     discordChannelId: nonEmptyString,
     guildId: nonEmptyString,
     ...notificationFields,
+    ...twitchVodFollowupFields,
 }).strict();
 
 export const twitchUpdateRequestSchema = z.object({
@@ -228,6 +234,7 @@ export const twitchUpdateRequestSchema = z.object({
     discordChannelId: nonEmptyString.optional(),
     guildId: nonEmptyString.optional(),
     ...notificationFields,
+    ...twitchVodFollowupFields,
 }).strict().refine(hasAtLeastOneField, {
     message: 'At least one field must be provided',
 });

@@ -21,6 +21,7 @@ export const API_ENDPOINTS = {
     DASHBOARD: "/api/external/dashboard",
     INTEGRATION_HEALTH: "/api/external/integrationHealth",
     NOTIFICATIONS: "/api/external/notifications",
+    SETUP_TEMPLATES: "/api/external/setupTemplates",
     USER_NOTES: "/api/external/userNotes",
     USER_REMINDERS: "/api/external/userReminders",
     USER_SETTINGS: "/api/external/userSettings",
@@ -106,4 +107,69 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
     }
 
     return await response.json();
+}
+
+export async function apiBinaryRequest(endpoint: string, options: ApiOptions = {}): Promise<Blob> {
+    const {
+        method = "GET",
+        body,
+        headers = {},
+        credentials = "include",
+    } = options;
+
+    const mergedHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...headers,
+    };
+
+    if (isMutating(method) && !(CSRF_HEADER_NAME in mergedHeaders)) {
+        const csrf = getBrowserCookie("csrf");
+        if (csrf) {
+            mergedHeaders[CSRF_HEADER_NAME] = csrf;
+        }
+    }
+
+    const requestOptions: RequestInit = {
+        method,
+        credentials,
+        headers: mergedHeaders,
+    };
+
+    if (body) {
+        requestOptions.body = JSON.stringify(body);
+    }
+
+    let response = await fetch(endpoint, requestOptions);
+
+    if (!response.ok && response.status === 401) {
+        const refreshed = await refreshAuthSession();
+        if (refreshed) {
+            response = await fetch(endpoint, requestOptions);
+        }
+        if (!response.ok) {
+            redirectToLogin();
+        }
+    }
+
+    if (!response.ok) {
+        const errorData: unknown = await response.json().catch(() => null);
+        const apiError = typeof errorData === "object" && errorData !== null && "error" in errorData
+            ? (errorData as { error?: unknown }).error
+            : undefined;
+        const apiErrorMessage = typeof apiError === "object" && apiError !== null && "message" in apiError
+            ? (apiError as { message?: unknown }).message
+            : undefined;
+        const fallbackMessage = typeof errorData === "object" && errorData !== null && "message" in errorData
+            ? (errorData as { message?: unknown }).message
+            : undefined;
+
+        throw new Error(
+            (typeof apiError === "string" ? apiError : undefined)
+            || (typeof apiErrorMessage === "string" ? apiErrorMessage : undefined)
+            || (typeof fallbackMessage === "string" ? fallbackMessage : undefined)
+            || `API request failed with status: ${response.status}`,
+        );
+    }
+
+    return await response.blob();
 }

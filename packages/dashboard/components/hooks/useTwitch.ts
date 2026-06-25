@@ -26,13 +26,12 @@ export function useTwitchConfigs(guildId: string | string[], options: UseTwitchC
       } as unknown as TwitchCreateRequest);
     },
     update: async (config, resolvedGuildId) => {
-      await api.deleteTwitchStream(config.id.toString());
-      await api.createTwitchStream({
+      await api.updateTwitchStream(config.id, {
         twitchUsername: config.twitchUsername,
         discordChannelId: config.discordChannelId,
         guildId: resolvedGuildId,
         ...buildNotificationTimingPayload(config),
-      } as unknown as TwitchCreateRequest);
+      } as unknown as TwitchUpdateRequest);
     },
     setPaused: async (config, paused) => {
       const body = { paused } satisfies TwitchUpdateRequest;

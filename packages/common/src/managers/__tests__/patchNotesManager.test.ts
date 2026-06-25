@@ -87,7 +87,7 @@ describe('PatchNotesManager', () => {
                 url: 'https://example.com/patch-14.3',
                 title: 'Patch 14.3',
                 content: 'Patch notes content',
-                publishedAt: 3000,
+                publishedAt: Date.now(),
             });
 
             const history = await patchNoteHistoryManager.getHistory('league');
@@ -126,26 +126,27 @@ describe('PatchNoteHistoryManager', () => {
     });
 
     it('upserts history records by game and URL and returns newest first', async () => {
+        const baseTime = Date.now();
         await patchNoteHistoryManager.recordPatch({
             game: 'league',
             url: 'https://example.com/older',
             title: 'Older',
             content: 'older',
-            publishedAt: 1000,
+            publishedAt: baseTime,
         });
         await patchNoteHistoryManager.recordPatch({
             game: 'league',
             url: 'https://example.com/newer',
             title: 'Newer',
             content: 'newer',
-            publishedAt: 2000,
+            publishedAt: baseTime + 1000,
         });
         await patchNoteHistoryManager.recordPatch({
             game: 'league',
             url: 'https://example.com/newer',
             title: 'Newer updated',
             content: 'newer updated',
-            publishedAt: 3000,
+            publishedAt: baseTime + 2000,
         });
 
         const history = await patchNoteHistoryManager.getHistory('league', 1);
@@ -153,6 +154,238 @@ describe('PatchNoteHistoryManager', () => {
         expect(history).toHaveLength(1);
         expect(history[0].url).toBe('https://example.com/newer');
         expect(history[0].title).toBe('Newer updated');
+        expect(history[0].contentHash).toMatch(/^[a-f0-9]{64}$/);
+    });
+
+    it('dedupes history records by content hash when URLs change', async () => {
+        const firstResult = await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/patch-v1',
+            title: 'Patch',
+            content: 'same patch body',
+            publishedAt: Date.now(),
+        });
+        const secondResult = await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/patch-v1-canonical',
+            title: 'Patch canonical',
+            content: 'same patch body',
+            publishedAt: Date.now() + 1000,
+        });
+
+        const history = await patchNoteHistoryManager.getHistory('league', 10);
+
+        expect(firstResult.inserted).toBe(true);
+        expect(secondResult.inserted).toBe(false);
+        expect(history).toHaveLength(1);
+        expect(history[0].url).toBe('https://example.com/patch-v1-canonical');
+        expect(history[0].title).toBe('Patch canonical');
+    });
+
+    it('truncates stored patch content to the configured byte limit', async () => {
+        const result = await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/large',
+            title: 'Large',
+            content: 'abcdef',
+            publishedAt: Date.now(),
+        }, { maxContentBytes: 3 });
+
+        const history = await patchNoteHistoryManager.getHistory('league');
+
+        expect(result.contentTruncated).toBe(true);
+        expect(result.contentBytes).toBe(3);
+        expect(history[0].content).toBe('abc');
+    });
+
+    it('prunes patch history beyond the configured per-game row limit', async () => {
+        const baseTime = new Date('2026-06-25T00:00:00.000Z').getTime();
+        for (let index = 1; index <= 4; index += 1) {
+            await patchNoteHistoryManager.recordPatch({
+                game: 'league',
+                url: `https://example.com/${index}`,
+                title: `Patch ${index}`,
+                content: `content ${index}`,
+                publishedAt: baseTime + index,
+            }, { maxRowsPerGame: 2, now: new Date('2026-06-25T00:00:00.000Z'), retentionDays: 3650 });
+        }
+
+        const history = await patchNoteHistoryManager.getHistory('league', 10);
+
+        expect(history.map(item => item.url)).toEqual([
+            'https://example.com/4',
+            'https://example.com/3',
+        ]);
+    });
+
+    it('prunes patch history older than the configured retention window', async () => {
+        const result = await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/old',
+            title: 'Old',
+            content: 'old content',
+            publishedAt: new Date('2026-06-20T00:00:00.000Z').getTime(),
+        }, { now: new Date('2026-06-25T00:00:00.000Z'), retentionDays: 1 });
+
+        const history = await patchNoteHistoryManager.getHistory('league', 10);
+
+        expect(result.prunedRows).toBe(1);
+        expect(history).toHaveLength(0);
+    });
+
+    it('summarizes storage usage and retention warnings by game', async () => {
+        const now = new Date('2026-06-25T00:00:00.000Z');
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/1',
+            title: 'Patch 1',
+            content: 'abcd',
+            publishedAt: new Date('2026-06-24T00:00:00.000Z').getTime(),
+        }, { now, retentionDays: 3650, maxRowsPerGame: 10 });
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/2',
+            title: 'Patch 2',
+            content: 'ef',
+            publishedAt: new Date('2026-06-25T00:00:00.000Z').getTime(),
+        }, { now, retentionDays: 3650, maxRowsPerGame: 10 });
+        await patchNoteHistoryManager.recordPatch({
+            game: 'valorant',
+            url: 'https://example.com/old',
+            title: 'Old',
+            content: 'xyz',
+            publishedAt: new Date('2026-06-01T00:00:00.000Z').getTime(),
+        }, { now, retentionDays: 3650, maxRowsPerGame: 10 });
+
+        const summary = await patchNoteHistoryManager.getStorageSummary({
+            maxRowsPerGame: 1,
+            now,
+            retentionDays: 7,
+        });
+
+        expect(summary.totalRows).toBe(3);
+        expect(summary.totalContentBytes).toBe(9);
+        expect(summary.retention.retentionDays).toBe(7);
+        expect(summary.warnings).toEqual(['records_exceed_retention', 'rows_exceed_max']);
+        expect(summary.games).toEqual([
+            expect.objectContaining({
+                contentBytes: 6,
+                game: 'league',
+                rows: 2,
+                warnings: ['rows_exceed_max'],
+            }),
+            expect.objectContaining({
+                contentBytes: 3,
+                game: 'valorant',
+                rows: 1,
+                warnings: ['records_exceed_retention'],
+            }),
+        ]);
+    });
+
+    it('lists bounded history with filters and pagination', async () => {
+        const now = new Date('2026-06-25T00:00:00.000Z');
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/league-1',
+            title: 'League Balance Patch',
+            content: 'league content',
+            publishedAt: new Date('2026-06-20T00:00:00.000Z').getTime(),
+            version: '14.1',
+        }, { now, retentionDays: 3650 });
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/league-2',
+            title: 'League Champion Patch',
+            content: 'league content two',
+            publishedAt: new Date('2026-06-24T00:00:00.000Z').getTime(),
+            version: '14.2',
+        }, { now, retentionDays: 3650 });
+        await patchNoteHistoryManager.recordPatch({
+            game: 'valorant',
+            url: 'https://example.com/valorant-1',
+            title: 'Valorant Map Patch',
+            content: 'valorant content',
+            publishedAt: new Date('2026-06-23T00:00:00.000Z').getTime(),
+            version: '9.1',
+        }, { now, retentionDays: 3650 });
+
+        const result = await patchNoteHistoryManager.listHistory({
+            fromPublishedAt: new Date('2026-06-21T00:00:00.000Z').getTime(),
+            limit: 1,
+            offset: 0,
+            query: 'Patch',
+        });
+
+        expect(result.total).toBe(2);
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0].url).toBe('https://example.com/league-2');
+
+        const gameResult = await patchNoteHistoryManager.listHistory({ game: 'valorant' });
+
+        expect(gameResult.total).toBe(1);
+        expect(gameResult.items[0].game).toBe('valorant');
+    });
+
+    it('compares two history records with a bounded line diff', async () => {
+        const now = new Date('2026-06-25T00:00:00.000Z');
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/older',
+            title: 'Older',
+            content: [
+                'Shared line',
+                'Removed line',
+                'Still here',
+            ].join('\n'),
+            publishedAt: now.getTime(),
+            version: '14.1',
+        }, { now, retentionDays: 3650 });
+        await patchNoteHistoryManager.recordPatch({
+            game: 'league',
+            url: 'https://example.com/newer',
+            title: 'Newer',
+            content: [
+                'Shared line',
+                'Added line',
+                'Still here',
+            ].join('\n'),
+            publishedAt: now.getTime() + 1000,
+            version: '14.2',
+        }, { now, retentionDays: 3650 });
+
+        const history = await patchNoteHistoryManager.listHistory({ game: 'league', limit: 10 });
+        const older = history.items.find(item => item.title === 'Older');
+        const newer = history.items.find(item => item.title === 'Newer');
+        expect(older).toBeDefined();
+        expect(newer).toBeDefined();
+        if (!older || !newer) throw new Error('Expected both patch history records');
+
+        const result = await patchNoteHistoryManager.compareHistoryRecordIds(
+            older.id,
+            newer.id,
+            { maxDiffLines: 3 }
+        );
+
+        expect(result.left).toEqual(expect.objectContaining({
+            game: 'league',
+            title: 'Older',
+            version: '14.1',
+        }));
+        expect(result.right.title).toBe('Newer');
+        expect(result.summary).toEqual(expect.objectContaining({
+            addedLines: 1,
+            removedLines: 1,
+            totalDiffLines: 4,
+            emittedLines: 3,
+            truncated: true,
+        }));
+        expect(result.diff).toEqual([
+            expect.objectContaining({ kind: 'unchanged', text: 'Shared line' }),
+            expect.objectContaining({ kind: 'removed', text: 'Removed line' }),
+            expect.objectContaining({ kind: 'added', text: 'Added line' }),
+        ]);
+        expect(result.left).not.toHaveProperty('content');
     });
 });
 

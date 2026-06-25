@@ -14,6 +14,7 @@ export * from "./api/jobs";
 export * from "./api/integrationHealth";
 export * from "./api/notifications";
 export * from "./api/patchNotes";
+export * from "./api/setupTemplates";
 export * from "./api/steamNews";
 export * from "./api/quotes";
 export * from "./api/riotLinks";
@@ -36,6 +37,7 @@ import { jobsApi } from "./api/jobs";
 import { integrationHealthApi } from "./api/integrationHealth";
 import { notificationsApi } from "./api/notifications";
 import { patchNotesApi } from "./api/patchNotes";
+import { setupTemplatesApi } from "./api/setupTemplates";
 import { steamNewsApi } from "./api/steamNews";
 import { quotesApi } from "./api/quotes";
 import { riotLinksApi } from "./api/riotLinks";
@@ -55,6 +57,7 @@ export const api = {
     ...blueskyApi,
     ...youtubeApi,
     ...patchNotesApi,
+    ...setupTemplatesApi,
     ...steamNewsApi,
     ...animeApi,
     ...quotesApi,

@@ -24,11 +24,11 @@ export async function registerRecurringPollingJob(options: RecurringPollingJobOp
     options.queue.on(options.jobName, async (job) => {
         const startedAt = new Date().toISOString();
         try {
-            const { processed, errors } = await options.run();
+            const result = await options.run();
             const nextAt = new Date(Date.now() + options.intervalSeconds * 1000);
             const key = `${options.provider}:next:${formatMinuteKey(nextAt)}`;
             await scheduleSingleton(options.queue, options.jobName, {}, options.intervalSeconds, key);
-            recordJobRun(options.provider, { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
+            recordJobRun(options.provider, { startedAt, finishedAt: new Date().toISOString(), ok: result.errors === 0, meta: { ...result } });
         } catch (err) {
             recordJobRun(options.provider, { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
         } finally {

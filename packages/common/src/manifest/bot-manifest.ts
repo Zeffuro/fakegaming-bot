@@ -201,6 +201,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null
     },
     {
+        "name": "profile-card",
+        "description": "Render a Discord profile card",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
         "name": "roll",
         "description": "Roll dice or generate a random number",
         "module": "general",
@@ -253,6 +263,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "league-history",
         "description": "Get recent League of Legends match history by Riot ID or linked user",
+        "module": "league",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "league-form",
+        "description": "Summarize recent League of Legends form by Riot ID or linked user",
         "module": "league",
         "permissions": null,
         "dm_permission": null,
@@ -373,6 +393,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "quote-leaderboard",
         "description": "Show the most quoted users in this server",
+        "module": "quotes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "quote-card",
+        "description": "Render an approved quote as a shareable image",
         "module": "quotes",
         "permissions": null,
         "dm_permission": null,
@@ -553,6 +583,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     {
         "name": "stream-status",
         "description": "Check whether a Twitch channel is live",
+        "module": "twitch",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "twitch-latest-vod",
+        "description": "Show the latest Twitch archive VOD for a channel",
         "module": "twitch",
         "permissions": null,
         "dm_permission": null,
@@ -778,6 +818,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "type": null
             },
             {
+                "name": "profile-card",
+                "description": "Render a Discord profile card",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
                 "name": "roll",
                 "description": "Roll dice or generate a random number",
                 "module": "general",
@@ -839,6 +889,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "league-history",
                 "description": "Get recent League of Legends match history by Riot ID or linked user",
+                "module": "league",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "league-form",
+                "description": "Summarize recent League of Legends form by Riot ID or linked user",
                 "module": "league",
                 "permissions": null,
                 "dm_permission": null,
@@ -977,6 +1037,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "quote-leaderboard",
                 "description": "Show the most quoted users in this server",
+                "module": "quotes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "quote-card",
+                "description": "Render an approved quote as a shareable image",
                 "module": "quotes",
                 "permissions": null,
                 "dm_permission": null,
@@ -1192,6 +1262,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "stream-status",
                 "description": "Check whether a Twitch channel is live",
+                "module": "twitch",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "twitch-latest-vod",
+                "description": "Show the latest Twitch archive VOD for a channel",
                 "module": "twitch",
                 "permissions": null,
                 "dm_permission": null,

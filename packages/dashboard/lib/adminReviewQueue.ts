@@ -1,4 +1,5 @@
 import type { AdminOperationsHealth, AdminOperationsHealthIssue } from "@/lib/adminOperationsHealth";
+import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import { formatAdminProviderCooldownSummary, getAdminProviderCooldownHint } from "@/lib/adminProviderCooldown";
 import { formatAdminProviderPlaybookSummary, getAdminProviderPlaybookHint } from "@/lib/adminProviderPlaybooks";
 import type { AuditEventEntry, IntegrationHealthRecord, IntegrationHealthStatus, JobRunEntry } from "@/lib/api-client";
@@ -238,8 +239,8 @@ function buildAuditItems(events: AuditEventEntry[]): AdminReviewQueueItem[] {
         .filter(event => event.status === "failure")
         .map(event => ({
             id: `audit:${event.id}`,
-            title: `Audit failed: ${event.action}`,
-            detail: `${formatAuditActor(event)} -> ${formatAuditTarget(event)}`,
+            title: formatAuditFailureTitle(event),
+            detail: formatAuditFailureDetail(event),
             severity: event.severity === "error" ? "critical" : "warning",
             source: "audit",
             href: buildAuditHref(event),
@@ -291,6 +292,10 @@ function buildIntegrationHealthHref(record: IntegrationHealthRecord): string {
 function buildAuditHref(event: AuditEventEntry): string {
     const params = new URLSearchParams({ status: "failure" });
     if (event.action.trim()) params.set("action", event.action.trim());
+    if (event.action.startsWith("riot.")) {
+        params.set("scope", "integrations");
+        params.set("provider", "riot");
+    }
     if (event.guildId) params.set("guildId", event.guildId);
     if (event.severity) params.set("severity", event.severity);
     return `/dashboard/admin/audit?${params.toString()}`;
@@ -330,6 +335,19 @@ function formatAuditActor(event: AuditEventEntry): string {
 
 function formatAuditTarget(event: AuditEventEntry): string {
     return event.targetId ? `${event.targetType}:${event.targetId}` : event.targetType;
+}
+
+function formatAuditFailureTitle(event: AuditEventEntry): string {
+    if (event.action === "riot.leagueForm") return "Audit failed: Riot League form";
+    return `Audit failed: ${event.action}`;
+}
+
+function formatAuditFailureDetail(event: AuditEventEntry): string {
+    const baseDetail = `${formatAuditActor(event)} -> ${formatAuditTarget(event)}`;
+    if (event.action !== "riot.leagueForm") return baseDetail;
+
+    const metadata = buildAdminAuditMetadataView(event.metadata);
+    return metadata.hasMetadata ? `${baseDetail} - ${metadata.summary}` : baseDetail;
 }
 
 function normalizeIdPart(value: string): string {

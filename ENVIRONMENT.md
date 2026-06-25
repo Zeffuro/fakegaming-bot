@@ -89,6 +89,8 @@ DATABASE_PROVIDER=sqlite
 DISCORD_BOT_TOKEN=your_dev_bot_token
 CLIENT_ID=your_dev_client_id
 GUILD_ID=your_test_guild_id
+COMMAND_DEPLOY_MODE=always
+COMMAND_DEPLOY_SCOPE=guild
 
 # API connection (to Express API)
 API_URL=http://localhost:3001/api
@@ -97,6 +99,8 @@ SERVICE_API_TOKEN=your_shared_service_token
 
 # API Keys (use test keys for dev)
 RIOT_LEAGUE_API_KEY=your_riot_api_key
+RIOT_RECENT_FORM_MATCH_COUNT=5
+RIOT_RECENT_FORM_TTL_MINUTES=60
 TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_api_key
@@ -111,8 +115,15 @@ TWITCH_TOKEN_ENC_KEY=change_me
 # Optional YouTube enrichment (adds Duration/Views to embeds); disabled by default
 YOUTUBE_ENRICH_EMBEDS=0
 
+# Riot recent form (optional /league-form bounds)
+# RIOT_RECENT_FORM_MATCH_COUNT defaults to 5 and is capped at 10.
+# RIOT_RECENT_FORM_TTL_MINUTES defaults to 60.
+
 # Patch Notes announcements gating (see README)
 BOT_DISABLE_PATCHNOTES_ANNOUNCE=0
+PATCH_NOTE_HISTORY_RETENTION_DAYS=365
+PATCH_NOTE_HISTORY_MAX_PER_GAME=50
+PATCH_NOTE_HISTORY_MAX_BODY_BYTES=120000
 ```
 
 #### Twitch Auth & Token Persistence (Bot)

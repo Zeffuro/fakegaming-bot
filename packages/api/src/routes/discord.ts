@@ -4,6 +4,7 @@ import { jwtAuth } from '../middleware/auth.js';
 import { checkUserGuildAccess } from '../utils/authHelpers.js';
 import * as common from '@zeffuro/fakegaming-common';
 import { discordResolveUsersRequestSchema } from '@zeffuro/fakegaming-common/api';
+import { buildProfileCardFilename, PROFILE_CARD_MIME_TYPE, renderProfileCard } from '@zeffuro/fakegaming-common/profile-card';
 import { memberSearchRateBuckets } from '../utils/memberSearchLimiter.js';
 
 const router = createBaseRouter();
@@ -166,6 +167,10 @@ function allowRequest(bucketKey: string): boolean {
 }
 
 const memberSearchParamsSchema = z.object({ guildId: z.string().min(1) }).strict();
+const profileCardParamsSchema = z.object({
+    guildId: z.string().min(1),
+    userId: z.string().min(1),
+}).strict();
 const memberSearchQuerySchema = z.object({
     query: z.string().min(1),
     limit: z.string().optional()
@@ -336,10 +341,149 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     return res.json(matched);
 });
 
+/**
+ * @openapi
+ * /discord/guilds/{guildId}/users/{userId}/profile-card:
+ *   get:
+ *     summary: Download a Discord user profile card as a PNG
+ *     tags: [Discord]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: guildId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PNG profile card
+ *         content:
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get('/guilds/:guildId/users/:userId/profile-card', jwtAuth, common.validateParams(profileCardParamsSchema), async (req, res) => {
+    const { guildId, userId } = req.params as z.infer<typeof profileCardParamsSchema>;
+
+    const accessResult = await checkUserGuildAccess(req, res, guildId);
+    if (!accessResult.authorized) return;
+
+    const resolved = await resolveProfileCardUser(guildId, userId);
+    const displayName = resolved.nick
+        ?? resolved.profile?.global_name
+        ?? resolved.profile?.username
+        ?? formatFallbackProfileName(userId);
+
+    const buffer = renderProfileCard({
+        userId,
+        displayName,
+        username: resolved.profile?.username ?? null,
+        discriminator: resolved.profile?.discriminator ?? null,
+        globalName: resolved.profile?.global_name ?? null,
+        nickname: resolved.nick,
+    });
+
+    res.status(200)
+        .set({
+            'Cache-Control': 'private, max-age=300',
+            'Content-Disposition': `attachment; filename="${buildProfileCardFilename(userId)}"`,
+            'Content-Type': PROFILE_CARD_MIME_TYPE,
+        })
+        .send(buffer);
+});
+
 function shouldUseDiscordMemberSearch(): boolean {
     const value = process.env.API_DISCORD_MEMBER_SEARCH_ENABLED;
     if (!value) return true;
     return !['0', 'false', 'off', 'no'].includes(value.trim().toLowerCase());
+}
+
+async function resolveProfileCardUser(guildId: string, userId: string): Promise<{ profile: common.DiscordUserProfile | null; nick: string | null }> {
+    const [cachedProfile, cachedNick] = await Promise.all([
+        readCacheValue<common.DiscordUserProfile>(common.CACHE_KEYS.userProfile(userId)),
+        readCacheValue<string | null>(common.CACHE_KEYS.userGuildNick(userId, guildId)),
+    ]);
+    if (cachedProfile) {
+        return { profile: cachedProfile, nick: cachedNick ?? null };
+    }
+
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+    if (!botToken) {
+        return { profile: null, nick: cachedNick ?? null };
+    }
+
+    try {
+        const member = await common.getDiscordGuildMember(guildId, userId, botToken) as {
+            user?: common.DiscordUserProfile;
+            nick?: string | null;
+        };
+        const profile = normalizeDiscordProfile(member.user, userId);
+        if (profile) {
+            await Promise.all([
+                writeCacheValue(common.CACHE_KEYS.userProfile(userId), profile, common.CACHE_TTL.USER_PROFILE),
+                writeCacheValue(common.CACHE_KEYS.userGuildNick(userId, guildId), member.nick ?? null, common.CACHE_TTL.USER_PROFILE),
+            ]);
+            return { profile, nick: member.nick ?? cachedNick ?? null };
+        }
+    } catch {
+        // Fallback to the global user endpoint below.
+    }
+
+    try {
+        const fetched = await common.getDiscordUserById(userId, botToken);
+        const profile = normalizeDiscordProfile(fetched, userId);
+        if (profile) {
+            await writeCacheValue(common.CACHE_KEYS.userProfile(userId), profile, common.CACHE_TTL.USER_PROFILE);
+            return { profile, nick: cachedNick ?? null };
+        }
+    } catch {
+        // Rendering can still proceed with a stable fallback label.
+    }
+
+    return { profile: null, nick: cachedNick ?? null };
+}
+
+function normalizeDiscordProfile(value: common.DiscordUserProfile | undefined, fallbackId: string): common.DiscordUserProfile | null {
+    if (!value) return null;
+    return {
+        id: value.id ?? fallbackId,
+        username: value.username,
+        global_name: value.global_name ?? null,
+        discriminator: value.discriminator ?? null,
+        avatar: value.avatar ?? null,
+    };
+}
+
+async function readCacheValue<T>(key: string): Promise<T | null> {
+    try {
+        return await cache.get<T>(key);
+    } catch {
+        return null;
+    }
+}
+
+async function writeCacheValue<T>(key: string, value: T, ttlMs: number): Promise<void> {
+    try {
+        await cache.set(key, value, ttlMs);
+    } catch {
+        // Profile-card rendering should not fail because the cache is unavailable.
+    }
+}
+
+function formatFallbackProfileName(userId: string): string {
+    const normalized = userId.trim();
+    return normalized ? `Discord user ${normalized.slice(-6)}` : 'Discord user';
 }
 
 export { router };

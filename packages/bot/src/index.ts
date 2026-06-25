@@ -1,5 +1,4 @@
 import './earlyEnv.js';
-import './deploy-commands.js';
 
 import {
     Events, GatewayIntentBits,
@@ -40,12 +39,6 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
         // Start minimal periodic metrics summary logger
         startMetricsSummaryLogger({ service: 'bot', loggerName: 'bot:metrics' });
 
-        deployCommands().then(() => {
-            logger.info("Slash commands deployed.");
-        }).catch(err => {
-            logger.error({ err }, "Failed to deploy slash commands:");
-        });
-
         const healthPortEnv = process.env.BOT_HEALTH_PORT ?? '';
         const parsedPort = Number.parseInt(healthPortEnv, 10);
         const healthPort = Number.isFinite(parsedPort) && parsedPort >= 0 ? parsedPort : 0;
@@ -56,6 +49,21 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
             logger.error('DISCORD_BOT_TOKEN is not set in environment variables.');
             process.exit(1);
         }
+
+        deployCommands().then((result) => {
+            logger.info({
+                mode: result.mode,
+                scope: result.scope,
+                targets: result.targets.map(target => ({
+                    action: target.action,
+                    key: target.key,
+                    target: target.target,
+                })),
+            }, "Slash command deployment check completed.");
+        }).catch(err => {
+            logger.error({ err }, "Failed to deploy slash commands:");
+        });
+
         await getConfigManager().init();
 
         // Load or sync application emojis (bot emoji store) from a hardcoded assets path

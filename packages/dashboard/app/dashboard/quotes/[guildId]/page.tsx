@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Autocomplete, Avatar, Box, Button, Chip, CircularProgress, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from "@mui/material";
-import { Add, Cancel, CheckCircle, Delete, FormatQuote, Groups, History, HourglassEmpty, LocalOffer, PersonSearch, Send, Today } from "@mui/icons-material";
+import { AccountBox, Add, Cancel, CheckCircle, Delete, Download, FormatQuote, Groups, History, HourglassEmpty, LocalOffer, PersonSearch, Send, Today } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "@/components/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -89,6 +89,8 @@ export default function GuildQuotesPage() {
     const [memberInput, setMemberInput] = useState<string>("");
     const [memberOptions, setMemberOptions] = useState<MemberItem[]>([]);
     const [memberLoading, setMemberLoading] = useState<boolean>(false);
+    const [downloadingQuoteId, setDownloadingQuoteId] = useState<string | null>(null);
+    const [downloadingProfileUserId, setDownloadingProfileUserId] = useState<string | null>(null);
     const memberSearchCacheRef = React.useRef<Map<string, { ts: number; items: MemberItem[] }>>(new Map());
     const accent = dashboardAccents.quotes;
     const fieldSx = dashboardFieldSx(accent);
@@ -98,6 +100,33 @@ export default function GuildQuotesPage() {
     const recentQuotes = useMemo(() => getRecentQuotes(allQuotes, 3), [allQuotes]);
     const duplicateGroups = useMemo(() => findDuplicateQuoteGroups(allQuotes, 3), [allQuotes]);
     const visibleQuotes = useMemo(() => filterQuotesByModerationStatus(quotes, moderationFilter), [moderationFilter, quotes]);
+
+    const downloadQuoteCard = async (quote: QuoteCurationQuote): Promise<void> => {
+        try {
+            setDownloadingQuoteId(quote.id);
+            const blob = await api.getQuoteCardImage(quote.id);
+            downloadBlob(blob, buildQuoteCardDownloadFilename(quote.id));
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to download quote card");
+        } finally {
+            setDownloadingQuoteId(null);
+        }
+    };
+
+    const downloadProfileCard = async (userId: string): Promise<void> => {
+        if (!guildId) return;
+        try {
+            setDownloadingProfileUserId(userId);
+            const blob = await api.getProfileCardImage(String(guildId), userId);
+            downloadBlob(blob, buildProfileCardDownloadFilename(userId));
+            setError(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to download profile card");
+        } finally {
+            setDownloadingProfileUserId(null);
+        }
+    };
 
     useEffect(() => {
         if (inputLooksLikeId) {
@@ -397,6 +426,30 @@ export default function GuildQuotesPage() {
                                                             sx={ghostActionButtonSx(dashboardAccents.patchNotes)}
                                                         >
                                                             <Cancel />
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                                <Tooltip title={moderationStatus === "approved" ? "Download quote card" : "Approve quote before card download"}>
+                                                    <span>
+                                                        <IconButton
+                                                            aria-label={`Download quote card ${q.id}`}
+                                                            disabled={saving || downloadingQuoteId === q.id || moderationStatus !== "approved"}
+                                                            onClick={() => void downloadQuoteCard(q)}
+                                                            sx={ghostActionButtonSx(accent)}
+                                                        >
+                                                            {downloadingQuoteId === q.id ? <CircularProgress size={20} /> : <Download />}
+                                                        </IconButton>
+                                                    </span>
+                                                </Tooltip>
+                                                <Tooltip title="Download author profile card">
+                                                    <span>
+                                                        <IconButton
+                                                            aria-label={`Download author profile card ${q.authorId}`}
+                                                            disabled={saving || downloadingProfileUserId === q.authorId}
+                                                            onClick={() => void downloadProfileCard(q.authorId)}
+                                                            sx={ghostActionButtonSx(dashboardAccents.commands)}
+                                                        >
+                                                            {downloadingProfileUserId === q.authorId ? <CircularProgress size={20} /> : <AccountBox />}
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
@@ -931,4 +984,36 @@ function DuplicateQuoteGroup({
 function quotePreview(value: string): string {
     const normalized = value.replace(/\s+/g, " ").trim();
     return normalized.length > 110 ? `${normalized.slice(0, 107)}...` : normalized;
+}
+
+function downloadBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.rel = "noopener";
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+}
+
+function buildQuoteCardDownloadFilename(quoteId: string): string {
+    const safeId = quoteId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80);
+    return `quote-card-${safeId || "quote"}.png`;
+}
+
+function buildProfileCardDownloadFilename(userId: string): string {
+    const safeId = userId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 80);
+    return `profile-card-${safeId || "user"}.png`;
 }

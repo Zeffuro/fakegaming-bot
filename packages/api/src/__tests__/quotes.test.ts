@@ -1,9 +1,10 @@
 import { describe, it, expect, beforeEach, beforeAll } from 'vitest';
 import request from 'supertest';
+import type { IncomingMessage } from 'node:http';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 import { QuoteConfig } from '@zeffuro/fakegaming-common/models';
-import { signTestJwt, expectNotFound, expectUnauthorized, expectCreated, expectBadRequest, expectOk, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectNotFound, expectUnauthorized, expectCreated, expectBadRequest, expectOk, expectInternalServerError, expectConflict } from '@zeffuro/fakegaming-common/testing';
 
 let quoteId: string;
 const testQuote = {
@@ -14,6 +15,19 @@ const testQuote = {
     quote: 'This is a test quote.',
     timestamp: 1700000000000
 };
+
+type BinaryParserCallback = (error: Error | null, body: unknown) => void;
+type SuperTestResponse = import('supertest').Response;
+
+function parseBinaryResponse(res: SuperTestResponse, callback: BinaryParserCallback): void {
+    const stream = res as unknown as IncomingMessage;
+    const chunks: Buffer[] = [];
+    stream.on('data', (chunk: Buffer | string) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    stream.on('end', () => callback(null, Buffer.concat(chunks)));
+    stream.on('error', (error: Error) => callback(error, Buffer.alloc(0)));
+}
 
 beforeEach(async () => {
     // Clean up quotes table before each test
@@ -140,6 +154,31 @@ describe('Quotes API', () => {
 
         const updated = await configManager.quoteManager.getOnePlain({ id: quoteId });
         expect(updated?.moderationStatus).toBe('approved');
+    });
+
+    it('should render an approved quote card as PNG', async () => {
+        await configManager.quoteManager.updateModerationStatus(quoteId, 'approved');
+
+        const res = await request(app)
+            .get(`/api/quotes/${quoteId}/card`)
+            .set('Authorization', `Bearer ${token}`)
+            .buffer(true)
+            .parse(parseBinaryResponse);
+
+        expectOk(res);
+        expect(res.headers['content-type']).toContain('image/png');
+        expect(res.headers['content-disposition']).toContain('quote-card-test-quote-1.png');
+        const body = res.body as Buffer;
+        expect(body.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    });
+
+    it('should reject quote card rendering for unapproved quotes', async () => {
+        const res = await request(app)
+            .get(`/api/quotes/${quoteId}/card`)
+            .set('Authorization', `Bearer ${token}`);
+
+        expectConflict(res);
+        expect(res.body.error.code).toBe('QUOTE_NOT_APPROVED');
     });
 
     it('should reject invalid quote moderation status', async () => {

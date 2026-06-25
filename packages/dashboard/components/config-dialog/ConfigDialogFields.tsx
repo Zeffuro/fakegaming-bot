@@ -118,6 +118,8 @@ export function ConfigDialogFields({
     const selectedChannel = channels.find((channel) => channel.id === selectedChannelId) ?? null;
     const customMessage = getConfigStringValue(value, "customMessage");
     const template = getMessageTemplate(moduleName);
+    const showTwitchVodControls = moduleName === "Twitch";
+    const vodFollowupEnabled = Boolean(value.vodFollowupEnabled);
     const [searchOptions, setSearchOptions] = useState<ConfigDialogItemOption[]>([]);
     const [searchingItems, setSearchingItems] = useState(false);
     const selectedItemOption = useMemo(() => (
@@ -416,6 +418,35 @@ export function ConfigDialogFields({
                             />
                         </Box>
                     </Box>
+                    {showTwitchVodControls && (
+                        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "auto 1fr" }, gap: 2, mt: 2, alignItems: "center" }}>
+                            <FormControlLabel
+                                sx={{ color: "grey.200", m: 0 }}
+                                control={(
+                                    <Switch
+                                        checked={vodFollowupEnabled}
+                                        onChange={(event) => {
+                                            onFieldChange("vodFollowupEnabled", event.target.checked);
+                                            if (event.target.checked && typeof value.vodFollowupDelayMinutes !== "number") {
+                                                onFieldChange("vodFollowupDelayMinutes", 15);
+                                            }
+                                        }}
+                                    />
+                                )}
+                                label="VOD follow-up"
+                            />
+                            <TextField
+                                label="VOD delay (minutes)"
+                                type="number"
+                                disabled={!vodFollowupEnabled}
+                                value={value.vodFollowupDelayMinutes ?? ""}
+                                onChange={(event) => onFieldChange("vodFollowupDelayMinutes", parseOptionalMinutes(event.target.value))}
+                                slotProps={{ htmlInput: { min: 1, max: 1440 } }}
+                                sx={fieldSx}
+                                helperText="Wait after offline before checking the latest archive"
+                            />
+                        </Box>
+                    )}
                     <FormControlLabel
                         sx={{ mt: 2, color: "grey.200" }}
                         control={(

@@ -6,6 +6,7 @@ import { enforceCsrf } from "@/lib/security/csrf";
 import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/security";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
 import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
+import { ACCESS_TOKEN_COOKIE_NAME } from "@/lib/auth/sessionConstants";
 
 const log = createSimpleLogger('dashboard:proxy');
 
@@ -15,11 +16,8 @@ type RouteContext = {
     }>;
 };
 
-const getJwt = (req: NextRequest): string | undefined => {
-    const auth = req.headers.get('authorization');
-    if (auth && auth.startsWith('Bearer ')) return auth;
-
-    const jwt = req.cookies.get('jwt')?.value;
+const getSessionAuthHeader = (req: NextRequest): string | undefined => {
+    const jwt = req.cookies.get(ACCESS_TOKEN_COOKIE_NAME)?.value;
     return jwt ? `Bearer ${jwt}` : undefined;
 };
 
@@ -90,12 +88,22 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         if (csrfFailure) return csrfFailure;
     }
 
-    const jwt = getJwt(req);
+    const jwt = getSessionAuthHeader(req);
 
     if (!jwt) {
         log.warn({ apiPath, reqId }, 'Request is unauthenticated (no JWT)');
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     } else {
         log.debug({ apiPath, reqId, hasJwt: true }, 'Extracted JWT');
+    }
+
+    const authResult = await authenticateUser(req);
+    if (!authResult.success) {
+        log.warn({ apiPath, reqId, status: authResult.statusCode ?? 401 }, 'Request has invalid dashboard session');
+        return NextResponse.json(
+            { error: authResult.error ?? 'Not authenticated' },
+            { status: authResult.statusCode ?? 401 }
+        );
     }
 
     if (!API_URL) {
@@ -117,8 +125,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         headers['Authorization'] = jwt;
     }
 
-    const authResult = jwt ? await authenticateUser(req) : { success: false as const };
-    const dashboardAdminId = authResult.success && authResult.user && isDashboardAdmin(authResult.user.discordId)
+    const dashboardAdminId = authResult.user && isDashboardAdmin(authResult.user.discordId)
         ? authResult.user.discordId
         : undefined;
 
@@ -183,15 +190,25 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
         log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');
 
-        const responseText = await response.text();
-        log.trace({ apiPath, responseBytes: responseText.length, reqId }, 'Proxy response body');
+        const responseBody = await response.arrayBuffer();
+        log.trace({ apiPath, responseBytes: responseBody.byteLength, reqId }, 'Proxy response body');
 
         const contentType = response.headers.get('Content-Type') || 'application/json';
-        return new NextResponse(responseText, {
+        const responseHeaders: Record<string, string> = {
+            'Content-Type': contentType,
+        };
+        const contentDisposition = response.headers.get('Content-Disposition');
+        if (contentDisposition) {
+            responseHeaders['Content-Disposition'] = contentDisposition;
+        }
+        const cacheControl = response.headers.get('Cache-Control');
+        if (cacheControl) {
+            responseHeaders['Cache-Control'] = cacheControl;
+        }
+
+        return new NextResponse(responseBody, {
             status: response.status,
-            headers: {
-                'Content-Type': contentType,
-            },
+            headers: responseHeaders,
         });
     } catch (error) {
         const ms = Date.now() - started;

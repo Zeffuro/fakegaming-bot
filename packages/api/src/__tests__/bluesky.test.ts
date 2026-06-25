@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectBadRequest, expectCreated, expectForbidden, expectNotFound, expectOk, expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
+import { expectBadRequest, expectCreated, expectForbidden, expectNotFound, expectOk, expectUnauthorized, seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testBluesky = {
@@ -12,6 +12,7 @@ const testBluesky = {
 
 beforeEach(async () => {
     await configManager.blueskyManager.removeAll();
+    await seedUserGuilds('nonadminuser', [{ id: 'testguild2', permissions: '0' }]);
     await configManager.blueskyManager.add(testBluesky as never);
 });
 

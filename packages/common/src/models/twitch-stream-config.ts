@@ -42,4 +42,14 @@ export class TwitchStreamConfig extends Model {
     @Default(false)
     @Column(DataType.BOOLEAN)
     declare isLive: boolean;
+
+    @Default(false)
+    @Column(DataType.BOOLEAN)
+    declare vodFollowupEnabled: boolean;
+
+    @Column(DataType.INTEGER)
+    declare vodFollowupDelayMinutes?: number | null;
+
+    @Column(DataType.STRING)
+    declare lastVodId?: string | null;
 }

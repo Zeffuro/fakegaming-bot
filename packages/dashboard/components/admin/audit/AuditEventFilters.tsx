@@ -9,7 +9,7 @@ import type { AuditEventsQuery, AuditEventScope, AuditEventSeverity, AuditEventS
 
 export type AuditFilterUpdater = <K extends keyof AuditEventsQuery>(key: K, value: AuditEventsQuery[K] | undefined) => void;
 
-const AUDIT_PROVIDER_OPTIONS: AuditIntegrationProvider[] = ["twitch", "youtube", "tiktok", "bluesky", "anime", "patchnotes"];
+const AUDIT_PROVIDER_OPTIONS: AuditIntegrationProvider[] = ["twitch", "youtube", "tiktok", "riot", "bluesky", "anime", "patchnotes"];
 
 interface AuditEventFiltersProps {
     filters: AuditEventsQuery;

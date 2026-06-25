@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound, expectInternalServerError } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound, expectInternalServerError, seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testYoutube = {
@@ -12,6 +12,10 @@ const testYoutube = {
 
 beforeEach(async () => {
     await configManager.youtubeManager.removeAll();
+    await seedUserGuilds('nonadminuser', [
+        { id: 'testguild1', permissions: '0' },
+        { id: 'testguild3', permissions: '0' },
+    ]);
     await configManager.youtubeManager.add(testYoutube);
 });
 

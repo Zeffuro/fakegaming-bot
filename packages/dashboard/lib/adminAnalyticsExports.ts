@@ -1,3 +1,4 @@
+import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import type { AuditEventEntry } from "@/lib/api/audit";
 import type { IntegrationHealthRecord, JobRunEntry } from "@/lib/api-client";
 import type { CsvRow } from "@/lib/csvExport";
@@ -14,6 +15,7 @@ export const adminAuditCsvHeaders = [
     "severity",
     "status",
     "requestId",
+    "metadataSummary",
     "metadata",
 ] as const;
 
@@ -43,20 +45,25 @@ export const adminJobRunsCsvHeaders = [
 ] as const;
 
 export function buildAdminAuditCsvRows(events: readonly AuditEventEntry[]): CsvRow[] {
-    return events.map((event) => [
-        event.id,
-        event.timestamp,
-        event.actorType,
-        event.actorId,
-        event.action,
-        event.targetType,
-        event.targetId,
-        event.guildId,
-        event.severity,
-        event.status,
-        event.requestId,
-        stringifyCsvObject(event.metadata),
-    ]);
+    return events.map((event) => {
+        const metadataView = buildAdminAuditMetadataView(event.metadata);
+
+        return [
+            event.id,
+            event.timestamp,
+            event.actorType,
+            event.actorId,
+            event.action,
+            event.targetType,
+            event.targetId,
+            event.guildId,
+            event.severity,
+            event.status,
+            event.requestId,
+            metadataView.hasMetadata ? metadataView.summary : "",
+            stringifyCsvObject(event.metadata),
+        ];
+    });
 }
 
 export function buildAdminIntegrationHealthCsvRows(records: readonly IntegrationHealthRecord[]): CsvRow[] {

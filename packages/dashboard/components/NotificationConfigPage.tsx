@@ -54,6 +54,7 @@ interface NotificationConfigPageProps<T extends StreamingConfig> {
     itemNameOptions?: string[];
     itemNameSearch?: (query: string) => Promise<ConfigDialogItemOption[]>;
     allowEdit?: boolean;
+    extraContent?: React.ReactNode;
 }
 
 export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
@@ -74,6 +75,7 @@ export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
     | "itemNameOptions"
     | "itemNameSearch"
     | "allowEdit"
+    | "extraContent"
 >;
 
 function moduleDescription(moduleName: string, plural: string): string {
@@ -140,6 +142,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
     itemNameOptions,
     itemNameSearch,
     allowEdit = true,
+    extraContent,
 }: NotificationConfigPageProps<T>) {
     const { channels, loading: loadingChannels, getChannelName, refetch: refetchChannels } = useGuildChannels(guildId, { enabled: Boolean(guild) });
     const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
@@ -428,6 +431,8 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             emptyDescription={filtersActive ? "Adjust the search or status filter to show more configurations." : undefined}
                         />
                     </FeaturePanel>
+
+                    {extraContent}
 
                     <AddConfigDialog
                         open={addDialogOpen}

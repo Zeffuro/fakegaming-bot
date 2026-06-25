@@ -180,8 +180,8 @@ export async function getPUUIDByRiotId(
         const {response} = await riotApi.Account.getByRiotId(gameName, tagLine, region);
         puuidCache.set(cacheKey, response.puuid);
         return response.puuid;
-    } catch {
-        throw new Error('Failed to fetch PUUID by Riot ID');
+    } catch (error: unknown) {
+        throw new Error(`Failed to fetch PUUID by Riot ID: ${normalizeRiotError(error)}`);
     }
 }
 

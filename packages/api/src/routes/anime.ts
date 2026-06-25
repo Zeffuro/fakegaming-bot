@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { Request } from 'express';
 import {
     getAniListAnimeById,
     getAniListSeasonAnimePage,
@@ -21,10 +22,16 @@ import { defaultCacheManager, validateBody, validateParams, validateQuery } from
 import { animeSubscribeRequestSchema, pausedStateRequestSchema, userAnimeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtAuth, getJwtSecret } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess } from '../utils/authHelpers.js';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import {
+    buildAnimeCalendarFeed,
+    buildAnimeCalendarLink,
+    signAnimeCalendarToken,
+    verifyAnimeCalendarToken,
+} from '../utils/animeCalendar.js';
 
 const router = createBaseRouter();
 const ANIME_SEASON_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -55,6 +62,9 @@ const seasonQuerySchema = z.object({
 const listQuerySchema = z.object({
     guildId: z.string().min(1).optional(),
 });
+const calendarTokenQuerySchema = z.object({
+    token: z.string().min(1),
+}).strict();
 
 function resolveSeason(value: z.infer<typeof seasonQuerySchema>): { season: AniListSeason; year: number } {
     if (value.season === 'current') return getCurrentAniListSeason();
@@ -147,6 +157,38 @@ async function ensureAnimeSubscriptionAccess(
     return true;
 }
 
+function getPublicApiBaseUrl(req: Request): string {
+    const configured = process.env.PUBLIC_URL?.trim();
+    if (configured) return configured.replace(/\/$/, '');
+
+    const forwardedHost = req.header('x-forwarded-host');
+    const host = forwardedHost ?? req.header('host') ?? 'localhost:3001';
+    const forwardedProto = req.header('x-forwarded-proto');
+    const proto = forwardedProto ?? (host.startsWith('localhost') ? 'http' : 'https');
+    return `${proto}://${host}`;
+}
+
+async function buildCalendarFeedForUser(userId: string): Promise<string> {
+    const manager = getConfigManager().animeManager;
+    const subscriptions = await manager.subscriptions.getUserSubscriptions(userId);
+    const anilistIds = [...new Set(subscriptions.map(subscription => subscription.anilistId))];
+    const titlePairs = await Promise.all(anilistIds.map(async anilistId => ({
+        anilistId,
+        title: await manager.titles.getOnePlain({ anilistId }),
+    })));
+    const episodePairs = await Promise.all(anilistIds.map(async anilistId => ({
+        anilistId,
+        episodes: await manager.episodes.getManyPlain({ anilistId }),
+    })));
+
+    return buildAnimeCalendarFeed({
+        episodesByAnilistId: new Map(episodePairs.map(pair => [pair.anilistId, pair.episodes])),
+        subscriptions,
+        titlesByAnilistId: new Map(titlePairs.flatMap(pair => pair.title ? [[pair.anilistId, pair.title] as const] : [])),
+        userId,
+    });
+}
+
 /**
  * @openapi
  * /anime:
@@ -166,6 +208,57 @@ router.get('/', jwtAuth, validateQuery(listQuerySchema), async (req, res) => {
         if (!access.authorized) return;
     }
     res.json(await Promise.all(subscriptions.map(serializeSubscription)));
+});
+
+/**
+ * @openapi
+ * /anime/calendar:
+ *   get:
+ *     summary: Get a tokenized personal anime calendar export URL
+ *     tags: [Anime]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/calendar', jwtAuth, async (req, res) => {
+    const userId = (req as AuthenticatedRequest).user.discordId;
+    const token = signAnimeCalendarToken(userId, getJwtSecret());
+    const link = buildAnimeCalendarLink({
+        publicBaseUrl: getPublicApiBaseUrl(req),
+        token,
+    });
+
+    res.json(link);
+});
+
+/**
+ * @openapi
+ * /anime/calendar.ics:
+ *   get:
+ *     summary: Read-only personal anime subscription calendar feed
+ *     tags: [Anime]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ */
+router.get('/calendar.ics', validateQuery(calendarTokenQuerySchema), async (req, res) => {
+    const query = req.query as unknown as z.infer<typeof calendarTokenQuerySchema>;
+    const payload = verifyAnimeCalendarToken(query.token, getJwtSecret());
+    if (!payload) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Calendar not found' } });
+    }
+
+    const feed = await buildCalendarFeedForUser(payload.u);
+    res
+        .status(200)
+        .set({
+            'Cache-Control': 'private, max-age=300',
+            'Content-Disposition': 'inline; filename="fakegaming-anime.ics"',
+            'Content-Type': 'text/calendar; charset=utf-8',
+        })
+        .send(feed);
 });
 
 /**

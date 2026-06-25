@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound, expectInternalServerError, expectBadRequest } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectNotFound, expectInternalServerError, expectBadRequest, seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testBirthday = {
@@ -19,6 +19,7 @@ const parseDate = (dateStr: string) => {
 beforeEach(async () => {
     // Clean up birthdays table before each test
     await configManager.birthdayManager.removeAll();
+    await seedUserGuilds('nonadminuser', [{ id: 'birthdayguild1', permissions: '0' }]);
     // Add test birthday using addPlain instead of set
     await configManager.birthdayManager.addPlain({
         userId: testBirthday.userId,

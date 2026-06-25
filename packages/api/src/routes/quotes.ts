@@ -2,8 +2,9 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager, type QuoteOfDayConfigRecord } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { checkUserGuildAccess } from '../utils/authHelpers.js';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { CACHE_KEYS, CACHE_TTL, defaultCacheManager, getDiscordUserById, validateBody, validateParams, validateQuery, type CacheManager, type DiscordUserProfile } from '@zeffuro/fakegaming-common';
 import { quoteCreateRequestSchema, quoteModerationUpdateRequestSchema, quoteOfDaySettingsRequestSchema } from '@zeffuro/fakegaming-common/api';
+import { buildQuoteCardFilename, QUOTE_CARD_MIME_TYPE, renderQuoteCard } from '@zeffuro/fakegaming-common/quote-card';
 import { formatQuoteOfDayDateKey, parseStoredQuoteTags, selectQuoteOfDay, serializeQuoteTags, type QuoteOfDayCandidate } from '@zeffuro/fakegaming-common/utils';
 import type { QuoteConfig, QuoteModerationStatus } from '@zeffuro/fakegaming-common/models';
 import { z } from 'zod';
@@ -47,6 +48,7 @@ const quoteOfDayQuerySchema = z.object({
 
 // Router
 const router = createBaseRouter();
+const quoteCardCache = ((globalThis as unknown as { __testCacheManager?: CacheManager }).__testCacheManager ?? defaultCacheManager) as CacheManager;
 
 /**
  * @openapi
@@ -262,6 +264,86 @@ router.get('/guild/:guildId/quote-of-day', jwtAuth, validateParams(guildIdParamS
         eligibleCount: selection.eligibleCount,
         settings: serializeQuoteOfDaySettings(settings),
     });
+});
+
+/**
+ * @openapi
+ * /quotes/{id}/card:
+ *   get:
+ *     summary: Download an approved quote as a PNG card
+ *     tags: [Quotes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: PNG quote card
+ *         content:
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
+ */
+router.get('/:id/card', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+    const id = String(req.params.id);
+    const manager = getConfigManager().quoteManager;
+    const quote = await manager.findByPkPlain(id);
+    if (!quote) {
+        sendNotFound(res, 'Quote not found');
+        return;
+    }
+
+    const hasAccess = await canReadGuildScopedRecord(req, res, quote);
+    if (!hasAccess) return;
+
+    const record = toQuoteRecord(quote);
+    const moderationStatus = normalizeQuoteModerationStatus(record.moderationStatus);
+    if (moderationStatus !== 'approved') {
+        res.status(409).json({
+            error: {
+                code: 'QUOTE_NOT_APPROVED',
+                message: 'Only approved quotes can be rendered as cards',
+            },
+        });
+        return;
+    }
+
+    const [authorName, submitterName] = await Promise.all([
+        resolveQuoteCardUserLabel(record.guildId, record.authorId),
+        resolveQuoteCardUserLabel(record.guildId, record.submitterId),
+    ]);
+
+    const buffer = renderQuoteCard({
+        quote: record.quote,
+        authorName,
+        authorId: record.authorId,
+        submitterName,
+        timestamp: record.timestamp,
+        tags: parseStoredQuoteTags(record.tags),
+        source: normalizeOptionalQuoteText(record.source),
+        context: normalizeOptionalQuoteText(record.context),
+    });
+
+    res.status(200)
+        .set({
+            'Cache-Control': 'private, max-age=300',
+            'Content-Disposition': `attachment; filename="${buildQuoteCardFilename(id)}"`,
+            'Content-Type': QUOTE_CARD_MIME_TYPE,
+        })
+        .send(buffer);
 });
 
 /**
@@ -560,4 +642,47 @@ function parseQuoteOfDayDate(value: string | undefined): Date {
 function normalizeRunHour(value: number | undefined): number {
     if (value === undefined || !Number.isFinite(value)) return 9;
     return Math.max(0, Math.min(23, Math.floor(value)));
+}
+
+async function resolveQuoteCardUserLabel(guildId: string, userId: string): Promise<string> {
+    const nick = await safeCacheGet<string | null>(CACHE_KEYS.userGuildNick(userId, guildId));
+    if (nick?.trim()) return nick.trim();
+
+    let profile = await safeCacheGet<DiscordUserProfile>(CACHE_KEYS.userProfile(userId));
+    const botToken = process.env.DISCORD_BOT_TOKEN;
+    if (!profile && botToken) {
+        try {
+            const fetched = await getDiscordUserById(userId, botToken);
+            profile = {
+                id: fetched.id,
+                username: fetched.username,
+                global_name: fetched.global_name ?? null,
+                discriminator: fetched.discriminator ?? null,
+                avatar: fetched.avatar ?? null,
+            };
+            await safeCacheSet(CACHE_KEYS.userProfile(userId), profile, CACHE_TTL.USER_PROFILE);
+        } catch {
+            profile = null;
+        }
+    }
+
+    return profile?.global_name?.trim()
+        || profile?.username?.trim()
+        || `Discord user ${userId.slice(-6)}`;
+}
+
+async function safeCacheGet<T>(key: string): Promise<T | null> {
+    try {
+        return await quoteCardCache.get<T>(key);
+    } catch {
+        return null;
+    }
+}
+
+async function safeCacheSet<T>(key: string, value: T, ttlMs: number): Promise<void> {
+    try {
+        await quoteCardCache.set(key, value, ttlMs);
+    } catch {
+        // Rendering a quote card should not fail because the profile cache is unavailable.
+    }
 }

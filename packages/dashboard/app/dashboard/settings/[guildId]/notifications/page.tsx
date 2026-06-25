@@ -19,6 +19,7 @@ import { useTikTokConfigs } from "@/components/hooks/useTikTok";
 import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
+import { SetupTemplatesPanel } from "@/components/notifications/SetupTemplatesPanel";
 import { buildNotificationSetupReview, type NotificationSetupReview, type NotificationReviewGroup, type NotificationChannelLoad } from "@/lib/notificationSetupReview";
 import { buildNotificationSetupExport, buildNotificationSetupExportFilename } from "@/lib/notificationSetupExport";
 import { buildNotificationChannelLinks, buildNotificationReviewGroupLink, type NotificationSetupLink } from "@/lib/notificationSetupLinks";
@@ -134,6 +135,19 @@ export default function GuildNotificationsHubPage() {
         } finally {
             setImporting(false);
         }
+    };
+
+    const refreshNotificationConfigLists = async () => {
+        await Promise.all([
+            twitchApi.refreshConfigs(),
+            youtubeApi.refreshConfigs(),
+            steamNewsApi.refreshConfigs(),
+            patchApi.refreshConfigs(),
+            tiktokApi.refreshConfigs(),
+            blueskyApi.refreshConfigs(),
+            animeApi.refreshConfigs(),
+            birthdayApi.refresh(),
+        ]);
     };
 
     if (!guild && !guildsLoading) {
@@ -275,6 +289,11 @@ export default function GuildNotificationsHubPage() {
                             ))}
                         </Box>
                     </FeaturePanel>
+
+                    <SetupTemplatesPanel
+                        guildId={guildId as string}
+                        onApplied={refreshNotificationConfigLists}
+                    />
 
                     {(importPlan || importError || importResult) && (
                         <ImportPreviewPanel

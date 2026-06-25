@@ -79,6 +79,8 @@ Required variables:
 DISCORD_BOT_TOKEN=your_bot_token
 CLIENT_ID=your_application_id
 GUILD_ID=your_test_guild_id
+COMMAND_DEPLOY_MODE=always
+COMMAND_DEPLOY_SCOPE=guild
 
 # Database (SQLite for dev)
 DATABASE_PROVIDER=sqlite
@@ -220,10 +222,9 @@ See [DEPLOYMENT.md](../../DEPLOYMENT.md) for detailed deployment guide.
 3. Give it a name and create
 4. Go to "Bot" section
 5. Click "Reset Token" and copy the token (this is your `DISCORD_BOT_TOKEN`)
-6. Enable required intents:
-   - Presence Intent
-   - Server Members Intent
-   - Message Content Intent (if needed)
+6. Confirm the required intent is enabled:
+   - `GatewayIntentBits.Guilds` is required by default.
+   - Privileged intents are not requested by the current bot startup path.
 
 ### Invite Bot to Server
 
@@ -317,8 +318,7 @@ See [TROUBLESHOOTING.md](../../TROUBLESHOOTING.md) for more issues and solutions
 ### External APIs
 
 - `axios` - HTTP client
-- `twurple` - Twitch API wrapper
-- `googleapis` - YouTube API wrapper
+- `twisted` - Riot API wrapper
 
 ### Development
 

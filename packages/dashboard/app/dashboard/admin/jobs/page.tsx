@@ -11,8 +11,9 @@ import {
     ghostActionButtonSx,
     primaryActionButtonSx,
 } from "@/components/dashboard/dashboardTheme";
-import { api, type JobRunEntry } from "@/lib/api-client";
+import { api, type JobRunEntry, type PatchNotesStorageSummary } from "@/lib/api-client";
 import { adminJobRunsCsvHeaders, buildAdminJobRunCsvRows } from "@/lib/adminAnalyticsExports";
+import { getAdminJobRunDetails } from "@/lib/adminJobRunDetails";
 import { buildAdminJobRetryPayload, canRetryAdminJobRun } from "@/lib/adminJobRetry";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 import {
@@ -43,6 +44,8 @@ import {
     Refresh,
     RestartAlt,
     Schedule,
+    Storage,
+    WarningAmber,
     WorkHistory,
 } from "@mui/icons-material";
 
@@ -71,6 +74,24 @@ function formatDateTime(value?: string | null): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString();
+}
+
+function formatTimestampMs(value?: number | null): string {
+    if (typeof value !== "number") return "Unknown";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+}
+
+function formatBytes(value: number): string {
+    if (!Number.isFinite(value) || value <= 0) return "0 B";
+    const units = ["B", "KB", "MB", "GB"];
+    let amount = value;
+    let unitIndex = 0;
+    while (amount >= 1024 && unitIndex < units.length - 1) {
+        amount /= 1024;
+        unitIndex += 1;
+    }
+    return `${amount >= 10 || unitIndex === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unitIndex]}`;
 }
 
 function getRunKey(run: JobRunEntry, index: number): string {
@@ -150,6 +171,9 @@ function AdminJobsContent() {
     const [birthdaysToday, setBirthdaysToday] = useState<number | null>(null);
     const [loadingBirthdaysToday, setLoadingBirthdaysToday] = useState<boolean>(false);
 
+    const [patchNotesStorage, setPatchNotesStorage] = useState<PatchNotesStorageSummary | null>(null);
+    const [loadingPatchNotesStorage, setLoadingPatchNotesStorage] = useState<boolean>(false);
+
     const selectedMeta = useMemo(() => jobs.find((j) => j.name === selectedJob), [jobs, selectedJob]);
     const savedViewQuery = useMemo(() => serializeJobFilters({ job: selectedJob, result: resultFilter }), [resultFilter, selectedJob]);
     const visibleRuns = useMemo(() => resultFilter === "failed" ? runs.filter(run => run.ok === false) : runs, [resultFilter, runs]);
@@ -211,10 +235,23 @@ function AdminJobsContent() {
         }
     };
 
+    const loadPatchNotesStorage = async () => {
+        try {
+            setLoadingPatchNotesStorage(true);
+            const res = await api.getPatchNotesStorage();
+            setPatchNotesStorage(res);
+        } catch {
+            setPatchNotesStorage(null);
+        } finally {
+            setLoadingPatchNotesStorage(false);
+        }
+    };
+
     useEffect(() => {
         void loadJobs();
         void loadLastHeartbeat();
         void loadBirthdaysToday();
+        void loadPatchNotesStorage();
     }, []);
 
     useEffect(() => {
@@ -286,7 +323,7 @@ function AdminJobsContent() {
     };
 
     const renderRunSummary = (r: JobRunEntry, idx: number) => {
-        const details = getRunDetails(r, selectedJob);
+        const details = getAdminJobRunDetails(r, selectedJob);
         const runKey = getRunKey(r, idx);
         const retrying = retryingRunKey === runKey;
 
@@ -449,6 +486,72 @@ function AdminJobsContent() {
                         )}
                     </StatPanel>
 
+                    <FeaturePanel accent={dashboardAccents.patchNotes} sx={{ p: 2.5, gridColumn: { xs: "auto", md: "1 / -1" } }}>
+                        <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, position: "relative", mb: 2 }}>
+                            <Stack direction="row" spacing={1.1} sx={{ alignItems: "center", minWidth: 0 }}>
+                                <Storage sx={{ color: dashboardAccents.patchNotes }} />
+                                <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, lineHeight: 1.1 }}>
+                                    Patch notes storage
+                                </Typography>
+                            </Stack>
+                            <Button size="small" variant="outlined" onClick={() => void loadPatchNotesStorage()} disabled={loadingPatchNotesStorage} startIcon={<Refresh />} sx={ghostActionButtonSx(dashboardAccents.patchNotes)}>
+                                Refresh
+                            </Button>
+                        </Stack>
+
+                        {patchNotesStorage ? (
+                            <Stack spacing={1.4} sx={{ position: "relative" }}>
+                                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(4, minmax(0, 1fr))" }, gap: 1 }}>
+                                    <StatusLine label="Rows" value={`${patchNotesStorage.totalRows} / ${patchNotesStorage.retention.maxRowsPerGame} per game`} />
+                                    <StatusLine label="Body bytes" value={formatBytes(patchNotesStorage.totalContentBytes)} />
+                                    <StatusLine label="Oldest kept" value={formatTimestampMs(getOldestPatchNoteTimestamp(patchNotesStorage))} />
+                                    <StatusLine
+                                        label="Last prune"
+                                        value={patchNotesStorage.lastScan
+                                            ? `${patchNotesStorage.lastScan.historyPrunedRows} pruned, ${patchNotesStorage.lastScan.historyTruncated} truncated`
+                                            : "No scan yet"}
+                                    />
+                                </Box>
+
+                                {patchNotesStorage.games.length > 0 ? (
+                                    <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                                        {patchNotesStorage.games.slice(0, 4).map(game => (
+                                            <Chip
+                                                key={game.game}
+                                                size="small"
+                                                label={`${game.game}: ${game.rows} rows, ${formatBytes(game.contentBytes)}`}
+                                                sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.76)", border: "1px solid rgba(255,255,255,0.08)" }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                ) : null}
+
+                                {patchNotesStorage.warnings.length > 0 ? (
+                                    <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                                        {patchNotesStorage.warnings.map(warning => (
+                                            <Chip
+                                                key={warning}
+                                                size="small"
+                                                icon={<WarningAmber />}
+                                                label={formatStorageWarning(warning)}
+                                                sx={{ bgcolor: alpha(dashboardAccents.quotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.quotes, 0.28)}` }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                ) : (
+                                    <Chip
+                                        size="small"
+                                        icon={<CheckCircle />}
+                                        label="Within configured bounds"
+                                        sx={{ alignSelf: "flex-start", bgcolor: alpha(dashboardAccents.settings, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.settings, 0.26)}` }}
+                                    />
+                                )}
+                            </Stack>
+                        ) : (
+                            <EmptyStatus icon={<Storage />} text="No patch-note storage data yet." />
+                        )}
+                    </FeaturePanel>
+
                     <FeaturePanel accent={accent} sx={{ p: 2.5, gridColumn: { xs: "auto", md: "1 / -1" } }}>
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" }, position: "relative", mb: 2 }}>
                             <Stack direction="row" spacing={1.1} sx={{ alignItems: "center" }}>
@@ -532,23 +635,16 @@ function EmptyStatus({ icon, text }: { icon: React.ReactNode; text: string }) {
     );
 }
 
-function getRunDetails(run: JobRunEntry, selectedJob: string): string | null {
-    if (typeof run.error === "string" && run.error.length > 0) {
-        return run.error;
-    }
+function getOldestPatchNoteTimestamp(summary: PatchNotesStorageSummary): number | null {
+    const timestamps = summary.games
+        .map(game => game.oldestPublishedAt)
+        .filter((value): value is number => typeof value === "number");
+    return timestamps.length > 0 ? Math.min(...timestamps) : null;
+}
 
-    if (!run.meta || typeof run.meta !== "object") return null;
-
-    if (selectedJob === "birthdays") {
-        const processed = run.meta.processed;
-        const forceFlag = run.meta.force;
-        return `processed: ${typeof processed === "number" ? processed : 0}${forceFlag ? " (force)" : ""}`;
-    }
-
-    if (selectedJob === "heartbeat") {
-        const backend = run.meta.backend;
-        return typeof backend === "string" && backend.length > 0 ? `backend: ${backend}` : null;
-    }
-
-    return null;
+function formatStorageWarning(warning: string): string {
+    if (warning === "records_exceed_retention") return "Retention exceeded";
+    if (warning === "rows_exceed_max") return "Row cap exceeded";
+    if (warning === "content_bytes_exceed_cap") return "Body cap exceeded";
+    return warning;
 }

@@ -544,6 +544,16 @@
           "isLive": {
             "type": "boolean"
           },
+          "vodFollowupEnabled": {
+            "type": "boolean"
+          },
+          "vodFollowupDelayMinutes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lastVodId": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1642,6 +1652,21 @@
           },
           "paused": {
             "type": "boolean"
+          },
+          "vodFollowupEnabled": {
+            "type": "boolean"
+          },
+          "vodFollowupDelayMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -1703,6 +1728,21 @@
           },
           "paused": {
             "type": "boolean"
+          },
+          "vodFollowupEnabled": {
+            "type": "boolean"
+          },
+          "vodFollowupDelayMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -3453,7 +3493,7 @@
             "bearerAuth": []
           }
         ],
-        "description": "Creates or updates a Twitch stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- twitchUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n- paused (boolean, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt.\n",
+        "description": "Creates or updates a Twitch stream configuration for a guild+streamer pair.\nAllowed fields in request body:\n- twitchUsername (string, required)\n- discordChannelId (string, required)\n- guildId (string, required)\n- customMessage (string, optional)\n- cooldownMinutes (integer >= 0 or null, optional)\n- quietHoursStart (HH:mm or null, optional)\n- quietHoursEnd (HH:mm or null, optional)\n- paused (boolean, optional)\n- vodFollowupEnabled (boolean, optional)\n- vodFollowupDelayMinutes (integer 1-1440 or null, optional)\n\nRead-only fields (ignored if provided): isLive, lastNotifiedAt, lastVodId.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -3650,7 +3690,7 @@
         "tags": [
           "Twitch"
         ],
-        "description": "Updates a Twitch stream configuration by id. Allowed fields in request body:\n- twitchUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n- paused (boolean)\n\nRead-only fields: isLive, lastNotifiedAt.\n",
+        "description": "Updates a Twitch stream configuration by id. Allowed fields in request body:\n- twitchUsername (string)\n- discordChannelId (string)\n- guildId (string)\n- customMessage (string)\n- cooldownMinutes (integer >= 0 or null)\n- quietHoursStart (HH:mm or null)\n- quietHoursEnd (HH:mm or null)\n- paused (boolean)\n- vodFollowupEnabled (boolean)\n- vodFollowupDelayMinutes (integer 1-1440 or null)\n\nRead-only fields: isLive, lastNotifiedAt, lastVodId.\n",
         "parameters": [
           {
             "in": "path",
@@ -5035,6 +5075,54 @@
         }
       }
     },
+    "/quotes/{id}/card": {
+      "get": {
+        "summary": "Download an approved quote as a PNG card",
+        "tags": [
+          "Quotes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG quote card",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
     "/quotes/guild/{guildId}/author/{authorId}": {
       "get": {
         "summary": "Get quotes by author in guild",
@@ -5459,6 +5547,109 @@
         }
       }
     },
+    "/patchNotes/history/compare": {
+      "get": {
+        "summary": "Compare two stored patch-note history records",
+        "tags": [
+          "PatchNotes"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "leftId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "rightId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deterministic line diff for the selected patch records"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/patchNotes/history": {
+      "get": {
+        "summary": "List bounded patch-note history",
+        "tags": [
+          "PatchNotes"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "game",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10000
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated patch-note history records"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
     "/patchNotes/{game}": {
       "get": {
         "summary": "Get the latest patch note for a game",
@@ -5676,6 +5867,30 @@
         "responses": {
           "200": {
             "description": "Last heartbeat info (or null)"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/jobs/patchnotes/storage": {
+      "get": {
+        "summary": "Get patch-note history storage usage and retention status",
+        "tags": [
+          "Jobs"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Patch-note history storage summary"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -6109,6 +6324,56 @@
           },
           "Retry-After": {
             "$ref": "#/components/headers/Retry-After"
+          }
+        }
+      }
+    },
+    "/discord/guilds/{guildId}/users/{userId}/profile-card": {
+      "get": {
+        "summary": "Download a Discord user profile card as a PNG",
+        "tags": [
+          "Discord"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "PNG profile card",
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -7158,6 +7423,37 @@
             "$ref": "#/components/responses/NotFound"
           }
         }
+      }
+    },
+    "/anime/calendar": {
+      "get": {
+        "summary": "Get a tokenized personal anime calendar export URL",
+        "tags": [
+          "Anime"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/anime/calendar.ics": {
+      "get": {
+        "summary": "Read-only personal anime subscription calendar feed",
+        "tags": [
+          "Anime"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
       }
     },
     "/anime/search": {

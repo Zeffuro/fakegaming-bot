@@ -117,11 +117,15 @@ DATABASE_PROVIDER=postgres
 DISCORD_BOT_TOKEN=your_bot_token
 CLIENT_ID=your_application_id
 GUILD_ID=your_primary_guild_id
+COMMAND_DEPLOY_MODE=auto
+COMMAND_DEPLOY_SCOPE=global
 
 API_URL=http://api:3001/api
 SERVICE_API_TOKEN=CHANGE_THIS_SHARED_SECRET
 
 RIOT_LEAGUE_API_KEY=your_riot_key
+RIOT_RECENT_FORM_MATCH_COUNT=5
+RIOT_RECENT_FORM_TTL_MINUTES=60
 TWITCH_CLIENT_ID=your_twitch_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_key
@@ -157,6 +161,9 @@ STEAM_WEB_API_KEY=your_steam_web_api_key
 
 # Optional: Enable background jobs
 JOBS_ENABLED=1
+PATCH_NOTE_HISTORY_RETENTION_DAYS=365
+PATCH_NOTE_HISTORY_MAX_PER_GAME=50
+PATCH_NOTE_HISTORY_MAX_BODY_BYTES=120000
 ```
 
 **Dashboard (`packages/dashboard/.env`):**

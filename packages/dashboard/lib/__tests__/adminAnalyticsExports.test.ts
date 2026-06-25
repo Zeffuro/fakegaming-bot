@@ -36,8 +36,87 @@ describe('admin analytics CSV exports', () => {
             'info',
             'success',
             'req-1',
+            '1 metadata key: moderationStatus',
             '{"moderationStatus":"approved"}',
         ]]);
+    });
+
+    it('adds Riot League form metadata summaries to audit CSV rows', () => {
+        const event: AuditEventEntry = {
+            id: 11,
+            timestamp: '2026-06-25T10:00:00.000Z',
+            actorId: 'user-1',
+            actorType: 'user',
+            action: 'riot.leagueForm',
+            targetType: 'riotRecentForm',
+            targetId: 'EUW1',
+            guildId: 'guild-1',
+            severity: 'error',
+            status: 'failure',
+            requestId: 'req-2',
+            metadata: {
+                provider: 'riot',
+                game: 'league',
+                outcome: 'history_failure',
+                cacheStatus: 'miss',
+                errorCategory: 'rate_limited',
+            },
+        };
+
+        expect(buildAdminAuditCsvRows([event])[0]).toEqual([
+            11,
+            '2026-06-25T10:00:00.000Z',
+            'user',
+            'user-1',
+            'riot.leagueForm',
+            'riotRecentForm',
+            'EUW1',
+            'guild-1',
+            'error',
+            'failure',
+            'req-2',
+            'League form history_failure - cache miss - rate_limited',
+            '{"provider":"riot","game":"league","outcome":"history_failure","cacheStatus":"miss","errorCategory":"rate_limited"}',
+        ]);
+    });
+
+    it('exports Riot League form identity failure summaries', () => {
+        const event: AuditEventEntry = {
+            id: 12,
+            timestamp: '2026-06-26T10:00:00.000Z',
+            actorId: 'user-1',
+            actorType: 'user',
+            action: 'riot.leagueForm',
+            targetType: 'riotRecentForm',
+            targetId: null,
+            guildId: 'guild-1',
+            severity: 'error',
+            status: 'failure',
+            requestId: 'req-3',
+            metadata: {
+                provider: 'riot',
+                game: 'league',
+                outcome: 'identity_failure',
+                cacheStatus: 'not_checked',
+                errorCategory: 'missing_key',
+            },
+        };
+
+        expect(buildAdminAuditCsvRows([event])[0]).toEqual([
+            12,
+            '2026-06-26T10:00:00.000Z',
+            'user',
+            'user-1',
+            'riot.leagueForm',
+            'riotRecentForm',
+            null,
+            'guild-1',
+            'error',
+            'failure',
+            'req-3',
+            'League form identity_failure - cache not_checked - missing_key',
+            '{"provider":"riot","game":"league","outcome":"identity_failure","cacheStatus":"not_checked","errorCategory":"missing_key"}',
+        ]);
     });
 
     it('maps integration health records into stable CSV rows', () => {

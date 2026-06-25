@@ -12,12 +12,12 @@ function params(value: string): URLSearchParams {
 
 describe('admin audit filters', () => {
     it('parses supported filter params and normalizes provider scope', () => {
-        expect(parseAdminAuditFilters(params('status=failure&severity=error&provider=twitch&guildId=123&limit=100&offset=25'))).toEqual({
+        expect(parseAdminAuditFilters(params('status=failure&severity=error&provider=riot&guildId=123&limit=100&offset=25'))).toEqual({
             limit: 100,
             offset: 25,
             guildId: '123',
             scope: 'integrations',
-            provider: 'twitch',
+            provider: 'riot',
             severity: 'error',
             status: 'failure',
         });

@@ -23,7 +23,7 @@ export const adminAuditFilterKeys = [
 ] as const satisfies Array<keyof AuditEventsQuery>;
 
 const auditScopes = new Set<AuditEventScope>(["integrations"]);
-const auditProviders = new Set<AuditIntegrationProvider>(["anime", "bluesky", "patchnotes", "tiktok", "twitch", "youtube"]);
+const auditProviders = new Set<AuditIntegrationProvider>(["anime", "bluesky", "patchnotes", "riot", "tiktok", "twitch", "youtube"]);
 const auditSeverities = new Set<AuditEventSeverity>(["info", "warn", "error"]);
 const auditStatuses = new Set<AuditEventStatus>(["success", "failure"]);
 const auditLimits = new Set([25, 50, 100, 200]);

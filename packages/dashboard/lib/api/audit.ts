@@ -7,7 +7,7 @@ export const DEFAULT_AUDIT_EVENTS_LIMIT = 50;
 export type AuditEventSeverity = "info" | "warn" | "error";
 export type AuditEventStatus = "success" | "failure";
 export type AuditEventScope = "integrations";
-export type AuditIntegrationProvider = "anime" | "bluesky" | "patchnotes" | "tiktok" | "twitch" | "youtube";
+export type AuditIntegrationProvider = "anime" | "bluesky" | "patchnotes" | "riot" | "tiktok" | "twitch" | "youtube";
 
 export interface AuditEventEntry {
     id: number;

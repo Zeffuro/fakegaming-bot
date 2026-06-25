@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 54 commands; 50 slash; 2 user context; 2 message context.
+Total: 58 commands; 54 slash; 2 user context; 2 message context.
 
 ## Anime
 
@@ -35,6 +35,7 @@ Total: 54 commands; 50 slash; 2 user context; 2 message context.
 | Slash | `/calendar` | Show upcoming birthdays and your reminders | All users |
 | Slash | `/help` | List all available commands and their descriptions. | All users |
 | Slash | `/poll` | Create a simple poll for users to vote on | All users |
+| Slash | `/profile-card` | Render a Discord profile card | All users |
 | Slash | `/roll` | Roll dice or generate a random number | All users |
 | Slash | `/spin` | Spin the wheel to pick someone! | All users |
 | Slash | `/test-notification` | Send a sample notification to a channel | All users |
@@ -45,6 +46,7 @@ Total: 54 commands; 50 slash; 2 user context; 2 message context.
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
+| Slash | `/league-form` | Summarize recent League of Legends form by Riot ID or linked user | All users |
 | Slash | `/league-history` | Get recent League of Legends match history by Riot ID or linked user | All users |
 | Slash | `/league-stats` | Get League of Legends stats by Riot ID or linked user | All users |
 | Slash | `/link-riot` | Link your Discord account or another user to a Riot account | All users |
@@ -67,6 +69,7 @@ Total: 54 commands; 50 slash; 2 user context; 2 message context.
 | --- | --- | --- | --- |
 | Slash | `/add-quote` | Add a quote | All users |
 | Slash | `/delete-quote` | Delete a quote you added or authored | All users |
+| Slash | `/quote-card` | Render an approved quote as a shareable image | All users |
 | Slash | `/quote-leaderboard` | Show the most quoted users in this server | All users |
 | Slash | `/quotes` | Get all quotes for a user | All users |
 | Slash | `/random-quote` | Get a random quote from the server | All users |
@@ -101,6 +104,7 @@ Total: 54 commands; 50 slash; 2 user context; 2 message context.
 | Slash | `/add-twitch-stream` | Add a Twitch stream for notifications | Administrator |
 | Slash | `/manage-twitch-streams` | List, test, pause, resume, or remove Twitch stream notifications | Administrator |
 | Slash | `/stream-status` | Check whether a Twitch channel is live | All users |
+| Slash | `/twitch-latest-vod` | Show the latest Twitch archive VOD for a channel | All users |
 
 ## Youtube
 

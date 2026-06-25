@@ -76,6 +76,14 @@
       "import": "./dist/api/index.js",
       "types": "./dist/api/index.d.ts"
     },
+    "./quote-card": {
+      "import": "./dist/quote-card/index.js",
+      "types": "./dist/quote-card/index.d.ts"
+    },
+    "./profile-card": {
+      "import": "./dist/profile-card/index.js",
+      "types": "./dist/profile-card/index.d.ts"
+    },
     "./api-types": {
       "import": "./types/empty.js",
       "types": "./types/api.d.ts"
@@ -153,6 +161,12 @@
       "api": [
         "dist/api/index.d.ts"
       ],
+      "quote-card": [
+        "dist/quote-card/index.d.ts"
+      ],
+      "profile-card": [
+        "dist/profile-card/index.d.ts"
+      ],
       "api/*": [
         "dist/api/*"
       ],
@@ -175,6 +189,7 @@
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.5.0",
+    "canvas": "^3.2.3",
     "cheerio": "^1.2.0",
     "discord.js": "^14.26.4",
     "dotenv": "^17.4.2",

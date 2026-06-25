@@ -74,7 +74,22 @@ export async function GET(req: NextRequest) {
     } catch (error: unknown) {
         log.error({ err: error }, "Error fetching guild data");
         const message = error instanceof Error ? error.message : "Failed to process guild data";
-        const status = message === "Discord authorization expired" ? 401 : 500;
-        return NextResponse.json({ error: message }, { status });
+        const status = getGuildDataErrorStatus(message);
+        return NextResponse.json({
+            error: {
+                code: status === 401 ? "DISCORD_AUTHORIZATION_EXPIRED" : status === 503 ? "GUILD_ACCESS_UNAVAILABLE" : "GUILD_DATA_UNAVAILABLE",
+                message,
+                recovery: status === 503 ? "Refresh the dashboard session, then retry the request." : undefined,
+            },
+        }, { status });
     }
+}
+
+function getGuildDataErrorStatus(message: string): number {
+    if (message === "Discord authorization expired") return 401;
+    const normalized = message.toLowerCase();
+    if (normalized.includes("redis") || normalized.includes("cache") || normalized.includes("guild access")) {
+        return 503;
+    }
+    return 500;
 }

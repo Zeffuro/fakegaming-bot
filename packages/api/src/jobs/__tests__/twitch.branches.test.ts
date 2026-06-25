@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
 import { registerTwitchJobs } from '../twitch.js';
+import { recordJobRun } from '../status.js';
 import { prepareDiscord, runJobOnce } from './helpers/jobTestUtils.js';
 
 const ORIGINAL_ENV = { ...process.env };
 
 const upsert = vi.fn().mockResolvedValue(null);
 const manager = {
-    twitchManager: { getAllStreams: vi.fn(), upsert },
+    twitchManager: { getAllStreams: vi.fn(), findByPkPlain: vi.fn(), upsert },
     notificationsManager: { has: vi.fn(), recordIfNew: vi.fn() }
 };
 
@@ -27,8 +29,10 @@ describe('Twitch job branches', () => {
         (globalThis as any).fetch = mockFetch;
         upsert.mockReset();
         manager.twitchManager.getAllStreams.mockReset();
+        manager.twitchManager.findByPkPlain.mockReset();
         manager.notificationsManager.has.mockReset();
         manager.notificationsManager.recordIfNew.mockReset();
+        vi.mocked(recordJobRun).mockReset();
         process.env = { ...ORIGINAL_ENV, TWITCH_CLIENT_ID: 'cid', TWITCH_CLIENT_SECRET: 'csecret' };
     });
     afterEach(() => { process.env = { ...ORIGINAL_ENV }; vi.restoreAllMocks(); });
@@ -197,5 +201,191 @@ describe('Twitch job branches', () => {
         expect(usersUrls).toHaveLength(1);
         expect(usersUrls[0].match(/(?:\?|&)login=/g)).toHaveLength(1);
         expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+    });
+
+    it('schedules a VOD follow-up when a configured stream goes offline', async () => {
+        const cfg = {
+            id: 't-vod-schedule',
+            guildId: 'g',
+            discordChannelId: 'chan',
+            twitchUsername: 'vodstreamer',
+            isLive: true,
+            vodFollowupEnabled: true,
+            vodFollowupDelayMinutes: 1,
+        } as any;
+        manager.twitchManager.getAllStreams.mockResolvedValueOnce([cfg]);
+        mockFetch.mockReset();
+        mockFetch.mockImplementation((url: any) => {
+            const u = String(url);
+            if (u.includes('/oauth2/token')) return Promise.resolve({ ok: true, json: async () => ({ access_token: 'app', expires_in: 3600 }) });
+            if (u.includes('/users')) return Promise.resolve({ ok: true, json: async () => ({ data: [{ id: 'u-vod', login: 'vodstreamer', display_name: 'Vod Streamer' }] }) });
+            if (u.includes('/streams')) return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+            return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+        });
+
+        const { q, done } = await runJobOnce('twitch:poll', registerTwitchJobs);
+
+        expect(done).toHaveBeenCalled();
+        expect(cfg.isLive).toBe(false);
+        expect(q.scheduled).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                name: 'twitch:vod-followup',
+                data: expect.objectContaining({ configId: 't-vod-schedule', twitchUserId: 'u-vod' }),
+                options: expect.objectContaining({ startAfterSeconds: 60 }),
+            }),
+        ]));
+        expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
+            meta: expect.objectContaining({
+                vodFollowupsScheduled: 1,
+                vodFollowupScheduleErrors: 0,
+            }),
+        }));
+    });
+
+    it('sends the latest VOD follow-up and stores the VOD id', async () => {
+        const cfg = {
+            id: 't-vod-send',
+            guildId: 'g',
+            discordChannelId: 'chan',
+            twitchUsername: 'streamer',
+            isLive: false,
+            vodFollowupEnabled: true,
+            lastVodId: null,
+        } as any;
+        manager.twitchManager.findByPkPlain.mockResolvedValueOnce(cfg);
+        manager.notificationsManager.has.mockResolvedValue(false);
+        mockFetch.mockReset();
+        mockFetch.mockImplementation((url: any) => {
+            const u = String(url);
+            if (u.includes('/oauth2/token')) return Promise.resolve({ ok: true, json: async () => ({ access_token: 'app', expires_in: 3600 }) });
+            if (u.includes('/videos')) return Promise.resolve({
+                ok: true,
+                json: async () => ({
+                    data: [{
+                        id: 'vod-1',
+                        user_id: 'u-vod',
+                        title: 'Stream archive',
+                        url: 'https://www.twitch.tv/videos/vod-1',
+                        duration: '1h2m3s',
+                        published_at: '2026-06-25T10:00:00Z',
+                    }],
+                }),
+            });
+            return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+        });
+        const { discord } = await prepareDiscord();
+        (discord as any).sendChannelMessagePayload.mockResolvedValue({ id: 'msg1' });
+        const q = new TestJobQueue();
+        await registerTwitchJobs(q as any, new Date('2025-01-01T00:00:00Z'));
+
+        const { done } = await runJobHandler(q, 'twitch:vod-followup', {
+            configId: 't-vod-send',
+            twitchUserId: 'u-vod',
+            twitchUsername: 'streamer',
+            twitchDisplayName: 'Streamer',
+        });
+
+        expect(done).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledWith('chan', expect.objectContaining({
+            content: expect.stringContaining('Latest VOD from Streamer'),
+        }));
+        expect(cfg.lastVodId).toBe('vod-1');
+        expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ lastVodId: 'vod-1' }), ['id']);
+        expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
+            meta: expect.objectContaining({
+                job: 'vod-followup',
+                status: 'notified',
+                username: 'streamer',
+                vodId: 'vod-1',
+                delivered: true,
+            }),
+        }));
+    });
+
+    it('records VOD follow-up metadata when no archive is available yet', async () => {
+        const cfg = {
+            id: 't-vod-empty',
+            guildId: 'g',
+            discordChannelId: 'chan',
+            twitchUsername: 'emptyvod',
+            isLive: false,
+            vodFollowupEnabled: true,
+            lastVodId: null,
+        } as any;
+        manager.twitchManager.findByPkPlain.mockResolvedValueOnce(cfg);
+        mockFetch.mockReset();
+        mockFetch.mockImplementation((url: any) => {
+            const u = String(url);
+            if (u.includes('/oauth2/token')) return Promise.resolve({ ok: true, json: async () => ({ access_token: 'app', expires_in: 3600 }) });
+            if (u.includes('/videos')) return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+            return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+        });
+        const { discord } = await prepareDiscord();
+        const q = new TestJobQueue();
+        await registerTwitchJobs(q as any, new Date('2025-01-01T00:00:00Z'));
+
+        const { done } = await runJobHandler(q, 'twitch:vod-followup', {
+            configId: 't-vod-empty',
+            twitchUserId: 'u-empty-vod',
+            twitchUsername: 'emptyvod',
+            twitchDisplayName: 'Empty Vod',
+        });
+
+        expect(done).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
+            ok: true,
+            meta: expect.objectContaining({
+                job: 'vod-followup',
+                status: 'no_archive_video',
+                username: 'emptyvod',
+            }),
+        }));
+    });
+
+    it('records duplicate VOD suppression in follow-up metadata', async () => {
+        const cfg = {
+            id: 't-vod-duplicate',
+            guildId: 'g',
+            discordChannelId: 'chan',
+            twitchUsername: 'duplicatevod',
+            isLive: false,
+            vodFollowupEnabled: true,
+            lastVodId: 'vod-duplicate',
+        } as any;
+        manager.twitchManager.findByPkPlain.mockResolvedValueOnce(cfg);
+        mockFetch.mockReset();
+        mockFetch.mockImplementation((url: any) => {
+            const u = String(url);
+            if (u.includes('/oauth2/token')) return Promise.resolve({ ok: true, json: async () => ({ access_token: 'app', expires_in: 3600 }) });
+            if (u.includes('/videos')) return Promise.resolve({
+                ok: true,
+                json: async () => ({ data: [{ id: 'vod-duplicate', user_id: 'u-dup-vod', title: 'Existing archive' }] }),
+            });
+            return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
+        });
+        const { discord } = await prepareDiscord();
+        const q = new TestJobQueue();
+        await registerTwitchJobs(q as any, new Date('2025-01-01T00:00:00Z'));
+
+        const { done } = await runJobHandler(q, 'twitch:vod-followup', {
+            configId: 't-vod-duplicate',
+            twitchUserId: 'u-dup-vod',
+            twitchUsername: 'duplicatevod',
+            twitchDisplayName: 'Duplicate Vod',
+        });
+
+        expect(done).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(upsert).not.toHaveBeenCalled();
+        expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
+            ok: true,
+            meta: expect.objectContaining({
+                job: 'vod-followup',
+                status: 'duplicate_last_vod',
+                username: 'duplicatevod',
+                vodId: 'vod-duplicate',
+            }),
+        }));
     });
 });

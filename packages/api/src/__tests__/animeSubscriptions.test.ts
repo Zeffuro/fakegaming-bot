@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { signTestJwt, expectCreated, expectOk } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectCreated, expectNotFound, expectOk } from '@zeffuro/fakegaming-common/testing';
 import { configManager } from '../vitest.setup.js';
 import { getAniListAnimeById, type AniListTitle } from '@zeffuro/fakegaming-common/anime';
 
@@ -49,6 +49,7 @@ describe('Anime subscriptions API', () => {
 
     beforeEach(async () => {
         await configManager.animeManager.subscriptions.removeAll();
+        await configManager.animeManager.episodes.removeAll();
         await configManager.animeManager.titles.removeAll();
         vi.mocked(getAniListAnimeById).mockResolvedValue(animeResult);
     });
@@ -113,5 +114,54 @@ describe('Anime subscriptions API', () => {
             .send({ paused: false });
         expectOk(resumeRes);
         expect(resumeRes.body.paused).toBe(false);
+    });
+
+    it('returns a tokenized personal anime calendar feed', async () => {
+        const airingAt = Date.now() + 86_400_000;
+        await configManager.animeManager.titles.upsertTitle({
+            anilistId: 101,
+            titleEnglish: 'Frieren: Beyond Journey\'s End',
+            siteUrl: 'https://anilist.co/anime/101',
+            duration: 24,
+        });
+        await configManager.animeManager.episodes.upsertEpisode({
+            anilistId: 101,
+            episode: 2,
+            airingAt,
+        });
+        await configManager.animeManager.subscriptions.subscribeUser({
+            anilistId: 101,
+            userId: 'testuser',
+            reminderMinutes: 15,
+        });
+
+        const linkRes = await request(app)
+            .get('/api/anime/calendar')
+            .set('Authorization', `Bearer ${token}`);
+
+        expectOk(linkRes);
+        expect(linkRes.body).toEqual(expect.objectContaining({
+            path: expect.stringContaining('/api/anime/calendar.ics?token='),
+            token: expect.any(String),
+            url: expect.stringContaining('/api/anime/calendar.ics?token='),
+        }));
+
+        const feedRes = await request(app)
+            .get(`/api/anime/calendar.ics?token=${encodeURIComponent(linkRes.body.token)}`);
+
+        expectOk(feedRes);
+        expect(feedRes.headers['content-type']).toContain('text/calendar');
+        expect(feedRes.text).toContain('BEGIN:VCALENDAR');
+        expect(feedRes.text).toContain("SUMMARY:Frieren: Beyond Journey's End Episode 2");
+        expect(feedRes.text).toContain('UID:anime-101-2@fakegaming');
+        expect(feedRes.text).toContain('DTSTART:');
+        expect(feedRes.text).toContain('X-WR-TIMEZONE:UTC');
+    });
+
+    it('rejects invalid anime calendar tokens', async () => {
+        const res = await request(app)
+            .get('/api/anime/calendar.ics?token=invalid');
+
+        expectNotFound(res);
     });
 });

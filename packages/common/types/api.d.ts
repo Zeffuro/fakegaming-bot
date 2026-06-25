@@ -1181,8 +1181,10 @@ export interface paths {
          *     - quietHoursStart (HH:mm or null, optional)
          *     - quietHoursEnd (HH:mm or null, optional)
          *     - paused (boolean, optional)
+         *     - vodFollowupEnabled (boolean, optional)
+         *     - vodFollowupDelayMinutes (integer 1-1440 or null, optional)
          *
-         *     Read-only fields (ignored if provided): isLive, lastNotifiedAt.
+         *     Read-only fields (ignored if provided): isLive, lastNotifiedAt, lastVodId.
          */
         post: {
             parameters: {
@@ -1359,8 +1361,10 @@ export interface paths {
          *     - quietHoursStart (HH:mm or null)
          *     - quietHoursEnd (HH:mm or null)
          *     - paused (boolean)
+         *     - vodFollowupEnabled (boolean)
+         *     - vodFollowupDelayMinutes (integer 1-1440 or null)
          *
-         *     Read-only fields: isLive, lastNotifiedAt.
+         *     Read-only fields: isLive, lastNotifiedAt, lastVodId.
          */
         put: {
             parameters: {
@@ -2623,6 +2627,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/quotes/{id}/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download an approved quote as a PNG card */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description PNG quote card */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": string;
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                409: components["responses"]["Conflict"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/quotes/guild/{guildId}/author/{authorId}": {
         parameters: {
             query?: never;
@@ -3033,6 +3079,87 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/patchNotes/history/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Compare two stored patch-note history records */
+        get: {
+            parameters: {
+                query: {
+                    leftId: number;
+                    rightId: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Deterministic line diff for the selected patch records */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patchNotes/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List bounded patch-note history */
+        get: {
+            parameters: {
+                query?: {
+                    game?: string;
+                    q?: string;
+                    from?: number;
+                    to?: number;
+                    limit?: number;
+                    offset?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Paginated patch-note history records */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/patchNotes/{game}": {
         parameters: {
             query?: never;
@@ -3213,6 +3340,42 @@ export interface paths {
             requestBody?: never;
             responses: {
                 /** @description Last heartbeat info (or null) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/jobs/patchnotes/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get patch-note history storage usage and retention status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Patch-note history storage summary */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -3568,6 +3731,47 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 429: components["responses"]["RateLimitExceeded"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/discord/guilds/{guildId}/users/{userId}/profile-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download a Discord user profile card as a PNG */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description PNG profile card */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/png": string;
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
             };
         };
         put?: never;
@@ -4530,6 +4734,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/anime/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a tokenized personal anime calendar export URL */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: never;
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/anime/calendar.ics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only personal anime subscription calendar feed */
+        get: {
+            parameters: {
+                query: {
+                    token: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: never;
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/anime/search": {
         parameters: {
             query?: never;
@@ -4917,6 +5175,10 @@ export interface components {
             guildId?: string;
             paused?: boolean;
             isLive?: boolean;
+            vodFollowupEnabled?: boolean;
+            /** Format: int64 */
+            vodFollowupDelayMinutes?: number;
+            lastVodId?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -5158,6 +5420,8 @@ export interface components {
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
             paused?: boolean;
+            vodFollowupEnabled?: boolean;
+            vodFollowupDelayMinutes?: number | null;
         };
         TwitchUpdateRequest: {
             twitchUsername?: string;
@@ -5168,6 +5432,8 @@ export interface components {
             quietHoursStart?: string | null;
             quietHoursEnd?: string | null;
             paused?: boolean;
+            vodFollowupEnabled?: boolean;
+            vodFollowupDelayMinutes?: number | null;
         };
         UserAnimeSubscribeRequest: {
             anilistId?: number;

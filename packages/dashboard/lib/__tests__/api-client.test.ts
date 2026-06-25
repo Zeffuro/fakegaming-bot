@@ -136,6 +136,26 @@ describe('api-client', () => {
         expect(result).toEqual(payload);
     });
 
+    it('getQuoteCardImage performs GET and returns a blob', async () => {
+        const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' });
+        getFetchMock().mockResolvedValueOnce({ ok: true, status: 200, blob: async () => blob });
+
+        const result = await api.getQuoteCardImage('quote/1');
+
+        expectFetchCalledWith(`${API_ENDPOINTS.QUOTES}/quote%2F1/card`, { method: 'GET' });
+        expect(result).toBe(blob);
+    });
+
+    it('getProfileCardImage performs GET and returns a blob', async () => {
+        const blob = new Blob([new Uint8Array([4, 5, 6])], { type: 'image/png' });
+        getFetchMock().mockResolvedValueOnce({ ok: true, status: 200, blob: async () => blob });
+
+        const result = await api.getProfileCardImage('guild/1', 'user/1');
+
+        expectFetchCalledWith(`${API_ENDPOINTS.DISCORD}/guilds/guild%2F1/users/user%2F1/profile-card`, { method: 'GET' });
+        expect(result).toBe(blob);
+    });
+
     it('loads and saves quote-of-the-day settings', async () => {
         const preview = { date: '2026-06-24', quote: null, eligibleCount: 0, settings: null };
         mockOkJsonOnce(preview);
@@ -199,6 +219,31 @@ describe('api-client', () => {
         const result = await api.resolveAdminIntegrationHealth('you tube', '91/legacy');
         expectFetchCalledWith(`${API_ENDPOINTS.INTEGRATION_HEALTH}/admin/you%20tube/91%2Flegacy/resolve`, { method: 'POST' });
         expect(result).toEqual(payload);
+    });
+
+    it('previews and applies setup templates', async () => {
+        const request = {
+            guildId: 'guild-1',
+            channels: { patches: 'patch-channel' },
+            inputs: { patchGames: ['Valorant'] },
+        };
+        const preview = { template: { id: 'patch-notes' }, ready: [], skipped: [], totals: { ready: 0 } };
+        mockOkJsonOnce(preview);
+        const previewResult = await api.previewSetupTemplate('patch-notes', request as any);
+        expectFetchCalledWith(`${API_ENDPOINTS.SETUP_TEMPLATES}/patch-notes/preview`, {
+            method: 'POST',
+            body: JSON.stringify(request),
+        });
+        expect(previewResult).toEqual(preview);
+
+        const apply = { ...preview, applied: 1 };
+        mockOkJsonOnce(apply);
+        const applyResult = await api.applySetupTemplate('patch-notes', request as any);
+        expectFetchCalledWith(`${API_ENDPOINTS.SETUP_TEMPLATES}/patch-notes/apply`, {
+            method: 'POST',
+            body: JSON.stringify(request),
+        });
+        expect(applyResult).toEqual(apply);
     });
 
     it('apiRequest throws with generic message if no json', async () => {

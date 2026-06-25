@@ -15,6 +15,7 @@ const testPatch = {
 };
 
 beforeEach(async () => {
+    await configManager.patchNoteHistoryManager.removeAll();
     await configManager.patchNotesManager.removeAll();
     await configManager.patchNotesManager.setLatestPatch(testPatch);
 });
@@ -68,5 +69,98 @@ describe('PatchNotes API', () => {
         expect(Array.isArray(res.body)).toBe(true);
         // Should contain at least one common title
         expect(res.body.length).toBeGreaterThan(0);
+    });
+
+    it('should list bounded patch note history with filters', async () => {
+        await configManager.patchNoteHistoryManager.recordPatch({
+            game: 'testgame1',
+            title: 'Second release',
+            content: 'Second patch notes content with enough words to preview',
+            url: 'https://example.com/patch/2',
+            publishedAt: now + 10_000,
+            version: '2.0.0',
+        });
+        await configManager.patchNoteHistoryManager.recordPatch({
+            game: 'othergame',
+            title: 'Other release',
+            content: 'Other patch notes',
+            url: 'https://example.com/patch/other',
+            publishedAt: now + 20_000,
+            version: '1.1.0',
+        });
+
+        const res = await client.get(`/api/patchNotes/history?game=testgame1&q=Second&limit=1`);
+
+        expectOk(res);
+        expect(res.body.total).toBe(1);
+        expect(res.body.limit).toBe(1);
+        expect(res.body.items).toEqual([
+            expect.objectContaining({
+                contentBytes: expect.any(Number),
+                contentPreview: 'Second patch notes content with enough words to preview',
+                game: 'testgame1',
+                title: 'Second release',
+                version: '2.0.0',
+            }),
+        ]);
+        expect(res.body.items[0]).not.toHaveProperty('content');
+    });
+
+    it('should compare two patch note history records on demand', async () => {
+        await configManager.patchNoteHistoryManager.recordPatch({
+            game: 'testgame1',
+            title: 'Second release',
+            content: [
+                'Initial patch notes',
+                'Added ranked changes',
+            ].join('\n'),
+            url: 'https://example.com/patch/2',
+            publishedAt: now + 10_000,
+            version: '2.0.0',
+        });
+        const history = await configManager.patchNoteHistoryManager.listHistory({ game: 'testgame1', limit: 10 });
+        const older = history.items.find(item => item.title === 'Initial release');
+        const newer = history.items.find(item => item.title === 'Second release');
+        expect(older).toBeDefined();
+        expect(newer).toBeDefined();
+        if (!older || !newer) throw new Error('Expected seeded patch history records');
+
+        const res = await client.get(`/api/patchNotes/history/compare?leftId=${older.id}&rightId=${newer.id}`);
+
+        expectOk(res);
+        expect(res.body.left).toEqual(expect.objectContaining({
+            game: 'testgame1',
+            title: 'Initial release',
+        }));
+        expect(res.body.right).toEqual(expect.objectContaining({
+            title: 'Second release',
+            version: '2.0.0',
+        }));
+        expect(res.body.summary.addedLines).toBe(1);
+        expect(res.body.diff).toEqual(expect.arrayContaining([
+            expect.objectContaining({ kind: 'added', text: 'Added ranked changes' }),
+        ]));
+        expect(res.body.left).not.toHaveProperty('content');
+    });
+
+    it('should reject patch note history compare across games', async () => {
+        await configManager.patchNoteHistoryManager.recordPatch({
+            game: 'othergame',
+            title: 'Other release',
+            content: 'Other patch notes',
+            url: 'https://example.com/patch/other',
+            publishedAt: now + 20_000,
+            version: '1.1.0',
+        });
+        const history = await configManager.patchNoteHistoryManager.listHistory({ limit: 10 });
+        const testGameRecord = history.items.find(item => item.game === 'testgame1');
+        const otherGameRecord = history.items.find(item => item.game === 'othergame');
+        expect(testGameRecord).toBeDefined();
+        expect(otherGameRecord).toBeDefined();
+        if (!testGameRecord || !otherGameRecord) throw new Error('Expected cross-game patch history records');
+
+        const res = await client.get(`/api/patchNotes/history/compare?leftId=${testGameRecord.id}&rightId=${otherGameRecord.id}`);
+
+        expectBadRequest(res);
     });
 });

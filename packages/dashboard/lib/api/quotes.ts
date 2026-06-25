@@ -1,5 +1,5 @@
 import type { ApiSchema } from "@zeffuro/fakegaming-common/api-helpers";
-import { API_ENDPOINTS, apiRequest } from "./core";
+import { API_ENDPOINTS, apiBinaryRequest, apiRequest } from "./core";
 
 type QuoteResponse = ApiSchema<"QuoteConfig">;
 type QuoteCreateRequest = ApiSchema<"QuoteCreateRequest">;
@@ -55,6 +55,9 @@ export const quotesApi = {
             method: "PUT",
             body,
         }),
+
+    getQuoteCardImage: (id: string) =>
+        apiBinaryRequest(`${API_ENDPOINTS.QUOTES}/${encodeURIComponent(id)}/card`),
 
     deleteQuote: (id: string) =>
         apiRequest<{ success: boolean }>(`${API_ENDPOINTS.QUOTES}/${encodeURIComponent(id)}`, { method: "DELETE" }),

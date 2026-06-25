@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import type { IncomingMessage } from 'node:http';
 import * as common from '@zeffuro/fakegaming-common';
 import { expectBadRequest, expectUnauthorized, seedUserGuilds, seedUserProfiles, seedUserGuildNick, expectOk } from '@zeffuro/fakegaming-common/testing';
 
@@ -17,6 +18,19 @@ const spyMember = vi.spyOn(common, 'getDiscordGuildMember').mockImplementation(a
 
 import app from '../app.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
+import type { Response as SuperTestResponse } from 'supertest';
+
+type BinaryParserCallback = (error: Error | null, body: unknown) => void;
+
+function parseBinaryResponse(res: SuperTestResponse, callback: BinaryParserCallback): void {
+    const stream = res as unknown as IncomingMessage;
+    const chunks: Buffer[] = [];
+    stream.on('data', (chunk: Buffer | string) => {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    stream.on('end', () => callback(null, Buffer.concat(chunks)));
+    stream.on('error', (error: Error) => callback(error, Buffer.alloc(0)));
+}
 
 describe('Discord resolve users API', () => {
     const guildId = 'testguild1';
@@ -128,5 +142,19 @@ describe('Discord resolve users API', () => {
         expectOk(res2);
         expect(spyUser.mock.calls.length).toBe(callsAfterFirst.user);
         expect(spyMember.mock.calls.length).toBe(callsAfterFirst.member);
+    });
+
+    it('renders a profile card as PNG', async () => {
+        const res = await client.raw
+            .get(`/api/discord/guilds/${guildId}/users/${authorId}/profile-card`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .buffer(true)
+            .parse(parseBinaryResponse);
+
+        expectOk(res);
+        expect(res.headers['content-type']).toContain('image/png');
+        expect(res.headers['content-disposition']).toContain('profile-card-123.png');
+        const body = res.body as Buffer;
+        expect(body.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
     });
 });

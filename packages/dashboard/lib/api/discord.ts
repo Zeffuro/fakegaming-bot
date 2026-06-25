@@ -1,5 +1,5 @@
 import type { ApiJsonResponse } from "@zeffuro/fakegaming-common/api-helpers";
-import { API_ENDPOINTS, apiRequest } from "./core";
+import { API_ENDPOINTS, apiBinaryRequest, apiRequest } from "./core";
 
 type GuildMemberSearchResponse = ApiJsonResponse<"/discord/guilds/{guildId}/members/search", "get", 200>;
 
@@ -23,4 +23,7 @@ export const discordApi = {
         apiRequest<GuildMemberSearchResponse>(
             `${API_ENDPOINTS.DISCORD}/guilds/${encodeURIComponent(guildId)}/members/search?query=${encodeURIComponent(query)}&limit=${encodeURIComponent(String(limit))}`,
         ),
+
+    getProfileCardImage: (guildId: string, userId: string) =>
+        apiBinaryRequest(`${API_ENDPOINTS.DISCORD}/guilds/${encodeURIComponent(guildId)}/users/${encodeURIComponent(userId)}/profile-card`),
 };

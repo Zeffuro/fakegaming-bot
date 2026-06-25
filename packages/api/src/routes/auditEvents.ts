@@ -10,6 +10,7 @@ const INTEGRATION_ACTION_PREFIXES = [
     'animeSubscription.',
     'bluesky.',
     'patchSubscription.',
+    'riot.',
     'tiktok.',
     'twitch.',
     'youtube.',
@@ -19,12 +20,13 @@ const INTEGRATION_PROVIDER_ACTION_PREFIXES = {
     anime: ['animeSubscription.'],
     bluesky: ['bluesky.'],
     patchnotes: ['patchSubscription.'],
+    riot: ['riot.'],
     tiktok: ['tiktok.'],
     twitch: ['twitch.'],
     youtube: ['youtube.'],
 } as const;
 
-const integrationProviderSchema = z.enum(['anime', 'bluesky', 'patchnotes', 'tiktok', 'twitch', 'youtube']);
+const integrationProviderSchema = z.enum(['anime', 'bluesky', 'patchnotes', 'riot', 'tiktok', 'twitch', 'youtube']);
 
 const auditEventsQuerySchema = z.object({
     limit: z.coerce.number().int().min(1).max(200).optional(),

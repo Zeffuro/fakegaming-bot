@@ -31,12 +31,21 @@ export type AnimeSearchMediaType = "anime" | "manga";
 
 export type AnimeSearchResult = AniListTitle;
 
+export interface AnimeCalendarLink {
+    path: string;
+    token: string;
+    url: string;
+}
+
 export const animeApi = {
     getAnimeSubscriptions: (guildId: string) =>
         apiRequest<AnimeSubscriptionDashboardConfig[]>(`${API_ENDPOINTS.ANIME}?guildId=${encodeURIComponent(guildId)}`),
 
     getMyAnimeSubscriptions: () =>
         apiRequest<AnimeSubscriptionDashboardConfig[]>(API_ENDPOINTS.ANIME),
+
+    getAnimeCalendarLink: () =>
+        apiRequest<AnimeCalendarLink>(`${API_ENDPOINTS.ANIME}/calendar`),
 
     searchAnime: (query: string, page: number = 1, perPage: number = 10, type: AnimeSearchMediaType = "anime") =>
         apiRequest<{ type: AniListMediaType; results: AnimeSearchResult[]; pageInfo: AnimePageInfo }>(

@@ -215,8 +215,10 @@ router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
  *       - quietHoursStart (HH:mm or null, optional)
  *       - quietHoursEnd (HH:mm or null, optional)
  *       - paused (boolean, optional)
+ *       - vodFollowupEnabled (boolean, optional)
+ *       - vodFollowupDelayMinutes (integer 1-1440 or null, optional)
  *
- *       Read-only fields (ignored if provided): isLive, lastNotifiedAt.
+ *       Read-only fields (ignored if provided): isLive, lastNotifiedAt, lastVodId.
  *     requestBody:
  *       required: true
  *       content:
@@ -278,8 +280,10 @@ router.post('/', jwtAuth, validateBody(twitchCreateRequestSchema), requireGuildA
  *       - quietHoursStart (HH:mm or null)
  *       - quietHoursEnd (HH:mm or null)
  *       - paused (boolean)
+ *       - vodFollowupEnabled (boolean)
+ *       - vodFollowupDelayMinutes (integer 1-1440 or null)
  *
- *       Read-only fields: isLive, lastNotifiedAt.
+ *       Read-only fields: isLive, lastNotifiedAt, lastVodId.
  *     parameters:
  *       - in: path
  *         name: id

@@ -33,6 +33,18 @@ interface NotificationTimingInput {
     quietHoursStart?: unknown;
     quietHoursEnd?: unknown;
     paused?: unknown;
+    vodFollowupEnabled?: unknown;
+    vodFollowupDelayMinutes?: unknown;
+}
+
+interface NotificationTimingPayload {
+    customMessage?: string;
+    cooldownMinutes: number | null;
+    quietHoursStart: string | null;
+    quietHoursEnd: string | null;
+    paused: boolean;
+    vodFollowupEnabled?: boolean;
+    vodFollowupDelayMinutes?: number | null;
 }
 
 export function resolveGuildId(guildId: GuildIdParam): string | null {
@@ -44,19 +56,21 @@ export function getErrorMessage(error: unknown, fallback: string): string {
     return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export function buildNotificationTimingPayload(config: NotificationTimingInput): {
-    customMessage?: string;
-    cooldownMinutes: number | null;
-    quietHoursStart: string | null;
-    quietHoursEnd: string | null;
-    paused: boolean;
-} {
+export function buildNotificationTimingPayload(config: NotificationTimingInput): NotificationTimingPayload {
+    const vodDelay = typeof config.vodFollowupDelayMinutes === "number"
+        ? config.vodFollowupDelayMinutes
+        : config.vodFollowupDelayMinutes === null
+            ? null
+            : undefined;
+
     return {
         customMessage: config.customMessage,
         cooldownMinutes: typeof config.cooldownMinutes === "number" ? config.cooldownMinutes : null,
         quietHoursStart: config.quietHoursStart ? String(config.quietHoursStart) : null,
         quietHoursEnd: config.quietHoursEnd ? String(config.quietHoursEnd) : null,
-        paused: Boolean(config.paused)
+        paused: Boolean(config.paused),
+        ...(typeof config.vodFollowupEnabled === "boolean" ? { vodFollowupEnabled: config.vodFollowupEnabled } : {}),
+        ...(vodDelay !== undefined ? { vodFollowupDelayMinutes: vodDelay } : {})
     };
 }
 

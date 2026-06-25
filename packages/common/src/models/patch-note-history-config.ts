@@ -17,6 +17,10 @@ export class PatchNoteHistoryConfig extends Model {
     @Column(DataType.TEXT)
     declare content: string;
 
+    @Index('patch_note_history_game_content_hash')
+    @Column(DataType.STRING)
+    declare contentHash?: string;
+
     @Index('patch_note_history_game_url')
     @Column(DataType.STRING)
     declare url: string;

@@ -10,6 +10,7 @@ import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { AuditEventFilters } from "@/components/admin/audit/AuditEventFilters";
 import { AuditEventDetailDialog } from "@/components/admin/audit/AuditEventDetailDialog";
 import { AuditEventsList } from "@/components/admin/audit/AuditEventsList";
+import { RiotLeagueFormAuditSummary } from "@/components/admin/audit/RiotLeagueFormAuditSummary";
 import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
 import {
     DEFAULT_AUDIT_EVENTS_LIMIT,
@@ -23,6 +24,7 @@ import {
     parseAdminAuditFilters,
     serializeAdminAuditFilters,
 } from "@/lib/adminAuditFilters";
+import { buildRiotLeagueFormAuditSummary } from "@/lib/adminRiotLeagueFormAudit";
 import { adminAuditCsvHeaders, buildAdminAuditCsvRows } from "@/lib/adminAnalyticsExports";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
 
@@ -30,6 +32,8 @@ const auditSavedViewPresets: AdminSavedViewPreset[] = [
     { id: "audit:failed", label: "Failed events", query: "status=failure" },
     { id: "audit:error", label: "Error failures", query: "severity=error&status=failure" },
     { id: "audit:integrations", label: "Integration failures", query: "scope=integrations&status=failure" },
+    { id: "audit:riot-league-form", label: "Riot League form", query: "scope=integrations&provider=riot&action=riot.leagueForm" },
+    { id: "audit:riot-league-form-failures", label: "Riot League failures", query: "scope=integrations&provider=riot&action=riot.leagueForm&status=failure" },
 ];
 
 function AdminAuditContent() {
@@ -96,6 +100,7 @@ function AdminAuditContent() {
         return countAdminAuditFilters(filters);
     }, [filters]);
     const savedViewQuery = useMemo(() => serializeAdminAuditFilters(filters), [filters]);
+    const riotLeagueFormSummary = useMemo(() => buildRiotLeagueFormAuditSummary(events), [events]);
     const exportEvents = useCallback(() => {
         downloadCsv(
             createCsvFilename("admin-audit-events"),
@@ -129,6 +134,8 @@ function AdminAuditContent() {
                         {error}
                     </Alert>
                 )}
+
+                <RiotLeagueFormAuditSummary summary={riotLeagueFormSummary} />
 
                 <AuditEventsList
                     events={events}

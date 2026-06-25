@@ -29,16 +29,63 @@ export function buildAdminAuditMetadataView(metadata: Record<string, unknown> | 
         hasMetadata: true,
         keyCount: keys.length,
         keys,
-        summary: formatMetadataSummary(keys),
+        summary: formatMetadataSummary(sanitized, keys),
         formatted: JSON.stringify(sanitized, null, 2),
     };
 }
 
-function formatMetadataSummary(keys: readonly string[]): string {
+function formatMetadataSummary(metadata: Record<string, unknown>, keys: readonly string[]): string {
+    const leagueFormSummary = formatLeagueFormSummary(metadata);
+    if (leagueFormSummary) return leagueFormSummary;
+
     const visibleKeys = keys.slice(0, summaryKeyLimit);
     const hiddenCount = Math.max(0, keys.length - visibleKeys.length);
     const suffix = hiddenCount > 0 ? `, +${hiddenCount} more` : "";
     return `${keys.length} metadata ${keys.length === 1 ? "key" : "keys"}: ${visibleKeys.join(", ")}${suffix}`;
+}
+
+function formatLeagueFormSummary(metadata: Record<string, unknown>): string | null {
+    if (readString(metadata.provider) !== "riot" || readString(metadata.game) !== "league") return null;
+
+    const outcome = readString(metadata.outcome);
+    if (!outcome) return null;
+
+    const parts = [`League form ${outcome}`];
+    const source = readString(metadata.source);
+    const cacheStatus = readString(metadata.cacheStatus);
+    const refreshRequested = readBoolean(metadata.refreshRequested);
+    const summaryStatus = readString(metadata.summaryStatus);
+    const matchCount = readNumber(metadata.matchCount);
+    const wins = readNumber(metadata.wins);
+    const losses = readNumber(metadata.losses);
+    const failedDetailCount = readNumber(metadata.failedDetailCount);
+    const requestedMatchCount = readNumber(metadata.requestedMatchCount);
+    const errorCategory = readString(metadata.errorCategory);
+
+    if (source) parts.push(`from ${source}`);
+    if (cacheStatus) parts.push(`cache ${cacheStatus}`);
+    if (refreshRequested === true) parts.push("refresh requested");
+    if (summaryStatus) parts.push(summaryStatus);
+    if (matchCount !== null) parts.push(`${matchCount} ${matchCount === 1 ? "match" : "matches"}`);
+    if (wins !== null && losses !== null) parts.push(`${wins}W-${losses}L`);
+    if (failedDetailCount !== null && failedDetailCount > 0) {
+        parts.push(`${failedDetailCount}/${requestedMatchCount ?? "?"} detail failures`);
+    }
+    if (errorCategory) parts.push(errorCategory);
+
+    return parts.join(" - ");
+}
+
+function readString(value: unknown): string | null {
+    return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function readNumber(value: unknown): number | null {
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function readBoolean(value: unknown): boolean | null {
+    return typeof value === "boolean" ? value : null;
 }
 
 function sanitizeAuditMetadataForDisplay(metadata: Record<string, unknown> | null | undefined): Record<string, unknown> | null {

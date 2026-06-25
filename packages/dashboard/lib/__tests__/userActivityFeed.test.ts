@@ -80,6 +80,27 @@ describe("userActivityFeed", () => {
         ]);
     });
 
+    it("labels League form audit events", () => {
+        const items = buildUserActivityFeed({
+            auditEvents: [
+                auditEvent({
+                    action: "riot.leagueForm",
+                    targetType: "riotRecentForm",
+                    targetId: "EUW",
+                    guildId: "guild-1",
+                }),
+            ],
+            deliveries: [],
+        });
+
+        expect(items).toEqual([
+            expect.objectContaining({
+                title: "Checked League form",
+                detail: "riotRecentForm EUW - guild guild-1",
+            }),
+        ]);
+    });
+
     it("honors a bounded limit", () => {
         const items = buildUserActivityFeed({
             auditEvents: [

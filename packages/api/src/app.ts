@@ -75,12 +75,17 @@ app.use(cors({
     credentials: true,
 }));
 
+function isPublicApiRoute(req: Request): boolean {
+    return req.method.toUpperCase() === 'GET' && req.path === '/anime/calendar.ics';
+}
+
 // Service-to-service auth (must come before JWT/CSRF)
 app.use('/api', serviceAuth);
 
 // Apply JWT auth to all /api routes except /api/auth/login; skip if service-authenticated
 app.use('/api', (req, res, next) => {
     if (req.path.startsWith('/auth/login')) return next();
+    if (isPublicApiRoute(req)) return next();
     if (shouldSkipJwt(req)) return next();
     return jwtAuth(req, res, next);
 });

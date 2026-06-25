@@ -16,6 +16,37 @@ export interface JobRunEntry {
     error?: string;
 }
 
+export interface PatchNotesStorageGameSummary {
+    contentBytes: number;
+    game: string;
+    newestPublishedAt: number | null;
+    oldestPublishedAt: number | null;
+    rows: number;
+    warnings: string[];
+}
+
+export interface PatchNotesStorageSummary {
+    games: PatchNotesStorageGameSummary[];
+    generatedAt: string;
+    lastScan: {
+        error?: string;
+        finishedAt: string;
+        historyPrunedRows: number;
+        historyTruncated: number;
+        ok: boolean;
+        startedAt: string;
+    } | null;
+    retention: {
+        cutoffPublishedAt: number;
+        maxBodyBytes: number;
+        maxRowsPerGame: number;
+        retentionDays: number;
+    };
+    totalContentBytes: number;
+    totalRows: number;
+    warnings: string[];
+}
+
 export const jobsApi = {
     triggerJob: (name: string, date?: string, force?: boolean) =>
         apiRequest<{ ok: boolean; jobId: string | number }>(
@@ -32,4 +63,7 @@ export const jobsApi = {
 
     getBirthdaysProcessedToday: () =>
         apiRequest<{ processed: number }>(`${API_ENDPOINTS.JOBS}/birthdays/today`),
+
+    getPatchNotesStorage: () =>
+        apiRequest<PatchNotesStorageSummary>(`${API_ENDPOINTS.JOBS}/patchnotes/storage`),
 };

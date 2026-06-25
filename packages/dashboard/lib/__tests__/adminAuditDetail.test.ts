@@ -44,4 +44,48 @@ describe("admin audit detail helpers", () => {
         expect(view.formatted).not.toContain("secret");
         expect(view.formatted).not.toContain("cookie");
     });
+
+    it("summarizes Riot League form success metadata for audit dogfooding", () => {
+        const view = buildAdminAuditMetadataView({
+            provider: "riot",
+            game: "league",
+            outcome: "live_partial",
+            source: "live",
+            cacheStatus: "bypass",
+            refreshRequested: true,
+            summaryStatus: "partial",
+            matchCount: 4,
+            wins: 3,
+            losses: 1,
+            requestedMatchCount: 5,
+            failedDetailCount: 1,
+        });
+
+        expect(view.summary).toBe("League form live_partial - from live - cache bypass - refresh requested - partial - 4 matches - 3W-1L - 1/5 detail failures");
+        expect(view.formatted).toContain('"provider": "riot"');
+    });
+
+    it("summarizes Riot League form failure metadata with error category", () => {
+        const view = buildAdminAuditMetadataView({
+            provider: "riot",
+            game: "league",
+            outcome: "history_failure",
+            cacheStatus: "miss",
+            errorCategory: "rate_limited",
+        });
+
+        expect(view.summary).toBe("League form history_failure - cache miss - rate_limited");
+    });
+
+    it("summarizes Riot League form identity failures for dogfood review", () => {
+        const view = buildAdminAuditMetadataView({
+            provider: "riot",
+            game: "league",
+            outcome: "identity_failure",
+            cacheStatus: "not_checked",
+            errorCategory: "missing_key",
+        });
+
+        expect(view.summary).toBe("League form identity_failure - cache not_checked - missing_key");
+    });
 });

@@ -243,16 +243,27 @@ describe('api request schemas', () => {
             quietHoursStart: '08:00',
             quietHoursEnd: '23:59',
             cooldownMinutes: null,
+            vodFollowupEnabled: true,
+            vodFollowupDelayMinutes: 15,
         })).toMatchObject({ quietHoursStart: '08:00' });
 
         expect(() => twitchCreateRequestSchema.parse({
             ...streamCreateBody('twitchUsername'),
             quietHoursStart: '25:00',
         })).toThrow();
+        expect(() => twitchCreateRequestSchema.parse({
+            ...streamCreateBody('twitchUsername'),
+            vodFollowupDelayMinutes: 0,
+        })).toThrow();
+        expect(() => tiktokCreateRequestSchema.parse({
+            ...streamCreateBody('tiktokUsername'),
+            vodFollowupEnabled: true,
+        })).toThrow();
     });
 
     it('requires at least one field for update request bodies', () => {
         expect(twitchUpdateRequestSchema.parse({ customMessage: 'Live now' })).toMatchObject({ customMessage: 'Live now' });
+        expect(twitchUpdateRequestSchema.parse({ vodFollowupEnabled: true, vodFollowupDelayMinutes: null })).toMatchObject({ vodFollowupEnabled: true });
         expect(blueskyUpdateRequestSchema.parse({ blueskyHandle: 'new.handle' })).toMatchObject({ blueskyHandle: 'new.handle' });
         expect(youtubeUpdateRequestSchema.parse({ cooldownMinutes: 10 })).toMatchObject({ cooldownMinutes: 10 });
         expect(serverUpdateRequestSchema.parse({ prefix: '!' })).toMatchObject({ prefix: '!' });

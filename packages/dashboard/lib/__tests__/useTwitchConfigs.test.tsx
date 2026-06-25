@@ -86,4 +86,46 @@ describe('useTwitchConfigs', () => {
 
         unmount();
     });
+
+    it('updates configs with PUT and preserves VOD follow-up fields', async () => {
+        const guildId = 'g1';
+        const configs = [
+            {
+                id: 7,
+                guildId,
+                twitchUsername: 'creator',
+                discordChannelId: 'c1',
+                customMessage: 'Live {url}',
+                vodFollowupEnabled: true,
+                vodFollowupDelayMinutes: 20,
+            },
+        ];
+        vi.spyOn(api, 'getTwitchConfigs').mockResolvedValue(configs as any);
+        const updateSpy = vi.spyOn(api, 'updateTwitchStream').mockResolvedValue({} as any);
+        const deleteSpy = vi.spyOn(api, 'deleteTwitchStream').mockResolvedValue({ success: true });
+        const createSpy = vi.spyOn(api, 'createTwitchStream').mockResolvedValue({ success: true } as any);
+
+        const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
+            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+        );
+
+        let result = false;
+        await act(async () => {
+            result = await (last() as any).updateConfig(configs[0]);
+        });
+        await flush();
+
+        expect(result).toBe(true);
+        expect(updateSpy).toHaveBeenCalledWith(7, expect.objectContaining({
+            twitchUsername: 'creator',
+            discordChannelId: 'c1',
+            guildId,
+            vodFollowupEnabled: true,
+            vodFollowupDelayMinutes: 20,
+        }));
+        expect(deleteSpy).not.toHaveBeenCalled();
+        expect(createSpy).not.toHaveBeenCalled();
+
+        unmount();
+    });
 });

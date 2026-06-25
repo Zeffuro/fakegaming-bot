@@ -1,11 +1,11 @@
 import { createHmac } from 'node:crypto';
 import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
-import { signTestJwt, expectForbidden, expectOk } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectForbidden, expectOk, expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
 
 const OLD_ENV = { ...process.env };
 
-function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf?: string; body?: any; requestId?: string; search?: string }) {
-    const { method, jwt, csrf, headerCsrf, body, requestId, search = '' } = opts;
+function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf?: string; body?: any; requestId?: string; search?: string; authorization?: string }) {
+    const { method, jwt, csrf, headerCsrf, body, requestId, search = '', authorization } = opts;
     return {
         method,
         nextUrl: { search },
@@ -14,6 +14,7 @@ function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf
                 if (name.toLowerCase() === 'content-type') return 'application/json';
                 if (name.toLowerCase() === 'x-csrf-token') return headerCsrf || null;
                 if (name.toLowerCase() === 'x-request-id') return requestId || null;
+                if (name.toLowerCase() === 'authorization') return authorization || null;
                 return null;
             }
         },
@@ -76,6 +77,53 @@ describe('external proxy route CSRF', () => {
         expectOk(res);
         const body = await res.json();
         expect(body.ok).toBe(true);
+    });
+
+    it('rejects a client bearer header without a dashboard JWT cookie', async () => {
+        const res = await GET(
+            makeReq({ method: 'GET', authorization: 'Bearer forged-token' }),
+            { params: Promise.resolve({ proxy: ['test'] }) } as any
+        );
+
+        expectUnauthorized(res);
+        const body = await res.json();
+        expect(body.error).toBe('Not authenticated');
+        expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it('uses the validated dashboard JWT cookie instead of a client bearer header', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        const res = await GET(
+            makeReq({ method: 'GET', jwt, authorization: 'Bearer forged-token' }),
+            { params: Promise.resolve({ proxy: ['test'] }) } as any
+        );
+
+        expectOk(res);
+        const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        const headers = init.headers as Record<string, string>;
+        expect(headers.Authorization).toBe(`Bearer ${jwt}`);
+    });
+
+    it('passes binary responses through without text decoding', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff]);
+        fetchMock.mockResolvedValueOnce(new Response(bytes, {
+            status: 200,
+            headers: {
+                'Content-Type': 'image/png',
+                'Content-Disposition': 'attachment; filename="quote-card.png"',
+            },
+        }));
+
+        const res = await GET(
+            makeReq({ method: 'GET', jwt }),
+            { params: Promise.resolve({ proxy: ['quotes', 'quote-1', 'card'] }) } as any
+        );
+
+        expectOk(res);
+        expect(res.headers.get('content-type')).toBe('image/png');
+        expect(res.headers.get('content-disposition')).toBe('attachment; filename="quote-card.png"');
+        expect(Array.from(new Uint8Array(await res.arrayBuffer()))).toEqual(Array.from(bytes));
     });
 
     it('forwards empty JSON POST bodies without parsing them', async () => {

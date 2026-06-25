@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound, seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const testTikTok = {
@@ -12,6 +12,7 @@ const testTikTok = {
 
 beforeEach(async () => {
     await configManager.tiktokManager.removeAll();
+    await seedUserGuilds('nonadminuser', [{ id: 'testguild2', permissions: '0' }]);
     await configManager.tiktokManager.add(testTikTok as any);
 });
 

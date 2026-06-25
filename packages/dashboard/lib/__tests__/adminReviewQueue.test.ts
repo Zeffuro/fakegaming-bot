@@ -260,4 +260,64 @@ describe('buildAdminReviewQueue', () => {
             }),
         ]);
     });
+
+    it('includes Riot League form audit metadata in failed review queue items', () => {
+        const queue = buildAdminReviewQueue({
+            auditEvents: [
+                auditEvent({
+                    id: 55,
+                    action: 'riot.leagueForm',
+                    targetType: 'riotRecentForm',
+                    targetId: 'EUW1',
+                    severity: 'error',
+                    metadata: {
+                        provider: 'riot',
+                        game: 'league',
+                        outcome: 'history_failure',
+                        cacheStatus: 'miss',
+                        errorCategory: 'rate_limited',
+                    },
+                }),
+            ],
+        });
+
+        expect(queue).toEqual([
+            expect.objectContaining({
+                id: 'audit:55',
+                title: 'Audit failed: Riot League form',
+                detail: 'user:user-1 -> riotRecentForm:EUW1 - League form history_failure - cache miss - rate_limited',
+                href: '/dashboard/admin/audit?status=failure&action=riot.leagueForm&scope=integrations&provider=riot&guildId=guild-1&severity=error',
+            }),
+        ]);
+    });
+
+    it('links Riot League form identity failures back to the Riot audit filter', () => {
+        const queue = buildAdminReviewQueue({
+            auditEvents: [
+                auditEvent({
+                    id: 56,
+                    action: 'riot.leagueForm',
+                    targetType: 'riotRecentForm',
+                    targetId: null,
+                    severity: 'error',
+                    metadata: {
+                        provider: 'riot',
+                        game: 'league',
+                        outcome: 'identity_failure',
+                        cacheStatus: 'not_checked',
+                        errorCategory: 'missing_key',
+                    },
+                }),
+            ],
+        });
+
+        expect(queue).toEqual([
+            expect.objectContaining({
+                id: 'audit:56',
+                title: 'Audit failed: Riot League form',
+                detail: 'user:user-1 -> riotRecentForm - League form identity_failure - cache not_checked - missing_key',
+                href: '/dashboard/admin/audit?status=failure&action=riot.leagueForm&scope=integrations&provider=riot&guildId=guild-1&severity=error',
+            }),
+        ]);
+    });
 });

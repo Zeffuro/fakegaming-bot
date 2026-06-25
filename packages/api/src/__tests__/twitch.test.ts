@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectUnauthorized, expectForbidden, expectBadRequest, expectNotFound, seedUserGuilds } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import { getFirstTwitchId } from './helpers/twitch.js';
 
@@ -16,6 +16,10 @@ beforeEach(async () => {
     process.env.DASHBOARD_ADMINS = 'testuser';
     // Clean up twitch table before each test
     await configManager.twitchManager.removeAll();
+    await seedUserGuilds('nonadminuser', [
+        { id: 'testguild1', permissions: '0' },
+        { id: 'testguild2', permissions: '0' },
+    ]);
     await configManager.twitchManager.add(testTwitch);
 });
 

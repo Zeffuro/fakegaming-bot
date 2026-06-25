@@ -43,8 +43,10 @@
     "start:dashboard": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start",
     "start:dashboard:dev": "pnpm --filter @zeffuro/fakegaming-bot-dashboard run start:dev",
     "clean": "node scripts/clean.js",
-    "fulltest": "pnpm run clean && pnpm run gen:manifest && pnpm --filter @zeffuro/fakegaming-common run build && pnpm run lint && pnpm run typecheck && pnpm run validate:commands && pnpm run validate:commands:strict && pnpm run validate:impl-vs-manifest && pnpm run build && pnpm run check:docs && pnpm run test:coverage",
+    "fulltest": "pnpm run clean && pnpm run gen:manifest && pnpm --filter @zeffuro/fakegaming-common run build && pnpm run lint && pnpm run typecheck && pnpm run validate:commands && pnpm run validate:commands:strict && pnpm run validate:impl-vs-manifest && pnpm run build && pnpm run smoke:cards && pnpm run check:docs && pnpm run test:coverage",
     "docker:build": "docker build -t fakegaming-api:local -f Dockerfile.api . && docker build -t fakegaming-bot:local -f Dockerfile.bot . && docker build -t fakegaming-dashboard:local -f Dockerfile.dashboard .",
+    "dogfood:league-form": "pnpm --filter @zeffuro/fakegaming-bot exec tsx ../../scripts/dogfood-league-form.ts",
+    "smoke:cards": "tsx scripts/smoke-card-renderers.ts",
     "scan:dupes": "jscpd --min-tokens 60 --reporters json,html --output report/jscpd --ignore \"**/__tests__/**,**/*.test.ts,**/*.test.tsx,**/*.test-d.ts,**/vitest.setup.ts,packages/common/src/manifest/bot-manifest.ts,packages/common/src/testing/**,packages/common/src/models/**\" packages/api/src packages/bot/src packages/dashboard/app packages/dashboard/components packages/dashboard/lib packages/common/src",
     "issues:summary": "tsx scripts/summarize-issues.ts",
     "ci:assert-jwt": "tsx scripts/assert-jwt-env.ts",
@@ -62,7 +64,7 @@
     "gen:api-docs": "pnpm --filter @zeffuro/fakegaming-bot-api run export:openapi && tsx scripts/generate-api-docs.ts",
     "check:api-docs": "tsx scripts/generate-api-docs.ts --check",
     "gen:docs": "pnpm run gen:manifest && pnpm run gen:command-docs && pnpm run gen:api-docs",
-    "check:docs": "pnpm run check:command-docs && pnpm run check:api-docs"
+    "check:docs": "pnpm run check:command-docs && pnpm run check:api-docs && tsx scripts/check-docs-consistency.ts"
   },
   "dependencies": {
     "cross-env": "^10.1.0",

@@ -232,7 +232,16 @@ describe('riotService helpers', () => {
     it('throws a stable error when Riot ID PUUID lookup fails', async () => {
         mockRiotApi.Account.getByRiotId.mockRejectedValueOnce(new Error('riot down'));
 
-        await expect(getPUUIDByRiotId('FailureUser', 'EUW', 'EUROPE' as any)).rejects.toThrow('Failed to fetch PUUID by Riot ID');
+        await expect(getPUUIDByRiotId('FailureUser', 'EUW', 'EUROPE' as any)).rejects.toThrow('Failed to fetch PUUID by Riot ID: riot down');
+    });
+
+    it('preserves missing API key details for Riot ID lookup telemetry', async () => {
+        delete process.env.RIOT_ACCOUNT_API_KEY;
+        delete process.env.RIOT_LEAGUE_API_KEY;
+        delete process.env.RIOT_TFT_API_KEY;
+        delete process.env.RIOT_DEV_API_KEY;
+
+        await expect(getPUUIDByRiotId('MissingKeyUser', 'EUW', 'EUROPE' as any)).rejects.toThrow('Failed to fetch PUUID by Riot ID: Missing Riot account API key');
     });
 
     it('refreshes stale linked PUUIDs from Riot ID and persists the update', async () => {

@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 134
+Operations: 141
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -10,6 +10,8 @@ Operations: 134
 | Anime | POST | `/anime` | Subscribe a guild channel to anime episode notifications | Bearer |
 | Anime | PATCH | `/anime/{id}` | Pause or resume an anime subscription | Bearer |
 | Anime | DELETE | `/anime/{id}` | Delete an anime subscription | Bearer |
+| Anime | GET | `/anime/calendar` | Get a tokenized personal anime calendar export URL | Bearer |
+| Anime | GET | `/anime/calendar.ics` | Read-only personal anime subscription calendar feed | Bearer |
 | Anime | POST | `/anime/me` | Subscribe the authenticated user to anime episode DM reminders | Bearer |
 | Anime | GET | `/anime/search` | Search AniList media | Bearer |
 | Anime | GET | `/anime/season` | List AniList titles for a season | Bearer |
@@ -39,6 +41,7 @@ Operations: 134
 | DisabledModules | DELETE | `/disabledModules/{id}` | Delete a disabled module by id | Bearer |
 | DisabledModules | GET | `/disabledModules/check` | Check if a module is disabled in a guild | Bearer |
 | Discord | GET | `/discord/guilds/{guildId}/members/search` | Search guild members by query (autocomplete) | Bearer |
+| Discord | GET | `/discord/guilds/{guildId}/users/{userId}/profile-card` | Download a Discord user profile card as a PNG | Bearer |
 | Discord | POST | `/discord/users/resolve` | Resolve minimal user profiles and guild nicknames | Bearer |
 | IntegrationHealth | GET | `/integrationHealth` | List integration health for a guild | Bearer |
 | IntegrationHealth | GET | `/integrationHealth/admin` | List integration health across guilds | Bearer |
@@ -48,11 +51,14 @@ Operations: 134
 | Jobs | GET | `/jobs/{name}/status` | Get recent runs for a job | Bearer |
 | Jobs | GET | `/jobs/birthdays/today` | Get number of birthday notifications processed today | Bearer |
 | Jobs | GET | `/jobs/heartbeat/last` | Get the last heartbeat payload/time | Bearer |
+| Jobs | GET | `/jobs/patchnotes/storage` | Get patch-note history storage usage and retention status | Bearer |
 | Notifications | GET | `/notifications/admin` | List recent notification delivery records | Bearer |
 | Notifications | GET | `/notifications/guild/{guildId}` | List recent notification delivery records for a guild | Bearer |
 | PatchNotes | GET | `/patchNotes` | List all patch notes | Bearer |
 | PatchNotes | POST | `/patchNotes` | Upsert (add or update) a patch note | Bearer |
 | PatchNotes | GET | `/patchNotes/{game}` | Get the latest patch note for a game | Bearer |
+| PatchNotes | GET | `/patchNotes/history` | List bounded patch-note history | Bearer |
+| PatchNotes | GET | `/patchNotes/history/compare` | Compare two stored patch-note history records | Bearer |
 | PatchNotes | GET | `/patchNotes/supportedGames` | List supported games for patch notes | Bearer |
 | PatchSubscriptions | GET | `/patchSubscriptions` | List all patch subscriptions | Bearer |
 | PatchSubscriptions | POST | `/patchSubscriptions` | Add a new patch subscription | Bearer |
@@ -64,6 +70,7 @@ Operations: 134
 | Quotes | POST | `/quotes` | Add a new quote | Bearer |
 | Quotes | GET | `/quotes/{id}` | Get a quote by id | Bearer |
 | Quotes | DELETE | `/quotes/{id}` | Delete a quote by id | Bearer |
+| Quotes | GET | `/quotes/{id}/card` | Download an approved quote as a PNG card | Bearer |
 | Quotes | PATCH | `/quotes/{id}/moderation` | Update quote moderation status | Bearer |
 | Quotes | GET | `/quotes/guild/{guildId}` | Get quotes by guild | Bearer |
 | Quotes | GET | `/quotes/guild/{guildId}/author/{authorId}` | Get quotes by author in guild | Bearer |

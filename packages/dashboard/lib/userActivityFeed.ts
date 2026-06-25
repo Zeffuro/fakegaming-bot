@@ -28,6 +28,7 @@ const auditActionLabels: Record<string, string> = {
     "quote.create": "Added quote",
     "reminder.create": "Created reminder",
     "reminder.delete": "Deleted reminder",
+    "riot.leagueForm": "Checked League form",
     "riotLink.delete": "Removed Riot link",
     "riotLink.upsert": "Updated Riot link",
     "userDigestSubscription.pause": "Paused personal digest",

@@ -93,7 +93,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 - Utility commands (poll, roll, weather, spin)
 
 ### 🔔 Notifications & Integrations
-- Twitch stream notifications (EventSub webhooks)
+- Twitch stream notifications (Helix polling)
 - YouTube video announcements
 - TikTok live stream alerts
 - Game patch notes (League of Legends, VALORANT, Marvel Rivals, Overwatch 2)
@@ -434,6 +434,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
 |`/help`|Slash|List all available commands and their descriptions.|All users|
+|`/league-form`|Slash|Summarize recent League of Legends form by Riot ID or linked user|All users|
 |`/league-history`|Slash|Get recent League of Legends match history by Riot ID or linked user|All users|
 |`/league-stats`|Slash|Get League of Legends stats by Riot ID or linked user|All users|
 |`/link-riot`|Slash|Link your Discord account or another user to a Riot account|All users|
@@ -448,6 +449,8 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|
+|`/profile-card`|Slash|Render a Discord profile card|All users|
+|`/quote-card`|Slash|Render an approved quote as a shareable image|All users|
 |`/quote-leaderboard`|Slash|Show the most quoted users in this server|All users|
 |`/quotes`|Slash|Get all quotes for a user|All users|
 |`/random-quote`|Slash|Get a random quote from the server|All users|
@@ -468,6 +471,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/tft-history`|Slash|Get recent Teamfight Tactics match history by Riot ID or linked user|All users|
 |`/tft-stats`|Slash|Get Teamfight Tactics ranked stats by Riot ID or linked user|All users|
 |`/time`|Slash|Convert a time into Discord timestamp formats|All users|
+|`/twitch-latest-vod`|Slash|Show the latest Twitch archive VOD for a channel|All users|
 |`/weather`|Slash|Get the current weather and a short forecast for a specified location|All users|
 |`/youtube-latest`|Slash|Show the latest video from a YouTube channel ID|All users|
 |`Remind Me in 1h`|Message context|Set a one-hour reminder for a message from the message context menu|All users|

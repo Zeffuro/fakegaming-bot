@@ -12,18 +12,28 @@ export function computeNextScanDelaySeconds(): number {
     return Math.max(300, base + jitter);
 }
 
-async function processPatchNotesScan(log = getLogger({ name: 'api:jobs:patchnotes:scan' })): Promise<{ updated: number; total: number; errors: number }> {
+async function processPatchNotesScan(log = getLogger({ name: 'api:jobs:patchnotes:scan' })): Promise<{
+    errors: number;
+    historyPrunedRows: number;
+    historyTruncated: number;
+    total: number;
+    updated: number;
+}> {
     const cm = getConfigManager();
     const fetchers = getDefaultPatchNoteFetchers();
     let updated = 0;
     let errors = 0;
+    let historyPrunedRows = 0;
+    let historyTruncated = 0;
 
     for (const fetcher of fetchers) {
         try {
             const latestStored = await cm.patchNotesManager.getLatestPatch(fetcher.game);
             const latestPatch = await fetcher.fetchLatestPatchNote(latestStored?.version ?? undefined);
             if (!latestPatch) continue;
-            await cm.patchNotesManager.setLatestPatch({ ...latestPatch, game: fetcher.game } as any);
+            const historyResult = await cm.patchNotesManager.setLatestPatch({ ...latestPatch, game: fetcher.game } as any);
+            historyPrunedRows += historyResult?.prunedRows ?? 0;
+            if (historyResult?.contentTruncated) historyTruncated += 1;
             updated += 1;
         } catch (err) {
             errors += 1;
@@ -31,7 +41,7 @@ async function processPatchNotesScan(log = getLogger({ name: 'api:jobs:patchnote
         }
     }
 
-    return { updated, total: fetchers.length, errors };
+    return { updated, total: fetchers.length, errors, historyPrunedRows, historyTruncated };
 }
 
 export async function registerPatchNotesScanJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
@@ -40,10 +50,15 @@ export async function registerPatchNotesScanJobs(queue: JobQueue, now: Date = ne
     queue.on('patchnotes:scan', async (job) => {
         const startedAt = new Date().toISOString();
         try {
-            const { updated, total, errors } = await processPatchNotesScan(log);
+            const { updated, total, errors, historyPrunedRows, historyTruncated } = await processPatchNotesScan(log);
             const delay = computeNextScanDelaySeconds();
             await scheduleSingleton(queue, 'patchnotes:scan', {}, delay, `patchnotes:scan:${Math.floor(Date.now() / 1000) + delay}`);
-            recordJobRun('patchnotes-scan', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { updated, total, errors } });
+            recordJobRun('patchnotes-scan', {
+                startedAt,
+                finishedAt: new Date().toISOString(),
+                ok: errors === 0,
+                meta: { updated, total, errors, historyPrunedRows, historyTruncated },
+            });
         } catch (err) {
             recordJobRun('patchnotes-scan', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
         } finally {
