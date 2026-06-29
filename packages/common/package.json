@@ -206,9 +206,9 @@
   "devDependencies": {
     "@types/ms": "^2.1.0",
     "@vitest/coverage-v8": "^4.1.9",
-    "eslint": "^10.5.0",
+    "eslint": "^10.6.0",
     "typescript": "^6.0.3",
-    "vite": "8.0.16",
+    "vite": "8.1.0",
     "vitest": "^4.1.9"
   }
 }
