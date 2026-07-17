@@ -33,6 +33,24 @@ describe('steam news jobs', () => {
         expect(selectNextSteamNewsItem(items, 'missing')?.gid).toBe('3');
     });
 
+    it('does not select stale Steam items older than the last announced timestamp', () => {
+        const gamescom = { ...baseItem, gid: '1838407329256944', title: 'Gamescom 2026', date: 1784214059 };
+        const coaches = { ...baseItem, gid: '1838407329259789', title: 'Coaches: New Vehicle Features', date: 1784300458 };
+
+        expect(selectNextSteamNewsItem([gamescom], coaches.gid, coaches.date * 1000)).toBeNull();
+        expect(selectNextSteamNewsItem([gamescom, coaches], gamescom.gid, gamescom.date * 1000)?.gid).toBe(coaches.gid);
+    });
+
+    it('uses last announced timestamps even when the stored gid is missing from the feed', () => {
+        const items: SteamNewsItem[] = [
+            { ...baseItem, gid: 'older', title: 'Older', date: 10 },
+            { ...baseItem, gid: 'newer', title: 'Newer', date: 20 },
+        ];
+
+        expect(selectNextSteamNewsItem(items, 'missing', 20_000)).toBeNull();
+        expect(selectNextSteamNewsItem(items, 'missing', '1970-01-01T00:00:15.000Z')?.gid).toBe('newer');
+    });
+
     it('fetches Steam community announcements sorted by date', async () => {
         const fetchMock = vi.fn().mockResolvedValue({
             ok: true,

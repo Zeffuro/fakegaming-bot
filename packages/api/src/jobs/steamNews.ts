@@ -1,15 +1,18 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
-import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { Op } from 'sequelize';
+import { getLogger, JobRun } from '@zeffuro/fakegaming-common';
+import { getConfigManager, type SteamNewsSubscriptionManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { formatMinuteKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
 import { getSteamAppById } from '@zeffuro/fakegaming-common/steam';
 import { getNotificationSuppression } from './notificationSuppression.js';
-import { sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
+import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 import { recordJobRun } from './status.js';
 
 const STEAM_NEWS_PROVIDER = 'steamnews';
 const STEAM_NEWS_FEED = 'steam_community_announcements';
+const STEAM_NEWS_RUN_NAME = 'steamnews';
+const MIN_STEAM_NEWS_POLL_INTERVAL_SECONDS = 20 * 60;
 
 export interface SteamNewsItem {
     gid: string;
@@ -110,7 +113,7 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
         try {
             const enrichedSubscription = await enrichSteamNewsSubscription(subscription, log);
             const items = await fetchSteamNewsForApp(enrichedSubscription.steamAppId);
-            const nextItem = selectNextSteamNewsItem(items, subscription.lastNewsGid);
+            const nextItem = selectNextSteamNewsItem(items, subscription.lastNewsGid, subscription.lastAnnouncedAt);
             if (!nextItem) {
                 await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, enrichedSubscription, {
                     metadata: {
@@ -141,6 +144,20 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
             }
 
             const eventId = buildSteamNewsEventId(enrichedSubscription, nextItem);
+            const alreadyAnnounced = await hasRecordedJobNotification(notifications, STEAM_NEWS_PROVIDER, eventId, enrichedSubscription.guildId);
+            if (alreadyAnnounced) {
+                await updateSteamNewsCursor(cm.steamNewsSubscriptionManager, enrichedSubscription, nextItem);
+                await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, enrichedSubscription, {
+                    metadata: {
+                        steamAppId: enrichedSubscription.steamAppId,
+                        appName: enrichedSubscription.appName ?? null,
+                        newsGid: nextItem.gid,
+                        skippedDuplicate: true,
+                    },
+                });
+                continue;
+            }
+
             const imageUrl = await fetchSteamNewsImageUrl(nextItem).catch((err: unknown) => {
                 log.debug({ err, newsUrl: nextItem.url }, 'Failed to fetch Steam news image metadata');
                 return null;
@@ -158,15 +175,7 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
                 throw new Error('Discord send returned no message id');
             }
 
-            const { id: rawSubscriptionId, ...subscriptionData } = enrichedSubscription;
-            const subscriptionId = typeof rawSubscriptionId === 'number' ? rawSubscriptionId : Number(rawSubscriptionId);
-            await cm.steamNewsSubscriptionManager.upsertSubscription({
-                ...subscriptionData,
-                ...(Number.isFinite(subscriptionId) ? { id: subscriptionId } : {}),
-                paused: Boolean(enrichedSubscription.paused),
-                lastNewsGid: nextItem.gid,
-                lastAnnouncedAt: nextItem.date * 1000,
-            });
+            await updateSteamNewsCursor(cm.steamNewsSubscriptionManager, enrichedSubscription, nextItem);
             processed += 1;
             await recordIntegrationSuccess(STEAM_NEWS_PROVIDER, enrichedSubscription, {
                 delivered: true,
@@ -225,28 +234,67 @@ export function extractSteamNewsImageUrl(value: string): string | null {
     return null;
 }
 
-export function selectNextSteamNewsItem(items: SteamNewsItem[], lastNewsGid?: string | null): SteamNewsItem | null {
+export function selectNextSteamNewsItem(
+    items: SteamNewsItem[],
+    lastNewsGid?: string | null,
+    lastAnnouncedAt?: number | string | Date | null
+): SteamNewsItem | null {
     if (items.length === 0) return null;
-    if (!lastNewsGid) return items[items.length - 1] ?? null;
+
+    const lastAnnouncedAtMs = parseSteamNewsTimestamp(lastAnnouncedAt);
+    const newerItems = lastAnnouncedAtMs === null
+        ? items
+        : items.filter((item) => item.date * 1000 > lastAnnouncedAtMs);
+
+    if (newerItems.length === 0) return null;
+    if (!lastNewsGid) return newerItems[newerItems.length - 1] ?? null;
 
     const lastIndex = items.findIndex((item) => item.gid === lastNewsGid);
-    if (lastIndex < 0) return items[items.length - 1] ?? null;
-    return items.slice(lastIndex + 1).at(-1) ?? null;
+    if (lastIndex < 0) return newerItems[newerItems.length - 1] ?? null;
+
+    const itemsAfterLastGid = items.slice(lastIndex + 1);
+    const candidates = lastAnnouncedAtMs === null
+        ? itemsAfterLastGid
+        : itemsAfterLastGid.filter((item) => item.date * 1000 > lastAnnouncedAtMs);
+    return candidates.at(-1) ?? null;
 }
 
 export async function registerSteamNewsJobs(queue: JobQueue, now: Date = new Date()): Promise<void> {
     const log = getLogger({ name: 'api:jobs:steamnews' });
 
     queue.on('steamnews:poll', async (job) => {
-        const startedAt = new Date().toISOString();
+        const startedAtDate = new Date();
+        const startedAt = startedAtDate.toISOString();
         try {
+            const recentRun = await getRecentSteamNewsRun(startedAtDate);
+            const recentRunFinishedAt = parseSteamNewsTimestamp(recentRun?.finishedAt);
+            const secondsSinceLastRun = recentRunFinishedAt !== null
+                ? Math.floor((startedAtDate.getTime() - recentRunFinishedAt) / 1000)
+                : null;
+            if (secondsSinceLastRun !== null && secondsSinceLastRun < MIN_STEAM_NEWS_POLL_INTERVAL_SECONDS) {
+                recordJobRun(STEAM_NEWS_RUN_NAME, {
+                    startedAt,
+                    finishedAt: new Date().toISOString(),
+                    ok: true,
+                    meta: {
+                        processed: 0,
+                        checked: 0,
+                        errors: 0,
+                        skipped: true,
+                        reason: 'recent_successful_run',
+                        secondsSinceLastRun,
+                    },
+                });
+                return;
+            }
+
             const result = await processSteamNewsSubscriptions(log);
             const delay = computeNextSteamNewsDelaySeconds();
             const nextAt = new Date(Date.now() + delay * 1000);
             await scheduleSingleton(queue, 'steamnews:poll', {}, delay, `steamnews:next:${formatMinuteKey(nextAt)}`);
-            recordJobRun('steamnews', { startedAt, finishedAt: new Date().toISOString(), ok: result.errors === 0, meta: result });
+            recordJobRun(STEAM_NEWS_RUN_NAME, { startedAt, finishedAt: new Date().toISOString(), ok: result.errors === 0, meta: result });
         } catch (err) {
-            recordJobRun('steamnews', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
+            recordJobRun(STEAM_NEWS_RUN_NAME, { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
         } finally {
             await job.done();
         }
@@ -260,6 +308,57 @@ export async function registerSteamNewsJobs(queue: JobQueue, now: Date = new Dat
 
 function buildSteamNewsEventId(subscription: SteamNewsSubscriptionPlain, item: SteamNewsItem): string {
     return `${subscription.steamAppId}:${item.gid}:${subscription.guildId}:${subscription.discordChannelId}`;
+}
+
+async function getRecentSteamNewsRun(startedAt: Date): Promise<JobRun | null> {
+    return await JobRun.findOne({
+        where: {
+            name: STEAM_NEWS_RUN_NAME,
+            ok: true,
+            finishedAt: {
+                [Op.lt]: startedAt,
+            },
+        },
+        order: [
+            ['finishedAt', 'DESC'],
+            ['id', 'DESC'],
+        ],
+    });
+}
+
+async function updateSteamNewsCursor(
+    manager: SteamNewsSubscriptionManager,
+    subscription: SteamNewsSubscriptionPlain,
+    item: SteamNewsItem
+): Promise<void> {
+    const { id: rawSubscriptionId, ...subscriptionData } = subscription;
+    const subscriptionId = typeof rawSubscriptionId === 'number' ? rawSubscriptionId : Number(rawSubscriptionId);
+    const payload: Parameters<SteamNewsSubscriptionManager['upsertSubscription']>[0] = {
+        ...subscriptionData,
+        ...(Number.isFinite(subscriptionId) ? { id: subscriptionId } : {}),
+        paused: Boolean(subscription.paused),
+        lastNewsGid: item.gid,
+        lastAnnouncedAt: item.date * 1000,
+    };
+    await manager.upsertSubscription(payload);
+}
+
+function parseSteamNewsTimestamp(value: number | string | Date | null | undefined): number | null {
+    if (value === null || value === undefined) return null;
+    if (value instanceof Date) {
+        const time = value.getTime();
+        return Number.isFinite(time) ? time : null;
+    }
+
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+
+    const numericValue = Number(value);
+    if (Number.isFinite(numericValue)) return numericValue;
+
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : null;
 }
 
 async function enrichSteamNewsSubscription(subscription: SteamNewsSubscriptionPlain, log = getLogger({ name: 'api:jobs:steamnews' })): Promise<SteamNewsSubscriptionPlain> {
