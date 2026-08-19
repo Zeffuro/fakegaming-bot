@@ -127,7 +127,10 @@ export {
   getDiscordGuildChannels,
   getDiscordUserById,
   getDiscordGuildMember,
-  getDiscordGuildMembersSearch
+  getDiscordGuildMembersSearch,
+  permissionNamesFromBitfield,
+  rolePermissionChannelKind,
+  rolePermissionOverwriteType
 } from './discord/index.js';
 
 export {

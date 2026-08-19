@@ -18,6 +18,7 @@ export * from "./api/setupTemplates";
 export * from "./api/steamNews";
 export * from "./api/quotes";
 export * from "./api/riotLinks";
+export * from "./api/rolePermissionSnapshots";
 export * from "./api/tiktok";
 export * from "./api/twitch";
 export * from "./api/userNotes";
@@ -41,6 +42,7 @@ import { setupTemplatesApi } from "./api/setupTemplates";
 import { steamNewsApi } from "./api/steamNews";
 import { quotesApi } from "./api/quotes";
 import { riotLinksApi } from "./api/riotLinks";
+import { rolePermissionSnapshotsApi } from "./api/rolePermissionSnapshots";
 import { tiktokApi } from "./api/tiktok";
 import { twitchApi } from "./api/twitch";
 import { userNotesApi } from "./api/userNotes";
@@ -68,6 +70,7 @@ export const api = {
     ...integrationHealthApi,
     ...notificationsApi,
     ...riotLinksApi,
+    ...rolePermissionSnapshotsApi,
     ...userNotesApi,
     ...userRemindersApi,
     ...userSettingsApi,

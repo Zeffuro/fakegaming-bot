@@ -25,3 +25,4 @@ export * from './integration-health.js';
 export * from './steam-news-subscription-config.js';
 export * from './user-note-config.js';
 export * from './user-digest-subscription-config.js';
+export * from './role-permission-snapshot.js';

@@ -21,6 +21,7 @@ export * from './integrationHealthManager.js';
 export * from './steamNewsManager.js';
 export * from './userNoteManager.js';
 export * from './userDigestSubscriptionManager.js';
+export * from './rolePermissionSnapshotManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

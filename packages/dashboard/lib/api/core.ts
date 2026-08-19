@@ -27,6 +27,7 @@ export const API_ENDPOINTS = {
     USER_SETTINGS: "/api/external/userSettings",
     USER_DIGEST_SUBSCRIPTION: "/api/external/userDigestSubscription",
     USER_ACTIVITY: "/api/external/userActivity",
+    ROLE_PERMISSION_SNAPSHOTS: "/api/external/rolePermissionSnapshots",
 };
 
 export interface ApiOptions {

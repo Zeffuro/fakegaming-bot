@@ -22,6 +22,7 @@ import {IntegrationHealthManager} from './integrationHealthManager.js';
 import {SteamNewsSubscriptionManager} from './steamNewsManager.js';
 import {UserNoteManager} from './userNoteManager.js';
 import {UserDigestSubscriptionManager} from './userDigestSubscriptionManager.js';
+import {RolePermissionSnapshotManager} from './rolePermissionSnapshotManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -54,6 +55,7 @@ export class ConfigManager {
     steamNewsSubscriptionManager = new SteamNewsSubscriptionManager();
     userNoteManager = new UserNoteManager();
     userDigestSubscriptionManager = new UserDigestSubscriptionManager();
+    rolePermissionSnapshotManager = new RolePermissionSnapshotManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

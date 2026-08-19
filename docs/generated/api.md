@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 141
+Operations: 145
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -66,6 +66,10 @@ Operations: 141
 | PatchSubscriptions | GET | `/patchSubscriptions/{id}` | Get a patch subscription by id | Bearer |
 | PatchSubscriptions | PATCH | `/patchSubscriptions/{id}` | Pause or resume a patch subscription | Bearer |
 | PatchSubscriptions | DELETE | `/patchSubscriptions/{id}` | Delete a patch subscription by id | Bearer |
+| Permissions | GET | `/rolePermissionSnapshots` | List saved role and channel permission snapshots for a guild | Bearer |
+| Permissions | GET | `/rolePermissionSnapshots/{id}` | Read one saved role and channel permission snapshot | Bearer |
+| Permissions | GET | `/rolePermissionSnapshots/live` | Read the current role and channel permission state from Discord | Bearer |
+| Permissions | POST | `/rolePermissionSnapshots/live` | Save a current role and channel permission snapshot from Discord | Bearer |
 | Quotes | GET | `/quotes` | List all quotes | Bearer |
 | Quotes | POST | `/quotes` | Add a new quote | Bearer |
 | Quotes | GET | `/quotes/{id}` | Get a quote by id | Bearer |

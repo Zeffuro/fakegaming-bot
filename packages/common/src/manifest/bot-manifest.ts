@@ -201,6 +201,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null
     },
     {
+        "name": "permissions-backup",
+        "description": "Save and export role, category, and channel permissions",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
         "name": "profile-card",
         "description": "Render a Discord profile card",
         "module": "general",
@@ -810,6 +820,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             {
                 "name": "poll",
                 "description": "Create a simple poll for users to vote on",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "permissions-backup",
+                "description": "Save and export role, category, and channel permissions",
                 "module": "general",
                 "permissions": null,
                 "dm_permission": null,

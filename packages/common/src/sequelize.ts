@@ -27,6 +27,7 @@ import {IntegrationHealth} from './models/integration-health.js';
 import {SteamNewsSubscriptionConfig} from './models/steam-news-subscription-config.js';
 import {UserNoteConfig} from './models/user-note-config.js';
 import {UserDigestSubscriptionConfig} from './models/user-digest-subscription-config.js';
+import {RolePermissionSnapshot} from './models/role-permission-snapshot.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -86,7 +87,8 @@ export function getSequelize(useTest = false): Sequelize {
         IntegrationHealth,
         SteamNewsSubscriptionConfig,
         UserNoteConfig,
-        UserDigestSubscriptionConfig
+        UserDigestSubscriptionConfig,
+        RolePermissionSnapshot
     ]);
 
     return sequelize;

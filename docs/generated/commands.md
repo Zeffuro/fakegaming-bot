@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 58 commands; 54 slash; 2 user context; 2 message context.
+Total: 59 commands; 55 slash; 2 user context; 2 message context.
 
 ## Anime
 
@@ -34,6 +34,7 @@ Total: 58 commands; 54 slash; 2 user context; 2 message context.
 | --- | --- | --- | --- |
 | Slash | `/calendar` | Show upcoming birthdays and your reminders | All users |
 | Slash | `/help` | List all available commands and their descriptions. | All users |
+| Slash | `/permissions-backup` | Save and export role, category, and channel permissions | All users |
 | Slash | `/poll` | Create a simple poll for users to vote on | All users |
 | Slash | `/profile-card` | Render a Discord profile card | All users |
 | Slash | `/roll` | Roll dice or generate a random number | All users |

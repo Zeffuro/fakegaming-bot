@@ -448,6 +448,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
+|`/permissions-backup`|Slash|Save and export role, category, and channel permissions|All users|
 |`/poll`|Slash|Create a simple poll for users to vote on|All users|
 |`/profile-card`|Slash|Render a Discord profile card|All users|
 |`/quote-card`|Slash|Render an approved quote as a shareable image|All users|

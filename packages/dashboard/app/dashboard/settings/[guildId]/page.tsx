@@ -16,6 +16,7 @@ import {
     NotificationsActive,
     PowerSettingsNew,
     Settings,
+    Security,
     Timeline,
     Tune,
     UploadFile,
@@ -197,6 +198,15 @@ export default function GuildSettingsPage() {
             icon: <Block />,
             actionLabel: "Manage Commands",
             chipLabel: "Access",
+        },
+        {
+            title: "Permission State",
+            description: "Inspect live roles, members, category overwrites, and channel permissions with historical snapshots.",
+            href: `/dashboard/permissions/${encodedGuildId}`,
+            accent: dashboardAccents.commands,
+            icon: <Security />,
+            actionLabel: "Open Permissions",
+            chipLabel: "Read only",
         },
         {
             title: "Quote Library",
