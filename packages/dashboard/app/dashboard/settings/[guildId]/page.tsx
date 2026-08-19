@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Box, Button, Chip, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, FormControl, LinearProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
     ArrowForward,
@@ -33,6 +33,7 @@ import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useGuildCommands } from "@/components/hooks/useGuildCommands";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useGuildModules } from "@/components/hooks/useGuildModules";
+import { useGuildLocaleConfig } from "@/components/hooks/useGuildLocaleConfig";
 import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
 import { usePatchSubscriptions } from "@/components/hooks/usePatchSubscriptions";
 import { useSteamNewsConfigs } from "@/components/hooks/useSteamNews";
@@ -72,6 +73,7 @@ export default function GuildSettingsPage() {
     const notificationTransferHref = `${notificationSetupHref}#notification-transfer`;
     const commandsApi = useGuildCommands(guildId as string);
     const modulesApi = useGuildModules(guildId as string);
+    const localeConfig = useGuildLocaleConfig(guildId as string, { enabled: guildReady });
     const integrationHealth = useIntegrationHealth(guildId as string, undefined, { enabled: guildReady });
     const twitchApi = useTwitchConfigs(guildId as string, { enabled: guildReady });
     const youtubeApi = useYouTubeConfigs(guildId as string, { enabled: guildReady });
@@ -275,6 +277,31 @@ export default function GuildSettingsPage() {
                         </Box>
 
                         <Stack spacing={3}>
+                            <SettingsCard
+                                title="Bot Output Language"
+                                description="Choose the language used by supported bot responses in this server."
+                                accent={dashboardAccents.settings}
+                            >
+                                <Stack spacing={1.25}>
+                                    <FormControl size="small" fullWidth>
+                                        <Select
+                                            value={localeConfig.outputLocale}
+                                            onChange={(event) => void localeConfig.updateOutputLocale(event.target.value as "en" | "nl")}
+                                            disabled={localeConfig.loading || localeConfig.saving}
+                                            inputProps={{ "aria-label": "Bot output language" }}
+                                        >
+                                            <MenuItem value="en">English</MenuItem>
+                                            <MenuItem value="nl">Nederlands</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                    {localeConfig.error ? (
+                                        <Typography variant="caption" sx={{ color: dashboardAccents.patchNotes }}>
+                                            {localeConfig.error}
+                                        </Typography>
+                                    ) : null}
+                                </Stack>
+                            </SettingsCard>
+
                             <SettingsCard
                                 title="Server Snapshot"
                                 description="Discord remains the source of truth for roles, channels, permissions, and member data."

@@ -1,124 +1,230 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest, expectReplyTextContains } from '@zeffuro/fakegaming-common/testing';
-import { ChatInputCommandInteraction } from 'discord.js';
+import type { ButtonInteraction } from 'discord.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import pollCommand, {
+    createPollComponentHandler,
+    hasDuplicatePollOptions,
+    normalizePollQuestion,
+} from '../commands/poll.js';
+import {
+    PollSessionStore,
+    renderPollMessage,
+    type PollSession,
+    type PollSessionMessage,
+} from '../shared/pollSession.js';
 
-describe('poll command', () => {
-    beforeEach(() => {
-        // Reset all mocks and clear module cache before each test
-        vi.resetAllMocks();
-        vi.resetModules();
+function createMessage(): PollSessionMessage & { edit: ReturnType<typeof vi.fn> } {
+    return { edit: vi.fn().mockResolvedValue(undefined) };
+}
+
+function createStore(): PollSessionStore {
+    return new PollSessionStore({
+        createId: () => 'poll-1',
+        renderDebounceMs: 25,
+        sessionRetentionMs: 1_000,
+    });
+}
+
+function createSession(store: PollSessionStore, message = createMessage()): PollSession {
+    const session = store.create({
+        creatorId: 'creator',
+        question: 'Which option?',
+        options: ['Alpha', 'Beta'],
+        durationMinutes: 1,
+        message,
+    });
+    if (!session) throw new Error('Expected poll session to be created.');
+    return session;
+}
+
+function button(customId: string, userId = 'voter'): ButtonInteraction & {
+    deferUpdate: ReturnType<typeof vi.fn>;
+    reply: ReturnType<typeof vi.fn>;
+} {
+    return {
+        customId,
+        user: { id: userId },
+        deferUpdate: vi.fn().mockResolvedValue(undefined),
+        reply: vi.fn().mockResolvedValue(undefined),
+    } as unknown as ButtonInteraction & {
+        deferUpdate: ReturnType<typeof vi.fn>;
+        reply: ReturnType<typeof vi.fn>;
+    };
+}
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
+describe('PollSessionStore', () => {
+    it('renders live counts and safe button component IDs', () => {
+        const store = createStore();
+        const session = createSession(store);
+        store.vote(session.id, 'one', 0);
+        store.vote(session.id, 'two', 1);
+        store.vote(session.id, 'three', 1);
+
+        const rendered = renderPollMessage(session);
+        expect(rendered.content).toContain('1. Alpha - 1 vote (33%)');
+        expect(rendered.content).toContain('2. Beta - 2 votes (67%)');
+        expect(rendered.allowedMentions).toEqual({ parse: [] });
+        expect(rendered.components[0]?.components).toHaveLength(2);
+        expect(rendered.components[1]?.components).toHaveLength(1);
+        expect(rendered.components[0]?.components[0]?.toJSON()).toMatchObject({ custom_id: 'poll:vote:poll-1:0' });
+        expect(rendered.components[1]?.components[0]?.toJSON()).toMatchObject({ custom_id: 'poll:close:poll-1' });
+        store.clear();
     });
 
-    it('creates a poll with two options', async () => {
-        // Mock for fetchReply
-        const mockMessage = {
-            react: vi.fn().mockResolvedValue(undefined)
-        };
+    it('keeps one vote per user while allowing vote changes', () => {
+        const store = createStore();
+        const session = createSession(store);
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/poll.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        question: 'Test poll question?',
-                        option1: 'Option One',
-                        option2: 'Option Two'
-                    },
-                    fetchReply: vi.fn().mockResolvedValue(mockMessage)
-                }
-            }
-        );
+        expect(store.vote(session.id, 'voter', 0)).toMatchObject({ status: 'recorded' });
+        expect(store.vote(session.id, 'voter', 1)).toMatchObject({ status: 'recorded' });
+        expect(store.vote(session.id, 'voter', 1)).toMatchObject({ status: 'unchanged' });
 
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
-
-        // Verify the interaction reply contains the question and options
-        expectReplyTextContains(interaction, '📊 Test poll question?');
-        expectReplyTextContains(interaction, '1️⃣ Option One');
-        expectReplyTextContains(interaction, '2️⃣ Option Two');
-
-        // Verify fetchReply was called to get the message for adding reactions
-        expect(interaction.fetchReply).toHaveBeenCalled();
-
-        // Verify reactions were added to the message
-        expect(mockMessage.react).toHaveBeenCalledWith('1️⃣');
-        expect(mockMessage.react).toHaveBeenCalledWith('2️⃣');
-        // Only 2 reactions should be added
-        expect(mockMessage.react).toHaveBeenCalledTimes(2);
+        const rendered = renderPollMessage(session);
+        expect(session.votes.size).toBe(1);
+        expect(rendered.content).toContain('1. Alpha - 0 votes (0%)');
+        expect(rendered.content).toContain('2. Beta - 1 vote (100%)');
+        store.clear();
     });
 
-    it('creates a poll with maximum number of options', async () => {
-        // Mock for fetchReply
-        const mockMessage = {
-            react: vi.fn().mockResolvedValue(undefined)
-        };
-
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/poll.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        question: 'Test poll with many options?',
-                        option1: 'Option One',
-                        option2: 'Option Two',
-                        option3: 'Option Three',
-                        option4: 'Option Four',
-                        option5: 'Option Five'
-                    },
-                    fetchReply: vi.fn().mockResolvedValue(mockMessage)
-                }
-            }
-        );
-
-        // Execute the command
-        await command.execute(interaction as unknown as ChatInputCommandInteraction);
-
-        // Verify the interaction reply contains all options
-        expectReplyTextContains(interaction, '📊 Test poll with many options?');
-        expectReplyTextContains(interaction, '1️⃣ Option One');
-        expectReplyTextContains(interaction, '5️⃣ Option Five');
-
-        // Verify all 5 reactions were added
-        expect(mockMessage.react).toHaveBeenCalledTimes(5);
-        expect(mockMessage.react).toHaveBeenCalledWith('5️⃣');
+    it('rejects duplicate option labels after trim and case normalization', () => {
+        expect(hasDuplicatePollOptions([' Alpha ', 'alpha'])).toBe(true);
+        expect(hasDuplicatePollOptions(['Alpha', 'Beta'])).toBe(false);
     });
 
-    it('handles reaction errors gracefully', async () => {
-        // Mock for fetchReply with a react method that fails
-        const mockMessage = {
-            react: vi.fn()
-                .mockResolvedValueOnce(undefined) // First reaction succeeds
-                .mockRejectedValueOnce(new Error('Failed to react')) // Second reaction fails
-                .mockResolvedValueOnce(undefined) // Third reaction succeeds
-        };
+    it('trims poll questions and rejects whitespace-only input', () => {
+        expect(normalizePollQuestion('  Which option?  ')).toBe('Which option?');
+        expect(normalizePollQuestion('   ')).toBe('');
+    });
 
-        // Setup the test environment
-        const { command, interaction } = await setupCommandTest(
-            'modules/general/commands/poll.js',
-            {
-                interaction: {
-                    stringOptions: {
-                        question: 'Test poll with error?',
-                        option1: 'Option One',
-                        option2: 'Option Two',
-                        option3: 'Option Three'
-                    },
-                    fetchReply: vi.fn().mockResolvedValue(mockMessage)
-                }
-            }
-        );
+    it('debounces public message updates during vote bursts', async () => {
+        vi.useFakeTimers();
+        const store = createStore();
+        const message = createMessage();
+        const session = createSession(store, message);
 
-        // Execute the command - it should not throw despite the reaction error
-        await expect(
-            command.execute(interaction as unknown as ChatInputCommandInteraction)
-        ).resolves.not.toThrow();
+        store.vote(session.id, 'one', 0);
+        store.vote(session.id, 'two', 1);
+        await vi.advanceTimersByTimeAsync(24);
+        expect(message.edit).not.toHaveBeenCalled();
 
-        // Verify the poll was still created
-        expect((interaction.reply as any).mock.calls.length).toBeGreaterThan(0);
+        await vi.advanceTimersByTimeAsync(1);
+        expect(message.edit).toHaveBeenCalledTimes(1);
+        store.clear();
+    });
 
-        // Verify all 3 react methods were called despite the error
-        expect(mockMessage.react).toHaveBeenCalledTimes(3);
+    it('only allows the creator to close and renders final results', async () => {
+        const store = createStore();
+        const message = createMessage();
+        const session = createSession(store, message);
+        const handleComponent = createPollComponentHandler(store);
+
+        const intruder = button(`poll:close:${session.id}`, 'intruder');
+        await expect(handleComponent(intruder)).resolves.toBe(true);
+        expect(intruder.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: 'Only the poll creator can close this poll.',
+        }));
+        expect(session.closedAt).toBeNull();
+
+        store.vote(session.id, 'one', 0);
+        const creator = button(`poll:close:${session.id}`, 'creator');
+        await expect(handleComponent(creator)).resolves.toBe(true);
+        expect(creator.deferUpdate).toHaveBeenCalledTimes(1);
+        expect(session.closedAt).not.toBeNull();
+        expect(message.edit).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('Winner: **Alpha** (1 vote).'),
+        }));
+        store.clear();
+    });
+
+    it('reports ties and percentages in the final result', () => {
+        const store = createStore();
+        const session = createSession(store);
+        store.vote(session.id, 'one', 0);
+        store.vote(session.id, 'two', 1);
+        store.close(session.id, 'creator');
+
+        const rendered = renderPollMessage(session);
+        expect(rendered.content).toContain('1. Alpha - 1 vote (50%)');
+        expect(rendered.content).toContain('2. Beta - 1 vote (50%)');
+        expect(rendered.content).toContain('Result: tie between **Alpha**, **Beta** (1 vote each).');
+        expect(rendered.components.flatMap(row => row.components).every(component => component.data.disabled)).toBe(true);
+        store.clear();
+    });
+
+    it('keeps five option buttons within Discord row limits and renders bounded slash input', () => {
+        const store = createStore();
+        const rendered = renderPollMessage({
+            ...createSession(store),
+            question: 'Q'.repeat(200),
+            options: Array.from({ length: 5 }, () => 'O'.repeat(200)),
+        });
+        const commandJson = pollCommand.data.toJSON();
+        const question = commandJson.options?.find(option => option.name === 'question');
+        const options = commandJson.options?.filter(option => option.name.startsWith('option')) ?? [];
+
+        expect(rendered.content.length).toBeLessThanOrEqual(2_000);
+        expect(rendered.components).toHaveLength(2);
+        expect(rendered.components[0]?.components).toHaveLength(5);
+        expect(rendered.components[1]?.components).toHaveLength(1);
+        expect(question).toMatchObject({ max_length: 200 });
+        expect(options).toHaveLength(5);
+        expect(options).toEqual(expect.arrayContaining([expect.objectContaining({ max_length: 200 })]));
+        store.clear();
+    });
+
+    it('expires polls, disables buttons, and rejects later clicks', async () => {
+        vi.useFakeTimers();
+        const store = createStore();
+        const message = createMessage();
+        const session = createSession(store, message);
+        const handleComponent = createPollComponentHandler(store);
+
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(session.closeReason).toBe('expired');
+        expect(message.edit).toHaveBeenCalledWith(expect.objectContaining({
+            components: expect.any(Array),
+        }));
+
+        const afterExpiry = button(`poll:vote:${session.id}:0`);
+        await expect(handleComponent(afterExpiry)).resolves.toBe(true);
+        expect(afterExpiry.reply).toHaveBeenCalledWith(expect.objectContaining({ content: 'This poll is closed.' }));
+        store.clear();
+    });
+
+    it('handles concurrent double clicks without counting a user twice', async () => {
+        const store = createStore();
+        const session = createSession(store);
+        const handleComponent = createPollComponentHandler(store);
+        const first = button(`poll:vote:${session.id}:0`, 'voter');
+        const second = button(`poll:vote:${session.id}:1`, 'voter');
+
+        await Promise.all([handleComponent(first), handleComponent(second)]);
+        expect(session.votes.size).toBe(1);
+        expect([...session.votes.values()]).toHaveLength(1);
+        expect(first.deferUpdate).toHaveBeenCalledTimes(1);
+        expect(second.deferUpdate).toHaveBeenCalledTimes(1);
+        store.clear();
+    });
+
+    it('handles stale and malformed poll component IDs without claiming another namespace', async () => {
+        const store = createStore();
+        const handleComponent = createPollComponentHandler(store);
+        const stale = button('poll:vote:missing:0');
+        const foreign = button('anime:subscribe:42');
+
+        await expect(handleComponent(stale)).resolves.toBe(true);
+        expect(stale.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('no longer available'),
+        }));
+        await expect(handleComponent(foreign)).resolves.toBe(false);
+        const malformed = button('poll:vote:missing:');
+        await expect(handleComponent(malformed)).resolves.toBe(true);
+        expect(malformed.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('no longer available'),
+        }));
+        store.clear();
     });
 });

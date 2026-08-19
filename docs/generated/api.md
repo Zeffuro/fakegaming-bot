@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 145
+Operations: 148
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -43,6 +43,8 @@ Operations: 145
 | Discord | GET | `/discord/guilds/{guildId}/members/search` | Search guild members by query (autocomplete) | Bearer |
 | Discord | GET | `/discord/guilds/{guildId}/users/{userId}/profile-card` | Download a Discord user profile card as a PNG | Bearer |
 | Discord | POST | `/discord/users/resolve` | Resolve minimal user profiles and guild nicknames | Bearer |
+| Guild Settings | GET | `/guildLocaleConfig` | Read a guild's bot output locale | Bearer |
+| Guild Settings | PUT | `/guildLocaleConfig` | Set a guild's bot output locale | Bearer |
 | IntegrationHealth | GET | `/integrationHealth` | List integration health for a guild | Bearer |
 | IntegrationHealth | GET | `/integrationHealth/admin` | List integration health across guilds | Bearer |
 | IntegrationHealth | POST | `/integrationHealth/admin/{provider}/{configId}/resolve` | Mark a stale integration health finding as resolved | Bearer |
@@ -68,6 +70,7 @@ Operations: 145
 | PatchSubscriptions | DELETE | `/patchSubscriptions/{id}` | Delete a patch subscription by id | Bearer |
 | Permissions | GET | `/rolePermissionSnapshots` | List saved role and channel permission snapshots for a guild | Bearer |
 | Permissions | GET | `/rolePermissionSnapshots/{id}` | Read one saved role and channel permission snapshot | Bearer |
+| Permissions | DELETE | `/rolePermissionSnapshots/{id}` | Permanently delete a saved permission snapshot | Bearer |
 | Permissions | GET | `/rolePermissionSnapshots/live` | Read the current role and channel permission state from Discord | Bearer |
 | Permissions | POST | `/rolePermissionSnapshots/live` | Save a current role and channel permission snapshot from Discord | Bearer |
 | Quotes | GET | `/quotes` | List all quotes | Bearer |

@@ -12,10 +12,13 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {loadCommands} from './core/loadCommands.js';
 import {preloadAllModules} from './core/preloadModules.js';
 import {deployCommands} from "./deploy-commands.js";
+import {ComponentRouter, componentNamespace} from './core/componentRouter.js';
+import {deployCommandsAtStartup} from './core/startupDeployment.js';
 import { loadApplicationEmojiCache, syncApplicationEmojisFromDir } from './core/applicationEmojiManager.js';
 import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
 import { getLogger, startMetricsSummaryLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { startHealthServer } from './utils/healthServer.js';
+import { startGameNightExpiryRuntime } from './modules/game-night/shared/gameNightRuntime.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -50,19 +53,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
             process.exit(1);
         }
 
-        deployCommands().then((result) => {
-            logger.info({
-                mode: result.mode,
-                scope: result.scope,
-                targets: result.targets.map(target => ({
-                    action: target.action,
-                    key: target.key,
-                    target: target.target,
-                })),
-            }, "Slash command deployment check completed.");
-        }).catch(err => {
-            logger.error({ err }, "Failed to deploy slash commands:");
-        });
+        await deployCommandsAtStartup(deployCommands, logger);
 
         await getConfigManager().init();
 
@@ -99,37 +90,40 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
             logger.error({ err }, 'Error loading commands:');
             process.exit(1);
         }
+        const componentRouter = new ComponentRouter(client.commands);
 
         // Now that the client exists, bind it to the health server
         void startHealthServer({ client, port: healthPort, host: healthHost, logger });
 
         client.once('clientReady', async () => {
             logger.info({ user: client.user?.tag }, `Logged in as ${client.user?.tag}`);
+            try {
+                await startGameNightExpiryRuntime(client);
+            } catch (error) {
+                logger.warn({ err: error }, 'Failed to restore Game Night Board expiry timers');
+            }
         });
 
 
         client.on(Events.InteractionCreate, async (interaction: Interaction) => {
             if (interaction.isButton()) {
-                for (const command of client.commands.values()) {
-                    if (!command.handleComponent) continue;
+                try {
+                    const handled = await componentRouter.dispatch(interaction);
+                    if (handled) return;
+                } catch (error) {
+                    incMetric('component_error', { name: componentNamespace(interaction.customId) });
+                    logger.error({ err: error, customId: interaction.customId }, 'Error handling component interaction');
                     try {
-                        const handled = await command.handleComponent(interaction);
-                        if (handled) return;
-                    } catch (error) {
-                        incMetric('component_error', { name: interaction.customId.split(':')[0] ?? 'unknown' });
-                        logger.error({ err: error, customId: interaction.customId }, 'Error handling component interaction');
-                        try {
-                            if (!interaction.replied && !interaction.deferred) {
-                                await interaction.reply({
-                                    content: 'Error handling interaction.',
-                                    flags: MessageFlags.Ephemeral
-                                });
-                            }
-                        } catch (err) {
-                            logger.error({ err }, 'Failed to send component error reply:');
+                        if (!interaction.replied && !interaction.deferred) {
+                            await interaction.reply({
+                                content: 'Error handling interaction.',
+                                flags: MessageFlags.Ephemeral
+                            });
                         }
-                        return;
+                    } catch (err) {
+                        logger.error({ err }, 'Failed to send component error reply:');
                     }
+                    return;
                 }
                 return;
             }

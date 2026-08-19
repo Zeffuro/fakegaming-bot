@@ -6,6 +6,8 @@ import {
     blueskyCreateRequestSchema,
     blueskyUpdateRequestSchema,
     discordResolveUsersRequestSchema,
+    guildLocaleConfigResponseSchema,
+    guildLocaleConfigUpdateRequestSchema,
     jobRunRequestSchema,
     patchSubscriptionRequestSchema,
     quoteCreateRequestSchema,
@@ -43,6 +45,8 @@ describe('api request schemas', () => {
             'DisabledCommandCreateRequest',
             'DisabledModuleCreateRequest',
             'DiscordResolveUsersRequest',
+            'GuildLocaleConfig',
+            'GuildLocaleConfigUpdateRequest',
             'JobRunRequest',
             'PatchNoteCreateRequest',
             'PatchSubscriptionRequest',
@@ -74,6 +78,13 @@ describe('api request schemas', () => {
             'YoutubeCreateRequest',
             'YoutubeUpdateRequest',
         ]);
+    });
+
+    it('validates the bounded guild output locale contract', () => {
+        expect(guildLocaleConfigUpdateRequestSchema.parse({ outputLocale: 'nl' })).toEqual({ outputLocale: 'nl' });
+        expect(guildLocaleConfigResponseSchema.parse({ guildId: 'guild-1', outputLocale: 'en' }))
+            .toEqual({ guildId: 'guild-1', outputLocale: 'en' });
+        expect(() => guildLocaleConfigUpdateRequestSchema.parse({ outputLocale: 'fr' })).toThrow();
     });
 
     it('accepts representative valid request bodies', () => {

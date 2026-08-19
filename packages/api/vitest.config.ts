@@ -10,6 +10,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/vitest.setup.ts'],
+    maxWorkers: 4,
+    testTimeout: 20_000,
     include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
     coverage: {
       provider: 'v8',

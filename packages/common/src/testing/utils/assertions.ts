@@ -9,6 +9,7 @@ function getStatus(res: HasStatusLike): number {
 
 export function expectOk(res: HasStatusLike) { expect(getStatus(res)).toBe(200); }
 export function expectCreated(res: HasStatusLike) { expect(getStatus(res)).toBe(201); }
+export function expectNoContent(res: HasStatusLike) { expect(getStatus(res)).toBe(204); }
 export function expectBadRequest(res: HasStatusLike) { expect(getStatus(res)).toBe(400); }
 export function expectUnauthorized(res: HasStatusLike) { expect(getStatus(res)).toBe(401); }
 export function expectForbidden(res: HasStatusLike) { expect(getStatus(res)).toBe(403); }

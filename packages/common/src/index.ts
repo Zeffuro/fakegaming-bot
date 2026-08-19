@@ -41,6 +41,10 @@ export {
   IntegrationHealth,
   SteamNewsSubscriptionConfig,
   UserDigestSubscriptionConfig,
+  GuildLocaleConfig,
+  GameNightSession,
+  GameNightNomination,
+  GameNightVote,
   type AuditActorType,
   type AuditEventSeverity,
   type AuditEventStatus,
@@ -84,6 +88,18 @@ export {
   IntegrationHealthManager,
   SteamNewsSubscriptionManager,
   UserDigestSubscriptionManager,
+  GuildLocaleConfigManager,
+  type GuildLocaleConfigRecord,
+  GameNightManager,
+  GameNightError,
+  GAME_NIGHT_DEFAULT_DURATION_HOURS,
+  GAME_NIGHT_MAX_DURATION_HOURS,
+  GAME_NIGHT_MAX_NAME_LENGTH,
+  GAME_NIGHT_MIN_DURATION_HOURS,
+  GAME_NIGHT_MAX_NOMINATIONS,
+  GAME_NIGHT_MIN_NOMINATIONS,
+  type GameNightBoard,
+  type GameNightErrorCode,
   type AuditEventInput,
   type AuditEventRecord,
   type AuditEventListOptions,
@@ -185,6 +201,12 @@ export {
 export { asValidated } from './utils/typeUtils.js';
 
 export { SUPPORTED_GAMES } from './utils/supportedGames.js';
+export {
+  SUPPORTED_OUTPUT_LOCALES,
+  DEFAULT_OUTPUT_LOCALE,
+  isSupportedOutputLocale,
+  type SupportedOutputLocale
+} from './utils/outputLocale.js';
 
 export { getLogger, createChildLogger, setLoggerLevel } from './utils/logger.js';
 export { incMetric, getMetricsSnapshot, resetMetrics, startMetricsSummaryLogger } from './utils/metrics.js';

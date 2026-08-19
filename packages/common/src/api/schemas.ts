@@ -109,6 +109,15 @@ export const disabledModuleCreateRequestSchema = z.object({
     moduleName: nonEmptyString,
 }).strict();
 
+export const guildLocaleConfigUpdateRequestSchema = z.object({
+    outputLocale: z.enum(['en', 'nl']),
+}).strict();
+
+export const guildLocaleConfigResponseSchema = z.object({
+    guildId: nonEmptyString,
+    outputLocale: z.enum(['en', 'nl']),
+}).strict();
+
 export const discordResolveUsersRequestSchema = z.object({
     guildId: nonEmptyString,
     ids: z.array(nonEmptyString).max(50),
@@ -335,6 +344,8 @@ export const apiRequestSchemas = {
     DisabledCommandCreateRequest: disabledCommandCreateRequestSchema,
     DisabledModuleCreateRequest: disabledModuleCreateRequestSchema,
     DiscordResolveUsersRequest: discordResolveUsersRequestSchema,
+    GuildLocaleConfig: guildLocaleConfigResponseSchema,
+    GuildLocaleConfigUpdateRequest: guildLocaleConfigUpdateRequestSchema,
     JobRunRequest: jobRunRequestSchema,
     PausedStateRequest: pausedStateRequestSchema,
     PatchNoteCreateRequest: patchNoteCreateRequestSchema,

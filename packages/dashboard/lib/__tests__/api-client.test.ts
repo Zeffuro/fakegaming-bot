@@ -30,6 +30,29 @@ describe('api-client', () => {
         expect(result).toEqual(response);
     });
 
+    it('handles successful no-content deletion responses', async () => {
+        getFetchMock().mockResolvedValueOnce({ ok: true, status: 204 });
+
+        await expect(api.deleteRolePermissionSnapshot('guild-1', 12)).resolves.toBeUndefined();
+        expectFetchCalledWith(
+            `${API_ENDPOINTS.ROLE_PERMISSION_SNAPSHOTS}/12?guildId=guild-1`,
+            { method: 'DELETE' },
+        );
+    });
+
+    it('loads and saves guild bot output language', async () => {
+        mockOkJsonOnce({ guildId: 'guild-1', outputLocale: 'en' });
+        await expect(api.getGuildLocaleConfig('guild-1')).resolves.toEqual({ guildId: 'guild-1', outputLocale: 'en' });
+        expectFetchCalledWith(`${API_ENDPOINTS.GUILD_LOCALE_CONFIG}?guildId=guild-1`, { method: 'GET' });
+
+        mockOkJsonOnce({ guildId: 'guild-1', outputLocale: 'nl' });
+        await expect(api.updateGuildLocaleConfig('guild-1', 'nl')).resolves.toEqual({ guildId: 'guild-1', outputLocale: 'nl' });
+        expectFetchCalledWith(`${API_ENDPOINTS.GUILD_LOCALE_CONFIG}?guildId=guild-1`, {
+            method: 'PUT',
+            body: JSON.stringify({ outputLocale: 'nl' }),
+        });
+    });
+
     it('updateTwitchStream performs PUT with body', async () => {
         const payload = { paused: true };
         const response = { id: 123, paused: true };

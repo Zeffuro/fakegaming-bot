@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 59 commands; 55 slash; 2 user context; 2 message context.
+Total: 62 commands; 57 slash; 2 user context; 3 message context.
 
 ## Anime
 
@@ -28,15 +28,22 @@ Total: 59 commands; 55 slash; 2 user context; 2 message context.
 | Slash | `/add-bluesky-account` | Add a Bluesky account for post notifications | Administrator |
 | Slash | `/manage-bluesky-accounts` | List, test, pause, resume, or remove Bluesky post notifications | Administrator |
 
+## Game Night
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/game-night` | Nominate and vote on games for a server game night | All users |
+
 ## General
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/calendar` | Show upcoming birthdays and your reminders | All users |
 | Slash | `/help` | List all available commands and their descriptions. | All users |
-| Slash | `/permissions-backup` | Save and export role, category, and channel permissions | All users |
-| Slash | `/poll` | Create a simple poll for users to vote on | All users |
+| Slash | `/permissions-backup` | Save and export role, category, and channel permissions | Administrator |
+| Slash | `/poll` | Create a button poll with live results | All users |
 | Slash | `/profile-card` | Render a Discord profile card | All users |
+| Slash | `/question` | Draw a conversation question from a local deck | All users |
 | Slash | `/roll` | Roll dice or generate a random number | All users |
 | Slash | `/spin` | Spin the wheel to pick someone! | All users |
 | Slash | `/test-notification` | Send a sample notification to a channel | All users |
@@ -120,6 +127,7 @@ Total: 59 commands; 55 slash; 2 user context; 2 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/notes` | Add, list, show, and delete your personal notes | All users |
+| Message context | `Save to Notes` | Save a message excerpt and jump link to your private notes | All users |
 
 ## Steam
 

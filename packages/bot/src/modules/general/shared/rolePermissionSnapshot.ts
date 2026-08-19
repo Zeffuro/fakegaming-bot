@@ -1,4 +1,4 @@
-import { Routes, type Guild, type GuildBasedChannel, type GuildMember, type Role } from 'discord.js';
+import { Routes, type Guild, type GuildBasedChannel, type Role } from 'discord.js';
 import {
     ROLE_PERMISSION_SNAPSHOT_VERSION,
     type RolePermissionSnapshotChannel,
@@ -208,12 +208,6 @@ function readPermissionBitfield(value: unknown, fallback: string): string {
     return fallback;
 }
 
-function snapshotMember(member: GuildMember): RolePermissionSnapshotMember {
-    return {
-        id: member.id,
-        username: member.user.username,
-        globalName: member.user.globalName,
-        displayName: member.displayName,
-        nickname: member.nickname,
-    };
+function snapshotMember(member: { id: string }): RolePermissionSnapshotMember {
+    return { id: member.id };
 }

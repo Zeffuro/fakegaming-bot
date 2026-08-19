@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ChatInputCommandInteraction } from 'discord.js';
+import { ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from 'discord.js';
 import { expectReplyTextContains, setupCommandTest } from '@zeffuro/fakegaming-common/testing';
 
 const notes = [
@@ -112,5 +112,92 @@ describe('notes command', () => {
 
         expect(removeForUser).toHaveBeenCalledWith('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '123456789012345678');
         expectReplyTextContains(interaction, 'Deleted note `bbbbbbbb`');
+    });
+});
+
+describe('Save to Notes message context command', () => {
+    it('saves a private note with a bounded excerpt and jump link', async () => {
+        const createForUser = vi.fn().mockResolvedValue({id: 'cccccccc-cccc-cccc-cccc-cccccccccccc'});
+        const { command, interaction } = await setupCommandTest(
+            'modules/notes/commands/saveMessageToNotes.js',
+            {
+                interaction: {
+                    guildId: 'guild-1',
+                    user: { id: '123456789012345678' },
+                    targetMessage: {
+                        id: 'message-1',
+                        channelId: 'channel-1',
+                        content: '<@&role> ' + 'x'.repeat(1600),
+                        url: 'https://discord.com/channels/guild-1/channel-1/message-1',
+                        attachments: { size: 0 },
+                        stickers: { size: 0 },
+                    },
+                },
+                managerOverrides: { userNoteManager: { createForUser } },
+            }
+        );
+
+        await command.execute(interaction as unknown as MessageContextMenuCommandInteraction);
+
+        expect(createForUser).toHaveBeenCalledWith(expect.objectContaining({
+            discordId: '123456789012345678',
+            title: 'Saved message',
+            body: expect.stringContaining('Source: https://discord.com/channels/guild-1/channel-1/message-1'),
+        }));
+        const body = createForUser.mock.calls[0]?.[0].body as string;
+        expect(body).toContain('...');
+        expect(body).not.toContain('x'.repeat(1600));
+        expectReplyTextContains(interaction, 'Saved this message to your private notes');
+        expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({allowedMentions: {parse: []}}));
+    });
+
+    it('saves attachment-only messages in DMs without downloading them', async () => {
+        const createForUser = vi.fn().mockResolvedValue({id: 'dddddddd-1111-2222-3333-444444444444'});
+        const { command, interaction } = await setupCommandTest(
+            'modules/notes/commands/saveMessageToNotes.js',
+            {
+                interaction: {
+                    guildId: null,
+                    user: { id: 'dm-user' },
+                    targetMessage: {
+                        id: 'message-2',
+                        channelId: 'dm-channel',
+                        content: '',
+                        attachments: { size: 1 },
+                        stickers: { size: 0 },
+                    },
+                },
+                managerOverrides: { userNoteManager: { createForUser } },
+            }
+        );
+
+        await command.execute(interaction as unknown as MessageContextMenuCommandInteraction);
+
+        expect(createForUser).toHaveBeenCalledWith(expect.objectContaining({
+            discordId: 'dm-user',
+            body: expect.stringContaining('[Message contains 1 attachment; files were not downloaded.]'),
+        }));
+        expect(createForUser.mock.calls[0]?.[0].body).toContain('/@me/dm-channel/message-2');
+    });
+
+    it('reports manager failures without leaking message content', async () => {
+        const createForUser = vi.fn().mockRejectedValue(new Error('database unavailable'));
+        const { command, interaction } = await setupCommandTest(
+            'modules/notes/commands/saveMessageToNotes.js',
+            {
+                interaction: {
+                    guildId: 'guild-1',
+                    user: { id: 'user-1' },
+                    targetMessage: { id: 'message-3', channelId: 'channel-1', content: 'secret content' },
+                },
+                managerOverrides: { userNoteManager: { createForUser } },
+            }
+        );
+
+        await command.execute(interaction as unknown as MessageContextMenuCommandInteraction);
+
+        expectReplyTextContains(interaction, 'could not save');
+        const replyContent = (interaction.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]?.content as string;
+        expect(replyContent).not.toContain('secret content');
     });
 });

@@ -14,7 +14,8 @@ import {
     DisabledModuleConfig,
     TikTokStreamConfig,
     BlueskyPostConfig,
-    AnimeSubscriptionConfig
+    AnimeSubscriptionConfig,
+    GuildLocaleConfig,
 } from "@zeffuro/fakegaming-common/models";
 import { apiRequestSchemas } from "@zeffuro/fakegaming-common/api";
 import { modelToOpenApiSchema, zodSchemaToOpenApiSchema } from "@zeffuro/fakegaming-common/utils";
@@ -39,6 +40,7 @@ const modelSchemaSources: SchemaSource[] = [
     ['DisabledCommandConfig', DisabledCommandConfig as ModelCtor<Model>],
     ['DisabledModuleConfig', DisabledModuleConfig as ModelCtor<Model>],
     ['AnimeSubscriptionConfig', AnimeSubscriptionConfig as ModelCtor<Model>],
+    ['GuildLocaleConfig', GuildLocaleConfig as ModelCtor<Model>],
     ['PatchNoteConfig', PatchNoteConfig as ModelCtor<Model>],
     ['PatchSubscriptionConfig', PatchSubscriptionConfig as ModelCtor<Model>],
     ['QuoteConfig', QuoteConfig as ModelCtor<Model>],

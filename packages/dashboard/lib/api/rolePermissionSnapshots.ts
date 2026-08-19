@@ -1,4 +1,4 @@
-import type { RolePermissionSnapshotData } from '@zeffuro/fakegaming-common/models';
+import type { RolePermissionSnapshotData, RolePermissionSnapshotMemberNames } from '@zeffuro/fakegaming-common/models';
 import { API_ENDPOINTS, apiRequest } from './core';
 
 export interface RolePermissionSnapshotRecord {
@@ -16,10 +16,12 @@ interface RolePermissionSnapshotsResponse {
 
 interface RolePermissionSnapshotResponse {
     snapshot: RolePermissionSnapshotRecord;
+    memberNames?: RolePermissionSnapshotMemberNames;
 }
 
 interface LiveRolePermissionSnapshotResponse {
     snapshot: RolePermissionSnapshotData;
+    memberNames: RolePermissionSnapshotMemberNames;
 }
 
 function guildQuery(guildId: string): string {
@@ -38,4 +40,7 @@ export const rolePermissionSnapshotsApi = {
 
     saveLiveRolePermissionSnapshot: (guildId: string) =>
         apiRequest<RolePermissionSnapshotResponse>(`${API_ENDPOINTS.ROLE_PERMISSION_SNAPSHOTS}/live${guildQuery(guildId)}`, { method: 'POST' }),
+
+    deleteRolePermissionSnapshot: (guildId: string, id: number) =>
+        apiRequest<void>(`${API_ENDPOINTS.ROLE_PERMISSION_SNAPSHOTS}/${id}${guildQuery(guildId)}`, { method: 'DELETE' }),
 };

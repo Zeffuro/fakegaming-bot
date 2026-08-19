@@ -17,3 +17,4 @@ export * from './quoteMetadata.js';
 export * from './quoteOfDay.js';
 export * from './reminderRecurrence.js';
 export * from './digestSchedule.js';
+export * from './outputLocale.js';

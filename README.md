@@ -432,6 +432,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
 |`/delete-quote`|Slash|Delete a quote you added or authored|All users|
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
+|`/game-night`|Slash|Nominate and vote on games for a server game night|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
 |`/help`|Slash|List all available commands and their descriptions.|All users|
 |`/league-form`|Slash|Summarize recent League of Legends form by Riot ID or linked user|All users|
@@ -448,9 +449,10 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
-|`/permissions-backup`|Slash|Save and export role, category, and channel permissions|All users|
-|`/poll`|Slash|Create a simple poll for users to vote on|All users|
+|`/permissions-backup`|Slash|Save and export role, category, and channel permissions|Administrator|
+|`/poll`|Slash|Create a button poll with live results|All users|
 |`/profile-card`|Slash|Render a Discord profile card|All users|
+|`/question`|Slash|Draw a conversation question from a local deck|All users|
 |`/quote-card`|Slash|Render an approved quote as a shareable image|All users|
 |`/quote-leaderboard`|Slash|Show the most quoted users in this server|All users|
 |`/quotes`|Slash|Get all quotes for a user|All users|
@@ -477,6 +479,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/youtube-latest`|Slash|Show the latest video from a YouTube channel ID|All users|
 |`Remind Me in 1h`|Message context|Set a one-hour reminder for a message from the message context menu|All users|
 |`Save as Quote`|Message context|Save a message as a quote from the message context menu|All users|
+|`Save to Notes`|Message context|Save a message excerpt and jump link to your private notes|All users|
 |`Show Birthday`|User context|Show a user birthday from the user context menu|All users|
 |`Show Quotes`|User context|Show quotes for a user from the user context menu|All users|
 <!-- COMMAND_TABLE_END -->

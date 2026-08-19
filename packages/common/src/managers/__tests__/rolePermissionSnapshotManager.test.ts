@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+    RolePermissionSnapshot,
     ROLE_PERMISSION_SNAPSHOT_VERSION,
     type RolePermissionSnapshotData,
 } from '../../models/role-permission-snapshot.js';
@@ -41,10 +42,6 @@ const snapshot: RolePermissionSnapshotData = {
         permissionsBitfield: '8',
         members: [{
             id: 'member-1',
-            username: 'member-one',
-            globalName: 'Member One',
-            displayName: 'Member One',
-            nickname: null,
         }],
     }],
     channels: [{
@@ -69,6 +66,11 @@ describe('RolePermissionSnapshotManager', () => {
     const manager = configManager.rolePermissionSnapshotManager;
 
     beforeEach(async () => {
+        await manager.removeAll();
+    });
+
+    afterEach(async () => {
+        delete process.env.ROLE_PERMISSION_SNAPSHOT_RETENTION;
         await manager.removeAll();
     });
 
@@ -98,4 +100,61 @@ describe('RolePermissionSnapshotManager', () => {
         });
         await expect(manager.getSnapshot('other-guild', saved.id)).resolves.toBeNull();
     });
+
+    it('enforces per-guild retention and supports guild-scoped deletion', async () => {
+        process.env.ROLE_PERMISSION_SNAPSHOT_RETENTION = '2';
+        const first = await manager.createSnapshot({ guildId: snapshot.guild.id, guildName: snapshot.guild.name, createdById: 'admin-1', snapshot });
+        const second = await manager.createSnapshot({ guildId: snapshot.guild.id, guildName: snapshot.guild.name, createdById: 'admin-1', snapshot });
+        const third = await manager.createSnapshot({ guildId: snapshot.guild.id, guildName: snapshot.guild.name, createdById: 'admin-1', snapshot });
+
+        expect(await manager.listSnapshots(snapshot.guild.id, 10)).toHaveLength(2);
+        await expect(manager.getSnapshot(snapshot.guild.id, first.id)).resolves.toBeNull();
+        await expect(manager.deleteSnapshot('other-guild', second.id)).resolves.toBe(false);
+        await expect(manager.deleteSnapshot(snapshot.guild.id, second.id)).resolves.toBe(true);
+        await expect(manager.getSnapshot(snapshot.guild.id, third.id)).resolves.not.toBeNull();
+    });
+
+    it('physically redacts valid v2 member profiles and surfaces invalid stored rows', async () => {
+        const legacy = await RolePermissionSnapshot.create({
+            guildId: snapshot.guild.id,
+            guildName: snapshot.guild.name,
+            createdById: 'admin-1',
+            snapshot: legacySnapshot() as never,
+        });
+
+        await expect(manager.redactLegacySnapshots()).resolves.toBe(1);
+        const raw = await RolePermissionSnapshot.findByPk(legacy.id, { raw: true });
+        const stored = typeof raw?.snapshot === 'string'
+            ? JSON.parse(raw.snapshot) as Record<string, unknown>
+            : raw?.snapshot as unknown as Record<string, unknown>;
+        const serialized = JSON.stringify(stored);
+        expect(stored.version).toBe(ROLE_PERMISSION_SNAPSHOT_VERSION);
+        expect(serialized).not.toContain('Private Name');
+        expect(serialized).not.toContain('private-user');
+
+        const invalid = await RolePermissionSnapshot.create({
+            guildId: snapshot.guild.id,
+            guildName: snapshot.guild.name,
+            createdById: 'admin-1',
+            snapshot: { version: 99 } as never,
+        });
+        await expect(manager.redactLegacySnapshots()).rejects.toThrow(`snapshot #${invalid.id} is invalid`);
+    });
 });
+
+function legacySnapshot(): unknown {
+    return {
+        ...snapshot,
+        version: 2,
+        roles: snapshot.roles.map(role => ({
+            ...role,
+            members: role.members.map(member => ({
+                ...member,
+                username: 'private-user',
+                globalName: 'Private Name',
+                displayName: 'Private Name',
+                nickname: 'Private Name',
+            })),
+        })),
+    };
+}

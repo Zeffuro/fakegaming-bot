@@ -3,14 +3,17 @@ import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 import { givenAuthenticatedClient } from './helpers/client.js';
 import * as Discord from '@zeffuro/fakegaming-common/discord';
-import type { RolePermissionSnapshotData } from '@zeffuro/fakegaming-common/models';
-import { expectCreated, expectNotFound, expectOk } from '@zeffuro/fakegaming-common/testing';
+import {
+    ROLE_PERMISSION_SNAPSHOT_VERSION,
+    type RolePermissionSnapshotData,
+} from '@zeffuro/fakegaming-common/models';
+import { expectCreated, expectNoContent, expectNotFound, expectOk } from '@zeffuro/fakegaming-common/testing';
 
 const client = givenAuthenticatedClient(app, { discordId: 'testuser' });
 const guildId = 'testguild1';
 
 const savedSnapshot: RolePermissionSnapshotData = {
-    version: 2,
+    version: ROLE_PERMISSION_SNAPSHOT_VERSION,
     capturedAt: '2026-08-19T10:00:00.000Z',
     guild: { id: guildId, name: 'Test Guild', memberCount: 1 },
     roleData: { source: 'fetched', capturedRoleCount: 1, fetchFailed: false },
@@ -27,13 +30,7 @@ const savedSnapshot: RolePermissionSnapshotData = {
         mentionable: false,
         permissions: ['ViewChannel'],
         permissionsBitfield: '1024',
-        members: [{
-            id: 'member-1',
-            username: 'member',
-            globalName: 'Member',
-            displayName: 'Member',
-            nickname: null,
-        }],
+        members: [{ id: 'member-1' }],
     }],
     channels: [{
         id: 'category-1',
@@ -61,6 +58,7 @@ describe('Role permission snapshots API', () => {
 
     afterEach(() => {
         delete process.env.DISCORD_BOT_TOKEN;
+        vi.restoreAllMocks();
     });
 
     it('lists and retrieves only snapshots for the requested guild', async () => {
@@ -81,6 +79,7 @@ describe('Role permission snapshots API', () => {
         expectOk(list);
         expect(list.body.snapshots).toHaveLength(1);
         expect(list.body.snapshots[0]).toMatchObject({ id: created.id, guildId, snapshot: savedSnapshot });
+        expect(list.headers['cache-control']).toBe('private, no-store');
 
         const found = await client.get(`/api/rolePermissionSnapshots/${created.id}`).query({ guildId });
         expectOk(found);
@@ -88,6 +87,22 @@ describe('Role permission snapshots API', () => {
 
         const hiddenFromOtherGuild = await client.get(`/api/rolePermissionSnapshots/${other.id}`).query({ guildId });
         expectNotFound(hiddenFromOtherGuild);
+    });
+
+    it('deletes snapshots only within the requested guild', async () => {
+        const created = await configManager.rolePermissionSnapshotManager.createSnapshot({
+            guildId,
+            guildName: 'Test Guild',
+            createdById: 'testuser',
+            snapshot: savedSnapshot,
+        });
+
+        const hidden = await client.delete(`/api/rolePermissionSnapshots/${created.id}`).query({ guildId: 'testguild2' });
+        expectNotFound(hidden);
+
+        const deleted = await client.delete(`/api/rolePermissionSnapshots/${created.id}`).query({ guildId });
+        expectNoContent(deleted);
+        await expect(configManager.rolePermissionSnapshotManager.getSnapshot(guildId, created.id)).resolves.toBeNull();
     });
 
     it('reads and saves the live role, member, category, and channel permission state', async () => {
@@ -150,7 +165,7 @@ describe('Role permission snapshots API', () => {
         expectOk(live);
         expect(live.headers['cache-control']).toBe('private, no-store');
         expect(live.body.snapshot).toMatchObject({
-            version: 2,
+            version: ROLE_PERMISSION_SNAPSHOT_VERSION,
             guild: { id: guildId, name: 'Live Guild', memberCount: 1 },
             roleData: { source: 'fetched', capturedRoleCount: 2, fetchFailed: false },
             memberData: { source: 'fetched', capturedMemberCount: 1, fetchFailed: false },
@@ -160,9 +175,12 @@ describe('Role permission snapshots API', () => {
             expect.objectContaining({
                 id: 'role-1',
                 permissions: ['Administrator'],
-                members: [expect.objectContaining({ id: 'member-1', displayName: 'Ali' })],
+                members: [{ id: 'member-1' }],
             }),
         ]));
+        expect(live.body.memberNames).toEqual({ 'member-1': 'Ali' });
+        expect(JSON.stringify(live.body.snapshot)).not.toContain('alice');
+        expect(JSON.stringify(live.body.snapshot)).not.toContain('Ali');
         expect(live.body.snapshot.channels).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 id: 'category-1',
@@ -184,6 +202,9 @@ describe('Role permission snapshots API', () => {
         expectCreated(saved);
         expect(saved.body.snapshot).toMatchObject({ guildId, createdById: 'testuser' });
         expect(saved.body.snapshot.snapshot.channels).toHaveLength(2);
+        expect(saved.body.memberNames).toEqual({ 'member-1': 'Ali' });
+        expect(JSON.stringify(saved.body.snapshot.snapshot)).not.toContain('alice');
+        expect(JSON.stringify(saved.body.snapshot.snapshot)).not.toContain('Ali');
         expect(await configManager.rolePermissionSnapshotManager.listSnapshots(guildId)).toHaveLength(1);
     });
 });

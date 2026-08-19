@@ -128,16 +128,16 @@ pnpm typecheck
 1. Create command file in `src/modules/yourmodule/commands/your-command.ts`:
 
 ```typescript
-import { SlashCommandBuilder } from 'discord.js';
-import type { CommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, type CommandInteraction } from 'discord.js';
 
-export const data = new SlashCommandBuilder()
-    .setName('your-command')
-    .setDescription('Your command description');
-
-export async function execute(interaction: CommandInteraction) {
-    await interaction.reply('Hello!');
-}
+export default {
+    data: new SlashCommandBuilder()
+        .setName('your-command')
+        .setDescription('Your command description'),
+    async execute(interaction: CommandInteraction) {
+        await interaction.reply('Hello!');
+    },
+};
 ```
 
 2. Command will be auto-discovered and registered
@@ -240,7 +240,6 @@ https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot%20application
 - Attach Files (32768)
 - Read Message History (65536)
 - Use External Emojis (262144)
-- Add Reactions (64)
 
 ## Health Endpoints
 

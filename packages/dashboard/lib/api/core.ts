@@ -28,6 +28,7 @@ export const API_ENDPOINTS = {
     USER_DIGEST_SUBSCRIPTION: "/api/external/userDigestSubscription",
     USER_ACTIVITY: "/api/external/userActivity",
     ROLE_PERMISSION_SNAPSHOTS: "/api/external/rolePermissionSnapshots",
+    GUILD_LOCALE_CONFIG: "/api/external/guildLocaleConfig",
 };
 
 export interface ApiOptions {
@@ -106,6 +107,8 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
             || `API request failed with status: ${response.status}`,
         );
     }
+
+    if (response.status === 204) return undefined as T;
 
     return await response.json();
 }

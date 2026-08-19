@@ -104,4 +104,25 @@ export default {
 
         expect(client.commands.size).toBe(0);
     });
+
+    it('rejects duplicate command names and reports both source paths', async () => {
+        const modulesPath = await createTempModulesRoot();
+        await writeCommand(
+            modulesPath,
+            'first.js',
+            `export default { data: { name: 'duplicate' }, execute: async () => undefined };`,
+        );
+        await writeCommand(
+            modulesPath,
+            'second.js',
+            `export default { data: { name: 'duplicate' }, execute: async () => undefined };`,
+        );
+
+        const client = createClient();
+
+        await expect(loadCommands(client, modulesPath)).rejects.toThrow(
+            /Duplicate command name "duplicate" found in .*first\.js.*second\.js/,
+        );
+        expect(client.commands.size).toBe(1);
+    });
 });

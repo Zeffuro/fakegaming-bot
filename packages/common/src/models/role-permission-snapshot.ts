@@ -1,6 +1,6 @@
 import { AutoIncrement, Column, DataType, Default, Index, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
-export const ROLE_PERMISSION_SNAPSHOT_VERSION = 2;
+export const ROLE_PERMISSION_SNAPSHOT_VERSION = 3;
 
 export type RolePermissionSnapshotSource = 'fetched' | 'cache' | 'unavailable';
 
@@ -18,11 +18,9 @@ export type RolePermissionSnapshotOverwriteType = 'role' | 'member' | 'unknown';
 
 export interface RolePermissionSnapshotMember {
     id: string;
-    username: string;
-    globalName: string | null;
-    displayName: string;
-    nickname: string | null;
 }
+
+export type RolePermissionSnapshotMemberNames = Record<string, string>;
 
 export interface RolePermissionSnapshotRole {
     id: string;
@@ -58,7 +56,7 @@ export interface RolePermissionSnapshotChannel {
 }
 
 export interface RolePermissionSnapshotData {
-    version: number;
+    version: typeof ROLE_PERMISSION_SNAPSHOT_VERSION;
     capturedAt: string;
     guild: {
         id: string;

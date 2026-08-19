@@ -1,7 +1,97 @@
-import type {
-    RolePermissionSnapshotChannelKind,
-    RolePermissionSnapshotOverwriteType,
+import { z } from 'zod';
+import {
+    ROLE_PERMISSION_SNAPSHOT_VERSION,
+    type RolePermissionSnapshotData,
+    type RolePermissionSnapshotChannelKind,
+    type RolePermissionSnapshotOverwriteType,
 } from '../models/role-permission-snapshot.js';
+
+const snapshotSourceSchema = z.enum(['fetched', 'cache', 'unavailable']);
+const decimalBitfieldSchema = z.string().regex(/^\d+$/);
+const timestampSchema = z.string().refine(value => {
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
+}, 'Expected a canonical ISO timestamp.');
+const memberIdSchema = z.object({ id: z.string().min(1).max(255) }).strict();
+const legacyMemberSchema = z.object({
+    id: z.string().min(1).max(255),
+    username: z.string(),
+    globalName: z.string().nullable(),
+    displayName: z.string(),
+    nickname: z.string().nullable(),
+}).strict();
+const overwriteSchema = z.object({
+    id: z.string().min(1).max(255),
+    type: z.enum(['role', 'member', 'unknown']),
+    allow: decimalBitfieldSchema,
+    deny: decimalBitfieldSchema,
+    allowPermissions: z.array(z.string()),
+    denyPermissions: z.array(z.string()),
+}).strict();
+const channelSchema = z.object({
+    id: z.string().min(1).max(255),
+    name: z.string(),
+    kind: z.enum(['category', 'text', 'announcement', 'voice', 'stage', 'forum', 'media', 'unknown']),
+    channelType: z.number().int(),
+    position: z.number().int(),
+    parentId: z.string().nullable(),
+    permissionOverwrites: z.array(overwriteSchema),
+}).strict();
+const coverageBaseShape = {
+    source: snapshotSourceSchema,
+    fetchFailed: z.boolean(),
+};
+const roleCoverageSchema = z.object({
+    ...coverageBaseShape,
+    capturedRoleCount: z.number().int().nonnegative(),
+}).strict();
+const memberCoverageSchema = z.object({
+    ...coverageBaseShape,
+    capturedMemberCount: z.number().int().nonnegative(),
+}).strict();
+const channelCoverageSchema = z.object({
+    ...coverageBaseShape,
+    capturedChannelCount: z.number().int().nonnegative(),
+}).strict();
+const baseSnapshotShape = {
+    capturedAt: timestampSchema,
+    guild: z.object({
+        id: z.string().min(1).max(255),
+        name: z.string(),
+        memberCount: z.number().int().nonnegative(),
+    }).strict(),
+    roleData: roleCoverageSchema,
+    memberData: memberCoverageSchema,
+    channelData: channelCoverageSchema,
+    channels: z.array(channelSchema),
+};
+const roleBaseShape = {
+    id: z.string().min(1).max(255),
+    name: z.string(),
+    position: z.number().int(),
+    color: z.number().int().nonnegative(),
+    hexColor: z.string(),
+    managed: z.boolean(),
+    hoist: z.boolean(),
+    mentionable: z.boolean(),
+    permissions: z.array(z.string()),
+    permissionsBitfield: decimalBitfieldSchema,
+};
+const snapshotV3Schema = z.object({
+    version: z.literal(3),
+    ...baseSnapshotShape,
+    roles: z.array(z.object({ ...roleBaseShape, members: z.array(memberIdSchema) }).strict()),
+}).strict();
+const snapshotV2Schema = z.object({
+    version: z.literal(2),
+    ...baseSnapshotShape,
+    roles: z.array(z.object({ ...roleBaseShape, members: z.array(legacyMemberSchema) }).strict()),
+}).strict();
+
+export interface NormalizedRolePermissionSnapshot {
+    snapshot: RolePermissionSnapshotData;
+    sourceVersion: 2 | typeof ROLE_PERMISSION_SNAPSHOT_VERSION;
+}
 
 const DISCORD_PERMISSION_FLAGS: ReadonlyArray<readonly [string, bigint]> = [
     ['CreateInstantInvite', 1n << 0n],
@@ -85,4 +175,52 @@ export function rolePermissionOverwriteType(overwriteType: number | string): Rol
     if (overwriteType === 0 || overwriteType === '0' || overwriteType === 'role') return 'role';
     if (overwriteType === 1 || overwriteType === '1' || overwriteType === 'member') return 'member';
     return 'unknown';
+}
+
+/** Validates current snapshots and deliberately converts legacy v2 profile data to the ID-only v3 shape. */
+export function parseRolePermissionSnapshot(value: unknown): RolePermissionSnapshotData {
+    return normalizeRolePermissionSnapshot(value).snapshot;
+}
+
+export function normalizeRolePermissionSnapshot(value: unknown): NormalizedRolePermissionSnapshot {
+    const decoded = typeof value === 'string' ? parseSnapshotJson(value) : value;
+    const version = readSnapshotVersion(decoded);
+
+    if (version === 3) {
+        return {
+            snapshot: snapshotV3Schema.parse(decoded) as RolePermissionSnapshotData,
+            sourceVersion: 3,
+        };
+    }
+    if (version === 2) {
+        const legacy = snapshotV2Schema.parse(decoded);
+        return {
+            snapshot: {
+                ...legacy,
+                version: 3,
+                roles: legacy.roles.map(role => ({
+                    ...role,
+                    members: role.members.map(member => ({ id: member.id })),
+                })),
+            } as RolePermissionSnapshotData,
+            sourceVersion: 2,
+        };
+    }
+
+    throw new Error(`Unsupported role permission snapshot version: ${String(version)}.`);
+}
+
+function parseSnapshotJson(value: string): unknown {
+    try {
+        return JSON.parse(value) as unknown;
+    } catch {
+        throw new Error('Role permission snapshot JSON is invalid.');
+    }
+}
+
+function readSnapshotVersion(value: unknown): unknown {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error('Role permission snapshot data is invalid.');
+    }
+    return Reflect.get(value, 'version');
 }

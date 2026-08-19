@@ -12,6 +12,7 @@ import {
     type RolePermissionSnapshotChannel,
     type RolePermissionSnapshotData,
     type RolePermissionSnapshotMember,
+    type RolePermissionSnapshotMemberNames,
     type RolePermissionSnapshotPermissionOverwrite,
     type RolePermissionSnapshotRole,
 } from '@zeffuro/fakegaming-common/models';
@@ -81,6 +82,11 @@ interface AuthenticatedRequest extends Request {
     };
 }
 
+interface LiveSnapshotResult {
+    snapshot: RolePermissionSnapshotData;
+    memberNames: RolePermissionSnapshotMemberNames;
+}
+
 /**
  * @openapi
  * /rolePermissionSnapshots:
@@ -107,7 +113,7 @@ router.get('/', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, asy
     const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
     const snapshots = await getConfigManager().rolePermissionSnapshotManager.listSnapshots(guildId, 25);
 
-    res.json({ snapshots: snapshots.map(serializeSnapshotRecord) });
+    res.set('Cache-Control', 'private, no-store').json({ snapshots: snapshots.map(serializeSnapshotRecord) });
 });
 
 /**
@@ -136,10 +142,10 @@ router.get('/', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, asy
  */
 router.get('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, async (req, res) => {
     const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
-    const snapshot = await loadLiveSnapshotOrRespond(guildId, res);
-    if (!snapshot) return;
+    const live = await loadLiveSnapshotOrRespond(guildId, res);
+    if (!live) return;
 
-    res.set('Cache-Control', 'private, no-store').json({ snapshot });
+    res.set('Cache-Control', 'private, no-store').json(live);
 });
 
 /**
@@ -168,8 +174,9 @@ router.get('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin,
  */
 router.post('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, async (req, res) => {
     const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
-    const snapshot = await loadLiveSnapshotOrRespond(guildId, res);
-    if (!snapshot) return;
+    const live = await loadLiveSnapshotOrRespond(guildId, res);
+    if (!live) return;
+    const { snapshot, memberNames } = live;
     const createdById = (req as AuthenticatedRequest).user?.discordId ?? 'dashboard';
     const saved = await getConfigManager().rolePermissionSnapshotManager.createSnapshot({
         guildId,
@@ -178,7 +185,7 @@ router.post('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin
         snapshot,
     });
 
-    res.status(201).json({ snapshot: serializeSnapshotRecord(saved) });
+    res.status(201).set('Cache-Control', 'private, no-store').json({ snapshot: serializeSnapshotRecord(saved), memberNames });
 });
 
 /**
@@ -215,10 +222,45 @@ router.get('/:id', jwtAuth, validateParams(snapshotParamsSchema), validateQuery(
         return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Permission snapshot was not found.' } });
     }
 
-    return res.json({ snapshot: serializeSnapshotRecord(snapshot) });
+    return res.set('Cache-Control', 'private, no-store').json({ snapshot: serializeSnapshotRecord(snapshot) });
 });
 
-async function loadLiveSnapshotOrRespond(guildId: string, res: Response): Promise<RolePermissionSnapshotData | null> {
+/**
+ * @openapi
+ * /rolePermissionSnapshots/{id}:
+ *   delete:
+ *     summary: Permanently delete a saved permission snapshot
+ *     tags: [Permissions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: guildId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Snapshot deleted
+ *       404:
+ *         description: Snapshot not found
+ */
+router.delete('/:id', jwtAuth, validateParams(snapshotParamsSchema), validateQuery(guildQuerySchema), requireGuildAdmin, async (req, res) => {
+    const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
+    const { id } = req.params as unknown as z.infer<typeof snapshotParamsSchema>;
+    const deleted = await getConfigManager().rolePermissionSnapshotManager.deleteSnapshot(guildId, id);
+    if (!deleted) {
+        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Permission snapshot was not found.' } });
+    }
+    return res.status(204).send();
+});
+
+async function loadLiveSnapshotOrRespond(guildId: string, res: Response): Promise<LiveSnapshotResult | null> {
     try {
         return await loadLiveSnapshot(guildId);
     } catch {
@@ -232,7 +274,7 @@ async function loadLiveSnapshotOrRespond(guildId: string, res: Response): Promis
     }
 }
 
-async function loadLiveSnapshot(guildId: string): Promise<RolePermissionSnapshotData> {
+async function loadLiveSnapshot(guildId: string): Promise<LiveSnapshotResult> {
     const botToken = process.env.DISCORD_BOT_TOKEN;
     if (!botToken) {
         throw new Error('DISCORD_BOT_TOKEN is not configured for live permission reads.');
@@ -249,7 +291,7 @@ async function loadLiveSnapshot(guildId: string): Promise<RolePermissionSnapshot
     const roles = snapshotRoles(rawRoles, memberResult.members, guildId);
     const channels = snapshotChannels(rawChannels);
 
-    return {
+    const snapshot: RolePermissionSnapshotData = {
         version: ROLE_PERMISSION_SNAPSHOT_VERSION,
         capturedAt: new Date().toISOString(),
         guild: {
@@ -275,6 +317,7 @@ async function loadLiveSnapshot(guildId: string): Promise<RolePermissionSnapshot
         roles,
         channels,
     };
+    return { snapshot, memberNames: memberNamesFromDiscord(memberResult.members) };
 }
 
 async function fetchDiscordJson<T>(url: string, headers: Record<string, string>): Promise<T> {
@@ -362,16 +405,20 @@ function snapshotMember(value: DiscordMemberPayload): RolePermissionSnapshotMemb
     const id = typeof value.user?.id === 'string' ? value.user.id : null;
     if (!id) return null;
 
-    const username = readString(value.user?.username, id);
-    const globalName = typeof value.user?.global_name === 'string' ? value.user.global_name : null;
-    const nickname = typeof value.nick === 'string' ? value.nick : null;
-    return {
-        id,
-        username,
-        globalName,
-        displayName: nickname ?? globalName ?? username,
-        nickname,
-    };
+    return { id };
+}
+
+function memberNamesFromDiscord(members: DiscordMemberPayload[]): RolePermissionSnapshotMemberNames {
+    const names: RolePermissionSnapshotMemberNames = {};
+    for (const member of members) {
+        const id = typeof member.user?.id === 'string' ? member.user.id : null;
+        if (!id) continue;
+        const username = readString(member.user?.username, id);
+        const globalName = typeof member.user?.global_name === 'string' ? member.user.global_name : null;
+        const nickname = typeof member.nick === 'string' ? member.nick : null;
+        names[id] = nickname ?? globalName ?? username;
+    }
+    return names;
 }
 
 function snapshotChannels(rawChannels: DiscordChannelPayload[]): RolePermissionSnapshotChannel[] {

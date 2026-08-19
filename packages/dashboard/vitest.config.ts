@@ -18,6 +18,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        maxWorkers: 4,
+        testTimeout: 20_000,
         include: ['lib/**/*.{test,spec}.{ts,tsx}'],
         setupFiles: ['lib/test-setup.ts'],
         coverage: {

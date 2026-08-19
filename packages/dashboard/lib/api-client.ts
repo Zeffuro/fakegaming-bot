@@ -12,6 +12,7 @@ export * from "./api/discord";
 export * from "./api/disabledFeatures";
 export * from "./api/jobs";
 export * from "./api/integrationHealth";
+export * from "./api/guildLocaleConfig";
 export * from "./api/notifications";
 export * from "./api/patchNotes";
 export * from "./api/setupTemplates";
@@ -36,6 +37,7 @@ import { discordApi } from "./api/discord";
 import { disabledFeaturesApi } from "./api/disabledFeatures";
 import { jobsApi } from "./api/jobs";
 import { integrationHealthApi } from "./api/integrationHealth";
+import { guildLocaleConfigApi } from "./api/guildLocaleConfig";
 import { notificationsApi } from "./api/notifications";
 import { patchNotesApi } from "./api/patchNotes";
 import { setupTemplatesApi } from "./api/setupTemplates";
@@ -68,6 +70,7 @@ export const api = {
     ...disabledFeaturesApi,
     ...jobsApi,
     ...integrationHealthApi,
+    ...guildLocaleConfigApi,
     ...notificationsApi,
     ...riotLinksApi,
     ...rolePermissionSnapshotsApi,

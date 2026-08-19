@@ -28,6 +28,10 @@ import {SteamNewsSubscriptionConfig} from './models/steam-news-subscription-conf
 import {UserNoteConfig} from './models/user-note-config.js';
 import {UserDigestSubscriptionConfig} from './models/user-digest-subscription-config.js';
 import {RolePermissionSnapshot} from './models/role-permission-snapshot.js';
+import {GuildLocaleConfig} from './models/guild-locale-config.js';
+import {GameNightSession} from './models/game-night-session.js';
+import {GameNightNomination} from './models/game-night-nomination.js';
+import {GameNightVote} from './models/game-night-vote.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -88,7 +92,11 @@ export function getSequelize(useTest = false): Sequelize {
         SteamNewsSubscriptionConfig,
         UserNoteConfig,
         UserDigestSubscriptionConfig,
-        RolePermissionSnapshot
+        RolePermissionSnapshot,
+        GuildLocaleConfig,
+        GameNightSession,
+        GameNightNomination,
+        GameNightVote
     ]);
 
     return sequelize;

@@ -5,6 +5,7 @@ import type { ConfigManager } from '@zeffuro/fakegaming-common/managers';
  * CRITICAL: This must be at top-level, before any test imports the SUT.
  */
 vi.mock('@zeffuro/fakegaming-common/managers', async () => {
+    const actual = await vi.importActual<typeof import('@zeffuro/fakegaming-common/managers')>('@zeffuro/fakegaming-common/managers');
     // Lazily import testing helpers to create a mock config manager on-demand
     const testing = await vi.importActual<typeof import('@zeffuro/fakegaming-common/testing')>('@zeffuro/fakegaming-common/testing');
     function getActive(): ConfigManager {
@@ -14,7 +15,7 @@ vi.mock('@zeffuro/fakegaming-common/managers', async () => {
         }
         return g.__FG_ACTIVE_CONFIG_MANAGER__ as ConfigManager;
     }
-    return { getConfigManager: () => getActive() } as unknown as { getConfigManager: () => ConfigManager };
+    return { ...actual, getConfigManager: () => getActive() };
 });
 
 // Provide a shared mock logger across all tests in this package.

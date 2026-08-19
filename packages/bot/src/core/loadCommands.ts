@@ -11,10 +11,19 @@ import { findCommandFiles } from './commandsFs.js';
 export async function loadCommands(client: FakegamingBot, modulesPath: string) {
     if (!fs.existsSync(modulesPath)) return;
     const commandFiles = findCommandFiles(modulesPath);
+    const commandSources = new Map<string, string>();
     for (const commandPath of commandFiles) {
         const commandModule = await import(pathToFileURL(commandPath).href);
         const cmd = commandModule.default;
         if (cmd?.data && cmd?.execute) {
+            const commandName = cmd.data.name;
+            const previousCommandPath = commandSources.get(commandName);
+            if (previousCommandPath !== undefined) {
+                throw new Error(
+                    `Duplicate command name "${commandName}" found in "${previousCommandPath}" and "${commandPath}"`,
+                );
+            }
+            commandSources.set(commandName, commandPath);
             // Derive module name from file path: modules/{module}/commands/*.{ts,js}
             const commandsDir = path.dirname(commandPath);
             const moduleDir = path.dirname(commandsDir);
@@ -24,7 +33,7 @@ export async function loadCommands(client: FakegamingBot, modulesPath: string) {
                 : typeof cmd.data.description === 'string'
                     ? cmd.data.description
                     : undefined;
-            client.commands.set(cmd.data.name, {
+            client.commands.set(commandName, {
                 data: cmd.data,
                 description,
                 execute: cmd.execute,

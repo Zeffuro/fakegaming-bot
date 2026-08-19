@@ -23,6 +23,8 @@ import {SteamNewsSubscriptionManager} from './steamNewsManager.js';
 import {UserNoteManager} from './userNoteManager.js';
 import {UserDigestSubscriptionManager} from './userDigestSubscriptionManager.js';
 import {RolePermissionSnapshotManager} from './rolePermissionSnapshotManager.js';
+import {GuildLocaleConfigManager} from './guildLocaleConfigManager.js';
+import {GameNightManager} from './gameNightManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -56,6 +58,8 @@ export class ConfigManager {
     userNoteManager = new UserNoteManager();
     userDigestSubscriptionManager = new UserDigestSubscriptionManager();
     rolePermissionSnapshotManager = new RolePermissionSnapshotManager();
+    guildLocaleConfigManager = new GuildLocaleConfigManager();
+    gameNightManager = new GameNightManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).
@@ -80,6 +84,11 @@ export class ConfigManager {
             await getSequelize(useTest).sync();
         } else {
             log.info('Sequelize sync disabled by DB_SYNC_ENABLED=0');
+        }
+
+        const redactedSnapshots = await this.rolePermissionSnapshotManager.redactLegacySnapshots();
+        if (redactedSnapshots > 0) {
+            log.info({ count: redactedSnapshots }, 'Redacted legacy role permission snapshot member profiles');
         }
     }
 }

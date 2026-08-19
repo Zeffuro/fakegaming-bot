@@ -39,6 +39,18 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
                         .setRequired(true)
                 )
         )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('delete')
+                .setDescription('Permanently delete a saved permission snapshot')
+                .addIntegerOption(option =>
+                    option
+                        .setName('id')
+                        .setDescription('Snapshot ID from the list')
+                        .setMinValue(1)
+                        .setRequired(true)
+                )
+        )
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -69,7 +81,12 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         return;
     }
 
-    await exportSnapshot(interaction);
+    if (action === 'export') {
+        await exportSnapshot(interaction);
+        return;
+    }
+
+    await deleteSnapshot(interaction);
 }
 
 async function createSnapshot(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -131,6 +148,17 @@ async function exportSnapshot(interaction: ChatInputCommandInteraction): Promise
             ? `Permission snapshot #${snapshot.id}: ${formatSnapshotSummary(snapshot.snapshot)}`
             : `Permission snapshot #${snapshot.id} is too large for a single Discord attachment.`,
         ...(attachment.file ? { files: [attachment.file] } : {}),
+        flags: MessageFlags.Ephemeral,
+    });
+}
+
+async function deleteSnapshot(interaction: ChatInputCommandInteraction): Promise<void> {
+    const id = interaction.options.getInteger('id', true);
+    const deleted = await getConfigManager().rolePermissionSnapshotManager.deleteSnapshot(interaction.guildId!, id);
+    await interaction.reply({
+        content: deleted
+            ? `Permission snapshot #${id} was deleted.`
+            : `Permission snapshot #${id} was not found for this server.`,
         flags: MessageFlags.Ephemeral,
     });
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { setupCommandTest } from '@zeffuro/fakegaming-common/testing';
-import type { RolePermissionSnapshotData } from '@zeffuro/fakegaming-common/models';
+import {
+    ROLE_PERMISSION_SNAPSHOT_VERSION,
+    type RolePermissionSnapshotData,
+} from '@zeffuro/fakegaming-common/models';
 
 function createRoleGuild(memberFetch: ReturnType<typeof vi.fn>) {
     const member = {
@@ -161,6 +164,10 @@ describe('permissions-backup command', () => {
                 })]),
             }),
         }));
+        const captured = createSnapshot.mock.calls[0]?.[0].snapshot as RolePermissionSnapshotData;
+        expect(JSON.stringify(captured)).not.toContain('member-one');
+        expect(JSON.stringify(captured)).not.toContain('Member One');
+        expect(command.data.toJSON().default_member_permissions).toBe(PermissionFlagsBits.Administrator.toString());
         expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('Saved permission snapshot #7'),
             files: expect.any(Array),
@@ -205,7 +212,7 @@ describe('permissions-backup command', () => {
 
     it('exports a saved snapshot without reading the current guild state', async () => {
         const snapshot: RolePermissionSnapshotData = {
-            version: 2,
+            version: ROLE_PERMISSION_SNAPSHOT_VERSION,
             capturedAt: '2026-08-19T10:00:00.000Z',
             guild: { id: 'guild-1', name: 'Permission Test Guild', memberCount: 1 },
             roleData: { source: 'fetched', capturedRoleCount: 0, fetchFailed: false },
@@ -237,6 +244,31 @@ describe('permissions-backup command', () => {
         expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('Permission snapshot #9'),
             files: expect.any(Array),
+        }));
+    });
+
+    it('deletes snapshots through a guild-scoped manager operation', async () => {
+        const deleteSnapshot = vi.fn().mockResolvedValue(true);
+        const { command, interaction } = await setupCommandTest(
+            'modules/general/commands/permissionsBackup.js',
+            {
+                managerOverrides: {
+                    rolePermissionSnapshotManager: { deleteSnapshot },
+                },
+                interaction: {
+                    guildId: 'guild-1',
+                    subcommand: 'delete',
+                    integerOptions: { id: 12 },
+                    memberPermissions: { has: vi.fn().mockReturnValue(true) },
+                },
+            },
+        );
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+
+        expect(deleteSnapshot).toHaveBeenCalledWith('guild-1', 12);
+        expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: 'Permission snapshot #12 was deleted.',
         }));
     });
 

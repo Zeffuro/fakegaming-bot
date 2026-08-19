@@ -26,6 +26,7 @@ import {
     Search,
     Security,
     Tag,
+    DeleteOutlined,
     UnfoldLess,
     UnfoldMore,
 } from "@mui/icons-material";
@@ -40,6 +41,7 @@ import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/
 import type {
     RolePermissionSnapshotChannel,
     RolePermissionSnapshotData,
+    RolePermissionSnapshotMemberNames,
     RolePermissionSnapshotPermissionOverwrite,
     RolePermissionSnapshotRole,
 } from "@zeffuro/fakegaming-common/models";
@@ -83,6 +85,12 @@ export default function GuildPermissionsPage() {
     const saveLive = async () => {
         setSelection("live");
         await permissions.saveLiveSnapshot();
+    };
+
+    const deleteSelectedSnapshot = async () => {
+        if (selection === "live") return;
+        if (!window.confirm(`Delete permission snapshot #${selection}? This cannot be undone.`)) return;
+        if (await permissions.deleteSnapshot(selection)) setSelection("live");
     };
 
     const setAccordionExpanded = (accordionId: string, expanded: boolean) => {
@@ -166,7 +174,7 @@ export default function GuildPermissionsPage() {
                                 <TextField
                                     value={search}
                                     onChange={event => setSearch(event.target.value)}
-                                    placeholder="Filter roles, channels, permissions, or member IDs"
+                                    placeholder="Filter roles, channels, permissions, or members"
                                     size="small"
                                     fullWidth
                                     slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search sx={{ color: "rgba(255,255,255,0.48)" }} /></InputAdornment> } }}
@@ -202,6 +210,17 @@ export default function GuildPermissionsPage() {
                                     >
                                         Export JSON
                                     </Button>
+                                    {selection !== "live" ? (
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<DeleteOutlined />}
+                                            onClick={() => void deleteSelectedSnapshot()}
+                                            disabled={permissions.deletingSnapshotId === selection}
+                                            sx={ghostActionButtonSx(dashboardAccents.quotes)}
+                                        >
+                                            Delete snapshot
+                                        </Button>
+                                    ) : null}
                                 </Stack>
                             ) : null}
 
@@ -214,14 +233,21 @@ export default function GuildPermissionsPage() {
                             {activeSnapshot ? (
                                 <>
                                     <SourceSummary snapshot={activeSnapshot} />
+                                    {selection !== "live" ? (
+                                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.54)" }}>
+                                            Member IDs are historical; displayed names are resolved from the current live server state and may have changed.
+                                        </Typography>
+                                    ) : null}
                                     <RolePermissions
                                         snapshot={activeSnapshot}
+                                        memberNames={permissions.memberNames}
                                         search={normalizedSearch}
                                         expandedAccordionIds={expandedAccordionIds}
                                         onAccordionExpandedChange={setAccordionExpanded}
                                     />
                                     <ChannelPermissions
                                         snapshot={activeSnapshot}
+                                        memberNames={permissions.memberNames}
                                         search={normalizedSearch}
                                         expandedAccordionIds={expandedAccordionIds}
                                         onAccordionExpandedChange={setAccordionExpanded}
@@ -258,16 +284,18 @@ function SourceSummary({ snapshot }: { snapshot: RolePermissionSnapshotData }) {
 
 function RolePermissions({
     snapshot,
+    memberNames,
     search,
     expandedAccordionIds,
     onAccordionExpandedChange,
 }: {
     snapshot: RolePermissionSnapshotData;
+    memberNames: RolePermissionSnapshotMemberNames;
     search: string;
     expandedAccordionIds: Set<string>;
     onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
-    const roles = snapshot.roles.filter(role => matchesRole(role, search));
+    const roles = snapshot.roles.filter(role => matchesRole(role, memberNames, search));
 
     return (
         <Box>
@@ -277,6 +305,7 @@ function RolePermissions({
                     <RoleRow
                         key={role.id}
                         role={role}
+                        memberNames={memberNames}
                         expanded={expandedAccordionIds.has(roleAccordionId(role.id))}
                         onExpandedChange={onAccordionExpandedChange}
                     />
@@ -289,10 +318,12 @@ function RolePermissions({
 
 function RoleRow({
     role,
+    memberNames,
     expanded,
     onExpandedChange,
 }: {
     role: RolePermissionSnapshotRole;
+    memberNames: RolePermissionSnapshotMemberNames;
     expanded: boolean;
     onExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
@@ -310,7 +341,7 @@ function RoleRow({
                 <Stack spacing={1.25}>
                     <PermissionLine label="Server permissions" permissions={role.permissions} emptyLabel="No explicit permissions" />
                     <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>Bitfield: {role.permissionsBitfield}</Typography>
-                    <MemberList members={role.members} />
+                    <MemberList members={role.members} memberNames={memberNames} />
                 </Stack>
             </AccordionDetails>
         </Accordion>
@@ -319,18 +350,19 @@ function RoleRow({
 
 function ChannelPermissions({
     snapshot,
+    memberNames,
     search,
     expandedAccordionIds,
     onAccordionExpandedChange,
 }: {
     snapshot: RolePermissionSnapshotData;
+    memberNames: RolePermissionSnapshotMemberNames;
     search: string;
     expandedAccordionIds: Set<string>;
     onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
     const allChannels = snapshot.channels ?? [];
     const roleNames = new Map(snapshot.roles.map(role => [role.id, role.name]));
-    const memberNames = new Map(snapshot.roles.flatMap(role => role.members.map(member => [member.id, member.displayName])));
     const categories = allChannels.filter(channel => channel.kind === "category");
     const categoryIds = new Set(categories.map(category => category.id));
     const categoryGroups = categories
@@ -390,7 +422,7 @@ function ChannelGroup({
     icon: React.ReactNode;
     channels: RolePermissionSnapshotChannel[];
     roleNames: Map<string, string>;
-    memberNames: Map<string, string>;
+    memberNames: RolePermissionSnapshotMemberNames;
     expandedAccordionIds: Set<string>;
     onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
@@ -425,7 +457,7 @@ function ChannelRow({
 }: {
     channel: RolePermissionSnapshotChannel;
     roleNames: Map<string, string>;
-    memberNames: Map<string, string>;
+    memberNames: RolePermissionSnapshotMemberNames;
     expanded: boolean;
     onExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
@@ -471,12 +503,12 @@ function OverwriteRow({
 }: {
     overwrite: RolePermissionSnapshotPermissionOverwrite;
     roleNames: Map<string, string>;
-    memberNames: Map<string, string>;
+    memberNames: RolePermissionSnapshotMemberNames;
 }) {
     const subject = overwrite.type === "role"
         ? `Role: ${roleNames.get(overwrite.id) ?? overwrite.id}`
         : overwrite.type === "member"
-            ? `Member: ${memberNames.get(overwrite.id) ?? overwrite.id}`
+            ? `Member: ${memberNames[overwrite.id] ?? overwrite.id}`
             : `Unknown: ${overwrite.id}`;
 
     return (
@@ -488,7 +520,13 @@ function OverwriteRow({
     );
 }
 
-function MemberList({ members }: { members: RolePermissionSnapshotRole["members"] }) {
+function MemberList({
+    members,
+    memberNames,
+}: {
+    members: RolePermissionSnapshotRole["members"];
+    memberNames: RolePermissionSnapshotMemberNames;
+}) {
     if (members.length === 0) {
         return <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>No members were available in this snapshot.</Typography>;
     }
@@ -497,7 +535,14 @@ function MemberList({ members }: { members: RolePermissionSnapshotRole["members"
         <Box>
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)", display: "block", mb: 0.5 }}>Members</Typography>
             <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
-                {members.map(member => <Chip key={member.id} size="small" label={`${member.displayName} (${member.id})`} sx={chipSx(dashboardAccents.neutral)} />)}
+                {members.map(member => (
+                    <Chip
+                        key={member.id}
+                        size="small"
+                        label={memberNames[member.id] ? `${memberNames[member.id]} (${member.id})` : member.id}
+                        sx={chipSx(dashboardAccents.neutral)}
+                    />
+                ))}
             </Stack>
         </Box>
     );
@@ -569,13 +614,13 @@ function hasExplicitOverwrite(overwrite: RolePermissionSnapshotPermissionOverwri
     return overwrite.allow !== "0" || overwrite.deny !== "0";
 }
 
-function matchesRole(role: RolePermissionSnapshotRole, search: string): boolean {
+function matchesRole(role: RolePermissionSnapshotRole, memberNames: RolePermissionSnapshotMemberNames, search: string): boolean {
     if (!search) return true;
     return [
         role.id,
         role.name,
         ...role.permissions,
-        ...role.members.flatMap(member => [member.id, member.username, member.displayName, member.globalName ?? "", member.nickname ?? ""]),
+        ...role.members.flatMap(member => [member.id, memberNames[member.id] ?? ""]),
     ].some(value => value.toLowerCase().includes(search));
 }
 

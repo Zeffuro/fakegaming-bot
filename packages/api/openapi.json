@@ -247,6 +247,27 @@
           "updatedAt"
         ]
       },
+      "GuildLocaleConfig": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "nl"
+            ]
+          }
+        },
+        "required": [
+          "guildId",
+          "outputLocale"
+        ],
+        "additionalProperties": false
+      },
       "PatchNoteConfig": {
         "type": "object",
         "properties": {
@@ -1051,6 +1072,22 @@
         "required": [
           "guildId",
           "ids"
+        ],
+        "additionalProperties": false
+      },
+      "GuildLocaleConfigUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "outputLocale": {
+            "type": "string",
+            "enum": [
+              "en",
+              "nl"
+            ]
+          }
+        },
+        "required": [
+          "outputLocale"
         ],
         "additionalProperties": false
       },
@@ -4695,6 +4732,43 @@
             "description": "Snapshot not found"
           }
         }
+      },
+      "delete": {
+        "summary": "Permanently delete a saved permission snapshot",
+        "tags": [
+          "Permissions"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Snapshot deleted"
+          },
+          "404": {
+            "description": "Snapshot not found"
+          }
+        }
       }
     },
     "/riotLinks": {
@@ -6319,6 +6393,99 @@
         "responses": {
           "200": {
             "description": "Integration health records for the guild"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/guildLocaleConfig": {
+      "get": {
+        "summary": "Read a guild's bot output locale",
+        "tags": [
+          "Guild Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild output locale, defaulting to English when no preference is stored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuildLocaleConfig"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "put": {
+        "summary": "Set a guild's bot output locale",
+        "tags": [
+          "Guild Settings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuildLocaleConfigUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated guild output locale",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuildLocaleConfig"
+                }
+              }
+            }
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"

@@ -26,3 +26,7 @@ export * from './steam-news-subscription-config.js';
 export * from './user-note-config.js';
 export * from './user-digest-subscription-config.js';
 export * from './role-permission-snapshot.js';
+export * from './guild-locale-config.js';
+export * from './game-night-session.js';
+export * from './game-night-nomination.js';
+export * from './game-night-vote.js';

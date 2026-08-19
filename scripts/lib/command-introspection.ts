@@ -8,6 +8,12 @@ export interface CommandOut { name: string; description: string; module?: string
 export interface ModuleOut { name: string; title: string; description: string; hidden?: boolean | null; sortOrder?: number | null; }
 export interface ModuleMeta { title?: string; description?: string; hidden?: boolean; sortOrder?: number; }
 export interface LoadResult { commands: CommandOut[]; usedFallback: boolean; }
+export interface ImplementationCommandMetadata {
+    name: string;
+    dm_permission: boolean | null;
+    default_member_permissions: string | null;
+    type: CommandKind;
+}
 
 export function getModulesPath(projectRoot: string): string {
     return fs.existsSync(path.join(projectRoot, 'packages/bot/src/modules'))
@@ -175,18 +181,40 @@ export async function loadCommands(moduleName: string, moduleDir: string, files:
 }
 
 export async function listImplementationCommands(moduleDir: string): Promise<string[]> {
+    return (await listImplementationCommandMetadata(moduleDir)).map(command => command.name);
+}
+
+export async function listImplementationCommandMetadata(moduleDir: string): Promise<ImplementationCommandMetadata[]> {
     const cmdDir = path.join(moduleDir, 'commands');
     const files = findCommandFiles(cmdDir);
-    const names: string[] = [];
+    const commands: ImplementationCommandMetadata[] = [];
     for (const file of files) {
         try {
             const mod = await import(pathToFileURL(file).href);
             const exp = (mod as any)?.default ?? mod;
-            const name: unknown = exp?.data?.name;
-            if (typeof name === 'string' && name.length > 0) names.push(name);
+            const data = exp?.data;
+            const json: unknown = typeof data?.toJSON === 'function' ? data.toJSON() : data;
+            if (!json || typeof json !== 'object' || Array.isArray(json)) continue;
+
+            const name = Reflect.get(json, 'name');
+            if (typeof name !== 'string' || name.length === 0) continue;
+            const dmPermission = Reflect.get(json, 'dm_permission');
+            const defaultMemberPermissions = Reflect.get(json, 'default_member_permissions');
+            commands.push({
+                name,
+                dm_permission: typeof dmPermission === 'boolean' ? dmPermission : null,
+                default_member_permissions: defaultMemberPermissions == null ? null : String(defaultMemberPermissions),
+                type: implementationCommandKind(Reflect.get(json, 'type')),
+            });
         } catch {
             // ignore
         }
     }
-    return names;
+    return commands;
+}
+
+function implementationCommandKind(value: unknown): CommandKind {
+    if (value === 2 || value === 'user') return 'user';
+    if (value === 3 || value === 'message') return 'message';
+    return 'chatInput';
 }

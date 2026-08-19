@@ -23,6 +23,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Bluesky module"
     },
     {
+        "name": "game-night",
+        "title": "Game Night",
+        "description": "Game Night module"
+    },
+    {
         "name": "general",
         "title": "General",
         "description": "General module"
@@ -171,6 +176,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null
     },
     {
+        "name": "game-night",
+        "description": "Nominate and vote on games for a server game night",
+        "module": "game-night",
+        "permissions": null,
+        "dm_permission": false,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
         "name": "help",
         "description": "List all available commands and their descriptions.",
         "module": "general",
@@ -192,7 +207,17 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "poll",
-        "description": "Create a simple poll for users to vote on",
+        "description": "Create a button poll with live results",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null
+    },
+    {
+        "name": "question",
+        "description": "Draw a conversation question from a local deck",
         "module": "general",
         "permissions": null,
         "dm_permission": null,
@@ -204,9 +229,9 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "name": "permissions-backup",
         "description": "Save and export role, category, and channel permissions",
         "module": "general",
-        "permissions": null,
+        "permissions": "Administrator",
         "dm_permission": null,
-        "default_member_permissions": null,
+        "default_member_permissions": "8",
         "testOnly": null,
         "type": null
     },
@@ -651,6 +676,16 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null
     },
     {
+        "name": "Save to Notes",
+        "description": "Save a message excerpt and jump link to your private notes",
+        "module": "notes",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "message"
+    },
+    {
         "name": "add-steam-news",
         "description": "Add Steam game news notifications",
         "module": "steam",
@@ -792,6 +827,25 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
     },
     {
         "module": {
+            "name": "game-night",
+            "title": "Game Night",
+            "description": "Game Night module"
+        },
+        "commands": [
+            {
+                "name": "game-night",
+                "description": "Nominate and vote on games for a server game night",
+                "module": "game-night",
+                "permissions": null,
+                "dm_permission": false,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            }
+        ]
+    },
+    {
+        "module": {
             "name": "general",
             "title": "General",
             "description": "General module"
@@ -819,7 +873,17 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "poll",
-                "description": "Create a simple poll for users to vote on",
+                "description": "Create a button poll with live results",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null
+            },
+            {
+                "name": "question",
+                "description": "Draw a conversation question from a local deck",
                 "module": "general",
                 "permissions": null,
                 "dm_permission": null,
@@ -831,9 +895,9 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "name": "permissions-backup",
                 "description": "Save and export role, category, and channel permissions",
                 "module": "general",
-                "permissions": null,
+                "permissions": "Administrator",
                 "dm_permission": null,
-                "default_member_permissions": null,
+                "default_member_permissions": "8",
                 "testOnly": null,
                 "type": null
             },
@@ -1356,6 +1420,16 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "default_member_permissions": null,
                 "testOnly": null,
                 "type": null
+            },
+            {
+                "name": "Save to Notes",
+                "description": "Save a message excerpt and jump link to your private notes",
+                "module": "notes",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "message"
             }
         ]
     },

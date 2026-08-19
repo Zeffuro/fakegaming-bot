@@ -2267,7 +2267,36 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        delete?: never;
+        /** Permanently delete a saved permission snapshot */
+        delete: {
+            parameters: {
+                query: {
+                    guildId: string;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Snapshot deleted */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Snapshot not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -3801,6 +3830,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/guildLocaleConfig": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read a guild's bot output locale */
+        get: {
+            parameters: {
+                query: {
+                    guildId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Guild output locale, defaulting to English when no preference is stored */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GuildLocaleConfig"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        /** Set a guild's bot output locale */
+        put: {
+            parameters: {
+                query: {
+                    guildId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["GuildLocaleConfigUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description Updated guild output locale */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GuildLocaleConfig"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/discord/users/resolve": {
         parameters: {
             query?: never;
@@ -5227,6 +5325,11 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        GuildLocaleConfig: {
+            guildId: string;
+            /** @enum {string} */
+            outputLocale: "en" | "nl";
+        };
         PatchNoteConfig: {
             /** Format: int64 */
             id: number;
@@ -5467,6 +5570,10 @@ export interface components {
         DiscordResolveUsersRequest: {
             guildId: string;
             ids: string[];
+        };
+        GuildLocaleConfigUpdateRequest: {
+            /** @enum {string} */
+            outputLocale: "en" | "nl";
         };
         JobRunRequest: {
             date?: string;
