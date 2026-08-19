@@ -26,6 +26,8 @@ import {
     Search,
     Security,
     Tag,
+    UnfoldLess,
+    UnfoldMore,
 } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -50,6 +52,7 @@ export default function GuildPermissionsPage() {
     const permissions = useRolePermissionSnapshots(guildId as string, { enabled: guildReady });
     const [selection, setSelection] = useState<SnapshotSelection>("live");
     const [search, setSearch] = useState("");
+    const [expandedAccordionIds, setExpandedAccordionIds] = useState<Set<string>>(() => new Set());
 
     useEffect(() => {
         if (guildReady) void permissions.refreshLive();
@@ -63,6 +66,12 @@ export default function GuildPermissionsPage() {
     const activeSnapshot = fallbackSnapshot;
     const normalizedSearch = search.trim().toLowerCase();
     const summary = useMemo(() => activeSnapshot ? summarizeSnapshot(activeSnapshot) : null, [activeSnapshot]);
+    const accordionIds = useMemo(() => activeSnapshot ? snapshotAccordionIds(activeSnapshot) : [], [activeSnapshot]);
+    const allAccordionsExpanded = accordionIds.length > 0 && accordionIds.every(id => expandedAccordionIds.has(id));
+
+    useEffect(() => {
+        setExpandedAccordionIds(new Set());
+    }, [activeSnapshot?.capturedAt, selection]);
 
     if (!guild && !guildsLoading) return <GuildAccessError />;
 
@@ -74,6 +83,15 @@ export default function GuildPermissionsPage() {
     const saveLive = async () => {
         setSelection("live");
         await permissions.saveLiveSnapshot();
+    };
+
+    const setAccordionExpanded = (accordionId: string, expanded: boolean) => {
+        setExpandedAccordionIds(current => {
+            const next = new Set(current);
+            if (expanded) next.add(accordionId);
+            else next.delete(accordionId);
+            return next;
+        });
     };
 
     return (
@@ -154,7 +172,28 @@ export default function GuildPermissionsPage() {
                                     slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search sx={{ color: "rgba(255,255,255,0.48)" }} /></InputAdornment> } }}
                                     sx={{ ...fieldSx, flex: 1 }}
                                 />
-                                {activeSnapshot ? (
+                            </Stack>
+
+                            {activeSnapshot ? (
+                                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<UnfoldMore />}
+                                        onClick={() => setExpandedAccordionIds(new Set(accordionIds))}
+                                        disabled={allAccordionsExpanded}
+                                        sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                    >
+                                        Expand all
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        startIcon={<UnfoldLess />}
+                                        onClick={() => setExpandedAccordionIds(new Set())}
+                                        disabled={expandedAccordionIds.size === 0}
+                                        sx={ghostActionButtonSx(dashboardAccents.settings)}
+                                    >
+                                        Collapse all
+                                    </Button>
                                     <Button
                                         variant="outlined"
                                         startIcon={<Download />}
@@ -163,8 +202,8 @@ export default function GuildPermissionsPage() {
                                     >
                                         Export JSON
                                     </Button>
-                                ) : null}
-                            </Stack>
+                                </Stack>
+                            ) : null}
 
                             {!activeSnapshot && !permissions.loading && !permissions.refreshingLive ? (
                                 <Alert severity="info" sx={{ bgcolor: "rgba(104,215,255,0.10)", color: "grey.100", border: "1px solid rgba(104,215,255,0.20)" }}>
@@ -175,8 +214,18 @@ export default function GuildPermissionsPage() {
                             {activeSnapshot ? (
                                 <>
                                     <SourceSummary snapshot={activeSnapshot} />
-                                    <RolePermissions snapshot={activeSnapshot} search={normalizedSearch} />
-                                    <ChannelPermissions snapshot={activeSnapshot} search={normalizedSearch} />
+                                    <RolePermissions
+                                        snapshot={activeSnapshot}
+                                        search={normalizedSearch}
+                                        expandedAccordionIds={expandedAccordionIds}
+                                        onAccordionExpandedChange={setAccordionExpanded}
+                                    />
+                                    <ChannelPermissions
+                                        snapshot={activeSnapshot}
+                                        search={normalizedSearch}
+                                        expandedAccordionIds={expandedAccordionIds}
+                                        onAccordionExpandedChange={setAccordionExpanded}
+                                    />
                                 </>
                             ) : null}
                         </Stack>
@@ -207,23 +256,48 @@ function SourceSummary({ snapshot }: { snapshot: RolePermissionSnapshotData }) {
     );
 }
 
-function RolePermissions({ snapshot, search }: { snapshot: RolePermissionSnapshotData; search: string }) {
+function RolePermissions({
+    snapshot,
+    search,
+    expandedAccordionIds,
+    onAccordionExpandedChange,
+}: {
+    snapshot: RolePermissionSnapshotData;
+    search: string;
+    expandedAccordionIds: Set<string>;
+    onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
+}) {
     const roles = snapshot.roles.filter(role => matchesRole(role, search));
 
     return (
         <Box>
             <SectionHeader icon={<Group />} title="Roles and Members" count={roles.length} />
             <Stack spacing={1}>
-                {roles.map(role => <RoleRow key={role.id} role={role} />)}
+                {roles.map(role => (
+                    <RoleRow
+                        key={role.id}
+                        role={role}
+                        expanded={expandedAccordionIds.has(roleAccordionId(role.id))}
+                        onExpandedChange={onAccordionExpandedChange}
+                    />
+                ))}
                 {roles.length === 0 ? <EmptyState label="No roles match the current filter." /> : null}
             </Stack>
         </Box>
     );
 }
 
-function RoleRow({ role }: { role: RolePermissionSnapshotRole }) {
+function RoleRow({
+    role,
+    expanded,
+    onExpandedChange,
+}: {
+    role: RolePermissionSnapshotRole;
+    expanded: boolean;
+    onExpandedChange: (accordionId: string, expanded: boolean) => void;
+}) {
     return (
-        <Accordion disableGutters sx={accordionSx}>
+        <Accordion disableGutters expanded={expanded} onChange={(_event, nextExpanded) => onExpandedChange(roleAccordionId(role.id), nextExpanded)} sx={accordionSx}>
             <AccordionSummary expandIcon={<ExpandMore sx={{ color: "rgba(255,255,255,0.62)" }} />}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: role.hexColor, border: "1px solid rgba(255,255,255,0.28)" }} />
@@ -243,7 +317,17 @@ function RoleRow({ role }: { role: RolePermissionSnapshotRole }) {
     );
 }
 
-function ChannelPermissions({ snapshot, search }: { snapshot: RolePermissionSnapshotData; search: string }) {
+function ChannelPermissions({
+    snapshot,
+    search,
+    expandedAccordionIds,
+    onAccordionExpandedChange,
+}: {
+    snapshot: RolePermissionSnapshotData;
+    search: string;
+    expandedAccordionIds: Set<string>;
+    onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
+}) {
     const allChannels = snapshot.channels ?? [];
     const roleNames = new Map(snapshot.roles.map(role => [role.id, role.name]));
     const memberNames = new Map(snapshot.roles.flatMap(role => role.members.map(member => [member.id, member.displayName])));
@@ -265,9 +349,28 @@ function ChannelPermissions({ snapshot, search }: { snapshot: RolePermissionSnap
             <SectionHeader icon={<Folder />} title="Categories and Channels" count={visibleCount} />
             <Stack spacing={1.25}>
                 {categoryGroups.map(group => (
-                    <ChannelGroup key={group.category.id} title={group.category.name} icon={<Folder fontSize="small" />} channels={group.channels} roleNames={roleNames} memberNames={memberNames} />
+                    <ChannelGroup
+                        key={group.category.id}
+                        title={group.category.name}
+                        icon={<Folder fontSize="small" />}
+                        channels={group.channels}
+                        roleNames={roleNames}
+                        memberNames={memberNames}
+                        expandedAccordionIds={expandedAccordionIds}
+                        onAccordionExpandedChange={onAccordionExpandedChange}
+                    />
                 ))}
-                {rootChannels.length > 0 ? <ChannelGroup title="No category" icon={<Tag fontSize="small" />} channels={rootChannels} roleNames={roleNames} memberNames={memberNames} /> : null}
+                {rootChannels.length > 0 ? (
+                    <ChannelGroup
+                        title="No category"
+                        icon={<Tag fontSize="small" />}
+                        channels={rootChannels}
+                        roleNames={roleNames}
+                        memberNames={memberNames}
+                        expandedAccordionIds={expandedAccordionIds}
+                        onAccordionExpandedChange={onAccordionExpandedChange}
+                    />
+                ) : null}
                 {visibleCount === 0 ? <EmptyState label="No channels or categories match the current filter." /> : null}
             </Stack>
         </Box>
@@ -280,12 +383,16 @@ function ChannelGroup({
     channels,
     roleNames,
     memberNames,
+    expandedAccordionIds,
+    onAccordionExpandedChange,
 }: {
     title: string;
     icon: React.ReactNode;
     channels: RolePermissionSnapshotChannel[];
     roleNames: Map<string, string>;
     memberNames: Map<string, string>;
+    expandedAccordionIds: Set<string>;
+    onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
     return (
         <Box sx={{ borderLeft: `3px solid ${dashboardAccents.settings}`, pl: 1.25 }}>
@@ -294,7 +401,16 @@ function ChannelGroup({
                 <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 800 }}>{title}</Typography>
             </Stack>
             <Stack spacing={0.75}>
-                {channels.map(channel => <ChannelRow key={channel.id} channel={channel} roleNames={roleNames} memberNames={memberNames} />)}
+                {channels.map(channel => (
+                    <ChannelRow
+                        key={channel.id}
+                        channel={channel}
+                        roleNames={roleNames}
+                        memberNames={memberNames}
+                        expanded={expandedAccordionIds.has(channelAccordionId(channel.id))}
+                        onExpandedChange={onAccordionExpandedChange}
+                    />
+                ))}
             </Stack>
         </Box>
     );
@@ -304,28 +420,43 @@ function ChannelRow({
     channel,
     roleNames,
     memberNames,
+    expanded,
+    onExpandedChange,
 }: {
     channel: RolePermissionSnapshotChannel;
     roleNames: Map<string, string>;
     memberNames: Map<string, string>;
+    expanded: boolean;
+    onExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
+    const explicitOverwrites = channel.permissionOverwrites.filter(hasExplicitOverwrite);
+    const neutralOverwriteCount = channel.permissionOverwrites.length - explicitOverwrites.length;
+
     return (
-        <Accordion disableGutters sx={accordionSx}>
+        <Accordion disableGutters expanded={expanded} onChange={(_event, nextExpanded) => onExpandedChange(channelAccordionId(channel.id), nextExpanded)} sx={accordionSx}>
             <AccordionSummary expandIcon={<ExpandMore sx={{ color: "rgba(255,255,255,0.62)" }} />}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 800, overflowWrap: "anywhere" }}>{channel.name}</Typography>
                     <Chip size="small" label={channel.kind} sx={chipSx(dashboardAccents.settings)} />
-                    <Chip size="small" label={`${channel.permissionOverwrites.length} overwrites`} sx={chipSx(dashboardAccents.commands)} />
+                    <Chip size="small" label={`${explicitOverwrites.length} explicit`} sx={chipSx(dashboardAccents.commands)} />
                 </Stack>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
-                {channel.permissionOverwrites.length === 0 ? (
-                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>No channel-specific overwrites. Discord resolves access from global roles and parent categories.</Typography>
+                {explicitOverwrites.length === 0 ? (
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
+                        No explicit allow or deny changes for this channel.
+                        {neutralOverwriteCount > 0 && ` ${neutralOverwriteCount} neutral Discord ${neutralOverwriteCount === 1 ? "record does" : "records do"} not change access.`}
+                    </Typography>
                 ) : (
                     <Stack spacing={1}>
-                        {channel.permissionOverwrites.map(overwrite => (
+                        {explicitOverwrites.map(overwrite => (
                             <OverwriteRow key={`${overwrite.type}:${overwrite.id}`} overwrite={overwrite} roleNames={roleNames} memberNames={memberNames} />
                         ))}
+                        {neutralOverwriteCount > 0 && (
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)" }}>
+                                {neutralOverwriteCount} neutral Discord {neutralOverwriteCount === 1 ? "record does" : "records do"} not change access.
+                            </Typography>
+                        )}
                     </Stack>
                 )}
             </AccordionDetails>
@@ -350,9 +481,9 @@ function OverwriteRow({
 
     return (
         <Box sx={{ px: 1.25, py: 1, borderRadius: 1, border: "1px solid rgba(255,255,255,0.09)", bgcolor: "rgba(255,255,255,0.03)" }}>
-            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, mb: 0.75, overflowWrap: "anywhere" }}>{subject}</Typography>
-            <PermissionLine label="Allow" permissions={overwrite.allowPermissions} emptyLabel="None" accent={dashboardAccents.settings} />
-            <PermissionLine label="Deny" permissions={overwrite.denyPermissions} emptyLabel="None" accent={dashboardAccents.quotes} />
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, mb: 0.75, overflowWrap: "anywhere" }}>Direct override: {subject}</Typography>
+            <PermissionLine label="Explicitly allowed" permissions={overwrite.allowPermissions} emptyLabel="None" accent={dashboardAccents.settings} />
+            <PermissionLine label="Explicitly denied" permissions={overwrite.denyPermissions} emptyLabel="None" accent={dashboardAccents.quotes} />
         </Box>
     );
 }
@@ -415,8 +546,27 @@ function summarizeSnapshot(snapshot: RolePermissionSnapshotData) {
         roles: snapshot.roles.length,
         channels: channels.length,
         categories: channels.filter(channel => channel.kind === "category").length,
-        overwrites: channels.reduce((total, channel) => total + channel.permissionOverwrites.length, 0),
+        overwrites: channels.reduce((total, channel) => total + channel.permissionOverwrites.filter(hasExplicitOverwrite).length, 0),
     };
+}
+
+function snapshotAccordionIds(snapshot: RolePermissionSnapshotData): string[] {
+    return [
+        ...snapshot.roles.map(role => roleAccordionId(role.id)),
+        ...(snapshot.channels ?? []).map(channel => channelAccordionId(channel.id)),
+    ];
+}
+
+function roleAccordionId(roleId: string): string {
+    return `role:${roleId}`;
+}
+
+function channelAccordionId(channelId: string): string {
+    return `channel:${channelId}`;
+}
+
+function hasExplicitOverwrite(overwrite: RolePermissionSnapshotPermissionOverwrite): boolean {
+    return overwrite.allow !== "0" || overwrite.deny !== "0";
 }
 
 function matchesRole(role: RolePermissionSnapshotRole, search: string): boolean {

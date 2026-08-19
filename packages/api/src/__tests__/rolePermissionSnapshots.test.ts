@@ -110,7 +110,14 @@ describe('Role permission snapshots API', () => {
                         type: 4,
                         position: 1,
                         parent_id: null,
-                        permission_overwrites: [{ id: 'role-1', type: 0, allow: '1024', deny: '0' }],
+                        permission_overwrites: [{
+                            id: 'role-1',
+                            type: 'role',
+                            allow: 0,
+                            deny: 0,
+                            allow_new: '1024',
+                            deny_new: '0',
+                        }],
                     },
                     {
                         id: 'channel-1',
@@ -118,7 +125,14 @@ describe('Role permission snapshots API', () => {
                         type: 0,
                         position: 2,
                         parent_id: 'category-1',
-                        permission_overwrites: [{ id: 'member-1', type: 1, allow: '0', deny: '2048' }],
+                        permission_overwrites: [{
+                            id: 'member-1',
+                            type: 'member',
+                            allow: 0,
+                            deny: 0,
+                            allow_new: '0',
+                            deny_new: '2048',
+                        }],
                     },
                 ];
             }

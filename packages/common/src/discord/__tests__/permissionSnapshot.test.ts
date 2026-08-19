@@ -18,6 +18,8 @@ describe('permission snapshots', () => {
         expect(rolePermissionChannelKind(99)).toBe('unknown');
         expect(rolePermissionOverwriteType(0)).toBe('role');
         expect(rolePermissionOverwriteType(1)).toBe('member');
+        expect(rolePermissionOverwriteType('role')).toBe('role');
+        expect(rolePermissionOverwriteType('member')).toBe('member');
         expect(rolePermissionOverwriteType(99)).toBe('unknown');
     });
 });

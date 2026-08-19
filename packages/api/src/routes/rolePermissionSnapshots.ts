@@ -71,6 +71,8 @@ interface DiscordPermissionOverwritePayload {
     type?: unknown;
     allow?: unknown;
     deny?: unknown;
+    allow_new?: unknown;
+    deny_new?: unknown;
 }
 
 interface AuthenticatedRequest extends Request {
@@ -395,11 +397,12 @@ function snapshotPermissionOverwrites(value: unknown): RolePermissionSnapshotPer
         .filter((overwrite): overwrite is DiscordPermissionOverwritePayload => Boolean(overwrite && typeof overwrite === 'object'))
         .filter((overwrite): overwrite is DiscordPermissionOverwritePayload & { id: string } => typeof overwrite.id === 'string')
         .map(overwrite => {
-            const allow = readString(overwrite.allow, '0');
-            const deny = readString(overwrite.deny, '0');
+            const allow = readPermissionBitfield(overwrite.allow_new, readPermissionBitfield(overwrite.allow, '0'));
+            const deny = readPermissionBitfield(overwrite.deny_new, readPermissionBitfield(overwrite.deny, '0'));
+            const overwriteType = typeof overwrite.type === 'string' || typeof overwrite.type === 'number' ? overwrite.type : -1;
             return {
                 id: overwrite.id,
-                type: rolePermissionOverwriteType(readInteger(overwrite.type)),
+                type: rolePermissionOverwriteType(overwriteType),
                 allow,
                 deny,
                 allowPermissions: permissionNamesFromBitfield(allow),
@@ -439,6 +442,12 @@ function readInteger(value: unknown): number {
 
 function readNonNegativeInteger(value: unknown): number {
     return Math.max(0, readInteger(value));
+}
+
+function readPermissionBitfield(value: unknown, fallback: string): string {
+    if (typeof value === 'string' && /^\d+$/.test(value)) return value;
+    if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) return value.toString();
+    return fallback;
 }
 
 export { router };

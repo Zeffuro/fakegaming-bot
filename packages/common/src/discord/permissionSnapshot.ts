@@ -81,8 +81,8 @@ export function rolePermissionChannelKind(channelType: number): RolePermissionSn
     return 'unknown';
 }
 
-export function rolePermissionOverwriteType(overwriteType: number): RolePermissionSnapshotOverwriteType {
-    if (overwriteType === 0) return 'role';
-    if (overwriteType === 1) return 'member';
+export function rolePermissionOverwriteType(overwriteType: number | string): RolePermissionSnapshotOverwriteType {
+    if (overwriteType === 0 || overwriteType === '0' || overwriteType === 'role') return 'role';
+    if (overwriteType === 1 || overwriteType === '1' || overwriteType === 'member') return 'member';
     return 'unknown';
 }

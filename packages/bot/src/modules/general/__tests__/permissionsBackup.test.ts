@@ -72,6 +72,35 @@ function createRoleGuild(memberFetch: ReturnType<typeof vi.fn>) {
             cache: channels,
             fetch: vi.fn().mockResolvedValue(channels),
         },
+        client: {
+            rest: {
+                get: vi.fn().mockResolvedValue([
+                    {
+                        id: category.id,
+                        name: category.name,
+                        type: category.type,
+                        position: category.rawPosition,
+                        parent_id: category.parentId,
+                        permission_overwrites: [{
+                            id: role.id,
+                            type: 'role',
+                            allow: 0,
+                            deny: 0,
+                            allow_new: '8',
+                            deny_new: '0',
+                        }],
+                    },
+                    {
+                        id: channel.id,
+                        name: channel.name,
+                        type: channel.type,
+                        position: channel.rawPosition,
+                        parent_id: channel.parentId,
+                        permission_overwrites: [],
+                    },
+                ]),
+            },
+        },
     };
 }
 
