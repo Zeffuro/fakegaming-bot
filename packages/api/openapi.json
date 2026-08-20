@@ -716,6 +716,9 @@
           "defaultReminderTimeSpan": {
             "type": "string"
           },
+          "preferredLocale": {
+            "type": "string"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -1998,6 +2001,20 @@
           "defaultReminderTimeSpan": {
             "type": "string",
             "minLength": 1
+          },
+          "preferredLocale": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "en",
+                  "nl"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false

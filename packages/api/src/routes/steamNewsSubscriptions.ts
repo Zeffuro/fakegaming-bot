@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getConfigManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 import { pausedStateRequestSchema, steamNewsSubscriptionRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getSteamAppById } from '@zeffuro/fakegaming-common/steam';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -11,8 +11,10 @@ import {
     loadGuildScopedRecords,
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
-    sendNotFound,
 } from '../utils/guildScopedRouteHelpers.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale } from '../localization/locale.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -116,7 +118,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
             const record = await manager.findByPkPlain(id) as unknown as SteamNewsSubscriptionRecord | null;
             return record ? normalizeSteamNewsSubscription(record) : null;
         },
-        notFoundMessage: 'Steam news subscription not found',
+        notFoundMessage: apiText(requestLocale(req), 'steamNewsSubscriptionNotFound'),
     });
 });
 
@@ -236,20 +238,18 @@ router.patch('/:id', jwtAuth, validateParams(idParamSchema), validateBody(paused
     const id = Number(req.params.id);
     const body = req.body as z.infer<typeof pausedStateRequestSchema>;
     const manager = getConfigManager().steamNewsSubscriptionManager;
-    const subscription = await manager.findByPkPlain(id) as unknown as SteamNewsSubscriptionRecord | null;
+    const subscription = await manager.getOnePlain({ id }) as unknown as SteamNewsSubscriptionRecord | null;
     if (!subscription) {
-        sendNotFound(res, 'Steam news subscription not found');
-        return;
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'steamNewsSubscriptionNotFound');
     }
 
     const access = await checkUserGuildAccess(req, res, subscription.guildId);
     if (!access.authorized) return;
 
     await manager.setPaused(id, body.paused);
-    const updated = await manager.findByPkPlain(id) as unknown as SteamNewsSubscriptionRecord | null;
+    const updated = await manager.getOnePlain({ id }) as unknown as SteamNewsSubscriptionRecord | null;
     if (!updated) {
-        sendNotFound(res, 'Steam news subscription not found');
-        return;
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'steamNewsSubscriptionNotFound');
     }
 
     await recordSteamNewsPausedStatus(updated, body.paused);
@@ -295,7 +295,7 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'Steam news subscription not found',
+        notFoundMessage: apiText(requestLocale(req), 'steamNewsSubscriptionNotFound'),
         auditAction: 'steamNewsSubscription.delete',
         auditTargetType: 'steamNewsSubscription',
         auditMetadata: subscription => ({

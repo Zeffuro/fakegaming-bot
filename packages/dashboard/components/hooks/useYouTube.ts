@@ -1,5 +1,6 @@
 import { api } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type YouTubeConfig = Awaited<ReturnType<typeof api.getYouTubeConfigs>>[number] & {
   youtubeChannelId: string;
@@ -34,6 +35,7 @@ async function getCachedYouTubeChannelMetadata(channelId: string): Promise<YouTu
 }
 
 export function useYouTubeConfigs(guildId: string | string[], options: UseYouTubeConfigsOptions = {}) {
+  const { t } = useDashboardI18n();
   return useConfigResource<YouTubeDashboardConfig, Omit<YouTubeConfig, 'id' | 'guildId'>>({
     guildId,
     enabled: options.enabled ?? true,
@@ -92,13 +94,13 @@ export function useYouTubeConfigs(guildId: string | string[], options: UseYouTub
     validateCreate: (configData) => (
       configData.youtubeChannelId && configData.discordChannelId
         ? null
-        : 'YouTube Channel ID and Discord Channel ID are required'
+        : t("hooks.youtubeRequired")
     ),
     messages: {
-      loadFailed: 'Failed to load YouTube configurations',
-      createFailed: 'Failed to save YouTube configuration',
-      updateFailed: 'Failed to update YouTube configuration',
-      deleteFailed: 'Failed to delete YouTube configuration',
+      loadFailed: t("hooks.youtubeLoadFailed"),
+      createFailed: t("hooks.youtubeSaveFailed"),
+      updateFailed: t("hooks.youtubeUpdateFailed"),
+      deleteFailed: t("hooks.youtubeDeleteFailed"),
     }
   });
 }

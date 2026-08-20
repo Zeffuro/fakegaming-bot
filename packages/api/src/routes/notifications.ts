@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { getConfigManager, validateParams, validateQuery, type NotificationListResult } from '@zeffuro/fakegaming-common';
+import { getConfigManager, type NotificationListResult } from '@zeffuro/fakegaming-common';
+import { validateParams, validateQuery } from '../localization/validation.js';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtOrService } from '../middleware/auth.js';
 import { checkUserGuildAccess } from '../utils/authHelpers.js';

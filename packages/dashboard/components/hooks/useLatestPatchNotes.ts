@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 /** Minimal shape for configs that contain a game field */
 export interface HasGameField {
@@ -23,6 +24,7 @@ export interface UseLatestPatchNotesResult {
  * Computes unique games from provided configs and fetches latest patch info per game.
  */
 export function useLatestPatchNotes<T extends HasGameField>(configs: T[] | null | undefined): UseLatestPatchNotesResult {
+    const { t } = useDashboardI18n();
     const [latestByGame, setLatestByGame] = useState<Record<string, LatestPatchInfo>>({});
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export function useLatestPatchNotes<T extends HasGameField>(configs: T[] | null 
             }
             setLatestByGame(map);
         } catch (e: any) {
-            setError(e?.message ?? 'Failed to load latest patch notes');
+            setError(e?.message ?? t("hooks.failedToLoadLatestPatchNotes"));
         } finally {
             setLoading(false);
         }

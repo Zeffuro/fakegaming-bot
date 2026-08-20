@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
 import { dashboardFieldSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface DiscordChannelOption {
     id: string;
@@ -43,6 +44,7 @@ interface ConfigDialogFieldsProps {
     channelNameLabel: string;
     channelNamePlaceholder?: string;
     moduleName: string;
+    moduleDisplayName?: string;
     moduleColor: string;
     channels: DiscordChannelOption[];
     loadingChannels: boolean;
@@ -58,30 +60,30 @@ export function getConfigStringValue(value: ConfigDialogValue, field: string): s
     return typeof raw === "string" ? raw : "";
 }
 
-function getMessageTemplate(moduleName: string): MessageTemplate {
+function getMessageTemplate(moduleName: string, t: ReturnType<typeof useDashboardI18n>["t"]): MessageTemplate {
     if (moduleName === "YouTube") {
         return {
             tokens: ["{title}", "{channel}", "{url}", "{duration}", "{views}"],
-            helper: "Tokens: {title}, {channel}, {url}, {duration}, {views}. If {url} is omitted, it will be appended automatically.",
-            placeholder: "New video from {channel}: {title} {url}",
-            example: "Example: New video from {channel}: {title} {url}"
+            helper: t("config.youtubeTemplateHelp"),
+            placeholder: t("config.youtubeTemplatePlaceholder"),
+            example: t("config.youtubeTemplateExample")
         };
     }
 
     if (moduleName === "Bluesky") {
         return {
             tokens: ["{author}", "{handle}", "{text}", "{url}", "{likes}", "{reposts}", "{replies}"],
-            helper: "Tokens: {author}, {handle}, {text}, {url}, {likes}, {reposts}, {replies}. If {url} is omitted, it will be appended automatically.",
-            placeholder: "New post from {author}: {text} {url}",
-            example: "Example: New post from {author}: {text} {url}"
+            helper: t("config.blueskyTemplateHelp"),
+            placeholder: t("config.blueskyTemplatePlaceholder"),
+            example: t("config.blueskyTemplateExample")
         };
     }
 
     return {
         tokens: ["{streamer}", "{title}", "{game}", "{url}", "{uptime}", "{viewers}"],
-        helper: "Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers}. If {url} is omitted, it will be appended automatically.",
-        placeholder: "{streamer} is now live! {url}",
-        example: "{streamer} is live: {title} {url}"
+        helper: t("config.streamTemplateHelp"),
+        placeholder: t("config.streamTemplatePlaceholder"),
+        example: t("config.streamTemplateExample")
     };
 }
 
@@ -103,6 +105,7 @@ export function ConfigDialogFields({
     channelNameLabel,
     channelNamePlaceholder,
     moduleName,
+    moduleDisplayName = moduleName,
     moduleColor,
     channels,
     loadingChannels,
@@ -112,12 +115,13 @@ export function ConfigDialogFields({
     itemNameSearch,
     onRefreshChannels
 }: ConfigDialogFieldsProps) {
+    const { t } = useDashboardI18n();
     const fieldSx = dashboardFieldSx(moduleColor);
     const nameValue = getConfigStringValue(value, channelNameField);
     const selectedChannelId = getConfigStringValue(value, "discordChannelId");
     const selectedChannel = channels.find((channel) => channel.id === selectedChannelId) ?? null;
     const customMessage = getConfigStringValue(value, "customMessage");
-    const template = getMessageTemplate(moduleName);
+    const template = getMessageTemplate(moduleName, t);
     const showTwitchVodControls = moduleName === "Twitch";
     const vodFollowupEnabled = Boolean(value.vodFollowupEnabled);
     const [searchOptions, setSearchOptions] = useState<ConfigDialogItemOption[]>([]);
@@ -201,7 +205,7 @@ export function ConfigDialogFields({
                                 label={channelNameLabel}
                                 placeholder={channelNamePlaceholder}
                                 sx={[fieldSx, { mb: 2 }]}
-                                helperText={`Search ${moduleName} by name, App ID, or URL`}
+                                helperText={t("config.searchProviderHelp", { module: moduleDisplayName })}
                                 slotProps={{
                                     ...params.slotProps,
                                     input: {
@@ -238,7 +242,7 @@ export function ConfigDialogFields({
                             )}
                         </li>
                     )}
-                    noOptionsText={nameValue.trim().length < 2 ? "Type at least 2 characters" : "No games found"}
+                    noOptionsText={nameValue.trim().length < 2 ? t("config.typeAtLeastTwoCharacters") : t("config.noGamesFound")}
                     sx={{
                         "& .MuiAutocomplete-popupIndicator": { color: "grey.400" },
                         "& .MuiAutocomplete-clearIndicator": { color: "grey.400" }
@@ -268,7 +272,7 @@ export function ConfigDialogFields({
                     value={nameValue}
                     onChange={(event) => onFieldChange(channelNameField, event.target.value)}
                     sx={[fieldSx, { mb: 2 }]}
-                    helperText={`Enter the ${moduleName} ${channelNameLabel.toLowerCase()}`}
+                    helperText={t("config.enterProviderField", { module: moduleDisplayName, field: channelNameLabel.toLowerCase() })}
                 />
             )}
 
@@ -301,7 +305,7 @@ export function ConfigDialogFields({
                         return (
                             <TextField
                                 {...params}
-                                label="Discord Channel"
+                                label={t("common.discordChannel")}
                                 sx={fieldSx}
                                 slotProps={{
                                     ...params.slotProps,
@@ -331,7 +335,7 @@ export function ConfigDialogFields({
                             #{option.name}
                         </li>
                     )}
-                    noOptionsText={loadingChannels ? "Loading channels..." : "No channels available"}
+                    noOptionsText={loadingChannels ? t("config.loadingChannels") : t("config.noChannelsAvailable")}
                     sx={{
                         flex: 1,
                         "& .MuiAutocomplete-popupIndicator": { color: "grey.400" },
@@ -339,10 +343,10 @@ export function ConfigDialogFields({
                     }}
                 />
                 {onRefreshChannels && (
-                    <Tooltip title="Refresh channels">
+                    <Tooltip title={t("common.refreshChannels")}>
                         <span>
                             <IconButton
-                                aria-label="Refresh channels"
+                                aria-label={t("common.refreshChannels")}
                                 onClick={() => void onRefreshChannels()}
                                 disabled={loadingChannels}
                                 sx={{ mt: 0.75, color: "grey.200", border: "1px solid rgba(255,255,255,0.14)" }}
@@ -358,7 +362,7 @@ export function ConfigDialogFields({
                 <>
                     <TextField
                         fullWidth
-                        label="Custom Message (Optional)"
+                        label={t("common.customMessageOptional")}
                         placeholder={template.placeholder}
                         value={customMessage}
                         onChange={(event) => onFieldChange("customMessage", event.target.value)}
@@ -367,7 +371,7 @@ export function ConfigDialogFields({
                     />
                     <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: "wrap" }}>
                         <Typography variant="caption" sx={{ color: "grey.400", mr: 1, alignSelf: "center" }}>
-                            Available tokens:
+                            {t("common.availableTokens")}
                         </Typography>
                         {template.tokens.map((token) => (
                             <Chip
@@ -389,32 +393,32 @@ export function ConfigDialogFields({
                 <>
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mt: 2 }}>
                         <TextField
-                            label="Cooldown (minutes)"
+                            label={t("common.cooldownMinutes")}
                             type="number"
                             value={value.cooldownMinutes ?? ""}
                             onChange={(event) => onFieldChange("cooldownMinutes", parseOptionalMinutes(event.target.value))}
                             slotProps={{ htmlInput: { min: 0 } }}
                             sx={fieldSx}
-                            helperText="Minimum minutes between notifications (optional)"
+                            helperText={t("config.cooldownHelp")}
                         />
                         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                             <TextField
-                                label="Quiet Start"
+                            label={t("common.quietStart")}
                                 type="time"
                                 value={value.quietHoursStart ?? ""}
                                 onChange={(event) => onFieldChange("quietHoursStart", event.target.value)}
                                 slotProps={{ htmlInput: { step: 60 } }}
                                 sx={fieldSx}
-                                helperText="HH:mm (24h)"
+                                helperText={t("config.time24hHelp")}
                             />
                             <TextField
-                                label="Quiet End"
+                            label={t("common.quietEnd")}
                                 type="time"
                                 value={value.quietHoursEnd ?? ""}
                                 onChange={(event) => onFieldChange("quietHoursEnd", event.target.value)}
                                 slotProps={{ htmlInput: { step: 60 } }}
                                 sx={fieldSx}
-                                helperText="HH:mm (24h)"
+                                helperText={t("config.time24hHelp")}
                             />
                         </Box>
                     </Box>
@@ -433,17 +437,17 @@ export function ConfigDialogFields({
                                         }}
                                     />
                                 )}
-                                label="VOD follow-up"
+                                label={t("config.vodFollowup")}
                             />
                             <TextField
-                                label="VOD delay (minutes)"
+                                label={t("config.vodDelay")}
                                 type="number"
                                 disabled={!vodFollowupEnabled}
                                 value={value.vodFollowupDelayMinutes ?? ""}
                                 onChange={(event) => onFieldChange("vodFollowupDelayMinutes", parseOptionalMinutes(event.target.value))}
                                 slotProps={{ htmlInput: { min: 1, max: 1440 } }}
                                 sx={fieldSx}
-                                helperText="Wait after offline before checking the latest archive"
+                                helperText={t("config.vodDelayHelp")}
                             />
                         </Box>
                     )}
@@ -455,7 +459,7 @@ export function ConfigDialogFields({
                                 onChange={(event) => onFieldChange("paused", event.target.checked)}
                             />
                         )}
-                        label="Paused"
+                        label={t("common.paused")}
                     />
                 </>
             )}

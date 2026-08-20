@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
@@ -11,15 +12,17 @@ import {gameAutocomplete} from "../shared/gameAutocomplete.js";
 import {buildPatchNoteEmbed} from "../shared/patchNoteEmbed.js";
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { subscribePatchnotes as META } from '../commands.manifest.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('game').setDescription('Game to subscribe to').setRequired(true).setAutocomplete(true))
-        .addChannelOption(option => option.setName('channel').setDescription('Channel to receive patch notes').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+        .addStringOption(option => option.setName('game').setNameLocalization('nl', 'spel').setDescription('Game to subscribe to').setDescriptionLocalization('nl', 'Spel waarop je je wilt abonneren').setRequired(true).setAutocomplete(true))
+        .addChannelOption(option => option.setName('channel').setNameLocalization('nl', 'kanaal').setDescription('Channel to receive patch notes').setDescriptionLocalization('nl', 'Kanaal dat patchnotes ontvangt').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 );
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
     if (!(await requireAdmin(interaction))) return;
     const game = interaction.options.getString('game', true);
     const channel = interaction.options.getChannel('channel', true);
@@ -30,11 +33,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (latestPatch) {
         await interaction.reply({
-            content: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`,
-            embeds: [buildPatchNoteEmbed(latestPatch)]
+            content: resolveLocaleValue(locale, { en: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`, nl: `<#${channel.id}> geabonneerd op patchnotes voor \`${game}\`. Nieuwste patch:` }),
+            embeds: [resolveLocaleValue(locale, { en: buildPatchNoteEmbed(latestPatch), nl: buildPatchNoteEmbed(latestPatch, locale) })]
         });
     } else {
-        await interaction.reply(`Subscribed <#${channel.id}> to patch notes for \`${game}\`.`);
+        await interaction.reply(resolveLocaleValue(locale, { en: `Subscribed <#${channel.id}> to patch notes for \`${game}\`.`, nl: `<#${channel.id}> geabonneerd op patchnotes voor \`${game}\`.` }));
     }
 }
 

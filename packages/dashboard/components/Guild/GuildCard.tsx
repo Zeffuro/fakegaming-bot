@@ -12,6 +12,7 @@ import { alpha } from "@mui/material/styles";
 import { People, AdminPanelSettings } from "@mui/icons-material";
 import { dashboardAccents, dashboardCardSx } from "@/components/dashboard/dashboardTheme";
 import { DISCORD_PERMISSION_ADMINISTRATOR } from "@/lib/constants";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface GuildCardProps {
   guild: {
@@ -26,6 +27,7 @@ interface GuildCardProps {
 }
 
 export default function GuildCard({ guild, onClick }: GuildCardProps) {
+  const { formatNumber, t } = useDashboardI18n();
   const getGuildIcon = () => {
     if (guild.icon) {
       return `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`;
@@ -79,7 +81,7 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
             {guild.owner && (
               <Chip
                 icon={<AdminPanelSettings />}
-                label="Owner"
+                label={t("guild.owner")}
                 size="small"
                 color="primary"
                 variant="outlined"
@@ -88,7 +90,7 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
             {!guild.owner && isAdmin && (
               <Chip
                 icon={<AdminPanelSettings />}
-                label="Admin"
+                label={t("guild.admin")}
                 size="small"
                 color="secondary"
                 variant="outlined"
@@ -100,7 +102,7 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
               <People sx={{ fontSize: 16, color: 'rgba(255,255,255,0.54)' }} />
               <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.54)' }}>
-                {guild.member_count.toLocaleString()} members
+                {t("guild.members", { count: formatNumber(guild.member_count) })}
               </Typography>
             </Box>
           )}

@@ -5490,6 +5490,7 @@ export interface components {
             nickname?: string;
             timezone?: string;
             defaultReminderTimeSpan?: string;
+            preferredLocale?: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -5749,6 +5750,7 @@ export interface components {
         UserUpdateRequest: {
             timezone?: string;
             defaultReminderTimeSpan?: string;
+            preferredLocale?: ("en" | "nl") | null;
         };
         YoutubeChannelRequest: {
             youtubeChannelId: string;

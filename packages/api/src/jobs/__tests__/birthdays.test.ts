@@ -13,16 +13,27 @@ vi.mock('@zeffuro/fakegaming-common/managers', () => ({
             setMessageMeta: vi.fn().mockResolvedValue(null),
             getOnePlain: vi.fn().mockResolvedValue({ channelId: 'c' }),
         },
+        guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('en') },
     })
 }));
 
-import { computeNextRunDelaySeconds, computeBirthdayRetryBackoffSeconds, runBirthdaysOnce } from '../birthdays.js';
+import {
+    buildBirthdayContent,
+    computeNextRunDelaySeconds,
+    computeBirthdayRetryBackoffSeconds,
+    runBirthdaysOnce,
+} from '../birthdays.js';
 
 const ORIGINAL_ENV = { ...process.env };
 
 describe('birthdays jobs helpers', () => {
     beforeEach(() => { process.env = { ...ORIGINAL_ENV }; });
     afterEach(() => { process.env = { ...ORIGINAL_ENV }; });
+
+    it('builds localized announcements without changing the mention', () => {
+        expect(buildBirthdayContent('123', 30, 'en')).toBe('🎉 Happy birthday <@123> (turning 30)!');
+        expect(buildBirthdayContent('123', 30, 'nl')).toBe('🎉 Gefeliciteerd met je verjaardag <@123> (je wordt 30)!');
+    });
 
     it('computeNextRunDelaySeconds returns positive seconds until next 09:00', () => {
         const now = new Date('2025-01-01T08:30:00Z');

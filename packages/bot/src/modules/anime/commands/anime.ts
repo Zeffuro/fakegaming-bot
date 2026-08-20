@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
 import {
     AutocompleteInteraction,
     ButtonInteraction,
@@ -23,6 +24,8 @@ import {
 import type { IntegrationHealthRecord } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { parseComponentLocale } from '../../../core/componentLocale.js';
+import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
 import { requireAdmin } from '../../../utils/permissions.js';
 import { recordBotAuditEvent } from '../../../utils/audit.js';
 import { anime as META } from '../commands.manifest.js';
@@ -30,6 +33,7 @@ import { anilistAutocomplete, parseAniListChoice } from '../shared/anilistAutoco
 import { buildAnimeActionRow, buildAnimeListActionRows, buildAnimeSearchActionRows, buildAnimeSeasonActionRows } from '../shared/animeComponents.js';
 import { buildAnimeEmbed, buildAnimeListEmbed, buildAnimeNextEmbed, buildAnimeSearchResultsEmbed, buildAnimeSeasonEmbed } from '../shared/animeEmbed.js';
 import { formatAnimeTitle } from '../shared/animeFormatters.js';
+import { getAnimeCopy } from '../copy/animeCopy.js';
 
 const ANIME_PAGE_SIZE = 10;
 
@@ -49,29 +53,37 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('search')
+                .setNameLocalization('nl', 'zoeken')
                 .setDescription('Search for an anime')
+                .setDescriptionLocalization('nl', 'Zoek een anime')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('subscribe')
+                .setNameLocalization('nl', 'abonneren')
                 .setDescription('Subscribe to anime episode reminders')
+                .setDescriptionLocalization('nl', 'Abonneer je op meldingen voor anime-afleveringen')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
                 .addChannelOption((option) =>
                     option
                         .setName('channel')
+                        .setNameLocalization('nl', 'kanaal')
                         .setDescription('Optional public notification channel (admin only)')
+                        .setDescriptionLocalization('nl', 'Optioneel openbaar meldingskanaal (alleen beheerders)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
                 .addIntegerOption((option) =>
                     option
                         .setName('reminder-minutes')
+                        .setNameLocalization('nl', 'melding-minuten')
                         .setDescription('Minutes before airing to remind you')
+                        .setDescriptionLocalization('nl', 'Minuten voor uitzending waarop je een melding krijgt')
                         .setRequired(false)
                         .setMinValue(0)
                         .setMaxValue(1440)
@@ -80,19 +92,25 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('list')
+                .setNameLocalization('nl', 'lijst')
                 .setDescription('Show your anime subscriptions')
+                .setDescriptionLocalization('nl', 'Toon je anime-abonnementen')
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('unsubscribe')
+                .setNameLocalization('nl', 'opzeggen')
                 .setDescription('Unsubscribe from anime episode reminders')
+                .setDescriptionLocalization('nl', 'Zeg meldingen voor anime-afleveringen op')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
                 .addChannelOption((option) =>
                     option
                         .setName('channel')
+                        .setNameLocalization('nl', 'kanaal')
                         .setDescription('Optional public notification channel subscription to remove (admin only)')
+                        .setDescriptionLocalization('nl', 'Optioneel kanaalabonnement om op te zeggen (alleen beheerders)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
@@ -100,14 +118,18 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('pause')
+                .setNameLocalization('nl', 'pauzeren')
                 .setDescription('Pause anime episode reminders')
+                .setDescriptionLocalization('nl', 'Pauzeer meldingen voor anime-afleveringen')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
                 .addChannelOption((option) =>
                     option
                         .setName('channel')
+                        .setNameLocalization('nl', 'kanaal')
                         .setDescription('Optional public notification channel subscription to pause (admin only)')
+                        .setDescriptionLocalization('nl', 'Optioneel kanaalabonnement om te pauzeren (alleen beheerders)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
@@ -115,14 +137,18 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('resume')
+                .setNameLocalization('nl', 'hervatten')
                 .setDescription('Resume anime episode reminders')
+                .setDescriptionLocalization('nl', 'Hervat meldingen voor anime-afleveringen')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
                 .addChannelOption((option) =>
                     option
                         .setName('channel')
+                        .setNameLocalization('nl', 'kanaal')
                         .setDescription('Optional public notification channel subscription to resume (admin only)')
+                        .setDescriptionLocalization('nl', 'Optioneel kanaalabonnement om te hervatten (alleen beheerders)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
@@ -130,14 +156,18 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('test')
+                .setNameLocalization('nl', 'status')
                 .setDescription('Show latest health for anime episode reminders')
+                .setDescriptionLocalization('nl', 'Toon de laatste status van meldingen voor anime-afleveringen')
                 .addStringOption((option) =>
-                    option.setName('title').setDescription('Anime title').setRequired(true).setAutocomplete(true)
+                    option.setName('title').setNameLocalization('nl', 'titel').setDescription('Anime title').setDescriptionLocalization('nl', 'Animetitel').setRequired(true).setAutocomplete(true)
                 )
                 .addChannelOption((option) =>
                     option
                         .setName('channel')
+                        .setNameLocalization('nl', 'kanaal')
                         .setDescription('Optional public notification channel subscription to inspect (admin only)')
+                        .setDescriptionLocalization('nl', 'Optioneel kanaalabonnement om te controleren (alleen beheerders)')
                         .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 )
@@ -145,30 +175,38 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('next')
+                .setNameLocalization('nl', 'komend')
                 .setDescription('Show upcoming episodes for your subscriptions')
+                .setDescriptionLocalization('nl', 'Toon komende afleveringen voor je abonnementen')
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('season')
+                .setNameLocalization('nl', 'seizoen')
                 .setDescription('Browse anime airing in a season')
+                .setDescriptionLocalization('nl', 'Bekijk anime die in een seizoen wordt uitgezonden')
                 .addStringOption((option) =>
                     option
                         .setName('season')
+                        .setNameLocalization('nl', 'seizoen')
                         .setDescription('Season to browse')
+                        .setDescriptionLocalization('nl', 'Seizoen om te bekijken')
                         .setRequired(true)
                         .addChoices(
-                            { name: 'Current', value: 'current' },
-                            { name: 'Next', value: 'next' },
-                            { name: 'Winter', value: 'WINTER' },
-                            { name: 'Spring', value: 'SPRING' },
-                            { name: 'Summer', value: 'SUMMER' },
-                            { name: 'Fall', value: 'FALL' },
+                            { name: 'Current', name_localizations: { nl: 'Huidig' }, value: 'current' },
+                            { name: 'Next', name_localizations: { nl: 'Volgend' }, value: 'next' },
+                            { name: 'Winter', name_localizations: { nl: 'Winter' }, value: 'WINTER' },
+                            { name: 'Spring', name_localizations: { nl: 'Lente' }, value: 'SPRING' },
+                            { name: 'Summer', name_localizations: { nl: 'Zomer' }, value: 'SUMMER' },
+                            { name: 'Fall', name_localizations: { nl: 'Herfst' }, value: 'FALL' },
                         )
                 )
                 .addIntegerOption((option) =>
                     option
                         .setName('year')
+                        .setNameLocalization('nl', 'jaar')
                         .setDescription('Year for a specific season')
+                        .setDescriptionLocalization('nl', 'Jaar van een specifiek seizoen')
                         .setRequired(false)
                         .setMinValue(1940)
                         .setMaxValue(2100)
@@ -176,13 +214,15 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
                 .addStringOption((option) =>
                     option
                         .setName('scope')
+                        .setNameLocalization('nl', 'bereik')
                         .setDescription('Filter seasonal results')
+                        .setDescriptionLocalization('nl', 'Filter de seizoensresultaten')
                         .setRequired(false)
                         .addChoices(
-                            { name: 'Airing/upcoming', value: 'airing' },
-                            { name: 'Season chart', value: 'chart' },
-                            { name: 'TV only', value: 'tv' },
-                            { name: 'All known formats', value: 'all' },
+                            { name: 'Airing/upcoming', name_localizations: { nl: 'Wordt uitgezonden/komend' }, value: 'airing' },
+                            { name: 'Season chart', name_localizations: { nl: 'Seizoensoverzicht' }, value: 'chart' },
+                            { name: 'TV only', name_localizations: { nl: 'Alleen tv' }, value: 'tv' },
+                            { name: 'All known formats', name_localizations: { nl: 'Alle bekende indelingen' }, value: 'all' },
                         )
                 )
         )
@@ -203,19 +243,23 @@ async function resolveAnime(input: string): Promise<AniListTitle | null> {
     return anime;
 }
 
-function getNotSubscribableReason(anime: AniListTitle): string | null {
+function getNotSubscribableReason(anime: AniListTitle, locale: SupportedOutputLocale): string | null {
     if (isAniListSubscribable(anime)) return null;
     if (anime.status === 'FINISHED') {
-        return `**${formatAnimeTitle(anime)}** is already finished, so episode reminders would never fire. Search for the sequel/next season entry instead.`;
+        return resolveLocaleValue(locale, { en: `**${formatAnimeTitle(anime, locale)}** is already finished, so episode reminders would never fire. Search for the sequel/next season entry instead.`, nl: `**${formatAnimeTitle(anime, locale)}** is al afgelopen, dus meldingen voor afleveringen zouden nooit worden verstuurd. Zoek in plaats daarvan naar het vervolg of het volgende seizoen.` });
     }
     if (anime.status === 'CANCELLED') {
-        return `**${formatAnimeTitle(anime)}** is cancelled, so episode reminders would never fire.`;
+        return resolveLocaleValue(locale, { en: `**${formatAnimeTitle(anime, locale)}** is cancelled, so episode reminders would never fire.`, nl: `**${formatAnimeTitle(anime, locale)}** is geannuleerd, dus meldingen voor afleveringen zouden nooit worden verstuurd.` });
     }
     return null;
 }
 
-async function canSubscribeOrReply(interaction: ChatInputCommandInteraction | ButtonInteraction, anime: AniListTitle): Promise<boolean> {
-    const reason = getNotSubscribableReason(anime);
+async function canSubscribeOrReply(
+    interaction: ChatInputCommandInteraction | ButtonInteraction,
+    anime: AniListTitle,
+    locale: SupportedOutputLocale,
+): Promise<boolean> {
+    const reason = getNotSubscribableReason(anime, locale);
     if (!reason) return true;
     await interaction.reply({ content: reason, flags: MessageFlags.Ephemeral });
     return false;
@@ -231,7 +275,7 @@ async function getCachedOrRemoteTitle(anilistId: number) {
     return input;
 }
 
-async function buildAnimeListPayload(userId: string, requestedPage = 1) {
+async function buildAnimeListPayload(userId: string, requestedPage = 1, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE) {
     const subscriptions = await getConfigManager().animeManager.subscriptions.getUserSubscriptions(userId);
     const total = subscriptions.length;
     const maxPage = Math.max(1, Math.ceil(total / ANIME_PAGE_SIZE));
@@ -245,7 +289,7 @@ async function buildAnimeListPayload(userId: string, requestedPage = 1) {
     }
 
     return {
-        embeds: [buildAnimeListEmbed(rows, { page, total, startIndex })],
+        embeds: [buildAnimeListEmbed(rows, { page, total, startIndex }, locale)],
         components: total
             ? buildAnimeListActionRows({
                 anilistIds: pageSubscriptions.map((subscription) => subscription.anilistId),
@@ -253,6 +297,7 @@ async function buildAnimeListPayload(userId: string, requestedPage = 1) {
                 hasPrevious: page > 1,
                 hasNext: page < maxPage,
                 startIndex,
+                locale,
             })
             : [],
     };
@@ -278,7 +323,7 @@ async function recordAnimePausedHealth(subscription: AnimeSubscriptionRecord, pa
     }
 }
 
-async function executeSearch(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeSearch(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     const input = interaction.options.getString('title', true);
     const selectedId = parseAniListChoice(input);
     if (!selectedId) {
@@ -287,8 +332,8 @@ async function executeSearch(interaction: ChatInputCommandInteraction): Promise<
             await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(result));
         }
         await interaction.reply({
-            embeds: [buildAnimeSearchResultsEmbed(results, input)],
-            components: buildAnimeSearchActionRows(results.map((anime) => anime.id)),
+            embeds: [buildAnimeSearchResultsEmbed(results, input, 'ANIME', locale)],
+            components: buildAnimeSearchActionRows(results.map((anime) => anime.id), 0, locale),
             flags: results.length ? undefined : MessageFlags.Ephemeral,
         });
         return;
@@ -296,32 +341,32 @@ async function executeSearch(interaction: ChatInputCommandInteraction): Promise<
 
     const anime = await resolveAnime(input);
     if (!anime) {
-        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No anime found for \`${input}\`.`, nl: `Geen anime gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
     await interaction.reply({
-        embeds: [buildAnimeEmbed(anime)],
-        components: [buildAnimeActionRow(anime.id)],
+        embeds: [buildAnimeEmbed(anime, locale)],
+        components: [buildAnimeActionRow(anime.id, locale)],
     });
 }
 
-async function executeSubscribe(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeSubscribe(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     const input = interaction.options.getString('title', true);
     const channel = interaction.options.getChannel('channel', false);
     const reminderMinutes = interaction.options.getInteger('reminder-minutes', false) ?? 30;
     const anime = await resolveAnime(input);
     if (!anime) {
-        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No anime found for \`${input}\`.`, nl: `Geen anime gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
-    if (!(await canSubscribeOrReply(interaction, anime))) return;
+    if (!(await canSubscribeOrReply(interaction, anime, locale))) return;
 
     if (channel) {
         if (!(await requireAdmin(interaction))) return;
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'Channel subscriptions can only be configured in a server.', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Channel subscriptions can only be configured in a server.', nl: 'Kanaalabonnementen kunnen alleen op een server worden ingesteld.' }), flags: MessageFlags.Ephemeral });
             return;
         }
         const created = await getConfigManager().animeManager.subscriptions.subscribeChannel({
@@ -341,7 +386,7 @@ async function executeSubscribe(interaction: ChatInputCommandInteraction): Promi
             },
         });
         await interaction.reply({
-            content: `${created ? 'Subscribed' : 'Updated subscription for'} <#${channel.id}> to **${formatAnimeTitle(anime)}**.`,
+            content: resolveLocaleValue(locale, { en: `${created ? 'Subscribed' : 'Updated subscription for'} <#${channel.id}> to **${formatAnimeTitle(anime, locale)}**.`, nl: `${created ? 'Geabonneerd' : 'Abonnement bijgewerkt voor'} <#${channel.id}> op **${formatAnimeTitle(anime, locale)}**.` }),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -353,21 +398,21 @@ async function executeSubscribe(interaction: ChatInputCommandInteraction): Promi
         reminderMinutes,
     });
     await interaction.reply({
-        content: `${created ? 'Subscribed you' : 'Updated your subscription'} to **${formatAnimeTitle(anime)}**. Episode reminders will use DMs by default.`,
+        content: resolveLocaleValue(locale, { en: `${created ? 'Subscribed you' : 'Updated your subscription'} to **${formatAnimeTitle(anime, locale)}**. Episode reminders will use DMs by default.`, nl: `${created ? 'Je bent geabonneerd' : 'Je abonnement is bijgewerkt'} op **${formatAnimeTitle(anime, locale)}**. Meldingen voor afleveringen worden standaard via DM verstuurd.` }),
         flags: MessageFlags.Ephemeral,
     });
 }
 
-async function executeList(interaction: ChatInputCommandInteraction): Promise<void> {
-    await interaction.reply({ ...(await buildAnimeListPayload(interaction.user.id)), flags: MessageFlags.Ephemeral });
+async function executeList(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
+    await interaction.reply({ ...(await buildAnimeListPayload(interaction.user.id, 1, locale)), flags: MessageFlags.Ephemeral });
 }
 
-async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeUnsubscribe(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     const input = interaction.options.getString('title', true);
     const channel = interaction.options.getChannel('channel', false);
     const anime = await resolveAnime(input);
     if (!anime) {
-        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No anime found for \`${input}\`.`, nl: `Geen anime gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -376,7 +421,7 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
             if (!(await requireAdmin(interaction))) return;
             const guildId = interaction.guildId;
             if (!guildId) {
-                await interaction.reply({ content: 'Channel subscriptions can only be removed in a server.', flags: MessageFlags.Ephemeral });
+                await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Channel subscriptions can only be removed in a server.', nl: 'Kanaalabonnementen kunnen alleen op een server worden opgezegd.' }), flags: MessageFlags.Ephemeral });
                 return;
             }
             const manager = getConfigManager().animeManager.subscriptions;
@@ -401,7 +446,7 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
                     channelId: channel.id,
                 },
             });
-            await interaction.reply({ content: `Unsubscribed <#${channel.id}> from **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: resolveLocaleValue(locale, { en: `Unsubscribed <#${channel.id}> from **${formatAnimeTitle(anime, locale)}**.`, nl: `Abonnement van <#${channel.id}> op **${formatAnimeTitle(anime, locale)}** opgezegd.` }), flags: MessageFlags.Ephemeral });
             return;
         }
 
@@ -409,18 +454,18 @@ async function executeUnsubscribe(interaction: ChatInputCommandInteraction): Pro
             anilistId: anime.id,
             userId: interaction.user.id,
         });
-        await interaction.reply({ content: `Unsubscribed you from **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `Unsubscribed you from **${formatAnimeTitle(anime, locale)}**.`, nl: `Je abonnement op **${formatAnimeTitle(anime, locale)}** is opgezegd.` }), flags: MessageFlags.Ephemeral });
     } catch {
-        await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No matching subscription found for **${formatAnimeTitle(anime, locale)}**.`, nl: `Geen overeenkomend abonnement gevonden voor **${formatAnimeTitle(anime, locale)}**.` }), flags: MessageFlags.Ephemeral });
     }
 }
 
-async function executeSetPaused(interaction: ChatInputCommandInteraction, paused: boolean): Promise<void> {
+async function executeSetPaused(interaction: ChatInputCommandInteraction, paused: boolean, locale: SupportedOutputLocale): Promise<void> {
     const input = interaction.options.getString('title', true);
     const channel = interaction.options.getChannel('channel', false);
     const anime = await resolveAnime(input);
     if (!anime) {
-        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No anime found for \`${input}\`.`, nl: `Geen anime gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -432,7 +477,7 @@ async function executeSetPaused(interaction: ChatInputCommandInteraction, paused
         if (!(await requireAdmin(interaction))) return;
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'Channel subscriptions can only be managed in a server.', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Channel subscriptions can only be managed in a server.', nl: 'Kanaalabonnementen kunnen alleen op een server worden beheerd.' }), flags: MessageFlags.Ephemeral });
             return;
         }
         subscription = await manager.getOnePlain({
@@ -441,24 +486,24 @@ async function executeSetPaused(interaction: ChatInputCommandInteraction, paused
             guildId,
             channelId: channel.id,
         }) as unknown as AnimeSubscriptionRecord | null;
-        targetDescription = `<#${channel.id}> reminders`;
+        targetDescription = resolveLocaleValue(locale, { en: `<#${channel.id}> reminders`, nl: `meldingen in <#${channel.id}>` });
     } else {
         subscription = await manager.getOnePlain({
             anilistId: anime.id,
             targetType: 'dm',
             userId: interaction.user.id,
         }) as unknown as AnimeSubscriptionRecord | null;
-        targetDescription = 'your DM reminders';
+        targetDescription = resolveLocaleValue(locale, { en: 'your DM reminders', nl: 'je DM-meldingen' });
     }
 
     if (!subscription?.id) {
-        await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No matching subscription found for **${formatAnimeTitle(anime, locale)}**.`, nl: `Geen overeenkomend abonnement gevonden voor **${formatAnimeTitle(anime, locale)}**.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
     if (Boolean(subscription.paused) === paused) {
         await interaction.reply({
-            content: `${targetDescription} for **${formatAnimeTitle(anime)}** are already ${paused ? 'paused' : 'active'}.`,
+            content: resolveLocaleValue(locale, { en: `${targetDescription} for **${formatAnimeTitle(anime, locale)}** are already ${paused ? 'paused' : 'active'}.`, nl: `${targetDescription} voor **${formatAnimeTitle(anime, locale)}** zijn al ${paused ? 'gepauzeerd' : 'actief'}.` }),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -479,17 +524,17 @@ async function executeSetPaused(interaction: ChatInputCommandInteraction, paused
     });
     await recordAnimePausedHealth(subscription, paused);
     await interaction.reply({
-        content: `${paused ? 'Paused' : 'Resumed'} ${targetDescription} for **${formatAnimeTitle(anime)}**.`,
+        content: resolveLocaleValue(locale, { en: `${paused ? 'Paused' : 'Resumed'} ${targetDescription} for **${formatAnimeTitle(anime, locale)}**.`, nl: `${paused ? 'Gepauzeerd' : 'Hervat'}: ${targetDescription} voor **${formatAnimeTitle(anime, locale)}**.` }),
         flags: MessageFlags.Ephemeral,
     });
 }
 
-async function executeTestHealth(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeTestHealth(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     const input = interaction.options.getString('title', true);
     const channel = interaction.options.getChannel('channel', false);
     const anime = await resolveAnime(input);
     if (!anime) {
-        await interaction.reply({ content: `No anime found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No anime found for \`${input}\`.`, nl: `Geen anime gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -501,7 +546,7 @@ async function executeTestHealth(interaction: ChatInputCommandInteraction): Prom
         if (!(await requireAdmin(interaction))) return;
         const guildId = interaction.guildId;
         if (!guildId) {
-            await interaction.reply({ content: 'Channel subscriptions can only be inspected in a server.', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Channel subscriptions can only be inspected in a server.', nl: 'Kanaalabonnementen kunnen alleen op een server worden gecontroleerd.' }), flags: MessageFlags.Ephemeral });
             return;
         }
         subscription = await manager.getOnePlain({
@@ -510,32 +555,32 @@ async function executeTestHealth(interaction: ChatInputCommandInteraction): Prom
             guildId,
             channelId: channel.id,
         }) as unknown as AnimeSubscriptionRecord | null;
-        targetDescription = `<#${channel.id}> reminders`;
+        targetDescription = resolveLocaleValue(locale, { en: `<#${channel.id}> reminders`, nl: `meldingen in <#${channel.id}>` });
     } else {
         subscription = await manager.getOnePlain({
             anilistId: anime.id,
             targetType: 'dm',
             userId: interaction.user.id,
         }) as unknown as AnimeSubscriptionRecord | null;
-        targetDescription = 'your DM reminders';
+        targetDescription = resolveLocaleValue(locale, { en: 'your DM reminders', nl: 'je DM-meldingen' });
     }
 
     if (!subscription?.id) {
-        await interaction.reply({ content: `No matching subscription found for **${formatAnimeTitle(anime)}**.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No matching subscription found for **${formatAnimeTitle(anime, locale)}**.`, nl: `Geen overeenkomend abonnement gevonden voor **${formatAnimeTitle(anime, locale)}**.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
     const health = await getConfigManager().integrationHealthManager.getForConfig('anime', subscription.id);
     if (!health) {
         await interaction.reply({
-            content: `No health record has been recorded yet for ${targetDescription} for **${formatAnimeTitle(anime)}**. The next worker poll will populate it.`,
+            content: resolveLocaleValue(locale, { en: `No health record has been recorded yet for ${targetDescription} for **${formatAnimeTitle(anime, locale)}**. The next worker poll will populate it.`, nl: `Er is nog geen status vastgelegd voor ${targetDescription} voor **${formatAnimeTitle(anime, locale)}**. De volgende controle vult deze in.` }),
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
     await interaction.reply({
-        content: formatAnimeHealthReply(targetDescription, formatAnimeTitle(anime), health),
+        content: formatAnimeHealthReply(targetDescription, formatAnimeTitle(anime, locale), health, locale),
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -546,7 +591,7 @@ function getSubscriptionAuditTargetId(subscription: { id?: unknown } | null, fal
     return fallback;
 }
 
-async function executeNext(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeNext(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const subscriptions = (await getConfigManager().animeManager.subscriptions.getUserSubscriptions(interaction.user.id))
         .filter((subscription) => !subscription.paused);
@@ -561,7 +606,7 @@ async function executeNext(interaction: ChatInputCommandInteraction): Promise<vo
             airingAt: item.airingAt * 1000,
         });
     }
-    await interaction.editReply({ embeds: [buildAnimeNextEmbed(schedules)] });
+    await interaction.editReply({ embeds: [buildAnimeNextEmbed(schedules, locale)] });
 }
 
 function resolveSeason(value: string, yearOption: number | null): { season: AniListSeason; year: number; label: string } {
@@ -578,7 +623,21 @@ function resolveSeason(value: string, yearOption: number | null): { season: AniL
     return { season, year, label: `${season} ${year}` };
 }
 
-async function buildAnimeSeasonPayload(season: AniListSeason, year: number, page = 1, scope: AniListSeasonScope = 'airing') {
+function formatSeasonName(season: AniListSeason, locale: SupportedOutputLocale): string {
+    const names = resolveLocaleValue(locale, {
+        en: { WINTER: 'WINTER', SPRING: 'SPRING', SUMMER: 'SUMMER', FALL: 'FALL' },
+        nl: { WINTER: 'Winter', SPRING: 'Lente', SUMMER: 'Zomer', FALL: 'Herfst' },
+    } satisfies OutputLocaleValues<Readonly<Record<AniListSeason, string>>>);
+    return names[season];
+}
+
+async function buildAnimeSeasonPayload(
+    season: AniListSeason,
+    year: number,
+    page = 1,
+    scope: AniListSeasonScope = 'airing',
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+) {
     const result = await getAniListSeasonAnimePage(season, year, page, ANIME_PAGE_SIZE, { scope });
     for (const anime of result.items) {
         await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
@@ -588,7 +647,7 @@ async function buildAnimeSeasonPayload(season: AniListSeason, year: number, page
     const startIndex = (currentPage - 1) * perPage;
 
     return {
-        embeds: [buildAnimeSeasonEmbed(result.items, `${season} ${year} - ${formatAniListSeasonScope(scope)}`, result.pageInfo)],
+        embeds: [buildAnimeSeasonEmbed(result.items, `${formatSeasonName(season, locale)} ${year} - ${formatAniListSeasonScope(scope, locale)}`, result.pageInfo, locale)],
         components: buildAnimeSeasonActionRows({
             anilistIds: result.items.map((anime) => anime.id),
             season,
@@ -598,72 +657,76 @@ async function buildAnimeSeasonPayload(season: AniListSeason, year: number, page
             hasPrevious: currentPage > 1,
             hasNext: Boolean(result.pageInfo.hasNextPage),
             startIndex,
+            locale,
         }),
     };
 }
 
-async function executeSeason(interaction: ChatInputCommandInteraction): Promise<void> {
+async function executeSeason(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     await interaction.deferReply();
     const value = interaction.options.getString('season', true);
     const yearOption = interaction.options.getInteger('year', false);
     const scope = (interaction.options.getString('scope', false) ?? 'airing') as AniListSeasonScope;
     const resolved = resolveSeason(value, yearOption);
-    await interaction.editReply(await buildAnimeSeasonPayload(resolved.season, resolved.year, 1, scope));
+    await interaction.editReply(await buildAnimeSeasonPayload(resolved.season, resolved.year, 1, scope, locale));
 }
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === 'search') {
-        await executeSearch(interaction);
+        await executeSearch(interaction, locale);
         return;
     }
     if (subcommand === 'subscribe') {
-        await executeSubscribe(interaction);
+        await executeSubscribe(interaction, locale);
         return;
     }
     if (subcommand === 'list') {
-        await executeList(interaction);
+        await executeList(interaction, locale);
         return;
     }
     if (subcommand === 'unsubscribe') {
-        await executeUnsubscribe(interaction);
+        await executeUnsubscribe(interaction, locale);
         return;
     }
     if (subcommand === 'pause') {
-        await executeSetPaused(interaction, true);
+        await executeSetPaused(interaction, true, locale);
         return;
     }
     if (subcommand === 'resume') {
-        await executeSetPaused(interaction, false);
+        await executeSetPaused(interaction, false, locale);
         return;
     }
     if (subcommand === 'test') {
-        await executeTestHealth(interaction);
+        await executeTestHealth(interaction, locale);
         return;
     }
     if (subcommand === 'next') {
-        await executeNext(interaction);
+        await executeNext(interaction, locale);
         return;
     }
     if (subcommand === 'season') {
-        await executeSeason(interaction);
+        await executeSeason(interaction, locale);
         return;
     }
-    await interaction.reply({ content: 'Unknown anime subcommand.', flags: MessageFlags.Ephemeral });
+    await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Unknown anime subcommand.', nl: 'Onbekende anime-subopdracht.' }), flags: MessageFlags.Ephemeral });
 }
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
-    await anilistAutocomplete(interaction, 'ANIME');
+    const locale = await resolveInteractionOutputLocale(interaction);
+    await anilistAutocomplete(interaction, 'ANIME', locale);
 }
 
 async function handleComponent(interaction: ButtonInteraction): Promise<boolean> {
-    const subscribeMatch = /^anime:subscribe:(\d+)$/.exec(interaction.customId);
+    const subscribeMatch = /^anime:subscribe:(\d+)(?::([^:]+))?$/.exec(interaction.customId);
     if (subscribeMatch) {
+        const locale = parseComponentLocale(subscribeMatch[2]) ?? await resolveInteractionOutputLocale(interaction);
         const anilistId = Number(subscribeMatch[1]);
         const anime = await getAniListAnimeById(anilistId);
         if (anime) {
             await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(anime));
-            if (!(await canSubscribeOrReply(interaction, anime))) return true;
+            if (!(await canSubscribeOrReply(interaction, anime, locale))) return true;
         }
         const created = await getConfigManager().animeManager.subscriptions.subscribeUser({
             anilistId,
@@ -671,14 +734,15 @@ async function handleComponent(interaction: ButtonInteraction): Promise<boolean>
             reminderMinutes: 30,
         });
         await interaction.reply({
-            content: `${created ? 'Subscribed you' : 'You are already subscribed'} to **${anime ? formatAnimeTitle(anime) : `AniList #${anilistId}`}**. Use \`/anime list\` to view or unsubscribe.`,
+            content: resolveLocaleValue(locale, { en: `${created ? 'Subscribed you' : 'You are already subscribed'} to **${anime ? formatAnimeTitle(anime, locale) : `AniList #${anilistId}`}**. Use \`/anime list\` to view or unsubscribe.`, nl: `${created ? 'Je bent geabonneerd' : 'Je bent al geabonneerd'} op **${anime ? formatAnimeTitle(anime, locale) : `AniList #${anilistId}`}**. Gebruik \`/anime list\` om je abonnementen te bekijken of op te zeggen.` }),
             flags: MessageFlags.Ephemeral,
         });
         return true;
     }
 
-    const unsubscribeMatch = /^anime:unsubscribe:(\d+)$/.exec(interaction.customId);
+    const unsubscribeMatch = /^anime:unsubscribe:(\d+)(?::([^:]+))?$/.exec(interaction.customId);
     if (unsubscribeMatch) {
+        const locale = parseComponentLocale(unsubscribeMatch[2]) ?? await resolveInteractionOutputLocale(interaction);
         const anilistId = Number(unsubscribeMatch[1]);
         try {
             await getConfigManager().animeManager.subscriptions.unsubscribeUser({
@@ -686,29 +750,32 @@ async function handleComponent(interaction: ButtonInteraction): Promise<boolean>
                 userId: interaction.user.id,
             });
         } catch {
-            await interaction.reply({ content: 'That subscription is already gone.', flags: MessageFlags.Ephemeral });
+            await interaction.reply({ content: resolveLocaleValue(locale, { en: 'That subscription is already gone.', nl: 'Dat abonnement bestaat niet meer.' }), flags: MessageFlags.Ephemeral });
             return true;
         }
         await interaction.update({
-            content: `Unsubscribed from AniList #${anilistId}.`,
-            ...(await buildAnimeListPayload(interaction.user.id)),
+            content: resolveLocaleValue(locale, { en: `Unsubscribed from AniList #${anilistId}.`, nl: `Abonnement op AniList #${anilistId} opgezegd.` }),
+            ...(await buildAnimeListPayload(interaction.user.id, 1, locale)),
         });
         return true;
     }
 
-    const listMatch = /^anime:list:(\d+)$/.exec(interaction.customId);
+    const listMatch = /^anime:list:(\d+)(?::([^:]+))?$/.exec(interaction.customId);
     if (listMatch) {
-        await interaction.update({ content: null, ...(await buildAnimeListPayload(interaction.user.id, Number(listMatch[1]))) });
+        const locale = parseComponentLocale(listMatch[2]) ?? await resolveInteractionOutputLocale(interaction);
+        await interaction.update({ content: null, ...(await buildAnimeListPayload(interaction.user.id, Number(listMatch[1]), locale)) });
         return true;
     }
 
-    const seasonMatch = /^anime:season:(airing|chart|tv|all):(WINTER|SPRING|SUMMER|FALL):(\d{4}):(\d+)$/.exec(interaction.customId);
+    const seasonMatch = /^anime:season:(airing|chart|tv|all):(WINTER|SPRING|SUMMER|FALL):(\d{4}):(\d+)(?::([^:]+))?$/.exec(interaction.customId);
     if (seasonMatch) {
+        const locale = parseComponentLocale(seasonMatch[5]) ?? await resolveInteractionOutputLocale(interaction);
         await interaction.update(await buildAnimeSeasonPayload(
             seasonMatch[2] as AniListSeason,
             Number(seasonMatch[3]),
             Number(seasonMatch[4]),
             seasonMatch[1] as AniListSeasonScope,
+            locale,
         ));
         return true;
     }
@@ -721,27 +788,44 @@ const testOnly = getTestOnly(META);
 // noinspection JSUnusedGlobalSymbols
 export default { data, execute, testOnly, autocomplete, handleComponent };
 
-function formatAnimeHealthReply(targetDescription: string, title: string, health: IntegrationHealthRecord): string {
+function formatAnimeHealthReply(
+    targetDescription: string,
+    title: string,
+    health: IntegrationHealthRecord,
+    locale: SupportedOutputLocale,
+): string {
+    const copy = getAnimeCopy(locale);
     const lines = [
-        `Latest health for ${targetDescription} for **${title}**:`,
-        `Status: \`${escapeInlineCode(health.status)}\``,
-        `Last checked: ${formatHealthDate(health.lastCheckedAt)}`,
-        `Last success: ${formatHealthDate(health.lastSuccessAt)}`,
-        `Last failure: ${formatHealthDate(health.lastFailureAt)}`,
-        `Last delivery: ${formatHealthDate(health.lastDeliveryAt)}`,
-        `Consecutive failures: ${health.consecutiveFailures}`,
+        resolveLocaleValue(locale, { en: `${copy.latestHealth} for ${targetDescription} for **${title}**:`, nl: `${copy.latestHealth} van ${targetDescription} voor **${title}**:` }),
+        `${copy.status}: \`${escapeInlineCode(formatHealthStatus(health.status, locale))}\``,
+        `${copy.lastChecked}: ${formatHealthDate(health.lastCheckedAt, locale)}`,
+        `${copy.lastSuccess}: ${formatHealthDate(health.lastSuccessAt, locale)}`,
+        `${copy.lastFailure}: ${formatHealthDate(health.lastFailureAt, locale)}`,
+        `${copy.lastDelivery}: ${formatHealthDate(health.lastDeliveryAt, locale)}`,
+        `${copy.consecutiveFailures}: ${health.consecutiveFailures}`,
     ];
 
     if (health.lastErrorCode || health.lastErrorMessage) {
         const code = health.lastErrorCode ? `\`${escapeInlineCode(health.lastErrorCode)}\` ` : '';
-        lines.push(`Last error: ${code}${truncateHealthLine(health.lastErrorMessage ?? 'Unknown error')}`);
+        lines.push(`${copy.lastError}: ${code}${truncateHealthLine(health.lastErrorMessage ?? copy.unknownError)}`);
     }
 
     return lines.join('\n');
 }
 
-function formatHealthDate(value?: Date | string | null): string {
-    if (!value) return 'Never';
+function formatHealthStatus(status: string, locale: SupportedOutputLocale): string {
+    const labels: Readonly<Record<string, string>> = resolveLocaleValue(locale, {
+        en: {},
+        nl: {
+            healthy: 'gezond', success: 'geslaagd', warning: 'waarschuwing', error: 'fout',
+            failed: 'mislukt', paused: 'gepauzeerd', unknown: 'onbekend',
+        },
+    } satisfies OutputLocaleValues<Readonly<Record<string, string>>>);
+    return labels[status] ?? status;
+}
+
+function formatHealthDate(value: Date | string | null | undefined, locale: SupportedOutputLocale): string {
+    if (!value) return resolveLocaleValue(locale, { en: 'Never', nl: 'Nooit' });
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toISOString();

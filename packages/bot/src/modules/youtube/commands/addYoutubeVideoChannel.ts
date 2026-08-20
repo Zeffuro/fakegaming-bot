@@ -6,7 +6,7 @@ import { addYoutubeChannel as META } from '../commands.manifest.js';
 
 const { data, execute, testOnly } = createSubscriptionCommand<string>({
     meta: META,
-    usernameOptionDescription: youtubeCommandConfig.usernameOptionDescription,
+    usernameOptionDescriptions: youtubeCommandConfig.usernameOptionDescriptions,
     resolveOrVerify: async (username) => {
         const youtubeChannelId = await resolveYoutubeChannelIdApi(username);
         return youtubeChannelId ? { ok: true, id: youtubeChannelId } : { ok: false };
@@ -37,9 +37,9 @@ const { data, execute, testOnly } = createSubscriptionCommand<string>({
             youtubeChannelId: externalId,
         }),
     },
-    successMessage: youtubeCommandConfig.successMessage,
-    alreadyConfiguredMessage: youtubeCommandConfig.alreadyConfiguredMessage,
-    notFoundMessage: youtubeCommandConfig.notFoundMessage,
+    successMessages: youtubeCommandConfig.successMessages,
+    alreadyConfiguredMessages: youtubeCommandConfig.alreadyConfiguredMessages,
+    notFoundMessages: youtubeCommandConfig.notFoundMessages,
 });
 
 // noinspection JSUnusedGlobalSymbols

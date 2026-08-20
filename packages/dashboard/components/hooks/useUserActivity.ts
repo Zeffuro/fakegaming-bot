@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api, type UserActivityResponse } from "@/lib/api-client";
 
 export function useUserActivity() {
+    const { t } = useDashboardI18n();
     const [activity, setActivity] = useState<UserActivityResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -15,12 +17,12 @@ export function useUserActivity() {
             setActivity(result);
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load account activity";
+            const message = err instanceof Error ? err.message : t("hooks.failedToLoadAccountActivity");
             setError(message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();

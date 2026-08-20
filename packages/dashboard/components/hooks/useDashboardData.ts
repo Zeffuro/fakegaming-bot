@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface Guild {
   id: string;
@@ -20,6 +21,7 @@ interface FetchDashboardDataOptions {
 }
 
 export function useDashboardData() {
+  const { t } = useDashboardI18n();
   const [data, setData] = useState<DashboardData>({ guilds: [], isAdmin: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function useDashboardData() {
       }
 
       if (!response.ok) {
-        throw new Error('Failed to fetch guilds');
+        throw new Error(t("hooks.failedToFetchGuilds"));
       }
 
       const result = await response.json();
@@ -56,7 +58,7 @@ export function useDashboardData() {
       setError(null);
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
-      setError(err.message || 'Failed to load dashboard data');
+      setError(err.message || t("hooks.failedToLoadDashboardData"));
     } finally {
       setLoading(false);
     }

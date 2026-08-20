@@ -11,6 +11,7 @@ import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { useGuildDashboardSummary } from "@/components/hooks/useGuildDashboardSummary";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import type { GuildDashboardSummaryCounts } from "@/lib/api-client";
 
 interface GuildDashboardModule {
@@ -37,6 +38,7 @@ const emptySummaryCounts: GuildDashboardSummaryCounts = {
 };
 
 export default function GuildDashboard() {
+  const { t } = useDashboardI18n();
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const encodedGuildId = encodeURIComponent(guildId);
   const guildReady = Boolean(guild);
@@ -53,118 +55,118 @@ export default function GuildDashboard() {
 
   const modules: GuildDashboardModule[] = [
     {
-      title: "Notifications Hub",
-      description: "Central command center for Twitch, TikTok, Bluesky, YouTube, Steam News, Patch Notes, Anime, and Birthday notifications.",
+      title: t("guildDashboard.notificationsHub"),
+      description: t("guildDashboard.notificationsHubDescription"),
       icon: <NotificationsActive />,
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}/notifications`,
-      chipLabel: notificationLoading ? "Loading..." : `${totalConfigured} Configured`,
-      meta: notificationLoading ? "Loading notification counts" : `Twitch ${counts.twitch} | TikTok ${counts.tiktok} | Bluesky ${counts.bluesky} | YouTube ${counts.youtube} | Steam ${counts.steamNews} | Patch ${counts.patchSubscriptions} | Anime ${counts.anime} | Birthdays ${counts.birthdays}`,
-      actionLabel: "Open Hub",
+      chipLabel: notificationLoading ? t("common.loading") : t("guildDashboard.configured", { count: totalConfigured }),
+      meta: notificationLoading ? t("guildDashboard.loadingCounts") : t("guildDashboard.providerCounts", { twitch: counts.twitch, tiktok: counts.tiktok, bluesky: counts.bluesky, youtube: counts.youtube, steam: counts.steamNews, patch: counts.patchSubscriptions, anime: counts.anime, birthdays: counts.birthdays }),
+      actionLabel: t("guildDashboard.openHub"),
     },
     {
-      title: "Anime Episodes",
-      description: "AniList-powered anime search, season browsing, and channel reminders.",
+      title: t("guildDashboard.animeTitle"),
+      description: t("guildDashboard.animeDescription"),
       icon: <AutoStories />,
       accent: dashboardAccents.anime,
       href: `/dashboard/anime/${encodedGuildId}`,
-      chipLabel: `${counts.anime} Configured`,
-      actionLabel: "Configure Anime",
+      chipLabel: t("guildDashboard.configured", { count: counts.anime }),
+      actionLabel: t("guildDashboard.configureAnime"),
     },
     {
-      title: "Birthday Announcements",
-      description: "Member birthday dates with Discord member search and per-birthday destination channels.",
+      title: t("guildDashboard.birthdaysTitle"),
+      description: t("guildDashboard.birthdaysDescription"),
       icon: <Cake />,
       accent: dashboardAccents.birthdays,
       href: `/dashboard/birthdays/${encodedGuildId}`,
-      chipLabel: `${counts.birthdays} Configured`,
-      actionLabel: "Configure Birthdays",
+      chipLabel: t("guildDashboard.configured", { count: counts.birthdays }),
+      actionLabel: t("guildDashboard.configureBirthdays"),
     },
     {
-      title: "Quotes Management",
-      description: "View, add, search, and delete quotes stored for your server.",
+      title: t("guildDashboard.quotesTitle"),
+      description: t("guildDashboard.quotesDescription"),
       icon: <FormatQuote />,
       accent: dashboardAccents.quotes,
       href: `/dashboard/quotes/${encodedGuildId}`,
-      actionLabel: "Manage Quotes",
+      actionLabel: t("guildDashboard.manageQuotes"),
     },
     {
-      title: "YouTube Uploads",
-      description: "Configure YouTube channels to post notifications when new videos are uploaded.",
+      title: t("guildDashboard.youtubeTitle"),
+      description: t("guildDashboard.youtubeDescription"),
       icon: <YouTube />,
       accent: dashboardAccents.youtube,
       href: `/dashboard/youtube/${encodedGuildId}`,
-      chipLabel: `${counts.youtube} Configured`,
-      actionLabel: "Configure YouTube",
+      chipLabel: t("guildDashboard.configured", { count: counts.youtube }),
+      actionLabel: t("guildDashboard.configureYoutube"),
     },
     {
-      title: "Steam News",
-      description: "Subscribe channels to official Steam game announcements.",
+      title: t("guildDashboard.steamTitle"),
+      description: t("guildDashboard.steamDescription"),
       icon: <SportsEsports />,
       accent: dashboardAccents.steam,
       href: `/dashboard/steam-news/${encodedGuildId}`,
-      chipLabel: `${counts.steamNews} Configured`,
-      actionLabel: "Configure Steam",
+      chipLabel: t("guildDashboard.configured", { count: counts.steamNews }),
+      actionLabel: t("guildDashboard.configureSteam"),
     },
     {
-      title: "Twitch Live",
-      description: "Configure Twitch stream notifications and live alerts.",
+      title: t("guildDashboard.twitchTitle"),
+      description: t("guildDashboard.twitchDescription"),
       icon: <LiveTv />,
       accent: dashboardAccents.twitch,
       href: `/dashboard/twitch/${encodedGuildId}`,
-      chipLabel: `${counts.twitch} Configured`,
-      actionLabel: "Configure Twitch",
+      chipLabel: t("guildDashboard.configured", { count: counts.twitch }),
+      actionLabel: t("guildDashboard.configureTwitch"),
     },
     {
-      title: "TikTok Live",
-      description: "Configure TikTok live notifications and live alerts.",
+      title: t("guildDashboard.tiktokTitle"),
+      description: t("guildDashboard.tiktokDescription"),
       icon: <LiveTv />,
       accent: dashboardAccents.tiktok,
       href: `/dashboard/tiktok/${encodedGuildId}`,
-      chipLabel: `${counts.tiktok} Configured`,
-      actionLabel: "Configure TikTok",
+      chipLabel: t("guildDashboard.configured", { count: counts.tiktok }),
+      actionLabel: t("guildDashboard.configureTiktok"),
     },
     {
-      title: "Bluesky Posts",
-      description: "Configure Bluesky account post notifications.",
+      title: t("guildDashboard.blueskyTitle"),
+      description: t("guildDashboard.blueskyDescription"),
       icon: <AlternateEmail />,
       accent: dashboardAccents.bluesky,
       href: `/dashboard/bluesky/${encodedGuildId}`,
-      chipLabel: `${counts.bluesky} Configured`,
-      actionLabel: "Configure Bluesky",
+      chipLabel: t("guildDashboard.configured", { count: counts.bluesky }),
+      actionLabel: t("guildDashboard.configureBluesky"),
     },
     {
-      title: "Server Settings",
-      description: "Jump into notification setup, delivery analytics, command controls, and live management surfaces.",
+      title: t("guildDashboard.settingsTitle"),
+      description: t("guildDashboard.settingsDescription"),
       icon: <Settings />,
       accent: dashboardAccents.settings,
       href: `/dashboard/settings/${encodedGuildId}`,
-      actionLabel: "Open Settings",
+      actionLabel: t("guildDashboard.openSettings"),
     },
     {
-      title: "Command Management",
-      description: "Enable or disable specific bot commands and modules for this server.",
+      title: t("guildDashboard.commandsTitle"),
+      description: t("guildDashboard.commandsDescription"),
       icon: <Block />,
       accent: dashboardAccents.commands,
       href: `/dashboard/commands/${encodedGuildId}`,
-      actionLabel: "Manage Commands",
+      actionLabel: t("guildDashboard.manageCommands"),
     },
     {
-      title: "Patch Notes",
-      description: "Manage game patch note notifications and subscriptions.",
+      title: t("guildDashboard.patchNotesTitle"),
+      description: t("guildDashboard.patchNotesDescription"),
       icon: <SpeakerNotes />,
       accent: dashboardAccents.patchNotes,
       href: `/dashboard/patch-notes/${encodedGuildId}`,
-      chipLabel: `${counts.patchSubscriptions} Configured`,
-      actionLabel: "Configure Patches",
+      chipLabel: t("guildDashboard.configured", { count: counts.patchSubscriptions }),
+      actionLabel: t("guildDashboard.configurePatches"),
     },
     {
-      title: "Analytics",
-      description: "Notification delivery history, provider health, and setup coverage for this server.",
+      title: t("guildDashboard.analyticsTitle"),
+      description: t("guildDashboard.analyticsDescription"),
       icon: <Timeline />,
       accent: dashboardAccents.neutral,
       href: `/dashboard/analytics/${encodedGuildId}`,
-      actionLabel: "Open Analytics",
+      actionLabel: t("guildDashboard.openAnalytics"),
     },
   ];
 
@@ -174,25 +176,25 @@ export default function GuildDashboard() {
         <FeatureShell accent={dashboardAccents.settings} secondaryAccent={dashboardAccents.anime}>
           <FeatureHero
             icon={<Settings />}
-            eyebrow="Dashboard"
-            title={`${guild.name} Dashboard`}
-            description="A cleaner control center for the bot features this server can actually use. High-value tools are grouped first; lower-level settings stay available without dominating the page."
+            eyebrow={t("guildDashboard.eyebrow")}
+            title={t("guildDashboard.title", { guild: guild.name })}
+            description={t("guildDashboard.description")}
             accent={dashboardAccents.settings}
             secondaryAccent={dashboardAccents.anime}
             stats={[
-              { label: "Members", value: guild.member_count || "N/A" },
-              { label: "Configured Notifications", value: notificationLoading ? "..." : totalConfigured },
-              { label: "Management Pages", value: modules.length },
+              { label: t("guildDashboard.members"), value: guild.member_count || t("guildDashboard.notAvailable") },
+              { label: t("guildDashboard.configuredNotifications"), value: notificationLoading ? "..." : totalConfigured },
+              { label: t("guildDashboard.managementPages"), value: modules.length },
             ]}
           />
 
           <FeaturePanel accent={dashboardAccents.settings} sx={{ mb: 3 }}>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }, gap: 2, position: "relative" }}>
               {[
-                { label: "Members", value: guild.member_count || "N/A", color: dashboardAccents.settings },
-                { label: "Management Pages", value: modules.length, color: dashboardAccents.commands },
-                { label: "Notification Configs", value: notificationLoading ? "..." : totalConfigured, color: dashboardAccents.anime },
-                { label: "Configured Types", value: notificationLoading ? "..." : configuredNotificationTypes, color: dashboardAccents.neutral },
+                { label: t("guildDashboard.members"), value: guild.member_count || t("guildDashboard.notAvailable"), color: dashboardAccents.settings },
+                { label: t("guildDashboard.managementPages"), value: modules.length, color: dashboardAccents.commands },
+                { label: t("guildDashboard.notificationConfigs"), value: notificationLoading ? "..." : totalConfigured, color: dashboardAccents.anime },
+                { label: t("guildDashboard.configuredTypes"), value: notificationLoading ? "..." : configuredNotificationTypes, color: dashboardAccents.neutral },
               ].map((stat) => (
                 <Box key={stat.label} sx={{ textAlign: "center", p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
                   <Typography variant="h5" sx={{ fontWeight: 900, color: stat.color }}>{stat.value}</Typography>
@@ -203,11 +205,11 @@ export default function GuildDashboard() {
           </FeaturePanel>
 
           <Typography variant="h5" sx={{ mb: 2, fontWeight: 850, color: "grey.50" }}>
-            Available Modules
+            {t("guildDashboard.availableModules")}
           </Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
             {modules.map((module) => (
-              <FeatureCard key={module.title} {...module} statusLabel={module.statusLabel ?? "active"} />
+              <FeatureCard key={module.title} {...module} statusLabel={module.statusLabel ?? t("guildDashboard.active")} />
             ))}
           </Box>
         </FeatureShell>

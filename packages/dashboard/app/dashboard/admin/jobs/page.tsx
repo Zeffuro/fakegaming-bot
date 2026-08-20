@@ -4,6 +4,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from "reac
 import { useRouter, useSearchParams } from "next/navigation";
 import { AdminPage } from "@/components/AdminPage";
 import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import {
     dashboardAccents,
@@ -16,6 +17,8 @@ import { adminJobRunsCsvHeaders, buildAdminJobRunCsvRows } from "@/lib/adminAnal
 import { getAdminJobRunDetails } from "@/lib/adminJobRunDetails";
 import { buildAdminJobRetryPayload, canRetryAdminJobRun } from "@/lib/adminJobRetry";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
+import { getDashboardIntlLocale, type DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
 import {
     Alert,
     Box,
@@ -63,26 +66,22 @@ interface JobInfo {
 
 type RunFilter = "all" | "failed";
 
-const jobSavedViewPresets: AdminSavedViewPreset[] = [
-    { id: "jobs:failed", label: "Failed runs", query: "result=failed" },
-    { id: "jobs:birthdays", label: "Birthday failures", query: "job=birthdays&result=failed" },
-    { id: "jobs:heartbeat", label: "Heartbeat failures", query: "job=heartbeat&result=failed" },
-];
-
-function formatDateTime(value?: string | null): string {
-    if (!value) return "Unknown";
+function formatDateTime(value: string | null | undefined, locale: DashboardLocale): string {
+    if (!value) return formatDashboardMessage(locale, "admin.jobsUnknown");
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString();
+    return new Intl.DateTimeFormat(getDashboardIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function formatTimestampMs(value?: number | null): string {
-    if (typeof value !== "number") return "Unknown";
+function formatTimestampMs(value: number | null | undefined, locale: DashboardLocale): string {
+    if (typeof value !== "number") return formatDashboardMessage(locale, "admin.jobsUnknown");
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+    return Number.isNaN(date.getTime())
+        ? formatDashboardMessage(locale, "admin.jobsUnknown")
+        : new Intl.DateTimeFormat(getDashboardIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function formatBytes(value: number): string {
+function formatBytes(value: number, locale: DashboardLocale): string {
     if (!Number.isFinite(value) || value <= 0) return "0 B";
     const units = ["B", "KB", "MB", "GB"];
     let amount = value;
@@ -91,7 +90,8 @@ function formatBytes(value: number): string {
         amount /= 1024;
         unitIndex += 1;
     }
-    return `${amount >= 10 || unitIndex === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unitIndex]}`;
+    const fractionDigits = amount >= 10 || unitIndex === 0 ? 0 : 1;
+    return `${new Intl.NumberFormat(getDashboardIntlLocale(locale), { maximumFractionDigits: fractionDigits, minimumFractionDigits: fractionDigits }).format(amount)} ${units[unitIndex]}`;
 }
 
 function getRunKey(run: JobRunEntry, index: number): string {
@@ -125,6 +125,7 @@ function StatPanel({
     onRefresh: () => void;
     children: React.ReactNode;
 }) {
+    const { t } = useDashboardI18n();
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.5, minHeight: 210, display: "flex", flexDirection: "column" }}>
             <Stack direction="row" sx={{ alignItems: "center", justifyContent: "space-between", gap: 1.5, position: "relative", mb: 2 }}>
@@ -135,7 +136,7 @@ function StatPanel({
                     </Typography>
                 </Stack>
                 <Button size="small" variant="outlined" onClick={onRefresh} disabled={loading} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-                    Refresh
+                    {t("admin.jobsRefresh")}
                 </Button>
             </Stack>
             <Box sx={{ position: "relative", flex: 1 }}>{children}</Box>
@@ -144,6 +145,7 @@ function StatPanel({
 }
 
 function AdminJobsContent() {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const accent = dashboardAccents.admin;
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -152,6 +154,11 @@ function AdminJobsContent() {
         { name: "birthdays", supportsDate: true, supportsForce: true },
         { name: "heartbeat", supportsDate: false, supportsForce: false },
     ]), []);
+    const savedViewPresets = useMemo<AdminSavedViewPreset[]>(() => [
+        { id: "jobs:failed", label: t("admin.jobsPresetFailed"), query: "result=failed" },
+        { id: "jobs:birthdays", label: t("admin.jobsPresetBirthdays"), query: "job=birthdays&result=failed" },
+        { id: "jobs:heartbeat", label: t("admin.jobsPresetHeartbeat"), query: "job=heartbeat&result=failed" },
+    ], [t]);
 
     const [jobs, setJobs] = useState<JobInfo[]>(fallbackJobs);
     const [selectedJob, setSelectedJob] = useState<string>(() => searchParams?.get("job")?.trim() || "birthdays");
@@ -295,7 +302,7 @@ function AdminJobsContent() {
                 setTimeout(() => { void loadLastHeartbeat(); }, 300);
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Unknown error";
+            const message = err instanceof Error ? err.message : t("admin.jobsUnknown");
             setResult({ ok: false, error: message });
         } finally {
             setSubmitting(false);
@@ -315,7 +322,7 @@ function AdminJobsContent() {
                 setTimeout(() => { void loadLastHeartbeat(); }, 300);
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Unknown error";
+            const message = err instanceof Error ? err.message : t("admin.jobsUnknown");
             setResult({ ok: false, error: message });
         } finally {
             setRetryingRunKey(null);
@@ -323,7 +330,7 @@ function AdminJobsContent() {
     };
 
     const renderRunSummary = (r: JobRunEntry, idx: number) => {
-        const details = getAdminJobRunDetails(r, selectedJob);
+        const details = getAdminJobRunDetails(r, selectedJob, locale);
         const runKey = getRunKey(r, idx);
         const retrying = retryingRunKey === runKey;
 
@@ -335,10 +342,10 @@ function AdminJobsContent() {
                         {r.ok ? <CheckCircle sx={{ color: dashboardAccents.settings, fontSize: 19 }} /> : <ErrorOutlined sx={{ color: dashboardAccents.quotes, fontSize: 19 }} />}
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 760 }}>
-                                {r.ok ? "Success" : "Failed"}
+                                {r.ok ? t("admin.jobsSuccess") : t("admin.jobsFailed")}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
-                                {formatDateTime(r.finishedAt)}
+                                {formatDateTime(r.finishedAt, locale)}
                             </Typography>
                         </Box>
                     </Stack>
@@ -358,7 +365,7 @@ function AdminJobsContent() {
                             startIcon={<RestartAlt />}
                             sx={ghostActionButtonSx(dashboardAccents.quotes)}
                         >
-                            {retrying ? "Retrying..." : "Retry"}
+                            {retrying ? t("admin.jobsRetrying") : t("admin.jobsRetry")}
                         </Button>
                     ) : null}
                 </Stack>
@@ -367,14 +374,16 @@ function AdminJobsContent() {
     };
 
     return (
-        <AdminPage title="Admin Jobs" trail={[{ label: "Jobs", href: "/dashboard/admin/jobs" }]}>
+        <AdminPage title={t("admin.jobsPageTitle")} trail={[{ label: t("admin.jobsPageTitle"), href: "/dashboard/admin/jobs" }]}>
             <Stack spacing={2.5}>
                 <AdminSavedViews
                     scope="jobs"
                     basePath="/dashboard/admin/jobs"
                     currentQuery={savedViewQuery}
-                    defaultLabel={resultFilter === "failed" ? `${selectedJob} failures` : `${selectedJob} runs`}
-                    presets={jobSavedViewPresets}
+                    defaultLabel={resultFilter === "failed"
+                        ? t("admin.jobsFailureView", { job: selectedJob })
+                        : t("admin.jobsRunsView", { job: selectedJob })}
+                    presets={savedViewPresets}
                 />
 
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(340px, 0.95fr) minmax(0, 1.55fr)" }, gap: 2.5 }}>
@@ -383,24 +392,24 @@ function AdminJobsContent() {
                         <Stack spacing={0.6}>
                             <Chip
                                 icon={<PlayArrow />}
-                                label="Manual run"
+                                label={t("admin.jobsManualRun")}
                                 sx={{ alignSelf: "flex-start", bgcolor: alpha(accent, 0.14), color: "grey.50", border: `1px solid ${alpha(accent, 0.42)}` }}
                             />
-                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: "-0.03em" }}>
-                                Trigger a job
+                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
+                                {t("admin.jobsTriggerTitle")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
-                                Run a worker task without waiting for its schedule. Date and force options only appear for jobs that support them.
+                                {t("admin.jobsTriggerDescription")}
                             </Typography>
                         </Stack>
 
                         <FormControl fullWidth sx={dashboardFieldSx(accent)}>
-                            <InputLabel id="job-select-label">Job</InputLabel>
+                            <InputLabel id="job-select-label">{t("admin.jobsJob")}</InputLabel>
                             <Select
                                 labelId="job-select-label"
                                 id="job-select"
                                 value={selectedJob}
-                                label="Job"
+                                label={t("admin.jobsJob")}
                                 onChange={handleJobChange}
                             >
                                 {jobs.map((job) => (
@@ -411,11 +420,11 @@ function AdminJobsContent() {
 
                         {selectedMeta?.supportsDate && (
                             <TextField
-                                label="Date (optional)"
+                                label={t("admin.jobsDateOptional")}
                                 type="datetime-local"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                helperText="If set, process for this date/time; otherwise, uses now."
+                                helperText={t("admin.jobsDateHelp")}
                                 slotProps={{ inputLabel: { shrink: true } }}
                                 fullWidth
                                 sx={dashboardFieldSx(accent)}
@@ -431,58 +440,58 @@ function AdminJobsContent() {
                                         sx={{ color: alpha(accent, 0.55), "&.Mui-checked": { color: accent } }}
                                     />
                                 )}
-                                label="Force run, bypassing idempotency checks"
+                                label={t("admin.jobsForce")}
                                 sx={{ color: "rgba(255,255,255,0.70)" }}
                             />
                         )}
 
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
                             <Button variant="contained" onClick={handleTrigger} disabled={submitting} startIcon={<PlayArrow />} sx={primaryActionButtonSx(accent)}>
-                                {submitting ? "Triggering..." : "Trigger Job"}
+                                {submitting ? t("admin.jobsTriggering") : t("admin.jobsTrigger")}
                             </Button>
                             <Button variant="outlined" onClick={() => { setDate(""); setForce(false); setResult(null); }} disabled={submitting} startIcon={<RestartAlt />} sx={ghostActionButtonSx(accent)}>
-                                Reset
+                                {t("admin.jobsReset")}
                             </Button>
                         </Stack>
 
                         {result && result.ok && (
                             <Alert severity="success" sx={{ bgcolor: alpha(dashboardAccents.settings, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.settings, 0.22)}` }}>
-                                Scheduled. Job ID: {String(result.jobId)}
+                                {t("admin.jobsScheduled", { id: String(result.jobId) })}
                             </Alert>
                         )}
                         {result && !result.ok && (
                             <Alert severity="error" sx={{ bgcolor: alpha(dashboardAccents.quotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.quotes, 0.22)}` }}>
-                                Failed: {result.error}
+                                {t("admin.jobsFailure", { error: result.error ?? t("admin.jobsUnknown") })}
                             </Alert>
                         )}
                     </Stack>
                 </FeaturePanel>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 2.5 }}>
-                    <StatPanel title="Heartbeat" icon={<MonitorHeart />} accent={dashboardAccents.commands} loading={loadingHeartbeat} onRefresh={() => void loadLastHeartbeat()}>
+                    <StatPanel title={t("admin.jobsHeartbeat")} icon={<MonitorHeart />} accent={dashboardAccents.commands} loading={loadingHeartbeat} onRefresh={() => void loadLastHeartbeat()}>
                         {lastHeartbeat ? (
                             <Stack spacing={1.15}>
-                                <StatusLine label="Received" value={formatDateTime(lastHeartbeat.receivedAt)} />
-                                <StatusLine label="Worker started" value={formatDateTime(lastHeartbeat.startedAt)} />
-                                <StatusLine label="Backend" value={lastHeartbeat.backend} />
+                                <StatusLine label={t("admin.jobsReceived")} value={formatDateTime(lastHeartbeat.receivedAt, locale)} />
+                                <StatusLine label={t("admin.jobsWorkerStarted")} value={formatDateTime(lastHeartbeat.startedAt, locale)} />
+                                <StatusLine label={t("admin.jobsBackend")} value={lastHeartbeat.backend} />
                             </Stack>
                         ) : (
-                            <EmptyStatus icon={<MonitorHeart />} text="No heartbeat observed yet." />
+                            <EmptyStatus icon={<MonitorHeart />} text={t("admin.jobsNoHeartbeat")} />
                         )}
                     </StatPanel>
 
-                    <StatPanel title="Birthdays today" icon={<Favorite />} accent={dashboardAccents.birthdays} loading={loadingBirthdaysToday} onRefresh={() => void loadBirthdaysToday()}>
+                    <StatPanel title={t("admin.jobsBirthdaysToday")} icon={<Favorite />} accent={dashboardAccents.birthdays} loading={loadingBirthdaysToday} onRefresh={() => void loadBirthdaysToday()}>
                         {birthdaysToday !== null ? (
                             <Stack spacing={0.8}>
-                                <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.05em" }}>
-                                    {birthdaysToday}
+                                <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
+                                    {formatNumber(birthdaysToday)}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
-                                    birthday notifications processed today.
+                                    {t("admin.jobsBirthdaysProcessed", { count: formatNumber(birthdaysToday) })}
                                 </Typography>
                             </Stack>
                         ) : (
-                            <EmptyStatus icon={<Favorite />} text="No birthday processing data yet." />
+                            <EmptyStatus icon={<Favorite />} text={t("admin.jobsNoBirthdayData")} />
                         )}
                     </StatPanel>
 
@@ -491,25 +500,31 @@ function AdminJobsContent() {
                             <Stack direction="row" spacing={1.1} sx={{ alignItems: "center", minWidth: 0 }}>
                                 <Storage sx={{ color: dashboardAccents.patchNotes }} />
                                 <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, lineHeight: 1.1 }}>
-                                    Patch notes storage
+                                    {t("admin.jobsPatchStorage")}
                                 </Typography>
                             </Stack>
                             <Button size="small" variant="outlined" onClick={() => void loadPatchNotesStorage()} disabled={loadingPatchNotesStorage} startIcon={<Refresh />} sx={ghostActionButtonSx(dashboardAccents.patchNotes)}>
-                                Refresh
+                                {t("admin.jobsRefresh")}
                             </Button>
                         </Stack>
 
                         {patchNotesStorage ? (
                             <Stack spacing={1.4} sx={{ position: "relative" }}>
                                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(4, minmax(0, 1fr))" }, gap: 1 }}>
-                                    <StatusLine label="Rows" value={`${patchNotesStorage.totalRows} / ${patchNotesStorage.retention.maxRowsPerGame} per game`} />
-                                    <StatusLine label="Body bytes" value={formatBytes(patchNotesStorage.totalContentBytes)} />
-                                    <StatusLine label="Oldest kept" value={formatTimestampMs(getOldestPatchNoteTimestamp(patchNotesStorage))} />
+                                    <StatusLine label={t("admin.jobsRows")} value={t("admin.jobsRowsPerGame", {
+                                        rows: formatNumber(patchNotesStorage.totalRows),
+                                        max: formatNumber(patchNotesStorage.retention.maxRowsPerGame),
+                                    })} />
+                                    <StatusLine label={t("admin.jobsBodyBytes")} value={formatBytes(patchNotesStorage.totalContentBytes, locale)} />
+                                    <StatusLine label={t("admin.jobsOldestKept")} value={formatTimestampMs(getOldestPatchNoteTimestamp(patchNotesStorage), locale)} />
                                     <StatusLine
-                                        label="Last prune"
+                                        label={t("admin.jobsLastPrune")}
                                         value={patchNotesStorage.lastScan
-                                            ? `${patchNotesStorage.lastScan.historyPrunedRows} pruned, ${patchNotesStorage.lastScan.historyTruncated} truncated`
-                                            : "No scan yet"}
+                                            ? t("admin.jobsPruneSummary", {
+                                                pruned: formatNumber(patchNotesStorage.lastScan.historyPrunedRows),
+                                                truncated: formatNumber(patchNotesStorage.lastScan.historyTruncated),
+                                            })
+                                            : t("admin.jobsNoScan")}
                                     />
                                 </Box>
 
@@ -519,7 +534,11 @@ function AdminJobsContent() {
                                             <Chip
                                                 key={game.game}
                                                 size="small"
-                                                label={`${game.game}: ${game.rows} rows, ${formatBytes(game.contentBytes)}`}
+                                                label={t("admin.jobsGameStorage", {
+                                                    game: game.game,
+                                                    rows: formatNumber(game.rows),
+                                                    bytes: formatBytes(game.contentBytes, locale),
+                                                })}
                                                 sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.76)", border: "1px solid rgba(255,255,255,0.08)" }}
                                             />
                                         ))}
@@ -533,7 +552,7 @@ function AdminJobsContent() {
                                                 key={warning}
                                                 size="small"
                                                 icon={<WarningAmber />}
-                                                label={formatStorageWarning(warning)}
+                                                label={formatStorageWarning(warning, locale)}
                                                 sx={{ bgcolor: alpha(dashboardAccents.quotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.quotes, 0.28)}` }}
                                             />
                                         ))}
@@ -542,13 +561,13 @@ function AdminJobsContent() {
                                     <Chip
                                         size="small"
                                         icon={<CheckCircle />}
-                                        label="Within configured bounds"
+                                        label={t("admin.jobsWithinBounds")}
                                         sx={{ alignSelf: "flex-start", bgcolor: alpha(dashboardAccents.settings, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.settings, 0.26)}` }}
                                     />
                                 )}
                             </Stack>
                         ) : (
-                            <EmptyStatus icon={<Storage />} text="No patch-note storage data yet." />
+                            <EmptyStatus icon={<Storage />} text={t("admin.jobsNoStorage")} />
                         )}
                     </FeaturePanel>
 
@@ -558,40 +577,40 @@ function AdminJobsContent() {
                                 <WorkHistory sx={{ color: accent }} />
                                 <Box>
                                     <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, lineHeight: 1.1 }}>
-                                        Recent runs
+                                        {t("admin.jobsRecentRuns")}
                                     </Typography>
                                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 0.75 }}>
                                         <Chip size="small" label={selectedJob} sx={{ bgcolor: alpha(accent, 0.14), color: "grey.50", border: `1px solid ${alpha(accent, 0.34)}` }} />
-                                        {selectedMeta?.supportsDate && <Chip size="small" icon={<Schedule />} label="date" sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)" }} />}
-                                        {selectedMeta?.supportsForce && <Chip size="small" label="force" sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)" }} />}
+                                        {selectedMeta?.supportsDate && <Chip size="small" icon={<Schedule />} label={t("admin.jobsDateCapability")} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)" }} />}
+                                        {selectedMeta?.supportsForce && <Chip size="small" label={t("admin.jobsForceCapability")} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.72)" }} />}
                                     </Stack>
                                 </Box>
                             </Stack>
                             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
                                 <Button size="small" variant="outlined" onClick={exportVisibleRuns} disabled={loadingStatus || visibleRuns.length === 0} startIcon={<Download />} sx={ghostActionButtonSx(accent)}>
-                                    Export CSV
+                                    {t("admin.jobsExportCsv")}
                                 </Button>
                                 <Button size="small" variant="outlined" onClick={() => void loadStatus(selectedJob)} disabled={loadingStatus} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-                                    Refresh
+                                    {t("admin.jobsRefresh")}
                                 </Button>
                             </Stack>
                         </Stack>
 
                         <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 170, mb: 2 }}>
-                            <InputLabel id="job-result-filter-label">Runs</InputLabel>
+                            <InputLabel id="job-result-filter-label">{t("admin.jobsRuns")}</InputLabel>
                             <Select
                                 labelId="job-result-filter-label"
-                                label="Runs"
+                                label={t("admin.jobsRuns")}
                                 value={resultFilter}
                                 onChange={(event) => commitJobFilters({ job: selectedJob, result: event.target.value as RunFilter })}
                             >
-                                <MenuItem value="all">All runs</MenuItem>
-                                <MenuItem value="failed">Failed only</MenuItem>
+                                <MenuItem value="all">{t("admin.jobsAllRuns")}</MenuItem>
+                                <MenuItem value="failed">{t("admin.jobsFailedOnly")}</MenuItem>
                             </Select>
                         </FormControl>
 
                         {visibleRuns.length === 0 ? (
-                            <EmptyStatus icon={<WorkHistory />} text={resultFilter === "failed" ? "No failed recent runs for this job." : "No recent runs for this job."} />
+                            <EmptyStatus icon={<WorkHistory />} text={resultFilter === "failed" ? t("admin.jobsNoFailedRuns") : t("admin.jobsNoRecentRuns")} />
                         ) : (
                             <Stack sx={{ position: "relative" }}>
                                 {visibleRuns.map((run, idx) => renderRunSummary(run, idx))}
@@ -607,7 +626,7 @@ function AdminJobsContent() {
 
 export default function AdminJobsPage() {
     return (
-        <Suspense fallback={<AdminPage title="Admin Jobs"><Typography>Loading admin jobs...</Typography></AdminPage>}>
+        <Suspense fallback={null}>
             <AdminJobsContent />
         </Suspense>
     );
@@ -616,7 +635,7 @@ export default function AdminJobsPage() {
 function StatusLine({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.07)", p: 1.25 }}>
-            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0 }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750 }}>
@@ -642,9 +661,9 @@ function getOldestPatchNoteTimestamp(summary: PatchNotesStorageSummary): number 
     return timestamps.length > 0 ? Math.min(...timestamps) : null;
 }
 
-function formatStorageWarning(warning: string): string {
-    if (warning === "records_exceed_retention") return "Retention exceeded";
-    if (warning === "rows_exceed_max") return "Row cap exceeded";
-    if (warning === "content_bytes_exceed_cap") return "Body cap exceeded";
+function formatStorageWarning(warning: string, locale: DashboardLocale): string {
+    if (warning === "records_exceed_retention") return formatDashboardMessage(locale, "admin.jobsRetentionExceeded");
+    if (warning === "rows_exceed_max") return formatDashboardMessage(locale, "admin.jobsRowCapExceeded");
+    if (warning === "content_bytes_exceed_cap") return formatDashboardMessage(locale, "admin.jobsBodyCapExceeded");
     return warning;
 }

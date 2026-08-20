@@ -3,7 +3,9 @@
 
 export interface BotModuleDef { name: string; title: string; description: string; }
 export type BotCommandType = 'chatInput' | 'user' | 'message';
-export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; }
+export interface BotCommandLocalization { name: string; description: string; }
+export type BotCommandLocalizationLocale = "nl";
+export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; localizations?: Record<BotCommandLocalizationLocale, BotCommandLocalization> | null; }
 export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<BotCommand>; }
 
 export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
@@ -93,7 +95,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "anime",
+                "description": "Zoek anime, beheer abonnementen en bekijk komende afleveringen"
+            }
+        }
     },
     {
         "name": "manga",
@@ -103,7 +111,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "manga",
+                "description": "Zoek manga, manhwa, webtoons en light novels op AniList"
+            }
+        }
     },
     {
         "name": "birthday",
@@ -113,7 +127,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "verjaardag",
+                "description": "Toon de verjaardag van jezelf of een andere gebruiker"
+            }
+        }
     },
     {
         "name": "birthdays",
@@ -123,7 +143,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "verjaardagen",
+                "description": "Toon komende verjaardagen op deze server"
+            }
+        }
     },
     {
         "name": "remove-birthday",
@@ -133,7 +159,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "verjaardag-verwijderen",
+                "description": "Verwijder jouw verjaardag of die van een ander (alleen beheerders)"
+            }
+        }
     },
     {
         "name": "set-birthday",
@@ -143,7 +175,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "verjaardag-instellen",
+                "description": "Stel je verjaardag en het kanaal voor meldingen in"
+            }
+        }
     },
     {
         "name": "Show Birthday",
@@ -153,7 +191,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": "user"
+        "type": "user",
+        "localizations": {
+            "nl": {
+                "name": "Verjaardag tonen",
+                "description": "Toon een verjaardag via het gebruikersmenu"
+            }
+        }
     },
     {
         "name": "add-bluesky-account",
@@ -163,7 +207,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "bluesky-account-toevoegen",
+                "description": "Voeg een Bluesky-account toe voor berichtmeldingen"
+            }
+        }
     },
     {
         "name": "manage-bluesky-accounts",
@@ -173,7 +223,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "bluesky-accounts-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder Bluesky-meldingen"
+            }
+        }
     },
     {
         "name": "game-night",
@@ -183,7 +239,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": false,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "spelavond",
+                "description": "Nomineer en stem op spellen voor een spelavond van de server"
+            }
+        }
     },
     {
         "name": "help",
@@ -193,7 +255,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "help",
+                "description": "Toon alle beschikbare opdrachten en hun beschrijvingen"
+            }
+        }
     },
     {
         "name": "calendar",
@@ -203,7 +271,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "kalender",
+                "description": "Toon komende verjaardagen en je herinneringen"
+            }
+        }
     },
     {
         "name": "poll",
@@ -213,7 +287,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "peiling",
+                "description": "Maak een peiling met knoppen en live resultaten"
+            }
+        }
     },
     {
         "name": "question",
@@ -223,7 +303,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "vraag",
+                "description": "Trek een gespreksvraag uit een lokaal kaartspel"
+            }
+        }
     },
     {
         "name": "permissions-backup",
@@ -233,7 +319,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": "8",
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "rechten-back-up",
+                "description": "Bewaar en exporteer rol-, categorie- en kanaalrechten"
+            }
+        }
     },
     {
         "name": "profile-card",
@@ -243,7 +335,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "profielkaart",
+                "description": "Maak een Discord-profielkaart"
+            }
+        }
     },
     {
         "name": "roll",
@@ -253,7 +351,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "werpen",
+                "description": "Werp dobbelstenen of maak een willekeurig getal"
+            }
+        }
     },
     {
         "name": "spin",
@@ -263,7 +367,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "draaien",
+                "description": "Draai aan het rad om iemand te kiezen"
+            }
+        }
     },
     {
         "name": "test-notification",
@@ -273,7 +383,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "testmelding",
+                "description": "Stuur een testmelding naar een kanaal"
+            }
+        }
     },
     {
         "name": "time",
@@ -283,7 +399,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tijd",
+                "description": "Zet een tijd om naar Discord-tijdstempelindelingen"
+            }
+        }
     },
     {
         "name": "weather",
@@ -293,7 +415,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "weer",
+                "description": "Toon het huidige weer en een korte verwachting voor een locatie"
+            }
+        }
     },
     {
         "name": "league-history",
@@ -303,7 +431,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "league-geschiedenis",
+                "description": "Toon recente League of Legends-wedstrijden via Riot ID of gekoppelde gebruiker"
+            }
+        }
     },
     {
         "name": "league-form",
@@ -313,7 +447,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "league-vorm",
+                "description": "Vat recente League of Legends-vorm samen via Riot ID of gekoppelde gebruiker"
+            }
+        }
     },
     {
         "name": "league-stats",
@@ -323,7 +463,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "league-statistieken",
+                "description": "Toon League of Legends-statistieken via Riot ID of gekoppelde gebruiker"
+            }
+        }
     },
     {
         "name": "link-riot",
@@ -333,7 +479,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "riot-koppelen",
+                "description": "Koppel jouw Discord-account of een andere gebruiker aan een Riot-account"
+            }
+        }
     },
     {
         "name": "riot-links",
@@ -343,7 +495,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "riot-koppelingen",
+                "description": "Beheer gekoppelde Riot-accounts"
+            }
+        }
     },
     {
         "name": "tft-history",
@@ -353,7 +511,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tft-geschiedenis",
+                "description": "Toon recente TFT-wedstrijden via Riot ID of gekoppelde gebruiker"
+            }
+        }
     },
     {
         "name": "tft-stats",
@@ -363,7 +527,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tft-statistieken",
+                "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+            }
+        }
     },
     {
         "name": "get-patchnotes",
@@ -373,7 +543,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "patchnotes-ophalen",
+                "description": "Toon de nieuwste patchnotes voor een spel"
+            }
+        }
     },
     {
         "name": "patchnotes-history",
@@ -383,7 +559,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "patchnotes-geschiedenis",
+                "description": "Toon opgeslagen patchnote-geschiedenis voor een spel"
+            }
+        }
     },
     {
         "name": "subscribe-patchnotes",
@@ -393,7 +575,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "patchnotes-abonneren",
+                "description": "Abonneer een kanaal op patchnotes voor een spel"
+            }
+        }
     },
     {
         "name": "manage-patchnotes",
@@ -403,7 +591,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "patchnotes-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder patchnote-abonnementen"
+            }
+        }
     },
     {
         "name": "add-quote",
@@ -413,7 +607,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaat-toevoegen",
+                "description": "Voeg een citaat toe"
+            }
+        }
     },
     {
         "name": "delete-quote",
@@ -423,7 +623,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaat-verwijderen",
+                "description": "Verwijder een citaat dat je toevoegde of uitsprak"
+            }
+        }
     },
     {
         "name": "quote-leaderboard",
@@ -433,7 +639,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaten-klassement",
+                "description": "Toon de meest geciteerde gebruikers op deze server"
+            }
+        }
     },
     {
         "name": "quote-card",
@@ -443,7 +655,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaatkaart",
+                "description": "Maak van een goedgekeurd citaat een deelbare afbeelding"
+            }
+        }
     },
     {
         "name": "quotes",
@@ -453,7 +671,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaten",
+                "description": "Toon alle citaten van een gebruiker"
+            }
+        }
     },
     {
         "name": "random-quote",
@@ -463,7 +687,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "willekeurig-citaat",
+                "description": "Toon een willekeurig citaat van de server"
+            }
+        }
     },
     {
         "name": "Save as Quote",
@@ -473,7 +703,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": "message"
+        "type": "message",
+        "localizations": {
+            "nl": {
+                "name": "Opslaan als citaat",
+                "description": "Bewaar een bericht als citaat via het berichtenmenu"
+            }
+        }
     },
     {
         "name": "search-quote",
@@ -483,7 +719,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "citaten-zoeken",
+                "description": "Zoek citaten op tekst"
+            }
+        }
     },
     {
         "name": "Show Quotes",
@@ -493,7 +735,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": "user"
+        "type": "user",
+        "localizations": {
+            "nl": {
+                "name": "Citaten tonen",
+                "description": "Toon citaten via het gebruikersmenu"
+            }
+        }
     },
     {
         "name": "set-reminder",
@@ -503,7 +751,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinnering-instellen",
+                "description": "Stel een herinnering in"
+            }
+        }
     },
     {
         "name": "set-timezone",
@@ -513,7 +767,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tijdzone-instellen",
+                "description": "Stel je tijdzone in"
+            }
+        }
     },
     {
         "name": "reminders",
@@ -523,7 +783,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinneringen",
+                "description": "Toon je actieve en gepauzeerde herinneringen"
+            }
+        }
     },
     {
         "name": "Remind Me in 1h",
@@ -533,7 +799,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": "message"
+        "type": "message",
+        "localizations": {
+            "nl": {
+                "name": "Herinner mij over 1u",
+                "description": "Stel via het berichtenmenu een herinnering over één uur in"
+            }
+        }
     },
     {
         "name": "delete-reminder",
@@ -543,7 +815,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinnering-verwijderen",
+                "description": "Verwijder een openstaande herinnering"
+            }
+        }
     },
     {
         "name": "snooze-reminder",
@@ -553,7 +831,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinnering-uitstellen",
+                "description": "Stel een openstaande herinnering uit"
+            }
+        }
     },
     {
         "name": "pause-reminder",
@@ -563,7 +847,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinnering-pauzeren",
+                "description": "Pauzeer een herhalende herinnering"
+            }
+        }
     },
     {
         "name": "resume-reminder",
@@ -573,7 +863,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "herinnering-hervatten",
+                "description": "Hervat een herhalende herinnering"
+            }
+        }
     },
     {
         "name": "add-tiktok-stream",
@@ -583,7 +879,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tiktok-stream-toevoegen",
+                "description": "Voeg een TikTok-account toe voor livemeldingen"
+            }
+        }
     },
     {
         "name": "manage-tiktok-streams",
@@ -593,7 +895,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "tiktok-streams-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder TikTok-livemeldingen"
+            }
+        }
     },
     {
         "name": "add-twitch-stream",
@@ -603,7 +911,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "twitch-stream-toevoegen",
+                "description": "Voeg een Twitch-stream toe voor meldingen"
+            }
+        }
     },
     {
         "name": "manage-twitch-streams",
@@ -613,7 +927,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "twitch-streams-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder Twitch-streammeldingen"
+            }
+        }
     },
     {
         "name": "stream-status",
@@ -623,7 +943,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "streamstatus",
+                "description": "Controleer of een Twitch-kanaal live is"
+            }
+        }
     },
     {
         "name": "twitch-latest-vod",
@@ -633,7 +959,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "nieuwste-twitch-vod",
+                "description": "Toon de nieuwste Twitch-archief-VOD van een kanaal"
+            }
+        }
     },
     {
         "name": "add-youtube-channel",
@@ -643,7 +975,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "youtube-kanaal-toevoegen",
+                "description": "Voeg een YouTube-kanaal toe voor nieuwe videomeldingen"
+            }
+        }
     },
     {
         "name": "manage-youtube-channels",
@@ -653,7 +991,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "youtube-kanalen-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder YouTube-videomeldingen"
+            }
+        }
     },
     {
         "name": "youtube-latest",
@@ -663,7 +1007,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "nieuwste-youtube-video",
+                "description": "Toon de nieuwste video van een YouTube-kanaal-ID"
+            }
+        }
     },
     {
         "name": "notes",
@@ -673,7 +1023,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "notities",
+                "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze"
+            }
+        }
     },
     {
         "name": "Save to Notes",
@@ -683,7 +1039,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": "message"
+        "type": "message",
+        "localizations": {
+            "nl": {
+                "name": "Opslaan in notities",
+                "description": "Bewaar een berichtfragment en link in je privénotities"
+            }
+        }
     },
     {
         "name": "add-steam-news",
@@ -693,7 +1055,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "steamnieuws-toevoegen",
+                "description": "Voeg meldingen voor Steam-spelnieuws toe"
+            }
+        }
     },
     {
         "name": "manage-steam-news",
@@ -703,7 +1071,13 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "dm_permission": null,
         "default_member_permissions": null,
         "testOnly": null,
-        "type": null
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "steamnieuws-beheren",
+                "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+            }
+        }
     }
 ] as const;
 
@@ -723,7 +1097,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "anime",
+                        "description": "Zoek anime, beheer abonnementen en bekijk komende afleveringen"
+                    }
+                }
             },
             {
                 "name": "manga",
@@ -733,7 +1113,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "manga",
+                        "description": "Zoek manga, manhwa, webtoons en light novels op AniList"
+                    }
+                }
             }
         ]
     },
@@ -752,7 +1138,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "verjaardag",
+                        "description": "Toon de verjaardag van jezelf of een andere gebruiker"
+                    }
+                }
             },
             {
                 "name": "birthdays",
@@ -762,7 +1154,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "verjaardagen",
+                        "description": "Toon komende verjaardagen op deze server"
+                    }
+                }
             },
             {
                 "name": "remove-birthday",
@@ -772,7 +1170,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "verjaardag-verwijderen",
+                        "description": "Verwijder jouw verjaardag of die van een ander (alleen beheerders)"
+                    }
+                }
             },
             {
                 "name": "set-birthday",
@@ -782,7 +1186,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "verjaardag-instellen",
+                        "description": "Stel je verjaardag en het kanaal voor meldingen in"
+                    }
+                }
             },
             {
                 "name": "Show Birthday",
@@ -792,7 +1202,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": "user"
+                "type": "user",
+                "localizations": {
+                    "nl": {
+                        "name": "Verjaardag tonen",
+                        "description": "Toon een verjaardag via het gebruikersmenu"
+                    }
+                }
             }
         ]
     },
@@ -811,7 +1227,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "bluesky-account-toevoegen",
+                        "description": "Voeg een Bluesky-account toe voor berichtmeldingen"
+                    }
+                }
             },
             {
                 "name": "manage-bluesky-accounts",
@@ -821,7 +1243,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "bluesky-accounts-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder Bluesky-meldingen"
+                    }
+                }
             }
         ]
     },
@@ -840,7 +1268,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": false,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "spelavond",
+                        "description": "Nomineer en stem op spellen voor een spelavond van de server"
+                    }
+                }
             }
         ]
     },
@@ -859,7 +1293,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "help",
+                        "description": "Toon alle beschikbare opdrachten en hun beschrijvingen"
+                    }
+                }
             },
             {
                 "name": "calendar",
@@ -869,7 +1309,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "kalender",
+                        "description": "Toon komende verjaardagen en je herinneringen"
+                    }
+                }
             },
             {
                 "name": "poll",
@@ -879,7 +1325,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "peiling",
+                        "description": "Maak een peiling met knoppen en live resultaten"
+                    }
+                }
             },
             {
                 "name": "question",
@@ -889,7 +1341,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "vraag",
+                        "description": "Trek een gespreksvraag uit een lokaal kaartspel"
+                    }
+                }
             },
             {
                 "name": "permissions-backup",
@@ -899,7 +1357,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": "8",
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "rechten-back-up",
+                        "description": "Bewaar en exporteer rol-, categorie- en kanaalrechten"
+                    }
+                }
             },
             {
                 "name": "profile-card",
@@ -909,7 +1373,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "profielkaart",
+                        "description": "Maak een Discord-profielkaart"
+                    }
+                }
             },
             {
                 "name": "roll",
@@ -919,7 +1389,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "werpen",
+                        "description": "Werp dobbelstenen of maak een willekeurig getal"
+                    }
+                }
             },
             {
                 "name": "spin",
@@ -929,7 +1405,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "draaien",
+                        "description": "Draai aan het rad om iemand te kiezen"
+                    }
+                }
             },
             {
                 "name": "test-notification",
@@ -939,7 +1421,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "testmelding",
+                        "description": "Stuur een testmelding naar een kanaal"
+                    }
+                }
             },
             {
                 "name": "time",
@@ -949,7 +1437,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tijd",
+                        "description": "Zet een tijd om naar Discord-tijdstempelindelingen"
+                    }
+                }
             },
             {
                 "name": "weather",
@@ -959,7 +1453,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "weer",
+                        "description": "Toon het huidige weer en een korte verwachting voor een locatie"
+                    }
+                }
             }
         ]
     },
@@ -978,7 +1478,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "league-geschiedenis",
+                        "description": "Toon recente League of Legends-wedstrijden via Riot ID of gekoppelde gebruiker"
+                    }
+                }
             },
             {
                 "name": "league-form",
@@ -988,7 +1494,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "league-vorm",
+                        "description": "Vat recente League of Legends-vorm samen via Riot ID of gekoppelde gebruiker"
+                    }
+                }
             },
             {
                 "name": "league-stats",
@@ -998,7 +1510,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "league-statistieken",
+                        "description": "Toon League of Legends-statistieken via Riot ID of gekoppelde gebruiker"
+                    }
+                }
             },
             {
                 "name": "link-riot",
@@ -1008,7 +1526,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "riot-koppelen",
+                        "description": "Koppel jouw Discord-account of een andere gebruiker aan een Riot-account"
+                    }
+                }
             },
             {
                 "name": "riot-links",
@@ -1018,7 +1542,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "riot-koppelingen",
+                        "description": "Beheer gekoppelde Riot-accounts"
+                    }
+                }
             },
             {
                 "name": "tft-history",
@@ -1028,7 +1558,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tft-geschiedenis",
+                        "description": "Toon recente TFT-wedstrijden via Riot ID of gekoppelde gebruiker"
+                    }
+                }
             },
             {
                 "name": "tft-stats",
@@ -1038,7 +1574,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tft-statistieken",
+                        "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+                    }
+                }
             }
         ]
     },
@@ -1057,7 +1599,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "patchnotes-ophalen",
+                        "description": "Toon de nieuwste patchnotes voor een spel"
+                    }
+                }
             },
             {
                 "name": "patchnotes-history",
@@ -1067,7 +1615,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "patchnotes-geschiedenis",
+                        "description": "Toon opgeslagen patchnote-geschiedenis voor een spel"
+                    }
+                }
             },
             {
                 "name": "subscribe-patchnotes",
@@ -1077,7 +1631,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "patchnotes-abonneren",
+                        "description": "Abonneer een kanaal op patchnotes voor een spel"
+                    }
+                }
             },
             {
                 "name": "manage-patchnotes",
@@ -1087,7 +1647,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "patchnotes-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder patchnote-abonnementen"
+                    }
+                }
             }
         ]
     },
@@ -1106,7 +1672,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaat-toevoegen",
+                        "description": "Voeg een citaat toe"
+                    }
+                }
             },
             {
                 "name": "delete-quote",
@@ -1116,7 +1688,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaat-verwijderen",
+                        "description": "Verwijder een citaat dat je toevoegde of uitsprak"
+                    }
+                }
             },
             {
                 "name": "quote-leaderboard",
@@ -1126,7 +1704,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaten-klassement",
+                        "description": "Toon de meest geciteerde gebruikers op deze server"
+                    }
+                }
             },
             {
                 "name": "quote-card",
@@ -1136,7 +1720,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaatkaart",
+                        "description": "Maak van een goedgekeurd citaat een deelbare afbeelding"
+                    }
+                }
             },
             {
                 "name": "quotes",
@@ -1146,7 +1736,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaten",
+                        "description": "Toon alle citaten van een gebruiker"
+                    }
+                }
             },
             {
                 "name": "random-quote",
@@ -1156,7 +1752,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "willekeurig-citaat",
+                        "description": "Toon een willekeurig citaat van de server"
+                    }
+                }
             },
             {
                 "name": "Save as Quote",
@@ -1166,7 +1768,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": "message"
+                "type": "message",
+                "localizations": {
+                    "nl": {
+                        "name": "Opslaan als citaat",
+                        "description": "Bewaar een bericht als citaat via het berichtenmenu"
+                    }
+                }
             },
             {
                 "name": "search-quote",
@@ -1176,7 +1784,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "citaten-zoeken",
+                        "description": "Zoek citaten op tekst"
+                    }
+                }
             },
             {
                 "name": "Show Quotes",
@@ -1186,7 +1800,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": "user"
+                "type": "user",
+                "localizations": {
+                    "nl": {
+                        "name": "Citaten tonen",
+                        "description": "Toon citaten via het gebruikersmenu"
+                    }
+                }
             }
         ]
     },
@@ -1205,7 +1825,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinnering-instellen",
+                        "description": "Stel een herinnering in"
+                    }
+                }
             },
             {
                 "name": "set-timezone",
@@ -1215,7 +1841,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tijdzone-instellen",
+                        "description": "Stel je tijdzone in"
+                    }
+                }
             },
             {
                 "name": "reminders",
@@ -1225,7 +1857,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinneringen",
+                        "description": "Toon je actieve en gepauzeerde herinneringen"
+                    }
+                }
             },
             {
                 "name": "Remind Me in 1h",
@@ -1235,7 +1873,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": "message"
+                "type": "message",
+                "localizations": {
+                    "nl": {
+                        "name": "Herinner mij over 1u",
+                        "description": "Stel via het berichtenmenu een herinnering over één uur in"
+                    }
+                }
             },
             {
                 "name": "delete-reminder",
@@ -1245,7 +1889,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinnering-verwijderen",
+                        "description": "Verwijder een openstaande herinnering"
+                    }
+                }
             },
             {
                 "name": "snooze-reminder",
@@ -1255,7 +1905,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinnering-uitstellen",
+                        "description": "Stel een openstaande herinnering uit"
+                    }
+                }
             },
             {
                 "name": "pause-reminder",
@@ -1265,7 +1921,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinnering-pauzeren",
+                        "description": "Pauzeer een herhalende herinnering"
+                    }
+                }
             },
             {
                 "name": "resume-reminder",
@@ -1275,7 +1937,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "herinnering-hervatten",
+                        "description": "Hervat een herhalende herinnering"
+                    }
+                }
             }
         ]
     },
@@ -1302,7 +1970,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tiktok-stream-toevoegen",
+                        "description": "Voeg een TikTok-account toe voor livemeldingen"
+                    }
+                }
             },
             {
                 "name": "manage-tiktok-streams",
@@ -1312,7 +1986,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "tiktok-streams-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder TikTok-livemeldingen"
+                    }
+                }
             }
         ]
     },
@@ -1331,7 +2011,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "twitch-stream-toevoegen",
+                        "description": "Voeg een Twitch-stream toe voor meldingen"
+                    }
+                }
             },
             {
                 "name": "manage-twitch-streams",
@@ -1341,7 +2027,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "twitch-streams-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder Twitch-streammeldingen"
+                    }
+                }
             },
             {
                 "name": "stream-status",
@@ -1351,7 +2043,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "streamstatus",
+                        "description": "Controleer of een Twitch-kanaal live is"
+                    }
+                }
             },
             {
                 "name": "twitch-latest-vod",
@@ -1361,7 +2059,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "nieuwste-twitch-vod",
+                        "description": "Toon de nieuwste Twitch-archief-VOD van een kanaal"
+                    }
+                }
             }
         ]
     },
@@ -1380,7 +2084,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "youtube-kanaal-toevoegen",
+                        "description": "Voeg een YouTube-kanaal toe voor nieuwe videomeldingen"
+                    }
+                }
             },
             {
                 "name": "manage-youtube-channels",
@@ -1390,7 +2100,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "youtube-kanalen-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder YouTube-videomeldingen"
+                    }
+                }
             },
             {
                 "name": "youtube-latest",
@@ -1400,7 +2116,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "nieuwste-youtube-video",
+                        "description": "Toon de nieuwste video van een YouTube-kanaal-ID"
+                    }
+                }
             }
         ]
     },
@@ -1419,7 +2141,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "notities",
+                        "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze"
+                    }
+                }
             },
             {
                 "name": "Save to Notes",
@@ -1429,7 +2157,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": "message"
+                "type": "message",
+                "localizations": {
+                    "nl": {
+                        "name": "Opslaan in notities",
+                        "description": "Bewaar een berichtfragment en link in je privénotities"
+                    }
+                }
             }
         ]
     },
@@ -1448,7 +2182,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "steamnieuws-toevoegen",
+                        "description": "Voeg meldingen voor Steam-spelnieuws toe"
+                    }
+                }
             },
             {
                 "name": "manage-steam-news",
@@ -1458,7 +2198,13 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "dm_permission": null,
                 "default_member_permissions": null,
                 "testOnly": null,
-                "type": null
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "steamnieuws-beheren",
+                        "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+                    }
+                }
             }
         ]
     }

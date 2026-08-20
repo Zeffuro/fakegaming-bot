@@ -6,45 +6,52 @@ import {snoozeReminder as META} from '../commands.manifest.js';
 import {autocompleteReminderIds} from '../shared/reminderAutocomplete.js';
 import {shortReminderId} from '../shared/reminderFormat.js';
 import {resolvePendingReminderForUser} from '../shared/reminderLookup.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
+import {getReminderCopy} from '../copy/reminderCopy.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
         .addStringOption(option =>
             option
                 .setName('reminder')
+                .setNameLocalization('nl', 'herinnering')
                 .setDescription('Reminder number from /reminders or its short ID')
+                .setDescriptionLocalization('nl', 'Nummer uit /herinneringen of het korte ID')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addStringOption(option =>
             option
                 .setName('timespan')
+                .setNameLocalization('nl', 'tijdsduur')
                 .setDescription('How long to snooze for, e.g. 10m or 2h')
+                .setDescriptionLocalization('nl', 'Hoe lang je wilt uitstellen, bijv. 10m of 2h')
                 .setRequired(true)
         )
 );
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const copy = getReminderCopy(await resolveInteractionOutputLocale(interaction));
     const input = interaction.options.getString('reminder', true);
     const timespan = interaction.options.getString('timespan', true);
     const delayMs = parseTimespan(timespan);
 
     if (delayMs === null || delayMs <= 0) {
-        await interaction.reply({content: 'Invalid timespan format. Use e.g. 10m, 1h, or 2d.', flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: copy.invalidSnooze, flags: MessageFlags.Ephemeral});
         return;
     }
 
     const reminder = await resolvePendingReminderForUser(interaction.user.id, input);
 
     if (!reminder) {
-        await interaction.reply({content: 'Reminder not found. Use `/reminders` to see your pending reminders.', flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: copy.pendingNotFound, flags: MessageFlags.Ephemeral});
         return;
     }
 
     const timestamp = Date.now() + delayMs;
     await getConfigManager().reminderManager.updatePlain({timestamp, timespan} as any, {id: reminder.id} as any);
     await interaction.reply({
-        content: `Snoozed reminder \`${shortReminderId(reminder.id)}\` until <t:${Math.floor(timestamp / 1000)}:F> (<t:${Math.floor(timestamp / 1000)}:R>).`,
+        content: copy.snoozed(shortReminderId(reminder.id), Math.floor(timestamp / 1000)),
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -52,7 +59,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
 const testOnly = getTestOnly(META);
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
-    await autocompleteReminderIds(interaction, 'pending');
+    await autocompleteReminderIds(interaction, 'pending', await resolveInteractionOutputLocale(interaction));
 }
 
 // noinspection JSUnusedGlobalSymbols

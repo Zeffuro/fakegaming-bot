@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -8,12 +9,11 @@ import {
     SlashCommandBuilder,
     type ButtonInteraction,
 } from 'discord.js';
-import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import {
     isSupportedOutputLocale,
     formatTranslation,
-    resolveOutputLocale,
+    resolveInteractionOutputLocale,
     translate,
     type SupportedOutputLocale,
 } from '../../../core/localization.js';
@@ -43,21 +43,30 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
     builder
         .addStringOption(option => option
             .setName('category')
+            .setNameLocalization('nl', 'categorie')
             .setDescription('Choose a question category')
+            .setDescriptionLocalization('nl', 'Kies een vraagcategorie')
             .setRequired(false)
             .addChoices(
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('any')), value: 'any' },
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('gaming')), value: 'gaming' },
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('silly')), value: 'silly' },
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('would-you-rather')), value: 'would-you-rather' },
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('getting-to-know-you')), value: 'getting-to-know-you' },
-                { name: translate(QUESTION_COPY, 'en', questionCategoryCopyKey('deep')), value: 'deep' },
+                questionChoice('any'), questionChoice('gaming'), questionChoice('silly'),
+                questionChoice('would-you-rather'), questionChoice('getting-to-know-you'), questionChoice('deep'),
             ))
         .addBooleanOption(option => option
             .setName('private')
+            .setNameLocalization('nl', 'privé')
             .setDescription('Show the question only to you')
+            .setDescriptionLocalization('nl', 'Toon de vraag alleen aan jou')
             .setRequired(false))
 );
+
+function questionChoice(category: QuestionCategorySelection) {
+    const key = questionCategoryCopyKey(category);
+    return {
+        name: translate(QUESTION_COPY, 'en', key),
+        name_localizations: { nl: translate(QUESTION_COPY, 'nl', key) },
+        value: category,
+    };
+}
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const locale = await resolveQuestionOutputLocale(interaction);
@@ -97,7 +106,7 @@ export function createQuestionComponentHandler(
 
         const selection = parts[2];
         const visibility = parts[3];
-        const locale = parts.length === 5 ? parts[4] : 'en';
+        const locale = parts.length === 5 ? parts[4] : DEFAULT_OUTPUT_LOCALE;
         if ((parts.length !== 4 && parts.length !== 5)
             || parts[1] !== 'next'
             || !isQuestionCategorySelection(selection)
@@ -116,19 +125,17 @@ export function createQuestionComponentHandler(
 }
 
 export async function resolveQuestionOutputLocale(
-    interaction: Pick<ChatInputCommandInteraction | ButtonInteraction, 'guildId' | 'guildLocale'>,
-    getStoredGuildLocale: (guildId: string) => Promise<unknown> = guildId =>
-        getConfigManager().guildLocaleConfigManager.getOutputLocale(guildId),
+    interaction: Pick<ChatInputCommandInteraction | ButtonInteraction, 'guildId' | 'locale'>,
+    getStoredGuildLocale?: (guildId: string) => Promise<unknown>,
 ): Promise<SupportedOutputLocale> {
-    if (!interaction.guildId) return resolveOutputLocale(interaction.guildLocale);
-    return resolveOutputLocale(await getStoredGuildLocale(interaction.guildId));
+    return await resolveInteractionOutputLocale(interaction, getStoredGuildLocale);
 }
 
 export function buildQuestionMessage(
     prompt: QuestionPrompt,
     selection: QuestionCategorySelection,
     privateResponse: boolean,
-    locale: SupportedOutputLocale = 'en',
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
 ) {
     const embed = new EmbedBuilder()
         .setColor(0x5865f2)

@@ -6,6 +6,7 @@ import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
 import type { IntegrationHealthRecord } from "@/lib/api-client";
 import { getNotificationInfo } from "@/lib/notificationTiming";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface NotificationConfigListProps<T extends StreamingConfig> {
     configs: T[];
@@ -16,6 +17,7 @@ interface NotificationConfigListProps<T extends StreamingConfig> {
     onDelete: (config: T) => void;
     onTogglePaused?: (config: T) => void;
     moduleName: string;
+    moduleDisplayName?: string;
     moduleColor?: string;
     saving: boolean;
     emptyStateIcon: React.ReactElement;
@@ -38,6 +40,7 @@ export default function NotificationConfigList<T extends StreamingConfig>({
     onDelete,
     onTogglePaused,
     moduleName,
+    moduleDisplayName = moduleName,
     moduleColor = dashboardAccents.neutral,
     saving,
     emptyStateIcon,
@@ -50,15 +53,16 @@ export default function NotificationConfigList<T extends StreamingConfig>({
     emptyTitle,
     emptyDescription,
 }: NotificationConfigListProps<T>) {
-    const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
-    const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
+    const { t, formatDate } = useDashboardI18n();
+    const singular = itemSingularLabel ?? (moduleName === "YouTube" ? t("config.channel") : t("config.streamer"));
+    const plural = itemPluralLabel ?? (moduleName === "YouTube" ? t("config.channels") : t("config.streamers"));
 
     if (configs.length === 0) {
         return (
             <EmptyState
                 icon={emptyStateIcon}
-                title={emptyTitle ?? `No ${moduleName} ${plural} Configured`}
-                description={emptyDescription ?? `Add your first ${moduleName} ${singular.toLowerCase()} to start receiving notifications.`}
+                title={emptyTitle ?? t("notifications.noConfigured", { module: moduleDisplayName, items: plural.toLowerCase() })}
+                description={emptyDescription ?? t("notifications.addFirst", { module: moduleDisplayName, item: singular.toLowerCase() })}
                 accent={moduleColor}
             />
         );
@@ -68,18 +72,18 @@ export default function NotificationConfigList<T extends StreamingConfig>({
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
             {configs.map((config) => {
                 const value = String((config as any)[channelNameField] ?? "").trim();
-                const displayTitle = String((config as any).youtubeChannelTitle ?? (value || `${moduleName} ${singular}`));
+                const displayTitle = String((config as any).youtubeChannelTitle ?? (value || `${moduleDisplayName} ${singular}`));
                 const configPaused = Boolean((config as { paused?: unknown }).paused);
                 const health = getHealthForConfig(config, healthByConfigId);
-                const healthChip = configPaused ? null : getHealthChip(health, healthLoading);
-                const healthInfo = getHealthInfo(health);
+                const healthChip = configPaused ? null : getHealthChip(health, healthLoading, t);
+                const healthInfo = getHealthInfo(health, t, formatDate);
                 const notificationInfo = getNotificationInfo(config as {
                     cooldownMinutes?: unknown;
                     quietHoursStart?: unknown;
                     quietHoursEnd?: unknown;
                 });
                 const statusChip = configPaused
-                    ? { label: "Paused", color: "info" as const, variant: "outlined" as const }
+                    ? { label: t("common.paused"), color: "info" as const, variant: "outlined" as const }
                     : renderChip?.(config);
                 return (
                     <ConfigCard
@@ -88,7 +92,7 @@ export default function NotificationConfigList<T extends StreamingConfig>({
                         accent={moduleColor}
                         channelInfo={{
                             label: channelNameLabel,
-                            value: value || "Unknown"
+                            value: value || t("common.unknown")
                         }}
                         discordChannel={getChannelName((config as any).discordChannelId)}
                         customMessage={(config as any).customMessage}
@@ -117,25 +121,25 @@ function getHealthForConfig<T extends StreamingConfig>(
     return healthByConfigId.get(String(config.id)) ?? null;
 }
 
-function getHealthChip(health: IntegrationHealthRecord | null, loading: boolean): ConfigStatusChip | null {
-    if (loading) return { label: "Checking...", color: "default", variant: "outlined" };
-    if (!health) return { label: "Not checked", color: "default", variant: "outlined" };
-    if (health.status === "healthy") return { label: "Healthy", color: "success", variant: "outlined" };
-    if (health.status === "warning") return { label: "Warning", color: "warning", variant: "outlined" };
-    if (health.status === "paused") return { label: "Paused", color: "info", variant: "outlined" };
-    if (health.status === "error") return { label: `Failing x${Math.max(1, health.consecutiveFailures)}`, color: "error", variant: "outlined" };
-    return { label: "Unknown", color: "default", variant: "outlined" };
+function getHealthChip(health: IntegrationHealthRecord | null, loading: boolean, t: ReturnType<typeof useDashboardI18n>["t"]): ConfigStatusChip | null {
+    if (loading) return { label: t("common.checking"), color: "default", variant: "outlined" };
+    if (!health) return { label: t("common.notChecked"), color: "default", variant: "outlined" };
+    if (health.status === "healthy") return { label: t("common.healthy"), color: "success", variant: "outlined" };
+    if (health.status === "warning") return { label: t("common.warning"), color: "warning", variant: "outlined" };
+    if (health.status === "paused") return { label: t("common.paused"), color: "info", variant: "outlined" };
+    if (health.status === "error") return { label: t("config.failingCount", { count: Math.max(1, health.consecutiveFailures) }), color: "error", variant: "outlined" };
+    return { label: t("common.unknown"), color: "default", variant: "outlined" };
 }
 
-function getHealthInfo(health: IntegrationHealthRecord | null): ConfigHealthInfo | undefined {
+function getHealthInfo(health: IntegrationHealthRecord | null, t: ReturnType<typeof useDashboardI18n>["t"], formatDate: ReturnType<typeof useDashboardI18n>["formatDate"]): ConfigHealthInfo | undefined {
     if (!health) return undefined;
 
     const lines = [
-        `Last checked: ${formatDateTime(health.lastCheckedAt)}`,
-        `Last delivery: ${formatDateTime(health.lastDeliveryAt)}`,
+        t("config.lastChecked", { value: formatDateTime(health.lastCheckedAt, t, formatDate) }),
+        t("config.lastDelivery", { value: formatDateTime(health.lastDeliveryAt, t, formatDate) }),
     ];
     if (health.lastErrorCode) {
-        lines.push(`Last error code: ${health.lastErrorCode}`);
+        lines.push(t("config.lastErrorCode", { value: health.lastErrorCode }));
     }
 
     return {
@@ -144,9 +148,9 @@ function getHealthInfo(health: IntegrationHealthRecord | null): ConfigHealthInfo
     };
 }
 
-function formatDateTime(value?: string | null): string {
-    if (!value) return "Never";
+function formatDateTime(value: string | null | undefined, t: ReturnType<typeof useDashboardI18n>["t"], formatDate: ReturnType<typeof useDashboardI18n>["formatDate"]): string {
+    if (!value) return t("common.never");
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString();
+    return formatDate(parsed, { dateStyle: "medium", timeStyle: "short" });
 }

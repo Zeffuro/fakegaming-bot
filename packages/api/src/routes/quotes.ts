@@ -2,7 +2,8 @@ import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager, type QuoteOfDayConfigRecord } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { checkUserGuildAccess } from '../utils/authHelpers.js';
-import { CACHE_KEYS, CACHE_TTL, defaultCacheManager, getDiscordUserById, validateBody, validateParams, validateQuery, type CacheManager, type DiscordUserProfile } from '@zeffuro/fakegaming-common';
+import { CACHE_KEYS, CACHE_TTL, defaultCacheManager, getDiscordUserById, type CacheManager, type DiscordUserProfile } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
 import { quoteCreateRequestSchema, quoteModerationUpdateRequestSchema, quoteOfDaySettingsRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { buildQuoteCardFilename, QUOTE_CARD_MIME_TYPE, renderQuoteCard } from '@zeffuro/fakegaming-common/quote-card';
 import { formatQuoteOfDayDateKey, parseStoredQuoteTags, selectQuoteOfDay, serializeQuoteTags, type QuoteOfDayCandidate } from '@zeffuro/fakegaming-common/utils';
@@ -17,9 +18,10 @@ import {
     canReadGuildScopedRecord,
     deleteGuildScopedRecord,
     loadGuildScopedRecords,
-    sendNotFound,
 } from '../utils/guildScopedRouteHelpers.js';
 import { filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 type QuoteRecord = QuoteOfDayCandidate & {
     tags?: unknown;
@@ -302,7 +304,7 @@ router.get('/:id/card', jwtAuth, validateParams(idParamSchema), async (req, res)
     const manager = getConfigManager().quoteManager;
     const quote = await manager.findByPkPlain(id);
     if (!quote) {
-        sendNotFound(res, 'Quote not found');
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'quoteNotFound');
         return;
     }
 
@@ -315,7 +317,7 @@ router.get('/:id/card', jwtAuth, validateParams(idParamSchema), async (req, res)
         res.status(409).json({
             error: {
                 code: 'QUOTE_NOT_APPROVED',
-                message: 'Only approved quotes can be rendered as cards',
+                message: apiText(requestLocale(req), 'quoteApprovedOnly'),
             },
         });
         return;
@@ -335,13 +337,14 @@ router.get('/:id/card', jwtAuth, validateParams(idParamSchema), async (req, res)
         tags: parseStoredQuoteTags(record.tags),
         source: normalizeOptionalQuoteText(record.source),
         context: normalizeOptionalQuoteText(record.context),
-    });
+    }, { locale: requestLocale(req) });
 
     res.status(200)
         .set({
             'Cache-Control': 'private, max-age=300',
             'Content-Disposition': `attachment; filename="${buildQuoteCardFilename(id)}"`,
             'Content-Type': QUOTE_CARD_MIME_TYPE,
+            'Vary': 'Accept-Language',
         })
         .send(buffer);
 });
@@ -409,7 +412,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().quoteManager;
     const quote = await manager.findByPkPlain(String(req.params.id));
     if (!quote) {
-        sendNotFound(res, 'Quote not found');
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'quoteNotFound');
         return;
     }
     const hasAccess = await canReadGuildScopedRecord(req, res, quote);
@@ -481,7 +484,7 @@ router.post('/', jwtAuth, validateBody(quoteCreateRequestSchema), async (req, re
         res.status(201).json(serializeQuote(createdQuote));
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: { code: 'CONFLICT', message: 'Quote with this ID already exists' } });
+            sendLocalizedError(req, res, 409, 'CONFLICT', 'quoteExists');
         } else {
             throw error;
         }
@@ -526,7 +529,7 @@ router.patch('/:id/moderation', jwtAuth, validateParams(idParamSchema), validate
     const manager = getConfigManager().quoteManager;
     const quote = await manager.getOnePlain({ id });
     if (!quote) {
-        sendNotFound(res, 'Quote not found');
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'quoteNotFound');
         return;
     }
 
@@ -536,7 +539,7 @@ router.patch('/:id/moderation', jwtAuth, validateParams(idParamSchema), validate
     const previousStatus = normalizeQuoteModerationStatus(toQuoteRecord(quote).moderationStatus);
     const updated = await manager.updateModerationStatus(id, body.moderationStatus);
     if (!updated) {
-        sendNotFound(res, 'Quote not found');
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'quoteNotFound');
         return;
     }
 
@@ -585,7 +588,7 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     await deleteGuildScopedRecord(req, res, id, {
         findByPk: id => manager.findByPkPlain(id),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'Quote not found',
+        notFoundMessage: apiText(requestLocale(req), 'quoteNotFound'),
         auditAction: 'quote.delete',
         auditTargetType: 'quote',
         auditMetadata: quote => ({

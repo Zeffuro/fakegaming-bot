@@ -64,4 +64,12 @@ describe("adminProviderDashboardLinks", () => {
         expect(normalizeProviderDashboardKey("Patch Notes")).toBe("patchnotes");
         expect(normalizeProviderDashboardKey("birthdays")).toBe("birthday");
     });
+
+    it("localizes labels without changing routes or IDs", () => {
+        expect(getAdminProviderDashboardLinks({ provider: "tiktok", guildId: "guild-1" }, "nl")).toMatchObject([
+            { id: "provider", label: "Providerpagina", href: "/dashboard/tiktok/guild-1" },
+            { id: "guild", label: "Serveroverzicht", href: "/dashboard/guild-1" },
+            { id: "notifications", label: "Meldingsinstellingen" },
+        ]);
+    });
 });

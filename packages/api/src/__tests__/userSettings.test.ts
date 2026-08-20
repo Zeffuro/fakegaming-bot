@@ -17,6 +17,7 @@ describe('User settings API', () => {
             discordId: 'settings-user',
             timezone: 'UTC',
             defaultReminderTimeSpan: '1h',
+            preferredLocale: null,
         });
         const client = givenAuthenticatedClient(app, { discordId: 'settings-user' });
 
@@ -31,19 +32,27 @@ describe('User settings API', () => {
         const updated = await patch(client, '/api/userSettings', {
             timezone: 'Europe/Amsterdam',
             defaultReminderTimeSpan: '2h',
+            preferredLocale: 'nl',
         });
         expectOk(updated);
         expect(updated.body).toMatchObject({
             discordId: 'settings-user',
             timezone: 'Europe/Amsterdam',
             defaultReminderTimeSpan: '2h',
+            preferredLocale: 'nl',
         });
 
         const stored = await configManager.userManager.getOnePlain({ discordId: 'settings-user' });
         expect(stored).toMatchObject({
             timezone: 'Europe/Amsterdam',
             defaultReminderTimeSpan: '2h',
+            preferredLocale: 'nl',
         });
+
+        const resetLocale = await patch(client, '/api/userSettings', { preferredLocale: null });
+        expectOk(resetLocale);
+        expect(resetLocale.body.preferredLocale).toBeNull();
+        expect(await configManager.userManager.getPreferredLocale('settings-user')).toBe('en');
     });
 
     it('does not expose another user settings record', async () => {
@@ -60,6 +69,7 @@ describe('User settings API', () => {
             discordId: 'other-user',
             timezone: null,
             defaultReminderTimeSpan: null,
+            preferredLocale: null,
         });
     });
 
@@ -72,6 +82,7 @@ describe('User settings API', () => {
             discordId: 'missing-user',
             timezone: 'UTC',
             defaultReminderTimeSpan: null,
+            preferredLocale: null,
         });
 
         expectBadRequest(await patch(client, '/api/userSettings', {}));

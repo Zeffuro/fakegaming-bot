@@ -1,7 +1,7 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import { validateParams, validateBody } from '../localization/validation.js';
 import {
     userCreateRequestSchema,
     userDefaultReminderTimeSpanUpdateRequestSchema,
@@ -9,6 +9,7 @@ import {
     userUpdateRequestSchema,
 } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const discordIdParamSchema = z.object({ discordId: z.string().min(1) });
@@ -75,7 +76,7 @@ router.get('/', async (_req, res) => {
 router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
-    if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    if (!user) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
     res.json(user);
 });
 
@@ -139,7 +140,7 @@ router.post('/', jwtAuth, validateBody(userCreateRequestSchema), async (req, res
 router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateRequestSchema), async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
-    if (!user) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    if (!user) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
     await getConfigManager().userManager.updatePlain(req.body, { discordId: discordId as string });
     const updated = await getConfigManager().userManager.findByPkPlain(discordId as string);
     res.json(updated);
@@ -184,7 +185,7 @@ router.put(
         const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timezone } = req.body as z.infer<typeof userTimezoneUpdateRequestSchema>;
         const updated = await updateExistingUserSettings(discordId, { timezone });
-        if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+        if (!updated) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
         res.json({ success: true });
     }
 );
@@ -228,7 +229,7 @@ router.put(
         const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timespan } = req.body as z.infer<typeof userDefaultReminderTimeSpanUpdateRequestSchema>;
         const updated = await updateExistingUserSettings(discordId, { defaultReminderTimeSpan: timespan });
-        if (!updated) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+        if (!updated) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
         res.json({ success: true });
     }
 );

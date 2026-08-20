@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
 import {
     api,
     getAuditEvents,
@@ -36,6 +38,7 @@ export interface AdminOverviewState {
 type JobInfo = JobsListResponse["jobs"][number];
 
 export function useAdminOverview(): AdminOverviewState {
+    const { t } = useDashboardI18n();
     const [integrationHealth, setIntegrationHealth] = useState<AdminIntegrationHealthResponse | null>(null);
     const [auditEvents, setAuditEvents] = useState<AuditEventEntry[]>([]);
     const [notifications, setNotifications] = useState<AdminNotificationsResponse | null>(null);
@@ -65,38 +68,38 @@ export function useAdminOverview(): AdminOverviewState {
         if (healthResult.status === "fulfilled") {
             setIntegrationHealth(healthResult.value);
         } else {
-            errors.push(formatSettledError("integration health", healthResult.reason));
+            errors.push(formatSettledError(t("admin.overviewErrorHealth"), healthResult.reason, t));
         }
 
         if (auditResult.status === "fulfilled") {
             setAuditEvents(auditResult.value.events);
         } else {
-            errors.push(formatSettledError("audit events", auditResult.reason));
+            errors.push(formatSettledError(t("admin.overviewErrorAudit"), auditResult.reason, t));
         }
 
         if (notificationsResult.status === "fulfilled") {
             setNotifications(notificationsResult.value);
         } else {
-            errors.push(formatSettledError("notifications", notificationsResult.reason));
+            errors.push(formatSettledError(t("admin.overviewErrorNotifications"), notificationsResult.reason, t));
         }
 
         if (heartbeatResult.status === "fulfilled") {
             setHeartbeat(heartbeatResult.value.last);
         } else {
-            errors.push(formatSettledError("job heartbeat", heartbeatResult.reason));
+            errors.push(formatSettledError(t("admin.overviewErrorHeartbeat"), heartbeatResult.reason, t));
         }
 
         if (jobsResult.status === "fulfilled") {
-            const jobStatuses = await loadJobStatuses(jobsResult.value.jobs);
+            const jobStatuses = await loadJobStatuses(jobsResult.value.jobs, t);
             setJobs(jobStatuses);
         } else {
             setJobs([]);
-            errors.push(formatSettledError("job registry", jobsResult.reason));
+            errors.push(formatSettledError(t("admin.overviewErrorRegistry"), jobsResult.reason, t));
         }
 
         setError(errors.length > 0 ? errors.join(" / ") : null);
         setLoading(false);
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();
@@ -114,7 +117,9 @@ export function useAdminOverview(): AdminOverviewState {
     };
 }
 
-async function loadJobStatuses(jobInfos: JobInfo[]): Promise<AdminOverviewJobStatus[]> {
+type Translate = (key: DashboardMessageKey, values?: Record<string, string | number>) => string;
+
+async function loadJobStatuses(jobInfos: JobInfo[], t: Translate): Promise<AdminOverviewJobStatus[]> {
     return await Promise.all(jobInfos.map(async (job) => {
         try {
             const status = await api.getJobStatus(job.name);
@@ -135,13 +140,13 @@ async function loadJobStatuses(jobInfos: JobInfo[]): Promise<AdminOverviewJobSta
                 latestRun: null,
                 failedRecentRuns: 0,
                 totalRecentRuns: 0,
-                error: err instanceof Error ? err.message : "Failed to load status",
+                error: err instanceof Error ? err.message : t("admin.overviewLoadStatusFailed"),
             };
         }
     }));
 }
 
-function formatSettledError(label: string, reason: unknown): string {
-    const message = reason instanceof Error ? reason.message : "unknown error";
-    return `${label}: ${message}`;
+function formatSettledError(label: string, reason: unknown, t: Translate): string {
+    const message = reason instanceof Error ? reason.message : t("admin.overviewErrorUnknown");
+    return t("admin.overviewErrorItem", { label, message });
 }

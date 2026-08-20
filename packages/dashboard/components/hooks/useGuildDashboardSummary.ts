@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type GuildDashboardSummary } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface UseGuildDashboardSummaryOptions {
   enabled?: boolean;
 }
 
 export function useGuildDashboardSummary(guildId: string, options: UseGuildDashboardSummaryOptions = {}) {
+  const { t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [summary, setSummary] = useState<GuildDashboardSummary | null>(null);
   const [loading, setLoading] = useState(enabled);
@@ -24,7 +26,7 @@ export function useGuildDashboardSummary(guildId: string, options: UseGuildDashb
       setSummary(data);
       setError(null);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to load dashboard summary";
+      const message = err instanceof Error ? err.message : t("hooks.failedToLoadDashboardSummary");
       setError(message);
     } finally {
       setLoading(false);

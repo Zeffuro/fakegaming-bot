@@ -33,8 +33,10 @@ function createCommand(records: TestRecord[] = [], options: TestCommandOptions =
     const setPausedRecord = vi.fn(async (_id: number, _paused: boolean) => undefined);
     const command = createIntegrationManagementCommand<TestRecord>({
         meta: {name: 'manage-test-integrations', description: 'Manage test integrations'},
-        subjectSingular: 'test integration',
-        subjectPlural: 'test integrations',
+        subjects: {
+            singular: {en: 'test integration', nl: 'testintegratie'},
+            plural: {en: 'test integrations', nl: 'testintegraties'},
+        },
         listRecords: vi.fn(async (guildId) => records.filter((record) => record.guildId === guildId)),
         getRecord: vi.fn(async (id) => records.find((record) => record.id === id) ?? null),
         removeRecord,

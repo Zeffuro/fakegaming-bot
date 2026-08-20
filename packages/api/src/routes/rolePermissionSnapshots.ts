@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { getConfigManager, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
+import { validateParams, validateQuery } from '../localization/validation.js';
 import {
     permissionNamesFromBitfield,
     rolePermissionChannelKind,
@@ -20,6 +21,7 @@ import type { RolePermissionSnapshotRecord } from '@zeffuro/fakegaming-common/ma
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -142,7 +144,7 @@ router.get('/', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, asy
  */
 router.get('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, async (req, res) => {
     const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
-    const live = await loadLiveSnapshotOrRespond(guildId, res);
+    const live = await loadLiveSnapshotOrRespond(req, guildId, res);
     if (!live) return;
 
     res.set('Cache-Control', 'private, no-store').json(live);
@@ -174,7 +176,7 @@ router.get('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin,
  */
 router.post('/live', jwtAuth, validateQuery(guildQuerySchema), requireGuildAdmin, async (req, res) => {
     const { guildId } = req.query as z.infer<typeof guildQuerySchema>;
-    const live = await loadLiveSnapshotOrRespond(guildId, res);
+    const live = await loadLiveSnapshotOrRespond(req, guildId, res);
     if (!live) return;
     const { snapshot, memberNames } = live;
     const createdById = (req as AuthenticatedRequest).user?.discordId ?? 'dashboard';
@@ -219,7 +221,7 @@ router.get('/:id', jwtAuth, validateParams(snapshotParamsSchema), validateQuery(
     const snapshot = await getConfigManager().rolePermissionSnapshotManager.getSnapshot(guildId, id);
 
     if (!snapshot) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Permission snapshot was not found.' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'permissionSnapshotNotFound');
     }
 
     return res.set('Cache-Control', 'private, no-store').json({ snapshot: serializeSnapshotRecord(snapshot) });
@@ -255,21 +257,16 @@ router.delete('/:id', jwtAuth, validateParams(snapshotParamsSchema), validateQue
     const { id } = req.params as unknown as z.infer<typeof snapshotParamsSchema>;
     const deleted = await getConfigManager().rolePermissionSnapshotManager.deleteSnapshot(guildId, id);
     if (!deleted) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Permission snapshot was not found.' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'permissionSnapshotNotFound');
     }
     return res.status(204).send();
 });
 
-async function loadLiveSnapshotOrRespond(guildId: string, res: Response): Promise<LiveSnapshotResult | null> {
+async function loadLiveSnapshotOrRespond(req: Request, guildId: string, res: Response): Promise<LiveSnapshotResult | null> {
     try {
         return await loadLiveSnapshot(guildId);
     } catch {
-        res.status(503).json({
-            error: {
-                code: 'DISCORD_PERMISSION_STATE_UNAVAILABLE',
-                message: 'Discord role or channel permissions could not be read right now.',
-            },
-        });
+        sendLocalizedError(req, res, 503, 'DISCORD_PERMISSION_STATE_UNAVAILABLE', 'permissionReadUnavailable');
         return null;
     }
 }

@@ -7,6 +7,10 @@ import { CSRF_HEADER_NAME, CSRF_COOKIE_NAME } from "@zeffuro/fakegaming-common/s
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
 import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
 import { ACCESS_TOKEN_COOKIE_NAME } from "@/lib/auth/sessionConstants";
+import {
+    getRequestDashboardLocaleFromRequest,
+    getRequestDashboardMessageFromRequest,
+} from "@/lib/i18n/server";
 
 const log = createSimpleLogger('dashboard:proxy');
 
@@ -74,6 +78,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const { proxy } = await context.params;
     const apiPath = '/' + proxy.join('/');
     const method = req.method;
+    const requestLocale = getRequestDashboardLocaleFromRequest(req);
 
     // Attach a request id for correlation and forward it to the API
     const incomingReqId = req.headers.get('x-request-id');
@@ -92,7 +97,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
     if (!jwt) {
         log.warn({ apiPath, reqId }, 'Request is unauthenticated (no JWT)');
-        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+        return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.notAuthenticated") }, { status: 401 });
     } else {
         log.debug({ apiPath, reqId, hasJwt: true }, 'Extracted JWT');
     }
@@ -101,14 +106,14 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     if (!authResult.success) {
         log.warn({ apiPath, reqId, status: authResult.statusCode ?? 401 }, 'Request has invalid dashboard session');
         return NextResponse.json(
-            { error: authResult.error ?? 'Not authenticated' },
+            { error: getRequestDashboardMessageFromRequest(req, "error.invalidSession") },
             { status: authResult.statusCode ?? 401 }
         );
     }
 
     if (!API_URL) {
         return new NextResponse(
-            JSON.stringify({ error: 'API_URL environment variable not set' }),
+            JSON.stringify({ error: getRequestDashboardMessageFromRequest(req, "error.serviceUnavailable") }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }
@@ -119,6 +124,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
     const headers: Record<string, string> = {
         'Content-Type': req.headers.get('content-type') || 'application/json',
         'x-request-id': reqId,
+        'Accept-Language': requestLocale,
     };
 
     if (jwt) {
@@ -185,7 +191,11 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
                 log.warn({ status, apiPath, method, ms, reqId, error: errorSummary }, 'API responded with error');
             }
 
-            return NextResponse.json(responseBody, { status });
+            const vary = response.headers.get('Vary');
+            return NextResponse.json(responseBody, {
+                status,
+                headers: vary ? { Vary: vary } : undefined,
+            });
         }
 
         log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');
@@ -205,6 +215,10 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         if (cacheControl) {
             responseHeaders['Cache-Control'] = cacheControl;
         }
+        const vary = response.headers.get('Vary');
+        if (vary) {
+            responseHeaders.Vary = vary;
+        }
 
         return new NextResponse(responseBody, {
             status: response.status,
@@ -214,7 +228,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         const ms = Date.now() - started;
         log.error({ apiPath, error, ms, reqId }, 'Proxy exception');
         return new NextResponse(
-            JSON.stringify({ error: 'Error connecting to API server' }),
+            JSON.stringify({ error: getRequestDashboardMessageFromRequest(req, "error.serviceUnavailable") }),
             { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
     }

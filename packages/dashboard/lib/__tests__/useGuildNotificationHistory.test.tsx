@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { useGuildNotificationHistory } from '@/components/hooks/useGuildNotificationHistory';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
 import { api } from '@/lib/api-client';
 import { createHookProbe1, mountWithSnapshots } from '../testing/reactTesting';
 
@@ -31,17 +32,21 @@ describe('useGuildNotificationHistory', () => {
         const loadSpy = vi.spyOn(api, 'getGuildNotifications').mockResolvedValue(response);
 
         const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, {
-                arg: {
-                    guildId: 'guild-1',
-                    options: {
-                        limit: 12,
-                        days: 30,
-                        provider: 'twitch',
+            React.createElement(
+                DashboardI18nProvider,
+                null,
+                React.createElement(HookProbe as any, {
+                    arg: {
+                        guildId: 'guild-1',
+                        options: {
+                            limit: 12,
+                            days: 30,
+                            provider: 'twitch',
+                        },
                     },
-                },
-                onSnapshot,
-            })
+                    onSnapshot,
+                }),
+            )
         );
 
         expect(loadSpy).toHaveBeenCalledWith('guild-1', {

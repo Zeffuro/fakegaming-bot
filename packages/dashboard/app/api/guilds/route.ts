@@ -12,6 +12,7 @@ import { authenticateUser, isDashboardAdmin } from "@/lib/auth/authUtils";
 import type { APIGuild } from "discord-api-types/v10";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
 import { getUserGuilds } from "@/lib/auth/discordGuildCache";
+import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 const log = createSimpleLogger("dashboard:guilds-api");
@@ -42,7 +43,7 @@ async function getBotGuilds(forceRefresh: boolean): Promise<APIGuild[] | null> {
 export async function GET(req: NextRequest) {
     const authResult = await authenticateUser(req);
     if (!authResult.success) {
-        return NextResponse.json({ error: authResult.error ?? "Not authenticated" }, { status: authResult.statusCode ?? 401 });
+        return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.invalidSession") }, { status: authResult.statusCode ?? 401 });
     }
     const user = authResult.user!;
     const forceRefresh = req.nextUrl.searchParams.get("refresh") === "1";
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
         const botGuilds = await getBotGuilds(forceRefresh);
 
         if (!botGuilds) {
-            return NextResponse.json({ error: "Failed to fetch bot guilds" }, { status: 500 });
+            return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.guildDataUnavailable") }, { status: 500 });
         }
 
         if (isDashboardAdmin(user.discordId)) {
@@ -78,8 +79,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             error: {
                 code: status === 401 ? "DISCORD_AUTHORIZATION_EXPIRED" : status === 503 ? "GUILD_ACCESS_UNAVAILABLE" : "GUILD_DATA_UNAVAILABLE",
-                message,
-                recovery: status === 503 ? "Refresh the dashboard session, then retry the request." : undefined,
+                message: status === 503
+                    ? getRequestDashboardMessageFromRequest(req, "error.guildAccessUnavailable")
+                    : getRequestDashboardMessageFromRequest(req, "error.guildDataUnavailable"),
+                recovery: status === 503
+                    ? getRequestDashboardMessageFromRequest(req, "error.guildAccessUnavailable")
+                    : undefined,
             },
         }, { status });
     }

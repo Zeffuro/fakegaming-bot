@@ -243,12 +243,12 @@ describe('/question', () => {
 
     it('prefers stored guild locale and does not look up a locale for direct messages', async () => {
         const getStoredGuildLocale = vi.fn(async () => 'en');
-        await expect(resolveQuestionOutputLocale({ guildId: 'guild-1', guildLocale: Locale.Dutch }, getStoredGuildLocale))
+        await expect(resolveQuestionOutputLocale({ guildId: 'guild-1', locale: Locale.Dutch }, getStoredGuildLocale))
             .resolves.toBe('en');
         expect(getStoredGuildLocale).toHaveBeenCalledWith('guild-1');
 
         getStoredGuildLocale.mockClear();
-        await expect(resolveQuestionOutputLocale({ guildId: null, guildLocale: Locale.Dutch }, getStoredGuildLocale))
+        await expect(resolveQuestionOutputLocale({ guildId: null, locale: Locale.Dutch }, getStoredGuildLocale))
             .resolves.toBe('nl');
         expect(getStoredGuildLocale).not.toHaveBeenCalled();
     });

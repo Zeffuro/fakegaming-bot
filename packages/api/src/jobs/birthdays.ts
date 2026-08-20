@@ -1,9 +1,11 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { computeExponentialBackoff, computeNextDailyRunDelaySeconds, formatDateKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
 import { sendChannelMessage } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
+import type { SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 
 interface BirthdayRecord {
     userId: string;
@@ -30,6 +32,15 @@ export function computeBirthdayRetryBackoffSeconds(attempt: number, base = 60, m
     return computeExponentialBackoff(attempt, base, max);
 }
 
+export function buildBirthdayContent(
+    userId: string,
+    age: number | null,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
+    const ageText = age === null ? '' : apiText(locale, 'birthdayAge', { age });
+    return `🎉 ${apiText(locale, 'birthday', { userId, age: ageText })}`;
+}
+
 async function processBirthdaysForDate(runDate: Date, force: boolean, log = getLogger({ name: 'api:jobs:birthdays' })): Promise<{ processed: number; failures: Array<{ eventId: string; userId: string; guildId: string; channelId: string }> }> {
     const cm = getConfigManager();
     const all = await cm.birthdayManager.getAllPlain() as unknown as BirthdayRecord[];
@@ -53,8 +64,8 @@ async function processBirthdaysForDate(runDate: Date, force: boolean, log = getL
             }
 
             const currentYear = runDate.getFullYear();
-            const ageText = b.year ? ` (turning ${currentYear - b.year})` : '';
-            const content = `🎉 Happy birthday <@${b.userId}>${ageText}!`;
+            const locale = await resolveGuildOutputLocale(b.guildId);
+            const content = buildBirthdayContent(b.userId, b.year ? currentYear - b.year : null, locale);
             const res = await sendChannelMessage(b.channelId, content);
             if (res && typeof (res as any).id === 'string') {
                 await cm.notificationsManager.setMessageMeta('birthday', eventId, { guildId: b.guildId, channelId: b.channelId, messageId: (res as any).id });
@@ -131,7 +142,8 @@ export async function registerBirthdaysJobs(queue: JobQueue, now: Date = new Dat
             const notif = await cm.notificationsManager.getOnePlain({ provider: 'birthday', eventId } as any);
             const channelId = (notif && (notif as any).channelId) ? String((notif as any).channelId) : '';
             // Build content (omit age on retry to avoid requiring year)
-            const content = `🎉 Happy birthday <@${userId}>!`;
+            const locale = await resolveGuildOutputLocale(guildId);
+            const content = buildBirthdayContent(userId, null, locale);
             let ok = false;
             if (channelId) {
                 const res = await sendChannelMessage(channelId, content);

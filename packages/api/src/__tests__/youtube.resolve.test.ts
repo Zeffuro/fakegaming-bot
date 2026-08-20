@@ -63,6 +63,21 @@ describe('YouTube resolve endpoint', () => {
             .query('identifier=%20&identifier=@ignored');
 
         expectBadRequest(res);
+        expect(res.body.error.details).toContainEqual({
+            path: 'identifier',
+            message: 'identifier is required',
+        });
+    });
+
+    it('localizes missing identifier validation', async () => {
+        const res = await client.get('/api/youtube/resolve').set('Accept-Language', 'nl');
+
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Validatie van de query is mislukt');
+        expect(res.body.error.details).toContainEqual({
+            path: 'identifier',
+            message: 'identifier is verplicht',
+        });
     });
 
     it('returns null when resolving handle without API key', async () => {

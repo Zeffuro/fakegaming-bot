@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -32,14 +33,16 @@ function toManagementRecord(record: SteamNewsSubscriptionRecord): SteamNewsManag
     };
 }
 
-function appLabel(record: SteamNewsManagementRecord): string {
-    return record.appName?.trim() || `Steam app ${record.steamAppId}`;
+function appLabel(record: SteamNewsManagementRecord, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    return record.appName?.trim() || `${resolveLocaleValue(locale, { en: 'Steam app', nl: 'Steam-app' })} ${record.steamAppId}`;
 }
 
 const { data, execute, testOnly } = createIntegrationManagementCommand<SteamNewsManagementRecord>({
     meta: META,
-    subjectSingular: 'Steam news subscription',
-    subjectPlural: 'Steam news subscriptions',
+    subjects: {
+        singular: { en: 'Steam news subscription', nl: 'Steamnieuwsabonnement' },
+        plural: { en: 'Steam news subscriptions', nl: 'Steamnieuwsabonnementen' },
+    },
     listRecords: async (guildId) => {
         const records = await getConfigManager().steamNewsSubscriptionManager.getManyPlain({ guildId } as never) as unknown as SteamNewsSubscriptionRecord[];
         return records.map(toManagementRecord);
@@ -54,8 +57,8 @@ const { data, execute, testOnly } = createIntegrationManagementCommand<SteamNews
     setPausedRecord: async (id, paused) => {
         await getConfigManager().steamNewsSubscriptionManager.setPaused(id, paused);
     },
-    formatRecord: (record) => `${inlineCode(String(record.id))} ${inlineCode(appLabel(record))} (${record.steamAppId}) -> <#${record.discordChannelId}>`,
-    describeRecord: (record) => `${inlineCode(appLabel(record))} in <#${record.discordChannelId}>`,
+    formatRecord: (record, locale = 'en') => `${inlineCode(String(record.id))} ${inlineCode(appLabel(record, locale))} (${record.steamAppId}) -> <#${record.discordChannelId}>`,
+    describeRecord: (record, locale = 'en') => `${inlineCode(appLabel(record, locale))} in <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'steamNewsSubscription.delete',
         targetType: 'steamNewsSubscription',

@@ -4,16 +4,22 @@ import { requireAdmin } from '../../../utils/permissions.js';
 import { subjectForUser } from '../shared/messages.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { removeBirthday as META } from '../commands.manifest.js';
+import { resolveInteractionOutputLocale } from '../../../core/localization.js';
+import { getBirthdayCopy } from '../copy/birthdayCopy.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addUserOption(option =>
         option.setName('user')
+            .setNameLocalization('nl', 'gebruiker')
             .setDescription('User to remove birthday for (admins only)')
+            .setDescriptionLocalization('nl', 'Gebruiker van wie je de verjaardag verwijdert (alleen beheerders)')
             .setRequired(false)
     )
 );
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
+    const copy = getBirthdayCopy(locale);
     const targetUser = interaction.options.getUser('user', false);
     const guildId = interaction.guildId!;
     let userId = interaction.user.id;
@@ -26,7 +32,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     await getConfigManager().birthdayManager.removeBirthday(userId, guildId);
 
     await interaction.reply({
-        content: `${subjectForUser(targetUser ? userId : null)} birthday has been removed.`,
+        content: copy.removed(subjectForUser(targetUser ? userId : null, locale)),
         flags: MessageFlags.Ephemeral
     });
 }

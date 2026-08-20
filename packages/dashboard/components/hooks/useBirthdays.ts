@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { BirthdayConfig } from "@zeffuro/fakegaming-common";
 import { api, type BirthdayUpdatePayload } from "@/lib/api-client";
 import { useResolvedUsers } from "@/components/hooks/useResolvedUsers";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 export type { ResolvedUser } from "@/components/hooks/useResolvedUsers";
 
 export interface BirthdayFormData {
@@ -17,9 +18,10 @@ interface UseBirthdaysOptions {
 }
 
 export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {}) {
+  const { t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [birthdays, setBirthdays] = useState<BirthdayConfig[]>([]);
-  const { userMap, resolveUsers } = useResolvedUsers(guildId, { warningMessage: "Failed to resolve birthday users" });
+  const { userMap, resolveUsers } = useResolvedUsers(guildId, { warningMessage: t("hooks.failedToResolveBirthdayUsers") });
   const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,15 +39,15 @@ export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {})
       setError(null);
       await resolveUsers(data.map(item => item.userId));
     } catch (err: any) {
-      setError(err?.message ?? "Failed to load birthdays");
+      setError(err?.message ?? t("hooks.failedToLoadBirthdays"));
     } finally {
       setLoading(false);
     }
-  }, [enabled, guildId, resolveUsers]);
+  }, [enabled, guildId, resolveUsers, t]);
 
   const addBirthday = useCallback(async (payload: BirthdayFormData) => {
     if (!payload.userId || !payload.channelId || !payload.day || !payload.month) {
-      setError("User, channel, day and month are required");
+      setError(t("hooks.birthdayRequired"));
       return false;
     }
 
@@ -55,12 +57,12 @@ export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {})
       await fetchBirthdays();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? "Failed to add birthday");
+      setError(err?.message ?? t("hooks.failedToAddBirthday"));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [fetchBirthdays, guildId]);
+  }, [fetchBirthdays, guildId, t]);
 
   const updateBirthday = useCallback(async (userId: string, payload: BirthdayUpdatePayload) => {
     try {
@@ -69,12 +71,12 @@ export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {})
       await fetchBirthdays();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? "Failed to update birthday");
+      setError(err?.message ?? t("hooks.failedToUpdateBirthday"));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [fetchBirthdays, guildId]);
+  }, [fetchBirthdays, guildId, t]);
 
   const deleteBirthday = useCallback(async (userId: string) => {
     try {
@@ -83,12 +85,12 @@ export function useBirthdays(guildId: string, options: UseBirthdaysOptions = {})
       await fetchBirthdays();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? "Failed to delete birthday");
+      setError(err?.message ?? t("hooks.failedToDeleteBirthday"));
       return false;
     } finally {
       setSaving(false);
     }
-  }, [fetchBirthdays, guildId]);
+  }, [fetchBirthdays, guildId, t]);
 
   useEffect(() => {
     if (!enabled) {

@@ -117,7 +117,7 @@ export function buildGuildNotificationAnalytics(input: {
 
     for (const record of healthRecords) {
         healthByProviderConfig.set(getProviderConfigKey(record.provider, record.configId), record);
-        getProviderAccumulator(providerStats, record.provider, getProviderLabel(record.provider));
+        getProviderAccumulator(providerStats, record.provider, record.provider.trim() || normalizeProviderKey(record.provider));
     }
 
     for (const config of configs) {
@@ -140,17 +140,17 @@ export function buildGuildNotificationAnalytics(input: {
             continue;
         }
 
-        const provider = getProviderAccumulator(providerStats, record.provider, getProviderLabel(record.provider));
+        const provider = getProviderAccumulator(providerStats, record.provider, record.provider.trim() || normalizeProviderKey(record.provider));
         addProviderHealth(provider, record);
     }
 
     for (const item of notificationProviders) {
-        const provider = getProviderAccumulator(providerStats, item.provider, getProviderLabel(item.provider));
+        const provider = getProviderAccumulator(providerStats, item.provider, item.provider.trim() || normalizeProviderKey(item.provider));
         provider.deliveries += Math.max(0, item.count);
     }
 
     for (const record of notificationRecords) {
-        const provider = getProviderAccumulator(providerStats, record.provider, getProviderLabel(record.provider));
+        const provider = getProviderAccumulator(providerStats, record.provider, record.provider.trim() || normalizeProviderKey(record.provider));
         provider.lastDeliveryAt = getLatestIsoTimestamp(provider.lastDeliveryAt, record.createdAt ?? null);
     }
 
@@ -362,19 +362,6 @@ function normalizeProviderKey(provider: string): string {
     if (normalized === "patchnote" || normalized === "patchnotes") return "patchnotes";
     if (normalized === "birthdays") return "birthday";
     return normalized || "unknown";
-}
-
-function getProviderLabel(provider: string): string {
-    const normalized = normalizeProviderKey(provider);
-    if (normalized === "twitch") return "Twitch";
-    if (normalized === "youtube") return "YouTube";
-    if (normalized === "steamnews") return "Steam News";
-    if (normalized === "tiktok") return "TikTok";
-    if (normalized === "bluesky") return "Bluesky";
-    if (normalized === "patchnotes") return "Patch Notes";
-    if (normalized === "anime") return "Anime";
-    if (normalized === "birthday") return "Birthdays";
-    return provider.trim() || "Unknown";
 }
 
 function startOfUtcDay(value: Date): Date {

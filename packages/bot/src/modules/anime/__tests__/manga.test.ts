@@ -7,6 +7,7 @@ import {
     setupCommandTest,
 } from '@zeffuro/fakegaming-common/testing';
 import type { AniListTitle } from '@zeffuro/fakegaming-common/anime';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 
 vi.mock('@zeffuro/fakegaming-common/anime', async (importOriginal) => {
     const actual = await importOriginal<typeof import('@zeffuro/fakegaming-common/anime')>();
@@ -47,11 +48,12 @@ async function getAnimeMocks() {
     } as const;
 }
 
-async function setupMangaCommand(title = 'solo leveling') {
+async function setupMangaCommand(title = 'solo leveling', locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE) {
     const upsertTitle = vi.fn().mockResolvedValue(undefined);
     const setup = await setupCommandTest('modules/anime/commands/manga.js', {
         interaction: { stringOptions: { title } },
         managerOverrides: {
+            guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue(locale) },
             animeManager: {
                 titles: { upsertTitle },
             },
@@ -112,6 +114,26 @@ describe('manga command', () => {
         expect(searchAniListMedia).toHaveBeenCalledWith('solo', 'MANGA');
         expect(interaction.respond).toHaveBeenCalledWith([
             expect.objectContaining({ name: 'Solo Leveling (South Korea - Manhwa - Finished)', value: 'anilist:30013' }),
+        ]);
+    });
+
+    it('uses stored Dutch locale for runtime output and autocomplete labels', async () => {
+        const { searchAniListManga, searchAniListMedia } = await getAnimeMocks();
+        searchAniListManga.mockResolvedValue([mangaResult]);
+        searchAniListMedia.mockResolvedValue([mangaResult]);
+        const { command, interaction } = await setupMangaCommand('solo leveling', 'nl');
+
+        await command.execute(interaction as ChatInputCommandInteraction);
+
+        expectReplyHasEmbed(interaction, { titleEquals: 'Manga zoeken: solo leveling', descriptionContains: 'Zuid-Korea' });
+
+        const autocompleteInteraction = createMockAutocompleteInteraction({
+            focused: 'solo',
+            guildId: '135381928284343204',
+        });
+        await command.autocomplete(autocompleteInteraction as AutocompleteInteraction);
+        expect(autocompleteInteraction.respond).toHaveBeenCalledWith([
+            expect.objectContaining({ name: 'Solo Leveling (Zuid-Korea - Manhwa - Afgerond)' }),
         ]);
     });
 });

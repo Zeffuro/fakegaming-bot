@@ -95,4 +95,19 @@ describe('buildAdminOperationsHealth', () => {
         ]);
         expect(health.issues.find(issue => issue.label === 'Failed job runs')?.href).toBe('/dashboard/admin/jobs?result=failed');
     });
+
+    it('localizes presentation copy while preserving issue identifiers and routes', () => {
+        const health = buildAdminOperationsHealth({
+            integrationSummary: healthySummary(),
+            jobs: [{ failedRecentRuns: 0 }],
+            heartbeat: { receivedAt: '2026-06-22T11:58:30.000Z' },
+            now,
+        }, 'nl');
+
+        expect(health).toMatchObject({
+            status: 'healthy',
+            title: 'Gezond',
+            description: 'Er zijn momenteel geen problemen met integraties, taken of de heartbeat.',
+        });
+    });
 });

@@ -1,4 +1,4 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { QuoteOfDayConfigRecord } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
@@ -12,6 +12,7 @@ import {
 } from '@zeffuro/fakegaming-common/utils';
 import { sendChannelMessage } from '../utils/discord.js';
 import { recordJobRun } from './status.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 interface QuoteOfDayJobResult {
     processed: number;
@@ -36,9 +37,12 @@ export function computeNextQuoteOfDayRunDelaySeconds(now: Date = new Date()): nu
     return Math.max(1, Math.floor((next.getTime() - now.getTime()) / 1000));
 }
 
-export function buildQuoteOfDayContent(input: { dateKey: string; quote: QuoteOfDayCandidate }): string {
+export function buildQuoteOfDayContent(
+    input: { dateKey: string; quote: QuoteOfDayCandidate },
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
     return [
-        `Quote of the day (${input.dateKey})`,
+        apiText(locale, 'quoteOfDay', { dateKey: input.dateKey }),
         `"${input.quote.quote}"`,
         `- <@${input.quote.authorId}>`,
     ].join('\n');
@@ -78,10 +82,11 @@ async function processQuoteOfDayForDate(date: Date, force: boolean, log = getLog
                 }
             }
 
+            const locale = await resolveGuildOutputLocale(config.guildId);
             const response = await sendChannelMessage(config.channelId, buildQuoteOfDayContent({
                 dateKey: selection.dateKey,
                 quote: selection.quote,
-            }));
+            }, locale));
             if (response && typeof (response as { id?: unknown }).id === 'string') {
                 await cm.notificationsManager.setMessageMeta(quoteOfDayProvider, eventId, {
                     guildId: config.guildId,
@@ -222,10 +227,11 @@ async function retryQuoteOfDayEvent(eventId: string, attempt: number, queue: Job
     const selection = selectQuoteOfDay(quotes, parsed.guildId, new Date(`${parsed.dateKey}T00:00:00.000Z`));
     if (!selection.quote) return false;
 
+    const locale = await resolveGuildOutputLocale(parsed.guildId);
     const response = await sendChannelMessage(channelId, buildQuoteOfDayContent({
         dateKey: selection.dateKey,
         quote: selection.quote,
-    }));
+    }, locale));
     if (response && typeof (response as { id?: unknown }).id === 'string') {
         await cm.notificationsManager.setMessageMeta(quoteOfDayProvider, eventId, {
             guildId: parsed.guildId,

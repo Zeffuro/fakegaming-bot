@@ -1,5 +1,5 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { defaultCacheManager } from '@zeffuro/fakegaming-common';
 import { youtubeChannelRequestSchema, youtubeCreateRequestSchema, youtubeUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -22,6 +22,9 @@ import {
     updatedChannelAuditMetadata,
 } from '../utils/guildScopedRouteHelpers.js';
 import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
+import { API_VALIDATION_ISSUE, validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 // Schemas
 const metadataQuerySchema = z.object({
@@ -54,7 +57,7 @@ const resolveQuerySchema = z.object({
     const raw = q.identifier ?? q.id ?? q.channelId ?? q.handle ?? q.username;
     if (Array.isArray(raw)) return (raw[0]?.trim().length ?? 0) > 0;
     return typeof raw === 'string' && raw.trim().length > 0;
-}, { message: 'identifier is required', path: ['identifier'] }).transform((q) => {
+}, { message: API_VALIDATION_ISSUE.identifierRequired, path: ['identifier'] }).transform((q) => {
     const raw = q.identifier ?? q.id ?? q.channelId ?? q.handle ?? q.username;
     const v = Array.isArray(raw) ? raw[0] : raw;
     return { identifier: (v ?? '').trim() };
@@ -280,7 +283,7 @@ router.get('/channel', jwtAuth, validateQuery(youtubeChannelRequestSchema), asyn
     const access = await checkUserGuildAccess(req, res, guildId);
     if (!access.authorized) return;
     const config = await getConfigManager().youtubeManager.getVideoChannel({ youtubeChannelId, discordChannelId, guildId });
-    if (!config) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'YouTube video config not found' } });
+    if (!config) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'youtubeVideoConfigNotFound');
     res.json(config);
 });
 
@@ -310,7 +313,7 @@ router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
     const manager = getConfigManager().youtubeManager;
     await sendGuildScopedRecordById(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
-        notFoundMessage: 'YouTube video config not found',
+        notFoundMessage: apiText(requestLocale(req), 'youtubeVideoConfigNotFound'),
     });
 });
 
@@ -523,7 +526,7 @@ router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(y
     await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
         findByPk: id => manager.findByPkPlain(id),
         update: (id, data) => manager.updatePlain(data, { id }),
-        notFoundMessage: 'YouTube video config not found',
+        notFoundMessage: apiText(requestLocale(req), 'youtubeVideoConfigNotFound'),
         auditAction: 'youtube.update',
         auditTargetType: 'youtubeConfig',
         auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous, {
@@ -568,7 +571,7 @@ router.delete('/:id', jwtAuth, validateParams(numericIdParamSchema), async (req,
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'YouTube video config not found',
+        notFoundMessage: apiText(requestLocale(req), 'youtubeVideoConfigNotFound'),
         auditAction: 'youtube.delete',
         auditTargetType: 'youtubeConfig',
         auditMetadata: video => channelAuditMetadata(video, {

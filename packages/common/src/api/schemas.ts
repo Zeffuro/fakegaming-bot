@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SUPPORTED_OUTPUT_LOCALES } from '../utils/outputLocale.js';
 import { parseHHmmToMinutes } from '../utils/time.js';
 
 const nonEmptyString = z.string().min(1);
@@ -110,12 +111,12 @@ export const disabledModuleCreateRequestSchema = z.object({
 }).strict();
 
 export const guildLocaleConfigUpdateRequestSchema = z.object({
-    outputLocale: z.enum(['en', 'nl']),
+    outputLocale: z.enum(SUPPORTED_OUTPUT_LOCALES),
 }).strict();
 
 export const guildLocaleConfigResponseSchema = z.object({
     guildId: nonEmptyString,
-    outputLocale: z.enum(['en', 'nl']),
+    outputLocale: z.enum(SUPPORTED_OUTPUT_LOCALES),
 }).strict();
 
 export const discordResolveUsersRequestSchema = z.object({
@@ -257,6 +258,7 @@ export const userCreateRequestSchema = z.object({
 export const userUpdateRequestSchema = z.object({
     timezone: nonEmptyString.optional(),
     defaultReminderTimeSpan: nonEmptyString.optional(),
+    preferredLocale: z.enum(SUPPORTED_OUTPUT_LOCALES).nullable().optional(),
 }).strict().refine(hasAtLeastOneField, {
     message: 'At least one field must be provided',
 });

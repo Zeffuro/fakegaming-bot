@@ -5,15 +5,29 @@ import { Alert, Box, Button, Chip, Stack, TextField, Typography } from "@mui/mat
 import { PlaylistAddCheck } from "@mui/icons-material";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import {
     api,
     type SetupTemplateChannelSlotKey,
     type SetupTemplateDefinition,
     type SetupTemplateInputGroupKey,
     type SetupTemplatePlan,
-    type SetupTemplateRequest,
-    type SetupTemplateSteamAppInput,
 } from "@/lib/api-client";
+import {
+    getSetupTemplateChannelSlotDescriptionKey,
+    getSetupTemplateChannelSlotLabelKey,
+    getSetupTemplateDescriptionKey,
+    getSetupTemplateFindingIdKey,
+    getSetupTemplateFindingKey,
+    getSetupTemplateInputGroupDescriptionKey,
+    getSetupTemplateInputGroupLabelKey,
+    getSetupTemplateInputGroupPlaceholderKey,
+    getSetupTemplateNameKey,
+    getSetupTemplateProviderKey,
+    getSetupTemplateWarningIdKey,
+    getSetupTemplateWarningKey,
+} from "@/lib/setupTemplateCopy";
+import { buildSetupTemplateRequest, getSetupTemplateValidationErrorKey } from "@/lib/setupTemplateRequest";
 
 interface SetupTemplatesPanelProps {
     guildId: string;
@@ -21,6 +35,7 @@ interface SetupTemplatesPanelProps {
 }
 
 export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelProps) {
+    const { t, formatNumber } = useDashboardI18n();
     const [definitions, setDefinitions] = useState<SetupTemplateDefinition[]>([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>("gaming-community");
     const [channelValues, setChannelValues] = useState<Record<string, string>>({});
@@ -49,7 +64,7 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                 ));
             } catch (err) {
                 if (!active) return;
-                setError(err instanceof Error ? err.message : "Failed to load setup templates.");
+                setError(err instanceof Error ? err.message : t("setupTemplates.error.load"));
             }
         })();
 
@@ -69,7 +84,8 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
             setPlan(preview);
         } catch (err) {
             setPlan(null);
-            setError(err instanceof Error ? err.message : "Failed to preview setup template.");
+            const validationErrorKey = getSetupTemplateValidationErrorKey(err);
+            setError(validationErrorKey ? t(validationErrorKey) : err instanceof Error ? err.message : t("setupTemplates.error.preview"));
         } finally {
             setLoading(false);
         }
@@ -84,10 +100,15 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
             setResult(null);
             const applyResult = await api.applySetupTemplate(selectedTemplate.id, buildSetupTemplateRequest(guildId, channelValues, inputValues));
             await onApplied();
-            setResult(`Applied ${applyResult.applied} ${applyResult.applied === 1 ? "route" : "routes"} from ${applyResult.template.name}.`);
+            setResult(t("setupTemplates.result.applied", {
+                count: formatNumber(applyResult.applied),
+                routes: applyResult.applied === 1 ? t("setupTemplates.route") : t("setupTemplates.routes"),
+                template: getLocalizedTemplateName(t, applyResult.template),
+            }));
             setPlan(applyResult);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to apply setup template.");
+            const validationErrorKey = getSetupTemplateValidationErrorKey(err);
+            setError(validationErrorKey ? t(validationErrorKey) : err instanceof Error ? err.message : t("setupTemplates.error.apply"));
         } finally {
             setApplying(false);
         }
@@ -116,17 +137,17 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", color: "grey.50" }}>
                             <PlaylistAddCheck />
                             <Typography variant="h6" sx={{ fontWeight: 850 }}>
-                                Setup Templates
+                                {t("setupTemplates.title")}
                             </Typography>
                         </Stack>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
-                            Presets create missing notification routes after a server-side preview.
+                            {t("setupTemplates.description")}
                         </Typography>
                     </Box>
                     {plan && (
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
-                            <Chip label={`${plan.totals.ready} ready`} color={plan.totals.ready > 0 ? "success" : "default"} variant="outlined" />
-                            <Chip label={`${plan.skipped.length} skipped`} color={plan.skipped.length > 0 ? "warning" : "default"} variant="outlined" />
+                            <Chip label={t("setupTemplates.readyCount", { count: formatNumber(plan.totals.ready) })} color={plan.totals.ready > 0 ? "success" : "default"} variant="outlined" />
+                            <Chip label={t("setupTemplates.skippedCount", { count: formatNumber(plan.skipped.length) })} color={plan.skipped.length > 0 ? "warning" : "default"} variant="outlined" />
                         </Stack>
                     )}
                 </Box>
@@ -144,7 +165,7 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                                 ? primaryActionButtonSx(dashboardAccents.settings)
                                 : ghostActionButtonSx(dashboardAccents.settings)}
                         >
-                            {template.name}
+                            {getLocalizedTemplateName(t, template)}
                         </Button>
                     ))}
                 </Stack>
@@ -152,19 +173,19 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                 {selectedTemplate && (
                     <>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
-                            {selectedTemplate.description}
+                            {getLocalizedTemplateDescription(t, selectedTemplate)}
                         </Typography>
 
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
                             {selectedTemplate.channelSlots.map((slot) => (
                                 <TextField
                                     key={slot.key}
-                                    label={slot.label}
+                                    label={getLocalizedChannelSlotLabel(t, slot.key, slot.label)}
                                     value={channelValues[slot.key] ?? ""}
                                     onChange={(event) => handleChannelChange(slot.key, event.target.value)}
                                     size="small"
                                     fullWidth
-                                    helperText={slot.description}
+                                    helperText={getLocalizedChannelSlotDescription(t, slot.key, slot.description)}
                                     sx={dashboardFieldSx(dashboardAccents.settings)}
                                 />
                             ))}
@@ -174,15 +195,15 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                             {selectedTemplate.inputGroups.map((group) => (
                                 <TextField
                                     key={group.key}
-                                    label={group.label}
+                                    label={getLocalizedInputGroupLabel(t, group.key, group.label)}
                                     value={inputValues[group.key] ?? ""}
                                     onChange={(event) => handleInputChange(group.key, event.target.value)}
                                     minRows={3}
                                     maxRows={6}
                                     multiline
                                     fullWidth
-                                    helperText={group.description}
-                                    placeholder={group.placeholder}
+                                    helperText={getLocalizedInputGroupDescription(t, group.key, group.description)}
+                                    placeholder={getLocalizedInputGroupPlaceholder(t, group.key, group.placeholder)}
                                     sx={dashboardFieldSx(dashboardAccents.settings)}
                                 />
                             ))}
@@ -210,7 +231,7 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                         disabled={!selectedTemplate || loading || applying}
                         sx={ghostActionButtonSx(dashboardAccents.settings)}
                     >
-                        {loading ? "Previewing..." : "Preview Template"}
+                        {loading ? t("setupTemplates.previewing") : t("setupTemplates.preview")}
                     </Button>
                     <Button
                         variant="contained"
@@ -220,21 +241,21 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
                         disabled={!plan || plan.ready.length === 0 || applying || loading || Boolean(result)}
                         sx={primaryActionButtonSx(dashboardAccents.settings)}
                     >
-                        {applying ? "Applying..." : `Apply Ready (${plan?.ready.length ?? 0})`}
+                        {applying ? t("setupTemplates.applying") : t("setupTemplates.applyReady", { count: formatNumber(plan?.ready.length ?? 0) })}
                     </Button>
                 </Stack>
 
                 {plan && (
                     <>
-                        {plan.warnings.map((warning) => (
-                            <Alert key={warning} severity="warning" sx={{ bgcolor: "rgba(255,179,71,0.12)", color: "grey.50", border: "1px solid rgba(255,179,71,0.24)" }}>
-                                {warning}
+                        {plan.warnings.map((warning, index) => (
+                            <Alert key={plan.warningIds?.[index] ?? `${index}:${warning}`} severity="warning" sx={{ bgcolor: "rgba(255,179,71,0.12)", color: "grey.50", border: "1px solid rgba(255,179,71,0.24)" }}>
+                                {getLocalizedWarning(t, warning, plan.warningIds?.[index])}
                             </Alert>
                         ))}
 
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2 }}>
-                            <TemplateItemSection title="Ready To Apply" items={plan.ready} emptyText="No missing supported routes were found." />
-                            <TemplateSkippedSection items={plan.skipped} />
+                            <TemplateItemSection title={t("setupTemplates.readyToApply")} items={plan.ready} emptyText={t("setupTemplates.noReadyRoutes")} t={t} />
+                            <TemplateSkippedSection items={plan.skipped} t={t} />
                         </Box>
                     </>
                 )}
@@ -243,7 +264,9 @@ export function SetupTemplatesPanel({ guildId, onApplied }: SetupTemplatesPanelP
     );
 }
 
-function TemplateItemSection({ title, items, emptyText }: { title: string; items: SetupTemplatePlan["ready"]; emptyText: string }) {
+type DashboardTranslator = ReturnType<typeof useDashboardI18n>["t"];
+
+function TemplateItemSection({ title, items, emptyText, t }: { title: string; items: SetupTemplatePlan["ready"]; emptyText: string; t: DashboardTranslator }) {
     return (
         <Box>
             <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
@@ -256,7 +279,10 @@ function TemplateItemSection({ title, items, emptyText }: { title: string; items
             ) : (
                 <Stack spacing={0.75}>
                     {items.slice(0, 8).map((item) => (
-                        <PreviewLine key={item.key} primary={`${item.record.provider}: ${item.record.source}`} secondary={item.record.channelId} />
+                        <PreviewLine key={item.key} primary={t("setupTemplates.routeProviderSource", {
+                            provider: getLocalizedProvider(t, item.record.provider),
+                            source: getLocalizedSource(t, item.record),
+                        })} secondary={t("setupTemplates.channel", { channel: item.record.channelId })} />
                     ))}
                 </Stack>
             )}
@@ -264,23 +290,29 @@ function TemplateItemSection({ title, items, emptyText }: { title: string; items
     );
 }
 
-function TemplateSkippedSection({ items }: { items: SetupTemplatePlan["skipped"] }) {
+function TemplateSkippedSection({ items, t }: { items: SetupTemplatePlan["skipped"]; t: DashboardTranslator }) {
     return (
         <Box>
             <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
-                Skipped
+                {t("setupTemplates.skipped")}
             </Typography>
             {items.length === 0 ? (
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
-                    No skipped routes.
+                    {t("setupTemplates.noSkippedRoutes")}
                 </Typography>
             ) : (
                 <Stack spacing={0.75}>
                     {items.slice(0, 8).map((item) => (
                         <PreviewLine
                             key={`${item.reason}:${item.key}`}
-                            primary={`${item.record.provider}: ${item.record.source}`}
-                            secondary={`${item.message} Channel: ${item.record.channelId}`}
+                            primary={t("setupTemplates.routeProviderSource", {
+                                provider: getLocalizedProvider(t, item.record.provider),
+                                source: getLocalizedSource(t, item.record),
+                            })}
+                            secondary={t("setupTemplates.skippedRouteDetails", {
+                                finding: getLocalizedFinding(t, item.message, item.findingId),
+                                channel: item.record.channelId,
+                            })}
                         />
                     ))}
                 </Stack>
@@ -302,65 +334,61 @@ function PreviewLine({ primary, secondary }: { primary: string; secondary: strin
     );
 }
 
-function buildSetupTemplateRequest(guildId: string, channelValues: Record<string, string>, inputValues: Record<string, string>): SetupTemplateRequest {
-    const inputs: NonNullable<SetupTemplateRequest["inputs"]> = {};
-    const twitchUsernames = parseDelimitedText(inputValues.twitchUsernames);
-    const youtubeChannelIds = parseDelimitedText(inputValues.youtubeChannelIds);
-    const patchGames = parseDelimitedText(inputValues.patchGames);
-    const animeIds = parsePositiveIntegerList(inputValues.animeIds, "AniList IDs");
-    const steamApps = parseSteamApps(inputValues.steamApps);
-
-    if (twitchUsernames.length > 0) inputs.twitchUsernames = twitchUsernames;
-    if (youtubeChannelIds.length > 0) inputs.youtubeChannelIds = youtubeChannelIds;
-    if (patchGames.length > 0) inputs.patchGames = patchGames;
-    if (animeIds.length > 0) inputs.animeIds = animeIds;
-    if (steamApps.length > 0) inputs.steamApps = steamApps;
-
-    return {
-        guildId,
-        channels: normalizeTemplateChannels(channelValues),
-        inputs,
-    };
+function getLocalizedTemplateName(t: DashboardTranslator, template: SetupTemplateDefinition): string {
+    const key = getSetupTemplateNameKey(template.id);
+    return key ? t(key) : template.name;
 }
 
-function normalizeTemplateChannels(values: Record<string, string>): SetupTemplateRequest["channels"] {
-    const keys: SetupTemplateChannelSlotKey[] = ["live", "videos", "patches", "anime", "steamNews"];
-    return keys.reduce<SetupTemplateRequest["channels"]>((channels, key) => {
-        const value = values[key]?.trim();
-        if (value) channels[key] = value;
-        return channels;
-    }, {});
+function getLocalizedTemplateDescription(t: DashboardTranslator, template: SetupTemplateDefinition): string {
+    const key = getSetupTemplateDescriptionKey(template.id);
+    return key ? t(key) : template.description;
 }
 
-function parseDelimitedText(value: string | undefined): string[] {
-    return (value ?? "")
-        .split(/[\n,]+/)
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+function getLocalizedChannelSlotLabel(t: DashboardTranslator, slotKey: string, fallback: string): string {
+    const key = getSetupTemplateChannelSlotLabelKey(slotKey);
+    return key ? t(key) : fallback;
 }
 
-function parsePositiveIntegerList(value: string | undefined, label: string): number[] {
-    return parseDelimitedText(value).map((item) => {
-        const parsed = Number(item);
-        if (!Number.isInteger(parsed) || parsed <= 0) {
-            throw new Error(`${label} must contain positive whole numbers.`);
-        }
-        return parsed;
-    });
+function getLocalizedChannelSlotDescription(t: DashboardTranslator, slotKey: string, fallback: string): string {
+    const key = getSetupTemplateChannelSlotDescriptionKey(slotKey);
+    return key ? t(key) : fallback;
 }
 
-function parseSteamApps(value: string | undefined): SetupTemplateSteamAppInput[] {
-    return parseDelimitedText(value).map((item) => {
-        const [rawAppId, ...rawNameParts] = item.split(":");
-        const appId = Number(rawAppId?.trim());
-        if (!Number.isInteger(appId) || appId <= 0) {
-            throw new Error("Steam apps must start with a positive app ID.");
-        }
+function getLocalizedInputGroupLabel(t: DashboardTranslator, groupKey: string, fallback: string): string {
+    const key = getSetupTemplateInputGroupLabelKey(groupKey);
+    return key ? t(key) : fallback;
+}
 
-        const name = rawNameParts.join(":").trim();
-        return {
-            appId,
-            ...(name ? { name } : {}),
-        };
-    });
+function getLocalizedInputGroupDescription(t: DashboardTranslator, groupKey: string, fallback: string): string {
+    const key = getSetupTemplateInputGroupDescriptionKey(groupKey);
+    return key ? t(key) : fallback;
+}
+
+function getLocalizedInputGroupPlaceholder(t: DashboardTranslator, groupKey: string, fallback: string): string {
+    const key = getSetupTemplateInputGroupPlaceholderKey(groupKey);
+    return key ? t(key) : fallback;
+}
+
+function getLocalizedProvider(t: DashboardTranslator, provider: string): string {
+    const key = getSetupTemplateProviderKey(provider);
+    return key ? t(key) : provider;
+}
+
+function getLocalizedSource(t: DashboardTranslator, record: SetupTemplatePlan["ready"][number]["record"]): string {
+    if (record.provider === "Steam News" && record.sourceId && record.source === record.sourceId) {
+        return t("setupTemplates.steamAppFallback", { appId: record.sourceId });
+    }
+    return record.source;
+}
+
+function getLocalizedFinding(t: DashboardTranslator, finding: string, findingId?: string): string {
+    const key = (findingId ? getSetupTemplateFindingIdKey(findingId) : null)
+        ?? getSetupTemplateFindingKey(finding);
+    return key ? t(key) : finding;
+}
+
+function getLocalizedWarning(t: DashboardTranslator, warning: string, warningId?: string): string {
+    const key = (warningId ? getSetupTemplateWarningIdKey(warningId) : null)
+        ?? getSetupTemplateWarningKey(warning);
+    return key ? t(key) : warning;
 }

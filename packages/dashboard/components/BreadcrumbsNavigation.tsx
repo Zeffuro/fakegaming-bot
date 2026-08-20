@@ -9,6 +9,8 @@ import {
 import { Home } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
+import { useDashboardI18n } from "./i18n/DashboardI18nProvider";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
 
 interface BreadcrumbItem {
   label: string;
@@ -22,13 +24,31 @@ interface BreadcrumbsNavigationProps {
   currentTrail?: BreadcrumbItem[] | null;
 }
 
+const moduleLabelKeys: Record<string, DashboardMessageKey> = {
+  settings: "common.settings",
+  commands: "commands.title",
+  analytics: "breadcrumb.analytics",
+  quotes: "breadcrumb.quotes",
+  permissions: "permissions.title",
+  notifications: "breadcrumb.notifications",
+  twitch: "featureNav.twitch",
+  tiktok: "featureNav.tiktok",
+  bluesky: "featureNav.bluesky",
+  youtube: "featureNav.youtube",
+  "steam news": "featureNav.steamNews",
+  "patch notes": "featureNav.patchNotes",
+  anime: "featureNav.anime",
+  birthdays: "featureNav.birthdays",
+};
+
 export default function BreadcrumbsNavigation({ guild, currentModule, currentTrail }: BreadcrumbsNavigationProps) {
   const router = useRouter();
+  const { t } = useDashboardI18n();
 
   const getBreadcrumbs = () => {
     const breadcrumbs: BreadcrumbItem[] = [
       {
-        label: "Dashboard",
+        label: t("nav.dashboard"),
         href: "/dashboard",
         icon: <Home sx={{ fontSize: 16 }} />
       }
@@ -55,8 +75,11 @@ export default function BreadcrumbsNavigation({ guild, currentModule, currentTra
           breadcrumbs.push({ label: item.label, href: item.href ?? null, icon: item.icon });
         }
       } else if (currentModule) {
+        const normalizedModule = currentModule.trim().toLowerCase();
         breadcrumbs.push({
-          label: currentModule.charAt(0).toUpperCase() + currentModule.slice(1),
+          label: moduleLabelKeys[normalizedModule]
+            ? t(moduleLabelKeys[normalizedModule])
+            : currentModule.charAt(0).toUpperCase() + currentModule.slice(1),
           href: null
         });
       }

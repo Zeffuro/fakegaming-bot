@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     getRemindersByUser: vi.fn(),
     getAnimeSubscriptions: vi.fn(),
     getAnimeTitle: vi.fn(),
+    getPreferredLocale: vi.fn(),
     sendDirectMessage: vi.fn(),
     recordJobRun: vi.fn(),
 }));
@@ -29,6 +30,9 @@ vi.mock('@zeffuro/fakegaming-common/managers', () => ({
             titles: {
                 getOnePlain: mocks.getAnimeTitle,
             },
+        },
+        userManager: {
+            getPreferredLocale: mocks.getPreferredLocale,
         },
     }),
 }));
@@ -52,6 +56,7 @@ describe('user digest jobs', () => {
         vi.clearAllMocks();
         mocks.getAnimeSubscriptions.mockResolvedValue([]);
         mocks.getAnimeTitle.mockResolvedValue(null);
+        mocks.getPreferredLocale.mockResolvedValue('en');
     });
 
     afterEach(() => {
@@ -197,6 +202,35 @@ describe('user digest jobs', () => {
             lastSentAt: now,
             nextRunAt: expect.any(Number),
         }));
+    });
+
+    it('uses the stored Dutch preference without changing user or provider content', async () => {
+        mocks.getPreferredLocale.mockResolvedValue('nl');
+        mocks.listDue.mockResolvedValue([
+            {
+                id: 'digest-nl',
+                discordId: 'user-nl',
+                frequency: 'daily',
+                timezone: 'Europe/Amsterdam',
+                runAt: '09:00',
+                categories: '["reminders"]',
+                nextRunAt: now,
+            },
+        ]);
+        mocks.getRemindersByUser.mockResolvedValue([
+            { id: 'reminder-nl', userId: 'user-nl', message: 'Bel Jeffrey', timestamp: now + 60_000 },
+        ]);
+        mocks.sendDirectMessage.mockResolvedValue({ id: 'discord-message' });
+
+        const queue = new TestJobQueue();
+        await registerUserDigestJobs(queue as never, new Date(now));
+        await runJobHandler(queue, 'user-digests:run', {});
+
+        expect(mocks.sendDirectMessage).toHaveBeenCalledWith(
+            'user-nl',
+            expect.stringContaining('Dagelijks herinneringenoverzicht'),
+        );
+        expect(mocks.sendDirectMessage).toHaveBeenCalledWith('user-nl', expect.stringContaining('Bel Jeffrey'));
     });
 
     it('formats reminder digest content with a bounded list', () => {

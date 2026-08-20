@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import React, { act } from 'react';
 import { usePatchSubscriptions } from '@/components/hooks/usePatchSubscriptions';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
 import { api } from '@/lib/api-client';
 import { createHookProbe1, mountWithSnapshots } from '../testing/reactTesting';
 
@@ -17,7 +18,7 @@ describe('usePatchSubscriptions', () => {
         const pauseSpy = vi.spyOn(api, 'setPatchSubscriptionPaused').mockResolvedValue({} as any);
 
         const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot })
+            React.createElement(DashboardI18nProvider, null, React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot }))
         );
 
         let result = false;

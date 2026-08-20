@@ -1,5 +1,5 @@
 import Parser from 'rss-parser';
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { fetchYouTubeChannelPageLatestVideo, getHttpStatusFromError } from '../utils/youtubePublic.js';
@@ -9,6 +9,7 @@ import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 interface YoutubeChannelConfigPlain {
     id?: number | string;
@@ -23,6 +24,11 @@ interface YoutubeChannelConfigPlain {
     lastNotifiedAt?: string | number | Date | null;
     paused?: boolean | null;
 }
+
+const DURATION_HOUR_UNITS = {
+    en: 'h',
+    nl: 'u',
+} as const satisfies OutputLocaleValues<string>;
 
 interface YoutubeFeedItem {
     ['yt:videoId']?: string;
@@ -45,6 +51,7 @@ interface YoutubeSendPlan {
     newVideos: YoutubeFeedItem[];
     sendVideos: YoutubeFeedItem[];
     now: Date;
+    locale: SupportedOutputLocale;
 }
 
 const parser = new Parser({
@@ -82,7 +89,7 @@ function getYoutubeThumbnailUrl(item: YoutubeFeedItem): string | null {
     return null;
 }
 
-function formatYoutubeDuration(iso8601: string): string | null {
+function formatYoutubeDuration(iso8601: string, locale: SupportedOutputLocale): string | null {
     const m = /^P(?:([0-9]+)D)?T?(?:([0-9]+)H)?(?:([0-9]+)M)?(?:([0-9]+)S)?$/i.exec(iso8601);
     if (!m) return null;
     const days = m[1] ? Number(m[1]) : 0;
@@ -91,7 +98,7 @@ function formatYoutubeDuration(iso8601: string): string | null {
     const seconds = m[4] ? Number(m[4]) : 0;
     const parts: string[] = [];
     if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
+    if (hours > 0) parts.push(`${hours}${resolveLocaleValue(locale, DURATION_HOUR_UNITS)}`);
     if (minutes > 0) parts.push(`${minutes}m`);
     if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
     return parts.join(' ');
@@ -157,11 +164,17 @@ async function fetchYoutubeVideoDetailsBatch(videoIds: string[], log = getLogger
     return out;
 }
 
-function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, details?: YoutubeVideoDetails | null, customMessage?: string | null): { content: string; payload: Record<string, unknown> } {
+export function buildYoutubeEmbedPayload(
+    item: YoutubeFeedItem,
+    channelId: string,
+    details?: YoutubeVideoDetails | null,
+    customMessage?: string | null,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): { content: string; payload: Record<string, unknown> } {
     const videoId = item['yt:videoId'] ?? '';
     const url = item.link ?? (videoId ? `https://www.youtube.com/watch?v=${videoId}` : 'https://youtube.com');
     const urlSafe = `<${url}>`;
-    const author = item.author ?? 'Unknown';
+    const author = item.author ?? apiText(locale, 'youtubeUnknownAuthor');
     const title = item.title ?? null;
     const publishedIso = item.published ? new Date(item.published).toISOString() : new Date().toISOString();
     const thumb = getYoutubeThumbnailUrl(item);
@@ -176,11 +189,16 @@ function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, deta
     if (thumb) (embed as any).image = { url: thumb };
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
     if (details?.duration) {
-        const pretty = formatYoutubeDuration(details.duration);
-        if (pretty) fields.push({ name: 'Duration', value: pretty, inline: true });
+        const pretty = formatYoutubeDuration(details.duration, locale);
+        if (pretty) fields.push({ name: apiText(locale, 'youtubeDuration'), value: pretty, inline: true });
     }
     if (details?.viewCount) {
-        fields.push({ name: 'Views', value: details.viewCount, inline: true });
+        const count = Number(details.viewCount);
+        fields.push({
+            name: apiText(locale, 'youtubeViews'),
+            value: Number.isFinite(count) ? new Intl.NumberFormat(locale).format(count) : details.viewCount,
+            inline: true,
+        });
     }
     if (fields.length > 0) (embed as any).fields = fields;
 
@@ -188,13 +206,15 @@ function buildYoutubeEmbedPayload(item: YoutubeFeedItem, channelId: string, deta
         title: item.title ?? '',
         channel: author,
         url: urlSafe,
-        duration: details?.duration ? (formatYoutubeDuration(details.duration) ?? '') : '',
-        views: details?.viewCount ?? ''
+        duration: details?.duration ? (formatYoutubeDuration(details.duration, locale) ?? '') : '',
+        views: details?.viewCount && Number.isFinite(Number(details.viewCount))
+            ? new Intl.NumberFormat(locale).format(Number(details.viewCount))
+            : details?.viewCount ?? ''
     };
     return buildDiscordNotificationPayload({
-        defaultContent: `Hey @everyone, new video from ${author}: ${urlSafe}`,
+        defaultContent: apiText(locale, 'youtubeDefaultContent', { author, url: urlSafe }),
         embed,
-        buttonLabel: 'Watch Video',
+        buttonLabel: apiText(locale, 'youtubeWatchVideo'),
         buttonUrl: url,
         tokens,
         customMessage,
@@ -278,7 +298,10 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                     sendVideos.push(video);
                 }
 
-                plans.push({ cfg, channelId, newVideos, sendVideos, now });
+                const locale = sendVideos.length > 0
+                    ? await resolveGuildOutputLocale(cfg.guildId)
+                    : DEFAULT_OUTPUT_LOCALE;
+                plans.push({ cfg, channelId, newVideos, sendVideos, now, locale });
             } catch (err) {
                 errors += 1;
                 await recordIntegrationFailure('youtube', cfg, err, {
@@ -292,7 +315,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
     const detailsById = await fetchYoutubeVideoDetailsBatch(plans.flatMap(plan => plan.sendVideos.map(v => v['yt:videoId']).filter((v): v is string => !!v)), log);
 
     for (const plan of plans) {
-        const { cfg, channelId, newVideos, sendVideos, now } = plan;
+        const { cfg, channelId, newVideos, sendVideos, now, locale } = plan;
         try {
             let sentAny = false;
 
@@ -300,7 +323,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 const videoId = video['yt:videoId'];
                 if (!videoId) continue;
                 const details = detailsById.get(videoId) ?? null;
-                const built = buildYoutubeEmbedPayload(video, channelId, details, cfg.customMessage ?? null);
+                const built = buildYoutubeEmbedPayload(video, channelId, details, cfg.customMessage ?? null, locale);
                 const sent = await sendJobNotification({
                     manager: notifications,
                     provider: 'youtube',

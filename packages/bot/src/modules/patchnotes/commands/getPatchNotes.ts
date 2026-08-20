@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
@@ -11,9 +12,10 @@ import { getPatchnotes as META } from '../commands.manifest.js';
 import { fetchLatestPatchNoteApi, type LatestPatchNoteDto } from '../../../utils/apiClient.js';
 import type { PatchNoteConfig } from '@zeffuro/fakegaming-common/models';
 import type { CreationAttributes } from 'sequelize';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
-    b.addStringOption(option => option.setName('game').setDescription('Game to get patch notes for').setRequired(true).setAutocomplete(true))
+    b.addStringOption(option => option.setName('game').setNameLocalization('nl', 'spel').setDescription('Game to get patch notes for').setDescriptionLocalization('nl', 'Spel waarvoor je patchnotes wilt tonen').setRequired(true).setAutocomplete(true))
 );
 
 function toPatchNoteAttrs(dto: LatestPatchNoteDto): CreationAttributes<PatchNoteConfig> {
@@ -37,18 +39,19 @@ function toPatchNoteAttrs(dto: LatestPatchNoteDto): CreationAttributes<PatchNote
 }
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const game = interaction.options.getString('game', true);
     const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
 
     if (latestPatch) {
-        await interaction.reply({embeds: [buildPatchNoteEmbed(latestPatch)]});
+        await interaction.reply({embeds: [resolveLocaleValue(locale, { en: buildPatchNoteEmbed(latestPatch), nl: buildPatchNoteEmbed(latestPatch, locale) })]});
     } else {
         const patch = await fetchLatestPatchNoteApi(game);
         if (patch) {
             const attrs = toPatchNoteAttrs(patch);
-            await interaction.reply({embeds: [buildPatchNoteEmbed(attrs)]});
+            await interaction.reply({embeds: [resolveLocaleValue(locale, { en: buildPatchNoteEmbed(attrs), nl: buildPatchNoteEmbed(attrs, locale) })]});
         } else {
-            await interaction.reply(`No patch notes found for \`${game}\`.`);
+            await interaction.reply(resolveLocaleValue(locale, { en: `No patch notes found for \`${game}\`.`, nl: `Geen patchnotes gevonden voor \`${game}\`.` }));
         }
     }
 }

@@ -44,12 +44,16 @@ describe('rateLimit middleware', () => {
             const r = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
             expectOk(r);
         }
-        const over = await request(app).get('/api/test').set('Authorization', `Bearer ${token}`);
+        const over = await request(app)
+            .get('/api/test')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl');
         expectTooManyRequests(over);
         expectErrorCode(over, 'RATE_LIMIT');
         expect(over.headers['x-ratelimit-limit']).toBe('3');
         expect(over.headers['x-ratelimit-remaining']).toBe('0');
         expect(over.headers['retry-after']).toBeDefined();
+        expect(over.body.error.message).toBe('Je hebt te veel verzoeken verstuurd');
     });
 
     it('separate users have isolated counters', async () => {

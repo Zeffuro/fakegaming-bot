@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminPage } from "@/components/AdminPage";
 import { api, type RiotLinkEntry } from "@/lib/api-client";
 import {
@@ -25,6 +25,7 @@ import {
     Typography,
 } from "@mui/material";
 import { Delete, Edit, Refresh } from "@mui/icons-material";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface EditForm {
     discordId: string;
@@ -73,6 +74,7 @@ function shortPuuid(puuid: string): string {
 }
 
 export default function AdminRiotLinksPage() {
+    const { t, formatNumber } = useDashboardI18n();
     const [links, setLinks] = useState<RiotLinkEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -80,22 +82,22 @@ export default function AdminRiotLinksPage() {
     const [query, setQuery] = useState("");
     const [editing, setEditing] = useState<EditForm | null>(null);
 
-    const load = async () => {
+    const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
             const response = await api.getRiotLinks();
             setLinks(response.links);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load Riot links");
+            setError(err instanceof Error ? err.message : t("admin.riotLinksLoadFailed"));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
 
     useEffect(() => {
         void load();
-    }, []);
+    }, [load]);
 
     const filteredLinks = useMemo(() => {
         const needle = query.trim().toLowerCase();
@@ -134,14 +136,17 @@ export default function AdminRiotLinksPage() {
             });
             setEditing(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to save Riot link");
+            setError(err instanceof Error ? err.message : t("admin.riotLinksSaveFailed"));
         } finally {
             setSaving(false);
         }
     };
 
     const deleteLink = async (link: RiotLinkEntry) => {
-        const ok = window.confirm(`Remove Riot link for ${displayRiotId(link)} (${link.discordId})?`);
+        const ok = window.confirm(t("admin.riotLinksConfirmDelete", {
+            riotId: displayRiotId(link),
+            discordId: link.discordId,
+        }));
         if (!ok) return;
         setSaving(true);
         setError(null);
@@ -149,7 +154,7 @@ export default function AdminRiotLinksPage() {
             await api.deleteRiotLink(link.discordId);
             setLinks(current => current.filter(item => item.discordId !== link.discordId));
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to delete Riot link");
+            setError(err instanceof Error ? err.message : t("admin.riotLinksDeleteFailed"));
         } finally {
             setSaving(false);
         }
@@ -161,15 +166,15 @@ export default function AdminRiotLinksPage() {
         && !!editing.puuid.trim();
 
     return (
-        <AdminPage title="Admin Riot Links" trail={[{ label: "Riot Links", href: "/dashboard/admin/riot-links" }]}>
+        <AdminPage title={t("admin.riotLinksPageTitle")} trail={[{ label: t("admin.riotLinks"), href: "/dashboard/admin/riot-links" }]}>
             <Stack spacing={2}>
                 <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { xs: "stretch", md: "center" } }}>
                     <TextField
-                        label="Search linked accounts"
+                        label={t("admin.riotLinksSearch")}
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         fullWidth
-                        placeholder="Discord ID, Riot ID, region, or PUUID"
+                        placeholder={t("admin.riotLinksSearchPlaceholder")}
                     />
                     <Button
                         variant="contained"
@@ -178,7 +183,7 @@ export default function AdminRiotLinksPage() {
                         disabled={loading || saving}
                         sx={{ minWidth: 132 }}
                     >
-                        Refresh
+                        {t("common.refresh")}
                     </Button>
                 </Stack>
 
@@ -186,18 +191,18 @@ export default function AdminRiotLinksPage() {
 
                 <Paper variant="outlined" sx={{ overflow: "hidden" }}>
                     <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
-                        <Typography variant="h6">Linked Riot Accounts</Typography>
-                        <Chip size="small" label={`${filteredLinks.length} shown`} />
+                        <Typography variant="h6">{t("admin.riotLinksAccounts")}</Typography>
+                        <Chip size="small" label={t("admin.riotLinksShown", { count: formatNumber(filteredLinks.length) })} />
                     </Box>
                     <TableContainer>
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Discord User</TableCell>
-                                    <TableCell>Riot ID</TableCell>
-                                    <TableCell>Region</TableCell>
+                                    <TableCell>{t("admin.riotLinksDiscordUser")}</TableCell>
+                                    <TableCell>{t("admin.riotLinksRiotId")}</TableCell>
+                                    <TableCell>{t("admin.riotLinksRegion")}</TableCell>
                                     <TableCell>PUUID</TableCell>
-                                    <TableCell align="right">Actions</TableCell>
+                                    <TableCell align="right">{t("admin.riotLinksActions")}</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -212,12 +217,12 @@ export default function AdminRiotLinksPage() {
                                             </Tooltip>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Tooltip title="Edit Riot link">
+                                            <Tooltip title={t("admin.riotLinksEdit")}>
                                                 <IconButton onClick={() => setEditing(toForm(link))} disabled={saving}>
                                                     <Edit />
                                                 </IconButton>
                                             </Tooltip>
-                                            <Tooltip title="Remove Riot link">
+                                            <Tooltip title={t("admin.riotLinksRemove")}>
                                                 <IconButton color="error" onClick={() => void deleteLink(link)} disabled={saving}>
                                                     <Delete />
                                                 </IconButton>
@@ -229,7 +234,7 @@ export default function AdminRiotLinksPage() {
                                     <TableRow>
                                         <TableCell colSpan={5}>
                                             <Typography variant="body2" color="text.secondary">
-                                                No linked Riot accounts found.
+                                                {t("admin.riotLinksEmpty")}
                                             </Typography>
                                         </TableCell>
                                     </TableRow>
@@ -238,7 +243,7 @@ export default function AdminRiotLinksPage() {
                                     <TableRow>
                                         <TableCell colSpan={5}>
                                             <Typography variant="body2" color="text.secondary">
-                                                Loading...
+                                                {t("common.loading")}
                                             </Typography>
                                         </TableCell>
                                     </TableRow>
@@ -250,33 +255,33 @@ export default function AdminRiotLinksPage() {
             </Stack>
 
             <Dialog open={!!editing} onClose={() => setEditing(null)} fullWidth maxWidth="sm">
-                <DialogTitle>Edit Riot Link</DialogTitle>
+                <DialogTitle>{t("admin.riotLinksEditTitle")}</DialogTitle>
                 <DialogContent>
                     {editing && (
                         <Stack spacing={2} sx={{ pt: 1 }}>
-                            <TextField label="Discord user ID" value={editing.discordId} disabled fullWidth />
+                            <TextField label={t("admin.riotLinksDiscordUserId")} value={editing.discordId} disabled fullWidth />
                             <TextField
-                                label="Riot ID"
+                                label={t("admin.riotLinksRiotId")}
                                 value={editing.summonerName}
                                 onChange={(event) => setEditing({ ...editing, summonerName: event.target.value })}
                                 fullWidth
                             />
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                                 <TextField
-                                    label="Game name"
+                                    label={t("admin.riotLinksGameName")}
                                     value={editing.riotIdGameName}
                                     onChange={(event) => setEditing({ ...editing, riotIdGameName: event.target.value })}
                                     fullWidth
                                 />
                                 <TextField
-                                    label="Tag line"
+                                    label={t("admin.riotLinksTagLine")}
                                     value={editing.riotIdTagLine}
                                     onChange={(event) => setEditing({ ...editing, riotIdTagLine: event.target.value })}
                                     fullWidth
                                 />
                             </Stack>
                             <TextField
-                                label="Region"
+                                label={t("admin.riotLinksRegion")}
                                 value={editing.region}
                                 onChange={(event) => setEditing({ ...editing, region: event.target.value })}
                                 fullWidth
@@ -291,9 +296,9 @@ export default function AdminRiotLinksPage() {
                     )}
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setEditing(null)} disabled={saving}>Cancel</Button>
+                    <Button onClick={() => setEditing(null)} disabled={saving}>{t("common.cancel")}</Button>
                     <Button onClick={() => void saveEdit()} variant="contained" disabled={saving || !canSaveEdit}>
-                        Save
+                        {t("common.save")}
                     </Button>
                 </DialogActions>
             </Dialog>

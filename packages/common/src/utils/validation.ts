@@ -3,11 +3,24 @@ import { Request, Response, NextFunction } from 'express';
 import type { Model, ModelCtor } from 'sequelize-typescript';
 import { schemaRegistry } from './schemaRegistry.js';
 
+export interface ValidationErrorPayload {
+    message: string;
+    details: Array<{ path: string; message: string }>;
+}
+
+export interface ValidatorOptions {
+    localizeError?: (
+        req: Request,
+        label: 'Body' | 'Query' | 'Params',
+        issues: ReadonlyArray<z.core.$ZodIssue>,
+    ) => ValidationErrorPayload;
+}
+
 /**
  * Format Zod issues into a consistent array of { path, message }
  */
 export function formatZodError(
-    issues: ReadonlyArray<{ path: ReadonlyArray<string | number>; message: string }>
+    issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>
 ): Array<{ path: string; message: string }> {
     return issues.map((e) => ({
         path: e.path.map((seg) => String(seg)).join('.'),
@@ -22,7 +35,8 @@ export function formatZodError(
 export function makeValidator<TParsed>(
     parseFn: (input: unknown) => Promise<TParsed>,
     applyFn: (req: Request, parsed: TParsed) => void,
-    label: 'Body' | 'Query' | 'Params'
+    label: 'Body' | 'Query' | 'Params',
+    options: ValidatorOptions = {},
 ) {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -31,14 +45,15 @@ export function makeValidator<TParsed>(
             next();
         } catch (error) {
             if (error instanceof z.ZodError) {
-                const issues = (error as unknown as {
-                    issues: ReadonlyArray<{ path: ReadonlyArray<string | number>; message: string }>;
-                }).issues;
+                const issues = (error as unknown as { issues: ReadonlyArray<z.core.$ZodIssue> }).issues;
+                const localized = options.localizeError?.(req, label, issues) ?? {
+                    message: `${label} validation failed`,
+                    details: formatZodError(issues),
+                };
                 res.status(400).json({
                     error: {
                         code: 'VALIDATION_ERROR',
-                        message: `${label} validation failed`,
-                        details: formatZodError(issues),
+                        ...localized,
                     },
                 });
                 return;
@@ -63,13 +78,14 @@ function getSourceByLabel(req: Request, label: 'Body' | 'Query' | 'Params'): unk
  * Validation middleware that uses Zod schemas.
  * This ensures runtime type safety derived from your models.
  */
-export function validateBody<T extends z.ZodTypeAny>(schema: T) {
+export function validateBody<T extends z.ZodTypeAny>(schema: T, options: ValidatorOptions = {}) {
     return makeValidator(
         (input) => schema.parseAsync(input),
         (req, parsed) => {
             req.body = parsed as unknown;
         },
-        'Body'
+        'Body',
+        options,
     );
 }
 
@@ -79,7 +95,8 @@ export function validateBody<T extends z.ZodTypeAny>(schema: T) {
  */
 export function validateBodyForModel<T extends Model>(
     model: ModelCtor<T>,
-    type: 'create' | 'update' | 'full' = 'full'
+    type: 'create' | 'update' | 'full' = 'full',
+    options: ValidatorOptions = {},
 ) {
     return makeValidator(
         async (input) => {
@@ -94,14 +111,15 @@ export function validateBodyForModel<T extends Model>(
         (req, parsed) => {
             req.body = parsed as unknown;
         },
-        'Body'
+        'Body',
+        options,
     );
 }
 
 /**
  * Validate query parameters
  */
-export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
+export function validateQuery<T extends z.ZodTypeAny>(schema: T, options: ValidatorOptions = {}) {
     return makeValidator(
         (input) => schema.parseAsync(input),
         (req, parsed) => {
@@ -112,19 +130,21 @@ export function validateQuery<T extends z.ZodTypeAny>(schema: T) {
                 writable: true,
             });
         },
-        'Query'
+        'Query',
+        options,
     );
 }
 
 /**
  * Validate route parameters
  */
-export function validateParams<T extends z.ZodTypeAny>(schema: T) {
+export function validateParams<T extends z.ZodTypeAny>(schema: T, options: ValidatorOptions = {}) {
     return makeValidator(
         (input) => schema.parseAsync(input),
         (req, parsed) => {
             req.params = parsed as unknown as Request['params'];
         },
-        'Params'
+        'Params',
+        options,
     );
 }

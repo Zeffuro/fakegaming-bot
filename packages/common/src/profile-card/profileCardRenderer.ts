@@ -1,4 +1,11 @@
 import { createCanvas, type CanvasRenderingContext2D } from 'canvas';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    isSupportedOutputLocale,
+    resolveLocaleValue,
+    type OutputLocaleValues,
+    type SupportedOutputLocale,
+} from '../utils/outputLocale.js';
 
 export const PROFILE_CARD_MIME_TYPE = 'image/png';
 
@@ -15,6 +22,17 @@ export interface ProfileCardInput {
 export interface ProfileCardRenderOptions {
     width?: number;
     height?: number;
+    locale?: SupportedOutputLocale;
+    labels?: Partial<ProfileCardLabels>;
+}
+
+export interface ProfileCardLabels {
+    profile: string;
+    fakeGamingProfile: string;
+    serverNickname: string;
+    globalName: string;
+    discordId: string;
+    discordUser: string;
 }
 
 const DEFAULT_WIDTH = 1000;
@@ -24,6 +42,24 @@ const TITLE_FONT = `900 56px ${FONT_FAMILY}`;
 const SUBTITLE_FONT = `700 30px ${FONT_FAMILY}`;
 const META_FONT = `650 24px ${FONT_FAMILY}`;
 const SMALL_FONT = `650 20px ${FONT_FAMILY}`;
+const PROFILE_CARD_LABELS = {
+    en: {
+        profile: 'profile',
+        fakeGamingProfile: 'FakeGaming profile',
+        serverNickname: 'Server nickname',
+        globalName: 'Global name',
+        discordId: 'Discord ID',
+        discordUser: 'Discord user',
+    },
+    nl: {
+        profile: 'profiel',
+        fakeGamingProfile: 'FakeGaming-profiel',
+        serverNickname: 'Serverbijnaam',
+        globalName: 'Globale naam',
+        discordId: 'Discord-ID',
+        discordUser: 'Discord-gebruiker',
+    },
+} as const satisfies OutputLocaleValues<ProfileCardLabels>;
 
 export function renderProfileCard(input: ProfileCardInput, options: ProfileCardRenderOptions = {}): Buffer {
     const width = normalizeDimension(options.width, DEFAULT_WIDTH);
@@ -32,7 +68,9 @@ export function renderProfileCard(input: ProfileCardInput, options: ProfileCardR
     const ctx = canvas.getContext('2d');
 
     drawBackground(ctx, width, height);
-    drawProfileContent(ctx, input, width, height);
+    const locale = isSupportedOutputLocale(options.locale) ? options.locale : DEFAULT_OUTPUT_LOCALE;
+    const localizedLabels = resolveLocaleValue(locale, PROFILE_CARD_LABELS);
+    drawProfileContent(ctx, input, width, height, { ...localizedLabels, ...options.labels });
 
     return canvas.toBuffer(PROFILE_CARD_MIME_TYPE);
 }
@@ -78,8 +116,14 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.restore();
 }
 
-function drawProfileContent(ctx: CanvasRenderingContext2D, input: ProfileCardInput, width: number, height: number): void {
-    const displayName = normalizeText(input.displayName) || fallbackUserName(input.userId);
+function drawProfileContent(
+    ctx: CanvasRenderingContext2D,
+    input: ProfileCardInput,
+    width: number,
+    height: number,
+    labels: ProfileCardLabels,
+): void {
+    const displayName = normalizeText(input.displayName) || fallbackUserName(input.userId, labels.discordUser);
     const handle = formatHandle(input.username, input.discriminator);
     const globalName = normalizeText(input.globalName);
     const nickname = normalizeText(input.nickname);
@@ -99,7 +143,7 @@ function drawProfileContent(ctx: CanvasRenderingContext2D, input: ProfileCardInp
     ctx.textBaseline = 'top';
     ctx.font = SMALL_FONT;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.56)';
-    ctx.fillText(guildName ? `${guildName} profile` : 'FakeGaming profile', contentX, 122);
+    ctx.fillText(guildName ? `${guildName} ${labels.profile}` : labels.fakeGamingProfile, contentX, 122);
 
     ctx.font = TITLE_FONT;
     ctx.fillStyle = '#f9fbff';
@@ -107,12 +151,12 @@ function drawProfileContent(ctx: CanvasRenderingContext2D, input: ProfileCardInp
 
     ctx.font = SUBTITLE_FONT;
     ctx.fillStyle = '#5ff0d0';
-    ctx.fillText(fitText(ctx, handle ?? fallbackUserName(input.userId), contentWidth), contentX, 236);
+    ctx.fillText(fitText(ctx, handle ?? fallbackUserName(input.userId, labels.discordUser), contentWidth), contentX, 236);
 
     const detailLines = [
-        nickname && nickname !== displayName ? `Server nickname: ${nickname}` : null,
-        globalName && globalName !== displayName ? `Global name: ${globalName}` : null,
-        `Discord ID: ${input.userId}`,
+        nickname && nickname !== displayName ? `${labels.serverNickname}: ${nickname}` : null,
+        globalName && globalName !== displayName ? `${labels.globalName}: ${globalName}` : null,
+        `${labels.discordId}: ${input.userId}`,
     ].filter((line): line is string => typeof line === 'string' && line.length > 0);
 
     ctx.font = META_FONT;
@@ -161,9 +205,9 @@ function normalizeText(value: string | null | undefined): string | null {
     return normalized ? normalized : null;
 }
 
-function fallbackUserName(userId: string): string {
+function fallbackUserName(userId: string, label: string): string {
     const normalized = userId.trim();
-    return normalized ? `Discord user ${normalized.slice(-6)}` : 'Discord user';
+    return normalized ? `${label} ${normalized.slice(-6)}` : label;
 }
 
 function getInitials(displayName: string): string {

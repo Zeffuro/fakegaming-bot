@@ -132,6 +132,26 @@ describe('Steam news subscriptions API', () => {
         expectNotFound(missing);
     });
 
+    it('localizes validation and record-specific not-found responses', async () => {
+        const invalid = await client.get('/api/steamNewsSubscriptions/abc')
+            .set('Accept-Language', 'nl');
+        expectBadRequest(invalid);
+        expect(invalid.body.error.message).toBe('Validatie van de parameters is mislukt');
+
+        const missing = await client.get('/api/steamNewsSubscriptions/999999')
+            .set('Accept-Language', 'nl');
+        expectNotFound(missing);
+        expect(missing.body.error.message).toBe('Abonnement op Steam-nieuws niet gevonden');
+
+        const missingPatch = await request(app)
+            .patch('/api/steamNewsSubscriptions/999999')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl')
+            .send({ paused: true });
+        expectNotFound(missingPatch);
+        expect(missingPatch.body.error.message).toBe('Abonnement op Steam-nieuws niet gevonden');
+    });
+
     it('deletes subscriptions and requires auth for mutations', async () => {
         const subscription = await configManager.steamNewsSubscriptionManager.addPlain({
             steamAppId: 271590,

@@ -1,13 +1,13 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { formatMinuteKey, scheduleSingleton, type JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
 import { hasRecordedJobNotification, sendJobNotification, syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
 import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 import { recordJobRun } from './status.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 interface TwitchStreamConfigPlain {
     id?: number | string;
@@ -25,6 +25,11 @@ interface TwitchStreamConfigPlain {
     vodFollowupDelayMinutes?: number | null;
     lastVodId?: string | null;
 }
+
+const UPTIME_HOUR_UNITS = {
+    en: 'h',
+    nl: 'u',
+} as const satisfies OutputLocaleValues<string>;
 
 interface HelixUser { id: string; login: string; display_name?: string; profile_image_url?: string }
 interface HelixStream { id: string; user_id: string; title: string; viewer_count?: number; started_at?: string; thumbnail_url?: string; game_id?: string }
@@ -197,43 +202,58 @@ async function helixGetLatestArchiveVideo(token: string, clientId: string, userI
     return video;
 }
 
-function buildTwitchEmbedAndContent(opts: { user: HelixUser; stream: HelixStream; gameName?: string | null; customMessage?: string | null }): { content: string; payload: Record<string, unknown> } {
+export function buildTwitchEmbedAndContent(opts: {
+    user: HelixUser;
+    stream: HelixStream;
+    gameName?: string | null;
+    customMessage?: string | null;
+    locale?: SupportedOutputLocale;
+}): { content: string; payload: Record<string, unknown> } {
     const { user, stream } = opts;
+    const locale = opts.locale ?? DEFAULT_OUTPUT_LOCALE;
     const gameName = opts.gameName ?? null;
+    const streamerName = user.display_name || user.login;
     const url = `https://twitch.tv/${user.login}`;
     const urlSafe = `<${url}>`;
     const startedAtMs = stream.started_at ? Date.parse(stream.started_at) : NaN;
     const uptimeMs = Number.isFinite(startedAtMs) ? Math.max(0, Date.now() - startedAtMs) : null;
-    const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatUptimeShort(uptimeMs) : null;
+    const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatTwitchUptime(uptimeMs, locale) : null;
+    const numberFormatter = new Intl.NumberFormat(locale);
 
     const embed: Record<string, unknown> = {
-        title: `${user.display_name || user.login} is now live!`,
+        title: apiText(locale, 'twitchLiveTitle', { streamer: streamerName }),
         url,
-        author: { name: user.display_name || user.login, icon_url: user.profile_image_url || undefined, url },
-        description: stream.title || 'Live on Twitch! ',
+        author: { name: streamerName, icon_url: user.profile_image_url || undefined, url },
+        description: stream.title || apiText(locale, 'twitchLiveFallback'),
         color: 0x9146ff,
         timestamp: new Date().toISOString(),
         fields: [
-            { name: 'Viewers', value: String(stream.viewer_count ?? 'N/A'), inline: true }
+            {
+                name: apiText(locale, 'twitchViewers'),
+                value: typeof stream.viewer_count === 'number'
+                    ? numberFormatter.format(stream.viewer_count)
+                    : apiText(locale, 'twitchNotAvailable'),
+                inline: true,
+            },
         ]
     };
-    if (gameName) (embed as any).fields.push({ name: 'Game', value: gameName, inline: true });
-    if (uptimeStr) (embed as any).fields.push({ name: 'Uptime', value: uptimeStr, inline: true });
+    if (gameName) (embed as any).fields.push({ name: apiText(locale, 'twitchGame'), value: gameName, inline: true });
+    if (uptimeStr) (embed as any).fields.push({ name: apiText(locale, 'twitchUptime'), value: uptimeStr, inline: true });
     if (stream.thumbnail_url) (embed as any).image = { url: stream.thumbnail_url.replace('{width}', '640').replace('{height}', '360') };
     if (user.profile_image_url) (embed as any).thumbnail = { url: user.profile_image_url };
 
     const tokens = {
-        streamer: user.display_name || user.login || '',
+        streamer: streamerName,
         title: stream.title || '',
         game: gameName || '',
         url: urlSafe,
         uptime: uptimeStr || '',
-        viewers: typeof stream.viewer_count === 'number' ? String(stream.viewer_count) : ''
+        viewers: typeof stream.viewer_count === 'number' ? numberFormatter.format(stream.viewer_count) : ''
     };
     return buildDiscordNotificationPayload({
-        defaultContent: `Hey @everyone, ${user.display_name || user.login} is now live! ${urlSafe}`,
+        defaultContent: apiText(locale, 'twitchDefaultContent', { streamer: streamerName, url: urlSafe }),
         embed,
-        buttonLabel: 'Watch Stream',
+        buttonLabel: apiText(locale, 'twitchWatchStream'),
         buttonUrl: url,
         tokens,
         customMessage: opts.customMessage,
@@ -241,8 +261,13 @@ function buildTwitchEmbedAndContent(opts: { user: HelixUser; stream: HelixStream
     });
 }
 
-function buildTwitchVodEmbedAndContent(opts: { user: HelixUser; video: HelixVideo }): { content: string; payload: Record<string, unknown> } {
+export function buildTwitchVodEmbedAndContent(opts: {
+    user: HelixUser;
+    video: HelixVideo;
+    locale?: SupportedOutputLocale;
+}): { content: string; payload: Record<string, unknown> } {
     const { user, video } = opts;
+    const locale = opts.locale ?? DEFAULT_OUTPUT_LOCALE;
     const streamerName = user.display_name || user.login;
     const url = video.url || `https://www.twitch.tv/videos/${video.id}`;
     const urlSafe = `<${url}>`;
@@ -250,17 +275,21 @@ function buildTwitchVodEmbedAndContent(opts: { user: HelixUser; video: HelixVide
 
     const fields: Array<{ name: string; value: string; inline: boolean }> = [];
     if (video.duration) {
-        fields.push({ name: 'Duration', value: video.duration, inline: true });
+        fields.push({ name: apiText(locale, 'twitchVodDuration'), value: video.duration, inline: true });
     }
     if (typeof video.view_count === 'number') {
-        fields.push({ name: 'Views', value: String(video.view_count), inline: true });
+        fields.push({
+            name: apiText(locale, 'twitchVodViews'),
+            value: new Intl.NumberFormat(locale).format(video.view_count),
+            inline: true,
+        });
     }
 
     const embed: Record<string, unknown> = {
-        title: video.title || `Latest VOD from ${streamerName}`,
+        title: video.title || apiText(locale, 'twitchVodTitle', { streamer: streamerName }),
         url,
         author: { name: streamerName, icon_url: user.profile_image_url || undefined, url: `https://twitch.tv/${user.login}` },
-        description: `Latest Twitch archive from ${streamerName}.`,
+        description: apiText(locale, 'twitchVodDescription', { streamer: streamerName }),
         color: 0x9146ff,
         timestamp: publishedAt ?? new Date().toISOString(),
         fields,
@@ -279,19 +308,33 @@ function buildTwitchVodEmbedAndContent(opts: { user: HelixUser; video: HelixVide
     }
 
     return buildDiscordNotificationPayload({
-        defaultContent: `Latest VOD from ${streamerName}: ${urlSafe}`,
+        defaultContent: apiText(locale, 'twitchVodDefaultContent', { streamer: streamerName, url: urlSafe }),
         embed,
-        buttonLabel: 'Watch VOD',
+        buttonLabel: apiText(locale, 'twitchWatchVod'),
         buttonUrl: url,
         tokens: {
             streamer: streamerName,
             title: video.title || '',
             url: urlSafe,
             duration: video.duration || '',
-            views: typeof video.view_count === 'number' ? String(video.view_count) : '',
+            views: typeof video.view_count === 'number' ? new Intl.NumberFormat(locale).format(video.view_count) : '',
         },
         urlToken: urlSafe,
     });
+}
+
+function formatTwitchUptime(msValue: number, locale: SupportedOutputLocale): string {
+    const totalSeconds = Math.max(0, Math.floor(msValue / 1000));
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const hourUnit = resolveLocaleValue(locale, UPTIME_HOUR_UNITS);
+
+    if (days > 0) return `${days}d ${hours}${hourUnit}`;
+    if (hours > 0) return `${hours}${hourUnit} ${minutes}m`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
 }
 
 async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' }), options: TwitchPollOptions = {}): Promise<{ processed: number; errors: number; vodFollowupsScheduled: number; vodFollowupScheduleErrors: number }> {
@@ -351,6 +394,7 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' }), o
                 });
                 continue;
             }
+            const locale = await resolveGuildOutputLocale(cfg.guildId);
 
             const sent = await syncLiveNotificationState({
                 config: cfg,
@@ -361,7 +405,13 @@ async function processTwitchPoll(log = getLogger({ name: 'api:jobs:twitch' }), o
                 isLive,
                 buildPayload: () => {
                     const gameName = stream?.game_id ? (gameNameById.get(stream.game_id) ?? null) : null;
-                    return buildTwitchEmbedAndContent({ user, stream: stream!, gameName, customMessage: cfg.customMessage ?? null }).payload;
+                    return buildTwitchEmbedAndContent({
+                        user,
+                        stream: stream!,
+                        gameName,
+                        customMessage: cfg.customMessage ?? null,
+                        locale,
+                    }).payload;
                 },
             });
             if (wasLive && !isLive && shouldScheduleVodFollowup(cfg)) {
@@ -489,13 +539,14 @@ async function processTwitchVodFollowup(
         const already = await hasRecordedJobNotification(notifications, 'twitch', eventId, cfg.guildId);
         let sent = false;
         if (!already) {
+            const locale = await resolveGuildOutputLocale(cfg.guildId);
             sent = await sendJobNotification({
                 manager: notifications,
                 provider: 'twitch',
                 eventId,
                 channelId: cfg.discordChannelId,
                 guildId: cfg.guildId,
-                payload: buildTwitchVodEmbedAndContent({ user, video }).payload,
+                payload: buildTwitchVodEmbedAndContent({ user, video, locale }).payload,
             });
         }
 

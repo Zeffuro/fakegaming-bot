@@ -6,8 +6,11 @@ import type {
     UserReminder,
     UserSettings,
 } from "@/lib/api-client";
+import { formatDashboardMessage, type DashboardTranslator } from "@/lib/i18n/messages";
 
 const nowMs = Date.parse("2026-06-24T12:00:00.000Z");
+const english: DashboardTranslator = (key, values) => formatDashboardMessage("en", key, values);
+const dutch: DashboardTranslator = (key, values) => formatDashboardMessage("nl", key, values);
 
 function formatDateTime(value: number): string {
     return new Date(value).toISOString();
@@ -72,6 +75,7 @@ function settings(overrides: Partial<UserSettings> = {}): UserSettings {
         discordId: "user-1",
         timezone: "Europe/Amsterdam",
         defaultReminderTimeSpan: "1h",
+        preferredLocale: null,
         ...overrides,
     };
 }
@@ -85,6 +89,8 @@ describe("personalSubscriptionOverview", () => {
             settings: null,
             nowMs,
             formatDateTime,
+            formatNumber: String,
+            t: english,
         });
 
         expect(overview.summary).toBe("0 active, 0 paused");
@@ -116,6 +122,8 @@ describe("personalSubscriptionOverview", () => {
             settings: settings(),
             nowMs,
             formatDateTime,
+            formatNumber: String,
+            t: english,
         });
 
         expect(overview.summary).toBe("3 active, 0 paused");
@@ -159,6 +167,8 @@ describe("personalSubscriptionOverview", () => {
             settings: settings({ timezone: null, defaultReminderTimeSpan: null }),
             nowMs,
             formatDateTime,
+            formatNumber: String,
+            t: english,
         });
 
         expect(overview.summary).toBe("0 active, 3 paused");
@@ -189,11 +199,36 @@ describe("personalSubscriptionOverview", () => {
             settings: null,
             nowMs,
             formatDateTime,
+            formatNumber: String,
+            t: english,
         });
 
         expect(overview.items[0]).toMatchObject({
             status: "active",
             meta: "Next reminder is due now",
+        });
+    });
+
+    it("builds Dutch summaries without changing stored schedule values", () => {
+        const overview = buildPersonalSubscriptionOverview({
+            reminders: [reminder()],
+            animeSubscriptions: [animeSubscription()],
+            digestSubscription: digestSubscription({ frequency: "weekly", runAt: "09:00" }),
+            settings: settings(),
+            nowMs,
+            formatDateTime,
+            formatNumber: String,
+            t: dutch,
+        });
+
+        expect(overview.summary).toBe("3 actief, 0 gepauzeerd");
+        expect(overview.items[0]).toMatchObject({
+            title: "Persoonlijke herinneringen",
+            detail: "1 actief, 0 gepauzeerd, 0 terugkerend",
+        });
+        expect(overview.items[2]).toMatchObject({
+            detail: "Wekelijks om 09:00 (Europe/Amsterdam)",
+            meta: "Herinneringen, Anime; volgende 2026-06-25T12:00:00.000Z",
         });
     });
 });

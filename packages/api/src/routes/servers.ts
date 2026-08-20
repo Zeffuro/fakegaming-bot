@@ -1,9 +1,10 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateParams, validateBody } from '@zeffuro/fakegaming-common';
+import { validateParams, validateBody } from '../localization/validation.js';
 import { serverCreateRequestSchema, serverUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const serverIdParamSchema = z.object({ serverId: z.string().min(1) });
@@ -47,7 +48,7 @@ router.get('/', async (_req, res) => {
 router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) => {
     const { serverId } = req.params;
     const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
-    if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
+    if (!server) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'serverNotFound');
     res.json(server);
 });
 
@@ -111,7 +112,7 @@ router.post('/', jwtAuth, validateBody(serverCreateRequestSchema), async (req, r
 router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateRequestSchema), async (req, res) => {
     const { serverId } = req.params;
     const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
-    if (!server) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Server not found' } });
+    if (!server) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'serverNotFound');
     await getConfigManager().serverManager.updatePlain(req.body, { serverId: serverId as string });
     const updated = await getConfigManager().serverManager.findByPkPlain(serverId as string);
     res.json(updated);

@@ -6,18 +6,20 @@ import { AlternateEmail, AutoStories, Cake, LiveTv, SpeakerNotes, SportsEsports,
 import { Button, Stack } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
 
 export type FeatureNavModule = "Twitch" | "TikTok" | "Bluesky" | "YouTube" | "Steam News" | "Patch Notes" | "Anime" | "Birthdays";
 
-const modules: Array<{ label: FeatureNavModule; href: string; accent: string; icon: React.ReactNode }> = [
-  { label: "Twitch", href: "twitch", accent: dashboardAccents.twitch, icon: <LiveTv fontSize="small" /> },
-  { label: "TikTok", href: "tiktok", accent: dashboardAccents.tiktok, icon: <LiveTv fontSize="small" /> },
-  { label: "Bluesky", href: "bluesky", accent: dashboardAccents.bluesky, icon: <AlternateEmail fontSize="small" /> },
-  { label: "YouTube", href: "youtube", accent: dashboardAccents.youtube, icon: <YouTubeIcon fontSize="small" /> },
-  { label: "Steam News", href: "steam-news", accent: dashboardAccents.steam, icon: <SportsEsports fontSize="small" /> },
-  { label: "Patch Notes", href: "patch-notes", accent: dashboardAccents.patchNotes, icon: <SpeakerNotes fontSize="small" /> },
-  { label: "Anime", href: "anime", accent: dashboardAccents.anime, icon: <AutoStories fontSize="small" /> },
-  { label: "Birthdays", href: "birthdays", accent: dashboardAccents.birthdays, icon: <Cake fontSize="small" /> },
+const modules: Array<{ id: FeatureNavModule; labelKey: DashboardMessageKey; href: string; accent: string; icon: React.ReactNode }> = [
+  { id: "Twitch", labelKey: "featureNav.twitch", href: "twitch", accent: dashboardAccents.twitch, icon: <LiveTv fontSize="small" /> },
+  { id: "TikTok", labelKey: "featureNav.tiktok", href: "tiktok", accent: dashboardAccents.tiktok, icon: <LiveTv fontSize="small" /> },
+  { id: "Bluesky", labelKey: "featureNav.bluesky", href: "bluesky", accent: dashboardAccents.bluesky, icon: <AlternateEmail fontSize="small" /> },
+  { id: "YouTube", labelKey: "featureNav.youtube", href: "youtube", accent: dashboardAccents.youtube, icon: <YouTubeIcon fontSize="small" /> },
+  { id: "Steam News", labelKey: "featureNav.steamNews", href: "steam-news", accent: dashboardAccents.steam, icon: <SportsEsports fontSize="small" /> },
+  { id: "Patch Notes", labelKey: "featureNav.patchNotes", href: "patch-notes", accent: dashboardAccents.patchNotes, icon: <SpeakerNotes fontSize="small" /> },
+  { id: "Anime", labelKey: "featureNav.anime", href: "anime", accent: dashboardAccents.anime, icon: <AutoStories fontSize="small" /> },
+  { id: "Birthdays", labelKey: "featureNav.birthdays", href: "birthdays", accent: dashboardAccents.birthdays, icon: <Cake fontSize="small" /> },
 ];
 
 interface FeatureNavProps {
@@ -27,14 +29,15 @@ interface FeatureNavProps {
 
 export function FeatureNav({ guildId, activeModule }: FeatureNavProps) {
   const encodedGuildId = encodeURIComponent(guildId);
+  const { t } = useDashboardI18n();
 
   return (
     <Stack direction="row" spacing={1} sx={{ justifyContent: { xs: "flex-start", lg: "flex-end" }, flexWrap: "wrap", rowGap: 1 }}>
       {modules.map((module) => {
-        const active = module.label === activeModule;
+        const active = module.id === activeModule;
         return (
           <Button
-            key={module.label}
+            key={module.id}
             component={Link}
             href={`/dashboard/${module.href}/${encodedGuildId}`}
             size="small"
@@ -48,7 +51,7 @@ export function FeatureNav({ guildId, activeModule }: FeatureNavProps) {
               "&:hover": { bgcolor: module.accent },
             } : ghostActionButtonSx(module.accent)}
           >
-            {module.label}
+            {t(module.labelKey)}
           </Button>
         );
       })}

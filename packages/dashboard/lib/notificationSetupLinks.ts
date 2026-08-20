@@ -1,5 +1,6 @@
 import type { NotificationChannelLoad, NotificationReviewGroup } from "@/lib/notificationSetupReview";
 import type { NotificationConfigStatusFilter } from "@/lib/notificationConfigFilters";
+import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
 
 export interface NotificationSetupLink {
     label: string;
@@ -39,15 +40,23 @@ export function buildNotificationProviderFilterHref(
 
 export function buildNotificationReviewGroupLink(
     guildId: string,
-    group: Pick<NotificationReviewGroup, "provider" | "sourceLabel">
+    group: Pick<NotificationReviewGroup, "provider" | "sourceLabel">,
+    locale: DashboardLocale = "en",
 ): NotificationSetupLink | null {
     const href = buildNotificationProviderFilterHref(guildId, group.provider, group.sourceLabel);
-    return href ? { label: `Open ${group.provider}`, href } : null;
+    return href ? {
+        label: getDashboardLocaleValue(locale, {
+            en: `Open ${group.provider}`,
+            nl: `${group.provider} openen`,
+        }),
+        href,
+    } : null;
 }
 
 export function buildNotificationChannelLinks(
     guildId: string,
-    channel: Pick<NotificationChannelLoad, "channelId" | "providers">
+    channel: Pick<NotificationChannelLoad, "channelId" | "providers">,
+    _locale: DashboardLocale = "en",
 ): NotificationSetupLink[] {
     return channel.providers
         .map((provider) => {

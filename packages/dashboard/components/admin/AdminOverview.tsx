@@ -25,6 +25,7 @@ import {
 } from "@mui/icons-material";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useAdminCards } from "@/components/hooks/useAdmin";
 import { useAdminOverview, type AdminOverviewJobStatus } from "@/components/hooks/useAdminOverview";
@@ -36,6 +37,18 @@ import type {
     AuditEventEntry,
     IntegrationHealthRecord,
 } from "@/lib/api-client";
+import {
+    getDashboardIntlLocale,
+    getDashboardLocaleValue,
+    type DashboardLocale,
+    type DashboardLocaleValues,
+} from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+
+const staleHeartbeatMinuteSuffix = {
+    en: "m",
+    nl: " min",
+} satisfies DashboardLocaleValues<string>;
 
 const emptyHealthSummary = {
     total: 0,
@@ -47,6 +60,7 @@ const emptyHealthSummary = {
 };
 
 export function AdminOverview() {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const cards = useAdminCards();
     const {
         integrationHealth,
@@ -69,13 +83,13 @@ export function AdminOverview() {
         jobs,
         heartbeat,
         overviewError: error,
-    });
+    }, locale);
     const reviewQueue = buildAdminReviewQueue({
         operationsHealth,
         healthRecords: integrationHealth?.records ?? [],
         jobs,
         auditEvents,
-    });
+    }, locale);
 
     return (
         <Stack spacing={2.5}>
@@ -83,14 +97,14 @@ export function AdminOverview() {
                 <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ position: "relative", alignItems: { xs: "stretch", md: "center" }, justifyContent: "space-between" }}>
                     <Box>
                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
-                            Operations overview
+                            {t("admin.overviewTitle")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.60)", mt: 0.5 }}>
-                            Quick read on provider health, worker state, recent deliveries, and admin activity.
+                            {t("admin.overviewDescription")}
                         </Typography>
                     </Box>
                     <Button variant="outlined" onClick={() => void refresh()} disabled={loading} startIcon={<Refresh />} sx={ghostActionButtonSx(dashboardAccents.admin)}>
-                        Refresh
+                        {t("admin.overviewRefresh")}
                     </Button>
                 </Stack>
                 {loading && <LinearProgress sx={{ mt: 2, borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)" }} />}
@@ -98,7 +112,7 @@ export function AdminOverview() {
 
             {error && (
                 <Alert severity="warning" icon={<WarningAmber />} sx={{ bgcolor: alpha(dashboardAccents.patchNotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.patchNotes, 0.25)}` }}>
-                    Some overview data could not be loaded: {error}
+                    {t("admin.overviewPartialError", { error })}
                 </Alert>
             )}
 
@@ -107,22 +121,22 @@ export function AdminOverview() {
             <AdminReviewQueuePanel items={reviewQueue} />
 
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2 }}>
-                <OverviewMetric label="Health errors" value={summary.error} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
-                <OverviewMetric label="Warnings" value={summary.warning + summary.unknown} accent={dashboardAccents.patchNotes} icon={<WarningAmber />} />
-                <OverviewMetric label="Job failures" value={jobFailures} accent={jobFailures > 0 ? dashboardAccents.quotes : dashboardAccents.settings} icon={<WorkHistory />} />
-                <OverviewMetric label="Deliveries tracked" value={notifications?.summary.total ?? 0} accent={dashboardAccents.commands} icon={<NotificationsActive />} />
+                <OverviewMetric label={t("admin.overviewHealthErrors")} value={summary.error} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
+                <OverviewMetric label={t("admin.overviewWarnings")} value={summary.warning + summary.unknown} accent={dashboardAccents.patchNotes} icon={<WarningAmber />} />
+                <OverviewMetric label={t("admin.overviewJobFailures")} value={jobFailures} accent={jobFailures > 0 ? dashboardAccents.quotes : dashboardAccents.settings} icon={<WorkHistory />} />
+                <OverviewMetric label={t("admin.overviewDeliveriesTracked")} value={notifications?.summary.total ?? 0} accent={dashboardAccents.commands} icon={<NotificationsActive />} />
             </Box>
 
             <ProviderInsightsPanel insights={providerInsights} />
 
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 2.5 }}>
                 <OverviewPanel
-                    title="Integration trouble"
-                    description="Current error records across providers."
+                    title={t("admin.overviewIntegrationTrouble")}
+                    description={t("admin.overviewIntegrationDescription")}
                     icon={<MonitorHeart />}
                     accent={dashboardAccents.quotes}
                     href="/dashboard/admin/integration-health"
-                    actionLabel="Open health"
+                    actionLabel={t("admin.overviewOpenHealth")}
                 >
                     {integrationHealth?.records.length ? (
                         <Stack spacing={1.3}>
@@ -131,36 +145,36 @@ export function AdminOverview() {
                             ))}
                         </Stack>
                     ) : (
-                        <EmptyState label="No failing integrations found." />
+                        <EmptyState label={t("admin.overviewNoFailingIntegrations")} />
                     )}
                 </OverviewPanel>
 
                 <OverviewPanel
-                    title="Worker state"
-                    description="Recent job outcomes and the last heartbeat."
+                    title={t("admin.overviewWorkerState")}
+                    description={t("admin.overviewWorkerDescription")}
                     icon={<WorkHistory />}
                     accent={dashboardAccents.settings}
                     href="/dashboard/admin/jobs"
-                    actionLabel="Open jobs"
+                    actionLabel={t("admin.overviewOpenJobs")}
                 >
                     <Stack spacing={1.3}>
                         <InfoRow
-                            primary={heartbeat ? `Heartbeat: ${heartbeat.backend}` : "No heartbeat recorded"}
-                            secondary={heartbeat ? `received ${formatDateTime(heartbeat.receivedAt)}` : "The worker may not have reported yet."}
-                            chipLabel={heartbeat ? "online signal" : "unknown"}
+                            primary={heartbeat ? t("admin.overviewHeartbeat", { backend: heartbeat.backend }) : t("admin.overviewNoHeartbeat")}
+                            secondary={heartbeat ? t("admin.overviewHeartbeatReceived", { date: formatDateTime(heartbeat.receivedAt, locale) }) : t("admin.overviewWorkerMayNotReported")}
+                            chipLabel={heartbeat ? t("admin.overviewOnlineSignal") : t("admin.overviewUnknown")}
                             accent={heartbeat ? dashboardAccents.settings : dashboardAccents.neutral}
                         />
                         {jobs.length > 0 ? jobs.slice(0, 5).map(job => (
                             <JobRow key={job.name} job={job} />
                         )) : (
-                            <EmptyState label="No jobs returned by the API." />
+                            <EmptyState label={t("admin.overviewNoJobs")} />
                         )}
                     </Stack>
                 </OverviewPanel>
 
                 <OverviewPanel
-                    title="Recent deliveries"
-                    description="Notification dedupe records from provider jobs."
+                    title={t("admin.overviewRecentDeliveries")}
+                    description={t("admin.overviewDeliveriesDescription")}
                     icon={<NotificationsActive />}
                     accent={dashboardAccents.commands}
                 >
@@ -171,7 +185,7 @@ export function AdminOverview() {
                                     <Chip
                                         key={item.provider}
                                         size="small"
-                                        label={`${item.provider}: ${item.count}`}
+                                        label={t("admin.overviewProviderCount", { provider: item.provider, count: formatNumber(item.count) })}
                                         sx={{ bgcolor: alpha(dashboardAccents.commands, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.commands, 0.22)}` }}
                                     />
                                 ))}
@@ -180,18 +194,18 @@ export function AdminOverview() {
                         {notifications?.records.length ? notifications.records.map(record => (
                             <NotificationRow key={record.id} record={record} />
                         )) : (
-                            <EmptyState label="No notification deliveries recorded yet." />
+                            <EmptyState label={t("admin.overviewNoDeliveries")} />
                         )}
                     </Stack>
                 </OverviewPanel>
 
                 <OverviewPanel
-                    title="Audit trail"
-                    description="Latest admin or configuration mutations."
+                    title={t("admin.overviewAuditTrail")}
+                    description={t("admin.overviewAuditDescription")}
                     icon={<History />}
                     accent={dashboardAccents.admin}
                     href="/dashboard/admin/audit"
-                    actionLabel="Open audit"
+                    actionLabel={t("admin.overviewOpenAudit")}
                 >
                     {auditEvents.length > 0 ? (
                         <Stack spacing={1.3}>
@@ -200,7 +214,7 @@ export function AdminOverview() {
                             ))}
                         </Stack>
                     ) : (
-                        <EmptyState label="No audit events returned." />
+                        <EmptyState label={t("admin.overviewNoAudit")} />
                     )}
                 </OverviewPanel>
             </Box>
@@ -209,10 +223,10 @@ export function AdminOverview() {
                 <Stack spacing={2} sx={{ position: "relative" }}>
                     <Stack spacing={0.5}>
                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
-                            Admin tools
+                            {t("admin.overviewAdminTools")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
-                            Drill into focused tools when the overview points at something.
+                            {t("admin.overviewAdminToolsDescription")}
                         </Typography>
                     </Stack>
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", xl: "repeat(4, minmax(0, 1fr))" }, gap: 2 }}>
@@ -224,8 +238,8 @@ export function AdminOverview() {
                                 icon={card.icon}
                                 accent={dashboardAccents.admin}
                                 href={card.href}
-                                statusLabel="admin"
-                                actionLabel="Open"
+                                statusLabel={t("admin.overviewAdminStatus")}
+                                actionLabel={t("admin.overviewOpen")}
                             />
                         ))}
                     </Box>
@@ -236,6 +250,7 @@ export function AdminOverview() {
 }
 
 function AdminReviewQueuePanel({ items }: { items: AdminReviewQueueItem[] }) {
+    const { t, formatNumber } = useDashboardI18n();
     const criticalCount = items.filter(item => item.severity === "critical").length;
     const warningCount = items.filter(item => item.severity === "warning").length;
     const panelSeverity: AdminReviewSeverity = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : "info";
@@ -251,22 +266,22 @@ function AdminReviewQueuePanel({ items }: { items: AdminReviewQueueItem[] }) {
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
-                                Review queue
+                                {t("admin.overviewReviewQueue")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                                Highest-priority admin signals from health checks, jobs, and audit failures.
+                                {t("admin.overviewReviewDescription")}
                             </Typography>
                         </Box>
                     </Stack>
                     <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
                         <Chip
                             size="small"
-                            label={`${criticalCount} critical`}
+                            label={t("admin.overviewCriticalCount", { count: formatNumber(criticalCount) })}
                             sx={{ bgcolor: alpha(dashboardAccents.quotes, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.quotes, 0.24)}` }}
                         />
                         <Chip
                             size="small"
-                            label={`${warningCount} warning`}
+                            label={t("admin.overviewWarningCount", { count: formatNumber(warningCount) })}
                             sx={{ bgcolor: alpha(dashboardAccents.patchNotes, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.patchNotes, 0.24)}` }}
                         />
                     </Stack>
@@ -279,7 +294,7 @@ function AdminReviewQueuePanel({ items }: { items: AdminReviewQueueItem[] }) {
                         ))}
                     </Box>
                 ) : (
-                    <EmptyState label="No admin review items queued." />
+                    <EmptyState label={t("admin.overviewNoReviewItems")} />
                 )}
             </Stack>
         </FeaturePanel>
@@ -287,6 +302,7 @@ function AdminReviewQueuePanel({ items }: { items: AdminReviewQueueItem[] }) {
 }
 
 function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const accent = getReviewSeverityAccent(item.severity);
 
     return (
@@ -300,13 +316,13 @@ function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
                                 {item.title}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)", display: "block", mt: 0.15 }}>
-                                {formatReviewSource(item.source)} - {item.timestamp ? formatDateTime(item.timestamp) : "current signal"}
+                                {formatReviewSource(item.source, locale)} - {item.timestamp ? formatDateTime(item.timestamp, locale) : t("admin.overviewCurrentSignal")}
                             </Typography>
                         </Box>
                     </Stack>
                     <Chip
                         size="small"
-                        label={item.severity}
+                        label={formatStatus(item.severity, locale)}
                         sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}`, flexShrink: 0 }}
                     />
                 </Stack>
@@ -320,13 +336,13 @@ function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
                         ))}
                         {item.relatedItems.length > 3 && (
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)" }}>
-                                +{item.relatedItems.length - 3} more detail {pluralize("row", item.relatedItems.length - 3)}
+                                {t("admin.overviewMoreDetails", { count: formatNumber(item.relatedItems.length - 3) })}
                             </Typography>
                         )}
                     </Stack>
                 ) : null}
                 <Button component={Link} href={item.href} size="small" variant="outlined" sx={{ ...ghostActionButtonSx(accent), alignSelf: "flex-start" }}>
-                    Review
+                    {t("admin.overviewReview")}
                 </Button>
             </Stack>
         </Box>
@@ -334,6 +350,7 @@ function AdminReviewQueueRow({ item }: { item: AdminReviewQueueItem }) {
 }
 
 function AdminReviewQueueRelatedRow({ item }: { item: NonNullable<AdminReviewQueueItem["relatedItems"]>[number] }) {
+    const { t } = useDashboardI18n();
     return (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={0.8} sx={{ alignItems: { xs: "flex-start", sm: "center" }, justifyContent: "space-between", gap: 1, minWidth: 0 }}>
             <Box sx={{ minWidth: 0 }}>
@@ -345,13 +362,14 @@ function AdminReviewQueueRelatedRow({ item }: { item: NonNullable<AdminReviewQue
                 </Typography>
             </Box>
             <Button component={Link} href={item.href} size="small" variant="text" sx={{ color: "grey.200", minWidth: 0, px: 0.6, flexShrink: 0 }}>
-                Open
+                {t("admin.overviewOpen")}
             </Button>
         </Stack>
     );
 }
 
 function ProviderInsightsPanel({ insights }: { insights: AdminProviderInsight[] }) {
+    const { t } = useDashboardI18n();
     return (
         <FeaturePanel accent={dashboardAccents.commands} sx={{ p: 2.5 }}>
             <Stack spacing={2} sx={{ position: "relative" }}>
@@ -362,15 +380,15 @@ function ProviderInsightsPanel({ insights }: { insights: AdminProviderInsight[] 
                         </Box>
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
-                                Provider drilldown
+                                {t("admin.overviewProviderDrilldown")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                                Health errors and recent delivery volume grouped by provider.
+                                {t("admin.overviewProviderDescription")}
                             </Typography>
                         </Box>
                     </Stack>
                     <Button component={Link} href="/dashboard/admin/notifications" size="small" variant="outlined" sx={ghostActionButtonSx(dashboardAccents.commands)}>
-                        Open deliveries
+                        {t("admin.overviewOpenDeliveries")}
                     </Button>
                 </Stack>
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
@@ -381,7 +399,7 @@ function ProviderInsightsPanel({ insights }: { insights: AdminProviderInsight[] 
                         ))}
                     </Box>
                 ) : (
-                    <EmptyState label="No provider health or delivery activity returned yet." />
+                    <EmptyState label={t("admin.overviewNoProviderActivity")} />
                 )}
             </Stack>
         </FeaturePanel>
@@ -389,9 +407,10 @@ function ProviderInsightsPanel({ insights }: { insights: AdminProviderInsight[] 
 }
 
 function ProviderInsightRow({ insight }: { insight: AdminProviderInsight }) {
+    const { locale, t } = useDashboardI18n();
     const accent = insight.state === "needs-review" ? dashboardAccents.quotes : dashboardAccents.commands;
-    const chipLabel = insight.state === "needs-review" ? "needs review" : "active";
-    const actionLabel = insight.state === "needs-review" ? "Open errors" : "Open deliveries";
+    const chipLabel = insight.state === "needs-review" ? t("admin.overviewNeedsReview") : t("admin.overviewActive");
+    const actionLabel = insight.state === "needs-review" ? t("admin.overviewOpenErrors") : t("admin.overviewOpenDeliveries");
     const icon = insight.state === "needs-review"
         ? <ErrorOutlined sx={{ color: accent, fontSize: 17 }} />
         : <NotificationsActive sx={{ color: accent, fontSize: 17 }} />;
@@ -413,7 +432,7 @@ function ProviderInsightRow({ insight }: { insight: AdminProviderInsight }) {
                     />
                 </Stack>
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
-                    {formatProviderInsightSummary(insight)}
+                    {formatProviderInsightSummary(insight, locale)}
                 </Typography>
                 <Button component={Link} href={insight.href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
                     {actionLabel}
@@ -424,6 +443,7 @@ function ProviderInsightRow({ insight }: { insight: AdminProviderInsight }) {
 }
 
 function OperationsHealthPanel({ health }: { health: AdminOperationsHealth }) {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const accent = getOperationsStatusAccent(health.status);
     const icon = getOperationsStatusIcon(health.status);
 
@@ -443,12 +463,14 @@ function OperationsHealthPanel({ health }: { health: AdminOperationsHealth }) {
                                 {health.description}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.45)", display: "block", mt: 0.35 }}>
-                                {health.heartbeatAgeMinutes === null ? "Worker heartbeat age unknown." : `Worker heartbeat received ${health.heartbeatAgeMinutes}m ago.`}
+                                {health.heartbeatAgeMinutes === null
+                                    ? t("admin.overviewHeartbeatAgeUnknown")
+                                    : t("admin.overviewHeartbeatAge", { minutes: formatNumber(health.heartbeatAgeMinutes) })}
                             </Typography>
                         </Box>
                     </Stack>
                     <Chip
-                        label={health.status}
+                        label={formatStatus(health.status, locale)}
                         sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}`, fontWeight: 850, textTransform: "capitalize" }}
                     />
                 </Stack>
@@ -465,12 +487,12 @@ function OperationsHealthPanel({ health }: { health: AdminOperationsHealth }) {
                                     variant="outlined"
                                     sx={ghostActionButtonSx(getOperationsStatusAccent(issue.severity))}
                                 >
-                                    {issue.label}: {formatIssueValue(issue.label, issue.value)}
+                                    {formatIssueLabel(issue.label, locale)}: {formatIssueValue(issue.label, issue.value, locale)}
                                 </Button>
                             ) : (
                                 <Chip
                                     key={`${issue.label}-${issue.value}`}
-                                    label={`${issue.label}: ${formatIssueValue(issue.label, issue.value)}`}
+                                    label={`${formatIssueLabel(issue.label, locale)}: ${formatIssueValue(issue.label, issue.value, locale)}`}
                                     size="small"
                                     sx={{
                                         bgcolor: alpha(getOperationsStatusAccent(issue.severity), 0.12),
@@ -498,6 +520,7 @@ function OverviewMetric({
     accent: string;
     icon: React.ReactNode;
 }) {
+    const { formatNumber } = useDashboardI18n();
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.25 }}>
             <Stack direction="row" spacing={1.4} sx={{ position: "relative", alignItems: "center" }}>
@@ -509,7 +532,7 @@ function OverviewMetric({
                         {label}
                     </Typography>
                     <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0, lineHeight: 1.05 }}>
-                        {value}
+                        {formatNumber(value)}
                     </Typography>
                 </Box>
             </Stack>
@@ -534,6 +557,8 @@ function OverviewPanel({
     actionLabel?: string;
     children: React.ReactNode;
 }) {
+    const { t } = useDashboardI18n();
+
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.5, minHeight: 310 }}>
             <Stack spacing={2} sx={{ position: "relative", height: "100%" }}>
@@ -553,7 +578,7 @@ function OverviewPanel({
                     </Stack>
                     {href && (
                         <Button component={Link} href={href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
-                            {actionLabel ?? "Open"}
+                            {actionLabel ?? t("common.open")}
                         </Button>
                     )}
                 </Stack>
@@ -565,13 +590,17 @@ function OverviewPanel({
 }
 
 function IntegrationHealthRow({ record }: { record: IntegrationHealthRecord }) {
-    const message = record.lastErrorMessage ?? record.lastErrorCode ?? "No error message recorded";
+    const { locale, t } = useDashboardI18n();
+    const message = record.lastErrorMessage ?? record.lastErrorCode ?? t("admin.overviewNoErrorMessage");
 
     return (
         <InfoRow
             primary={`${record.provider} / ${record.configId}`}
             secondary={message}
-            meta={`guild ${record.guildId ?? "unknown"} - checked ${formatDateTime(record.lastCheckedAt)}`}
+            meta={t("admin.overviewHealthMeta", {
+                guild: record.guildId ?? t("admin.overviewUnknown"),
+                date: formatDateTime(record.lastCheckedAt, locale),
+            })}
             chipLabel={`x${Math.max(1, record.consecutiveFailures)}`}
             accent={dashboardAccents.quotes}
         />
@@ -579,12 +608,13 @@ function IntegrationHealthRow({ record }: { record: IntegrationHealthRecord }) {
 }
 
 function JobRow({ job }: { job: AdminOverviewJobStatus }) {
+    const { locale, t, formatNumber } = useDashboardI18n();
     if (job.error) {
         return (
             <InfoRow
                 primary={job.name}
                 secondary={job.error}
-                chipLabel="status unavailable"
+                chipLabel={t("admin.overviewStatusUnavailable")}
                 accent={dashboardAccents.patchNotes}
             />
         );
@@ -593,41 +623,52 @@ function JobRow({ job }: { job: AdminOverviewJobStatus }) {
     const latest = job.latestRun;
     const ok = latest?.ok ?? true;
     const secondary = latest
-        ? `${ok ? "last success" : "last failure"} at ${formatDateTime(latest.finishedAt)}`
-        : "No recent runs recorded";
+        ? t("admin.overviewLastRun", {
+            result: ok ? t("admin.overviewLastSuccess") : t("admin.overviewLastFailure"),
+            date: formatDateTime(latest.finishedAt, locale),
+        })
+        : t("admin.overviewNoRecentRuns");
 
     return (
         <InfoRow
             primary={job.name}
             secondary={secondary}
-            meta={`${job.failedRecentRuns}/${job.totalRecentRuns} recent failures`}
-            chipLabel={ok ? "ok" : "failed"}
+            meta={t("admin.overviewRecentFailures", {
+                failed: formatNumber(job.failedRecentRuns),
+                total: formatNumber(job.totalRecentRuns),
+            })}
+            chipLabel={ok ? t("admin.overviewOk") : t("admin.overviewFailed")}
             accent={ok ? dashboardAccents.settings : dashboardAccents.quotes}
         />
     );
 }
 
 function NotificationRow({ record }: { record: AdminNotificationRecord }) {
+    const { locale, t } = useDashboardI18n();
     return (
         <InfoRow
             primary={`${record.provider} / ${record.eventId}`}
-            secondary={`guild ${record.guildId ?? "unknown"} - channel ${record.channelId ?? "unknown"}`}
-            meta={`recorded ${formatDateTime(record.createdAt)}`}
-            chipLabel={record.messageId ? "message saved" : "dedupe only"}
+            secondary={t("admin.overviewNotificationMeta", {
+                guild: record.guildId ?? t("admin.overviewUnknown"),
+                channel: record.channelId ?? t("admin.overviewUnknown"),
+            })}
+            meta={t("admin.overviewRecorded", { date: formatDateTime(record.createdAt, locale) })}
+            chipLabel={record.messageId ? t("admin.overviewMessageSaved") : t("admin.overviewDedupeOnly")}
             accent={dashboardAccents.commands}
         />
     );
 }
 
 function AuditRow({ event }: { event: AuditEventEntry }) {
+    const { locale, t } = useDashboardI18n();
     const accent = event.status === "failure" ? dashboardAccents.quotes : dashboardAccents.admin;
 
     return (
         <InfoRow
             primary={event.action}
             secondary={`${event.actorType}${event.actorId ? `:${event.actorId}` : ""} -> ${event.targetType}${event.targetId ? `:${event.targetId}` : ""}`}
-            meta={formatDateTime(event.timestamp)}
-            chipLabel={event.status}
+            meta={formatDateTime(event.timestamp, locale)}
+            chipLabel={event.status === "failure" ? t("admin.auditStatusFailure") : t("admin.auditStatusSuccess")}
             accent={accent}
         />
     );
@@ -709,34 +750,63 @@ function getReviewSeverityIcon(severity: AdminReviewSeverity, accent: string): R
     return <CheckCircle sx={{ color: accent, fontSize: 17 }} />;
 }
 
-function formatReviewSource(source: AdminReviewSource): string {
-    if (source === "integration-health") return "Integration health";
-    if (source === "jobs") return "Jobs";
-    if (source === "audit") return "Audit";
-    return "Operations";
+function formatReviewSource(source: AdminReviewSource, locale: DashboardLocale): string {
+    if (source === "integration-health") return formatDashboardMessage(locale, "admin.overviewSourceHealth");
+    if (source === "jobs") return formatDashboardMessage(locale, "admin.overviewSourceJobs");
+    if (source === "audit") return formatDashboardMessage(locale, "admin.overviewSourceAudit");
+    return formatDashboardMessage(locale, "admin.overviewSourceOperations");
 }
 
-function formatIssueValue(label: string, value: number): string {
-    if (label === "Stale worker heartbeat") return `${value}m`;
-    return String(value);
+function formatStatus(status: AdminOperationsStatus | AdminReviewSeverity, locale: DashboardLocale): string {
+    if (status === "critical") return formatDashboardMessage(locale, "admin.overviewStatusCritical");
+    if (status === "warning") return formatDashboardMessage(locale, "admin.overviewStatusWarning");
+    if (status === "info") return formatDashboardMessage(locale, "admin.auditSeverityInfo");
+    return formatDashboardMessage(locale, "admin.overviewStatusHealthy");
 }
 
-function formatProviderInsightSummary(insight: AdminProviderInsight): string {
+function formatIssueLabel(label: string, locale: DashboardLocale): string {
+    if (label === "Integration errors") return formatDashboardMessage(locale, "admin.overviewIssueIntegrationErrors");
+    if (label === "Failed job runs") return formatDashboardMessage(locale, "admin.overviewIssueFailedJobs");
+    if (label === "Job status unavailable") return formatDashboardMessage(locale, "admin.overviewIssueJobUnavailable");
+    if (label === "Stale worker heartbeat") return formatDashboardMessage(locale, "admin.overviewIssueStaleHeartbeat");
+    if (label === "Health warnings") return formatDashboardMessage(locale, "admin.overviewIssueHealthWarnings");
+    if (label === "Missing worker heartbeat") return formatDashboardMessage(locale, "admin.overviewIssueMissingHeartbeat");
+    if (label === "Partial overview data") return formatDashboardMessage(locale, "admin.overviewIssuePartialData");
+    return label;
+}
+
+function formatIssueValue(label: string, value: number, locale: DashboardLocale): string {
+    const formatted = new Intl.NumberFormat(getDashboardIntlLocale(locale)).format(value);
+    if (label === "Stale worker heartbeat") {
+        return `${formatted}${getDashboardLocaleValue(locale, staleHeartbeatMinuteSuffix)}`;
+    }
+    return formatted;
+}
+
+function formatProviderInsightSummary(insight: AdminProviderInsight, locale: DashboardLocale): string {
+    const number = new Intl.NumberFormat(getDashboardIntlLocale(locale));
     if (insight.healthErrors > 0) {
-        const guilds = insight.affectedGuilds > 0 ? `${insight.affectedGuilds} ${pluralize("guild", insight.affectedGuilds)}` : "guild unknown";
-        return `${insight.healthErrors} error ${pluralize("config", insight.healthErrors)} - ${insight.consecutiveFailures} current ${pluralize("failure", insight.consecutiveFailures)} - ${guilds} - ${insight.deliveries} ${pluralize("delivery", insight.deliveries)}`;
+        const guilds = insight.affectedGuilds === 1
+            ? formatDashboardMessage(locale, "admin.overviewProviderGuildOne")
+            : insight.affectedGuilds > 1
+                ? formatDashboardMessage(locale, "admin.overviewProviderGuildMany", { count: number.format(insight.affectedGuilds) })
+                : formatDashboardMessage(locale, "admin.overviewProviderGuildUnknown");
+        return formatDashboardMessage(locale, "admin.overviewProviderErrors", {
+            errors: number.format(insight.healthErrors),
+            failures: number.format(insight.consecutiveFailures),
+            guilds,
+            deliveries: number.format(insight.deliveries),
+        });
     }
 
-    return `No visible health errors - ${insight.deliveries} recent ${pluralize("delivery", insight.deliveries)}`;
+    return formatDashboardMessage(locale, "admin.overviewProviderNoErrors", {
+        deliveries: number.format(insight.deliveries),
+    });
 }
 
-function pluralize(label: string, value: number): string {
-    return value === 1 ? label : `${label}s`;
-}
-
-function formatDateTime(value?: string | null): string {
-    if (!value) return "unknown";
+function formatDateTime(value: string | null | undefined, locale: DashboardLocale): string {
+    if (!value) return formatDashboardMessage(locale, "admin.overviewDateUnknown");
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString();
+    return new Intl.DateTimeFormat(getDashboardIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(parsed);
 }

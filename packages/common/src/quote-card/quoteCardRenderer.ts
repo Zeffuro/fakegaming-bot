@@ -1,4 +1,11 @@
 import { createCanvas, type CanvasRenderingContext2D } from 'canvas';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getOutputLocaleMetadata,
+    resolveLocaleValue,
+    type OutputLocaleValues,
+    type SupportedOutputLocale,
+} from '../utils/outputLocale.js';
 
 export const QUOTE_CARD_MIME_TYPE = 'image/png';
 
@@ -17,10 +24,26 @@ export interface QuoteCardInput {
 export interface QuoteCardRenderOptions {
     width?: number;
     height?: number;
+    locale?: SupportedOutputLocale;
 }
 
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 630;
+
+const QUOTE_CARD_COPY = {
+    en: {
+        fallbackTitle: 'FakeGaming Quotes',
+        submittedBy: 'submitted by',
+        unknownAuthor: 'Unknown author',
+        discordUser: 'Discord user',
+    },
+    nl: {
+        fallbackTitle: 'FakeGaming Citaten',
+        submittedBy: 'ingediend door',
+        unknownAuthor: 'Onbekende auteur',
+        discordUser: 'Discord-gebruiker',
+    },
+} as const satisfies OutputLocaleValues<Record<string, string>>;
 const CARD_PADDING = 64;
 const FONT_FAMILY = '"Segoe UI", "Noto Sans", Arial, sans-serif';
 const TITLE_FONT = `800 50px ${FONT_FAMILY}`;
@@ -42,7 +65,7 @@ export function renderQuoteCard(input: QuoteCardInput, options: QuoteCardRenderO
     const ctx = canvas.getContext('2d');
 
     drawBackground(ctx, width, height);
-    drawQuoteCardContent(ctx, input, width, height);
+    drawQuoteCardContent(ctx, input, width, height, options.locale ?? DEFAULT_OUTPUT_LOCALE);
 
     return canvas.toBuffer(QUOTE_CARD_MIME_TYPE);
 }
@@ -88,9 +111,10 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
     ctx.restore();
 }
 
-function drawQuoteCardContent(ctx: CanvasRenderingContext2D, input: QuoteCardInput, width: number, height: number): void {
+function drawQuoteCardContent(ctx: CanvasRenderingContext2D, input: QuoteCardInput, width: number, height: number, locale: SupportedOutputLocale): void {
     const quote = normalizeWhitespace(input.quote);
-    const title = input.guildName?.trim() || 'FakeGaming Quotes';
+    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
+    const title = input.guildName?.trim() || copy.fallbackTitle;
     const source = normalizeOptional(input.source);
     const context = normalizeOptional(input.context);
     const tags = normalizeTags(input.tags);
@@ -120,18 +144,18 @@ function drawQuoteCardContent(ctx: CanvasRenderingContext2D, input: QuoteCardInp
     drawLines(ctx, quoteLines, contentX, contentY, quote.length > 180 ? 48 : 56);
 
     const metaY = Math.min(height - CARD_PADDING - 120, contentY + quoteLines.length * (quote.length > 180 ? 48 : 56) + 24);
-    drawAuthorLine(ctx, input, contentX, metaY, contentWidth);
+    drawAuthorLine(ctx, input, contentX, metaY, contentWidth, locale);
 
     const detailY = metaY + 42;
-    drawDetails(ctx, { source, context, submitterName: input.submitterName, timestamp: input.timestamp }, contentX, detailY, contentWidth);
+    drawDetails(ctx, { source, context, submitterName: input.submitterName, timestamp: input.timestamp }, contentX, detailY, contentWidth, locale);
 
     if (tags.length > 0) {
         drawTags(ctx, tags, contentX, height - CARD_PADDING - 56, contentWidth);
     }
 }
 
-function drawAuthorLine(ctx: CanvasRenderingContext2D, input: QuoteCardInput, x: number, y: number, maxWidth: number): void {
-    const author = input.authorName.trim() || formatFallbackUser(input.authorId);
+function drawAuthorLine(ctx: CanvasRenderingContext2D, input: QuoteCardInput, x: number, y: number, maxWidth: number, locale: SupportedOutputLocale): void {
+    const author = input.authorName.trim() || formatFallbackUser(input.authorId, locale);
     ctx.font = TITLE_FONT;
     ctx.fillStyle = '#46d9c8';
     const prefix = '- ';
@@ -148,11 +172,13 @@ function drawDetails(
     x: number,
     y: number,
     maxWidth: number,
+    locale: SupportedOutputLocale,
 ): void {
     const submitter = normalizeOptional(input.submitterName);
+    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
     const parts = [
-        formatQuoteCardDate(input.timestamp),
-        submitter ? `submitted by ${submitter}` : null,
+        formatQuoteCardDate(input.timestamp, locale),
+        submitter ? `${copy.submittedBy} ${submitter}` : null,
         input.source,
         input.context,
     ]
@@ -265,17 +291,18 @@ function normalizeTags(tags: readonly string[] | null | undefined): string[] {
         .slice(0, 8);
 }
 
-function formatFallbackUser(userId: string | null | undefined): string {
+function formatFallbackUser(userId: string | null | undefined, locale: SupportedOutputLocale): string {
     const normalized = userId?.trim();
-    if (!normalized) return 'Unknown author';
-    return `Discord user ${normalized.slice(-6)}`;
+    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
+    if (!normalized) return copy.unknownAuthor;
+    return `${copy.discordUser} ${normalized.slice(-6)}`;
 }
 
-function formatQuoteCardDate(value: number | string | null | undefined): string | null {
+function formatQuoteCardDate(value: number | string | null | undefined, locale: SupportedOutputLocale): string | null {
     if (value === null || value === undefined) return null;
     const timestamp = typeof value === 'string' ? Number(value) : value;
     if (!Number.isFinite(timestamp) || timestamp <= 0) return null;
-    return new Intl.DateTimeFormat('en-US', {
+    return new Intl.DateTimeFormat(getOutputLocaleMetadata(locale).languageTag, {
         dateStyle: 'medium',
         timeZone: 'UTC',
     }).format(new Date(timestamp));

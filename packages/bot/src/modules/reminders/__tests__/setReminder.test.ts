@@ -1,5 +1,5 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest';
-import {setupCommandTest, expectEphemeralReply, expectReplyText} from '@zeffuro/fakegaming-common/testing';
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
+import {setupCommandTest, expectEphemeralReply, expectReplyText, createMockConfigManager} from '@zeffuro/fakegaming-common/testing';
 import {ChatInputCommandInteraction} from 'discord.js';
 import {parseReminderRecurrence, parseTimespan} from '@zeffuro/fakegaming-common/utils';
 import {v4 as uuidv4} from 'uuid';
@@ -16,7 +16,12 @@ vi.mock('@zeffuro/fakegaming-common/utils', () => ({
 }));
 
 describe('setReminder command', () => {
+    const setDefaultLocale = (): void => {
+        vi.mocked(createMockConfigManager({}).guildLocaleConfigManager.getOutputLocale).mockResolvedValue('en');
+    };
+    afterEach(setDefaultLocale);
     beforeEach(() => {
+        setDefaultLocale();
         // Reset mock call history without tearing down module graph
         vi.restoreAllMocks();
         vi.clearAllMocks();
@@ -24,6 +29,28 @@ describe('setReminder command', () => {
         // Make Date.now() return a consistent value
         vi.spyOn(Date, 'now').mockReturnValue(1633027200000); // October 1, 2021
         vi.mocked(uuidv4 as unknown as () => string).mockReturnValue('mock-uuid-1234');
+    });
+
+    it('uses Dutch app copy while preserving the reminder message', async () => {
+        vi.mocked(parseTimespan).mockReturnValue(3_600_000);
+        const addReminder = vi.fn().mockResolvedValue(undefined);
+        const { command, interaction } = await setupCommandTest(
+            'modules/reminders/commands/setReminder.js',
+            {
+                interaction: {
+                    guildId: 'guild-nl',
+                    stringOptions: { timespan: '1h', message: 'Bel de tandarts' },
+                },
+                managerOverrides: {
+                    reminderManager: { addReminder },
+                    guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('nl') },
+                },
+            },
+        );
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expectReplyText(interaction, 'Ik herinner je over 1h aan: "Bel de tandarts" (om <t:1633030800:R>).');
+        expect(addReminder).toHaveBeenCalledWith(expect.objectContaining({ message: 'Bel de tandarts' }));
     });
 
     it('sets a reminder with a valid timespan', async () => {

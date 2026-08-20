@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { useResolvedUsers } from "@/components/hooks/useResolvedUsers";
 import { filterQuotesForCuration } from "@/lib/quoteCuration";
 import type { QuoteModerationStatus, QuoteOfDayPreviewResponse, QuoteOfDaySettingsRequest } from "@/lib/api/quotes";
@@ -18,8 +19,9 @@ export interface QuoteItem {
 }
 
 export function useQuotes(guildId: string) {
+    const { t } = useDashboardI18n();
     const [quotes, setQuotes] = useState<QuoteItem[]>([]);
-    const { userMap, resolveUsers } = useResolvedUsers(guildId, { warningMessage: "Failed to resolve some users" });
+    const { userMap, resolveUsers } = useResolvedUsers(guildId, { warningMessage: t("hooks.failedToResolveSomeUsers") });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [quoteOfDayLoading, setQuoteOfDayLoading] = useState(true);
@@ -35,7 +37,7 @@ export function useQuotes(guildId: string) {
             setQuotes(data as QuoteItem[]);
             setError(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load quotes");
+            setError(err instanceof Error ? err.message : t("hooks.failedToLoadQuotes"));
         } finally {
             setLoading(false);
         }
@@ -46,7 +48,7 @@ export function useQuotes(guildId: string) {
             setQuoteOfDayLoading(true);
             setQuoteOfDayPreview(await api.getQuoteOfDayPreview(guildId));
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load quote of the day");
+            setError(err instanceof Error ? err.message : t("hooks.failedToLoadQuoteOfDay"));
         } finally {
             setQuoteOfDayLoading(false);
         }
@@ -58,7 +60,7 @@ export function useQuotes(guildId: string) {
 
     const addQuote = useCallback(async (payload: Omit<QuoteItem, 'id' | 'guildId' | 'submitterId'> & { id?: string }) => {
         if (!payload.quote || !payload.authorId) {
-            setError('Quote and authorId are required');
+            setError(t("hooks.quoteRequired"));
             return false;
         }
         try {
@@ -77,7 +79,7 @@ export function useQuotes(guildId: string) {
             await resolveUsers([payload.authorId]);
             return true;
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to add quote');
+            setError(err instanceof Error ? err.message : t("hooks.failedToAddQuote"));
             return false;
         } finally {
             setSaving(false);
@@ -91,7 +93,7 @@ export function useQuotes(guildId: string) {
             await refresh();
             return true;
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to delete quote');
+            setError(err instanceof Error ? err.message : t("hooks.failedToDeleteQuote"));
             return false;
         } finally {
             setSaving(false);
@@ -105,7 +107,7 @@ export function useQuotes(guildId: string) {
             await refresh();
             return true;
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to update quote status');
+            setError(err instanceof Error ? err.message : t("hooks.failedToUpdateQuoteStatus"));
             return false;
         } finally {
             setSaving(false);
@@ -119,7 +121,7 @@ export function useQuotes(guildId: string) {
             await fetchQuoteOfDayPreview();
             return true;
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to save quote of the day settings');
+            setError(err instanceof Error ? err.message : t("hooks.failedToSaveQuoteOfDay"));
             return false;
         } finally {
             setQuoteOfDaySaving(false);

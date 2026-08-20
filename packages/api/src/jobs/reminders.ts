@@ -1,10 +1,12 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, computeNextMinuteBoundaryDelaySeconds, formatMinuteKey, computeBackoffWithNearWindow } from '@zeffuro/fakegaming-common/jobs';
 import { sendDirectMessage } from '../utils/discord.js';
-import { formatElapsed, getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurrenceRule, type ReminderRecurrenceUnit } from '@zeffuro/fakegaming-common/utils';
+import { getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurrenceRule, type ReminderRecurrenceUnit } from '@zeffuro/fakegaming-common/utils';
 import { recordJobRun } from './status.js';
+import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
+import type { SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 
 interface ReminderPlain {
     id: string;
@@ -36,6 +38,26 @@ export function computeReminderRetryBackoffSeconds(now: Date, currentTimestampMs
     return computeBackoffWithNearWindow(currentDelaySeconds, base, cap, 2);
 }
 
+export function buildReminderContent(
+    message: string,
+    elapsed: string,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
+    return `\u23f0 ${apiText(locale, 'reminder', { message, elapsed })}`;
+}
+
+export function formatReminderElapsed(ms: number, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    const seconds = Math.max(0, Math.floor(ms / 1_000));
+    const [value, unit] = seconds >= 86_400
+        ? [Math.floor(seconds / 86_400), 'day'] as const
+        : seconds >= 3_600
+            ? [Math.floor(seconds / 3_600), 'hour'] as const
+            : seconds >= 60
+                ? [Math.floor(seconds / 60), 'minute'] as const
+                : [seconds, 'second'] as const;
+    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-value, unit);
+}
+
 async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:reminders' })): Promise<{ processed: number; errors: number }>{
     const cm = getConfigManager();
     const all = await cm.reminderManager.getAllPlain() as unknown as ReminderPlain[];
@@ -51,9 +73,9 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
 
         try {
             const baseMs = timestamp - getReminderTimespanMs(r.timespan);
-            const elapsed = formatElapsed(Math.max(0, nowMs - baseMs));
-            const content = `⏰ Reminder: ${r.message}\n(set ${elapsed})`;
-            const sent = await sendDirectMessage(r.userId, content);
+            const locale = await resolveUserOutputLocale(r.userId);
+            const elapsed = formatReminderElapsed(Math.max(0, nowMs - baseMs), locale);
+            const sent = await sendDirectMessage(r.userId, buildReminderContent(r.message, elapsed, locale));
             if (sent) {
                 const nextTimestamp = getNextRecurringTimestamp(r, timestamp, nowMs);
                 if (nextTimestamp !== null) {

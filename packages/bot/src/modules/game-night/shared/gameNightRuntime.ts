@@ -2,6 +2,8 @@ import type { Client } from 'discord.js';
 import { getConfigManager, type GameNightBoard } from '@zeffuro/fakegaming-common/managers';
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { renderGameNightBoard } from './gameNightPresentation.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { resolveOutputLocale } from '../../../core/localization.js';
 
 const log = getLogger({ name: 'bot:game-night' });
 const timers = new Map<string, NodeJS.Timeout>();
@@ -51,11 +53,18 @@ export function cancelGameNightRefresh(sessionId: string): void {
     refreshTimers.delete(sessionId);
 }
 
-export async function refreshGameNightMessage(client: Client, board: GameNightBoard): Promise<void> {
+export async function refreshGameNightMessage(
+    client: Client,
+    board: GameNightBoard,
+    locale?: SupportedOutputLocale,
+): Promise<void> {
     if (!board.session.messageId) return;
     const channel = await client.channels.fetch(board.session.channelId);
     if (!channel?.isTextBased() || !('messages' in channel)) return;
-    await channel.messages.edit(board.session.messageId, renderGameNightBoard(board));
+    const outputLocale = locale ?? resolveOutputLocale(
+        await getConfigManager().guildLocaleConfigManager.getOutputLocale(board.session.guildId),
+    );
+    await channel.messages.edit(board.session.messageId, renderGameNightBoard(board, outputLocale));
 }
 
 async function expireAndRefresh(client: Client, sessionId: string): Promise<void> {

@@ -1,6 +1,7 @@
 import type { BlueskyPostConfig } from "@zeffuro/fakegaming-common";
 import { api, type BlueskyCreateRequest } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type BlueskyUpdateRequest = Parameters<typeof api.updateBlueskyAccount>[1];
 
@@ -18,6 +19,7 @@ interface UseBlueskyConfigsOptions {
 }
 
 export function useBlueskyConfigs(guildId: string | string[], options: UseBlueskyConfigsOptions = {}) {
+  const { t } = useDashboardI18n();
   return useConfigResource<BlueskyPostConfig, Omit<BlueskyPostConfig, 'id' | 'guildId'>>({
     guildId,
     enabled: options.enabled ?? true,
@@ -45,13 +47,13 @@ export function useBlueskyConfigs(guildId: string | string[], options: UseBluesk
     validateCreate: (configData) => (
       configData.blueskyHandle && configData.discordChannelId
         ? null
-        : 'Bluesky handle and Discord Channel ID are required'
+        : t("hooks.blueskyRequired")
     ),
     messages: {
-      loadFailed: 'Failed to load Bluesky configurations',
-      createFailed: 'Failed to save Bluesky configuration',
-      updateFailed: 'Failed to update Bluesky configuration',
-      deleteFailed: 'Failed to delete Bluesky configuration',
+      loadFailed: t("hooks.blueskyLoadFailed"),
+      createFailed: t("hooks.blueskySaveFailed"),
+      updateFailed: t("hooks.blueskyUpdateFailed"),
+      deleteFailed: t("hooks.blueskyDeleteFailed"),
     }
   });
 }

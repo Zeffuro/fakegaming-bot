@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import app from '../app.js';
-import { signTestJwt, expectCreated, expectNotFound, expectOk } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectBadRequest, expectCreated, expectNotFound, expectOk } from '@zeffuro/fakegaming-common/testing';
 import { configManager } from '../vitest.setup.js';
 import { getAniListAnimeById, type AniListTitle } from '@zeffuro/fakegaming-common/anime';
 
@@ -134,6 +134,7 @@ describe('Anime subscriptions API', () => {
             userId: 'testuser',
             reminderMinutes: 15,
         });
+        await configManager.userManager.setUser({ discordId: 'testuser', preferredLocale: 'nl' });
 
         const linkRes = await request(app)
             .get('/api/anime/calendar')
@@ -152,16 +153,38 @@ describe('Anime subscriptions API', () => {
         expectOk(feedRes);
         expect(feedRes.headers['content-type']).toContain('text/calendar');
         expect(feedRes.text).toContain('BEGIN:VCALENDAR');
-        expect(feedRes.text).toContain("SUMMARY:Frieren: Beyond Journey's End Episode 2");
+        expect(feedRes.text).toContain("SUMMARY:Frieren: Beyond Journey's End Aflevering 2");
+        expect(feedRes.text).toContain('X-WR-CALNAME:Fakegaming-animeherinneringen');
+        expect(feedRes.text).toContain('Herinnering 15 minuten voor uitzending');
         expect(feedRes.text).toContain('UID:anime-101-2@fakegaming');
+        expect(feedRes.text).toContain('PRODID:-//Fakegaming//Anime Calendar//EN');
+        expect(feedRes.headers['content-disposition']).toBe('inline; filename="fakegaming-anime.ics"');
         expect(feedRes.text).toContain('DTSTART:');
         expect(feedRes.text).toContain('X-WR-TIMEZONE:UTC');
     });
 
     it('rejects invalid anime calendar tokens', async () => {
         const res = await request(app)
-            .get('/api/anime/calendar.ics?token=invalid');
+            .get('/api/anime/calendar.ics?token=invalid')
+            .set('Accept-Language', 'nl');
 
         expectNotFound(res);
+        expect(res.body.error.message).toBe('Kalender niet gevonden');
+    });
+
+    it('localizes AniList status values in not-subscribable errors', async () => {
+        vi.mocked(getAniListAnimeById).mockResolvedValue({ ...animeResult, status: 'FINISHED' });
+
+        const res = await request(app)
+            .post('/api/anime/me')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl')
+            .send({ anilistId: 101, reminderMinutes: 15 });
+
+        expectBadRequest(res);
+        expect(res.body.error).toEqual({
+            code: 'ANIME_NOT_SUBSCRIBABLE',
+            message: "Je kunt Frieren: Beyond Journey's End niet volgen (status: afgerond).",
+        });
     });
 });

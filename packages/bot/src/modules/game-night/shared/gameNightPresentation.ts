@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -6,7 +7,9 @@ import {
     type MessageMentionOptions,
 } from 'discord.js';
 import type { GameNightBoard } from '@zeffuro/fakegaming-common/managers';
-import { gameNightCopy } from '../copy/gameNight.en.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { encodeComponentLocale } from '../../../core/componentLocale.js';
+import { getGameNightCopy } from '../copy/gameNightCopy.js';
 
 export interface GameNightMessage {
     content: string;
@@ -14,12 +17,13 @@ export interface GameNightMessage {
     allowedMentions: MessageMentionOptions;
 }
 
-export function renderGameNightBoard(board: GameNightBoard): GameNightMessage {
+export function renderGameNightBoard(board: GameNightBoard, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): GameNightMessage {
+    const gameNightCopy = getGameNightCopy(locale);
     const safeName = escapeMarkdown(board.session.name);
     const lines = [
         gameNightCopy.title(safeName),
         gameNightCopy.host(board.session.creatorId),
-        stateLine(board),
+        stateLine(board, locale),
         gameNightCopy.expiry(Math.floor(board.session.expiresAt / 1_000)),
         '',
         gameNightCopy.nominationHeading,
@@ -46,23 +50,25 @@ export function renderGameNightBoard(board: GameNightBoard): GameNightMessage {
 
     return {
         content: lines.join('\n'),
-        components: componentRows(board),
+        components: componentRows(board, locale),
         allowedMentions: { parse: [] },
     };
 }
 
-function stateLine(board: GameNightBoard): string {
+function stateLine(board: GameNightBoard, locale: SupportedOutputLocale): string {
+    const gameNightCopy = getGameNightCopy(locale);
     if (board.session.state === 'nominating') return gameNightCopy.nominatingState;
     if (board.session.state === 'voting') return gameNightCopy.votingState;
     if (board.session.state === 'finished') return gameNightCopy.finishedState;
     return gameNightCopy.expiredState;
 }
 
-function componentRows(board: GameNightBoard): ActionRowBuilder<ButtonBuilder>[] {
+function componentRows(board: GameNightBoard, locale: SupportedOutputLocale): ActionRowBuilder<ButtonBuilder>[] {
+    const gameNightCopy = getGameNightCopy(locale);
     if (board.session.state === 'nominating') {
         return [new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
-                .setCustomId(`game-night:open:${board.session.id}`)
+                .setCustomId(`game-night:open:${board.session.id}${encodeComponentLocale(locale)}`)
                 .setLabel(gameNightCopy.openVotingButton)
                 .setStyle(ButtonStyle.Primary),
         )];
@@ -71,7 +77,7 @@ function componentRows(board: GameNightBoard): ActionRowBuilder<ButtonBuilder>[]
         const voteRow = new ActionRowBuilder<ButtonBuilder>();
         for (const [index, nomination] of board.nominations.entries()) {
             voteRow.addComponents(new ButtonBuilder()
-                .setCustomId(`game-night:vote:${board.session.id}:${nomination.id}`)
+                .setCustomId(`game-night:vote:${board.session.id}:${nomination.id}${encodeComponentLocale(locale)}`)
                 .setLabel(String(index + 1))
                 .setStyle(ButtonStyle.Secondary));
         }
@@ -79,7 +85,7 @@ function componentRows(board: GameNightBoard): ActionRowBuilder<ButtonBuilder>[]
             voteRow,
             new ActionRowBuilder<ButtonBuilder>().addComponents(
                 new ButtonBuilder()
-                    .setCustomId(`game-night:close:${board.session.id}`)
+                    .setCustomId(`game-night:close:${board.session.id}${encodeComponentLocale(locale)}`)
                     .setLabel(gameNightCopy.pickWinnerButton)
                     .setStyle(ButtonStyle.Success),
             ),

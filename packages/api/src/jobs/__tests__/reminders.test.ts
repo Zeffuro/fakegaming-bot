@@ -1,7 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { computeNextReminderRunDelaySeconds, computeReminderRetryBackoffSeconds } from '../reminders.js';
+import {
+    buildReminderContent,
+    computeNextReminderRunDelaySeconds,
+    computeReminderRetryBackoffSeconds,
+    formatReminderElapsed,
+} from '../reminders.js';
 
 describe('reminders jobs helpers', () => {
+    it('defaults personal reminder DMs to English and supports Dutch preferences', () => {
+        expect(buildReminderContent('Buy melk', '2 hours ago')).toBe('⏰ Reminder: Buy melk\n(set 2 hours ago)');
+        expect(buildReminderContent('Buy melk', '2 uur geleden', 'nl'))
+            .toBe('⏰ Herinnering: Buy melk\n(ingesteld 2 uur geleden)');
+        expect(formatReminderElapsed(2 * 60 * 60 * 1_000, 'nl')).toBe('2 uur geleden');
+    });
+
     it('computeNextReminderRunDelaySeconds returns at least 5s', () => {
         const now = new Date('2025-01-01T00:00:10Z');
         const sec = computeNextReminderRunDelaySeconds(now);

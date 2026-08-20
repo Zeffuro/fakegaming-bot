@@ -1,3 +1,10 @@
+import {
+    defaultDashboardLocale,
+    getDashboardLocaleValue,
+    type DashboardLocale,
+    type DashboardLocaleValues,
+} from "@/lib/i18n/localeStore";
+
 export interface AdminProviderPlaybookInput {
     provider?: string | null;
     status?: string | null;
@@ -13,6 +20,104 @@ export interface AdminProviderPlaybookHint {
     nextStep: string;
     urgency: "critical" | "warning" | "info";
 }
+
+type PlaybookLocalizedCopy = Pick<AdminProviderPlaybookHint, "title" | "summary" | "nextStep">;
+
+const playbookCopy: DashboardLocaleValues<Readonly<Record<string, PlaybookLocalizedCopy>>> = {
+    en: {},
+    nl: {
+        "twitch-auth": {
+        title: "Twitch-authenticatie mislukt",
+        summary: "De worker kon geen Twitch-app-token ophalen.",
+        nextStep: "Controleer de Twitch-client-ID en het geheim en bevestig dat de Twitch-app nog actief is.",
+    },
+    "twitch-user-not-found": {
+        title: "Twitch-gebruiker niet gevonden",
+        summary: "De ingestelde Twitch-login kan niet meer via Helix worden gevonden.",
+        nextStep: "Controleer de gebruikersnaam en werk de configuratie bij of pauzeer deze als het account is hernoemd of verwijderd.",
+    },
+    "youtube-feed-unavailable": {
+        title: "YouTube-feed niet beschikbaar",
+        summary: "De RSS-feed voor het ingestelde kanaal bevatte geen bruikbare items.",
+        nextStep: "Controleer de YouTube-kanaal-ID en of de kanaalfeed openbaar en bereikbaar is.",
+    },
+    "tiktok-resolve-failed": {
+        title: "TikTok-opzoekactie mislukt",
+        summary: "De worker kon de livestreamstatus van de maker niet bepalen.",
+        nextStep: "Open de TikTok-diagnostiek, controleer de gebruikersnaam en bekijk de opgeschoonde sessiestatus.",
+    },
+    "tiktok-auth-required": {
+        title: "TikTok-sessie waarschijnlijk vereist",
+        summary: "TikTok lijkt voor deze opzoekactie nieuw sessiemateriaal te vereisen.",
+        nextStep: "Vernieuw de beheerde TikTok-sessiecookie en controleer of de diagnostiek een waarschijnlijke sessiecookie toont.",
+    },
+    "tiktok-rate-limited": {
+        title: "TikTok-snelheidslimiet bereikt",
+        summary: "TikTok lijkt controles van de livestreamstatus te beperken.",
+        nextStep: "Wacht op de afkoelperiode en vermijd herhaalde handmatige controles totdat het pollen is hersteld.",
+    },
+    "tiktok-user-not-found": {
+        title: "TikTok-gebruiker niet gevonden",
+        summary: "De ingestelde TikTok-gebruikersnaam kan niet worden gevonden.",
+        nextStep: "Controleer de gebruikersnaam en werk verouderde TikTok-configuraties bij of pauzeer ze.",
+    },
+    "bluesky-feed-unavailable": {
+        title: "Bluesky-feed niet beschikbaar",
+        summary: "De ingestelde Bluesky-handle kon niet worden geladen.",
+        nextStep: "Controleer de handle en daarna de beschikbaarheid van Bluesky voordat je de configuratie wijzigt.",
+    },
+    "patch-update-failed": {
+        title: "Bijwerken van patchabonnement mislukt",
+        summary: "Er is een patchnotitie aangekondigd, maar de bijgewerkte abonnementsstatus kon niet worden opgeslagen.",
+        nextStep: "Controleer de API en database en voer de patchnotitietaak opnieuw uit zodra de opslag stabiel is.",
+    },
+    "discord-send-failed": {
+        title: "Bezorging via Discord mislukt",
+        summary: "Discord heeft geen bericht teruggegeven voor de melding.",
+        nextStep: "Controleer of het doelkanaal bestaat en of de bot het kanaal kan bekijken en er berichten kan sturen.",
+    },
+    "steam-news-poll-failed": {
+        title: "Ophalen van Steam-nieuws mislukt",
+        summary: "De Steam-nieuwscontrole is mislukt voor de ingestelde app.",
+        nextStep: "Controleer de Steam-app-ID en of de openbare nieuwsfeed bereikbaar is.",
+    },
+    auth: {
+        title: "Authenticatiefout",
+        summary: "De provider heeft de inloggegevens of het toegangstoken geweigerd.",
+        nextStep: "Controleer de providergegevens en vervang zo nodig het relevante token of geheim.",
+    },
+    "rate-limit": {
+        title: "Snelheidslimiet van provider",
+        summary: "De provider lijkt aanvragen te beperken.",
+        nextStep: "Wacht op de afkoelperiode en verlaag de controlefrequentie als dezelfde provider blijft mislukken.",
+    },
+    "not-found": {
+        title: "Ingesteld doel niet gevonden",
+        summary: "De provider kon het ingestelde account, de feed of het kanaal niet vinden.",
+        nextStep: "Controleer de ingestelde identificatie en pauzeer of wijzig verouderde configuraties.",
+    },
+    network: {
+        title: "Ophalen bij provider mislukt",
+        summary: "De provideraanvraag is mislukt of bevatte onbruikbare gegevens.",
+        nextStep: "Probeer het na korte tijd opnieuw en controleer de providerstatus als de fouten aanhouden.",
+    },
+    discord: {
+        title: "Probleem met Discord-bestemming",
+        summary: "Bezorging wordt mogelijk geblokkeerd door de kanaalstatus of botmachtigingen.",
+        nextStep: "Controleer het doelkanaal en de machtigingen van de bot om het te bekijken en berichten te sturen.",
+    },
+    "unknown-status": {
+        title: "Onbekende integratiestatus",
+        summary: "De worker heeft nog onvoldoende recente gegevens over deze integratie gemeld.",
+        nextStep: "Controleer de heartbeat van de worker en wacht op de volgende providercontrole voordat je de configuratie wijzigt.",
+        },
+    },
+};
+
+const playbookSummaryPrefixes = {
+    en: "Next",
+    nl: "Volgende stap",
+} satisfies DashboardLocaleValues<string>;
 
 interface PlaybookRule {
     id: string;
@@ -150,32 +255,46 @@ const fallbackRules: PlaybookRule[] = [
     },
 ];
 
-export function getAdminProviderPlaybookHint(input: AdminProviderPlaybookInput): AdminProviderPlaybookHint | null {
+export function getAdminProviderPlaybookHint(
+    input: AdminProviderPlaybookInput,
+    locale: DashboardLocale = "en",
+): AdminProviderPlaybookHint | null {
     const code = normalizeKey(input.lastErrorCode);
     const provider = normalizeKey(input.provider);
     const message = input.lastErrorMessage ?? "";
 
     const explicitRule = explicitRules.find(rule => ruleMatches(rule, { code, provider, message }));
-    if (explicitRule) return toHint(explicitRule, input);
+    if (explicitRule) return localizeHint(toHint(explicitRule, input), locale);
 
     const fallbackRule = fallbackRules.find(rule => ruleMatches(rule, { code, provider, message }));
-    if (fallbackRule) return toHint(fallbackRule, input);
+    if (fallbackRule) return localizeHint(toHint(fallbackRule, input), locale);
 
     if (input.status === "unknown") {
-        return {
+        return localizeHint({
             id: "unknown-status",
             title: "Unknown health state",
             summary: "The worker has not reported enough recent data for this integration.",
             nextStep: "Check the worker heartbeat and wait for the next provider poll before changing config.",
             urgency: "info",
-        };
+        }, locale);
     }
 
     return null;
 }
 
-export function formatAdminProviderPlaybookSummary(hint: AdminProviderPlaybookHint | null): string | null {
-    return hint ? `Next: ${hint.nextStep}` : null;
+function localizeHint(hint: AdminProviderPlaybookHint, locale: DashboardLocale): AdminProviderPlaybookHint {
+    const localizedCopies = getDashboardLocaleValue(locale, playbookCopy);
+    const fallbackCopies = getDashboardLocaleValue(defaultDashboardLocale, playbookCopy);
+    const copy = localizedCopies[hint.id] ?? fallbackCopies[hint.id];
+    return copy ? { ...hint, ...copy } : hint;
+}
+
+export function formatAdminProviderPlaybookSummary(
+    hint: AdminProviderPlaybookHint | null,
+    locale: DashboardLocale = "en",
+): string | null {
+    const prefix = getDashboardLocaleValue(locale, playbookSummaryPrefixes);
+    return hint ? `${prefix}: ${hint.nextStep}` : null;
 }
 
 function ruleMatches(rule: PlaybookRule, input: { code: string; provider: string; message: string }): boolean {

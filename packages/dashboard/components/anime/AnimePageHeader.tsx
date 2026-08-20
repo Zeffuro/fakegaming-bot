@@ -6,6 +6,7 @@ import { AutoStories } from "@mui/icons-material";
 import { Box, Button, Chip, Stack, Typography } from "@mui/material";
 import { ANIME_ACCENT, ANIME_ACCENT_SOFT, ANIME_GOLD, ANIME_PINK, ghostButtonSx, panelSx } from "@/components/anime/animeTheme";
 import { FeatureNav } from "@/components/dashboard/FeatureNav";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AnimePageHeaderProps {
   guildId: string;
@@ -14,6 +15,7 @@ interface AnimePageHeaderProps {
 }
 
 export function AnimePageHeader({ guildId, serverCount, personalCount }: AnimePageHeaderProps) {
+  const { t } = useDashboardI18n();
   const encodedGuildId = encodeURIComponent(guildId);
 
   return (
@@ -34,14 +36,14 @@ export function AnimePageHeader({ guildId, serverCount, personalCount }: AnimePa
               label="Anime"
               sx={{ bgcolor: "rgba(104,215,255,0.14)", color: ANIME_ACCENT_SOFT, border: `1px solid ${ANIME_ACCENT}` }}
             />
-            <Chip label={`${serverCount} Server Subs`} sx={{ bgcolor: "rgba(255,255,255,0.07)", color: "grey.100" }} />
-            <Chip label={`${personalCount} DM Subs`} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: ANIME_GOLD }} />
+            <Chip label={t("anime.serverSubscriptions", { count: serverCount })} sx={{ bgcolor: "rgba(255,255,255,0.07)", color: "grey.100" }} />
+            <Chip label={t("anime.dmSubscriptions", { count: personalCount })} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: ANIME_GOLD }} />
           </Stack>
-          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: "-0.04em" }}>
-            Anime Episodes
+          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
+            {t("anime.title")}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.68)", fontSize: { xs: 15, md: 17 }, maxWidth: 680 }}>
-            Search exact AniList entries, browse seasonal charts with sensible filters, and subscribe a guild channel to upcoming episode reminders.
+            {t("anime.description")}
           </Typography>
         </Stack>
 
@@ -52,7 +54,7 @@ export function AnimePageHeader({ guildId, serverCount, personalCount }: AnimePa
             variant="outlined"
             sx={{ ...ghostButtonSx, borderColor: "rgba(255,255,255,0.22)" }}
           >
-            Back To Notifications
+            {t("notifications.back")}
           </Button>
           <FeatureNav guildId={guildId} activeModule="Anime" />
         </Stack>

@@ -241,4 +241,23 @@ describe('notification setup import', () => {
             },
         });
     });
+
+    it('localizes import validation and plan guidance in Dutch', () => {
+        expect(() => parseNotificationSetupImportJson('{', 'nl'))
+            .toThrow('Het importbestand bevat geen geldige JSON.');
+
+        const plan = buildNotificationSetupImportPlan({
+            exportPayload: {
+                ...baseExport,
+                records: [
+                    { provider: 'Mastodon', source: 'example', channelId: 'channel-1' },
+                ],
+            },
+            currentGuildId: 'target-guild',
+            currentRecords: [],
+        }, 'nl');
+
+        expect(plan.warnings[0]).toContain('Deze export komt van server source-guild');
+        expect(plan.skipped[0]?.message).toContain('wordt nog niet ondersteund');
+    });
 });

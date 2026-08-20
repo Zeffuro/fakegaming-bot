@@ -30,8 +30,10 @@ function toManagementRecord(record: PatchSubscriptionRecord): PatchNoteManagemen
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<PatchNoteManagementRecord>({
     meta: META,
-    subjectSingular: 'patch note subscription',
-    subjectPlural: 'patch note subscriptions',
+    subjects: {
+        singular: { en: 'patch note subscription', nl: 'patchnote-abonnement' },
+        plural: { en: 'patch note subscriptions', nl: 'patchnote-abonnementen' },
+    },
     listRecords: async (guildId) => {
         const records = await getConfigManager().patchSubscriptionManager.getManyPlain({guildId}) as unknown as PatchSubscriptionRecord[];
         return records.map(toManagementRecord);

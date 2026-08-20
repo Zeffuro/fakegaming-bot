@@ -4,7 +4,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import cors from 'cors';
-import { PROJECT_ROOT, getSequelize, getLogger } from '@zeffuro/fakegaming-common';
+import { PROJECT_ROOT, getSequelize, getLogger, NotFoundError } from '@zeffuro/fakegaming-common';
 import { jwtAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { fileURLToPath } from 'url';
@@ -107,9 +107,7 @@ app.use('/api', apiRouter);
 
 // Catch 404
 app.use('/api', (_req, _res, next) => {
-    const err = new Error('Not Found');
-    (err as any).status = 404;
-    next(err);
+    next(new NotFoundError());
 });
 
 // Global error handler

@@ -36,6 +36,10 @@
       "import": "./dist/utils/cacheManager.js",
       "types": "./dist/utils/cacheManager.d.ts"
     },
+    "./output-locale": {
+      "import": "./dist/utils/outputLocale.js",
+      "types": "./dist/utils/outputLocale.d.ts"
+    },
     "./auth": {
       "import": "./dist/discord/auth.js",
       "types": "./dist/discord/auth.d.ts"
@@ -128,6 +132,9 @@
       "utils/cache": [
         "dist/utils/cacheManager.d.ts"
       ],
+      "output-locale": [
+        "dist/utils/outputLocale.d.ts"
+      ],
       "auth": [
         "dist/discord/auth.d.ts"
       ],
@@ -205,10 +212,10 @@
   },
   "devDependencies": {
     "@types/ms": "^2.1.0",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "eslint": "^10.8.1",
     "typescript": "^6.0.3",
     "vite": "8.0.16",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   }
 }

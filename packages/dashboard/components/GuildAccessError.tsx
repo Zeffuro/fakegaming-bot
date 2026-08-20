@@ -2,12 +2,14 @@
 
 import { Alert } from "@mui/material";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export function GuildAccessError() {
+  const { t } = useDashboardI18n();
   return (
     <DashboardLayout>
       <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
-        Guild not found or you don't have access to this guild.
+        {t("guild.notFoundOrForbidden")}
       </Alert>
     </DashboardLayout>
   );

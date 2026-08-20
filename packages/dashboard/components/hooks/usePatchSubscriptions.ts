@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { PatchSubscriptionConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type PatchSubscriptionCreateRequest = Parameters<typeof api.createPatchSubscription>[0];
 type PatchSubscriptionUpsertRequest = Parameters<typeof api.upsertPatchSubscription>[0];
@@ -19,6 +20,7 @@ export interface PatchSubscriptionUIConfig {
 }
 
 export function usePatchSubscriptions(guildId: string | string[], options: UsePatchSubscriptionsOptions = {}) {
+  const { t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<PatchSubscriptionUIConfig[]>([]);
   const [loading, setLoading] = useState(enabled);
@@ -46,15 +48,15 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       const guildSubs = (all as PatchSubscriptionConfig[]).filter(s => s.guildId === guildId);
       setConfigs(guildSubs.map(mapToUI));
     } catch (err: any) {
-      setError(err?.message ?? "Failed to load Patch Note subscriptions");
+      setError(err?.message ?? t("hooks.failedToLoadPatchSubscriptions"));
     } finally {
       setLoading(false);
     }
-  }, [enabled, guildId]);
+  }, [enabled, guildId, t]);
 
   const addConfig = async (config: Omit<PatchSubscriptionUIConfig, 'id' | 'guildId'>) => {
     if (!config.game || !config.discordChannelId) {
-      setError('Game and Discord Channel are required');
+      setError(t("hooks.patchSubscriptionRequired"));
       return false;
     }
 
@@ -70,7 +72,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to create subscription');
+      setError(err?.message ?? t("hooks.failedToCreateSubscription"));
       return false;
     } finally {
       setSaving(false);
@@ -90,7 +92,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to update subscription');
+      setError(err?.message ?? t("hooks.failedToUpdateSubscription"));
       return false;
     } finally {
       setSaving(false);
@@ -104,7 +106,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to delete subscription');
+      setError(err?.message ?? t("hooks.failedToDeleteSubscription"));
       return false;
     } finally {
       setSaving(false);
@@ -118,7 +120,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to update subscription status');
+      setError(err?.message ?? t("hooks.failedToUpdateSubscriptionStatus"));
       return false;
     } finally {
       setSaving(false);
@@ -137,7 +139,7 @@ export function usePatchSubscriptions(guildId: string | string[], options: UsePa
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to update subscription statuses');
+      setError(err?.message ?? t("hooks.failedToUpdateSubscriptionStatuses"));
       return false;
     } finally {
       setSaving(false);

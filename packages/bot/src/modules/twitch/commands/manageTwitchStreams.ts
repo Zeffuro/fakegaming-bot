@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -14,8 +15,10 @@ interface TwitchManagementRecord extends IntegrationManagementRecord {
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<TwitchManagementRecord>({
     meta: META,
-    subjectSingular: 'Twitch stream',
-    subjectPlural: 'Twitch streams',
+    subjects: {
+        singular: { en: 'Twitch stream', nl: 'Twitch-stream' },
+        plural: { en: 'Twitch streams', nl: 'Twitch-streams' },
+    },
     listRecords: async (guildId) => {
         const records = await getConfigManager().twitchManager.getManyPlain({guildId});
         return records as unknown as TwitchManagementRecord[];
@@ -34,7 +37,7 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TwitchManag
         const liveState = record.isLive ? ' live' : '';
         return `${inlineCode(String(record.id))} ${inlineCode(record.twitchUsername)} -> <#${record.discordChannelId}>${liveState}`;
     },
-    describeRecord: (record) => `${inlineCode(record.twitchUsername)} from <#${record.discordChannelId}>`,
+    describeRecord: (record, locale) => `${inlineCode(record.twitchUsername)} ${resolveLocaleValue(locale, { en: 'from', nl: 'uit' })} <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'twitch.delete',
         targetType: 'twitchConfig',

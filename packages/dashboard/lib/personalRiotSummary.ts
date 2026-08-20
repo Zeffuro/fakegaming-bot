@@ -1,4 +1,5 @@
 import type { RiotLinkEntry } from "@/lib/api-client";
+import type { DashboardTranslator } from "@/lib/i18n/messages";
 
 export type PersonalRiotSummaryTone = "default" | "success" | "warning";
 
@@ -19,36 +20,37 @@ export interface PersonalRiotSummary {
 export function buildPersonalRiotSummary(
     link: RiotLinkEntry | null,
     formatDate: (value: string | null) => string,
+    t: DashboardTranslator,
 ): PersonalRiotSummary {
     if (!link) {
         return {
             linked: false,
-            badgeLabel: "No link",
-            summaryText: "No linked Riot account",
-            helperText: "Use /link-riot in Discord to connect an account for League and TFT commands.",
+            badgeLabel: t("personal.riotNoLinkBadge"),
+            summaryText: t("personal.riotNoAccount"),
+            helperText: t("personal.riotNoAccountHelp"),
             rows: [],
         };
     }
 
     const riotId = displayRiotId(link);
-    const region = formatRiotRegion(link.region);
+    const region = formatRiotRegion(link.region, t("common.unknown"));
     const accountKeyReady = link.puuid.trim().length > 0;
 
     return {
         linked: true,
-        badgeLabel: "Linked",
-        summaryText: `${riotId} in ${region}`,
-        helperText: "League and TFT commands use this account when no Riot ID is provided.",
+        badgeLabel: t("personal.riotLinkedBadge"),
+        summaryText: t("personal.riotSummary", { riotId, region }),
+        helperText: t("personal.riotLinkedHelp"),
         rows: [
-            { label: "Riot ID", value: riotId, tone: "default" },
-            { label: "Region", value: region, tone: "default" },
+            { label: t("personal.riotId"), value: riotId, tone: "default" },
+            { label: t("personal.region"), value: region, tone: "default" },
             {
-                label: "Command status",
-                value: accountKeyReady ? "Ready for League and TFT commands" : "Missing account key",
+                label: t("personal.commandStatus"),
+                value: accountKeyReady ? t("personal.riotReady") : t("personal.riotMissingKey"),
                 tone: accountKeyReady ? "success" : "warning",
             },
             {
-                label: "Updated",
+                label: t("personal.updated"),
                 value: formatDate(link.updatedAt ?? link.createdAt ?? null),
                 tone: "default",
             },
@@ -63,6 +65,6 @@ export function displayRiotId(link: Pick<RiotLinkEntry, "summonerName" | "riotId
     return link.summonerName;
 }
 
-export function formatRiotRegion(region: string): string {
-    return region.trim().toUpperCase() || "Unknown";
+export function formatRiotRegion(region: string, unknownLabel: string): string {
+    return region.trim().toUpperCase() || unknownLabel;
 }

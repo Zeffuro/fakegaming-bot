@@ -29,7 +29,7 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(401);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: { code: 'UNAUTHORIZED', message: 'Token expired' }
+            error: { code: 'UNAUTHORIZED', message: 'Unauthorized' }
         });
     });
 
@@ -59,7 +59,17 @@ describe('errorHandler', () => {
 
         expect(statusMock).toHaveBeenCalledWith(500);
         expect(jsonMock).toHaveBeenCalledWith({
-            error: { code: 'INTERNAL_SERVER_ERROR', message: 'Something went wrong' }
+            error: { code: 'INTERNAL_SERVER_ERROR', message: 'Unexpected error' }
+        });
+    });
+
+    it('uses Dutch generic copy when requested', () => {
+        mockReq = { headers: { 'accept-language': 'nl-NL,nl;q=0.9' } };
+
+        errorHandler({ name: 'UnauthorizedError' }, mockReq as Request, mockRes as Response, mockNext);
+
+        expect(jsonMock).toHaveBeenCalledWith({
+            error: { code: 'UNAUTHORIZED', message: 'Niet geautoriseerd' }
         });
     });
 

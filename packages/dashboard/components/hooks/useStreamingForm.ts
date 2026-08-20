@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SelectChangeEvent } from "@mui/material";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface StreamingConfig {
   id?: number;
@@ -24,6 +25,7 @@ export function useStreamingForm<T extends StreamingConfig>({
   channelNameField,
   guildId: _guildId
 }: UseStreamingFormProps<T>) {
+  const { t } = useDashboardI18n();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editingConfig, setEditingConfig] = useState<T | null>(null);
   const [newConfig, setNewConfig] = useState<any>({
@@ -63,7 +65,7 @@ export function useStreamingForm<T extends StreamingConfig>({
   };
 
   const handleDeleteConfig = async (config: T) => {
-    if (!confirm(`Are you sure you want to delete this configuration?`)) {
+    if (!confirm(t("hooks.confirmDeleteConfiguration"))) {
       return false;
     }
     return await onDelete(config);

@@ -1,10 +1,11 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { patchNoteCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { SUPPORTED_GAMES } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const gameParamSchema = z.object({ game: z.string().min(1) });
@@ -101,12 +102,7 @@ router.get('/history/compare', validateQuery(patchNoteHistoryCompareQuerySchema)
     ]);
 
     if (left.game !== right.game) {
-        return res.status(400).json({
-            error: {
-                code: 'BAD_REQUEST',
-                message: 'Patch records must be from the same game',
-            },
-        });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'patchRecordsSameGame');
     }
 
     res.json(manager.compareHistoryRecords(left, right));
@@ -195,7 +191,7 @@ router.get('/history', validateQuery(patchNoteHistoryQuerySchema), async (req, r
 router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
     const { game } = req.params;
     const note = await getConfigManager().patchNotesManager.getLatestPatch(game as string);
-    if (!note) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Patch note not found' } });
+    if (!note) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'patchNoteNotFound');
     res.json(note);
 });
 

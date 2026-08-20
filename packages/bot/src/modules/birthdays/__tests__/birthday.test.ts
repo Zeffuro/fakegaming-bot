@@ -1,9 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { setupCommandTest, createMockBirthday, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { setupCommandTest, createMockBirthday, createMockConfigManager, expectReplyTextContains, expectEphemeralReply } from '@zeffuro/fakegaming-common/testing';
 import { CommandInteraction } from 'discord.js';
 
 describe('birthday command', () => {
+    afterEach(() => setDefaultLocale());
     beforeEach(() => {
+        setDefaultLocale();
         // Reset mock call history without tearing down module graph
         vi.clearAllMocks();
         vi.restoreAllMocks();
@@ -60,6 +62,23 @@ describe('birthday command', () => {
         // Verify the interaction reply (content and ephemeral)
         expectReplyContains(interaction, 'Your birthday: 5 January 1990');
         expectEphemeral(interaction);
+    });
+
+    function setDefaultLocale(): void {
+        vi.mocked(createMockConfigManager({}).guildLocaleConfigManager.getOutputLocale).mockResolvedValue('en');
+    }
+
+    it('uses the stored guild locale for Dutch birthday output', async () => {
+        const { command, interaction } = await setupBirthdayCmd({
+            interaction: { user: { id: '123456789012345678' }, guildId: 'guild-nl' },
+            managerOverrides: {
+                birthdayManager: { getBirthday: vi.fn().mockResolvedValue(createMockBirthday({ day: 5, month: 1, year: 1990 })) },
+                guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('nl') },
+            },
+        });
+
+        await command.execute(interaction as unknown as CommandInteraction);
+        expectReplyContains(interaction, 'Jouw verjaardag: 5 januari 1990');
     });
 
     it('shows another user\'s birthday when user option is provided', async () => {

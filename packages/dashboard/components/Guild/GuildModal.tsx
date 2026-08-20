@@ -2,9 +2,11 @@ import React from "react";
 import {Box, Typography, Button, Modal} from "@mui/material";
 import { useRouter } from "next/navigation";
 import GuildAvatar from "./GuildAvatar";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export default function GuildModal({guild, open, onClose}: { guild: any, open: boolean, onClose: () => void }) {
   const router = useRouter();
+  const { t } = useDashboardI18n();
 
     return (
         <Modal open={open} onClose={onClose}>
@@ -25,7 +27,7 @@ export default function GuildModal({guild, open, onClose}: { guild: any, open: b
                         <Box sx={{display: "flex", alignItems: "center", mb: 2}}>
                             <GuildAvatar guild={guild}/>
                             <Typography variant="h6" sx={{ml: 2}}>
-                                Managing: {guild.name}
+                                {t("guild.managing", { guild: guild.name })}
                             </Typography>
                         </Box>
                         {/* Add management UI here */}
@@ -35,7 +37,7 @@ export default function GuildModal({guild, open, onClose}: { guild: any, open: b
                             onClick={onClose}
                             sx={{mt: 2}}
                         >
-                            Close
+                            {t("common.close")}
                         </Button>
                         <Button
                             variant="contained"
@@ -47,7 +49,7 @@ export default function GuildModal({guild, open, onClose}: { guild: any, open: b
                             disabled={!guild}
                             sx={{mt: 2, ml: 1}}
                         >
-                            Manage Commands
+                            {t("guild.manageCommands")}
                         </Button>
                     </>
                 )}

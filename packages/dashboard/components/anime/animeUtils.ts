@@ -1,4 +1,6 @@
 import type { AnimeSearchResult, AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
+import { getDashboardIntlLocale, type DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
 import {
   formatAniListCountryOfOrigin,
   formatAniListMediaFormat,
@@ -8,60 +10,55 @@ import {
   formatAniListStatus,
 } from "@zeffuro/fakegaming-common/anime";
 
-const airingDateFormatter = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
+function animeMessage(locale: DashboardLocale, key: "anime.noUpcomingEpisode" | "anime.episodeAirs" | "anime.saving" | "anime.lookupOnly" | "anime.channelFirst" | "anime.ready", values?: Record<string, string | number>): string {
+  return formatDashboardMessage(locale, key, values);
+}
 
 export function formatAnimeTitle(anime: AnimeSearchResult): string {
   return anime.title.english || anime.title.romaji || anime.title.native || `AniList #${anime.id}`;
 }
 
-export function formatStatus(status?: string | null): string {
-  return formatAniListStatus(status);
+export function formatStatus(status: string | null | undefined, locale: DashboardLocale): string {
+  return formatAniListStatus(status, locale);
 }
 
-export function formatAnimeMeta(anime: AnimeSearchResult): string {
+export function formatAnimeMeta(anime: AnimeSearchResult, locale: DashboardLocale): string {
   if (anime.type === "MANGA") {
     return [
-      formatAniListCountryOfOrigin(anime.countryOfOrigin),
-      formatAniListMediaFormat({ format: anime.format, type: anime.type, countryOfOrigin: anime.countryOfOrigin }),
-      formatStatus(anime.status),
-      anime.chapters ? `${anime.chapters} Chapters` : null,
-      anime.volumes ? `${anime.volumes} Volumes` : null,
-      formatAniListScore(anime),
-      anime.popularity ? `${formatAniListPopularity(anime.popularity)} Users` : null,
+      formatAniListCountryOfOrigin(anime.countryOfOrigin, locale),
+      formatAniListMediaFormat({ format: anime.format, type: anime.type, countryOfOrigin: anime.countryOfOrigin }, locale),
+      formatStatus(anime.status, locale),
+      anime.chapters ? formatDashboardMessage(locale, "anime.chapters", { count: anime.chapters }) : null,
+      anime.volumes ? formatDashboardMessage(locale, "anime.volumes", { count: anime.volumes }) : null,
+      formatAniListScore(anime, locale),
+      anime.popularity ? formatDashboardMessage(locale, "anime.users", { count: formatAniListPopularity(anime.popularity, locale) }) : null,
     ].filter(Boolean).join(" - ");
   }
 
   return [
-    anime.seasonYear ?? "Unknown Year",
-    formatAniListMediaFormat({ format: anime.format, type: anime.type ?? "ANIME", countryOfOrigin: anime.countryOfOrigin }),
-    formatStatus(anime.status),
-    anime.episodes ? `${anime.episodes} Episodes` : null,
-    formatAniListScore(anime),
-    anime.popularity ? `${formatAniListPopularity(anime.popularity)} Users` : null,
+    anime.seasonYear ?? formatDashboardMessage(locale, "anime.unknownYear"),
+    formatAniListMediaFormat({ format: anime.format, type: anime.type ?? "ANIME", countryOfOrigin: anime.countryOfOrigin }, locale),
+    formatStatus(anime.status, locale),
+    anime.episodes ? formatDashboardMessage(locale, "anime.episodes", { count: anime.episodes }) : null,
+    formatAniListScore(anime, locale),
+    anime.popularity ? formatDashboardMessage(locale, "anime.users", { count: formatAniListPopularity(anime.popularity, locale) }) : null,
   ].filter(Boolean).join(" - ");
 }
 
-export function formatAiring(ms?: number | null): string {
-  if (!ms) return "No upcoming episode known";
-  return airingDateFormatter.format(new Date(ms));
+export function formatAiring(ms: number | null | undefined, locale: DashboardLocale): string {
+  if (!ms) return animeMessage(locale, "anime.noUpcomingEpisode");
+  return new Intl.DateTimeFormat(getDashboardIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(new Date(ms));
 }
 
-export function formatNextEpisode(anime: AnimeSearchResult): string | null {
+export function formatNextEpisode(anime: AnimeSearchResult, locale: DashboardLocale): string | null {
   if (anime.type === "MANGA") return null;
   if (!anime.nextAiringEpisode) return null;
-  return `Episode ${anime.nextAiringEpisode.episode} Airs ${formatAiring(anime.nextAiringEpisode.airingAt * 1000)}`;
+  return animeMessage(locale, "anime.episodeAirs", { episode: anime.nextAiringEpisode.episode, date: formatAiring(anime.nextAiringEpisode.airingAt * 1000, locale) });
 }
 
-export function formatRankings(anime: Pick<AnimeSearchResult, "rankings">): string[] {
+export function formatRankings(anime: Pick<AnimeSearchResult, "rankings">, locale: DashboardLocale): string[] {
   const rankings = anime.rankings?.filter((rank) => rank.allTime).slice(0, 2) ?? anime.rankings?.slice(0, 2) ?? [];
-  return rankings.map(formatAniListRanking);
+  return rankings.map(rank => formatAniListRanking(rank, locale));
 }
 
 export function canSubscribe(anime?: Pick<AnimeSearchResult, "status" | "type"> | null): boolean {
@@ -72,21 +69,21 @@ export function subscriptionTitle(config: AnimeSubscriptionDashboardConfig): str
   return config.animeTitle || `AniList #${config.anilistId}`;
 }
 
-export function subscriptionMeta(config: AnimeSubscriptionDashboardConfig): string {
+export function subscriptionMeta(config: AnimeSubscriptionDashboardConfig, locale: DashboardLocale): string {
   return [
-    config.format ? formatAniListMediaFormat({ format: config.format, type: "ANIME" }) : null,
-    config.status ? formatAniListStatus(config.status) : null,
-    config.nextEpisode && config.nextAiringAt ? `Episode ${config.nextEpisode} ${formatAiring(Number(config.nextAiringAt))}` : null,
-    `${config.reminderMinutes ?? 30} Min Reminder`,
+    config.format ? formatAniListMediaFormat({ format: config.format, type: "ANIME" }, locale) : null,
+    config.status ? formatAniListStatus(config.status, locale) : null,
+    config.nextEpisode && config.nextAiringAt ? formatDashboardMessage(locale, "anime.episodeAirs", { episode: config.nextEpisode, date: formatAiring(Number(config.nextAiringAt), locale) }) : null,
+    formatDashboardMessage(locale, "anime.minutesReminder", { minutes: config.reminderMinutes ?? 30 }),
   ].filter(Boolean).join(" - ");
 }
 
-export function getSubscribeHint(args: { anime?: AnimeSearchResult | null; channelId?: string; saving?: boolean }): string {
-  if (args.saving) return "Saving...";
-  if (args.anime?.type === "MANGA") return "Manga results are lookup-only; episode reminders are anime-only.";
-  if (args.anime && !canSubscribe(args.anime)) return `${formatStatus(args.anime.status)} anime cannot receive episode reminders.`;
-  if (!args.channelId) return "Choose a notification channel first.";
-  return "Ready to subscribe.";
+export function getSubscribeHint(args: { anime?: AnimeSearchResult | null; channelId?: string; saving?: boolean }, locale: DashboardLocale): string {
+  if (args.saving) return animeMessage(locale, "anime.saving");
+  if (args.anime?.type === "MANGA") return animeMessage(locale, "anime.lookupOnly");
+  if (args.anime && !canSubscribe(args.anime)) return formatDashboardMessage(locale, "anime.invalidReminder");
+  if (!args.channelId) return animeMessage(locale, "anime.channelFirst");
+  return animeMessage(locale, "anime.ready");
 }
 
 export function errorMessage(err: unknown, fallback: string): string {

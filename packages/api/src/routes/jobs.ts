@@ -1,7 +1,7 @@
 import { Router, type Request } from 'express';
 import { jwtOrService } from '../middleware/auth.js';
 import { getActiveJobQueue, getLastHeartbeat } from '../jobs/bootstrap.js';
-import { validateBody } from '@zeffuro/fakegaming-common';
+import { validateBody } from '../localization/validation.js';
 import { jobRunRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getJobRuns } from '../jobs/status.js';
 import type { JobRunEntry } from '../jobs/status.js';
@@ -10,6 +10,7 @@ import { Op } from 'sequelize';
 import { JobRun } from '@zeffuro/fakegaming-common';
 import { recordAuditEvent } from '../utils/audit.js';
 import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = Router();
 
@@ -143,7 +144,7 @@ router.get('/:name/status', ...requireJobsAdmin, async (req, res) => {
     const { name } = req.params as { name: string };
     const def = ALLOWED_JOBS[name];
     if (!def) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: `Unknown job name: ${name}` } });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'unknownJobName', { name });
     }
     // Prefer DB-backed recent runs; fallback to in-memory if none
     const dbNames = [name, ...(def.runNames ?? [])];
@@ -207,13 +208,13 @@ router.post('/:name/run', ...requireJobsAdmin, validateBody(jobRunRequestSchema)
     const { name } = req.params as { name: string };
     const def = ALLOWED_JOBS[name];
     if (!def) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: `Unknown job name: ${name}` } });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'unknownJobName', { name });
     }
 
     const queue = getActiveJobQueue();
     if (!queue) {
         await recordJobRunAudit(req, name, def, 'failure', { reason: 'queue_unavailable' });
-        return res.status(503).json({ error: { code: 'JOBS_UNAVAILABLE', message: 'Jobs are not enabled or queue is not initialized' } });
+        return sendLocalizedError(req, res, 503, 'JOBS_UNAVAILABLE', 'jobsUnavailable');
     }
 
     const payload: Record<string, unknown> = {};

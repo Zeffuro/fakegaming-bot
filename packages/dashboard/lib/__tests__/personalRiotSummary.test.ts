@@ -5,6 +5,10 @@ import {
     formatRiotRegion,
 } from "@/lib/personalRiotSummary";
 import type { RiotLinkEntry } from "@/lib/api-client";
+import { formatDashboardMessage, type DashboardTranslator } from "@/lib/i18n/messages";
+
+const english: DashboardTranslator = (key, values) => formatDashboardMessage("en", key, values);
+const dutch: DashboardTranslator = (key, values) => formatDashboardMessage("nl", key, values);
 
 function formatDate(value: string | null): string {
     return value ? `formatted:${value}` : "unknown";
@@ -26,7 +30,7 @@ function riotLink(overrides: Partial<RiotLinkEntry> = {}): RiotLinkEntry {
 
 describe("personalRiotSummary", () => {
     it("builds a linked summary for command-ready accounts", () => {
-        const summary = buildPersonalRiotSummary(riotLink(), formatDate);
+        const summary = buildPersonalRiotSummary(riotLink(), formatDate, english);
 
         expect(summary.linked).toBe(true);
         expect(summary.badgeLabel).toBe("Linked");
@@ -41,7 +45,7 @@ describe("personalRiotSummary", () => {
     });
 
     it("builds an unlinked summary", () => {
-        const summary = buildPersonalRiotSummary(null, formatDate);
+        const summary = buildPersonalRiotSummary(null, formatDate, english);
 
         expect(summary.linked).toBe(false);
         expect(summary.badgeLabel).toBe("No link");
@@ -54,9 +58,9 @@ describe("personalRiotSummary", () => {
     });
 
     it("normalizes blank regions and missing account keys", () => {
-        const summary = buildPersonalRiotSummary(riotLink({ region: " ", puuid: " ", updatedAt: null }), formatDate);
+        const summary = buildPersonalRiotSummary(riotLink({ region: " ", puuid: " ", updatedAt: null }), formatDate, english);
 
-        expect(formatRiotRegion(" ")).toBe("Unknown");
+        expect(formatRiotRegion(" ", "Unknown")).toBe("Unknown");
         expect(summary.summaryText).toBe("Player#EUW in Unknown");
         expect(summary.rows).toContainEqual({
             label: "Command status",
@@ -67,6 +71,18 @@ describe("personalRiotSummary", () => {
             label: "Updated",
             value: "formatted:2026-06-23T10:00:00.000Z",
             tone: "default",
+        });
+    });
+
+    it("localizes application copy while preserving Riot account values", () => {
+        const summary = buildPersonalRiotSummary(riotLink(), formatDate, dutch);
+
+        expect(summary.badgeLabel).toBe("Gekoppeld");
+        expect(summary.summaryText).toBe("Player#EUW in EUW1");
+        expect(summary.rows).toContainEqual({
+            label: "Commandostatus",
+            value: "Klaar voor League- en TFT-commando's",
+            tone: "success",
         });
     });
 });

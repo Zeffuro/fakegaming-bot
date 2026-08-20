@@ -8,6 +8,7 @@ import {
 } from "@/components/config-dialog/ConfigDialogFields";
 import { useStreamingForm } from "@/components/hooks/useStreamingForm";
 import type { StreamingConfig } from "@/components/hooks/useStreamingForm";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AddConfigDialogProps<T extends StreamingConfig> {
     open: boolean;
@@ -18,6 +19,7 @@ interface AddConfigDialogProps<T extends StreamingConfig> {
     channelNamePlaceholder: string;
     guildId: string;
     moduleName: string;
+    moduleDisplayName?: string;
     moduleColor: string;
     channels: { id: string; name: string }[];
     loadingChannels: boolean;
@@ -39,6 +41,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     channelNamePlaceholder,
     guildId,
     moduleName,
+    moduleDisplayName = moduleName,
     moduleColor,
     channels,
     loadingChannels,
@@ -50,6 +53,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     itemNameOptions,
     itemNameSearch
 }: AddConfigDialogProps<T>) {
+    const { t } = useDashboardI18n();
     const {
         newConfig,
         setNewConfig,
@@ -68,7 +72,9 @@ export default function AddConfigDialog<T extends StreamingConfig>({
     const handleFieldChange = (field: string, value: unknown) => {
         setNewConfig((current: ConfigDialogValue) => ({ ...current, [field]: value }));
     };
-    const title = itemSingularLabel ? `Add ${itemSingularLabel}` : `Add ${moduleName} ${moduleName === 'YouTube' ? 'Channel' : 'Streamer'}`;
+    const title = itemSingularLabel
+        ? t("common.addItem", { item: itemSingularLabel })
+        : t("common.addItem", { item: `${moduleDisplayName} ${moduleName === "YouTube" ? t("config.channel") : t("config.streamer")}` });
 
     return (
         <ConfigDialogShell
@@ -77,7 +83,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
             title={title}
             moduleColor={moduleColor}
             saving={saving}
-            submitLabel="Add"
+            submitLabel={t("common.add")}
             submitDisabled={!nameValue || !selectedChannelId}
             onSubmit={handleAddConfig}
         >
@@ -88,6 +94,7 @@ export default function AddConfigDialog<T extends StreamingConfig>({
                 channelNameLabel={channelNameLabel}
                 channelNamePlaceholder={channelNamePlaceholder}
                 moduleName={moduleName}
+                moduleDisplayName={moduleDisplayName}
                 moduleColor={moduleColor}
                 channels={channels}
                 loadingChannels={loadingChannels}

@@ -84,4 +84,15 @@ describe('adminProviderPlaybooks', () => {
         expect(formatAdminProviderPlaybookSummary(hint)).toBe('Next: Check the destination channel exists and the bot can view and send messages there.');
         expect(formatAdminProviderPlaybookSummary(null)).toBeNull();
     });
+
+    it('localizes provider guidance while preserving stable IDs', () => {
+        expect(getAdminProviderPlaybookHint({
+            provider: 'twitch',
+            lastErrorCode: 'TWITCH_AUTH_FAILED',
+        }, 'nl')).toMatchObject({
+            id: 'twitch-auth',
+            title: 'Twitch-authenticatie mislukt',
+            urgency: 'critical',
+        });
+    });
 });

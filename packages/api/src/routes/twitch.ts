@@ -1,5 +1,4 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { twitchCreateRequestSchema, twitchUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getLogger } from '@zeffuro/fakegaming-common';
 import { z } from 'zod';
@@ -18,6 +17,8 @@ import {
     upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
+import { API_VALIDATION_ISSUE, validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 // Schemas
 const existsQuerySchema = z.object({
@@ -38,7 +39,7 @@ const verifyQuerySchema = z.object({
     const raw = q.username ?? q.twitchUsername;
     if (Array.isArray(raw)) return (raw[0]?.trim().length ?? 0) > 0;
     return typeof raw === 'string' && raw.trim().length > 0;
-}, { message: 'username is required', path: ['username'] }).transform((q) => {
+}, { message: API_VALIDATION_ISSUE.usernameRequired, path: ['username'] }).transform((q) => {
     const raw = q.username ?? q.twitchUsername;
     const v = Array.isArray(raw) ? raw[0] : raw;
     return { username: (v ?? '').trim() };
@@ -192,7 +193,7 @@ router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
     const manager = getConfigManager().twitchManager;
     await sendGuildScopedRecordById(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
-        notFoundMessage: 'Twitch stream config not found',
+        notFoundMessage: apiText(requestLocale(req), 'twitchConfigNotFound'),
     });
 });
 
@@ -318,7 +319,7 @@ router.put('/:id', jwtAuth, validateParams(numericIdParamSchema), validateBody(t
     await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
         findByPk: id => manager.findByPkPlain(id),
         update: (id, data) => manager.updatePlain(data, { id }),
-        notFoundMessage: 'Twitch stream config not found',
+        notFoundMessage: apiText(requestLocale(req), 'twitchConfigNotFound'),
         auditAction: 'twitch.update',
         auditTargetType: 'twitchConfig',
         auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
@@ -361,7 +362,7 @@ router.delete('/:id', jwtAuth, validateParams(numericIdParamSchema), async (req,
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'Twitch stream config not found',
+        notFoundMessage: apiText(requestLocale(req), 'twitchConfigNotFound'),
         auditAction: 'twitch.delete',
         auditTargetType: 'twitchConfig',
         auditMetadata: stream => channelAuditMetadata(stream),

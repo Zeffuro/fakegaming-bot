@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { resolveSteamAppInput, searchSteamApps } from '@zeffuro/fakegaming-common/steam';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { validateQuery } from '@zeffuro/fakegaming-common';
+import { validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -81,7 +82,7 @@ router.get('/resolve', validateQuery(steamAppQuerySchema), async (req, res) => {
         res.status(409).json({
             error: {
                 code: 'STEAM_APP_AMBIGUOUS',
-                message: 'Multiple Steam apps matched this input. Choose one of the suggested results.',
+                message: apiText(requestLocale(req), 'steamMultipleMatches'),
                 suggestions: result.suggestions,
             },
         });
@@ -91,7 +92,7 @@ router.get('/resolve', validateQuery(steamAppQuerySchema), async (req, res) => {
     res.status(404).json({
         error: {
             code: 'NOT_FOUND',
-            message: 'Steam app not found',
+            message: apiText(requestLocale(req), 'steamAppNotFound'),
             suggestions: result.suggestions,
         },
     });

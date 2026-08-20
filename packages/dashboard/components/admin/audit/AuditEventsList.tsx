@@ -7,6 +7,7 @@ import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import type { AuditEventEntry } from "@/lib/api/audit";
 import { AuditEventCard } from "./AuditEventCard";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AuditEventsListProps {
     events: AuditEventEntry[];
@@ -35,6 +36,7 @@ export function AuditEventsList({
     onExport,
     onInspectEvent,
 }: AuditEventsListProps) {
+    const { t, formatNumber } = useDashboardI18n();
     const accent = dashboardAccents.admin;
 
     return (
@@ -44,19 +46,22 @@ export function AuditEventsList({
                     <History sx={{ color: accent }} />
                     <Box>
                         <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, lineHeight: 1.1 }}>
-                            Recent events
+                            {t("admin.auditRecentEvents")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-                            Showing {events.length} of {total} rows.
+                            {t("admin.auditShowingRows", {
+                                shown: formatNumber(events.length),
+                                total: formatNumber(total),
+                            })}
                         </Typography>
                     </Box>
                 </Stack>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
                     <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 110 }}>
-                        <InputLabel id="limit-filter-label">Rows</InputLabel>
+                        <InputLabel id="limit-filter-label">{t("admin.auditRows")}</InputLabel>
                         <Select
                             labelId="limit-filter-label"
-                            label="Rows"
+                            label={t("admin.auditRows")}
                             value={String(limit)}
                             onChange={(e: SelectChangeEvent<string>) => onLimitChange(Number(e.target.value))}
                         >
@@ -67,13 +72,13 @@ export function AuditEventsList({
                         </Select>
                     </FormControl>
                     <Button variant="outlined" disabled={loading || events.length === 0} onClick={onExport} startIcon={<Download />} sx={ghostActionButtonSx(accent)}>
-                        Export CSV
+                        {t("admin.auditExportCsv")}
                     </Button>
                     <Button variant="outlined" disabled={loading || !canGoBack} onClick={onPrevious} sx={ghostActionButtonSx(accent)}>
-                        Prev
+                        {t("admin.auditPrevious")}
                     </Button>
                     <Button variant="outlined" disabled={loading || !canGoNext} onClick={onNext} sx={ghostActionButtonSx(accent)}>
-                        Next
+                        {t("admin.auditNext")}
                     </Button>
                 </Stack>
             </Stack>
@@ -81,7 +86,7 @@ export function AuditEventsList({
             {events.length === 0 ? (
                 <Stack spacing={1} sx={{ position: "relative", alignItems: "center", justifyContent: "center", py: 7, color: "rgba(255,255,255,0.54)" }}>
                     <ShieldOutlined sx={{ fontSize: 34, opacity: 0.72 }} />
-                    <Typography variant="body2">{loading ? "Loading audit events..." : "No audit events match these filters."}</Typography>
+                    <Typography variant="body2">{loading ? t("admin.auditLoading") : t("admin.auditEmpty")}</Typography>
                 </Stack>
             ) : (
                 <Stack spacing={1.4} sx={{ position: "relative" }}>

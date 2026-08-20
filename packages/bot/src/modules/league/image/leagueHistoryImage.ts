@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
 import {CanvasRenderingContext2D, Image, createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {
@@ -27,6 +28,8 @@ import type {
 import type {LeagueMatchDto, LeagueMatchParticipantDto} from '../types/riotDtos.js';
 import {communityDragonAssetUrl, leagueChampionIconUrl} from '../utils/assetUrl.js';
 import {historyFontString as fontString} from './textRender.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { leagueText } from '../copy/leagueCopy.js';
 
 type ArenaParticipant = LeagueMatchParticipantDto & { playerSubteamId?: number };
 
@@ -41,7 +44,7 @@ const MUTED_COLOR = '#bdbdbd';
 
 export async function generateLeagueHistoryImage(matches: LeagueMatchDto[], identity: {
     puuid: string
-}): Promise<Buffer> {
+}, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): Promise<Buffer> {
     const [itemsJson, summonerSpellsJson, perkStylesJson, perksJson] = await Promise.all([
         getItemData(),
         getSummonerSpellData(),
@@ -66,7 +69,7 @@ export async function generateLeagueHistoryImage(matches: LeagueMatchDto[], iden
             summonerSpells: summonerSpellsJson,
             perkStyles: perkStylesJson,
             perks: perksJson,
-        }, PADDING, y);
+        }, PADDING, y, locale);
     }
 
     return canvas.toBuffer('image/png');
@@ -84,15 +87,16 @@ async function drawMatchRow(
         perks: LeaguePerk[];
     },
     x: number,
-    y: number
+    y: number,
+    locale: SupportedOutputLocale,
 ): Promise<void> {
     const rowWidth = WIDTH - PADDING * 2;
     const rowHeight = ROW_HEIGHT - 8;
-    const mode = getModeLabel(match);
+    const mode = getModeLabel(match, locale);
     const accentColor = participant.win ? '#58a6ff' : '#ff6673';
 
     drawRowBackground(ctx, participant.win, mode, x, y, rowWidth, rowHeight, accentColor);
-    drawMatchInfo(ctx, match, participant, x + 16, y + 8);
+    drawMatchInfo(ctx, match, participant, x + 16, y + 8, locale);
 
     const championX = x + 100;
     const championSize = 56;
@@ -118,22 +122,22 @@ async function drawMatchRow(
 
     const kdaX = afterSideIconsX + sideIconsWidth + 20;
     drawKda(ctx, participant, kdaX, championY + 8);
-    drawStats(ctx, match, participant, kdaX + 110, championY + 2);
+    drawStats(ctx, match, participant, kdaX + 110, championY + 2, locale);
 
     const itemsY = championY + championSize + 8;
     await drawItems(ctx, participant, data.items, championX, itemsY);
-    drawMultikillLabelBox(ctx, participant, championX, itemsY);
+    drawMultikillLabelBox(ctx, participant, championX, itemsY, locale);
 
     const rightX = WIDTH - 280;
     if (match.info.gameMode === 'CHERRY') {
-        await drawArenaTeams(ctx, match, playerPuuid, rightX, y + 3);
+        await drawArenaTeams(ctx, match, playerPuuid, rightX, y + 3, locale);
         return;
     }
 
     const team1 = match.info.participants.filter((p) => p.teamId === 100);
     const team2 = match.info.participants.filter((p) => p.teamId === 200);
-    await drawTeamNames(ctx, team1, rightX, y + 3, playerPuuid);
-    await drawTeamNames(ctx, team2, rightX + 120, y + 3, playerPuuid);
+    await drawTeamNames(ctx, team1, rightX, y + 3, playerPuuid, locale);
+    await drawTeamNames(ctx, team2, rightX + 120, y + 3, playerPuuid, locale);
 }
 
 function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: string, x: number, y: number, w: number, h: number, accentColor: string): void {
@@ -145,10 +149,10 @@ function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: st
     ctx.restore();
 }
 
-function drawMatchInfo(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, participant: LeagueMatchParticipantDto, x: number, y: number): void {
-    const mode = getModeLabel(match);
-    const elapsed = match.info.gameEndTimestamp ? timeAgo(match.info.gameEndTimestamp) : '';
-    const result = participant.win ? 'Victory' : 'Defeat';
+function drawMatchInfo(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, participant: LeagueMatchParticipantDto, x: number, y: number, locale: SupportedOutputLocale): void {
+    const mode = getModeLabel(match, locale);
+    const elapsed = match.info.gameEndTimestamp ? timeAgo(match.info.gameEndTimestamp, undefined, locale) : '';
+    const result = participant.win ? leagueText(locale, { en: 'Victory', nl: 'Overwinning' }) : leagueText(locale, { en: 'Defeat', nl: 'Nederlaag' });
     const durationSec = participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000);
     const modeColor = participant.win ? '#4fa3ff' : '#e05c5c';
     const resultColor = participant.win ? '#4fd18b' : '#e05c5c';
@@ -168,7 +172,7 @@ function drawMatchInfo(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, par
 
     ctx.font = fontString({size: 14});
     ctx.fillStyle = MUTED_COLOR;
-    ctx.fillText(formatDuration(durationSec), x, y + 66);
+    ctx.fillText(formatDuration(durationSec, locale), x, y + 66);
     ctx.restore();
 }
 
@@ -212,8 +216,8 @@ function drawKda(ctx: CanvasRenderingContext2D, participant: LeagueMatchParticip
     ctx.restore();
 }
 
-function drawStats(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, participant: LeagueMatchParticipantDto, x: number, y: number): void {
-    const lines = getStatLines(match, participant);
+function drawStats(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, participant: LeagueMatchParticipantDto, x: number, y: number, locale: SupportedOutputLocale): void {
+    const lines = getStatLines(match, participant, locale);
     ctx.save();
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -224,10 +228,10 @@ function drawStats(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, partici
     ctx.restore();
 }
 
-function getStatLines(match: LeagueMatchDto, participant: LeagueMatchParticipantDto): { text: string; color: string; size: number; bold: boolean }[] {
+function getStatLines(match: LeagueMatchDto, participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): { text: string; color: string; size: number; bold: boolean }[] {
     if (gameModeConvertMap[match.info.gameMode ?? ''] === 'Arena') {
         const placement = participant.placement ? String(participant.placement) : '-';
-        return [{text: `Placement: ${placement}`, color: '#e05c5c', size: 15, bold: true}];
+        return [{text: `${leagueText(locale, { en: 'Placement', nl: 'Plaats' })}: ${placement}`, color: '#e05c5c', size: 15, bold: true}];
     }
 
     const team = match.info.participants.filter((p) => p.teamId === participant.teamId);
@@ -237,13 +241,13 @@ function getStatLines(match: LeagueMatchDto, participant: LeagueMatchParticipant
     const durationMin = Math.max(1, (participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000)) / 60);
     const csPerMin = cs / durationMin;
     const vision = participant.visionScore || 0;
-    const rank = getParticipantRank(participant);
+    const rank = getParticipantRank(participant, locale);
 
     return [
-        {text: `${killP}% Kill P.`, color: '#e05c5c', size: 13, bold: true},
+        {text: `${killP}% ${leagueText(locale, { en: 'Kill P.', nl: 'Killdeelname' })}`, color: '#e05c5c', size: 13, bold: true},
         {text: `${cs} CS (${csPerMin.toFixed(1)})`, color: '#cccccc', size: 13, bold: false},
-        {text: `${vision} Vision`, color: '#cccccc', size: 13, bold: false},
-        {text: rank, color: rank === 'Unranked' ? MUTED_COLOR : '#cccccc', size: 13, bold: true},
+        {text: `${vision} ${leagueText(locale, { en: 'Vision', nl: 'Zicht' })}`, color: '#cccccc', size: 13, bold: false},
+        {text: rank, color: rank === leagueText(locale, { en: 'Unranked', nl: 'Ongerangschikt' }) ? MUTED_COLOR : '#cccccc', size: 13, bold: true},
     ];
 }
 
@@ -271,7 +275,7 @@ async function drawItems(ctx: CanvasRenderingContext2D, participant: LeagueMatch
     });
 }
 
-async function drawTeamNames(ctx: CanvasRenderingContext2D, team: LeagueMatchParticipantDto[], x: number, y: number, playerPuuid: string): Promise<void> {
+async function drawTeamNames(ctx: CanvasRenderingContext2D, team: LeagueMatchParticipantDto[], x: number, y: number, playerPuuid: string, locale: SupportedOutputLocale): Promise<void> {
     const rowHeight = 20;
     const iconSize = 16;
     const champImages = await Promise.all(team.map((participant) => loadChampionImage(participant.championId)));
@@ -286,12 +290,12 @@ async function drawTeamNames(ctx: CanvasRenderingContext2D, team: LeagueMatchPar
         ctx.save();
         ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
         ctx.fillStyle = isPlayer ? TEXT_COLOR : '#9e9eb1';
-        drawTextFit(ctx, getParticipantName(participant), x + iconSize + 8, rowY - 3, 94);
+        drawTextFit(ctx, getParticipantName(participant, locale), x + iconSize + 8, rowY - 3, 94);
         ctx.restore();
     }
 }
 
-async function drawArenaTeams(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, playerPuuid: string, x: number, y: number): Promise<void> {
+async function drawArenaTeams(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, playerPuuid: string, x: number, y: number, locale: SupportedOutputLocale): Promise<void> {
     const participants = (match.info.participants as ArenaParticipant[])
         .filter((participant) => typeof participant.placement === 'number' && participant.placement >= 1);
     const teamMap = new Map<number, ArenaParticipant[]>();
@@ -307,11 +311,11 @@ async function drawArenaTeams(ctx: CanvasRenderingContext2D, match: LeagueMatchD
         .slice(0, 4);
 
     for (let i = 0; i < teams.length; i++) {
-        await drawArenaTeamPair(ctx, teams[i], x, y + i * 20, playerPuuid);
+        await drawArenaTeamPair(ctx, teams[i], x, y + i * 20, playerPuuid, locale);
     }
 }
 
-async function drawArenaTeamPair(ctx: CanvasRenderingContext2D, team: ArenaParticipant[], x: number, y: number, playerPuuid: string): Promise<void> {
+async function drawArenaTeamPair(ctx: CanvasRenderingContext2D, team: ArenaParticipant[], x: number, y: number, playerPuuid: string, locale: SupportedOutputLocale): Promise<void> {
     const pair = team.slice(0, 2);
     const champImages = await Promise.all(pair.map((participant) => loadChampionImage(participant.championId)));
     for (let i = 0; i < 2; i++) {
@@ -324,7 +328,7 @@ async function drawArenaTeamPair(ctx: CanvasRenderingContext2D, team: ArenaParti
         ctx.save();
         ctx.font = fontString({size: 14, family: TEAM_FONT_FAMILY});
         ctx.fillStyle = isPlayer ? TEXT_COLOR : '#9e9eb1';
-        drawTextFit(ctx, getParticipantName(participant), cellX + 24, y - 3, 92);
+        drawTextFit(ctx, getParticipantName(participant, locale), cellX + 24, y - 3, 92);
         ctx.restore();
     }
 }
@@ -436,38 +440,49 @@ async function loadChampionImage(championId: number): Promise<Image | undefined>
     return asset.buffer ? await loadImage(asset.buffer) : undefined;
 }
 
-function getModeLabel(match: LeagueMatchDto): string {
-    if (match.info.queueId && queueMapper[match.info.queueId]) return queueMapper[match.info.queueId];
-    if (match.info.gameMode && gameModeConvertMap[match.info.gameMode]) return gameModeConvertMap[match.info.gameMode];
-    return match.info.gameMode || 'Unknown';
+function getModeLabel(match: LeagueMatchDto, locale: SupportedOutputLocale): string {
+    const label = match.info.queueId && queueMapper[match.info.queueId]
+        ? queueMapper[match.info.queueId]
+        : match.info.gameMode && gameModeConvertMap[match.info.gameMode]
+            ? gameModeConvertMap[match.info.gameMode]
+            : match.info.gameMode;
+    if (!label) return leagueText(locale, { en: 'Unknown', nl: 'Onbekend' });
+    const translations: Readonly<Record<string, string>> = resolveLocaleValue(locale, {
+        en: {},
+        nl: {
+            'Draft Pick': 'Draftkeuze', 'Blind Pick': 'Blinde keuze', 'Ranked Solo': 'Solo-ranglijst',
+            'Ranked Flex': 'Flex-ranglijst', Tutorial: 'Training', Arena: 'Arena', 'One for All': 'Een voor allen',
+        },
+    } satisfies OutputLocaleValues<Readonly<Record<string, string>>>);
+    return translations[label] ?? label;
 }
 
 function getResultColor(win: boolean, _mode: string): string {
     return win ? '#2d3e5e' : '#7c3a3a';
 }
 
-function getParticipantRank(participant: LeagueMatchParticipantDto): string {
+function getParticipantRank(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
     const rank = participant.tier ? `${participant.tier} ${participant.rank ?? ''}`.trim() : participant.leagueTier;
-    return rank || 'Unranked';
+    return rank || leagueText(locale, { en: 'Unranked', nl: 'Ongerangschikt' });
 }
 
-function getParticipantName(participant: LeagueMatchParticipantDto): string {
+function getParticipantName(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
     if (participant.riotIdGameName && participant.riotIdTagline) {
         return `${participant.riotIdGameName}#${participant.riotIdTagline}`;
     }
-    return participant.riotIdGameName ?? participant.summonerName ?? participant.championName ?? `Champion ${participant.championId}`;
+    return participant.riotIdGameName ?? participant.summonerName ?? participant.championName ?? `${leagueText(locale, { en: 'Champion', nl: 'Kampioen' })} ${participant.championId}`;
 }
 
-function getMultikillLabel(participant: LeagueMatchParticipantDto): string {
-    if ((participant as { pentaKills?: number }).pentaKills) return 'Penta Kill';
-    if ((participant as { quadraKills?: number }).quadraKills) return 'Quadra Kill';
-    if ((participant as { tripleKills?: number }).tripleKills) return 'Triple Kill';
-    if ((participant as { doubleKills?: number }).doubleKills) return 'Double Kill';
+function getMultikillLabel(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
+    if ((participant as { pentaKills?: number }).pentaKills) return leagueText(locale, { en: 'Penta Kill', nl: 'Pentakill' });
+    if ((participant as { quadraKills?: number }).quadraKills) return leagueText(locale, { en: 'Quadra Kill', nl: 'Quadrakill' });
+    if ((participant as { tripleKills?: number }).tripleKills) return leagueText(locale, { en: 'Triple Kill', nl: 'Triplekill' });
+    if ((participant as { doubleKills?: number }).doubleKills) return leagueText(locale, { en: 'Double Kill', nl: 'Doublekill' });
     return '';
 }
 
-function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: LeagueMatchParticipantDto, itemsX: number, itemsY: number): void {
-    const multikillLabel = getMultikillLabel(participant);
+function drawMultikillLabelBox(ctx: CanvasRenderingContext2D, participant: LeagueMatchParticipantDto, itemsX: number, itemsY: number, locale: SupportedOutputLocale): void {
+    const multikillLabel = getMultikillLabel(participant, locale);
     if (!multikillLabel) return;
 
     const itemsTotalWidth = 7 * ITEM_SIZE + 6 * ITEM_GAP;

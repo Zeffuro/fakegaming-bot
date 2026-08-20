@@ -320,4 +320,25 @@ describe('buildAdminReviewQueue', () => {
             }),
         ]);
     });
+
+    it('localizes review guidance while preserving IDs and provider errors', () => {
+        const queue = buildAdminReviewQueue({
+            operationsHealth: {
+                issues: [{ label: 'Integration errors', value: 1, severity: 'critical' }],
+            },
+            healthRecords: [healthRecord({ lastErrorMessage: 'Provider timeout' })],
+        }, 'nl');
+
+        expect(queue[0]).toMatchObject({
+            id: 'operations:integration-errors',
+            title: 'Integratiefouten',
+            detail: '1 integratierecord mislukt momenteel. Bevat 1 zichtbaar detail.',
+        });
+        expect(queue[0]?.relatedItems?.[0]).toMatchObject({
+            id: 'integration-health:twitch:config-1',
+            title: 'twitch-configuratie config-1',
+        });
+        expect(queue[0]?.relatedItems?.[0]?.detail).toContain('Provider timeout');
+        expect(queue[0]?.relatedItems?.[0]?.detail).toContain('Volgende stap:');
+    });
 });

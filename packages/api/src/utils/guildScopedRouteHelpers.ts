@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { NotFoundError } from '@zeffuro/fakegaming-common';
 import {
     checkGuildScopedRecordAccess,
     checkGuildScopedUpdateAccess,
@@ -79,7 +80,7 @@ export async function sendGuildScopedRecordById<T extends GuildScopedRecord, TId
         notFoundMessage: string;
     }
 ): Promise<void> {
-    const record = await options.findByPk(id);
+    const record = await findGuildRecord(options.findByPk, id);
     if (!record) {
         sendNotFound(res, options.notFoundMessage);
         return;
@@ -123,7 +124,7 @@ export async function deleteGuildScopedRecord<T extends GuildScopedRecord, TId e
     id: TId,
     options: DeleteGuildScopedRecordOptions<T, TId>
 ): Promise<void> {
-    const record = await options.findByPk(id);
+    const record = await findGuildRecord(options.findByPk, id);
     if (!record) {
         sendNotFound(res, options.notFoundMessage);
         return;
@@ -150,7 +151,7 @@ export async function updateGuildScopedRecord<TRecord extends GuildScopedRecord,
     body: TBody,
     options: UpdateGuildScopedRecordOptions<TRecord, TBody>
 ): Promise<void> {
-    const previous = await options.findByPk(id);
+    const previous = await findGuildRecord(options.findByPk, id);
     if (!previous) {
         sendNotFound(res, options.notFoundMessage);
         return;
@@ -160,7 +161,7 @@ export async function updateGuildScopedRecord<TRecord extends GuildScopedRecord,
     if (!hasAccess) return;
 
     await options.update(id, body);
-    const updated = await options.findByPk(id);
+    const updated = await findGuildRecord(options.findByPk, id);
     if (!updated) {
         sendNotFound(res, options.notFoundMessage);
         return;
@@ -209,6 +210,18 @@ function getBodyGuildId(body: unknown): string | undefined {
     if (typeof body !== 'object' || body === null) return undefined;
     const { guildId } = body as { guildId?: unknown };
     return typeof guildId === 'string' ? guildId : undefined;
+}
+
+async function findGuildRecord<T, TId extends string | number>(
+    findByPk: (id: TId) => Promise<T | null>,
+    id: TId,
+): Promise<T | null> {
+    try {
+        return await findByPk(id);
+    } catch (error) {
+        if (error instanceof NotFoundError) return null;
+        throw error;
+    }
 }
 
 function withOptionalChannelId(channelId: string | null | undefined, extra: Record<string, unknown>): Record<string, unknown> {

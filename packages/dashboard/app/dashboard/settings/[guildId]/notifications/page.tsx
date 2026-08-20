@@ -20,6 +20,7 @@ import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
 import { SetupTemplatesPanel } from "@/components/notifications/SetupTemplatesPanel";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { buildNotificationSetupReview, type NotificationSetupReview, type NotificationReviewGroup, type NotificationChannelLoad } from "@/lib/notificationSetupReview";
 import { buildNotificationSetupExport, buildNotificationSetupExportFilename } from "@/lib/notificationSetupExport";
 import { buildNotificationChannelLinks, buildNotificationReviewGroupLink, type NotificationSetupLink } from "@/lib/notificationSetupLinks";
@@ -32,8 +33,10 @@ import {
     type NotificationSetupImportSkippedItem,
 } from "@/lib/notificationSetupImport";
 import { api } from "@/lib/api-client";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export default function GuildNotificationsHubPage() {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const guildReady = Boolean(guild);
     const twitchApi = useTwitchConfigs(guildId as string);
@@ -74,7 +77,7 @@ export default function GuildNotificationsHubPage() {
     ]);
     const setupReview = useMemo(() => buildNotificationSetupReview({
         ...notificationRecords,
-    }), [notificationRecords]);
+    }, locale), [locale, notificationRecords]);
     const setupExport = useMemo(() => buildNotificationSetupExport({
         guildId: guildId as string,
         review: setupReview,
@@ -94,15 +97,15 @@ export default function GuildNotificationsHubPage() {
             setImportError(null);
             setImportResult(null);
             const text = await file.text();
-            const exportPayload = parseNotificationSetupImportJson(text);
+            const exportPayload = parseNotificationSetupImportJson(text, locale);
             setImportPlan(buildNotificationSetupImportPlan({
                 exportPayload,
                 currentGuildId: guildId as string,
                 currentRecords: setupExport.records,
-            }));
+            }, locale));
         } catch (err) {
             setImportPlan(null);
-            setImportError(err instanceof Error ? err.message : "Failed to read notification setup import.");
+            setImportError(err instanceof Error ? err.message : t("notificationsHub.importReadFailed"));
         }
     };
 
@@ -115,7 +118,7 @@ export default function GuildNotificationsHubPage() {
             setImportResult(null);
 
             for (const item of importPlan.ready) {
-                await restoreNotificationRecord(guildId as string, item);
+                await restoreNotificationRecord(guildId as string, item, locale);
             }
 
             await Promise.all([
@@ -128,10 +131,12 @@ export default function GuildNotificationsHubPage() {
                 animeApi.refreshConfigs(),
                 birthdayApi.refresh(),
             ]);
-            setImportResult(`Imported ${importPlan.ready.length} missing ${importPlan.ready.length === 1 ? "route" : "routes"}.`);
+            setImportResult(importPlan.ready.length === 1
+                ? t("notificationsHub.importedOne")
+                : t("notificationsHub.imported", { count: formatNumber(importPlan.ready.length) }));
             setImportPlan(null);
         } catch (err) {
-            setImportError(err instanceof Error ? err.message : "Failed to import notification setup.");
+            setImportError(err instanceof Error ? err.message : t("notificationsHub.importFailed"));
         } finally {
             setImporting(false);
         }
@@ -156,76 +161,76 @@ export default function GuildNotificationsHubPage() {
 
     const cards = [
         {
-            title: "Twitch Live",
-            description: "Stream alerts with destination channels, custom messages, cooldowns, and quiet hours.",
+            title: t("notificationsHub.twitchTitle"),
+            description: t("notificationsHub.twitchDescription"),
             icon: <LiveTv />,
             accent: dashboardAccents.twitch,
             href: `/dashboard/twitch/${encodedGuildId}`,
-            chipLabel: `${twitchApi.configs.length} Configured`,
-            actionLabel: "Manage Twitch",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(twitchApi.configs.length) }),
+            actionLabel: t("notificationsHub.twitchAction"),
         },
         {
-            title: "TikTok Live",
-            description: "Creator live alerts using the same channel routing and notification controls as Twitch.",
+            title: t("notificationsHub.tiktokTitle"),
+            description: t("notificationsHub.tiktokDescription"),
             icon: <LiveTv />,
             accent: dashboardAccents.tiktok,
             href: `/dashboard/tiktok/${encodedGuildId}`,
-            chipLabel: `${tiktokApi.configs.length} Configured`,
-            actionLabel: "Manage TikTok",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(tiktokApi.configs.length) }),
+            actionLabel: t("notificationsHub.tiktokAction"),
         },
         {
-            title: "Bluesky Posts",
-            description: "Account post alerts with Discord channel routing, custom messages, cooldowns, and quiet hours.",
+            title: t("notificationsHub.blueskyTitle"),
+            description: t("notificationsHub.blueskyDescription"),
             icon: <AlternateEmail />,
             accent: dashboardAccents.bluesky,
             href: `/dashboard/bluesky/${encodedGuildId}`,
-            chipLabel: `${blueskyApi.configs.length} Configured`,
-            actionLabel: "Manage Bluesky",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(blueskyApi.configs.length) }),
+            actionLabel: t("notificationsHub.blueskyAction"),
         },
         {
-            title: "YouTube Uploads",
-            description: "Watch channels for new uploads and post clean video announcements to Discord.",
+            title: t("notificationsHub.youtubeTitle"),
+            description: t("notificationsHub.youtubeDescription"),
             icon: <YouTubeIcon />,
             accent: dashboardAccents.youtube,
             href: `/dashboard/youtube/${encodedGuildId}`,
-            chipLabel: `${youtubeApi.configs.length} Configured`,
-            actionLabel: "Manage YouTube",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(youtubeApi.configs.length) }),
+            actionLabel: t("notificationsHub.youtubeAction"),
         },
         {
-            title: "Steam News",
-            description: "Official Steam game announcements with destination channels, custom messages, cooldowns, and quiet hours.",
+            title: t("notificationsHub.steamTitle"),
+            description: t("notificationsHub.steamDescription"),
             icon: <SportsEsports />,
             accent: dashboardAccents.steam,
             href: `/dashboard/steam-news/${encodedGuildId}`,
-            chipLabel: `${steamNewsApi.configs.length} Configured`,
-            actionLabel: "Manage Steam",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(steamNewsApi.configs.length) }),
+            actionLabel: t("notificationsHub.steamAction"),
         },
         {
-            title: "Patch Notes",
-            description: "Subscribe channels to game update feeds so patch posts land where people expect them.",
+            title: t("notificationsHub.patchTitle"),
+            description: t("notificationsHub.patchDescription"),
             icon: <SpeakerNotes />,
             accent: dashboardAccents.patchNotes,
             href: `/dashboard/patch-notes/${encodedGuildId}`,
-            chipLabel: `${patchApi.configs.length} Configured`,
-            actionLabel: "Manage Patch Notes",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(patchApi.configs.length) }),
+            actionLabel: t("notificationsHub.patchAction"),
         },
         {
-            title: "Anime Episodes",
-            description: "AniList search, season browsing, and channel reminders for upcoming episodes.",
+            title: t("notificationsHub.animeTitle"),
+            description: t("notificationsHub.animeDescription"),
             icon: <AutoStories />,
             accent: dashboardAccents.anime,
             href: `/dashboard/anime/${encodedGuildId}`,
-            chipLabel: `${animeApi.configs.length} Configured`,
-            actionLabel: "Manage Anime",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(animeApi.configs.length) }),
+            actionLabel: t("notificationsHub.animeAction"),
         },
         {
-            title: "Birthday Announcements",
-            description: "Member birthday announcements with member search and per-birthday destination channels.",
+            title: t("notificationsHub.birthdayTitle"),
+            description: t("notificationsHub.birthdayDescription"),
             icon: <Cake />,
             accent: dashboardAccents.birthdays,
             href: `/dashboard/birthdays/${encodedGuildId}`,
-            chipLabel: `${birthdayApi.birthdays.length} Configured`,
-            actionLabel: "Manage Birthdays",
+            chipLabel: t("notificationsHub.configuredCount", { count: formatNumber(birthdayApi.birthdays.length) }),
+            actionLabel: t("notificationsHub.birthdayAction"),
         },
     ];
 
@@ -235,12 +240,12 @@ export default function GuildNotificationsHubPage() {
                 <FeatureShell accent={dashboardAccents.settings} secondaryAccent={dashboardAccents.anime}>
                     <FeatureHero
                         icon={<NotificationsActive />}
-                        eyebrow="Notifications"
-                        title="Notification Command Center"
-                        description="One place to manage every server-facing notification feed: live streams, uploads, game news, patch notes, anime episodes, and birthday announcements."
+                        eyebrow={t("notificationsHub.eyebrow")}
+                        title={t("notificationsHub.title")}
+                        description={t("notificationsHub.description")}
                         accent={dashboardAccents.settings}
                         secondaryAccent={dashboardAccents.anime}
-                        stats={[{ label: "Configured Feeds", value: totalConfigured }]}
+                        stats={[{ label: t("notificationsHub.configuredFeeds"), value: formatNumber(totalConfigured) }]}
                         actions={(
                             <Stack id="notification-transfer" direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1, scrollMarginTop: 96 }}>
                                 <input
@@ -259,7 +264,7 @@ export default function GuildNotificationsHubPage() {
                                     disabled={importing}
                                     sx={ghostActionButtonSx(dashboardAccents.settings)}
                                 >
-                                    Import JSON
+                                    {t("notificationsHub.importJson")}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -268,7 +273,7 @@ export default function GuildNotificationsHubPage() {
                                     disabled={totalConfigured === 0}
                                     sx={ghostActionButtonSx(dashboardAccents.settings)}
                                 >
-                                    Export JSON
+                                    {t("notificationsHub.exportJson")}
                                 </Button>
                                 <Button
                                     component={Link}
@@ -276,7 +281,7 @@ export default function GuildNotificationsHubPage() {
                                     variant="outlined"
                                     sx={ghostActionButtonSx(dashboardAccents.settings)}
                                 >
-                                    Back To Settings
+                                    {t("notificationsHub.backSettings")}
                                 </Button>
                             </Stack>
                         )}
@@ -285,7 +290,7 @@ export default function GuildNotificationsHubPage() {
                     <FeaturePanel accent={dashboardAccents.settings}>
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))", xl: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
                             {cards.map((card) => (
-                                <FeatureCard key={card.title} {...card} statusLabel="active" />
+                                <FeatureCard key={card.title} {...card} statusLabel={t("notificationsHub.active")} />
                             ))}
                         </Box>
                     </FeaturePanel>
@@ -327,22 +332,23 @@ function ImportPreviewPanel({
     importing: boolean;
     onImport: () => void;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     return (
         <FeaturePanel accent={dashboardAccents.settings} sx={{ mt: 3 }}>
             <Stack spacing={2}>
                 <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
                     <Box>
                         <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
-                            Import Preview
+                            {t("notificationsHub.previewTitle")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
-                            Missing supported routes can be created without overwriting existing notification setup.
+                            {t("notificationsHub.previewDescription")}
                         </Typography>
                     </Box>
                     {plan && (
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
-                            <Chip label={`${plan.totals.ready} ready`} color={plan.totals.ready > 0 ? "success" : "default"} variant="outlined" />
-                            <Chip label={`${plan.skipped.length} skipped`} color={plan.skipped.length > 0 ? "warning" : "default"} variant="outlined" />
+                            <Chip label={t("notificationsHub.readyCount", { count: formatNumber(plan.totals.ready) })} color={plan.totals.ready > 0 ? "success" : "default"} variant="outlined" />
+                            <Chip label={t("notificationsHub.skippedCount", { count: formatNumber(plan.skipped.length) })} color={plan.skipped.length > 0 ? "warning" : "default"} variant="outlined" />
                         </Stack>
                     )}
                 </Box>
@@ -367,7 +373,7 @@ function ImportPreviewPanel({
                         ))}
 
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2 }}>
-                            <ImportItemSection title="Ready To Import" items={plan.ready} emptyText="No missing supported routes were found." />
+                            <ImportItemSection title={t("notificationsHub.readyTitle")} items={plan.ready} emptyText={t("notificationsHub.noReady")} />
                             <ImportSkippedSection items={plan.skipped} />
                         </Box>
 
@@ -384,7 +390,9 @@ function ImportPreviewPanel({
                                     "&:hover": { bgcolor: dashboardAccents.settings },
                                 }}
                             >
-                                {importing ? "Importing..." : `Import Missing (${plan.ready.length})`}
+                                {importing
+                                    ? t("notificationsHub.importing")
+                                    : t("notificationsHub.importMissing", { count: formatNumber(plan.ready.length) })}
                             </Button>
                         </Box>
                     </>
@@ -416,14 +424,15 @@ function ImportItemSection({ title, items, emptyText }: { title: string; items: 
 }
 
 function ImportSkippedSection({ items }: { items: NotificationSetupImportSkippedItem[] }) {
+    const { t } = useDashboardI18n();
     return (
         <Box>
             <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
-                Skipped
+                {t("notificationsHub.skippedTitle")}
             </Typography>
             {items.length === 0 ? (
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
-                    No skipped routes.
+                    {t("notificationsHub.noSkipped")}
                 </Typography>
             ) : (
                 <Stack spacing={0.75}>
@@ -431,7 +440,7 @@ function ImportSkippedSection({ items }: { items: NotificationSetupImportSkipped
                         <ImportLine
                             key={`${item.reason}:${item.key}`}
                             primary={`${item.record.provider}: ${item.record.source}`}
-                            secondary={`${item.message} Channel: ${item.record.channelId}`}
+                            secondary={`${item.message} ${t("notificationsHub.channel", { channel: item.record.channelId })}`}
                         />
                     ))}
                 </Stack>
@@ -454,6 +463,7 @@ function ImportLine({ primary, secondary }: { primary: string; secondary: string
 }
 
 function SetupReviewPanel({ review, guildId }: { review: NotificationSetupReview; guildId: string }) {
+    const { t, formatNumber } = useDashboardI18n();
     const totalFindings = review.duplicateRoutes.length + review.multiChannelFeeds.length + review.busyChannels.length;
 
     return (
@@ -462,14 +472,18 @@ function SetupReviewPanel({ review, guildId }: { review: NotificationSetupReview
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
                     <Box>
                         <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
-                            Setup Review
+                            {t("notificationsHub.reviewTitle")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
-                            Duplicate routes, cross-channel feed overlap, and high-volume notification channels.
+                            {t("notificationsHub.reviewDescription")}
                         </Typography>
                     </Box>
                     <Chip
-                        label={totalFindings === 0 ? "No findings" : `${totalFindings} ${totalFindings === 1 ? "finding" : "findings"}`}
+                        label={totalFindings === 0
+                            ? t("notificationsHub.noFindings")
+                            : totalFindings === 1
+                                ? t("notificationsHub.findingOne")
+                                : t("notificationsHub.findingMany", { count: formatNumber(totalFindings) })}
                         color={totalFindings === 0 ? "success" : "warning"}
                         variant="outlined"
                     />
@@ -477,12 +491,12 @@ function SetupReviewPanel({ review, guildId }: { review: NotificationSetupReview
 
                 {totalFindings === 0 ? (
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
-                        No duplicate notification routes or crowded destination channels were detected.
+                        {t("notificationsHub.reviewClean")}
                     </Typography>
                 ) : (
                     <Stack spacing={1.5}>
-                        <ReviewGroupSection title="Duplicate Routes" groups={review.duplicateRoutes} guildId={guildId} />
-                        <ReviewGroupSection title="Same Feed, Multiple Channels" groups={review.multiChannelFeeds} guildId={guildId} />
+                        <ReviewGroupSection title={t("notificationsHub.duplicateRoutes")} groups={review.duplicateRoutes} guildId={guildId} />
+                        <ReviewGroupSection title={t("notificationsHub.multiChannel")} groups={review.multiChannelFeeds} guildId={guildId} />
                         <BusyChannelSection channels={review.busyChannels} guildId={guildId} />
                     </Stack>
                 )}
@@ -492,6 +506,7 @@ function SetupReviewPanel({ review, guildId }: { review: NotificationSetupReview
 }
 
 function ReviewGroupSection({ title, groups, guildId }: { title: string; groups: NotificationReviewGroup[]; guildId: string }) {
+    const { locale, t, formatNumber } = useDashboardI18n();
     if (groups.length === 0) return null;
 
     return (
@@ -504,8 +519,12 @@ function ReviewGroupSection({ title, groups, guildId }: { title: string; groups:
                     <ReviewLine
                         key={group.key}
                         primary={`${group.provider}: ${group.sourceLabel}`}
-                        secondary={`${group.records.length} routes across ${group.channelIds.length} ${group.channelIds.length === 1 ? "channel" : "channels"}: ${group.channelIds.join(", ")}`}
-                        actions={toReviewActions(buildNotificationReviewGroupLink(guildId, group))}
+                        secondary={t("notificationsHub.routeSummary", {
+                            routes: formatNumber(group.records.length),
+                            channels: formatNumber(group.channelIds.length),
+                            ids: group.channelIds.join(", "),
+                        })}
+                        actions={toReviewActions(buildNotificationReviewGroupLink(guildId, group, locale))}
                     />
                 ))}
             </Stack>
@@ -514,20 +533,24 @@ function ReviewGroupSection({ title, groups, guildId }: { title: string; groups:
 }
 
 function BusyChannelSection({ channels, guildId }: { channels: NotificationChannelLoad[]; guildId: string }) {
+    const { locale, t, formatNumber } = useDashboardI18n();
     if (channels.length === 0) return null;
 
     return (
         <Box>
             <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 800, mb: 0.75 }}>
-                Busy Channels
+                {t("notificationsHub.busyChannels")}
             </Typography>
             <Stack spacing={0.75}>
                 {channels.slice(0, 5).map((channel) => (
                     <ReviewLine
                         key={channel.channelId}
                         primary={channel.channelId}
-                        secondary={`${channel.count} feeds from ${channel.providers.join(", ")}`}
-                        actions={toReviewActions(buildNotificationChannelLinks(guildId, channel))}
+                        secondary={t("notificationsHub.busySummary", {
+                            count: formatNumber(channel.count),
+                            providers: channel.providers.join(", "),
+                        })}
+                        actions={toReviewActions(buildNotificationChannelLinks(guildId, channel, locale))}
                     />
                 ))}
             </Stack>
@@ -597,8 +620,12 @@ function downloadJson(filename: string, value: unknown): void {
     URL.revokeObjectURL(url);
 }
 
-async function restoreNotificationRecord(guildId: string, item: NotificationSetupImportItem): Promise<void> {
-    const create = buildNotificationSetupImportCreatePayload(guildId, item.record);
+async function restoreNotificationRecord(
+    guildId: string,
+    item: NotificationSetupImportItem,
+    locale: DashboardLocale,
+): Promise<void> {
+    const create = buildNotificationSetupImportCreatePayload(guildId, item.record, locale);
     if (create.provider === "Twitch") {
         await api.createTwitchStream(create.payload as Parameters<typeof api.createTwitchStream>[0]);
         return;

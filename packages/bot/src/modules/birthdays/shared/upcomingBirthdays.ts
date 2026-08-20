@@ -1,4 +1,7 @@
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {months} from '../../../constants/months.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
 
 export interface BirthdayRow {
     day: number;
@@ -46,11 +49,17 @@ export function getUpcomingBirthdays(
         .slice(0, limit);
 }
 
-export function formatBirthdayLine(row: BirthdayRow, date: Date, now: Date): string {
+export function formatBirthdayLine(
+    row: BirthdayRow,
+    date: Date,
+    now: Date,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
     const unix = Math.floor(date.getTime() / 1000);
     const age = row.year ? date.getFullYear() - row.year : null;
-    const ageText = age && age > 0 ? `, turns ${age}` : '';
+    const ageText = age && age > 0 ? resolveLocaleValue(locale, { en: `, turns ${age}`, nl: `, wordt ${age}` }) : '';
     const today = date.toDateString() === now.toDateString();
-    const relative = today ? 'today' : `<t:${unix}:R>`;
-    return `<@${row.userId}> - ${row.day} ${months[row.month - 1].name}${ageText} (${relative})`;
+    const relative = today ? resolveLocaleValue(locale, { en: 'today', nl: 'vandaag' }) : `<t:${unix}:R>`;
+    const month = resolveLocaleValue(locale, { en: months[row.month - 1].name, nl: new Intl.DateTimeFormat('nl-NL', { month: 'long' }).format(new Date(2000, row.month - 1, 1)) });
+    return `<@${row.userId}> - ${row.day} ${month}${ageText} (${relative})`;
 }

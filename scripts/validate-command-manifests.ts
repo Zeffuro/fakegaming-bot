@@ -6,6 +6,8 @@ import {
     findModuleFolders,
     findCommandFiles,
     loadCommands,
+    COMMAND_LOCALIZATION_LOCALES,
+    commandLocaleLabel,
     type CommandKind,
     type CommandOut,
 } from './lib/command-introspection.js';
@@ -88,6 +90,22 @@ async function main() {
         if (nErr) errors.push(`Invalid name '${c.name}' in module '${c.module}': ${nErr}`);
         const dErr = validateDescription(c.description);
         if (dErr) errors.push(`Invalid description for '${c.name}' in module '${c.module}': ${dErr}`);
+        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+            const localized = c.localizations?.[locale];
+            const label = `${commandLocaleLabel(locale)} (${locale})`;
+            if (!localized) {
+                errors.push(`Command '${c.name}' in module '${c.module}' is missing ${label} metadata.`);
+                continue;
+            }
+            const localizedNameError = validateName(localized.name, c.type);
+            if (localizedNameError) {
+                errors.push(`Invalid ${label} name '${localized.name}' for '${c.name}': ${localizedNameError}`);
+            }
+            const localizedDescriptionError = validateDescription(localized.description);
+            if (localizedDescriptionError) {
+                errors.push(`Invalid ${label} description for '${c.name}': ${localizedDescriptionError}`);
+            }
+        }
     }
 
     if (errors.length > 0) {

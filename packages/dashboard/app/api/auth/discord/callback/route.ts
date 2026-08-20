@@ -12,15 +12,16 @@ import {
     REFRESH_SESSION_COOKIE_NAME,
     REFRESH_SESSION_IDLE_MAX_AGE_SECONDS
 } from "@/lib/auth/sessionConstants";
+import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
-    if (!code) return NextResponse.json({ error: "Missing code" }, { status: 400 });
+    if (!code) return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.oauthCodeMissing") }, { status: 400 });
 
     const { clientId, clientSecret, redirectUri } = getDiscordOAuthConfig();
     const { secret, audience, issuer } = getJwtConfig();
     const tokenData = await exchangeCodeForToken(code, clientId, clientSecret, redirectUri);
-    if (!tokenData.access_token) return NextResponse.json({ error: "Invalid code" }, { status: 400 });
+    if (!tokenData.access_token) return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.oauthCodeInvalid") }, { status: 400 });
 
     const user: APIUser = await fetchDiscordUser(tokenData.access_token);
     const guilds: APIGuild[] = await getDiscordGuilds(tokenData.access_token, "Bearer");

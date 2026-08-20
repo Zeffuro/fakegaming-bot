@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { api } from '@/lib/api-client';
+import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
 
 interface UseGuildLocaleConfigOptions {
     enabled?: boolean;
 }
 
 export function useGuildLocaleConfig(guildId: string, options: UseGuildLocaleConfigOptions = {}) {
+    const { t } = useDashboardI18n();
     const enabled = options.enabled ?? true;
     const [outputLocale, setOutputLocale] = useState<SupportedOutputLocale>('en');
     const [loading, setLoading] = useState(enabled);
@@ -26,7 +28,7 @@ export function useGuildLocaleConfig(guildId: string, options: UseGuildLocaleCon
             setOutputLocale(config.outputLocale);
             setError(null);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load bot output language');
+            setError(err instanceof Error ? err.message : t('hooks.failedToLoadBotOutputLanguage'));
         } finally {
             setLoading(false);
         }
@@ -41,7 +43,7 @@ export function useGuildLocaleConfig(guildId: string, options: UseGuildLocaleCon
             setError(null);
             return true;
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to save bot output language');
+            setError(err instanceof Error ? err.message : t('hooks.failedToSaveBotOutputLanguage'));
             return false;
         } finally {
             setSaving(false);

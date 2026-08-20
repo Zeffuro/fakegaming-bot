@@ -13,6 +13,8 @@ import {
 } from "@/lib/animeSubscriptionFilters";
 import { findDuplicateAnimeSubscriptionGroups, getDuplicateAnimeSubscriptionsToRemove, type DuplicateAnimeSubscriptionGroup } from "@/lib/animeSubscriptionReview";
 import type { AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
 
 interface AnimeSubscriptionsPanelProps {
   serverSubs: AnimeSubscriptionDashboardConfig[];
@@ -34,6 +36,7 @@ interface SubscriptionCardProps {
 }
 
 function SubscriptionCard({ config, saving, channelName, onTogglePaused, onDelete }: SubscriptionCardProps) {
+  const { locale, t } = useDashboardI18n();
   const paused = Boolean(config.paused);
   const PauseIcon = paused ? PlayCircleOutlined : PauseCircleOutlined;
 
@@ -43,26 +46,26 @@ function SubscriptionCard({ config, saving, channelName, onTogglePaused, onDelet
         <Stack spacing={0.75}>
           <Typography sx={{ color: "grey.50", fontWeight: 800 }}>{subscriptionTitle(config)}</Typography>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
-            {subscriptionMeta(config)}
+            {subscriptionMeta(config, locale)}
           </Typography>
           {channelName && (
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)" }}>
-              Channel: {channelName}
+              {t("anime.channel", { channel: channelName })}
             </Typography>
           )}
         </Stack>
       </CardContent>
       <CardActions sx={{ justifyContent: "space-between", px: 2, pb: 2 }}>
         <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
-          <Chip size="small" label={`AniList #${config.anilistId}`} variant="outlined" sx={{ color: "rgba(255,255,255,0.68)", borderColor: "rgba(255,255,255,0.16)" }} />
-          {paused && <Chip size="small" label="Paused" color="info" variant="outlined" />}
+          <Chip size="small" label={t("anime.anilistId", { id: config.anilistId })} variant="outlined" sx={{ color: "rgba(255,255,255,0.68)", borderColor: "rgba(255,255,255,0.16)" }} />
+          {paused && <Chip size="small" label={t("common.paused")} color="info" variant="outlined" />}
         </Stack>
         <Stack direction="row" spacing={1}>
           <Button size="small" variant="outlined" startIcon={<PauseIcon />} disabled={saving} onClick={() => onTogglePaused(config)} sx={ghostButtonSx}>
-            {paused ? "Resume" : "Pause"}
+            {paused ? t("common.resume") : t("common.pause")}
           </Button>
           <Button size="small" variant="outlined" color="error" startIcon={<Delete />} disabled={saving} onClick={() => onDelete(config)} sx={dangerButtonSx}>
-            Remove
+            {t("anime.remove")}
           </Button>
         </Stack>
       </CardActions>
@@ -90,15 +93,17 @@ interface SubscriptionSectionProps {
   children: React.ReactNode;
 }
 
-const statusFilterOptions: Array<{ value: AnimeSubscriptionStatusFilter; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "active", label: "Active" },
-  { value: "paused", label: "Paused" },
-  { value: "airing-known", label: "Airing Known" },
-  { value: "airing-missing", label: "Airing Missing" },
+const statusFilterOptions: Array<{ value: AnimeSubscriptionStatusFilter; labelKey: DashboardMessageKey }> = [
+  { value: "all", labelKey: "status.all" },
+  { value: "active", labelKey: "status.active" },
+  { value: "paused", labelKey: "common.paused" },
+  { value: "airing-known", labelKey: "anime.airingKnown" },
+  { value: "airing-missing", labelKey: "anime.airingMissing" },
 ];
 
 function SubscriptionSection({ title, count, totalCount, chipSx, emptyMessage, filteredEmptyMessage, description, actions, children }: SubscriptionSectionProps) {
+  const { t } = useDashboardI18n();
+
   return (
     <Paper sx={{ ...elevatedPanelSx, p: 3 }}>
       <Stack spacing={2} sx={{ position: "relative" }}>
@@ -116,7 +121,7 @@ function SubscriptionSection({ title, count, totalCount, chipSx, emptyMessage, f
             {description}
           </Typography>
         )}
-        {count === 0 ? <EmptyState>{totalCount === 0 ? emptyMessage : filteredEmptyMessage ?? "No subscriptions match the current filters."}</EmptyState> : children}
+        {count === 0 ? <EmptyState>{totalCount === 0 ? emptyMessage : filteredEmptyMessage ?? t("anime.noSubscriptionsMatchFilters")}</EmptyState> : children}
       </Stack>
     </Paper>
   );
@@ -133,6 +138,7 @@ function hasId(config: AnimeSubscriptionDashboardConfig): boolean {
 }
 
 function BulkPauseActions({ configs, saving, onSetPaused }: BulkPauseActionsProps) {
+  const { t } = useDashboardI18n();
   const activeCount = configs.filter((config) => hasId(config) && !config.paused).length;
   const pausedCount = configs.filter((config) => hasId(config) && Boolean(config.paused)).length;
 
@@ -141,18 +147,13 @@ function BulkPauseActions({ configs, saving, onSetPaused }: BulkPauseActionsProp
   return (
     <>
       <Button size="small" variant="outlined" startIcon={<PauseCircleOutlined />} disabled={saving || activeCount === 0} onClick={() => void onSetPaused(true)} sx={ghostButtonSx}>
-        Pause Active ({activeCount})
+        {t("anime.pauseActive", { count: activeCount })}
       </Button>
       <Button size="small" variant="outlined" startIcon={<PlayCircleOutlined />} disabled={saving || pausedCount === 0} onClick={() => void onSetPaused(false)} sx={ghostButtonSx}>
-        Resume Paused ({pausedCount})
+        {t("anime.resumePaused", { count: pausedCount })}
       </Button>
     </>
   );
-}
-
-function duplicateDestinationLabel(group: DuplicateAnimeSubscriptionGroup, getChannelName: (channelId: string) => string): string {
-  if (group.scope === "personal") return "DM reminder";
-  return `Channel: ${getChannelName(group.destinationId)}`;
 }
 
 function DuplicateSubscriptionReview({
@@ -168,6 +169,7 @@ function DuplicateSubscriptionReview({
   onDelete: (config: AnimeSubscriptionDashboardConfig) => void | Promise<void>;
   onDeleteMany: (configs: AnimeSubscriptionDashboardConfig[]) => void | Promise<void>;
 }) {
+  const { t } = useDashboardI18n();
   if (groups.length === 0) return null;
 
   return (
@@ -177,13 +179,13 @@ function DuplicateSubscriptionReview({
           <Box>
             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, display: "flex", alignItems: "center", gap: 1 }}>
               <WarningAmber fontSize="small" />
-              Duplicate Review
+              {t("anime.duplicateReview")}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>
-              Same AniList title routed to the same destination more than once.
+              {t("anime.duplicateReviewDescription")}
             </Typography>
           </Box>
-          <Chip label={`${groups.length} group${groups.length === 1 ? "" : "s"}`} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50", border: "1px solid rgba(255,200,87,0.24)" }} />
+          <Chip label={t(groups.length === 1 ? "anime.duplicateGroupOne" : "anime.duplicateGroupMany", { count: groups.length })} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50", border: "1px solid rgba(255,200,87,0.24)" }} />
         </Stack>
 
         <Stack spacing={1.25}>
@@ -216,8 +218,12 @@ function DuplicateSubscriptionGroupCard({
   onDelete: (config: AnimeSubscriptionDashboardConfig) => void | Promise<void>;
   onDeleteMany: (configs: AnimeSubscriptionDashboardConfig[]) => void | Promise<void>;
 }) {
+  const { t } = useDashboardI18n();
   const removable = getDuplicateAnimeSubscriptionsToRemove(group).map((item) => item.config);
   const removableCount = removable.filter((config) => config.id !== undefined && config.id !== null).length;
+  const destinationLabel = group.scope === "personal"
+    ? t("anime.dmReminder")
+    : t("anime.channel", { channel: getChannelName(group.destinationId) });
 
   return (
     <Box sx={{ p: 1.5, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
@@ -228,11 +234,11 @@ function DuplicateSubscriptionGroupCard({
                       {group.title}
                     </Typography>
                     <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.5)" }}>
-                      AniList #{group.anilistId} - {duplicateDestinationLabel(group, getChannelName)}
+                      {t("anime.anilistId", { id: group.anilistId })} - {destinationLabel}
                     </Typography>
                   </Box>
                   <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
-                    <Chip size="small" label={`${group.count} duplicates`} sx={{ bgcolor: "rgba(255,200,87,0.10)", color: "rgba(255,255,255,0.78)" }} />
+                    <Chip size="small" label={t("anime.duplicatesCount", { count: group.count })} sx={{ bgcolor: "rgba(255,200,87,0.10)", color: "rgba(255,255,255,0.78)" }} />
                     <Button
                       size="small"
                       variant="outlined"
@@ -242,7 +248,7 @@ function DuplicateSubscriptionGroupCard({
                       onClick={() => void onDeleteMany(removable)}
                       sx={dangerButtonSx}
                     >
-                      Remove Extras ({removableCount})
+                      {t("anime.removeExtras", { count: removableCount })}
                     </Button>
                   </Stack>
                 </Stack>
@@ -266,24 +272,30 @@ function DuplicateSubscriptionRow({
   saving: boolean;
   onDelete: (config: AnimeSubscriptionDashboardConfig) => void | Promise<void>;
 }) {
+  const { t } = useDashboardI18n();
+
   return (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center", justifyContent: "space-between", p: 1, borderRadius: 2, bgcolor: "rgba(0,0,0,0.16)" }}>
       <Box sx={{ minWidth: 0 }}>
         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.74)", display: "block", overflowWrap: "anywhere" }}>
-          Subscription #{item.config.id ?? "unknown"} - {item.config.paused ? "paused" : "active"}
+          {t("anime.subscriptionStatus", {
+            id: item.config.id ?? t("common.unknown"),
+            status: item.config.paused ? t("common.paused") : t("status.active"),
+          })}
         </Typography>
         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)", display: "block" }}>
-          {item.scope === "server" ? "Server channel" : "Personal DM"} - {item.config.reminderMinutes ?? 30} min reminder
+          {item.scope === "server" ? t("anime.serverChannel") : t("anime.personalDm")} - {t("anime.reminderMinutes", { minutes: item.config.reminderMinutes ?? 30 })}
         </Typography>
       </Box>
       <Button size="small" variant="outlined" color="error" startIcon={<Delete />} disabled={saving || !item.config.id} onClick={() => void onDelete(item.config)} sx={dangerButtonSx}>
-        Remove
+        {t("anime.remove")}
       </Button>
     </Box>
   );
 }
 
 export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getChannelName, onTogglePaused, onSetPaused, onDelete, onDeleteMany }: AnimeSubscriptionsPanelProps) {
+  const { t } = useDashboardI18n();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<AnimeSubscriptionStatusFilter>("all");
   const channelNames = useMemo(() => {
@@ -312,8 +324,8 @@ export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getC
       <Paper sx={{ ...elevatedPanelSx, p: 2.5 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ position: "relative", alignItems: { md: "center" } }}>
           <TextField
-            label="Search subscriptions"
-            placeholder="Title, AniList ID, channel, status, or scope"
+            label={t("anime.searchSubscriptions")}
+            placeholder={t("anime.searchSubscriptionsPlaceholder")}
             size="small"
             fullWidth
             value={query}
@@ -327,19 +339,21 @@ export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getC
           />
           <TextField
             select
-            label="Filter"
+            label={t("anime.filter")}
             size="small"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as AnimeSubscriptionStatusFilter)}
             sx={{ ...fieldSx, minWidth: { xs: "100%", md: 190 } }}
           >
             {statusFilterOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+              <MenuItem key={option.value} value={option.value}>{t(option.labelKey)}</MenuItem>
             ))}
           </TextField>
           <Chip
             icon={<FilterList />}
-            label={filtersActive ? `${filteredSubscriptions.length}/${serverSubs.length + personalSubs.length} shown` : `${serverSubs.length + personalSubs.length} total`}
+            label={filtersActive
+              ? t("anime.filteredSubscriptionCount", { shown: filteredSubscriptions.length, total: serverSubs.length + personalSubs.length })
+              : t("anime.totalSubscriptions", { total: serverSubs.length + personalSubs.length })}
             sx={{ alignSelf: { xs: "flex-start", md: "center" }, bgcolor: "rgba(104,215,255,0.12)", color: "grey.50", border: "1px solid rgba(104,215,255,0.24)" }}
           />
         </Stack>
@@ -355,12 +369,12 @@ export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getC
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 3fr) minmax(320px, 2fr)" }, gap: 3 }}>
       <SubscriptionSection
-        title="Server Channel Subscriptions"
+        title={t("anime.serverSubscriptionsTitle")}
         count={filteredServerSubs.length}
         totalCount={serverSubs.length}
         chipSx={{ bgcolor: "rgba(104,215,255,0.14)", color: "grey.50" }}
-        emptyMessage="No server channel anime subscriptions configured."
-        filteredEmptyMessage="No server channel subscriptions match the current filters."
+        emptyMessage={t("anime.noServerSubscriptions")}
+        filteredEmptyMessage={t("anime.noServerSubscriptionsMatchFilters")}
         actions={<BulkPauseActions configs={filteredServerSubs} saving={saving} onSetPaused={(paused) => onSetPaused(filteredServerSubs, paused)} />}
       >
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
@@ -378,13 +392,13 @@ export function AnimeSubscriptionsPanel({ serverSubs, personalSubs, saving, getC
       </SubscriptionSection>
 
       <SubscriptionSection
-        title="Your DM Subscriptions"
+        title={t("anime.personalSubscriptionsTitle")}
         count={filteredPersonalSubs.length}
         totalCount={personalSubs.length}
         chipSx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50" }}
-        emptyMessage="No personal anime subscriptions."
-        filteredEmptyMessage="No personal subscriptions match the current filters."
-        description="Personal `/anime subscribe` reminders are listed here so they are not invisible from the dashboard."
+        emptyMessage={t("anime.noPersonalSubscriptions")}
+        filteredEmptyMessage={t("anime.noPersonalSubscriptionsMatchFilters")}
+        description={t("anime.personalSubscriptionsDescription")}
         actions={<BulkPauseActions configs={filteredPersonalSubs} saving={saving} onSetPaused={(paused) => onSetPaused(filteredPersonalSubs, paused)} />}
       >
         <Stack spacing={1.5}>

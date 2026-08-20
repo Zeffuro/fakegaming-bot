@@ -82,21 +82,24 @@ async function readRiotErrorMessage(response: Response): Promise<string | null> 
     }
 }
 
-export async function validateRiotAccountLink(input: RiotAccountValidationInput): Promise<RiotAccountValidationResult> {
+export async function validateRiotAccountLink(
+    input: RiotAccountValidationInput,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): Promise<RiotAccountValidationResult> {
     const gameName = input.gameName.trim();
     const tagLine = input.tagLine.trim();
     if (!gameName || !tagLine) {
-        return failure(400, 'BAD_REQUEST', 'Riot ID must include a game name and tag line.');
+        return failure(400, 'BAD_REQUEST', apiText(locale, 'riotIdRequired'));
     }
 
     const regionGroup = riotAccountRegionGroup(input.region);
     if (!regionGroup) {
-        return failure(400, 'BAD_REQUEST', `Unsupported Riot region: ${input.region}`);
+        return failure(400, 'BAD_REQUEST', apiText(locale, 'riotRegionUnsupported', { region: input.region }));
     }
 
     const apiKey = getRiotAccountApiKey();
     if (!apiKey) {
-        return failure(503, 'RIOT_VALIDATION_UNAVAILABLE', 'Riot Account API key is not configured.');
+        return failure(503, 'RIOT_VALIDATION_UNAVAILABLE', apiText(locale, 'riotApiKeyMissing'));
     }
 
     const url = `https://${regionGroup}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
@@ -109,27 +112,29 @@ export async function validateRiotAccountLink(input: RiotAccountValidationInput)
             },
         });
     } catch {
-        return failure(502, 'RIOT_VALIDATION_FAILED', 'Riot Account API validation request failed.');
+        return failure(502, 'RIOT_VALIDATION_FAILED', apiText(locale, 'riotValidationRequestFailed'));
     }
 
     if (!response.ok) {
         const riotMessage = await readRiotErrorMessage(response);
         if (response.status === 404) {
-            return failure(400, 'RIOT_ACCOUNT_NOT_FOUND', 'Riot ID could not be verified through Account-V1.');
+            return failure(400, 'RIOT_ACCOUNT_NOT_FOUND', apiText(locale, 'riotAccountNotFound'));
         }
-        return failure(502, 'RIOT_VALIDATION_FAILED', riotMessage ?? 'Riot Account API validation failed.');
+        return failure(502, 'RIOT_VALIDATION_FAILED', riotMessage ?? apiText(locale, 'riotValidationFailed'));
     }
 
     const data = await response.json() as RiotAccountResponse;
     const validatedPuuid = typeof data.puuid === 'string' ? data.puuid.trim() : '';
     if (!validatedPuuid) {
-        return failure(502, 'RIOT_VALIDATION_FAILED', 'Riot Account API returned an invalid account payload.');
+        return failure(502, 'RIOT_VALIDATION_FAILED', apiText(locale, 'riotInvalidPayload'));
     }
 
     const expectedPuuid = input.puuid?.trim();
     if (expectedPuuid && expectedPuuid !== validatedPuuid) {
-        return failure(400, 'RIOT_PUUID_MISMATCH', 'PUUID does not match the Riot ID returned by Account-V1.');
+        return failure(400, 'RIOT_PUUID_MISMATCH', apiText(locale, 'riotPuuidMismatch'));
     }
 
     return { ok: true, puuid: validatedPuuid };
 }
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { apiText } from '../localization/locale.js';

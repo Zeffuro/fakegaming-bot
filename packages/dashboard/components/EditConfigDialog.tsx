@@ -6,6 +6,7 @@ import {
     type ConfigDialogValue
 } from "@/components/config-dialog/ConfigDialogFields";
 import { StreamingConfig } from "@/components/hooks/useStreamingForm";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface EditConfigDialogProps<T extends StreamingConfig> {
     open: boolean;
@@ -16,6 +17,7 @@ interface EditConfigDialogProps<T extends StreamingConfig> {
     channelNameField: string;
     channelNameLabel: string;
     moduleName: string;
+    moduleDisplayName?: string;
     moduleColor: string;
     channels: { id: string; name: string }[];
     loadingChannels: boolean;
@@ -37,6 +39,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
     channelNameField,
     channelNameLabel,
     moduleName,
+    moduleDisplayName = moduleName,
     moduleColor,
     channels,
     loadingChannels,
@@ -48,19 +51,20 @@ export default function EditConfigDialog<T extends StreamingConfig>({
     itemNameOptions,
     itemNameSearch
 }: EditConfigDialogProps<T>) {
+    const { t } = useDashboardI18n();
     if (!config) return null;
 
     const configValue = config as unknown as ConfigDialogValue;
-    const titleLabel = itemSingularLabel ?? (moduleName === 'YouTube' ? 'Channel' : 'Streamer');
+    const titleLabel = itemSingularLabel ?? (moduleName === "YouTube" ? t("config.channel") : t("config.streamer"));
 
     return (
         <ConfigDialogShell
             open={open}
             onClose={onClose}
-            title={`Edit ${titleLabel}`}
+            title={t("common.editItem", { item: titleLabel })}
             moduleColor={moduleColor}
             saving={saving}
-            submitLabel="Update"
+            submitLabel={t("common.update")}
             onSubmit={onSave}
         >
             <ConfigDialogFields
@@ -69,6 +73,7 @@ export default function EditConfigDialog<T extends StreamingConfig>({
                 channelNameField={channelNameField}
                 channelNameLabel={channelNameLabel}
                 moduleName={moduleName}
+                moduleDisplayName={moduleDisplayName}
                 moduleColor={moduleColor}
                 channels={channels}
                 loadingChannels={loadingChannels}

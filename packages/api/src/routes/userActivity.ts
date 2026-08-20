@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import {
     getConfigManager,
-    validateQuery,
     type AuditEventRecord,
     type NotificationRecord,
 } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { validateQuery } from '../localization/validation.js';
 
 const router = createBaseRouter();
 

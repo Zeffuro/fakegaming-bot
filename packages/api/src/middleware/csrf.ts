@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, validateCsrf } from '@zeffuro/fakegaming-common/security';
 import { getLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { getSafeRequestContext } from '../utils/requestContext.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 // Per-request CSRF state without augmenting Express types
 const csrfState = new WeakMap<Request, { checked: boolean; valid: boolean }>();
@@ -30,7 +31,7 @@ function parseCookies(header: string | undefined): Map<string, string> {
 function denyCsrf(req: Request, res: Response, details: string): void {
     log.warn({ ...getSafeRequestContext(req), details }, 'CSRF validation failed');
     incMetric('csrf_denied');
-    res.status(403).json({ error: 'CSRF', details });
+    res.status(403).json({ error: 'CSRF', details: apiText(requestLocale(req), 'csrf') });
 }
 
 /** Core CSRF enforcement. Sets request state so future checks can short-circuit. */

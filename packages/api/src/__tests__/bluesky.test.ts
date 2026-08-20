@@ -70,6 +70,21 @@ describe('Bluesky API', () => {
         expectNotFound(res);
     });
 
+    it('localizes a non-existent config response', async () => {
+        const res = await client.get('/api/bluesky/999999').set('Accept-Language', 'nl');
+        expectNotFound(res);
+        expect(res.body.error.message).toBe('Bluesky-berichtconfiguratie niet gevonden');
+    });
+
+    it('localizes an invalid normalized handle response', async () => {
+        const res = await client.post('/api/bluesky')
+            .set('Accept-Language', 'nl')
+            .send({ blueskyHandle: ' ', discordChannelId: 'channel', guildId: 'testguild1' });
+
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('blueskyHandle is verplicht');
+    });
+
     it('deletes a bluesky config', async () => {
         const all = await configManager.blueskyManager.getAllPlain();
         const id = all[0]?.id as number;

@@ -4,27 +4,32 @@ import {isValidTimezone, getTimezoneSuggestions} from '../../../utils/timezoneUt
 import { createSlashCommand } from '../../../core/commandBuilder.js';
 import { getTestOnly } from '../../../core/commandBuilder.js';
 import { setTimezone as META } from '../commands.manifest.js';
+import { resolveInteractionOutputLocale } from '../../../core/localization.js';
+import { getReminderCopy } from '../copy/reminderCopy.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option.setName('timezone')
+            .setNameLocalization('nl', 'tijdzone')
             .setDescription('Your IANA timezone (e.g., Europe/Berlin or GMT+2)')
+            .setDescriptionLocalization('nl', 'Je IANA-tijdzone (bijv. Europe/Berlin of GMT+2)')
             .setRequired(true)
             .setAutocomplete(true)
     )
 );
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const copy = getReminderCopy(await resolveInteractionOutputLocale(interaction));
     const timezone = interaction.options.getString('timezone', true);
     const userId = interaction.user.id;
 
     if (!isValidTimezone(timezone)) {
-        await interaction.reply('Invalid timezone. Please use a valid IANA timezone (e.g., Europe/Berlin) or GMT offset.');
+        await interaction.reply(copy.invalidTimezone);
         return;
     }
 
     await getConfigManager().userManager.setTimezone({discordId: userId, timezone: timezone});
-    await interaction.reply(`Timezone set to \`${timezone}\`.`);
+    await interaction.reply(copy.timezoneSet(timezone));
 }
 
 async function autocomplete(interaction: AutocompleteInteraction) {

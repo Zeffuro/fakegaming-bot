@@ -133,4 +133,31 @@ describe('leagueStats command', () => {
         // Verify error response now uses an embed object
         expectEditReplyContainsText(interaction, 'Failed to fetch summoner: Rate limit exceeded');
     });
+
+    it('uses the stored Dutch locale for stats presentation', async () => {
+        const { getLeagueIdentityFromInteraction } = await import('../utils/leagueUtils.js');
+        vi.mocked(getLeagueIdentityFromInteraction).mockResolvedValue({
+            summoner: 'ProviderPlayer',
+            region: 'EUW' as Regions,
+            puuid: 'provider-puuid',
+        });
+        const { getSummoner, getSummonerDetails } = await import('../../../services/riotService.js');
+        vi.mocked(getSummoner).mockResolvedValue({ success: true, data: { summonerLevel: 42 } });
+        vi.mocked(getSummonerDetails).mockResolvedValue({ success: true, data: [] });
+        const { command, interaction } = await setupCommandTest('modules/league/commands/leagueStats.js', {
+            managerOverrides: {
+                guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('nl') },
+            },
+        });
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+
+        const payload = vi.mocked(interaction.editReply).mock.calls[0]?.[0] as { embeds?: Array<{ toJSON(): { title?: string; fields?: Array<{ name: string; value: string }> } }> };
+        const embed = payload.embeds?.[0]?.toJSON();
+        expect(embed?.title).toBe('Statistieken voor ProviderPlayer [EUW]');
+        expect(embed?.fields).toEqual(expect.arrayContaining([
+            expect.objectContaining({ name: 'Niveau', value: '42' }),
+            expect.objectContaining({ name: 'Ranglijst', value: 'Geen ranggegevens gevonden.' }),
+        ]));
+    });
 });

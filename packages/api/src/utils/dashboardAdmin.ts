@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { AuthenticatedRequest } from '../types/express.js';
 import { isServiceRequest } from '../middleware/serviceAuth.js';
 import { getAuditRequestMetadata, recordAuditEvent } from './audit.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 export function isDashboardAdmin(discordId: string | undefined): boolean {
     if (!discordId) return false;
@@ -60,7 +61,7 @@ export function requireDashboardAdmin(req: Request, res: Response, next: NextFun
         res.status(403).json({
             error: {
                 code: 'FORBIDDEN',
-                message: 'Only dashboard admins can access this resource',
+                message: apiText(requestLocale(req), 'adminOnly'),
             },
         });
         return;

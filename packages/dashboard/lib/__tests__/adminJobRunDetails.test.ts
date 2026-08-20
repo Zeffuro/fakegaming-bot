@@ -37,4 +37,17 @@ describe("admin job run details", () => {
         expect(getAdminJobRunDetails(run({ meta: { processed: 4, force: true } }), "birthdays")).toBe("processed: 4 (force)");
         expect(getAdminJobRunDetails(run({ meta: { backend: "redis" } }), "heartbeat")).toBe("backend: redis");
     });
+
+    it("localizes application-owned run details in Dutch", () => {
+        expect(getAdminJobRunDetails(run({
+            meta: {
+                job: "vod-followup",
+                status: "no_archive_video",
+                username: "creator",
+            },
+        }), "twitch", "nl")).toBe("VOD-opvolging: nog geen archief: @creator");
+
+        expect(getAdminJobRunDetails(run({ meta: { processed: 4, force: true } }), "birthdays", "nl"))
+            .toBe("verwerkt: 4 (geforceerd)");
+    });
 });

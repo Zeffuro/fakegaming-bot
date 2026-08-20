@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import {
     api,
     type UserDigestPausedInput,
@@ -9,6 +10,7 @@ import {
 } from "@/lib/api-client";
 
 export function useUserDigestSubscription() {
+    const { t } = useDashboardI18n();
     const [subscription, setSubscription] = useState<UserDigestSubscription | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -21,12 +23,12 @@ export function useUserDigestSubscription() {
             setSubscription(result.subscription);
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load digest subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToLoadDigestSubscription");
             setError(message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const saveSubscription = useCallback(async (input: UserDigestSubscriptionInput) => {
         setSaving(true);
@@ -36,13 +38,13 @@ export function useUserDigestSubscription() {
             setError(null);
             return result.subscription;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to save digest subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToSaveDigestSubscription");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const setPaused = useCallback(async (input: UserDigestPausedInput) => {
         setSaving(true);
@@ -52,13 +54,13 @@ export function useUserDigestSubscription() {
             setError(null);
             return result.subscription;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to update digest subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToUpdateDigestSubscription");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();

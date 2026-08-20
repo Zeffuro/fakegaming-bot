@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type DisabledCommandArr = Awaited<ReturnType<typeof api.getDisabledCommands>>;
 
 export function useGuildCommands(guildId: string) {
+  const { t } = useDashboardI18n();
   const [disabledCommands, setDisabledCommands] = useState<string[]>([]);
   const [loadingCommand, setLoadingCommand] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,11 @@ export function useGuildCommands(guildId: string) {
         .filter((name): name is string => typeof name === "string" && name.length > 0);
       setDisabledCommands(names);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to fetch disabled commands";
+      const message = err instanceof Error ? err.message : t("hooks.failedToFetchDisabledCommands");
       setError(message);
       setDisabledCommands([]);
     }
-  }, [guildId]);
+  }, [guildId, t]);
 
   const disableCommand = useCallback(async (commandName: string) => {
     setLoadingCommand(commandName);
@@ -35,11 +37,11 @@ export function useGuildCommands(guildId: string) {
       await api.createDisabledCommand({ guildId, commandName });
       await fetchDisabledCommands();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to disable command";
+      const message = err instanceof Error ? err.message : t("hooks.failedToDisableCommand");
       setError(message);
     }
     setLoadingCommand(undefined);
-  }, [guildId, fetchDisabledCommands]);
+  }, [guildId, fetchDisabledCommands, t]);
 
   const enableCommand = useCallback(async (commandName: string) => {
     setLoadingCommand(commandName);
@@ -53,11 +55,11 @@ export function useGuildCommands(guildId: string) {
       }
       await fetchDisabledCommands();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Failed to enable command";
+      const message = err instanceof Error ? err.message : t("hooks.failedToEnableCommand");
       setError(message);
     }
     setLoadingCommand(undefined);
-  }, [guildId, fetchDisabledCommands]);
+  }, [guildId, fetchDisabledCommands, t]);
 
   return {
     disabledCommands,

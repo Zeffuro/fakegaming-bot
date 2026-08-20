@@ -1,6 +1,8 @@
 import { api, type SteamNewsSubscriptionConfig, type SteamNewsSubscriptionRequest } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 import type { ConfigDialogItemOption } from "@/components/config-dialog/ConfigDialogFields";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
 
 interface UseSteamNewsConfigsOptions {
     enabled?: boolean;
@@ -25,6 +27,7 @@ export interface SteamNewsDashboardConfig {
 type SteamNewsCreateConfig = Omit<SteamNewsDashboardConfig, "id" | "guildId">;
 
 export function useSteamNewsConfigs(guildId: string | string[], options: UseSteamNewsConfigsOptions = {}) {
+    const { locale, t } = useDashboardI18n();
     return useConfigResource<SteamNewsDashboardConfig, SteamNewsCreateConfig>({
         guildId,
         enabled: options.enabled ?? true,
@@ -32,7 +35,7 @@ export function useSteamNewsConfigs(guildId: string | string[], options: UseStea
             const allConfigs = await api.getSteamNewsSubscriptions(resolvedGuildId);
             return allConfigs
                 .filter((config) => config.guildId === resolvedGuildId)
-                .map(toDashboardConfig);
+                .map((config) => toDashboardConfig(config, locale));
         },
         create: async (configData, resolvedGuildId) => {
             await api.createSteamNewsSubscription(await buildSteamNewsRequest(configData, resolvedGuildId));
@@ -45,25 +48,29 @@ export function useSteamNewsConfigs(guildId: string | string[], options: UseStea
         },
         setPaused: async (config, paused) => {
             if (config.id === undefined) {
-                throw new Error("Steam news subscription ID is required");
+                throw new Error(t("hooks.steamSubscriptionIdRequired"));
             }
             await api.setSteamNewsSubscriptionPaused(config.id, paused);
         },
         deleteConfig: async (config) => {
             if (config.id === undefined) {
-                throw new Error("Steam news subscription ID is required");
+                throw new Error(t("hooks.steamSubscriptionIdRequired"));
             }
             await api.deleteSteamNewsSubscription(config.id);
         },
         removeById: async (configId) => {
             await api.deleteSteamNewsSubscription(configId);
         },
-        validateCreate: validateSteamNewsConfig,
+        validateCreate: (config) => validateSteamNewsConfig(
+            config,
+            t("hooks.steamGameRequired"),
+            t("hooks.discordChannelRequired"),
+        ),
         messages: {
-            loadFailed: "Failed to load Steam news subscriptions",
-            createFailed: "Failed to save Steam news subscription",
-            updateFailed: "Failed to update Steam news subscription",
-            deleteFailed: "Failed to delete Steam news subscription",
+            loadFailed: t("hooks.steamLoadFailed"),
+            createFailed: t("hooks.steamSaveFailed"),
+            updateFailed: t("hooks.steamUpdateFailed"),
+            deleteFailed: t("hooks.steamDeleteFailed"),
         },
     });
 }
@@ -83,7 +90,7 @@ export async function searchSteamNewsAppOptions(query: string): Promise<ConfigDi
     }));
 }
 
-function toDashboardConfig(config: SteamNewsSubscriptionConfig): SteamNewsDashboardConfig {
+function toDashboardConfig(config: SteamNewsSubscriptionConfig, locale: DashboardLocale): SteamNewsDashboardConfig {
     const appName = normalizeOptionalString(config.appName);
     return {
         id: config.id,
@@ -98,7 +105,7 @@ function toDashboardConfig(config: SteamNewsSubscriptionConfig): SteamNewsDashbo
         quietHoursStart: config.quietHoursStart ?? null,
         quietHoursEnd: config.quietHoursEnd ?? null,
         paused: config.paused ?? false,
-        youtubeChannelTitle: appName ?? `Steam app ${config.steamAppId}`,
+        youtubeChannelTitle: appName ?? `${getDashboardLocaleValue(locale, { en: "Steam app", nl: "Steam-app" })} ${config.steamAppId}`,
     };
 }
 
@@ -113,12 +120,16 @@ async function buildSteamNewsRequest(config: SteamNewsCreateConfig | SteamNewsDa
     } as SteamNewsSubscriptionRequest;
 }
 
-function validateSteamNewsConfig(config: SteamNewsCreateConfig): string | null {
+function validateSteamNewsConfig(
+    config: SteamNewsCreateConfig,
+    gameRequired: string,
+    channelRequired: string,
+): string | null {
     if (!normalizeOptionalString(config.steamAppId)) {
-        return "Game, Steam App ID, or Steam URL is required";
+        return gameRequired;
     }
     if (!config.discordChannelId) {
-        return "Discord Channel is required";
+        return channelRequired;
     }
     return null;
 }

@@ -27,16 +27,10 @@ import {
 import { buildRiotLeagueFormAuditSummary } from "@/lib/adminRiotLeagueFormAudit";
 import { adminAuditCsvHeaders, buildAdminAuditCsvRows } from "@/lib/adminAnalyticsExports";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
-
-const auditSavedViewPresets: AdminSavedViewPreset[] = [
-    { id: "audit:failed", label: "Failed events", query: "status=failure" },
-    { id: "audit:error", label: "Error failures", query: "severity=error&status=failure" },
-    { id: "audit:integrations", label: "Integration failures", query: "scope=integrations&status=failure" },
-    { id: "audit:riot-league-form", label: "Riot League form", query: "scope=integrations&provider=riot&action=riot.leagueForm" },
-    { id: "audit:riot-league-form-failures", label: "Riot League failures", query: "scope=integrations&provider=riot&action=riot.leagueForm&status=failure" },
-];
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 function AdminAuditContent() {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const router = useRouter();
     const searchParams = useSearchParams();
     const searchParamString = searchParams?.toString() ?? "";
@@ -64,11 +58,11 @@ function AdminAuditContent() {
             setEvents(response.events);
             setTotal(response.total);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Failed to load audit events");
+            setError(err instanceof Error ? err.message : t("admin.auditLoadFailed"));
         } finally {
             setLoading(false);
         }
-    }, [filters]);
+    }, [filters, t]);
 
     useEffect(() => {
         void loadEvents();
@@ -100,17 +94,24 @@ function AdminAuditContent() {
         return countAdminAuditFilters(filters);
     }, [filters]);
     const savedViewQuery = useMemo(() => serializeAdminAuditFilters(filters), [filters]);
+    const auditSavedViewPresets = useMemo<AdminSavedViewPreset[]>(() => [
+        { id: "audit:failed", label: t("admin.auditPresetFailed"), query: "status=failure" },
+        { id: "audit:error", label: t("admin.auditPresetError"), query: "severity=error&status=failure" },
+        { id: "audit:integrations", label: t("admin.auditPresetIntegrations"), query: "scope=integrations&status=failure" },
+        { id: "audit:riot-league-form", label: t("admin.auditPresetRiotLeague"), query: "scope=integrations&provider=riot&action=riot.leagueForm" },
+        { id: "audit:riot-league-form-failures", label: t("admin.auditPresetRiotLeagueFailures"), query: "scope=integrations&provider=riot&action=riot.leagueForm&status=failure" },
+    ], [t]);
     const riotLeagueFormSummary = useMemo(() => buildRiotLeagueFormAuditSummary(events), [events]);
     const exportEvents = useCallback(() => {
         downloadCsv(
             createCsvFilename("admin-audit-events"),
             adminAuditCsvHeaders,
-            buildAdminAuditCsvRows(events),
+            buildAdminAuditCsvRows(events, locale),
         );
-    }, [events]);
+    }, [events, locale]);
 
     return (
-        <AdminPage title="Audit Events" trail={[{ label: "Audit Events", href: "/dashboard/admin/audit" }]}>
+        <AdminPage title={t("admin.auditPageTitle")} trail={[{ label: t("admin.auditEvents"), href: "/dashboard/admin/audit" }]}>
             <Stack spacing={2.5}>
                 <AuditEventFilters
                     filters={filters}
@@ -125,7 +126,9 @@ function AdminAuditContent() {
                     scope="audit"
                     basePath="/dashboard/admin/audit"
                     currentQuery={savedViewQuery}
-                    defaultLabel={activeFilterCount > 0 ? `${activeFilterCount} audit filters` : "Audit view"}
+                    defaultLabel={activeFilterCount > 0
+                        ? t("admin.auditFilterCount", { count: formatNumber(activeFilterCount) })
+                        : t("admin.auditView")}
                     presets={auditSavedViewPresets}
                 />
 
@@ -161,8 +164,10 @@ function AdminAuditContent() {
 }
 
 export default function AdminAuditPage() {
+    const { t } = useDashboardI18n();
+
     return (
-        <Suspense fallback={<AdminPage title="Audit Events"><Typography>Loading audit events...</Typography></AdminPage>}>
+        <Suspense fallback={<AdminPage title={t("admin.auditPageTitle")}><Typography>{t("admin.auditLoading")}</Typography></AdminPage>}>
             <AdminAuditContent />
         </Suspense>
     );

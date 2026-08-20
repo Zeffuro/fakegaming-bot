@@ -7,6 +7,7 @@ import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
 import { useAdminAccess, useAdminBreadcrumbs } from "@/components/hooks/useAdmin";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface AdminBreadcrumbItem {
     label: string;
@@ -21,6 +22,7 @@ export interface AdminPageProps {
 }
 
 export function AdminPage({ title, trail = [], children }: AdminPageProps) {
+    const { t } = useDashboardI18n();
     const { loading, isAdmin, error } = useAdminAccess();
     const currentTrail = useAdminBreadcrumbs(trail);
 
@@ -35,7 +37,7 @@ export function AdminPage({ title, trail = [], children }: AdminPageProps) {
     if (!loading && !isAdmin) {
         return (
             <DashboardLayout>
-                <Alert severity="warning">You do not have access to Admin tools.</Alert>
+                <Alert severity="warning">{t("admin.noAccess")}</Alert>
             </DashboardLayout>
         );
     }
@@ -46,9 +48,9 @@ export function AdminPage({ title, trail = [], children }: AdminPageProps) {
                 <FeatureShell accent={dashboardAccents.admin} secondaryAccent={dashboardAccents.patchNotes}>
                     <FeatureHero
                         icon={<AdminPanelSettings />}
-                        eyebrow="Admin"
+                        eyebrow={t("admin.eyebrow")}
                         title={title}
-                        description="Operational tools for checking jobs, providers, and backend-only diagnostics."
+                        description={t("admin.description")}
                         accent={dashboardAccents.admin}
                         secondaryAccent={dashboardAccents.patchNotes}
                     />

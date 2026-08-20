@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api, type IntegrationHealthRecord } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface UseIntegrationHealthOptions {
     enabled?: boolean;
 }
 
 export function useIntegrationHealth(guildId: string, provider?: string, options: UseIntegrationHealthOptions = {}) {
+    const { t } = useDashboardI18n();
     const enabled = options.enabled ?? true;
     const [records, setRecords] = useState<IntegrationHealthRecord[]>([]);
     const [loading, setLoading] = useState(enabled);
@@ -24,7 +26,7 @@ export function useIntegrationHealth(guildId: string, provider?: string, options
             setRecords(response.records);
             setError(null);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Failed to load integration health");
+            setError(err instanceof Error ? err.message : t("hooks.failedToLoadIntegrationHealth"));
             setRecords([]);
         } finally {
             setLoading(false);

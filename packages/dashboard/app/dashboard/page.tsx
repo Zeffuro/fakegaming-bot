@@ -10,11 +10,13 @@ import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { dashboardAccents, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/components/hooks/useDashboardData";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export default function Dashboard() {
     const { guilds, isAdmin, loading, error, refetch } = useDashboardData();
     const [refreshing, setRefreshing] = useState(false);
     const router = useRouter();
+    const { t } = useDashboardI18n();
 
     const handleGuildClick = (guild: any) => {
         router.push(`/dashboard/${guild.id}`);
@@ -43,12 +45,12 @@ export default function Dashboard() {
                 <FeatureShell accent={dashboardAccents.settings} secondaryAccent={dashboardAccents.anime}>
                     <FeatureHero
                         icon={<Groups />}
-                        eyebrow={isAdmin ? "Full access" : "Guilds"}
-                        title="Your guilds"
-                        description="Pick a server to configure bot modules, notifications, commands, quotes, birthdays, and anime reminders."
+                        eyebrow={isAdmin ? t("dashboard.fullAccess") : t("dashboard.guilds")}
+                        title={t("dashboard.yourGuilds")}
+                        description={t("dashboard.pickGuild")}
                         accent={dashboardAccents.settings}
                         secondaryAccent={dashboardAccents.anime}
-                        stats={[{ label: "guilds available", value: guilds.length }]}
+                        stats={[{ label: t("dashboard.guildsAvailable"), value: guilds.length }]}
                         actions={(
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
                                 <Button
@@ -68,7 +70,7 @@ export default function Dashboard() {
                                         }
                                     }}
                                 >
-                                    Your dashboard
+                                    {t("nav.yourDashboard")}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -88,11 +90,11 @@ export default function Dashboard() {
                                         }
                                     }}
                                 >
-                                    Refresh servers
+                                    {t("dashboard.refreshServers")}
                                 </Button>
                                 {isAdmin && (
                                     <Button variant="contained" startIcon={<AdminPanelSettings />} onClick={() => router.push("/dashboard/admin")} sx={primaryActionButtonSx(dashboardAccents.admin)}>
-                                        Admin panel
+                                        {t("nav.adminPanel")}
                                     </Button>
                                 )}
                             </Stack>
@@ -107,10 +109,10 @@ export default function Dashboard() {
                                 </Box>
                                 <Box sx={{ minWidth: 0 }}>
                                     <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                        Personal tools
+                                        {t("dashboard.personalTools")}
                                     </Typography>
                                     <Typography sx={{ color: "rgba(255,255,255,0.62)" }}>
-                                        Notes and other account-level features that are not tied to a server.
+                                        {t("dashboard.personalToolsDescription")}
                                     </Typography>
                                 </Box>
                             </Stack>
@@ -120,7 +122,7 @@ export default function Dashboard() {
                                 onClick={() => router.push("/dashboard/me")}
                                 sx={primaryActionButtonSx(dashboardAccents.commands)}
                             >
-                                Open personal tools
+                                {t("dashboard.openPersonalTools")}
                             </Button>
                         </Stack>
                     </FeaturePanel>

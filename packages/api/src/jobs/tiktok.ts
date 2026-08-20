@@ -1,12 +1,12 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { formatUptimeShort } from '@zeffuro/fakegaming-common/utils';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
 import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
 import { syncLiveNotificationState, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 interface TikTokStreamConfigPlain {
     id?: number | string;
@@ -21,6 +21,11 @@ interface TikTokStreamConfigPlain {
     lastNotifiedAt?: string | number | Date | null;
     paused?: boolean | null;
 }
+
+const UPTIME_HOUR_UNITS = {
+    en: 'h',
+    nl: 'u',
+} as const satisfies OutputLocaleValues<string>;
 
 interface TikTokLiveInfo {
     live: boolean;
@@ -65,7 +70,10 @@ function normalizeTikTokUsername(username: string): string {
     return username.trim().replace(/^@/, '').toLowerCase();
 }
 
-export function getTikTokSessionDiagnostics(cookieHeader = process.env.TIKTOK_COOKIE): TikTokSessionDiagnostics {
+export function getTikTokSessionDiagnostics(
+    cookieHeader = process.env.TIKTOK_COOKIE,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): TikTokSessionDiagnostics {
     const cookieNames = parseCookieNames(cookieHeader);
     const cookieConfigured = cookieNames.length > 0;
     const likelySessionCookiePresent = cookieNames.some(name => likelySessionCookiePattern.test(name));
@@ -76,11 +84,11 @@ export function getTikTokSessionDiagnostics(cookieHeader = process.env.TIKTOK_CO
         likelySessionCookiePresent,
         freshness: cookieConfigured ? 'unknown' : 'not-configured',
         connectorUsesCookie: false,
-        summary: cookieConfigured
+        summary: apiText(locale, cookieConfigured
             ? likelySessionCookiePresent
-                ? 'TikTok cookie material is configured, but this connector path does not expose expiry age and is not attaching cookies to live checks.'
-                : 'TikTok cookie material is configured, but no likely session cookie was detected and this connector path is not attaching cookies to live checks.'
-            : 'No TikTok cookie material is configured for this process.',
+                ? 'tiktokSessionAttached'
+                : 'tiktokSessionUnrecognized'
+            : 'tiktokSessionMissing'),
     };
 }
 
@@ -91,6 +99,7 @@ export function buildTikTokDebugMeta(
         cachedOffline?: boolean;
         offlineBackoffUntil?: number | null;
         cookieHeader?: string;
+        locale?: SupportedOutputLocale;
     } = {},
 ): TikTokDebugMeta {
     const checkedAt = options.now ?? new Date();
@@ -104,7 +113,7 @@ export function buildTikTokDebugMeta(
         cachedOffline: options.cachedOffline ?? false,
         offlineBackoffUntil,
         checkedAt: checkedAt.toISOString(),
-        session: getTikTokSessionDiagnostics(options.cookieHeader),
+        session: getTikTokSessionDiagnostics(options.cookieHeader, options.locale),
     };
 }
 
@@ -259,24 +268,34 @@ async function resolveTikTokLiveForPoll(username: string, log: ReturnType<typeof
     };
 }
 
-function buildTikTokEmbedAndContent(opts: { username: string; info: TikTokLiveInfo; customMessage?: string | null }): { content: string; payload: Record<string, unknown> } {
+export function buildTikTokEmbedAndContent(opts: {
+    username: string;
+    info: TikTokLiveInfo;
+    customMessage?: string | null;
+    locale?: SupportedOutputLocale;
+}): { content: string; payload: Record<string, unknown> } {
     const { username, info } = opts;
+    const locale = opts.locale ?? DEFAULT_OUTPUT_LOCALE;
     const url = `https://www.tiktok.com/@${username}/live`;
     const urlSafe = `<${url}>`;
     const startedAtMs = typeof info.startedAt === 'number' ? info.startedAt : null;
     const uptimeMs = typeof startedAtMs === 'number' ? Math.max(0, Date.now() - startedAtMs) : null;
-    const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatUptimeShort(uptimeMs) : null;
+    const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatTikTokUptime(uptimeMs, locale) : null;
 
     const embed: Record<string, unknown> = {
-        title: `${username} is now live on TikTok!`,
+        title: apiText(locale, 'tiktokLiveTitle', { username }),
         url,
-        description: info.title || 'Live on TikTok!',
+        description: info.title || apiText(locale, 'tiktokLiveFallback'),
         color: 0x010101,
         timestamp: new Date().toISOString(),
     };
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
-    if (typeof info.viewers === 'number') fields.push({ name: 'Viewers', value: String(info.viewers), inline: true });
-    if (uptimeStr) fields.push({ name: 'Uptime', value: uptimeStr, inline: true });
+    if (typeof info.viewers === 'number') fields.push({
+        name: apiText(locale, 'tiktokViewers'),
+        value: new Intl.NumberFormat(locale).format(info.viewers),
+        inline: true,
+    });
+    if (uptimeStr) fields.push({ name: apiText(locale, 'tiktokUptime'), value: uptimeStr, inline: true });
     if (fields.length) (embed as any).fields = fields;
     if (info.cover) (embed as any).image = { url: info.cover };
 
@@ -285,17 +304,31 @@ function buildTikTokEmbedAndContent(opts: { username: string; info: TikTokLiveIn
         title: info.title || '',
         url: urlSafe,
         uptime: uptimeStr || '',
-        viewers: typeof info.viewers === 'number' ? String(info.viewers) : ''
+        viewers: typeof info.viewers === 'number' ? new Intl.NumberFormat(locale).format(info.viewers) : ''
     };
     return buildDiscordNotificationPayload({
-        defaultContent: `Hey @everyone, ${username} is now live! ${urlSafe}`,
+        defaultContent: apiText(locale, 'tiktokDefaultContent', { username, url: urlSafe }),
         embed,
-        buttonLabel: 'Watch Stream',
+        buttonLabel: apiText(locale, 'tiktokWatchStream'),
         buttonUrl: url,
         tokens,
         customMessage: opts.customMessage,
         urlToken: urlSafe,
     });
+}
+
+function formatTikTokUptime(msValue: number, locale: SupportedOutputLocale): string {
+    const totalSeconds = Math.max(0, Math.floor(msValue / 1000));
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const hourUnit = resolveLocaleValue(locale, UPTIME_HOUR_UNITS);
+
+    if (days > 0) return `${days}d ${hours}${hourUnit}`;
+    if (hours > 0) return `${hours}${hourUnit} ${minutes}m`;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
 }
 
 async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({ name: 'api:jobs:tiktok' })): Promise<{ processed: number; errors: number }> {
@@ -351,6 +384,7 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
             const isLive = info.live;
             const now = new Date();
             const eventId = isLive ? String(info.roomId ?? `${cfg.tiktokUsername}:${Math.floor(now.getTime()/60000)}`) : '';
+            const locale = await resolveGuildOutputLocale(cfg.guildId);
 
             const sent = await syncLiveNotificationState({
                 config: cfg,
@@ -360,7 +394,12 @@ async function processTikTokPoll(log: ReturnType<typeof getLogger> = getLogger({
                 eventId,
                 isLive,
                 now,
-                buildPayload: () => buildTikTokEmbedAndContent({ username: cfg.tiktokUsername, info, customMessage: cfg.customMessage ?? null }).payload,
+                buildPayload: () => buildTikTokEmbedAndContent({
+                    username: cfg.tiktokUsername,
+                    info,
+                    customMessage: cfg.customMessage ?? null,
+                    locale,
+                }).payload,
             });
             if (sent) {
                 processed += 1;

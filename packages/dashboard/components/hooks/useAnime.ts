@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, type AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export type AnimeDashboardConfig = AnimeSubscriptionDashboardConfig & {
   animeTitle: string;
@@ -13,6 +14,7 @@ interface UseAnimeConfigsOptions {
 }
 
 export function useAnimeConfigs(guildId: string | string[], options: UseAnimeConfigsOptions = {}) {
+  const { t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [configs, setConfigs] = useState<AnimeDashboardConfig[]>([]);
   const [loading, setLoading] = useState(enabled);
@@ -34,7 +36,7 @@ export function useAnimeConfigs(guildId: string | string[], options: UseAnimeCon
         cooldownMinutes: config.reminderMinutes,
       })));
     } catch (err: any) {
-      setError(err.message || 'Failed to load anime subscriptions');
+      setError(err.message || t("hooks.failedToLoadAnimeSubscriptions"));
     } finally {
       setLoading(false);
     }
@@ -43,7 +45,7 @@ export function useAnimeConfigs(guildId: string | string[], options: UseAnimeCon
   const addConfig = async (configData: Omit<AnimeDashboardConfig, 'id' | 'guildId'>) => {
     const titleOrId = String(configData.animeTitle ?? '').trim();
     if (!titleOrId || !configData.discordChannelId) {
-      setError('Anime title/AniList ID and Discord Channel are required');
+      setError(t("hooks.animeSubscriptionRequired"));
       return false;
     }
 
@@ -59,7 +61,7 @@ export function useAnimeConfigs(guildId: string | string[], options: UseAnimeCon
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to save anime subscription');
+      setError(err.message || t("hooks.failedToCreateAnimeSubscription"));
       return false;
     } finally {
       setSaving(false);
@@ -81,7 +83,7 @@ export function useAnimeConfigs(guildId: string | string[], options: UseAnimeCon
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to update anime subscription');
+      setError(err.message || t("hooks.failedToUpdateAnimeSubscription"));
       return false;
     } finally {
       setSaving(false);
@@ -96,7 +98,7 @@ export function useAnimeConfigs(guildId: string | string[], options: UseAnimeCon
       await fetchConfigs();
       return true;
     } catch (err: any) {
-      setError(err.message || 'Failed to delete anime subscription');
+      setError(err.message || t("hooks.failedToDeleteAnimeSubscription"));
       return false;
     } finally {
       setSaving(false);

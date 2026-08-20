@@ -2,23 +2,35 @@ import { randomUUID } from 'node:crypto';
 import type { CreationAttributes } from 'sequelize';
 import { BaseManager } from './baseManager.js';
 import { UserNoteConfig } from '../models/user-note-config.js';
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 export interface UserNoteCreateInput {
     discordId: string;
     title?: string | null;
     body: string;
     pinned?: boolean;
+    locale?: SupportedOutputLocale;
 }
 
 export interface UserNoteUpdateInput {
     title?: string;
     body?: string;
     pinned?: boolean;
+    locale?: SupportedOutputLocale;
 }
 
 export type UserNoteRecord = CreationAttributes<UserNoteConfig>;
 
-export function deriveUserNoteTitle(title: string | null | undefined, body: string): string {
+const UNTITLED_NOTE_LABEL = {
+    en: 'Untitled note',
+    nl: 'Naamloze notitie',
+} as const satisfies OutputLocaleValues<string>;
+
+export function deriveUserNoteTitle(
+    title: string | null | undefined,
+    body: string,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
     const trimmedTitle = title?.trim();
     if (trimmedTitle) return trimmedTitle.slice(0, 160);
 
@@ -26,7 +38,7 @@ export function deriveUserNoteTitle(title: string | null | undefined, body: stri
         .split(/\r?\n/)
         .map((line) => line.trim())
         .find((line) => line.length > 0);
-    if (!firstBodyLine) return 'Untitled note';
+    if (!firstBodyLine) return resolveLocaleValue(locale, UNTITLED_NOTE_LABEL);
 
     return firstBodyLine.replace(/\s+/g, ' ').slice(0, 160);
 }
@@ -60,7 +72,7 @@ export class UserNoteManager extends BaseManager<UserNoteConfig> {
         return this.addPlain({
             id: randomUUID(),
             discordId: input.discordId,
-            title: deriveUserNoteTitle(input.title, input.body),
+            title: deriveUserNoteTitle(input.title, input.body, input.locale),
             body: input.body,
             pinned: input.pinned ?? false,
         } as CreationAttributes<UserNoteConfig>);
@@ -70,9 +82,9 @@ export class UserNoteManager extends BaseManager<UserNoteConfig> {
         const existing = await this.getForUser(id, discordId);
         if (!existing) return null;
 
-        const update = { ...input };
+        const {locale, ...update} = input;
         if (Object.hasOwn(update, 'title')) {
-            update.title = deriveUserNoteTitle(update.title, update.body ?? existing.body);
+            update.title = deriveUserNoteTitle(update.title, update.body ?? existing.body, locale);
         }
 
         await this.updatePlain(update as CreationAttributes<UserNoteConfig>, { id, discordId });

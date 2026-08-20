@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface UseSupportedGamesResult {
     games: string[];
@@ -9,6 +10,7 @@ export interface UseSupportedGamesResult {
 }
 
 export function useSupportedGames(): UseSupportedGamesResult {
+    const { t } = useDashboardI18n();
     const [games, setGames] = useState<string[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -20,7 +22,7 @@ export function useSupportedGames(): UseSupportedGamesResult {
             const data = await api.getSupportedGames();
             setGames(Array.isArray(data) ? data : []);
         } catch (e: any) {
-            setError(e?.message ?? 'Failed to load supported games');
+            setError(e?.message ?? t('hooks.failedToLoadSupportedGames'));
         } finally {
             setLoading(false);
         }

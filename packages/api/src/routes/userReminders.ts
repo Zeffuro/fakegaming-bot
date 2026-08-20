@@ -2,9 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import {
     getConfigManager,
-    validateBody,
-    validateParams,
 } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams } from '../localization/validation.js';
 import {
     userReminderCreateRequestSchema,
     userReminderSnoozeRequestSchema,
@@ -20,6 +19,7 @@ import {
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -176,14 +176,14 @@ router.post('/', validateBody(userReminderCreateRequestSchema), async (req, res)
     const body = req.body as z.infer<typeof userReminderCreateRequestSchema>;
     const timestamp = getDueTimestamp(body.timespan);
     if (timestamp === null) {
-        res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid timespan. Use values like 10m, 1h, or 2d.' } });
+        sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'reminderInvalidTimespan');
         return;
     }
     const recurrence = body.recurrence
         ? parseReminderRecurrence(body.recurrence, body.recurrenceTimezone ?? '')
         : null;
     if (body.recurrence && !recurrence) {
-        res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid recurrence. Use values like daily, weekly, monthly, every 2 weeks, or 3mo with a valid timezone.' } });
+        sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'reminderInvalidRecurrence');
         return;
     }
 
@@ -238,7 +238,7 @@ router.get('/:id', validateParams(reminderIdParamSchema), async (req, res) => {
     const { id } = req.params as z.infer<typeof reminderIdParamSchema>;
     const reminder = await getConfigManager().reminderManager.getForUser(id, userId) as unknown as ReminderRecord | null;
     if (!reminder) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
         return;
     }
     res.json(serializeReminder(reminder));
@@ -278,7 +278,7 @@ router.patch('/:id/snooze', validateParams(reminderIdParamSchema), validateBody(
     const body = req.body as z.infer<typeof userReminderSnoozeRequestSchema>;
     const timestamp = getDueTimestamp(body.timespan);
     if (timestamp === null) {
-        res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid timespan. Use values like 10m, 1h, or 2d.' } });
+        sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'reminderInvalidTimespan');
         return;
     }
 
@@ -287,7 +287,7 @@ router.patch('/:id/snooze', validateParams(reminderIdParamSchema), validateBody(
         timestamp,
     }) as unknown as ReminderRecord | null;
     if (!reminder) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
         return;
     }
 
@@ -334,13 +334,13 @@ router.patch('/:id/paused', validateParams(reminderIdParamSchema), validateBody(
     const body = req.body as z.infer<typeof pausedStateRequestSchema>;
     const existing = await getConfigManager().reminderManager.getForUser(id, userId) as unknown as ReminderRecord | null;
     if (!existing) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
         return;
     }
 
     const recurrenceRule = getReminderRecurrenceRule(existing);
     if (!recurrenceRule) {
-        res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Only recurring reminders can be paused.' } });
+        sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'reminderRecurringOnly');
         return;
     }
 
@@ -388,7 +388,7 @@ router.delete('/:id', validateParams(reminderIdParamSchema), async (req, res) =>
     const { id } = req.params as z.infer<typeof reminderIdParamSchema>;
     const deleted = await getConfigManager().reminderManager.removeForUser(id, userId);
     if (!deleted) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
         return;
     }
 

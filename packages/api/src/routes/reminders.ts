@@ -1,11 +1,12 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
-import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams } from '../localization/validation.js';
 import { reminderCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { UniqueConstraintError } from 'sequelize';
 import { recordAuditEvent } from '../utils/audit.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.string().min(1) });
@@ -59,7 +60,7 @@ router.get('/', async (_req, res) => {
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
-    if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+    if (!reminder) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
     res.json(reminder);
 });
 
@@ -98,7 +99,7 @@ router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req,
         res.status(201).json(created);
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: { code: 'CONFLICT', message: 'Reminder with this ID already exists' } });
+            sendLocalizedError(req, res, 409, 'CONFLICT', 'reminderExists');
         } else {
             throw error;
         }
@@ -130,7 +131,7 @@ router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req,
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
     const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
-    if (!reminder) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Reminder not found' } });
+    if (!reminder) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
     await getConfigManager().reminderManager.removeByPk(id as string);
     await recordAuditEvent(req, {
         action: 'reminder.delete',

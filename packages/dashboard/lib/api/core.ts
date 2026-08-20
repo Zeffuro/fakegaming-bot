@@ -1,5 +1,7 @@
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 import { getBrowserCookie, redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
+import { getDashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
 
 export const API_ENDPOINTS = {
     TWITCH: "/api/external/twitch",
@@ -46,6 +48,39 @@ function isMutating(method: string): boolean {
         || normalizedMethod === "DELETE";
 }
 
+async function fetchDashboardApi(endpoint: string, requestOptions: RequestInit): Promise<Response> {
+    try {
+        return await fetch(endpoint, requestOptions);
+    } catch {
+        throw new Error(formatDashboardMessage(getDashboardLocale(), "error.network"));
+    }
+}
+
+function getApiErrorMessage(errorData: unknown, status: number): string {
+    const errorObject = typeof errorData === "object" && errorData !== null ? errorData : null;
+    const apiError = errorObject && "error" in errorObject
+        ? (errorObject as { error?: unknown }).error
+        : undefined;
+    const apiErrorMessage = typeof apiError === "object" && apiError !== null && "message" in apiError
+        ? (apiError as { message?: unknown }).message
+        : undefined;
+    const detailMessage = errorObject && "details" in errorObject
+        ? (errorObject as { details?: unknown }).details
+        : undefined;
+    const fallbackMessage = errorObject && "message" in errorObject
+        ? (errorObject as { message?: unknown }).message
+        : undefined;
+
+    if (apiError === "CSRF" && typeof detailMessage === "string") {
+        return detailMessage;
+    }
+
+    return (typeof apiError === "string" ? apiError : undefined)
+        || (typeof apiErrorMessage === "string" ? apiErrorMessage : undefined)
+        || (typeof fallbackMessage === "string" ? fallbackMessage : undefined)
+        || formatDashboardMessage(getDashboardLocale(), "error.requestFailed", { status });
+}
+
 export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     const {
         method = "GET",
@@ -56,6 +91,7 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
 
     const mergedHeaders: Record<string, string> = {
         "Content-Type": "application/json",
+        "Accept-Language": getDashboardLocale(),
         ...headers,
     };
 
@@ -76,12 +112,12 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
         requestOptions.body = JSON.stringify(body);
     }
 
-    let response = await fetch(endpoint, requestOptions);
+    let response = await fetchDashboardApi(endpoint, requestOptions);
 
     if (!response.ok && response.status === 401) {
         const refreshed = await refreshAuthSession();
         if (refreshed) {
-            response = await fetch(endpoint, requestOptions);
+            response = await fetchDashboardApi(endpoint, requestOptions);
         }
         if (!response.ok) {
             redirectToLogin();
@@ -90,22 +126,7 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
 
     if (!response.ok) {
         const errorData: unknown = await response.json().catch(() => null);
-        const apiError = typeof errorData === "object" && errorData !== null && "error" in errorData
-            ? (errorData as { error?: unknown }).error
-            : undefined;
-        const apiErrorMessage = typeof apiError === "object" && apiError !== null && "message" in apiError
-            ? (apiError as { message?: unknown }).message
-            : undefined;
-        const fallbackMessage = typeof errorData === "object" && errorData !== null && "message" in errorData
-            ? (errorData as { message?: unknown }).message
-            : undefined;
-
-        throw new Error(
-            (typeof apiError === "string" ? apiError : undefined)
-            || (typeof apiErrorMessage === "string" ? apiErrorMessage : undefined)
-            || (typeof fallbackMessage === "string" ? fallbackMessage : undefined)
-            || `API request failed with status: ${response.status}`,
-        );
+        throw new Error(getApiErrorMessage(errorData, response.status));
     }
 
     if (response.status === 204) return undefined as T;
@@ -123,6 +144,7 @@ export async function apiBinaryRequest(endpoint: string, options: ApiOptions = {
 
     const mergedHeaders: Record<string, string> = {
         "Content-Type": "application/json",
+        "Accept-Language": getDashboardLocale(),
         ...headers,
     };
 
@@ -143,12 +165,12 @@ export async function apiBinaryRequest(endpoint: string, options: ApiOptions = {
         requestOptions.body = JSON.stringify(body);
     }
 
-    let response = await fetch(endpoint, requestOptions);
+    let response = await fetchDashboardApi(endpoint, requestOptions);
 
     if (!response.ok && response.status === 401) {
         const refreshed = await refreshAuthSession();
         if (refreshed) {
-            response = await fetch(endpoint, requestOptions);
+            response = await fetchDashboardApi(endpoint, requestOptions);
         }
         if (!response.ok) {
             redirectToLogin();
@@ -157,22 +179,7 @@ export async function apiBinaryRequest(endpoint: string, options: ApiOptions = {
 
     if (!response.ok) {
         const errorData: unknown = await response.json().catch(() => null);
-        const apiError = typeof errorData === "object" && errorData !== null && "error" in errorData
-            ? (errorData as { error?: unknown }).error
-            : undefined;
-        const apiErrorMessage = typeof apiError === "object" && apiError !== null && "message" in apiError
-            ? (apiError as { message?: unknown }).message
-            : undefined;
-        const fallbackMessage = typeof errorData === "object" && errorData !== null && "message" in errorData
-            ? (errorData as { message?: unknown }).message
-            : undefined;
-
-        throw new Error(
-            (typeof apiError === "string" ? apiError : undefined)
-            || (typeof apiErrorMessage === "string" ? apiErrorMessage : undefined)
-            || (typeof fallbackMessage === "string" ? fallbackMessage : undefined)
-            || `API request failed with status: ${response.status}`,
-        );
+        throw new Error(getApiErrorMessage(errorData, response.status));
     }
 
     return await response.blob();

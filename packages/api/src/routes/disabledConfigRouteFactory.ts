@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, type GuildScopedRecord } from '../utils/authHelpers.js';
@@ -8,9 +8,10 @@ import {
     canReadGuildScopedRecord,
     loadGuildScopedRecords,
     sendGuildScopedRecords,
-    sendNotFound,
 } from '../utils/guildScopedRouteHelpers.js';
 import { numericIdParamSchema, optionalGuildListQuerySchema } from './sharedSchemas.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import type { ApiCopyKey } from '../localization/catalog.js';
 
 interface DisabledConfigRecord extends GuildScopedRecord {
     id?: number | null;
@@ -35,7 +36,7 @@ interface DisabledConfigRouteOptions<
     createSchema: TCreateSchema;
     checkQuerySchema: TCheckSchema;
     nameField: keyof TRecord & string;
-    notFoundMessage: string;
+    notFoundKey: ApiCopyKey;
     auditTargetType: string;
     auditDisableAction: string;
     auditEnableAction: string;
@@ -50,7 +51,7 @@ export function createDisabledConfigRouter<
     createSchema,
     checkQuerySchema,
     nameField,
-    notFoundMessage,
+    notFoundKey,
     auditTargetType,
     auditDisableAction,
     auditEnableAction,
@@ -72,7 +73,7 @@ export function createDisabledConfigRouter<
 
     router.get('/:id', validateParams(numericIdParamSchema), async (req, res) => {
         const record = await getManager().findByPkPlain(Number(req.params.id));
-        if (!record) return sendNotFound(res, notFoundMessage);
+        if (!record) return sendLocalizedError(req, res, 404, 'NOT_FOUND', notFoundKey);
         const hasAccess = await canReadGuildScopedRecord(req, res, record);
         if (!hasAccess) return;
         res.json(record);
@@ -95,7 +96,7 @@ export function createDisabledConfigRouter<
     router.delete('/:id', jwtAuth, validateParams(numericIdParamSchema), async (req, res) => {
         const numericId = Number(req.params.id);
         const existing = await getManager().findByPkPlain(numericId);
-        if (!existing) return sendNotFound(res, notFoundMessage);
+        if (!existing) return sendLocalizedError(req, res, 404, 'NOT_FOUND', notFoundKey);
         const hasAccess = await canReadGuildScopedRecord(req, res, existing);
         if (!hasAccess) return;
         await getManager().removeByPk(numericId);

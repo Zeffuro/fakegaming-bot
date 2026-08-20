@@ -150,7 +150,6 @@ describe("buildServerSettingsStatus", () => {
             multiChannelFeeds: 1,
             busyChannels: 1,
             totalFindings: 3,
-            statusLabel: "3 findings",
         });
         expect(status.summary.notificationFindings).toBe(3);
     });
@@ -163,12 +162,11 @@ describe("buildServerSettingsStatus", () => {
 
         expect(status.capabilityChecklist).toMatchObject({
             issueCount: 0,
-            statusLabel: "Ready",
             items: [
                 expect.objectContaining({
                     id: "ready",
                     severity: "success",
-                    statusLabel: "Ready",
+                    count: 0,
                     href: "/dashboard/guild-1",
                 }),
             ],
@@ -227,12 +225,14 @@ describe("buildServerSettingsStatus", () => {
         ]);
         expect(status.capabilityChecklist.items[0]).toMatchObject({
             severity: "critical",
-            statusLabel: "2 missing",
+            count: 2,
             href: "/dashboard/settings/guild-1/notifications",
         });
         expect(status.capabilityChecklist.items[1]).toMatchObject({
             severity: "critical",
-            statusLabel: "2 issues",
+            count: 2,
+            healthErrors: 1,
+            healthWarnings: 1,
             href: "/dashboard/analytics/guild-1",
         });
     });

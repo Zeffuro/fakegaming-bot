@@ -1,4 +1,5 @@
 import { getLogger } from '../utils/logger.js';
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 const ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
 
@@ -63,6 +64,21 @@ export type AniListMangaFormat = 'MANGA' | 'NOVEL' | 'ONE_SHOT';
 export type AniListMediaFormat = AniListAnimeFormat | AniListMangaFormat;
 export type AniListMediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 export type AniListSeasonScope = 'airing' | 'chart' | 'tv' | 'all';
+
+const ANILIST_SEASON_SCOPE_LABELS = {
+    en: {
+        airing: 'airing/upcoming',
+        chart: 'season chart',
+        tv: 'TV only',
+        all: 'all known formats',
+    },
+    nl: {
+        airing: 'wordt uitgezonden/komend',
+        chart: 'seizoensoverzicht',
+        tv: 'alleen tv',
+        all: 'alle bekende indelingen',
+    },
+} as const satisfies OutputLocaleValues<Record<AniListSeasonScope, string>>;
 
 export interface AniListSeasonFilter {
     scope?: AniListSeasonScope;
@@ -262,11 +278,11 @@ export function getAniListSeasonScopeFilters(scope: AniListSeasonScope = 'airing
     };
 }
 
-export function formatAniListSeasonScope(scope: AniListSeasonScope = 'airing'): string {
-    if (scope === 'chart') return 'season chart';
-    if (scope === 'tv') return 'TV only';
-    if (scope === 'all') return 'all known formats';
-    return 'airing/upcoming';
+export function formatAniListSeasonScope(
+    scope: AniListSeasonScope = 'airing',
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
+    return resolveLocaleValue(locale, ANILIST_SEASON_SCOPE_LABELS)[scope];
 }
 
 export async function searchAniListMediaPage(

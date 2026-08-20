@@ -101,4 +101,16 @@ describe("adminProviderCooldown", () => {
         });
         expect(formatAdminProviderCooldownSummary(hint)).toBe("Retry: scheduled for 2026-06-23T10:20:00.000Z");
     });
+
+    it("localizes visible cooldown guidance in Dutch", () => {
+        const hint = getAdminProviderCooldownHint(healthRecord({
+            metadata: { suppressedByCooldown: true },
+        }), Date.now(), "nl");
+
+        expect(hint).toMatchObject({
+            title: "Afkoelperiode heeft bezorging onderdrukt",
+            state: "suppressed",
+        });
+        expect(hint?.nextStep).toContain("afkoelperiode");
+    });
 });

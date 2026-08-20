@@ -19,6 +19,7 @@ import {
     type AdminSavedView,
     type AdminSavedViewScope,
 } from "@/lib/adminSavedViews";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface AdminSavedViewPreset {
     id: string;
@@ -39,6 +40,7 @@ export function AdminSavedViews({
     defaultLabel: string;
     presets: AdminSavedViewPreset[];
 }) {
+    const { t } = useDashboardI18n();
     const [views, setViews] = useState<AdminSavedView[]>([]);
     const accent = dashboardAccents.admin;
     const normalizedCurrentQuery = useMemo(() => normalizeSavedViewQuery(currentQuery), [currentQuery]);
@@ -55,7 +57,7 @@ export function AdminSavedViews({
 
     const saveCurrentView = useCallback(() => {
         if (!normalizedCurrentQuery) return;
-        const label = window.prompt("Saved view name", defaultLabel);
+        const label = window.prompt(t("admin.savedViewName"), defaultLabel);
         if (!label) return;
 
         const view = createAdminSavedView({
@@ -66,7 +68,7 @@ export function AdminSavedViews({
         if (!view) return;
 
         persistViews(upsertAdminSavedView(views, view));
-    }, [defaultLabel, normalizedCurrentQuery, persistViews, scope, views]);
+    }, [defaultLabel, normalizedCurrentQuery, persistViews, scope, t, views]);
 
     const deleteView = useCallback((id: string) => {
         persistViews(removeAdminSavedView(views, id));
@@ -78,7 +80,7 @@ export function AdminSavedViews({
                 <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", minWidth: 0 }}>
                     <PushPin sx={{ color: accent, fontSize: 18 }} />
                     <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 850 }}>
-                        Saved views
+                        {t("admin.savedViews")}
                     </Typography>
                 </Stack>
 
@@ -109,7 +111,7 @@ export function AdminSavedViews({
                         onClick={saveCurrentView}
                         sx={ghostActionButtonSx(accent)}
                     >
-                        Save view
+                        {t("admin.saveView")}
                     </Button>
                 </Stack>
             </Stack>

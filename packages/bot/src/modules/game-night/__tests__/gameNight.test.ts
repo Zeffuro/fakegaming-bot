@@ -58,6 +58,20 @@ function button(customId: string, userId = 'voter'): ButtonInteraction & {
 }
 
 describe('Game Night Board command', () => {
+    it('publishes Dutch command, subcommand, and option metadata', () => {
+        const json = gameNightCommand.data.toJSON();
+        expect(json.name_localizations?.nl).toBe('spelavond');
+        expect(json.description_localizations?.nl).toBeTruthy();
+        for (const subcommand of json.options ?? []) {
+            expect(subcommand.name_localizations?.nl).toBeTruthy();
+            expect(subcommand.description_localizations?.nl).toBeTruthy();
+            for (const option of 'options' in subcommand ? subcommand.options ?? [] : []) {
+                expect(option.name_localizations?.nl).toBeTruthy();
+                expect(option.description_localizations?.nl).toBeTruthy();
+            }
+        }
+    });
+
     it('renders bounded voting controls with safe mentions and escaped user content', () => {
         const rendered = renderGameNightBoard(board());
         expect(rendered.allowedMentions).toEqual({ parse: [] });
@@ -69,6 +83,17 @@ describe('Game Night Board command', () => {
             custom_id: 'game-night:vote:session-1:nomination-1',
         });
         expect(rendered.content.length).toBeLessThanOrEqual(2_000);
+    });
+
+    it('renders Dutch board copy and locale-stable component IDs', () => {
+        const rendered = renderGameNightBoard(board(), 'nl');
+        expect(rendered.content).toContain('**Spelavond: Friday');
+        expect(rendered.content).toContain('Status: de stemming is geopend');
+        expect(rendered.content).toContain('2 stemmen');
+        expect(rendered.components[0]?.components[0]?.toJSON()).toMatchObject({
+            custom_id: 'game-night:vote:session-1:nomination-1:nl',
+        });
+        expect(rendered.components[1]?.components[0]?.toJSON()).toMatchObject({ label: 'Winnaar kiezen' });
     });
 
     it('renders the recorded winner and tiebreak evidence after closing', () => {

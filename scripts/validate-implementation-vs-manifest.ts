@@ -5,6 +5,9 @@ import {
     findModuleFolders,
     getModulesPath,
     listImplementationCommandMetadata,
+    COMMAND_LOCALIZATION_LOCALES,
+    commandLocaleLabel,
+    type CommandLocalizations,
     type CommandKind,
     type ImplementationCommandMetadata,
 } from './lib/command-introspection.js';
@@ -25,6 +28,7 @@ async function main(): Promise<void> {
         dm_permission?: boolean | null;
         default_member_permissions?: string | null;
         type?: CommandKind | null;
+        localizations?: CommandLocalizations | null;
     }
     type ManifestMod = { BOT_COMMANDS?: ReadonlyArray<ManifestCommand>; };
     const mod = (await import(pathToFileURL(manifestPath).href)) as ManifestMod;
@@ -74,14 +78,28 @@ async function main(): Promise<void> {
         if (command.type != null && command.type !== implementation.type) {
             mismatches.push(`${command.name}: type is ${implementation.type} in the implementation, expected ${command.type}`);
         }
+        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+            const expected = command.localizations?.[locale];
+            const actual = implementation.localizations[locale];
+            const label = `${commandLocaleLabel(locale)} (${locale})`;
+            if (expected?.name !== actual?.name) {
+                mismatches.push(`${command.name}: ${label} implementation name is ${actual?.name ?? 'missing'}, expected ${expected?.name ?? 'missing'}`);
+            }
+            if (implementation.type === 'chatInput' && expected?.description !== actual?.description) {
+                mismatches.push(`${command.name}: ${label} implementation description is ${actual?.description ?? 'missing'}, expected ${expected?.description ?? 'missing'}`);
+            }
+        }
         return mismatches;
     });
 
-    if (missingImpl.length || missingManifest.length || duplicateImplementations.length || metadataMismatches.length) {
+    const localizationIssues = [...implementationByName.values()].flatMap(command => command.localizationIssues);
+
+    if (missingImpl.length || missingManifest.length || duplicateImplementations.length || metadataMismatches.length || localizationIssues.length) {
         if (missingImpl.length) console.error('Commands in manifest but no implementation:', missingImpl.sort().join(', '));
         if (missingManifest.length) console.error('Commands implemented but missing in manifest:', missingManifest.sort().join(', '));
         if (duplicateImplementations.length) console.error('Duplicate implementation command names:', duplicateImplementations.sort().join(', '));
         for (const mismatch of metadataMismatches) console.error('Command metadata mismatch:', mismatch);
+        for (const issue of localizationIssues) console.error('Command localization issue:', issue);
         process.exit(1);
         return;
     }

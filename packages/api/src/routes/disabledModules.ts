@@ -134,7 +134,7 @@ const router = createDisabledConfigRouter({
     createSchema: disabledModuleCreateRequestSchema,
     checkQuerySchema,
     nameField: 'moduleName',
-    notFoundMessage: 'Disabled module not found',
+    notFoundKey: 'disabledModuleNotFound',
     auditTargetType: 'disabledModule',
     auditDisableAction: 'module.disable',
     auditEnableAction: 'module.enable',

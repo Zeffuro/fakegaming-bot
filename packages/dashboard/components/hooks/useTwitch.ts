@@ -1,6 +1,7 @@
 import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type TwitchCreateRequest = Parameters<typeof api.createTwitchStream>[0];
 type TwitchUpdateRequest = Parameters<typeof api.updateTwitchStream>[1];
@@ -10,6 +11,7 @@ interface UseTwitchConfigsOptions {
 }
 
 export function useTwitchConfigs(guildId: string | string[], options: UseTwitchConfigsOptions = {}) {
+  const { t } = useDashboardI18n();
   return useConfigResource<TwitchStreamConfig, Omit<TwitchStreamConfig, 'id' | 'guildId'>>({
     guildId,
     enabled: options.enabled ?? true,
@@ -46,13 +48,13 @@ export function useTwitchConfigs(guildId: string | string[], options: UseTwitchC
     validateCreate: (configData) => (
       configData.twitchUsername && configData.discordChannelId
         ? null
-        : 'Twitch Channel Name and Discord Channel ID are required'
+        : t("hooks.twitchRequired")
     ),
     messages: {
-      loadFailed: 'Failed to load Twitch configurations',
-      createFailed: 'Failed to save Twitch configuration',
-      updateFailed: 'Failed to update Twitch configuration',
-      deleteFailed: 'Failed to delete Twitch configuration',
+      loadFailed: t("hooks.twitchLoadFailed"),
+      createFailed: t("hooks.twitchSaveFailed"),
+      updateFailed: t("hooks.twitchUpdateFailed"),
+      deleteFailed: t("hooks.twitchDeleteFailed"),
     }
   });
 }

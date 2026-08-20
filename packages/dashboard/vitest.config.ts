@@ -6,6 +6,11 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
+    oxc: {
+        jsx: {
+            runtime: 'automatic',
+        },
+    },
     // Ensure Vite resolves aliases for local modules
     resolve: {
         alias: {
@@ -20,7 +25,10 @@ export default defineConfig({
         environment: 'jsdom',
         maxWorkers: 4,
         testTimeout: 20_000,
-        include: ['lib/**/*.{test,spec}.{ts,tsx}'],
+        include: [
+            'lib/**/*.{test,spec}.{ts,tsx}',
+            'components/**/*.{test,spec}.{ts,tsx}',
+        ],
         setupFiles: ['lib/test-setup.ts'],
         coverage: {
             provider: 'v8',

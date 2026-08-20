@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type GuildNotificationsResponse } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface UseGuildNotificationHistoryOptions {
     enabled?: boolean;
@@ -9,6 +10,7 @@ interface UseGuildNotificationHistoryOptions {
 }
 
 export function useGuildNotificationHistory(guildId: string, options: UseGuildNotificationHistoryOptions = {}) {
+    const { t } = useDashboardI18n();
     const enabled = options.enabled ?? true;
     const limit = options.limit ?? 100;
     const days = options.days;
@@ -30,11 +32,11 @@ export function useGuildNotificationHistory(guildId: string, options: UseGuildNo
             setError(null);
         } catch (err: unknown) {
             setHistory(null);
-            setError(err instanceof Error ? err.message : "Failed to load notification history");
+            setError(err instanceof Error ? err.message : t("hooks.failedToLoadNotificationHistory"));
         } finally {
             setLoading(false);
         }
-    }, [days, enabled, guildId, limit, provider]);
+    }, [days, enabled, guildId, limit, provider, t]);
 
     useEffect(() => {
         void refresh();

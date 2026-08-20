@@ -25,9 +25,10 @@ describe('CSRF middleware (Express adapter)', () => {
     });
 
     it('rejects mutating request without tokens', async () => {
-        const r = await request(app).post('/mutate');
+        const r = await request(app).post('/mutate').set('Accept-Language', 'nl');
         expectForbidden(r);
         expect(r.body.error).toBe('CSRF');
+        expect(r.body.details).toBe('De beveiligingstoken ontbreekt of is ongeldig');
     });
 
     it('rejects mutating request with mismatched tokens', async () => {

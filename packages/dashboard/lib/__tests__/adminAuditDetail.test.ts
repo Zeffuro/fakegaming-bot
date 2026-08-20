@@ -29,6 +29,23 @@ describe("admin audit detail helpers", () => {
         });
     });
 
+    it("localizes application-authored metadata summaries", () => {
+        expect(buildAdminAuditMetadataView(null, "nl")).toMatchObject({
+            summary: "Geen metadata",
+            formatted: "Voor deze gebeurtenis is geen metadata vastgelegd.",
+        });
+
+        const view = buildAdminAuditMetadataView({
+            zebra: true,
+            alpha: "one",
+            middle: 2,
+            beta: "two",
+            omega: "last",
+        }, "nl");
+
+        expect(view.summary).toBe("5 metadatasleutels: alpha, beta, middle, omega, +1 meer");
+    });
+
     it("redacts sensitive-looking keys before formatting", () => {
         const view = buildAdminAuditMetadataView({
             token: "secret",
@@ -75,6 +92,24 @@ describe("admin audit detail helpers", () => {
         });
 
         expect(view.summary).toBe("League form history_failure - cache miss - rate_limited");
+    });
+
+    it("localizes Riot League metadata grammar while preserving stable values", () => {
+        const view = buildAdminAuditMetadataView({
+            provider: "riot",
+            game: "league",
+            outcome: "live_partial",
+            source: "live",
+            cacheStatus: "bypass",
+            refreshRequested: true,
+            matchCount: 4,
+            wins: 3,
+            losses: 1,
+            requestedMatchCount: 5,
+            failedDetailCount: 1,
+        }, "nl");
+
+        expect(view.summary).toBe("League-formulier live_partial - uit live - cache bypass - verversing aangevraagd - 4 wedstrijden - 3W-1V - 1/5 mislukte details");
     });
 
     it("summarizes Riot League form identity failures for dogfood review", () => {

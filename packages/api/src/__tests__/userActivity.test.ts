@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { expectOk, expectUnauthorized, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
+import { expectBadRequest, expectOk, expectUnauthorized, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 
@@ -67,5 +67,13 @@ describe('User activity API', () => {
         const client = givenAuthenticatedClient(app, { discordId: 'activity-user' });
 
         expectUnauthorized(await client.raw.get('/api/userActivity'));
+    });
+
+    it('localizes invalid query responses', async () => {
+        const client = givenAuthenticatedClient(app, { discordId: 'activity-user' });
+        const res = await client.get('/api/userActivity?auditLimit=0').set('Accept-Language', 'nl');
+
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Validatie van de query is mislukt');
     });
 });

@@ -44,4 +44,14 @@ describe('notification setup links', () => {
             },
         ]);
     });
+
+    it('localizes review action labels without changing routes', () => {
+        expect(buildNotificationReviewGroupLink('guild-1', {
+            provider: 'YouTube',
+            sourceLabel: 'Video Archive',
+        }, 'nl')).toEqual({
+            label: 'YouTube openen',
+            href: '/dashboard/youtube/guild-1?q=Video+Archive',
+        });
+    });
 });

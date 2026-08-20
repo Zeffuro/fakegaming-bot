@@ -1,3 +1,5 @@
+import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
+
 export type AdminOperationsStatus = "healthy" | "warning" | "critical";
 
 export interface AdminOperationsHealthSummary {
@@ -35,13 +37,44 @@ export interface AdminOperationsHealth {
 
 const staleHeartbeatMinutes = 10;
 
+const statusCopy = {
+    en: {
+        critical: {
+            title: "Attention Needed",
+            description: "One or more operational signals need immediate review.",
+        },
+        warning: {
+            title: "Monitor Closely",
+            description: "No critical failures detected, but some signals need follow-up.",
+        },
+        healthy: {
+            title: "Healthy",
+            description: "No current integration, job, or heartbeat issues detected.",
+        },
+    },
+    nl: {
+        critical: {
+            title: "Aandacht vereist",
+            description: "Een of meer operationele signalen moeten direct worden beoordeeld.",
+        },
+        warning: {
+            title: "Nauwlettend volgen",
+            description: "Er zijn geen kritieke fouten, maar enkele signalen moeten worden opgevolgd.",
+        },
+        healthy: {
+            title: "Gezond",
+            description: "Er zijn momenteel geen problemen met integraties, taken of de heartbeat.",
+        },
+    },
+} satisfies DashboardLocaleValues<Record<AdminOperationsStatus, { title: string; description: string }>>;
+
 export function buildAdminOperationsHealth(input: {
     integrationSummary?: AdminOperationsHealthSummary | null;
     jobs?: AdminOperationsHealthJob[];
     heartbeat?: AdminOperationsHeartbeat | null;
     overviewError?: string | null;
     now?: Date;
-}): AdminOperationsHealth {
+}, locale: DashboardLocale = "en"): AdminOperationsHealth {
     const now = input.now ?? new Date();
     const summary = input.integrationSummary ?? {
         total: 0,
@@ -122,8 +155,8 @@ export function buildAdminOperationsHealth(input: {
 
     return {
         status,
-        title: getStatusTitle(status),
-        description: getStatusDescription(status),
+        title: getStatusTitle(status, locale),
+        description: getStatusDescription(status, locale),
         issues,
         heartbeatAgeMinutes,
     };
@@ -136,14 +169,10 @@ function getHeartbeatAgeMinutes(heartbeat: AdminOperationsHeartbeat | null | und
     return Math.max(0, Math.floor((now.getTime() - parsed.getTime()) / 60000));
 }
 
-function getStatusTitle(status: AdminOperationsStatus): string {
-    if (status === "critical") return "Attention Needed";
-    if (status === "warning") return "Monitor Closely";
-    return "Healthy";
+function getStatusTitle(status: AdminOperationsStatus, locale: DashboardLocale): string {
+    return getDashboardLocaleValue(locale, statusCopy)[status].title;
 }
 
-function getStatusDescription(status: AdminOperationsStatus): string {
-    if (status === "critical") return "One or more operational signals need immediate review.";
-    if (status === "warning") return "No critical failures detected, but some signals need follow-up.";
-    return "No current integration, job, or heartbeat issues detected.";
+function getStatusDescription(status: AdminOperationsStatus, locale: DashboardLocale): string {
+    return getDashboardLocaleValue(locale, statusCopy)[status].description;
 }

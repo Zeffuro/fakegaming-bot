@@ -6,6 +6,9 @@ import * as common from '@zeffuro/fakegaming-common';
 import { discordResolveUsersRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { buildProfileCardFilename, PROFILE_CARD_MIME_TYPE, renderProfileCard } from '@zeffuro/fakegaming-common/profile-card';
 import { memberSearchRateBuckets } from '../utils/memberSearchLimiter.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import { requestLocale } from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -79,7 +82,7 @@ const cache = ((globalThis as any).__testCacheManager ?? common.defaultCacheMana
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/users/resolve', jwtAuth, common.validateBody(discordResolveUsersRequestSchema), async (req, res) => {
+router.post('/users/resolve', jwtAuth, validateBody(discordResolveUsersRequestSchema), async (req, res) => {
     const { guildId, ids } = req.body as z.infer<typeof discordResolveUsersRequestSchema>;
 
     const accessResult = await checkUserGuildAccess(req, res, guildId);
@@ -229,7 +232,7 @@ const memberSearchQuerySchema = z.object({
  *       Retry-After:
  *         $ref: '#/components/headers/Retry-After'
  */
-router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(memberSearchParamsSchema), common.validateQuery(memberSearchQuerySchema), async (req, res) => {
+router.get('/guilds/:guildId/members/search', jwtAuth, validateParams(memberSearchParamsSchema), validateQuery(memberSearchQuerySchema), async (req, res) => {
     const { guildId } = req.params as z.infer<typeof memberSearchParamsSchema>;
     const { query, limit } = req.query as { query: string; limit?: string };
 
@@ -239,7 +242,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
     const user = (req as any).user as { discordId?: string } | undefined;
     const bucketKey = `${user?.discordId || 'anon'}:${guildId}:membersearch`;
     if (!allowRequest(bucketKey)) {
-        return res.status(429).json({ error: { code: 'RATE_LIMIT', message: 'Too many requests' } });
+        return sendLocalizedError(req, res, 429, 'RATE_LIMIT', 'tooManyRequests');
     }
 
     // Normalize query to reduce number of unique cache keys and keep Discord search effective
@@ -373,7 +376,7 @@ router.get('/guilds/:guildId/members/search', jwtAuth, common.validateParams(mem
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.get('/guilds/:guildId/users/:userId/profile-card', jwtAuth, common.validateParams(profileCardParamsSchema), async (req, res) => {
+router.get('/guilds/:guildId/users/:userId/profile-card', jwtAuth, validateParams(profileCardParamsSchema), async (req, res) => {
     const { guildId, userId } = req.params as z.infer<typeof profileCardParamsSchema>;
 
     const accessResult = await checkUserGuildAccess(req, res, guildId);
@@ -385,6 +388,8 @@ router.get('/guilds/:guildId/users/:userId/profile-card', jwtAuth, common.valida
         ?? resolved.profile?.username
         ?? formatFallbackProfileName(userId);
 
+    const locale = requestLocale(req);
+
     const buffer = renderProfileCard({
         userId,
         displayName,
@@ -392,13 +397,14 @@ router.get('/guilds/:guildId/users/:userId/profile-card', jwtAuth, common.valida
         discriminator: resolved.profile?.discriminator ?? null,
         globalName: resolved.profile?.global_name ?? null,
         nickname: resolved.nick,
-    });
+    }, { locale });
 
     res.status(200)
         .set({
             'Cache-Control': 'private, max-age=300',
             'Content-Disposition': `attachment; filename="${buildProfileCardFilename(userId)}"`,
             'Content-Type': PROFILE_CARD_MIME_TYPE,
+            'Vary': 'Accept-Language',
         })
         .send(buffer);
 });

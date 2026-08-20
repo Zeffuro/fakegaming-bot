@@ -129,6 +129,10 @@ describe('Twitch API', () => {
         const res = await client.get('/api/twitch/verify');
 
         expectBadRequest(res);
+        expect(res.body.error.details).toContainEqual({
+            path: 'username',
+            message: 'username is required',
+        });
     });
 
     it('should return false when twitch token request fails', async () => {
@@ -175,6 +179,20 @@ describe('Twitch API', () => {
     it('should return 404 for non-existent twitch config', async () => {
         const res = await client.get('/api/twitch/999999');
         expectNotFound(res);
+    });
+
+    it('localizes Twitch not-found and username validation responses', async () => {
+        const missing = await client.get('/api/twitch/999999').set('Accept-Language', 'nl');
+        expectNotFound(missing);
+        expect(missing.body.error.message).toBe('Twitch-streamconfiguratie niet gevonden');
+
+        const invalid = await client.get('/api/twitch/verify').set('Accept-Language', 'nl');
+        expectBadRequest(invalid);
+        expect(invalid.body.error.message).toBe('Validatie van de query is mislukt');
+        expect(invalid.body.error.details).toContainEqual({
+            path: 'username',
+            message: 'username is verplicht',
+        });
     });
 
     it('should delete a twitch config', async () => {

@@ -1,24 +1,25 @@
 import {
     DEFAULT_OUTPUT_LOCALE,
     isSupportedOutputLocale,
+    resolveLocaleValue,
+    type OutputLocaleValues,
     type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
 export {
     SUPPORTED_OUTPUT_LOCALES,
     DEFAULT_OUTPUT_LOCALE,
+    getOutputLocaleMetadata,
     isSupportedOutputLocale,
+    resolveLocaleValue,
+    type OutputLocaleValues,
     type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
 
-export type LocaleCatalog<Key extends string> = Readonly<Record<Key, Readonly<Partial<Record<SupportedOutputLocale, string>>>>>;
+export type LocaleCatalog<Key extends string> = Readonly<Record<Key, OutputLocaleValues<string>>>;
 
-export type CompleteLocaleCatalog<Key extends string> = Readonly<Record<
-    Key,
-    Readonly<{ en: string } & Partial<Record<SupportedOutputLocale, string>>>
->>;
-
-export function createLocaleCatalog<Key extends string>(catalog: CompleteLocaleCatalog<Key>): LocaleCatalog<Key> {
+export function createLocaleCatalog<Key extends string>(catalog: LocaleCatalog<Key>): LocaleCatalog<Key> {
     return Object.freeze(catalog);
 }
 
@@ -30,10 +31,42 @@ export function resolveOutputLocale(preferredGuildLocale?: unknown): SupportedOu
     return isSupportedOutputLocale(preferredGuildLocale) ? preferredGuildLocale : DEFAULT_OUTPUT_LOCALE;
 }
 
+export interface LocaleAwareInteraction {
+    guildId: string | null;
+    locale?: string;
+    user?: { id: string };
+}
+
+export async function resolveInteractionOutputLocale(
+    interaction: LocaleAwareInteraction,
+    getStoredGuildLocale: (guildId: string) => Promise<unknown> = guildId =>
+        getConfigManager().guildLocaleConfigManager.getOutputLocale(guildId),
+    getStoredUserLocale: (userId: string) => Promise<unknown> = async userId => {
+        const user = await getConfigManager().userManager.getUser({ discordId: userId });
+        return (user as unknown as { preferredLocale?: unknown } | null)?.preferredLocale;
+    },
+): Promise<SupportedOutputLocale> {
+    if (interaction.guildId) {
+        try {
+            return resolveOutputLocale(await getStoredGuildLocale(interaction.guildId));
+        } catch {
+            return DEFAULT_OUTPUT_LOCALE;
+        }
+    }
+    if (interaction.user?.id) {
+        try {
+            const storedLocale = await getStoredUserLocale(interaction.user.id);
+            if (isSupportedOutputLocale(storedLocale)) return storedLocale;
+        } catch {
+            // Discord's interaction locale remains a safe fallback for DMs.
+        }
+    }
+    return resolveOutputLocale(interaction.locale);
+}
+
 /**
- * Resolves locale-specific application copy. A missing secondary translation
- * falls back to English; a missing catalog key is returned unchanged so callers
- * can surface and diagnose it without failing an interaction.
+ * Resolves locale-specific application copy. A missing catalog key is returned
+ * unchanged so callers can surface and diagnose it without failing an interaction.
  */
 export function translate<Key extends string>(
     catalog: LocaleCatalog<Key>,
@@ -43,7 +76,7 @@ export function translate<Key extends string>(
     const entry = catalog[key as Key];
     if (!entry) return key;
 
-    return entry[locale] ?? entry[DEFAULT_OUTPUT_LOCALE] ?? key;
+    return resolveLocaleValue(locale, entry);
 }
 
 export function formatTranslation(template: string, values: Readonly<Record<string, string>>): string {

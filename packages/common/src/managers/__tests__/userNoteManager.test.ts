@@ -69,4 +69,21 @@ describe('UserNoteManager', () => {
 
         expect(retitled?.title).toBe('Replacement body title');
     });
+
+    it('localizes the fallback title while retaining English by default', async () => {
+        const english = await manager.createForUser({
+            discordId: 'english-owner',
+            title: '',
+            body: '',
+        });
+        const dutch = await manager.createForUser({
+            discordId: 'dutch-owner',
+            title: '',
+            body: '',
+            locale: 'nl',
+        });
+
+        expect(english.title).toBe('Untitled note');
+        expect(dutch.title).toBe('Naamloze notitie');
+    });
 });

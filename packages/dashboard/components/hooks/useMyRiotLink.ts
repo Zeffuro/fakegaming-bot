@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, type RiotLinkEntry } from "@/lib/api-client";
+import { getDashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
 
 export function useMyRiotLink() {
     const [link, setLink] = useState<RiotLinkEntry | null>(null);
@@ -15,7 +17,9 @@ export function useMyRiotLink() {
             setLink(result.link);
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load Riot linked account";
+            const message = err instanceof Error
+                ? err.message
+                : formatDashboardMessage(getDashboardLocale(), "hooks.failedToLoadRiotAccount");
             setError(message);
         } finally {
             setLoading(false);

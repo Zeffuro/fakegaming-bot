@@ -76,6 +76,12 @@ describe('TikTok API', () => {
         expectNotFound(res);
     });
 
+    it('localizes a non-existent TikTok config response', async () => {
+        const res = await client.get('/api/tiktok/999999').set('Accept-Language', 'nl');
+        expectNotFound(res);
+        expect(res.body.error.message).toBe('TikTok-streamconfiguratie niet gevonden');
+    });
+
     it('should delete a tiktok config', async () => {
         const all = await configManager.tiktokManager.getAllPlain();
         const id = all[0]?.id as number;

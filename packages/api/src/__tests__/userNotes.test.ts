@@ -62,6 +62,23 @@ describe('User notes API', () => {
         });
     });
 
+    it('uses the stored user locale for generated fallback titles', async () => {
+        const discordId = 'note-locale-user';
+        await configManager.userManager.setUser({discordId, preferredLocale: 'nl'});
+        const client = givenAuthenticatedClient(app, {discordId});
+        const created = await client.post('/api/userNotes', {title: 'Temporary title', body: ''});
+        expectCreated(created);
+
+        const updated = await client.raw
+            .put(`/api/userNotes/${created.body.id}`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'en')
+            .send({title: ''});
+
+        expectOk(updated);
+        expect(updated.body.title).toBe('Naamloze notitie');
+    });
+
     it('does not expose notes across users', async () => {
         const owner = givenAuthenticatedClient(app, { discordId: 'owner-user' });
         const other = givenAuthenticatedClient(app, { discordId: 'other-user' });
@@ -89,5 +106,23 @@ describe('User notes API', () => {
 
         const noAuth = await client.raw.get('/api/userNotes');
         expectUnauthorized(noAuth);
+    });
+
+    it('returns actionable Dutch validation and not-found messages', async () => {
+        const client = givenAuthenticatedClient(app, { discordId: 'note-user' });
+        const invalid = await client.raw
+            .post('/api/userNotes')
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'nl')
+            .send({ title: '', body: '' });
+        expectBadRequest(invalid);
+        expect(invalid.body.error.details[0]?.message).toBe('title of body is verplicht');
+
+        const missing = await client.raw
+            .get('/api/userNotes/missing')
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'nl');
+        expectNotFound(missing);
+        expect(missing.body.error.message).toBe('Notitie niet gevonden');
     });
 });

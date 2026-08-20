@@ -74,6 +74,30 @@ describe('PatchSubscriptions API', () => {
         expectNotFound(res);
     });
 
+    it('localizes validation and record-specific not-found responses', async () => {
+        const invalid = await request(app)
+            .get('/api/patchSubscriptions/abc')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl');
+        expectBadRequest(invalid);
+        expect(invalid.body.error.message).toBe('Validatie van de parameters is mislukt');
+
+        const missing = await request(app)
+            .get('/api/patchSubscriptions/999999')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl');
+        expectNotFound(missing);
+        expect(missing.body.error.message).toBe('Abonnement op patchnotities niet gevonden');
+
+        const missingPatch = await request(app)
+            .patch('/api/patchSubscriptions/999999')
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl')
+            .send({ paused: true });
+        expectNotFound(missingPatch);
+        expect(missingPatch.body.error.message).toBe('Abonnement op patchnotities niet gevonden');
+    });
+
     it('should return 400 when POST /api/patchSubscriptions with missing fields', async () => {
         const res = await request(app)
             .post('/api/patchSubscriptions')

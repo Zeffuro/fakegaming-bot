@@ -8,6 +8,7 @@ import {
     formatAniListScore,
     formatAniListStatus,
 } from '../mediaMetadata.js';
+import { formatAniListSeasonScope } from '../anilistClient.js';
 
 describe('AniList media metadata formatters', () => {
     it('formats manga country-origin names', () => {
@@ -37,5 +38,18 @@ describe('AniList media metadata formatters', () => {
         })).toBe('South Korea - Manhwa - Finished');
         expect(formatAniListRanking({ rank: 55, type: 'RATED', allTime: true })).toBe('#55 Highest Rated All Time');
         expect(formatAniListRanking({ rank: 16, type: 'POPULAR', allTime: true })).toBe('#16 Most Popular All Time');
+    });
+
+    it('formats Dutch metadata without changing unknown provider values', () => {
+        expect(formatAniListStatus('NOT_YET_RELEASED', 'nl')).toBe('Nog niet verschenen');
+        expect(formatAniListCountryOfOrigin('KR', 'nl')).toBe('Zuid-Korea');
+        expect(formatAniListMediaFormat({ format: 'MOVIE', type: 'ANIME' }, 'nl')).toBe('Film');
+        expect(formatAniListMediaFormat({ format: 'NOVEL', type: 'MANGA' }, 'nl')).toBe('Roman');
+        expect(formatAniListScore({ averageScore: 84 }, 'nl')).toBe('Gemiddeld 84/100');
+        expect(formatAniListPopularity(12345, 'nl')).toBe('12.345');
+        expect(formatAniListRanking({ rank: 16, type: 'POPULAR', allTime: true }, 'nl'))
+            .toBe('#16 Populairst aller tijden');
+        expect(formatAniListStatus('CUSTOM_PROVIDER_STATUS', 'nl')).toBe('Custom Provider Status');
+        expect(formatAniListSeasonScope('chart', 'nl')).toBe('seizoensoverzicht');
     });
 });

@@ -1,5 +1,4 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { tiktokCreateRequestSchema, tiktokUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -19,6 +18,8 @@ import {
     upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { optionalGuildListQuerySchema } from './sharedSchemas.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -134,11 +135,12 @@ router.get('/exists', jwtAuth, validateQuery(existsQuerySchema), requireGuildAdm
  */
 router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(liveQuerySchema), async (req, res) => {
     const { username, debug, mode } = req.query as unknown as z.output<typeof liveQuerySchema>;
+    const locale = requestLocale(req);
     if (mode === 'light') {
         const info = await _resolveLive(username, undefined, { mode: 'light' } as any);
         const { live } = info;
         const payload: Record<string, unknown> = { live };
-        if (debug) payload.debugMeta = buildTikTokDebugMeta(info);
+        if (debug) payload.debugMeta = buildTikTokDebugMeta(info, { locale });
         return res.json(payload);
     }
     const info = await _resolveLive(username);
@@ -149,7 +151,7 @@ router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(
         startedAt: info.startedAt ?? null,
         viewers: info.viewers ?? null,
         cover: info.cover ?? null,
-        ...(debug ? { debugMeta: buildTikTokDebugMeta(info) } : {})
+        ...(debug ? { debugMeta: buildTikTokDebugMeta(info, { locale }) } : {})
     });
 });
 
@@ -180,8 +182,8 @@ router.get('/live', jwtOrService, requireDashboardAdminOrService, validateQuery(
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().tiktokManager;
     await sendGuildScopedRecordById(req, res, Number(req.params.id), {
-        findByPk: id => manager.findByPkPlain(id),
-        notFoundMessage: 'TikTok stream config not found',
+        findByPk: id => manager.getOnePlain({ id }),
+        notFoundMessage: apiText(requestLocale(req), 'tiktokConfigNotFound'),
     });
 });
 
@@ -301,9 +303,9 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
     const body = req.body as z.output<typeof tiktokUpdateRequestSchema>;
     const manager = getConfigManager().tiktokManager;
     await updateGuildScopedRecord(req, res, Number(req.params.id), body, {
-        findByPk: id => manager.findByPkPlain(id),
+        findByPk: id => manager.getOnePlain({ id }),
         update: (id, data) => manager.updatePlain(data, { id }),
-        notFoundMessage: 'TikTok stream config not found',
+        notFoundMessage: apiText(requestLocale(req), 'tiktokConfigNotFound'),
         auditAction: 'tiktok.update',
         auditTargetType: 'tiktokConfig',
         auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
@@ -344,9 +346,9 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(tiktokUp
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().tiktokManager;
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
-        findByPk: id => manager.findByPkPlain(id),
+        findByPk: id => manager.getOnePlain({ id }),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'TikTok stream config not found',
+        notFoundMessage: apiText(requestLocale(req), 'tiktokConfigNotFound'),
         auditAction: 'tiktok.delete',
         auditTargetType: 'tiktokConfig',
         auditMetadata: stream => channelAuditMetadata(stream),

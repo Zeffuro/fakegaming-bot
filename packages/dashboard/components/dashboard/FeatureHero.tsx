@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents } from "@/components/dashboard/dashboardTheme";
@@ -61,7 +61,7 @@ export function FeatureHero({
               />
             ))}
           </Stack>
-          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: "-0.04em" }}>
+          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
             {title}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.68)", fontSize: { xs: 15, md: 17 }, maxWidth: 700 }}>
@@ -76,18 +76,6 @@ export function FeatureHero({
           </Stack>
         )}
       </Stack>
-      <Box
-        sx={{
-          position: "absolute",
-          right: -70,
-          bottom: -92,
-          width: 230,
-          height: 230,
-          borderRadius: "999px",
-          background: `radial-gradient(circle, ${alpha(secondaryAccent, 0.22)}, transparent 66%)`,
-          pointerEvents: "none",
-        }}
-      />
     </FeaturePanel>
   );
 }

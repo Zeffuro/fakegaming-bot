@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface DiscordChannel {
   id: string;
@@ -15,6 +16,7 @@ interface FetchChannelsOptions {
 }
 
 export function useGuildChannels(guildId: string | string[], options: UseGuildChannelsOptions = {}) {
+  const { t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [channels, setChannels] = useState<DiscordChannel[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,14 +37,14 @@ export function useGuildChannels(guildId: string | string[], options: UseGuildCh
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch Discord channels');
+        throw new Error(t("hooks.failedToFetchChannels"));
       }
 
       const channelData = await response.json();
       setChannels(channelData);
     } catch (err: any) {
       console.error('Error fetching channels:', err);
-      setError(err.message || 'Failed to fetch channels');
+      setError(err.message || t("hooks.failedToFetchChannels"));
       // Don't show error for channels as it's not critical for the UI
     } finally {
       setLoading(false);

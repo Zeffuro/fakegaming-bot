@@ -1,11 +1,13 @@
 "use client";
 import React from "react";
 import Layout from "../components/Layout";
+import { DashboardI18nProvider } from "../components/i18n/DashboardI18nProvider";
+import { dashboardLocaleMetadata, defaultDashboardLocale } from "../lib/i18n/localeStore";
 import './globals.css';
 
 export default function RootLayout({children}: { children: React.ReactNode }) {
     return (
-        <html lang="en">
+        <html lang={dashboardLocaleMetadata[defaultDashboardLocale].htmlLang}>
         <head>
             <link rel="icon" href="/favicon.ico"/>
             <link rel="manifest" href="/site.webmanifest"/>
@@ -16,7 +18,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         </head>
         <body>
         <Layout>
-            {children}
+            <DashboardI18nProvider>{children}</DashboardI18nProvider>
         </Layout>
         </body>
         </html>

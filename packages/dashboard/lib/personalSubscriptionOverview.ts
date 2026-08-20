@@ -4,6 +4,7 @@ import type {
     UserReminder,
     UserSettings,
 } from "@/lib/api-client";
+import type { DashboardTranslator } from "@/lib/i18n/messages";
 
 export type PersonalSubscriptionStatus = "active" | "paused" | "off" | "attention";
 
@@ -28,14 +29,16 @@ export interface PersonalSubscriptionOverviewInput {
     settings: UserSettings | null;
     nowMs?: number;
     formatDateTime: (value: number) => string;
+    formatNumber: (value: number) => string;
+    t: DashboardTranslator;
 }
 
 export function buildPersonalSubscriptionOverview(input: PersonalSubscriptionOverviewInput): PersonalSubscriptionOverview {
     const nowMs = input.nowMs ?? Date.now();
-    const reminderItem = buildReminderItem(input.reminders, nowMs, input.formatDateTime);
-    const animeItem = buildAnimeItem(input.animeSubscriptions, input.formatDateTime);
-    const digestItem = buildDigestItem(input.digestSubscription, input.formatDateTime);
-    const preferencesItem = buildPreferencesItem(input.settings);
+    const reminderItem = buildReminderItem(input.reminders, nowMs, input.formatDateTime, input.formatNumber, input.t);
+    const animeItem = buildAnimeItem(input.animeSubscriptions, input.formatDateTime, input.formatNumber, input.t);
+    const digestItem = buildDigestItem(input.digestSubscription, input.formatDateTime, input.t);
+    const preferencesItem = buildPreferencesItem(input.settings, input.t);
     const activeCount = [reminderItem, animeItem, digestItem]
         .filter((item) => item.status === "active")
         .length;
@@ -44,7 +47,10 @@ export function buildPersonalSubscriptionOverview(input: PersonalSubscriptionOve
         .length;
 
     return {
-        summary: `${activeCount} active, ${pausedCount} paused`,
+        summary: input.t("personal.overviewSummary", {
+            active: input.formatNumber(activeCount),
+            paused: input.formatNumber(pausedCount),
+        }),
         items: [reminderItem, animeItem, digestItem, preferencesItem],
     };
 }
@@ -53,6 +59,8 @@ function buildReminderItem(
     reminders: UserReminder[],
     nowMs: number,
     formatDateTime: (value: number) => string,
+    formatNumber: (value: number) => string,
+    t: DashboardTranslator,
 ): PersonalSubscriptionOverviewItem {
     const recurring = reminders.filter(isRecurringReminder);
     const pausedRecurring = recurring.filter((reminder) => reminder.completed);
@@ -63,19 +71,25 @@ function buildReminderItem(
 
     return {
         id: "reminders",
-        title: "Personal reminders",
-        detail: `${activeReminders.length} active, ${pausedRecurring.length} paused, ${recurring.length} recurring`,
+        title: t("personal.overviewRemindersTitle"),
+        detail: t("personal.overviewRemindersDetail", {
+            active: formatNumber(activeReminders.length),
+            paused: formatNumber(pausedRecurring.length),
+            recurring: formatNumber(recurring.length),
+        }),
         meta: nextReminder
-            ? nextReminder.timestamp <= nowMs ? "Next reminder is due now" : `Next ${formatDateTime(nextReminder.timestamp)}`
-            : reminders.length > 0 ? "All current recurring reminders are paused" : "No reminder subscriptions configured",
+            ? nextReminder.timestamp <= nowMs ? t("personal.overviewNextDue") : t("personal.overviewNext", { date: formatDateTime(nextReminder.timestamp) })
+            : reminders.length > 0 ? t("personal.overviewAllRemindersPaused") : t("personal.overviewNoReminders"),
         status: activeReminders.length > 0 ? "active" : pausedRecurring.length > 0 ? "paused" : "off",
-        statusLabel: activeReminders.length > 0 ? "Active" : pausedRecurring.length > 0 ? "Paused" : "None",
+        statusLabel: activeReminders.length > 0 ? t("personal.statusActive") : pausedRecurring.length > 0 ? t("personal.statusPaused") : t("common.none"),
     };
 }
 
 function buildAnimeItem(
     subscriptions: AnimeSubscriptionDashboardConfig[],
     formatDateTime: (value: number) => string,
+    formatNumber: (value: number) => string,
+    t: DashboardTranslator,
 ): PersonalSubscriptionOverviewItem {
     const activeSubscriptions = subscriptions.filter((subscription) => !subscription.paused);
     const pausedSubscriptions = subscriptions.length - activeSubscriptions.length;
@@ -86,60 +100,66 @@ function buildAnimeItem(
 
     return {
         id: "anime",
-        title: "Anime DM reminders",
-        detail: `${activeSubscriptions.length} active, ${pausedSubscriptions} paused`,
+        title: t("personal.overviewAnimeTitle"),
+        detail: t("personal.overviewActivePaused", {
+            active: formatNumber(activeSubscriptions.length),
+            paused: formatNumber(pausedSubscriptions),
+        }),
         meta: nextAiringAt
-            ? `Next episode ${formatDateTime(nextAiringAt * 1000)}`
-            : subscriptions.length > 0 ? "No upcoming episode timestamp available" : "No anime DM subscriptions configured",
+            ? t("personal.overviewNextEpisode", { date: formatDateTime(nextAiringAt * 1000) })
+            : subscriptions.length > 0 ? t("personal.overviewNoUpcomingEpisode") : t("personal.overviewNoAnime"),
         status: activeSubscriptions.length > 0 ? "active" : pausedSubscriptions > 0 ? "paused" : "off",
-        statusLabel: activeSubscriptions.length > 0 ? "Active" : pausedSubscriptions > 0 ? "Paused" : "None",
+        statusLabel: activeSubscriptions.length > 0 ? t("personal.statusActive") : pausedSubscriptions > 0 ? t("personal.statusPaused") : t("common.none"),
     };
 }
 
 function buildDigestItem(
     subscription: UserDigestSubscription | null,
     formatDateTime: (value: number) => string,
+    t: DashboardTranslator,
 ): PersonalSubscriptionOverviewItem {
     if (!subscription) {
         return {
             id: "digest",
-            title: "Personal digest",
-            detail: "Not configured",
-            meta: "No daily or weekly DM summary is scheduled",
+            title: t("personal.overviewDigestTitle"),
+            detail: t("personal.statusNotConfigured"),
+            meta: t("personal.overviewNoDigest"),
             status: "off",
-            statusLabel: "Off",
+            statusLabel: t("personal.statusOff"),
         };
     }
 
     const categories = subscription.categories.length > 0
-        ? subscription.categories.map(formatDigestCategory).join(", ")
-        : "No categories";
+        ? subscription.categories.map(category => formatDigestCategory(category, t)).join(", ")
+        : t("personal.overviewNoCategories");
     const cadence = subscription.frequency === "weekly"
-        ? `Weekly at ${subscription.runAt}`
-        : `Daily at ${subscription.runAt}`;
+        ? t("personal.overviewWeeklyAt", { time: subscription.runAt })
+        : t("personal.overviewDailyAt", { time: subscription.runAt });
 
     return {
         id: "digest",
-        title: "Personal digest",
-        detail: `${cadence} (${subscription.timezone})`,
-        meta: `${categories}; next ${formatDateTime(subscription.nextRunAt)}`,
+        title: t("personal.overviewDigestTitle"),
+        detail: t("personal.overviewDigestDetail", { cadence, timezone: subscription.timezone }),
+        meta: t("personal.overviewDigestMeta", { categories, date: formatDateTime(subscription.nextRunAt) }),
         status: subscription.paused ? "paused" : "active",
-        statusLabel: subscription.paused ? "Paused" : "Active",
+        statusLabel: subscription.paused ? t("personal.statusPaused") : t("personal.statusActive"),
     };
 }
 
-function buildPreferencesItem(settings: UserSettings | null): PersonalSubscriptionOverviewItem {
-    const timezone = settings?.timezone?.trim() || "not set";
-    const defaultReminder = settings?.defaultReminderTimeSpan?.trim() || "not set";
-    const configured = timezone !== "not set" || defaultReminder !== "not set";
+function buildPreferencesItem(settings: UserSettings | null, t: DashboardTranslator): PersonalSubscriptionOverviewItem {
+    const timezoneValue = settings?.timezone?.trim();
+    const defaultReminderValue = settings?.defaultReminderTimeSpan?.trim();
+    const timezone = timezoneValue || t("personal.notSet");
+    const defaultReminder = defaultReminderValue || t("personal.notSet");
+    const configured = Boolean(timezoneValue || defaultReminderValue);
 
     return {
         id: "preferences",
-        title: "Notification preferences",
-        detail: `Timezone ${timezone}; reminders ${defaultReminder}`,
-        meta: configured ? "Used by recurring reminders and digest scheduling" : "Add a timezone before relying on recurring schedules",
+        title: t("personal.overviewPreferencesTitle"),
+        detail: t("personal.overviewPreferencesDetail", { timezone, reminders: defaultReminder }),
+        meta: configured ? t("personal.overviewPreferencesConfigured") : t("personal.overviewPreferencesMissing"),
         status: configured ? "active" : "attention",
-        statusLabel: configured ? "Configured" : "Needs setup",
+        statusLabel: configured ? t("personal.statusConfigured") : t("personal.statusNeedsSetup"),
     };
 }
 
@@ -147,8 +167,8 @@ function isRecurringReminder(reminder: UserReminder): boolean {
     return Boolean(reminder.recurrenceUnit && reminder.recurrenceInterval && reminder.recurrenceTimezone);
 }
 
-function formatDigestCategory(category: string): string {
-    if (category === "anime") return "Anime";
-    if (category === "reminders") return "Reminders";
+function formatDigestCategory(category: string, t: DashboardTranslator): string {
+    if (category === "anime") return t("personal.categoryAnime");
+    if (category === "reminders") return t("personal.categoryReminders");
     return category;
 }

@@ -4,11 +4,13 @@ import React, { useCallback, useEffect, useState } from "react";
 import { AdminPage } from "@/components/AdminPage";
 import { Alert, Box, Button, Checkbox, Chip, Divider, Stack, TextField, Typography } from "@mui/material";
 import { api, type IntegrationHealthRecord, type TikTokLiveResponse } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type TikTokDebugMeta = NonNullable<TikTokLiveResponse["debugMeta"]>;
 type TikTokSessionDiagnostics = TikTokDebugMeta["session"];
 
 export default function AdminTikTokDebugPage() {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const [username, setUsername] = useState("");
     const [isLive, setIsLive] = useState<boolean | null>(null);
     const [details, setDetails] = useState<{ roomId: string | null; title: string | null; startedAt: number | null; viewers: number | null; cover: string | null } | null>(null);
@@ -27,11 +29,11 @@ export default function AdminTikTokDebugPage() {
             setHealthRecords(result.records);
             setHealthError(null);
         } catch (err) {
-            setHealthError(err instanceof Error ? err.message : "Failed to load TikTok health diagnostics");
+            setHealthError(err instanceof Error ? err.message : t("admin.tiktokHealthLoadFailed"));
         } finally {
             setHealthLoading(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void loadHealth();
@@ -44,7 +46,7 @@ export default function AdminTikTokDebugPage() {
         setDebugMeta(null);
         const normalizedUsername = username.trim().replace(/^@/, "");
         if (!normalizedUsername) {
-            setError("Please enter a TikTok username");
+            setError(t("admin.tiktokUsernameRequired"));
             return;
         }
 
@@ -61,7 +63,7 @@ export default function AdminTikTokDebugPage() {
             });
             setDebugMeta(response.debugMeta ?? null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Request failed");
+            setError(err instanceof Error ? err.message : t("admin.tiktokRequestFailed"));
         } finally {
             setLoading(false);
         }
@@ -70,22 +72,22 @@ export default function AdminTikTokDebugPage() {
     const normalizedUsername = username.trim().replace(/^@/, "");
 
     return (
-        <AdminPage title="Admin - TikTok Live" trail={[{ label: "TikTok Live", href: "/dashboard/admin/tiktok" }]}>
+        <AdminPage title={t("admin.tiktokPageTitle")} trail={[{ label: t("admin.tiktokDebug"), href: "/dashboard/admin/tiktok" }]}>
             <Stack spacing={3} sx={{ maxWidth: 920 }}>
                 <Box>
                     <Typography variant="body2" sx={{ mb: 2 }}>
-                        Check current live status and inspect sanitized connector diagnostics without exposing cookies or raw provider payloads.
+                        {t("admin.tiktokDescription")}
                     </Typography>
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mb: 1.5 }}>
                         <TextField
-                            label="TikTok username"
+                            label={t("admin.tiktokUsername")}
                             placeholder="creator123"
                             value={username}
                             onChange={(event) => setUsername(event.target.value)}
                             fullWidth
                         />
                         <Button variant="contained" onClick={() => void onCheck()} disabled={loading}>
-                            {loading ? "Checking..." : "Check live"}
+                            {loading ? t("admin.tiktokChecking") : t("admin.tiktokCheckLive")}
                         </Button>
                     </Stack>
                     <Box component="label" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, color: "text.secondary" }}>
@@ -94,7 +96,7 @@ export default function AdminTikTokDebugPage() {
                             onChange={(event) => setIncludeDiagnostics(event.target.checked)}
                             size="small"
                         />
-                        Include sanitized diagnostics
+                        {t("admin.tiktokIncludeDiagnostics")}
                     </Box>
                 </Box>
 
@@ -102,7 +104,7 @@ export default function AdminTikTokDebugPage() {
 
                 {isLive !== null && (
                     <Alert severity={isLive ? "success" : "info"}>
-                        {isLive ? "Live now" : "Not live"}
+                        {isLive ? t("admin.tiktokLiveNow") : t("admin.tiktokNotLive")}
                     </Alert>
                 )}
 
@@ -110,18 +112,18 @@ export default function AdminTikTokDebugPage() {
                     <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
                         <Stack spacing={1}>
                             <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
-                                Live details
+                                {t("admin.tiktokLiveDetails")}
                             </Typography>
                             <Typography variant="body2">
-                                Watch: <a href={`https://www.tiktok.com/@${normalizedUsername}/live`} target="_blank" rel="noreferrer">tiktok.com/@{normalizedUsername}/live</a>
+                                {t("admin.tiktokWatch")}: <a href={`https://www.tiktok.com/@${normalizedUsername}/live`} target="_blank" rel="noreferrer">tiktok.com/@{normalizedUsername}/live</a>
                             </Typography>
-                            <InfoRow label="Title" value={details?.title ?? "Unknown"} />
-                            <InfoRow label="Viewers" value={typeof details?.viewers === "number" ? String(details.viewers) : "Unknown"} />
-                            <InfoRow label="Room ID" value={details?.roomId ?? "Unknown"} />
-                            <InfoRow label="Started" value={typeof details?.startedAt === "number" ? formatDateTime(details.startedAt) : "Unknown"} />
+                            <InfoRow label={t("admin.tiktokTitle")} value={details?.title ?? t("common.unknown")} />
+                            <InfoRow label={t("admin.tiktokViewers")} value={typeof details?.viewers === "number" ? formatNumber(details.viewers) : t("common.unknown")} />
+                            <InfoRow label={t("admin.tiktokRoomId")} value={details?.roomId ?? t("common.unknown")} />
+                            <InfoRow label={t("admin.tiktokStarted")} value={typeof details?.startedAt === "number" ? formatDateTime(details.startedAt, formatDate) : t("common.unknown")} />
                             {details?.cover ? (
                                 <Box sx={{ mt: 1 }}>
-                                    <img src={details.cover} alt="TikTok live cover" style={{ maxWidth: "100%", borderRadius: 6 }} />
+                                    <img src={details.cover} alt={t("admin.tiktokCoverAlt")} style={{ maxWidth: "100%", borderRadius: 6 }} />
                                 </Box>
                             ) : null}
                         </Stack>
@@ -136,14 +138,14 @@ export default function AdminTikTokDebugPage() {
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}>
                         <Box>
                             <Typography variant="h6" sx={{ fontWeight: 900 }}>
-                                Recent poll diagnostics
+                                {t("admin.tiktokRecentDiagnostics")}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Last reported TikTok fetch state from integration health metadata.
+                                {t("admin.tiktokRecentDiagnosticsDescription")}
                             </Typography>
                         </Box>
                         <Button variant="outlined" onClick={() => void loadHealth()} disabled={healthLoading}>
-                            {healthLoading ? "Refreshing..." : "Refresh"}
+                            {healthLoading ? t("admin.tiktokRefreshing") : t("common.refresh")}
                         </Button>
                     </Stack>
 
@@ -156,7 +158,7 @@ export default function AdminTikTokDebugPage() {
                             ))}
                         </Stack>
                     ) : (
-                        <Alert severity="info">{healthLoading ? "Loading TikTok health diagnostics..." : "No TikTok health records found."}</Alert>
+                        <Alert severity="info">{healthLoading ? t("admin.tiktokHealthLoading") : t("admin.tiktokNoHealthRecords")}</Alert>
                     )}
                 </Stack>
             </Stack>
@@ -165,21 +167,23 @@ export default function AdminTikTokDebugPage() {
 }
 
 function DiagnosticsPanel({ diagnostics }: { diagnostics: TikTokDebugMeta }) {
+    const { t, formatDate } = useDashboardI18n();
+
     return (
         <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 2 }}>
             <Stack spacing={1.25}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 900 }}>
-                        Sanitized diagnostics
+                        {t("admin.tiktokSanitizedDiagnostics")}
                     </Typography>
-                    <Chip size="small" label={diagnostics.fetchStatus} color={diagnostics.fetchStatus === "live" ? "success" : diagnostics.fetchStatus === "offline" ? "info" : "warning"} />
+                    <Chip size="small" label={localizeFetchStatus(t, diagnostics.fetchStatus)} color={diagnostics.fetchStatus === "live" ? "success" : diagnostics.fetchStatus === "offline" ? "info" : "warning"} />
                     {diagnostics.errorCode && <Chip size="small" label={diagnostics.errorCode} variant="outlined" />}
                 </Stack>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
-                    <InfoRow label="Method" value={diagnostics.method} />
-                    <InfoRow label="Checked" value={formatDateTime(diagnostics.checkedAt)} />
-                    <InfoRow label="Cached offline" value={diagnostics.cachedOffline ? "Yes" : "No"} />
-                    <InfoRow label="Backoff until" value={diagnostics.offlineBackoffUntil ? formatDateTime(diagnostics.offlineBackoffUntil) : "None"} />
+                    <InfoRow label={t("admin.tiktokMethod")} value={diagnostics.method} />
+                    <InfoRow label={t("admin.tiktokChecked")} value={formatDateTime(diagnostics.checkedAt, formatDate)} />
+                    <InfoRow label={t("admin.tiktokCachedOffline")} value={diagnostics.cachedOffline ? t("common.yes") : t("common.no")} />
+                    <InfoRow label={t("admin.tiktokBackoffUntil")} value={diagnostics.offlineBackoffUntil ? formatDateTime(diagnostics.offlineBackoffUntil, formatDate) : t("common.none")} />
                 </Box>
                 <SessionDiagnostics session={diagnostics.session} />
             </Stack>
@@ -188,6 +192,7 @@ function DiagnosticsPanel({ diagnostics }: { diagnostics: TikTokDebugMeta }) {
 }
 
 function HealthDiagnosticRow({ record }: { record: IntegrationHealthRecord }) {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const metadata = record.metadata ?? {};
     const fetchStatus = readString(metadata.lastFetchStatus) ?? "unknown";
     const fetchError = readString(metadata.lastFetchErrorCode);
@@ -199,18 +204,18 @@ function HealthDiagnosticRow({ record }: { record: IntegrationHealthRecord }) {
         <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, p: 1.5 }}>
             <Stack spacing={1}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
-                    <Typography sx={{ fontWeight: 850 }}>{readString(metadata.username) ?? `Config ${record.configId}`}</Typography>
-                    <Chip size="small" label={record.status} variant="outlined" />
-                    <Chip size="small" label={fetchStatus} color={fetchStatus === "live" ? "success" : fetchStatus === "offline" ? "info" : "warning"} />
+                    <Typography sx={{ fontWeight: 850 }}>{readString(metadata.username) ?? t("admin.tiktokConfig", { id: record.configId })}</Typography>
+                    <Chip size="small" label={localizeHealthStatus(t, record.status)} variant="outlined" />
+                    <Chip size="small" label={localizeFetchStatus(t, fetchStatus)} color={fetchStatus === "live" ? "success" : fetchStatus === "offline" ? "info" : "warning"} />
                     {fetchError && <Chip size="small" label={fetchError} variant="outlined" />}
                 </Stack>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" }, gap: 1 }}>
-                    <InfoRow label="Guild" value={record.guildId ?? "Unknown"} />
-                    <InfoRow label="Checked" value={formatDateTime(record.lastCheckedAt)} />
-                    <InfoRow label="Cached offline" value={cachedOffline ? "Yes" : "No"} />
-                    <InfoRow label="Backoff until" value={backoffUntil ? formatDateTime(backoffUntil) : "None"} />
-                    <InfoRow label="Last delivery" value={formatDateTime(record.lastDeliveryAt)} />
-                    <InfoRow label="Failures" value={String(record.consecutiveFailures)} />
+                    <InfoRow label={t("admin.tiktokGuild")} value={record.guildId ?? t("common.unknown")} />
+                    <InfoRow label={t("admin.tiktokChecked")} value={formatDateTime(record.lastCheckedAt, formatDate, t("common.never"))} />
+                    <InfoRow label={t("admin.tiktokCachedOffline")} value={cachedOffline ? t("common.yes") : t("common.no")} />
+                    <InfoRow label={t("admin.tiktokBackoffUntil")} value={backoffUntil ? formatDateTime(backoffUntil, formatDate) : t("common.none")} />
+                    <InfoRow label={t("admin.tiktokLastDelivery")} value={formatDateTime(record.lastDeliveryAt, formatDate, t("common.never"))} />
+                    <InfoRow label={t("admin.tiktokFailures")} value={formatNumber(record.consecutiveFailures)} />
                 </Box>
                 {session && <SessionDiagnostics session={session} compact />}
             </Stack>
@@ -219,21 +224,28 @@ function HealthDiagnosticRow({ record }: { record: IntegrationHealthRecord }) {
 }
 
 function SessionDiagnostics({ session, compact = false }: { session: TikTokSessionDiagnostics; compact?: boolean }) {
+    const { t, formatNumber } = useDashboardI18n();
+    const summary = session.cookieConfigured
+        ? session.likelySessionCookiePresent
+            ? t("admin.tiktokSessionAttached")
+            : t("admin.tiktokSessionUnrecognized")
+        : t("admin.tiktokSessionMissing");
+
     return (
         <Box sx={{ borderRadius: 1.5, bgcolor: "action.hover", p: compact ? 1 : 1.25 }}>
             <Stack spacing={0.75}>
                 <Typography variant="body2" sx={{ fontWeight: 800 }}>
-                    Session diagnostics
+                    {t("admin.tiktokSessionDiagnostics")}
                 </Typography>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
-                    <InfoRow label="Cookie configured" value={session.cookieConfigured ? "Yes" : "No"} />
-                    <InfoRow label="Cookie pair count" value={String(session.cookiePairCount)} />
-                    <InfoRow label="Likely session cookie" value={session.likelySessionCookiePresent ? "Yes" : "No"} />
-                    <InfoRow label="Connector uses cookie" value={session.connectorUsesCookie ? "Yes" : "No"} />
+                    <InfoRow label={t("admin.tiktokCookieConfigured")} value={session.cookieConfigured ? t("common.yes") : t("common.no")} />
+                    <InfoRow label={t("admin.tiktokCookiePairCount")} value={formatNumber(session.cookiePairCount)} />
+                    <InfoRow label={t("admin.tiktokLikelySessionCookie")} value={session.likelySessionCookiePresent ? t("common.yes") : t("common.no")} />
+                    <InfoRow label={t("admin.tiktokConnectorUsesCookie")} value={session.connectorUsesCookie ? t("common.yes") : t("common.no")} />
                 </Box>
                 {!compact && (
                     <Typography variant="body2" color="text.secondary">
-                        {session.summary}
+                        {summary}
                     </Typography>
                 )}
             </Stack>
@@ -289,9 +301,39 @@ function readNumber(value: unknown): number | null {
     return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function formatDateTime(value?: string | number | null): string {
-    if (!value) return "Never";
+function localizeFetchStatus(
+    t: ReturnType<typeof useDashboardI18n>["t"],
+    status: string,
+): string {
+    switch (status) {
+        case "live": return t("admin.tiktokStatusLive");
+        case "offline": return t("admin.tiktokStatusOffline");
+        case "connect-failed": return t("admin.tiktokStatusConnectFailed");
+        case "unknown": return t("admin.tiktokStatusUnknown");
+        default: return status;
+    }
+}
+
+function localizeHealthStatus(
+    t: ReturnType<typeof useDashboardI18n>["t"],
+    status: IntegrationHealthRecord["status"],
+): string {
+    switch (status) {
+        case "healthy": return t("admin.tiktokHealthHealthy");
+        case "warning": return t("admin.tiktokHealthWarning");
+        case "error": return t("admin.tiktokHealthError");
+        case "paused": return t("admin.tiktokHealthPaused");
+        case "unknown": return t("admin.tiktokStatusUnknown");
+    }
+}
+
+function formatDateTime(
+    value: string | number | null | undefined,
+    formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string,
+    emptyValue = "",
+): string {
+    if (!value) return emptyValue;
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
-    return date.toLocaleString();
+    return formatDate(date, { dateStyle: "medium", timeStyle: "short" });
 }

@@ -279,6 +279,9 @@ describe('api request schemas', () => {
         expect(youtubeUpdateRequestSchema.parse({ cooldownMinutes: 10 })).toMatchObject({ cooldownMinutes: 10 });
         expect(serverUpdateRequestSchema.parse({ prefix: '!' })).toMatchObject({ prefix: '!' });
         expect(userUpdateRequestSchema.parse({ timezone: 'Europe/Amsterdam' })).toMatchObject({ timezone: 'Europe/Amsterdam' });
+        expect(userUpdateRequestSchema.parse({ preferredLocale: 'nl' })).toMatchObject({ preferredLocale: 'nl' });
+        expect(userUpdateRequestSchema.parse({ preferredLocale: null })).toMatchObject({ preferredLocale: null });
+        expect(() => userUpdateRequestSchema.parse({ preferredLocale: 'fr' })).toThrow();
         expect(userNoteUpdateRequestSchema.parse({ pinned: false })).toMatchObject({ pinned: false });
 
         expect(() => twitchUpdateRequestSchema.parse({})).toThrow();

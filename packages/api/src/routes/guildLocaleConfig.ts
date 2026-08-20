@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { getConfigManager, guildLocaleConfigUpdateRequestSchema, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
+import { getConfigManager, guildLocaleConfigUpdateRequestSchema } from '@zeffuro/fakegaming-common';
+import { validateBody, validateQuery } from '../localization/validation.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { createBaseRouter } from '../utils/createBaseRouter.js';

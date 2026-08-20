@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { getConfigManager, validateQuery } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtOrService } from '../middleware/auth.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
+import { validateQuery } from '../localization/validation.js';
 
 const router = createBaseRouter();
 

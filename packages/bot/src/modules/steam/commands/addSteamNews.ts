@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     AutocompleteInteraction,
     ChannelType,
@@ -12,6 +13,7 @@ import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js
 import { requireAdmin } from '../../../utils/permissions.js';
 import { recordBotAuditEvent } from '../../../utils/audit.js';
 import { addSteamNews as META } from '../commands.manifest.js';
+import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
 
 const MAX_SUGGESTIONS = 5;
 
@@ -20,30 +22,40 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addStringOption((option) =>
             option
                 .setName('game')
+                .setNameLocalization('nl', 'spel')
                 .setDescription('Steam game name, App ID, or store URL')
+                .setDescriptionLocalization('nl', 'Naam, app-ID of winkel-URL van het Steam-spel')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addChannelOption((option) =>
             option
                 .setName('channel')
+                .setNameLocalization('nl', 'kanaal')
                 .setDescription('Discord channel for Steam news')
+                .setDescriptionLocalization('nl', 'Discord-kanaal voor Steamnieuws')
                 .setRequired(true)
                 .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
         )
         .addStringOption((option) =>
             option
                 .setName('message')
+                .setNameLocalization('nl', 'bericht')
                 .setDescription('Custom notification message (optional)')
+                .setDescriptionLocalization('nl', 'Aangepast meldingsbericht (optioneel)')
                 .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({ content: 'This command can only be used in a server.', flags: MessageFlags.Ephemeral });
+        await interaction.reply({
+            content: resolveLocaleValue(locale, { en: 'This command can only be used in a server.', nl: 'Deze opdracht kan alleen op een server worden gebruikt.' }),
+            flags: MessageFlags.Ephemeral,
+        });
         return;
     }
 
@@ -53,10 +65,19 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const discordChannel = interaction.options.getChannel('channel', true);
     const customMessage = interaction.options.getString('message', false) ?? undefined;
 
-    const resolved = await resolveSteamAppInput(gameInput, { limit: MAX_SUGGESTIONS });
+    let resolved: Awaited<ReturnType<typeof resolveSteamAppInput>>;
+    try {
+        resolved = await resolveSteamAppInput(gameInput, { limit: MAX_SUGGESTIONS });
+    } catch {
+        await interaction.reply({
+            content: resolveLocaleValue(locale, { en: 'Steam app lookup failed. Please try again later.', nl: 'Steam-apps zoeken is momenteel mislukt. Probeer het later opnieuw.' }),
+            flags: MessageFlags.Ephemeral,
+        });
+        return;
+    }
     if (resolved.status === 'not_found') {
         await interaction.reply({
-            content: `I could not find a Steam app for \`${sanitizeInline(gameInput)}\`. Try a Steam store URL or App ID.`,
+            content: resolveLocaleValue(locale, { en: `I could not find a Steam app for \`${sanitizeInline(gameInput)}\`. Try a Steam store URL or App ID.`, nl: `Ik kon geen Steam-app vinden voor \`${sanitizeInline(gameInput)}\`. Probeer een Steam-winkel-URL of app-ID.` }),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -64,7 +85,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     if (resolved.status === 'ambiguous') {
         await interaction.reply({
-            content: formatAmbiguousReply(gameInput, resolved.suggestions),
+            content: formatAmbiguousReply(gameInput, resolved.suggestions, locale),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -79,7 +100,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     } as never);
     if (existing) {
         await interaction.reply({
-            content: `Steam news for \`${sanitizeInline(app.appName)}\` is already configured in <#${discordChannel.id}>.`,
+            content: resolveLocaleValue(locale, { en: `Steam news for \`${sanitizeInline(app.appName)}\` is already configured in <#${discordChannel.id}>.`, nl: `Steamnieuws voor \`${sanitizeInline(app.appName)}\` is al ingesteld in <#${discordChannel.id}>.` }),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -105,9 +126,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         },
     });
 
-    await interaction.reply(
-        `Subscribed <#${discordChannel.id}> to Steam news for \`${sanitizeInline(app.appName)}\` (${formatSteamStoreUrl(app.steamAppId)}).`
-    );
+    await interaction.reply(resolveLocaleValue(locale, { en: `Subscribed <#${discordChannel.id}> to Steam news for \`${sanitizeInline(app.appName)}\` (${formatSteamStoreUrl(app.steamAppId)}).`, nl: `<#${discordChannel.id}> is geabonneerd op Steamnieuws voor \`${sanitizeInline(app.appName)}\` (${formatSteamStoreUrl(app.steamAppId)}).` }));
 }
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
@@ -133,12 +152,12 @@ function toAutocompleteChoice(result: SteamAppSearchResult): { name: string; val
     };
 }
 
-function formatAmbiguousReply(input: string, suggestions: SteamAppSearchResult[]): string {
+function formatAmbiguousReply(input: string, suggestions: SteamAppSearchResult[], locale: SupportedOutputLocale): string {
     const lines = suggestions.slice(0, MAX_SUGGESTIONS).map((suggestion) =>
         `- \`${suggestion.appName}\` (${suggestion.steamAppId})`
     );
     return [
-        `Multiple Steam apps matched \`${sanitizeInline(input)}\`. Pick one from autocomplete or paste a Steam store URL/App ID.`,
+        resolveLocaleValue(locale, { en: `Multiple Steam apps matched \`${sanitizeInline(input)}\`. Pick one from autocomplete or paste a Steam store URL/App ID.`, nl: `Meerdere Steam-apps kwamen overeen met \`${sanitizeInline(input)}\`. Kies er een via automatisch aanvullen of plak een Steam-winkel-URL/app-ID.` }),
         ...lines,
     ].join('\n');
 }

@@ -10,7 +10,7 @@ function normalizeHandle(input: string): string {
 
 const { data, execute, testOnly } = createSubscriptionCommand<string>({
     meta: META,
-    usernameOptionDescription: blueskyCommandConfig.usernameOptionDescription,
+    usernameOptionDescriptions: blueskyCommandConfig.usernameOptionDescriptions,
     resolveOrVerify: async (username) => {
         const result = await verifyBlueskyHandleApi(normalizeHandle(username));
         return result?.exists && result.handle ? { ok: true, id: result.handle } : { ok: false };
@@ -35,9 +35,9 @@ const { data, execute, testOnly } = createSubscriptionCommand<string>({
             blueskyHandle: normalizeHandle(externalId),
         }),
     },
-    successMessage: blueskyCommandConfig.successMessage,
-    alreadyConfiguredMessage: blueskyCommandConfig.alreadyConfiguredMessage,
-    notFoundMessage: blueskyCommandConfig.notFoundMessage,
+    successMessages: blueskyCommandConfig.successMessages,
+    alreadyConfiguredMessages: blueskyCommandConfig.alreadyConfiguredMessages,
+    notFoundMessages: blueskyCommandConfig.notFoundMessages,
 });
 
 // noinspection JSUnusedGlobalSymbols

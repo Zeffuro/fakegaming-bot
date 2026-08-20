@@ -9,6 +9,7 @@ import {
     REFRESH_SESSION_COOKIE_NAME,
     REFRESH_SESSION_IDLE_MAX_AGE_SECONDS
 } from "@/lib/auth/sessionConstants";
+import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 
 /**
  * POST /api/auth/refresh
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
     const rotated = await rotateRefreshSession(oldRefreshToken);
 
     if (!rotated) {
-        return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+        return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.notAuthenticated") }, { status: 401 });
     }
 
     const { secret, audience, issuer } = getJwtConfig();

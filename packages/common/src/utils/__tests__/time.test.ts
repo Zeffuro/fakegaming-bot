@@ -43,6 +43,7 @@ describe('utils/time', () => {
         it('formats complex durations', () => {
             const ms = 2 * 86400000 + 3 * 3600000 + 15 * 60000 + 30 * 1000;
             expect(formatElapsed(ms)).toBe('2 days, 3 hrs, 15 mins, 30 secs ago');
+            expect(formatElapsed(ms, 'nl')).toBe('2 dagen, 3 uur, 15 min, 30 sec geleden');
         });
 
         it('handles zero', () => {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import type { IncomingMessage } from 'node:http';
 import * as common from '@zeffuro/fakegaming-common';
 import { expectBadRequest, expectUnauthorized, seedUserGuilds, seedUserProfiles, seedUserGuildNick, expectOk } from '@zeffuro/fakegaming-common/testing';
+import {renderProfileCard} from '@zeffuro/fakegaming-common/profile-card';
 
 const spyUser = vi.spyOn(common, 'getDiscordUserById').mockImplementation(async (id: string) => ({
     id,
@@ -157,4 +158,59 @@ describe('Discord resolve users API', () => {
         const body = res.body as Buffer;
         expect(body.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
     });
+
+    it('uses the request locale independently from the guild bot-output locale', async () => {
+        await common.getConfigManager().guildLocaleConfigManager.setOutputLocale(guildId, 'nl');
+        const res = await client.raw
+            .get(`/api/discord/guilds/${guildId}/users/${authorId}/profile-card`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'en')
+            .buffer(true)
+            .parse(parseBinaryResponse);
+
+        expectOk(res);
+        expect(res.headers.vary).toBe('Accept-Language');
+        expect(res.body as Buffer).toEqual(renderExpectedEnglishProfileCard());
+    });
+
+    it('uses the request locale when no guild locale is stored', async () => {
+        const fallbackGuildId = 'profile-locale-fallback';
+        await seedUserGuilds('testuser', [
+            {id: guildId, permissions: '8'},
+            {id: fallbackGuildId, permissions: '8'},
+        ]);
+        await seedUserGuildNick(authorId, fallbackGuildId, 'AuthorNick');
+        const res = await client.raw
+            .get(`/api/discord/guilds/${fallbackGuildId}/users/${authorId}/profile-card`)
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'nl-NL')
+            .buffer(true)
+            .parse(parseBinaryResponse);
+
+        expectOk(res);
+        expect(res.headers.vary).toBe('Accept-Language');
+        expect(res.body as Buffer).toEqual(renderExpectedDutchProfileCard());
+    });
 });
+
+function renderExpectedDutchProfileCard(): Buffer {
+    return renderProfileCard({
+        userId: '123',
+        displayName: 'AuthorNick',
+        username: 'user_123',
+        discriminator: '0001',
+        globalName: null,
+        nickname: 'AuthorNick',
+    }, {locale: 'nl'});
+}
+
+function renderExpectedEnglishProfileCard(): Buffer {
+    return renderProfileCard({
+        userId: '123',
+        displayName: 'AuthorNick',
+        username: 'user_123',
+        discriminator: '0001',
+        globalName: null,
+        nickname: 'AuthorNick',
+    }, { locale: 'en' });
+}

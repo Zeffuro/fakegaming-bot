@@ -1,4 +1,24 @@
 import ms from 'ms';
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from './outputLocale.js';
+
+const ELAPSED_TIME_COPY = {
+    en: {
+        day: 'day',
+        days: 'days',
+        hour: 'hrs',
+        minute: 'mins',
+        second: 'secs',
+        ago: 'ago',
+    },
+    nl: {
+        day: 'dag',
+        days: 'dagen',
+        hour: 'uur',
+        minute: 'min',
+        second: 'sec',
+        ago: 'geleden',
+    },
+} as const satisfies OutputLocaleValues<Record<string, string>>;
 
 /**
  * Normalize various timestamp representations to milliseconds since epoch.
@@ -55,12 +75,13 @@ export function parseTimespan(timespan: string): number | null {
 /**
  * Format a duration in ms as '<d> days, <h> hrs, <m> mins, <s> secs ago'.
  */
-export function formatElapsed(msValue: number): string {
+export function formatElapsed(msValue: number, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
     const secs = Math.floor(msValue / 1000) % 60;
     const mins = Math.floor(msValue / 1000 / 60) % 60;
     const hrs = Math.floor(msValue / 1000 / 60 / 60) % 24;
     const days = Math.floor(msValue / 1000 / 60 / 60 / 24);
-    return `${days} day${days !== 1 ? 's' : ''}, ${hrs} hrs, ${mins} mins, ${secs} secs ago`;
+    const copy = resolveLocaleValue(locale, ELAPSED_TIME_COPY);
+    return `${days} ${days === 1 ? copy.day : copy.days}, ${hrs} ${copy.hour}, ${mins} ${copy.minute}, ${secs} ${copy.second} ${copy.ago}`;
 }
 
 /**

@@ -9,6 +9,7 @@ import { canSubscribe, formatAnimeTitle, getSubscribeHint } from "@/components/a
 import type { AnimeDashboardChannel } from "@/components/anime/types";
 import type { AnimeSearchMediaType, AnimeSearchResult } from "@/lib/api-client";
 import type { AnimeLookupHistoryEntry } from "@/lib/animeLookupHistory";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AnimeSetupPanelProps {
   searchInput: string;
@@ -35,17 +36,17 @@ interface AnimeSetupPanelProps {
   onSearchMediaTypeChange: (value: AnimeSearchMediaType) => void;
 }
 
-function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResult | null; searchInput: string; channelId: string; searchMediaType: AnimeSearchMediaType }) {
-  if (args.saving) return "Saving...";
-  if (args.searchMediaType === "manga" || args.selectedAnime?.type === "MANGA") return "Lookup Only";
-  if (!args.selectedAnime && !args.searchInput.trim()) return "Pick Anime First";
-  if (args.selectedAnime && !canSubscribe(args.selectedAnime)) return "Cannot Subscribe";
-  if (!args.channelId) return "Choose Channel";
-  return "Add Channel Subscription";
+function subscribeLabel(args: { saving: boolean; selectedAnime: AnimeSearchResult | null; searchInput: string; channelId: string; searchMediaType: AnimeSearchMediaType }, t: ReturnType<typeof useDashboardI18n>["t"]) {
+  if (args.saving) return t("anime.saving");
+  if (args.searchMediaType === "manga" || args.selectedAnime?.type === "MANGA") return t("anime.lookupOnly");
+  if (!args.selectedAnime && !args.searchInput.trim()) return t("anime.pickFirst");
+  if (args.selectedAnime && !canSubscribe(args.selectedAnime)) return t("anime.cannotSubscribe");
+  if (!args.channelId) return t("anime.chooseChannel");
+  return t("anime.addChannelSubscription");
 }
 
-function historyTypeLabel(mediaType: AnimeSearchMediaType): string {
-  return mediaType === "manga" ? "Manga" : "Anime";
+function historyTypeLabel(mediaType: AnimeSearchMediaType, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+  return mediaType === "manga" ? t("anime.manga") : t("anime.anime");
 }
 
 function LookupHistoryPanel({
@@ -59,6 +60,7 @@ function LookupHistoryPanel({
   onUse: (entry: AnimeLookupHistoryEntry) => void;
   onClear: () => void;
 }) {
+  const { t } = useDashboardI18n();
   const visibleHistory = history.filter((entry) => entry.mediaType === mediaType).slice(0, 5);
 
   if (history.length === 0) return null;
@@ -69,11 +71,11 @@ function LookupHistoryPanel({
         <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", gap: 1 }}>
           <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 850, display: "flex", alignItems: "center", gap: 0.75 }}>
             <History fontSize="small" />
-            Recent {historyTypeLabel(mediaType)} Lookups
+            {t("anime.recentLookups", { type: historyTypeLabel(mediaType, t) })}
           </Typography>
-          <Tooltip title="Clear recent lookups">
+          <Tooltip title={t("anime.clearLookups")}>
             <span>
-              <IconButton size="small" aria-label="Clear recent lookups" onClick={onClear} sx={{ color: "rgba(255,255,255,0.62)" }}>
+              <IconButton size="small" aria-label={t("anime.clearLookups")} onClick={onClear} sx={{ color: "rgba(255,255,255,0.62)" }}>
                 <DeleteSweep fontSize="small" />
               </IconButton>
             </span>
@@ -82,7 +84,7 @@ function LookupHistoryPanel({
 
         {visibleHistory.length === 0 ? (
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
-            No recent {historyTypeLabel(mediaType).toLowerCase()} lookups.
+            {t("anime.noRecentLookups", { type: historyTypeLabel(mediaType, t) })}
           </Typography>
         ) : (
           <Stack spacing={0.75}>
@@ -93,12 +95,12 @@ function LookupHistoryPanel({
                     {entry.title}
                   </Typography>
                   <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75, mt: 0.5 }}>
-                    <Chip size="small" label={`AniList #${entry.id}`} variant="outlined" sx={{ color: "rgba(255,255,255,0.62)", borderColor: "rgba(255,255,255,0.14)" }} />
-                    <Chip size="small" label={entry.subscribable ? "Subscribable" : "Lookup Only"} sx={{ bgcolor: entry.subscribable ? "rgba(104,215,255,0.12)" : "rgba(255,200,87,0.12)", color: "rgba(255,255,255,0.76)" }} />
+                    <Chip size="small" label={t("anime.anilistId", { id: entry.id })} variant="outlined" sx={{ color: "rgba(255,255,255,0.62)", borderColor: "rgba(255,255,255,0.14)" }} />
+                    <Chip size="small" label={entry.subscribable ? t("anime.subscribable") : t("anime.lookupOnly")} sx={{ bgcolor: entry.subscribable ? "rgba(104,215,255,0.12)" : "rgba(255,200,87,0.12)", color: "rgba(255,255,255,0.76)" }} />
                   </Stack>
                 </Box>
                 <Button size="small" variant="outlined" onClick={() => onUse(entry)} sx={{ textTransform: "none", color: "grey.100", borderColor: "rgba(255,255,255,0.16)", flex: "0 0 auto" }}>
-                  Search
+                  {t("common.search")}
                 </Button>
               </Box>
             ))}
@@ -133,6 +135,7 @@ export function AnimeSetupPanel({
   onRefreshChannels,
   notificationChannelInputRef,
 }: AnimeSetupPanelProps) {
+  const { locale, t } = useDashboardI18n();
   const hasAnimeInput = Boolean(selectedAnime || searchInput.trim());
   const invalidSelectedAnime = Boolean(selectedAnime && !canSubscribe(selectedAnime));
   const mangaLookup = searchMediaType === "manga" || selectedAnime?.type === "MANGA";
@@ -145,10 +148,10 @@ export function AnimeSetupPanel({
         <Stack spacing={0.5}>
           <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, display: "flex", gap: 1, alignItems: "center" }}>
             <Search fontSize="small" />
-            Search AniList
+            {t("anime.searchAniList")}
           </Typography>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-            Anime entries can be subscribed to episode reminders. Manga, manhwa, webtoons, and light novels are lookup-only.
+            {t("anime.searchDescription")}
           </Typography>
         </Stack>
 
@@ -172,8 +175,8 @@ export function AnimeSetupPanel({
             },
           }}
         >
-          <ToggleButton value="anime">Anime</ToggleButton>
-          <ToggleButton value="manga">Manga</ToggleButton>
+          <ToggleButton value="anime">{t("anime.anime")}</ToggleButton>
+          <ToggleButton value="manga">{t("anime.manga")}</ToggleButton>
         </ToggleButtonGroup>
 
         <Autocomplete
@@ -186,7 +189,7 @@ export function AnimeSetupPanel({
           onChange={(_event, value) => onSelectedAnimeChange(value)}
           isOptionEqualToValue={(option, value) => option.id === value.id}
           getOptionLabel={(option) => formatAnimeTitle(option)}
-          noOptionsText={searchInput.trim().length < 2 ? "Type at least 2 characters" : "No AniList results"}
+          noOptionsText={searchInput.trim().length < 2 ? t("config.typeAtLeastTwoCharacters") : t("anime.noResults")}
           renderOption={(props, option) => (
             <Box component="li" {...props} key={option.id} sx={{ bgcolor: "rgba(18,24,34,0.98)", color: "grey.100", py: 1 }}>
               <AnimeMediaRow anime={option} dense />
@@ -195,9 +198,11 @@ export function AnimeSetupPanel({
           renderInput={(params) => (
             <TextField
               {...params}
-              label={searchMediaType === "manga" ? "Manga Search" : "Anime Search"}
-              placeholder={searchMediaType === "manga" ? "Solo Leveling, Omniscient Reader, or AniList ID" : "Frieren, Apothecary Diaries, or AniList ID"}
-              helperText={getSubscribeHint({ anime: selectedAnime, channelId, saving })}
+              label={searchMediaType === "manga" ? t("anime.mangaSearch") : t("anime.animeSearch")}
+              placeholder={t("anime.searchPlaceholder", {
+                examples: searchMediaType === "manga" ? "Solo Leveling, Omniscient Reader" : "Frieren, Apothecary Diaries",
+              })}
+              helperText={getSubscribeHint({ anime: selectedAnime, channelId, saving }, locale)}
               sx={fieldSx}
               slotProps={{
                 ...params.slotProps,
@@ -242,9 +247,9 @@ export function AnimeSetupPanel({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Notification Channel"
+                label={t("anime.notificationChannel")}
                 inputRef={notificationChannelInputRef}
-                helperText={channelId ? "Season browse subscribe buttons will use this channel too." : "Required for server subscriptions."}
+                helperText={channelId ? t("anime.seasonChannelHelp") : t("anime.channelRequired")}
                 sx={{
                   ...fieldSx,
                   ...(needsChannel ? {
@@ -255,10 +260,10 @@ export function AnimeSetupPanel({
             )}
           />
           {onRefreshChannels && (
-            <Tooltip title="Refresh channels">
+            <Tooltip title={t("common.refreshChannels")}>
               <span>
                 <IconButton
-                  aria-label="Refresh channels"
+                  aria-label={t("common.refreshChannels")}
                   onClick={() => void onRefreshChannels()}
                   disabled={loadingChannels}
                   sx={{ mt: 0.5, color: "grey.200", border: "1px solid rgba(255,255,255,0.14)" }}
@@ -273,22 +278,22 @@ export function AnimeSetupPanel({
         <TextField
           fullWidth
           select
-          label="Reminder Timing"
+          label={t("anime.reminderTiming")}
           value={reminderMinutes}
           onChange={(event) => onReminderMinutesChange(Number(event.target.value))}
-          helperText="How long before the episode air time to notify."
+          helperText={t("anime.reminderTimingHelp")}
           sx={fieldSx}
         >
           {[0, 5, 10, 15, 30, 60, 120, 360].map((minutes) => (
             <MenuItem key={minutes} value={minutes}>
-              {minutes === 0 ? "At Air Time" : `${minutes} Minutes Before`}
+              {minutes === 0 ? t("anime.atAirTime") : t("anime.minutesBefore", { minutes })}
             </MenuItem>
           ))}
         </TextField>
 
         {needsChannel && (
           <Alert severity="info" sx={{ bgcolor: "rgba(2,169,255,0.10)", color: "grey.100", border: "1px solid rgba(104,215,255,0.22)" }}>
-            The subscribe action is available, but it will ask for a channel until one is selected.
+            {t("anime.channelSelectionAlert")}
           </Alert>
         )}
 
@@ -300,7 +305,7 @@ export function AnimeSetupPanel({
           onClick={() => onSubscribe()}
           sx={primaryButtonSx}
         >
-          {subscribeLabel({ saving, selectedAnime, searchInput, channelId, searchMediaType })}
+          {subscribeLabel({ saving, selectedAnime, searchInput, channelId, searchMediaType }, t)}
         </Button>
       </Stack>
     </Paper>

@@ -16,6 +16,8 @@ import { useRouter } from "next/navigation";
 import BreadcrumbsNavigation from "./BreadcrumbsNavigation";
 import UserMenu from "./UserMenu";
 import LoadingSkeleton from "./LoadingSkeleton";
+import { DashboardLanguageSelector } from "./i18n/DashboardLanguageSelector";
+import { useDashboardI18n } from "./i18n/DashboardI18nProvider";
 
 interface BreadcrumbItem {
   label: string;
@@ -41,6 +43,7 @@ export default function DashboardLayout({
   loading = false
 }: DashboardLayoutProps) {
   const router = useRouter();
+  const { t } = useDashboardI18n();
 
   return (
     <Box
@@ -76,7 +79,7 @@ export default function DashboardLayout({
                   flex: "0 0 auto",
                   color: "grey.50",
                   fontWeight: 950,
-                  letterSpacing: "-0.06em",
+                  letterSpacing: 0,
                   background: "linear-gradient(135deg, #68D7FF, #FF6B9A)",
                   boxShadow: `0 14px 34px ${alpha("#68D7FF", 0.22)}`,
                 }}
@@ -84,11 +87,11 @@ export default function DashboardLayout({
                 FG
               </Box>
               <Box sx={{ minWidth: 0, display: { xs: "none", sm: "block" } }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: "grey.50", letterSpacing: "-0.035em", lineHeight: 1 }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 900, color: "grey.50", letterSpacing: 0, lineHeight: 1 }}>
                   Fakegaming Bot
                 </Typography>
                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)", fontWeight: 650 }}>
-                  Control panel
+                  {t("app.controlPanel")}
                 </Typography>
               </Box>
             </Box>
@@ -99,9 +102,9 @@ export default function DashboardLayout({
           <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, md: 1.4 }, flex: "0 0 auto" }}>
             {guild && (
               <>
-                <Tooltip title="Back to servers">
+                <Tooltip title={t("nav.backToServers")}>
                   <IconButton
-                    aria-label="Back to servers"
+                    aria-label={t("nav.backToServers")}
                     onClick={() => router.push("/dashboard")}
                     sx={{
                       display: { xs: "inline-flex", md: "none" },
@@ -138,10 +141,11 @@ export default function DashboardLayout({
                     }
                   }}
                 >
-                  Back to Guilds
+                  {t("nav.backToGuilds")}
                 </Button>
               </>
             )}
+            <DashboardLanguageSelector />
             <UserMenu />
           </Box>
         </Toolbar>
@@ -162,11 +166,11 @@ export default function DashboardLayout({
         <Container maxWidth={maxWidth}>
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)" }}>
             <Link href="/privacy" underline="hover" color="inherit">
-              Privacy and cookies
+              {t("nav.privacy")}
             </Link>
             {" | "}
             <Link href="/terms" underline="hover" color="inherit">
-              Terms
+              {t("nav.terms")}
             </Link>
           </Typography>
         </Container>

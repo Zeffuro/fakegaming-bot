@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from 'discord.js';
-import { expectReplyTextContains, setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { createMockConfigManager, expectReplyTextContains, setupCommandTest } from '@zeffuro/fakegaming-common/testing';
 
 const notes = [
     {
@@ -20,6 +20,29 @@ const notes = [
 ];
 
 describe('notes command', () => {
+    const setDefaultLocale = (): void => {
+        vi.mocked(createMockConfigManager({}).guildLocaleConfigManager.getOutputLocale).mockResolvedValue('en');
+    };
+    beforeEach(setDefaultLocale);
+    afterEach(setDefaultLocale);
+    it('localizes list chrome while preserving note content', async () => {
+        const { command, interaction } = await setupCommandTest(
+            'modules/notes/commands/notes.js',
+            {
+                interaction: { subcommand: 'list', guildId: 'guild-nl' },
+                managerOverrides: {
+                    userNoteManager: { listForUser: vi.fn().mockResolvedValue(notes) },
+                    guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('nl') },
+                },
+            },
+        );
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expectReplyTextContains(interaction, 'Je notities:');
+        expectReplyTextContains(interaction, '[vastgezet] Pinned note');
+        expectReplyTextContains(interaction, 'Pinned body');
+    });
+
     it('adds a note with an optional title', async () => {
         const createForUser = vi.fn().mockResolvedValue({
             id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
@@ -48,8 +71,32 @@ describe('notes command', () => {
             discordId: '123456789012345678',
             body: 'Command body',
             pinned: false,
+            locale: 'en',
         });
         expectReplyTextContains(interaction, 'Saved note `cccccccc`');
+    });
+
+    it('passes the stored Dutch locale when creating a note', async () => {
+        const createForUser = vi.fn().mockResolvedValue({
+            id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+            title: 'Notitie-inhoud',
+        });
+        const {command, interaction} = await setupCommandTest('modules/notes/commands/notes.js', {
+            interaction: {
+                subcommand: 'add',
+                guildId: 'guild-nl',
+                stringOptions: {body: 'Notitie-inhoud'},
+            },
+            managerOverrides: {
+                guildLocaleConfigManager: {getOutputLocale: vi.fn().mockResolvedValue('nl')},
+                userNoteManager: {createForUser},
+            },
+        });
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+
+        expect(createForUser).toHaveBeenCalledWith(expect.objectContaining({locale: 'nl'}));
+        expectReplyTextContains(interaction, 'Notitie `dddddddd` opgeslagen');
     });
 
     it('lists saved notes for the user', async () => {

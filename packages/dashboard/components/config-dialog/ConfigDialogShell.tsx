@@ -8,6 +8,7 @@ import {
     DialogTitle
 } from "@mui/material";
 import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface ConfigDialogShellProps {
     open: boolean;
@@ -32,6 +33,7 @@ export function ConfigDialogShell({
     onSubmit,
     children
 }: ConfigDialogShellProps) {
+    const { t } = useDashboardI18n();
     const handleSubmit = () => {
         void onSubmit();
     };
@@ -60,7 +62,7 @@ export function ConfigDialogShell({
                     disabled={saving}
                     sx={ghostActionButtonSx(moduleColor)}
                 >
-                    Cancel
+                    {t("common.cancel")}
                 </Button>
                 <Button
                     onClick={handleSubmit}

@@ -17,6 +17,7 @@ import {
 } from "@/components/anime/animeTheme";
 import { formatAnimeTitle } from "@/components/anime/animeUtils";
 import type { AnimeSearchResult } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AnimeSeasonBrowserProps {
   season: AnimeSeasonOption;
@@ -37,10 +38,20 @@ interface AnimeSeasonBrowserProps {
   onSubscribe: (anime: AnimeSearchResult) => void | Promise<void>;
 }
 
-function formatSeasonOption(option: AnimeSeasonOption): string {
-  if (option === "current") return "Current";
-  if (option === "next") return "Next";
-  return option.toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
+function formatSeasonOption(option: AnimeSeasonOption, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+  if (option === "current") return t("anime.seasonCurrent");
+  if (option === "next") return t("anime.seasonNext");
+  if (option === "WINTER") return t("anime.seasonWinter");
+  if (option === "SPRING") return t("anime.seasonSpring");
+  if (option === "SUMMER") return t("anime.seasonSummer");
+  return t("anime.seasonFall");
+}
+
+function formatScopeOption(option: AnimeSeasonScope, t: ReturnType<typeof useDashboardI18n>["t"]): { label: string; description: string } {
+  if (option === "airing") return { label: t("anime.scopeAiring"), description: t("anime.scopeAiringDescription") };
+  if (option === "chart") return { label: t("anime.scopeChart"), description: t("anime.scopeChartDescription") };
+  if (option === "tv") return { label: t("anime.scopeTv"), description: t("anime.scopeTvDescription") };
+  return { label: t("anime.scopeAll"), description: t("anime.scopeAllDescription") };
 }
 
 export function AnimeSeasonBrowser({
@@ -61,6 +72,7 @@ export function AnimeSeasonBrowser({
   onUseAnime,
   onSubscribe,
 }: AnimeSeasonBrowserProps) {
+  const { t } = useDashboardI18n();
   return (
     <Paper sx={{ ...elevatedPanelSx, p: 3 }}>
       <Stack spacing={2.5} sx={{ position: "relative" }}>
@@ -68,10 +80,10 @@ export function AnimeSeasonBrowser({
           <Stack spacing={0.5}>
             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, display: "flex", gap: 1, alignItems: "center" }}>
               <AutoStories fontSize="small" />
-              Browse Season
+              {t("anime.browseSeason")}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-              {seasonLabel}. Page through AniList results without losing your selected notification channel.
+              {t("anime.seasonBrowserDescription", { season: seasonLabel })}
             </Typography>
           </Stack>
 
@@ -79,35 +91,35 @@ export function AnimeSeasonBrowser({
             <TextField
               select
               size="small"
-              label="Season"
+              label={t("anime.season")}
               value={season}
               onChange={(event) => onSeasonChange(event.target.value as AnimeSeasonOption)}
               sx={{ ...fieldSx, minWidth: 136 }}
             >
               {SEASON_OPTIONS.map((option) => (
                 <MenuItem key={option} value={option}>
-                  {formatSeasonOption(option)}
+                  {formatSeasonOption(option, t)}
                 </MenuItem>
               ))}
             </TextField>
             <TextField
               select
               size="small"
-              label="Scope"
+              label={t("anime.scope")}
               value={seasonScope}
               onChange={(event) => onSeasonScopeChange(event.target.value as AnimeSeasonScope)}
               sx={{ ...fieldSx, minWidth: 190 }}
             >
               {SEASON_SCOPES.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
-                  {option.label}
+                  {formatScopeOption(option.value, t).label}
                 </MenuItem>
               ))}
             </TextField>
             <TextField
               size="small"
               type="number"
-              label="Year"
+              label={t("anime.year")}
               value={seasonYear}
               disabled={season === "current" || season === "next"}
               onChange={(event) => onSeasonYearChange(Number(event.target.value))}
@@ -117,28 +129,29 @@ export function AnimeSeasonBrowser({
         </Stack>
 
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
-          {SEASON_SCOPES.map((option) => (
-            <Chip
+          {SEASON_SCOPES.map((option) => {
+            const copy = formatScopeOption(option.value, t);
+            return <Chip
               key={option.value}
-              label={`${option.label}: ${option.description}`}
+              label={`${copy.label}: ${copy.description}`}
               variant={option.value === seasonScope ? "filled" : "outlined"}
               sx={{
                 bgcolor: option.value === seasonScope ? "rgba(104,215,255,0.14)" : "transparent",
                 color: option.value === seasonScope ? ANIME_ACCENT_SOFT : "rgba(255,255,255,0.62)",
                 borderColor: "rgba(255,255,255,0.14)",
               }}
-            />
-          ))}
+            />;
+          })}
         </Stack>
 
         {seasonLoading ? (
           <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", color: "rgba(255,255,255,0.64)" }}>
             <CircularProgress size={22} />
-            <Typography variant="body2">Loading Season Results...</Typography>
+            <Typography variant="body2">{t("anime.loadingResults")}</Typography>
           </Stack>
         ) : seasonResults.length === 0 ? (
           <Box sx={{ p: 3, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", color: "rgba(255,255,255,0.62)" }}>
-            No season results for this filter.
+            {t("anime.noSeasonResults")}
           </Box>
         ) : (
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
@@ -156,9 +169,9 @@ export function AnimeSeasonBrowser({
                           variant="outlined"
                           onClick={() => onUseAnime(anime)}
                           sx={ghostButtonSx}
-                          title={`Use ${formatAnimeTitle(anime)} in search`}
+                          title={t("anime.useInSearch", { title: formatAnimeTitle(anime) })}
                         >
-                          Use
+                          {t("anime.use")}
                         </Button>
                         <AnimeSubscribeButton anime={anime} channelId={channelId} saving={saving} onSubscribe={onSubscribe} fullWidth />
                       </Stack>
@@ -177,16 +190,16 @@ export function AnimeSeasonBrowser({
             onClick={() => onSeasonPageChange((page) => Math.max(1, page - 1))}
             sx={ghostButtonSx}
           >
-            Previous
+            {t("anime.previous")}
           </Button>
-          <Chip label={`Page ${seasonPage}`} variant="outlined" sx={{ color: "grey.100", borderColor: "rgba(255,255,255,0.16)" }} />
+          <Chip label={t("anime.page", { page: seasonPage })} variant="outlined" sx={{ color: "grey.100", borderColor: "rgba(255,255,255,0.16)" }} />
           <Button
             endIcon={<NavigateNext />}
             disabled={!seasonHasNext || seasonLoading}
             onClick={() => onSeasonPageChange((page) => page + 1)}
             sx={ghostButtonSx}
           >
-            Next
+            {t("anime.next")}
           </Button>
         </Stack>
       </Stack>

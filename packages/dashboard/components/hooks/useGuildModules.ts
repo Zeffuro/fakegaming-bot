@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type DisabledModulesResponse = Awaited<ReturnType<typeof api.getDisabledModules>>;
 type DisabledModule = DisabledModulesResponse extends (infer Item)[] ? Item : never;
@@ -9,6 +10,7 @@ function getModuleName(config: DisabledModule): string | undefined {
 }
 
 export function useGuildModules(guildId: string) {
+  const { t } = useDashboardI18n();
   const [disabledModules, setDisabledModules] = useState<string[]>([]);
   const [loadingModule, setLoadingModule] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +24,11 @@ export function useGuildModules(guildId: string) {
         .filter((name: string | undefined): name is string => typeof name === "string");
       setDisabledModules(names);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch disabled modules';
+      const message = err instanceof Error ? err.message : t("hooks.failedToFetchDisabledModules");
       setError(message);
       setDisabledModules([]);
     }
-  }, [guildId]);
+  }, [guildId, t]);
 
   const disableModule = useCallback(async (moduleName: string) => {
     setLoadingModule(moduleName);
@@ -35,11 +37,11 @@ export function useGuildModules(guildId: string) {
       await api.createDisabledModule({ guildId, moduleName });
       await fetchDisabledModules();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to disable module';
+      const message = err instanceof Error ? err.message : t("hooks.failedToDisableModule");
       setError(message);
     }
     setLoadingModule(undefined);
-  }, [guildId, fetchDisabledModules]);
+  }, [guildId, fetchDisabledModules, t]);
 
   const enableModule = useCallback(async (moduleName: string) => {
     setLoadingModule(moduleName);
@@ -52,11 +54,11 @@ export function useGuildModules(guildId: string) {
       }
       await fetchDisabledModules();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to enable module';
+      const message = err instanceof Error ? err.message : t("hooks.failedToEnableModule");
       setError(message);
     }
     setLoadingModule(undefined);
-  }, [guildId, fetchDisabledModules]);
+  }, [guildId, fetchDisabledModules, t]);
 
   return {
     disabledModules,

@@ -13,6 +13,7 @@ import { dashboardAccents, dashboardCardSx, dashboardFieldSx, dangerActionButton
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useQuotes } from "@/components/hooks/useQuotes";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api } from "@/lib/api-client";
 import type { QuoteOfDayPreviewResponse, QuoteOfDaySettingsRequest } from "@/lib/api/quotes";
 import {
@@ -31,22 +32,22 @@ import {
     type QuoteModerationStatus,
 } from "@/lib/quoteCuration";
 
-function formatTimestamp(ts: number): string {
+function formatTimestamp(ts: number, formatDate: ReturnType<typeof useDashboardI18n>["formatDate"], t: ReturnType<typeof useDashboardI18n>["t"]): string {
     try {
         const d = new Date(Number(ts));
         if (Number.isNaN(d.getTime())) return String(ts);
-        return `${new Intl.DateTimeFormat("en-US", {
+        return t("quotes.timestamp", { date: formatDate(d, {
             dateStyle: "medium",
             timeStyle: "short",
             timeZone: "UTC",
-        }).format(d)} UTC`;
+        }) });
     } catch {
         return String(ts);
     }
 }
 
-function getDisplayName(user?: QuoteCurationUser): string {
-    return getQuoteUserDisplayName(user);
+function getDisplayName(user: QuoteCurationUser | undefined, unknownLabel: string): string {
+    return getQuoteUserDisplayName(user, unknownLabel);
 }
 
 function buildAvatarUrl(userId: string, avatar: string | null | undefined): string | null {
@@ -58,6 +59,7 @@ type MemberItem = QuoteCurationUser & { id: string; discriminator?: string | nul
 type QuoteUserMap = Record<string, QuoteCurationUser | undefined>;
 
 export default function GuildQuotesPage() {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const { guildId, guild, guildsLoading } = useGuildFromParams();
     const {
         quotes,
@@ -108,7 +110,7 @@ export default function GuildQuotesPage() {
             downloadBlob(blob, buildQuoteCardDownloadFilename(quote.id));
             setError(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to download quote card");
+            setError(err instanceof Error ? err.message : t("quotes.error.downloadCard"));
         } finally {
             setDownloadingQuoteId(null);
         }
@@ -122,7 +124,7 @@ export default function GuildQuotesPage() {
             downloadBlob(blob, buildProfileCardDownloadFilename(userId));
             setError(null);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to download profile card");
+            setError(err instanceof Error ? err.message : t("quotes.error.downloadProfileCard"));
         } finally {
             setDownloadingProfileUserId(null);
         }
@@ -188,22 +190,22 @@ export default function GuildQuotesPage() {
                 <FeatureShell accent={accent} secondaryAccent={dashboardAccents.commands}>
                     <FeatureHero
                         icon={<FormatQuote />}
-                        eyebrow="Quotes"
-                        title="Quotes"
-                        description="Search, add, and clean up server quotes with Discord member lookup and readable attribution."
+                        eyebrow={t("quotes.title")}
+                        title={t("quotes.title")}
+                        description={t("quotes.description")}
                         accent={accent}
                         secondaryAccent={dashboardAccents.commands}
                         stats={[
-                            { label: "quotes stored", value: allQuotes.length },
-                            { label: "quoted members", value: curationSummary.uniqueAuthors },
-                            { label: "curators", value: curationSummary.uniqueSubmitters },
-                            { label: "pending", value: curationSummary.pendingQuotes },
-                            { label: "approved", value: curationSummary.approvedQuotes },
-                            { label: "shown", value: visibleQuotes.length },
+                            { label: t("quotes.stats.stored"), value: formatNumber(allQuotes.length) },
+                            { label: t("quotes.stats.quotedMembers"), value: formatNumber(curationSummary.uniqueAuthors) },
+                            { label: t("quotes.stats.curators"), value: formatNumber(curationSummary.uniqueSubmitters) },
+                            { label: t("quotes.stats.pending"), value: formatNumber(curationSummary.pendingQuotes) },
+                            { label: t("quotes.stats.approved"), value: formatNumber(curationSummary.approvedQuotes) },
+                            { label: t("quotes.stats.shown"), value: formatNumber(visibleQuotes.length) },
                         ]}
                         actions={(
                             <Button variant="outlined" onClick={() => void refresh()} disabled={loading || saving} sx={ghostActionButtonSx(accent)}>
-                                Refresh
+                                {t("common.refresh")}
                             </Button>
                         )}
                     />
@@ -217,12 +219,12 @@ export default function GuildQuotesPage() {
                     <FeaturePanel accent={accent} sx={{ mb: 3 }}>
                         <Stack spacing={2.25} sx={{ position: "relative" }}>
                             <Box>
-                                <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>Find and add quotes</Typography>
-                                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>Search existing quotes, then add new quotes with a resolved author.</Typography>
+                                <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>{t("quotes.findAdd.title")}</Typography>
+                                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>{t("quotes.findAdd.description")}</Typography>
                             </Box>
 
                             <Stack direction={{ xs: "column", lg: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", lg: "center" } }}>
-                                <TextField label="Search quotes, people, or IDs" size="small" fullWidth value={search} onChange={(e) => setSearch(e.target.value)} sx={{ ...fieldSx, flex: 1 }} />
+                                <TextField label={t("quotes.search")} size="small" fullWidth value={search} onChange={(e) => setSearch(e.target.value)} sx={{ ...fieldSx, flex: 1 }} />
                                 <QuoteModerationFilterControl
                                     value={moderationFilter}
                                     onChange={setModerationFilter}
@@ -242,17 +244,17 @@ export default function GuildQuotesPage() {
                                         const opt = (newValue as MemberItem | string | null);
                                         if (opt && typeof opt !== "string" && opt.id) {
                                             setAuthorId(opt.id);
-                                            setMemberInput(`${getDisplayName(opt)} (${opt.id})`);
+                                            setMemberInput(`${getDisplayName(opt, t("quotes.unknown"))} (${opt.id})`);
                                         }
                                     }}
-                                    getOptionLabel={(opt) => typeof opt === "string" ? opt : getDisplayName(opt)}
+                                    getOptionLabel={(opt) => typeof opt === "string" ? opt : getDisplayName(opt, t("quotes.unknown"))}
                                     loading={memberLoading}
-                                    noOptionsText={memberInput.trim().length < 3 ? "Type at least 3 characters" : "No members found"}
+                                    noOptionsText={memberInput.trim().length < 3 ? t("quotes.typeThree") : t("quotes.noMembers")}
                                     renderInput={(params) => (
                                         <TextField
                                             {...params}
-                                            label="Author"
-                                            placeholder="Type a name, nickname, or paste a Discord user ID"
+                                            label={t("quotes.author")}
+                                            placeholder={t("quotes.authorPlaceholder")}
                                             size="small"
                                             fullWidth
                                             sx={fieldSx}
@@ -278,10 +280,10 @@ export default function GuildQuotesPage() {
                                             <li key={liKey} {...liProps}>
                                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                                                     <Avatar src={avatarUrl ?? undefined} sx={{ width: 24, height: 24 }}>
-                                                        {getDisplayName(item).slice(0, 1).toUpperCase()}
+                                                        {getDisplayName(item, t("quotes.unknown")).slice(0, 1).toUpperCase()}
                                                     </Avatar>
                                                     <Box sx={{ display: "flex", flexDirection: "column" }}>
-                                                        <Typography variant="body2" sx={{ color: "grey.100" }}>{getDisplayName(item)}</Typography>
+                                                        <Typography variant="body2" sx={{ color: "grey.100" }}>{getDisplayName(item, t("quotes.unknown"))}</Typography>
                                                         <Typography variant="caption" sx={{ color: "grey.500" }}>{item.username}{item.discriminator ? `#${item.discriminator}` : ""} | {item.id}</Typography>
                                                     </Box>
                                                 </Box>
@@ -290,7 +292,7 @@ export default function GuildQuotesPage() {
                                     }}
                                 />
 
-                                <TextField label="Quote" placeholder="Add a new quote..." size="small" value={quoteText} onChange={(e) => setQuoteText(e.target.value)} fullWidth sx={fieldSx} />
+                                <TextField label={t("quotes.quote")} placeholder={t("quotes.quotePlaceholder")} size="small" value={quoteText} onChange={(e) => setQuoteText(e.target.value)} fullWidth sx={fieldSx} />
 
                                 <Button
                                     variant="contained"
@@ -317,24 +319,24 @@ export default function GuildQuotesPage() {
                                     }}
                                     sx={{ ...primaryActionButtonSx(accent), whiteSpace: "nowrap", justifySelf: { xs: "stretch", lg: "end" } }}
                                 >
-                                    Add Quote
+                                    {t("quotes.add")}
                                 </Button>
                             </Box>
 
                             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr", xl: "1fr 1fr 2fr" }, gap: 2 }}>
                                 <TextField
-                                    label="Tags"
-                                    placeholder="funny raid-night"
+                                    label={t("quotes.tags")}
+                                    placeholder={t("quotes.tagsPlaceholder")}
                                     size="small"
                                     value={quoteTags}
                                     onChange={(event) => setQuoteTags(event.target.value)}
-                                    helperText="Separate tags with spaces or commas"
+                                    helperText={t("quotes.tagsHelp")}
                                     fullWidth
                                     sx={fieldSx}
                                 />
                                 <TextField
-                                    label="Source"
-                                    placeholder="Voice chat, stream, message link"
+                                    label={t("quotes.source")}
+                                    placeholder={t("quotes.sourcePlaceholder")}
                                     size="small"
                                     value={quoteSource}
                                     onChange={(event) => setQuoteSource(event.target.value)}
@@ -342,8 +344,8 @@ export default function GuildQuotesPage() {
                                     sx={fieldSx}
                                 />
                                 <TextField
-                                    label="Context"
-                                    placeholder="Optional note about when or why this was said"
+                                    label={t("quotes.context")}
+                                    placeholder={t("quotes.contextPlaceholder")}
                                     size="small"
                                     value={quoteContext}
                                     onChange={(event) => setQuoteContext(event.target.value)}
@@ -379,8 +381,8 @@ export default function GuildQuotesPage() {
                         {visibleQuotes.length === 0 ? (
                             <EmptyState
                                 icon={<FormatQuote />}
-                                title={allQuotes.length === 0 ? "No quotes yet" : "No quotes match these filters"}
-                                description={allQuotes.length === 0 ? "Add the first quote above to start building this server's quote archive." : "Adjust search or moderation status filters to broaden the quote list."}
+                                title={allQuotes.length === 0 ? t("quotes.empty.none") : t("quotes.empty.filtered")}
+                                description={allQuotes.length === 0 ? t("quotes.empty.noneDescription") : t("quotes.empty.filteredDescription")}
                                 accent={accent}
                             />
                         ) : (
@@ -397,7 +399,7 @@ export default function GuildQuotesPage() {
                                                     {q.quote}
                                                 </Typography>
                                                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-                                                    by {getDisplayName(author)} | added by {getDisplayName(submitter)} | {formatTimestamp(q.timestamp)}
+                                                    {t("quotes.attribution", { author: getDisplayName(author, t("quotes.unknown")), submitter: getDisplayName(submitter, t("quotes.unknown")), date: formatTimestamp(q.timestamp, formatDate, t) })}
                                                 </Typography>
                                                 <Stack direction="row" spacing={0.75} sx={{ mt: 1, flexWrap: "wrap", rowGap: 0.75 }}>
                                                     <ModerationStatusChip status={moderationStatus} />
@@ -405,10 +407,10 @@ export default function GuildQuotesPage() {
                                                 <QuoteMetadata quote={q} />
                                             </Box>
                                             <Stack direction="row" spacing={0.75} sx={{ flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end", ml: { sm: "auto" } }}>
-                                                <Tooltip title="Approve quote">
+                                                <Tooltip title={t("quotes.action.approve")}>
                                                     <span>
                                                         <IconButton
-                                                            aria-label={`Approve quote ${q.id}`}
+                                                            aria-label={t("quotes.action.approveAria", { id: q.id })}
                                                             disabled={saving || moderationStatus === "approved"}
                                                             onClick={() => void setQuoteModerationStatus(q.id, "approved")}
                                                             sx={ghostActionButtonSx(dashboardAccents.settings)}
@@ -417,10 +419,10 @@ export default function GuildQuotesPage() {
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
-                                                <Tooltip title="Reject quote">
+                                                <Tooltip title={t("quotes.action.reject")}>
                                                     <span>
                                                         <IconButton
-                                                            aria-label={`Reject quote ${q.id}`}
+                                                            aria-label={t("quotes.action.rejectAria", { id: q.id })}
                                                             disabled={saving || moderationStatus === "rejected"}
                                                             onClick={() => void setQuoteModerationStatus(q.id, "rejected")}
                                                             sx={ghostActionButtonSx(dashboardAccents.patchNotes)}
@@ -429,10 +431,10 @@ export default function GuildQuotesPage() {
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
-                                                <Tooltip title={moderationStatus === "approved" ? "Download quote card" : "Approve quote before card download"}>
+                                                <Tooltip title={moderationStatus === "approved" ? t("quotes.action.downloadCard") : t("quotes.action.approveBeforeDownload")}>
                                                     <span>
                                                         <IconButton
-                                                            aria-label={`Download quote card ${q.id}`}
+                                                            aria-label={t("quotes.action.downloadCardAria", { id: q.id })}
                                                             disabled={saving || downloadingQuoteId === q.id || moderationStatus !== "approved"}
                                                             onClick={() => void downloadQuoteCard(q)}
                                                             sx={ghostActionButtonSx(accent)}
@@ -441,10 +443,10 @@ export default function GuildQuotesPage() {
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
-                                                <Tooltip title="Download author profile card">
+                                                <Tooltip title={t("quotes.action.downloadProfile")}>
                                                     <span>
                                                         <IconButton
-                                                            aria-label={`Download author profile card ${q.authorId}`}
+                                                            aria-label={t("quotes.action.downloadProfileAria", { id: q.authorId })}
                                                             disabled={saving || downloadingProfileUserId === q.authorId}
                                                             onClick={() => void downloadProfileCard(q.authorId)}
                                                             sx={ghostActionButtonSx(dashboardAccents.commands)}
@@ -453,9 +455,9 @@ export default function GuildQuotesPage() {
                                                         </IconButton>
                                                     </span>
                                                 </Tooltip>
-                                                <Tooltip title="Delete quote">
+                                                <Tooltip title={t("quotes.action.delete")}>
                                                     <span>
-                                                        <IconButton color="error" disabled={saving} onClick={() => void deleteQuote(q.id)} sx={dangerActionButtonSx}>
+                                                        <IconButton aria-label={t("quotes.action.delete")} color="error" disabled={saving} onClick={() => void deleteQuote(q.id)} sx={dangerActionButtonSx}>
                                                             <Delete />
                                                         </IconButton>
                                                     </span>
@@ -490,33 +492,34 @@ function QuoteCurationPanel({
     saving: boolean;
     onDelete: (id: string) => void | Promise<unknown>;
 }) {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     return (
         <FeaturePanel accent={accent} sx={{ mb: 3 }}>
             <Stack spacing={2.25} sx={{ position: "relative" }}>
                 <Box>
-                    <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>Quote curation</Typography>
+                    <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>{t("quotes.curation.title")}</Typography>
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.5 }}>
-                        Review quote coverage, active curators, and the newest archive entries.
+                        {t("quotes.curation.description")}
                     </Typography>
                 </Box>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))", xl: "repeat(5, minmax(0, 1fr))" }, gap: 1.5 }}>
-                    <CurationMetric icon={<FormatQuote />} label="Total" value={summary.total} accent={accent} />
-                    <CurationMetric icon={<HourglassEmpty />} label="Pending" value={summary.pendingQuotes} accent={dashboardAccents.patchNotes} />
-                    <CurationMetric icon={<CheckCircle />} label="Approved" value={summary.approvedQuotes} accent={dashboardAccents.settings} />
-                    <CurationMetric icon={<Cancel />} label="Rejected" value={summary.rejectedQuotes} accent={dashboardAccents.quotes} />
-                    <CurationMetric icon={<Groups />} label="Quoted" value={summary.uniqueAuthors} accent={dashboardAccents.commands} />
-                    <CurationMetric icon={<PersonSearch />} label="Curators" value={summary.uniqueSubmitters} accent={dashboardAccents.settings} />
-                    <CurationMetric icon={<LocalOffer />} label="Tagged" value={summary.taggedQuotes} accent={dashboardAccents.anime} />
-                    <CurationMetric icon={<FormatQuote />} label="Duplicates" value={duplicateGroups.length} accent={dashboardAccents.quotes} />
-                    <CurationMetric icon={<History />} label="Latest" value={summary.latestQuote ? formatTimestamp(summary.latestQuote.timestamp) : "None"} accent={dashboardAccents.neutral} />
+                    <CurationMetric icon={<FormatQuote />} label={t("quotes.curation.total")} value={formatNumber(summary.total)} accent={accent} />
+                    <CurationMetric icon={<HourglassEmpty />} label={t("quotes.status.pending")} value={formatNumber(summary.pendingQuotes)} accent={dashboardAccents.patchNotes} />
+                    <CurationMetric icon={<CheckCircle />} label={t("quotes.status.approved")} value={formatNumber(summary.approvedQuotes)} accent={dashboardAccents.settings} />
+                    <CurationMetric icon={<Cancel />} label={t("quotes.status.rejected")} value={formatNumber(summary.rejectedQuotes)} accent={dashboardAccents.quotes} />
+                    <CurationMetric icon={<Groups />} label={t("quotes.curation.quoted")} value={formatNumber(summary.uniqueAuthors)} accent={dashboardAccents.commands} />
+                    <CurationMetric icon={<PersonSearch />} label={t("quotes.stats.curators")} value={formatNumber(summary.uniqueSubmitters)} accent={dashboardAccents.settings} />
+                    <CurationMetric icon={<LocalOffer />} label={t("quotes.curation.tagged")} value={formatNumber(summary.taggedQuotes)} accent={dashboardAccents.anime} />
+                    <CurationMetric icon={<FormatQuote />} label={t("quotes.curation.duplicates")} value={formatNumber(duplicateGroups.length)} accent={dashboardAccents.quotes} />
+                    <CurationMetric icon={<History />} label={t("quotes.curation.latest")} value={summary.latestQuote ? formatTimestamp(summary.latestQuote.timestamp, formatDate, t) : t("quotes.none")} accent={dashboardAccents.neutral} />
                 </Box>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 0.9fr) minmax(0, 1.1fr)" }, gap: 2 }}>
                     <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>Top quoted members</Typography>
+                        <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>{t("quotes.curation.topMembers")}</Typography>
                         {summary.topAuthors.length === 0 ? (
-                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>No quoted members yet.</Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>{t("quotes.curation.noMembers")}</Typography>
                         ) : (
                             <Stack spacing={1}>
                                 {summary.topAuthors.map((author) => (
@@ -527,9 +530,9 @@ function QuoteCurationPanel({
                     </Box>
 
                     <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                        <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>Recent additions</Typography>
+                        <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>{t("quotes.curation.recent")}</Typography>
                         {recentQuotes.length === 0 ? (
-                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>No recent additions yet.</Typography>
+                            <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>{t("quotes.curation.noRecent")}</Typography>
                         ) : (
                             <Stack spacing={1.2}>
                                 {recentQuotes.map((quote) => (
@@ -541,15 +544,15 @@ function QuoteCurationPanel({
                 </Box>
 
                 <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>Top tags</Typography>
+                        <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>{t("quotes.curation.topTags")}</Typography>
                     {summary.topTags.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>No tags have been added yet.</Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>{t("quotes.curation.noTags")}</Typography>
                     ) : (
                         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
                             {summary.topTags.map((item) => (
                                 <Chip
                                     key={item.tag}
-                                    label={`${item.tag} x${item.count}`}
+                                    label={t("quotes.curation.tagCount", { tag: item.tag, count: formatNumber(item.count) })}
                                     size="small"
                                     sx={{ bgcolor: "rgba(255,255,255,0.08)", color: "grey.100", border: "1px solid rgba(255,255,255,0.10)" }}
                                 />
@@ -559,9 +562,9 @@ function QuoteCurationPanel({
                 </Box>
 
                 <Box sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                    <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>Duplicate review</Typography>
+                    <Typography sx={{ color: "grey.50", fontWeight: 850, mb: 1.5 }}>{t("quotes.curation.duplicateReview")}</Typography>
                     {duplicateGroups.length === 0 ? (
-                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>No duplicate quote text detected.</Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.52)" }}>{t("quotes.curation.noDuplicates")}</Typography>
                     ) : (
                         <Stack spacing={1.5}>
                             {duplicateGroups.map((group) => (
@@ -600,6 +603,7 @@ function QuoteOfDayPanel({
     accent: string;
     onSave: (settings: QuoteOfDaySettingsRequest) => Promise<boolean>;
 }) {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const settings = preview?.settings ?? null;
     const quote = preview?.quote as QuoteCurationQuote | null | undefined;
     const [enabled, setEnabled] = useState(false);
@@ -628,16 +632,16 @@ function QuoteOfDayPanel({
                         <Today sx={{ color: dashboardAccents.commands }} />
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
-                                Quote of the day
+                                {t("quotes.day.title")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)", mt: 0.35 }}>
-                                {preview ? `${preview.eligibleCount} approved quote${preview.eligibleCount === 1 ? "" : "s"} eligible for ${preview.date}.` : "Loading preview..."}
+                                {preview ? t("quotes.day.eligible", { count: formatNumber(preview.eligibleCount), date: preview.date }) : t("quotes.day.loadingPreview")}
                             </Typography>
                         </Box>
                     </Stack>
                     <Chip
                         size="small"
-                        label={enabled ? "Enabled" : "Disabled"}
+                        label={enabled ? t("common.enabled") : t("common.disabled")}
                         sx={{
                             alignSelf: { xs: "flex-start", md: "center" },
                             bgcolor: alpha(enabled ? dashboardAccents.settings : dashboardAccents.neutral, 0.14),
@@ -655,15 +659,15 @@ function QuoteOfDayPanel({
                                     {quote.quote}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
-                                    by {getDisplayName(userMap[quote.authorId])} | {formatTimestamp(quote.timestamp)}
+                                    {t("quotes.by", { author: getDisplayName(userMap[quote.authorId], t("quotes.unknown")) })} | {formatTimestamp(quote.timestamp, formatDate, t)}
                                 </Typography>
                                 <QuoteMetadata quote={quote} />
                             </Stack>
                         ) : (
                             <EmptyState
                                 icon={<FormatQuote />}
-                                title={loading ? "Loading quote preview" : "No approved quote available"}
-                                description={loading ? "Loading quote-of-the-day preview." : "Approve at least one quote before enabling daily delivery."}
+                                title={loading ? t("quotes.day.loadingTitle") : t("quotes.day.emptyTitle")}
+                                description={loading ? t("quotes.day.loadingDescription") : t("quotes.day.emptyDescription")}
                                 accent={accent}
                             />
                         )}
@@ -671,10 +675,10 @@ function QuoteOfDayPanel({
 
                     <Stack spacing={1.5}>
                         <FormControl size="small" fullWidth sx={dashboardFieldSx(dashboardAccents.commands)}>
-                            <InputLabel id="quote-of-day-channel-label">Channel</InputLabel>
+                            <InputLabel id="quote-of-day-channel-label">{t("quotes.day.channel")}</InputLabel>
                             <Select
                                 labelId="quote-of-day-channel-label"
-                                label="Channel"
+                                label={t("quotes.day.channel")}
                                 value={channelId}
                                 onChange={(event) => setChannelId(event.target.value)}
                             >
@@ -687,10 +691,10 @@ function QuoteOfDayPanel({
                         </FormControl>
 
                         <FormControl size="small" fullWidth sx={dashboardFieldSx(dashboardAccents.commands)}>
-                            <InputLabel id="quote-of-day-hour-label">UTC hour</InputLabel>
+                            <InputLabel id="quote-of-day-hour-label">{t("quotes.day.utcHour")}</InputLabel>
                             <Select
                                 labelId="quote-of-day-hour-label"
-                                label="UTC hour"
+                                label={t("quotes.day.utcHour")}
                                 value={String(runHourUtc)}
                                 onChange={(event) => setRunHourUtc(Number(event.target.value))}
                             >
@@ -705,10 +709,10 @@ function QuoteOfDayPanel({
                         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)", px: 1.5, py: 1 }}>
                             <Box sx={{ minWidth: 0 }}>
                                 <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 800 }}>
-                                    Daily delivery
+                                    {t("quotes.day.dailyDelivery")}
                                 </Typography>
                                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
-                                    {channelId ? `${getChannelName(channelId)} at ${String(runHourUtc).padStart(2, "0")}:00 UTC` : "Choose a channel"}
+                                    {channelId ? t("quotes.day.deliverySummary", { channel: getChannelName(channelId), hour: String(runHourUtc).padStart(2, "0") }) : t("quotes.day.chooseChannel")}
                                 </Typography>
                             </Box>
                             <Switch
@@ -725,7 +729,7 @@ function QuoteOfDayPanel({
                             variant="contained"
                             sx={primaryActionButtonSx(dashboardAccents.commands)}
                         >
-                            Save Daily Quote
+                            {t("quotes.day.save")}
                         </Button>
                     </Stack>
                 </Box>
@@ -745,11 +749,12 @@ function QuoteModerationFilterControl({
     summary: ReturnType<typeof buildQuoteCurationSummary>;
     accent: string;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     const options: Array<{ value: QuoteModerationFilter; label: string; count: number }> = [
-        { value: "all", label: "All", count: summary.total },
-        { value: "pending", label: "Pending", count: summary.pendingQuotes },
-        { value: "approved", label: "Approved", count: summary.approvedQuotes },
-        { value: "rejected", label: "Rejected", count: summary.rejectedQuotes },
+        { value: "all", label: t("quotes.status.all"), count: summary.total },
+        { value: "pending", label: t("quotes.status.pending"), count: summary.pendingQuotes },
+        { value: "approved", label: t("quotes.status.approved"), count: summary.approvedQuotes },
+        { value: "rejected", label: t("quotes.status.rejected"), count: summary.rejectedQuotes },
     ];
 
     const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: unknown): void => {
@@ -763,7 +768,7 @@ function QuoteModerationFilterControl({
             size="small"
             value={value}
             onChange={handleChange}
-            aria-label="Quote moderation filter"
+            aria-label={t("quotes.filterAria")}
             sx={{
                 alignSelf: { xs: "flex-start", lg: "center" },
                 bgcolor: "rgba(255,255,255,0.045)",
@@ -790,8 +795,8 @@ function QuoteModerationFilterControl({
             }}
         >
             {options.map((option) => (
-                <ToggleButton key={option.value} value={option.value} aria-label={`${option.label} quote filter`}>
-                    {option.label} {option.count}
+                <ToggleButton key={option.value} value={option.value} aria-label={t("quotes.filterOptionAria", { status: option.label })}>
+                    {option.label} {formatNumber(option.count)}
                 </ToggleButton>
             ))}
         </ToggleButtonGroup>
@@ -799,6 +804,7 @@ function QuoteModerationFilterControl({
 }
 
 function ModerationStatusChip({ status }: { status: QuoteModerationStatus }) {
+    const { t } = useDashboardI18n();
     const accent = getModerationStatusAccent(status);
     const icon = status === "approved"
         ? <CheckCircle fontSize="small" />
@@ -810,7 +816,7 @@ function ModerationStatusChip({ status }: { status: QuoteModerationStatus }) {
         <Chip
             size="small"
             icon={icon}
-            label={status}
+            label={status === "approved" ? t("quotes.status.approved") : status === "rejected" ? t("quotes.status.rejected") : t("quotes.status.pending")}
             sx={{
                 bgcolor: alpha(accent, 0.12),
                 color: "grey.100",
@@ -844,6 +850,7 @@ function CurationMetric({ icon, label, value, accent }: { icon: React.ReactNode;
 }
 
 function QuoteMetadata({ quote }: { quote: QuoteCurationQuote }) {
+    const { t } = useDashboardI18n();
     const hasTags = quote.tags && quote.tags.length > 0;
     const source = quote.source?.trim();
     const context = quote.context?.trim();
@@ -871,12 +878,12 @@ function QuoteMetadata({ quote }: { quote: QuoteCurationQuote }) {
             ) : null}
             {source ? (
                 <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.54)", overflowWrap: "anywhere" }}>
-                    Source: {source}
+                    {t("quotes.sourceValue", { source })}
                 </Typography>
             ) : null}
             {context ? (
                 <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.54)", overflowWrap: "anywhere" }}>
-                    Context: {context}
+                    {t("quotes.contextValue", { context })}
                 </Typography>
             ) : null}
         </Stack>
@@ -890,18 +897,19 @@ function TopQuotedMemberRow({
     author: QuoteAuthorCount;
     userMap: QuoteUserMap;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     return (
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
             <Box sx={{ minWidth: 0 }}>
                 <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 800, overflowWrap: "anywhere" }}>
-                    {getDisplayName(userMap[author.authorId])}
+                    {getDisplayName(userMap[author.authorId], t("quotes.unknown"))}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.44)" }}>
                     {author.authorId}
                 </Typography>
             </Box>
             <Typography variant="body2" sx={{ color: dashboardAccents.quotes, fontWeight: 900, whiteSpace: "nowrap" }}>
-                {author.count} {author.count === 1 ? "quote" : "quotes"}
+                {t("quotes.curation.quoteCount", { count: formatNumber(author.count) })}
             </Typography>
         </Box>
     );
@@ -914,13 +922,14 @@ function RecentQuoteRow({
     quote: QuoteCurationQuote;
     userMap: QuoteUserMap;
 }) {
+    const { t, formatDate } = useDashboardI18n();
     return (
         <Box sx={{ minWidth: 0 }}>
             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, overflowWrap: "anywhere" }}>
                 {quotePreview(quote.quote)}
             </Typography>
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-                by {getDisplayName(userMap[quote.authorId])} | added by {getDisplayName(userMap[quote.submitterId])} | {formatTimestamp(quote.timestamp)}
+                {t("quotes.attribution", { author: getDisplayName(userMap[quote.authorId], t("quotes.unknown")), submitter: getDisplayName(userMap[quote.submitterId], t("quotes.unknown")), date: formatTimestamp(quote.timestamp, formatDate, t) })}
             </Typography>
         </Box>
     );
@@ -937,6 +946,7 @@ function DuplicateQuoteGroup({
     saving: boolean;
     onDelete: (id: string) => void | Promise<unknown>;
 }) {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     return (
         <Box sx={{ borderTop: "1px solid rgba(255,255,255,0.08)", pt: 1.5 }}>
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ justifyContent: "space-between", alignItems: { xs: "flex-start", sm: "center" }, mb: 1 }}>
@@ -945,7 +955,7 @@ function DuplicateQuoteGroup({
                         {quotePreview(group.quotes[0]?.quote ?? group.normalizedQuote)}
                     </Typography>
                     <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
-                        {group.count} matching entries | newest {formatTimestamp(group.latestTimestamp)}
+                        {t("quotes.curation.duplicateSummary", { count: formatNumber(group.count), date: formatTimestamp(group.latestTimestamp, formatDate, t) })}
                     </Typography>
                 </Box>
             </Stack>
@@ -957,13 +967,13 @@ function DuplicateQuoteGroup({
                                 {quote.id}
                             </Typography>
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", display: "block" }}>
-                                by {getDisplayName(userMap[quote.authorId])} | added by {getDisplayName(userMap[quote.submitterId])} | {formatTimestamp(quote.timestamp)}
+                                {t("quotes.attribution", { author: getDisplayName(userMap[quote.authorId], t("quotes.unknown")), submitter: getDisplayName(userMap[quote.submitterId], t("quotes.unknown")), date: formatTimestamp(quote.timestamp, formatDate, t) })}
                             </Typography>
                         </Box>
-                        <Tooltip title="Delete duplicate quote">
+                        <Tooltip title={t("quotes.action.deleteDuplicate")}>
                             <span>
                                 <IconButton
-                                    aria-label={`Delete duplicate quote ${quote.id}`}
+                                    aria-label={t("quotes.action.deleteDuplicateAria", { id: quote.id })}
                                     color="error"
                                     disabled={saving}
                                     size="small"

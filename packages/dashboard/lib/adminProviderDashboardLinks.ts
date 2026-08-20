@@ -1,4 +1,5 @@
 import type { IntegrationHealthRecord } from "@/lib/api-client";
+import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
 
 export type AdminProviderDashboardLinkKind = "provider" | "guild" | "notifications";
 
@@ -20,8 +21,22 @@ const providerDashboardPaths: Record<string, string> = {
     youtube: "youtube",
 };
 
+const linkLabels = {
+    en: {
+        provider: "Provider page",
+        guild: "Server overview",
+        notifications: "Notification setup",
+    },
+    nl: {
+        provider: "Providerpagina",
+        guild: "Serveroverzicht",
+        notifications: "Meldingsinstellingen",
+    },
+} satisfies DashboardLocaleValues<Record<AdminProviderDashboardLinkKind, string>>;
+
 export function getAdminProviderDashboardLinks(
     record: Pick<IntegrationHealthRecord, "provider" | "guildId">,
+    locale: DashboardLocale = "en",
 ): AdminProviderDashboardLink[] {
     const guildId = record.guildId?.trim();
     if (!guildId) return [];
@@ -30,11 +45,12 @@ export function getAdminProviderDashboardLinks(
     const providerKey = normalizeProviderDashboardKey(record.provider);
     const providerPath = providerDashboardPaths[providerKey];
     const links: AdminProviderDashboardLink[] = [];
+    const labels = getDashboardLocaleValue(locale, linkLabels);
 
     if (providerPath) {
         links.push({
             id: "provider",
-            label: "Provider page",
+            label: labels.provider,
             href: `/dashboard/${providerPath}/${encodedGuildId}`,
             kind: "provider",
         });
@@ -43,13 +59,13 @@ export function getAdminProviderDashboardLinks(
     links.push(
         {
             id: "guild",
-            label: "Server overview",
+            label: labels.guild,
             href: `/dashboard/${encodedGuildId}`,
             kind: "guild",
         },
         {
             id: "notifications",
-            label: "Notification setup",
+            label: labels.notifications,
             href: `/dashboard/settings/${encodedGuildId}/notifications`,
             kind: "notifications",
         },

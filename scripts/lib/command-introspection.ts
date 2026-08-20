@@ -1,10 +1,29 @@
 import fs from 'fs';
 import path from 'path';
 import { pathToFileURL } from 'url';
+import {
+    NON_DEFAULT_OUTPUT_LOCALES,
+    OUTPUT_LOCALE_METADATA,
+    type NonDefaultOutputLocale,
+} from '../../packages/common/src/utils/outputLocale.js';
 
 export type CommandKind = 'chatInput' | 'user' | 'message';
 
-export interface CommandOut { name: string; description: string; module?: string | null; permissions?: string | null; hidden?: boolean | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: CommandKind | null; }
+export interface CommandLocalization {
+    name: string;
+    description: string;
+}
+
+export type CommandLocalizationLocale = NonDefaultOutputLocale;
+export type CommandLocalizations = Partial<Record<CommandLocalizationLocale, CommandLocalization>>;
+
+export const COMMAND_LOCALIZATION_LOCALES = NON_DEFAULT_OUTPUT_LOCALES;
+
+export function commandLocaleLabel(locale: CommandLocalizationLocale): string {
+    return OUTPUT_LOCALE_METADATA[locale].nativeName;
+}
+
+export interface CommandOut { name: string; description: string; module?: string | null; permissions?: string | null; hidden?: boolean | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: CommandKind | null; localizations?: CommandLocalizations | null; }
 export interface ModuleOut { name: string; title: string; description: string; hidden?: boolean | null; sortOrder?: number | null; }
 export interface ModuleMeta { title?: string; description?: string; hidden?: boolean; sortOrder?: number; }
 export interface LoadResult { commands: CommandOut[]; usedFallback: boolean; }
@@ -13,6 +32,11 @@ export interface ImplementationCommandMetadata {
     dm_permission: boolean | null;
     default_member_permissions: string | null;
     type: CommandKind;
+    localizations: Partial<Record<CommandLocalizationLocale, {
+        name: string | null;
+        description: string | null;
+    }>>;
+    localizationIssues: string[];
 }
 
 export function getModulesPath(projectRoot: string): string {
@@ -77,6 +101,7 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                 default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                 testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
                 type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
+                localizations: normalizeCommandLocalizations(c.localizations),
                 module: null,
             })).filter(c => c.name && c.description);
         }
@@ -94,6 +119,7 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                     default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                     testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
                     type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
+                    localizations: normalizeCommandLocalizations(c.localizations),
                     module: null,
                 })).filter(c => c.name && c.description);
             }
@@ -171,6 +197,7 @@ export async function loadCommands(moduleName: string, moduleDir: string, files:
                     default_member_permissions: null,
                     testOnly: null,
                     type: null,
+                    localizations: null,
                 });
             }
         } catch {
@@ -200,17 +227,98 @@ export async function listImplementationCommandMetadata(moduleDir: string): Prom
             if (typeof name !== 'string' || name.length === 0) continue;
             const dmPermission = Reflect.get(json, 'dm_permission');
             const defaultMemberPermissions = Reflect.get(json, 'default_member_permissions');
+            const nameLocalizations = getRecord(Reflect.get(json, 'name_localizations'));
+            const descriptionLocalizations = getRecord(Reflect.get(json, 'description_localizations'));
+            const localizations = Object.fromEntries(COMMAND_LOCALIZATION_LOCALES.map(locale => [
+                locale,
+                {
+                    name: getNonEmptyString(nameLocalizations?.[locale]),
+                    description: getNonEmptyString(descriptionLocalizations?.[locale]),
+                },
+            ])) as ImplementationCommandMetadata['localizations'];
             commands.push({
                 name,
                 dm_permission: typeof dmPermission === 'boolean' ? dmPermission : null,
                 default_member_permissions: defaultMemberPermissions == null ? null : String(defaultMemberPermissions),
                 type: implementationCommandKind(Reflect.get(json, 'type')),
+                localizations,
+                localizationIssues: collectLocalizationIssues(json, name),
             });
         } catch {
             // ignore
         }
     }
     return commands;
+}
+
+function normalizeCommandLocalizations(value: unknown): CommandLocalizations | null {
+    const localizations = getRecord(value);
+    const normalized: CommandLocalizations = {};
+    for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+        const localized = getRecord(localizations?.[locale]);
+        const name = getNonEmptyString(localized?.name);
+        const description = getNonEmptyString(localized?.description);
+        if (name && description) normalized[locale] = { name, description };
+    }
+    return Object.keys(normalized).length > 0 ? normalized : null;
+}
+
+function collectLocalizationIssues(value: unknown, path: string): string[] {
+    const node = getRecord(value);
+    if (!node) return [`${path}: command metadata is not an object`];
+
+    const issues: string[] = [];
+    const name = getNonEmptyString(node.name);
+    const nameLocalizations = getRecord(node.name_localizations);
+    if (name) {
+        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+            if (!getNonEmptyString(nameLocalizations?.[locale])) {
+                issues.push(`${path}: missing ${commandLocaleLabel(locale)} (${locale}) name localization`);
+            }
+        }
+    }
+
+    const description = getNonEmptyString(node.description);
+    const descriptionLocalizations = getRecord(node.description_localizations);
+    if (description) {
+        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+            if (!getNonEmptyString(descriptionLocalizations?.[locale])) {
+                issues.push(`${path}: missing ${commandLocaleLabel(locale)} (${locale}) description localization`);
+            }
+        }
+    }
+
+    const choices = Array.isArray(node.choices) ? node.choices : [];
+    for (const [index, choiceValue] of choices.entries()) {
+        const choice = getRecord(choiceValue);
+        if (!choice) continue;
+        const choiceName = getNonEmptyString(choice.name) ?? `choice ${index + 1}`;
+        const choiceLocalizations = getRecord(choice.name_localizations);
+        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+            if (!getNonEmptyString(choiceLocalizations?.[locale])) {
+                issues.push(`${path} > ${choiceName}: missing ${commandLocaleLabel(locale)} (${locale}) choice name localization`);
+            }
+        }
+    }
+
+    const options = Array.isArray(node.options) ? node.options : [];
+    for (const [index, optionValue] of options.entries()) {
+        const option = getRecord(optionValue);
+        if (!option) continue;
+        const optionName = getNonEmptyString(option.name) ?? `option ${index + 1}`;
+        issues.push(...collectLocalizationIssues(option, `${path} > ${optionName}`));
+    }
+    return issues;
+}
+
+function getRecord(value: unknown): Record<string, unknown> | null {
+    return value !== null && typeof value === 'object' && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : null;
+}
+
+function getNonEmptyString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
 function implementationCommandKind(value: unknown): CommandKind {

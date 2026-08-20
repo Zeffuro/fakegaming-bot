@@ -17,6 +17,7 @@ import { Close, DataObject } from "@mui/icons-material";
 import { dashboardAccents, dashboardDialogPaperSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import type { AuditEventEntry } from "@/lib/api/audit";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AuditEventDetailDialogProps {
     event: AuditEventEntry | null;
@@ -25,7 +26,8 @@ interface AuditEventDetailDialogProps {
 }
 
 export function AuditEventDetailDialog({ event, open, onClose }: AuditEventDetailDialogProps) {
-    const metadata = buildAdminAuditMetadataView(event?.metadata ?? null);
+    const { locale, t, formatDate, formatNumber } = useDashboardI18n();
+    const metadata = buildAdminAuditMetadataView(event?.metadata ?? null, locale);
 
     return (
         <Dialog
@@ -36,24 +38,24 @@ export function AuditEventDetailDialog({ event, open, onClose }: AuditEventDetai
             slotProps={{ paper: { sx: dashboardDialogPaperSx(dashboardAccents.admin) } }}
         >
             <DialogTitle sx={{ color: "grey.100", fontWeight: 900 }}>
-                Audit Event Detail
+                {t("admin.auditDetailTitle")}
             </DialogTitle>
             <DialogContent>
                 {event ? (
                     <Stack spacing={2.2} sx={{ pt: 0.5 }}>
                         <Stack direction="row" spacing={0.75} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
                             <Chip size="small" label={`#${event.id}`} sx={detailChipSx(dashboardAccents.admin)} />
-                            <Chip size="small" label={event.status} sx={detailChipSx(event.status === "failure" ? dashboardAccents.quotes : dashboardAccents.settings)} />
-                            <Chip size="small" label={event.severity} sx={detailChipSx(getSeverityAccent(event.severity))} />
+                            <Chip size="small" label={event.status === "success" ? t("admin.auditStatusSuccess") : t("admin.auditStatusFailure")} sx={detailChipSx(event.status === "failure" ? dashboardAccents.quotes : dashboardAccents.settings)} />
+                            <Chip size="small" label={localizeSeverity(t, event.severity)} sx={detailChipSx(getSeverityAccent(event.severity))} />
                         </Stack>
 
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
-                            <DetailLine label="Action" value={event.action} />
-                            <DetailLine label="Timestamp" value={formatDateTime(event.timestamp)} />
-                            <DetailLine label="Actor" value={event.actorId ? `${event.actorType}:${event.actorId}` : event.actorType} />
-                            <DetailLine label="Target" value={event.targetId ? `${event.targetType}:${event.targetId}` : event.targetType} />
-                            <DetailLine label="Guild" value={event.guildId ?? "None"} />
-                            <DetailLine label="Request" value={event.requestId ?? "None"} />
+                            <DetailLine label={t("admin.auditAction")} value={event.action} />
+                            <DetailLine label={t("admin.auditTimestamp")} value={formatDateTime(event.timestamp, formatDate)} />
+                            <DetailLine label={t("admin.auditActor")} value={event.actorId ? `${event.actorType}:${event.actorId}` : event.actorType} />
+                            <DetailLine label={t("admin.auditTarget")} value={event.targetId ? `${event.targetType}:${event.targetId}` : event.targetType} />
+                            <DetailLine label={t("admin.auditGuild")} value={event.guildId ?? t("common.none")} />
+                            <DetailLine label={t("admin.auditRequest")} value={event.requestId ?? t("common.none")} />
                         </Box>
 
                         <Box sx={{ borderRadius: 2.5, bgcolor: alpha(dashboardAccents.admin, 0.09), border: `1px solid ${alpha(dashboardAccents.admin, 0.22)}`, p: 1.4 }}>
@@ -61,10 +63,12 @@ export function AuditEventDetailDialog({ event, open, onClose }: AuditEventDetai
                                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0 }}>
                                     <DataObject sx={{ color: dashboardAccents.admin, fontSize: 20 }} />
                                     <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 850 }}>
-                                        Metadata
+                                        {t("admin.auditMetadata")}
                                     </Typography>
                                 </Stack>
-                                <Chip size="small" label={metadata.hasMetadata ? `${metadata.keyCount} keys` : "Empty"} sx={detailChipSx(metadata.hasMetadata ? dashboardAccents.admin : dashboardAccents.neutral)} />
+                                <Chip size="small" label={metadata.hasMetadata
+                                    ? t("admin.auditMetadataKeys", { count: formatNumber(metadata.keyCount) })
+                                    : t("admin.auditMetadataEmpty")} sx={detailChipSx(metadata.hasMetadata ? dashboardAccents.admin : dashboardAccents.neutral)} />
                             </Stack>
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.54)", display: "block", mb: 1 }}>
                                 {metadata.summary}
@@ -93,7 +97,7 @@ export function AuditEventDetailDialog({ event, open, onClose }: AuditEventDetai
             </DialogContent>
             <DialogActions sx={{ px: 3, pb: 2.5 }}>
                 <Button variant="outlined" onClick={onClose} startIcon={<Close />} sx={ghostActionButtonSx(dashboardAccents.admin)}>
-                    Close
+                    {t("common.close")}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -103,7 +107,7 @@ export function AuditEventDetailDialog({ event, open, onClose }: AuditEventDetai
 function DetailLine({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ minWidth: 0, borderRadius: 2, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.08)", p: 1.2 }}>
-            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.44)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.44)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0 }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", fontWeight: 750, overflowWrap: "anywhere" }}>
@@ -129,8 +133,20 @@ function getSeverityAccent(severity: AuditEventEntry["severity"]): string {
     return dashboardAccents.settings;
 }
 
-function formatDateTime(value: string): string {
+function localizeSeverity(
+    t: ReturnType<typeof useDashboardI18n>["t"],
+    severity: AuditEventEntry["severity"],
+): string {
+    if (severity === "error") return t("admin.auditSeverityError");
+    if (severity === "warn") return t("admin.auditSeverityWarning");
+    return t("admin.auditSeverityInfo");
+}
+
+function formatDateTime(
+    value: string,
+    formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string,
+): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString();
+    return formatDate(date, { dateStyle: "medium", timeStyle: "short" });
 }

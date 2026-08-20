@@ -87,6 +87,12 @@ describe('Role permission snapshots API', () => {
 
         const hiddenFromOtherGuild = await client.get(`/api/rolePermissionSnapshots/${other.id}`).query({ guildId });
         expectNotFound(hiddenFromOtherGuild);
+
+        const localizedMissing = await client.get('/api/rolePermissionSnapshots/999999')
+            .set('Accept-Language', 'nl')
+            .query({ guildId });
+        expectNotFound(localizedMissing);
+        expect(localizedMissing.body.error.message).toBe('De momentopname van de rechten is niet gevonden.');
     });
 
     it('deletes snapshots only within the requested guild', async () => {

@@ -6,7 +6,7 @@ import { addTwitchStream as META } from '../commands.manifest.js';
 
 const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
     meta: META,
-    usernameOptionDescription: twitchCommandConfig.usernameOptionDescription,
+    usernameOptionDescriptions: twitchCommandConfig.usernameOptionDescriptions,
     resolveOrVerify: async (username) => {
         const result = await verifyTwitchUsernameApi(username);
         const exists = !!result && result.exists;
@@ -32,9 +32,9 @@ const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
             twitchUsername: username,
         }),
     },
-    successMessage: twitchCommandConfig.successMessage,
-    alreadyConfiguredMessage: twitchCommandConfig.alreadyConfiguredMessage,
-    notFoundMessage: twitchCommandConfig.notFoundMessage,
+    successMessages: twitchCommandConfig.successMessages,
+    alreadyConfiguredMessages: twitchCommandConfig.alreadyConfiguredMessages,
+    notFoundMessages: twitchCommandConfig.notFoundMessages,
 });
 
 // noinspection JSUnusedGlobalSymbols

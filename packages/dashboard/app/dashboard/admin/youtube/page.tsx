@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { OpenInNew, Search, VideoLibrary, YouTube } from "@mui/icons-material";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface YouTubeLookupResult {
     channelId: string | null;
@@ -33,6 +34,7 @@ interface YouTubeLookupResult {
 }
 
 export default function AdminYouTubeDebugPage() {
+    const { t } = useDashboardI18n();
     const accent = dashboardAccents.youtube;
     const [identifier, setIdentifier] = useState<string>("");
     const { submitting, result, error, setError, reset, run } = useAsyncTask<YouTubeLookupResult>();
@@ -40,7 +42,7 @@ export default function AdminYouTubeDebugPage() {
     const handleResolve = async () => {
         const id = identifier.trim();
         if (!id) {
-            setError("Please enter a YouTube identifier, handle, username, or UC channel ID.");
+            setError(t("admin.youtubeIdentifierRequired"));
             return;
         }
 
@@ -65,26 +67,26 @@ export default function AdminYouTubeDebugPage() {
     const latestVideoUrl = result?.latestVideoId ? `https://www.youtube.com/watch?v=${result.latestVideoId}` : null;
 
     return (
-        <AdminPage title="Admin YouTube Debug" trail={[{ label: "YouTube Debug", href: "/dashboard/admin/youtube" }]}>
+        <AdminPage title={t("admin.youtubePageTitle")} trail={[{ label: t("admin.youtubeDebug"), href: "/dashboard/admin/youtube" }]}>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(340px, 0.95fr) minmax(0, 1.35fr)" }, gap: 2.5 }}>
                 <FeaturePanel accent={accent} sx={{ p: 3, alignSelf: "start" }}>
                     <Stack spacing={2.25} sx={{ position: "relative" }}>
                         <Stack spacing={0.8}>
                             <Chip
                                 icon={<YouTube />}
-                                label="Tokenless lookup"
+                                label={t("admin.tokenlessLookup")}
                                 sx={{ alignSelf: "flex-start", bgcolor: alpha(accent, 0.14), color: "grey.50", border: `1px solid ${alpha(accent, 0.42)}` }}
                             />
-                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: "-0.03em" }}>
-                                Resolve a channel
+                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
+                                {t("admin.resolveChannel")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.62)" }}>
-                                Handles and usernames use the configured YouTube API key when available. UC channel IDs also get a no-token metadata pass through YouTube's public Atom feed.
+                                {t("admin.youtubeLookupDescription")}
                             </Typography>
                         </Stack>
 
                         <TextField
-                            label="YouTube identifier"
+                            label={t("admin.youtubeIdentifier")}
                             placeholder="@GoogleDevelopers, GoogleDevelopers, or UC..."
                             value={identifier}
                             onChange={(e) => setIdentifier(e.target.value)}
@@ -97,7 +99,7 @@ export default function AdminYouTubeDebugPage() {
 
                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2}>
                             <Button variant="contained" onClick={() => void handleResolve()} disabled={submitting} startIcon={<Search />} sx={primaryActionButtonSx(accent)}>
-                                {submitting ? "Resolving..." : "Resolve"}
+                                {submitting ? t("admin.resolving") : t("admin.resolve")}
                             </Button>
                             <Button
                                 variant="outlined"
@@ -108,7 +110,7 @@ export default function AdminYouTubeDebugPage() {
                                 disabled={submitting}
                                 sx={ghostActionButtonSx(accent)}
                             >
-                                Clear
+                                {t("common.clear")}
                             </Button>
                         </Stack>
 
@@ -128,16 +130,16 @@ export default function AdminYouTubeDebugPage() {
                                     <VideoLibrary />
                                 </Box>
                                 <Box sx={{ minWidth: 0 }}>
-                                    <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: "-0.03em" }}>
-                                        {result?.title ?? "Channel preview"}
+                                    <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
+                                        {result?.title ?? t("admin.channelPreview")}
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>
-                                        {result?.channelId ?? "Resolve a channel to see public metadata here."}
+                                        {result?.channelId ?? t("admin.resolveChannelHint")}
                                     </Typography>
                                 </Box>
                             </Stack>
                             {result?.title && (
-                                <Chip label="feed matched" size="small" sx={{ bgcolor: alpha(dashboardAccents.settings, 0.14), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.settings, 0.34)}` }} />
+                                <Chip label={t("admin.feedMatched")} size="small" sx={{ bgcolor: alpha(dashboardAccents.settings, 0.14), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.settings, 0.34)}` }} />
                             )}
                         </Stack>
 
@@ -147,9 +149,9 @@ export default function AdminYouTubeDebugPage() {
                             <EmptyLookup />
                         ) : result.channelId ? (
                             <Stack spacing={1.3}>
-                                <InfoRow label="Channel ID" value={result.channelId} />
-                                <InfoRow label="Channel name" value={result.title ?? "Unavailable from public feed"} />
-                                <InfoRow label="Latest video" value={result.latestVideoId ?? "No recent public feed entry"} />
+                                <InfoRow label={t("admin.channelId")} value={result.channelId} />
+                                <InfoRow label={t("admin.channelName")} value={result.title ?? t("admin.publicFeedUnavailable")} />
+                                <InfoRow label={t("admin.latestVideo")} value={result.latestVideoId ?? t("admin.noRecentFeedEntry")} />
 
                                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1.1} sx={{ pt: 0.8 }}>
                                     {channelUrl && (
@@ -162,7 +164,7 @@ export default function AdminYouTubeDebugPage() {
                                             startIcon={<OpenInNew />}
                                             sx={ghostActionButtonSx(accent)}
                                         >
-                                            Open channel
+                                            {t("admin.openChannel")}
                                         </Button>
                                     )}
                                     {latestVideoUrl && (
@@ -175,14 +177,14 @@ export default function AdminYouTubeDebugPage() {
                                             startIcon={<OpenInNew />}
                                             sx={ghostActionButtonSx(accent)}
                                         >
-                                            Open latest video
+                                            {t("admin.openLatestVideo")}
                                         </Button>
                                     )}
                                 </Stack>
                             </Stack>
                         ) : (
                             <Alert severity="warning" sx={{ bgcolor: alpha(dashboardAccents.birthdays, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.birthdays, 0.22)}` }}>
-                                No channel ID resolved. If this was a handle, set YOUTUBE_API_KEY for handle resolution, or paste a UC channel ID directly.
+                                {t("admin.youtubeNotResolved")}
                             </Alert>
                         )}
                     </Stack>
@@ -195,7 +197,7 @@ export default function AdminYouTubeDebugPage() {
 function InfoRow({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.07)", p: 1.35, minWidth: 0 }}>
-            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0 }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, overflowWrap: "anywhere" }}>
@@ -206,11 +208,12 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function EmptyLookup() {
+    const { t } = useDashboardI18n();
     return (
         <Stack spacing={1.1} sx={{ minHeight: 160, alignItems: "center", justifyContent: "center", textAlign: "center", color: "rgba(255,255,255,0.52)" }}>
             <YouTube sx={{ fontSize: 42, opacity: 0.48 }} />
             <Typography variant="body2">
-                Paste a channel ID to get a tokenless title lookup, or resolve a handle if an API key is configured.
+                {t("admin.youtubeEmpty")}
             </Typography>
         </Stack>
     );

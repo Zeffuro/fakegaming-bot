@@ -38,6 +38,7 @@ import { GuildAccessError } from "@/components/GuildAccessError";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useRolePermissionSnapshots } from "@/components/hooks/useRolePermissionSnapshots";
 import { dashboardAccents, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import type {
     RolePermissionSnapshotChannel,
     RolePermissionSnapshotData,
@@ -49,6 +50,7 @@ import type {
 type SnapshotSelection = "live" | number;
 
 export default function GuildPermissionsPage() {
+    const { t, formatDate } = useDashboardI18n();
     const { guild, guildId, guildsLoading } = useGuildFromParams();
     const guildReady = Boolean(guild && guildId);
     const permissions = useRolePermissionSnapshots(guildId as string, { enabled: guildReady });
@@ -89,7 +91,7 @@ export default function GuildPermissionsPage() {
 
     const deleteSelectedSnapshot = async () => {
         if (selection === "live") return;
-        if (!window.confirm(`Delete permission snapshot #${selection}? This cannot be undone.`)) return;
+        if (!window.confirm(t("permissions.deleteConfirmation", { id: selection }))) return;
         if (await permissions.deleteSnapshot(selection)) setSelection("live");
     };
 
@@ -108,16 +110,16 @@ export default function GuildPermissionsPage() {
                 <FeatureShell accent={dashboardAccents.commands} secondaryAccent={dashboardAccents.settings}>
                     <FeatureHero
                         icon={<Security />}
-                        eyebrow="Permissions"
-                        title="Permission State"
-                        description="Live role, member, category, and channel overwrite details with saved historical snapshots."
+                        eyebrow={t("permissions.eyebrow")}
+                        title={t("permissions.title")}
+                        description={t("permissions.description")}
                         accent={dashboardAccents.commands}
                         secondaryAccent={dashboardAccents.settings}
                         stats={[
-                            { label: "Roles", value: summary?.roles ?? "-" },
-                            { label: "Channels", value: summary?.channels ?? "-" },
-                            { label: "Categories", value: summary?.categories ?? "-" },
-                            { label: "Overwrites", value: summary?.overwrites ?? "-" },
+                            { label: t("permissions.roles"), value: summary?.roles ?? "-" },
+                            { label: t("permissions.channels"), value: summary?.channels ?? "-" },
+                            { label: t("permissions.categories"), value: summary?.categories ?? "-" },
+                            { label: t("permissions.overwrites"), value: summary?.overwrites ?? "-" },
                         ]}
                         actions={(
                             <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
@@ -128,7 +130,7 @@ export default function GuildPermissionsPage() {
                                     disabled={permissions.refreshingLive}
                                     sx={primaryActionButtonSx(dashboardAccents.commands)}
                                 >
-                                    Refresh Live
+                                    {t("permissions.refreshLive")}
                                 </Button>
                                 <Button
                                     variant="outlined"
@@ -137,7 +139,7 @@ export default function GuildPermissionsPage() {
                                     disabled={permissions.saving}
                                     sx={ghostActionButtonSx(dashboardAccents.settings)}
                                 >
-                                    Save Snapshot
+                                    {t("permissions.saveSnapshot")}
                                 </Button>
                             </Stack>
                         )}
@@ -158,23 +160,23 @@ export default function GuildPermissionsPage() {
                             <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { md: "center" } }}>
                                 <TextField
                                     select
-                                    label="Permission state"
+                                    label={t("permissions.state")}
                                     value={selection}
                                     onChange={event => setSelection(event.target.value === "live" ? "live" : Number(event.target.value))}
                                     size="small"
                                     sx={fieldSx}
                                 >
-                                    <MenuItem value="live">Live state</MenuItem>
+                                    <MenuItem value="live">{t("permissions.liveState")}</MenuItem>
                                     {permissions.snapshots.map(snapshot => (
                                         <MenuItem key={snapshot.id} value={snapshot.id}>
-                                            Snapshot #{snapshot.id} - {formatTimestamp(snapshot.createdAt)}
+                                            {t("permissions.saveSnapshot")} #{snapshot.id} - {formatDate(snapshot.createdAt, { dateStyle: "medium", timeStyle: "short" })}
                                         </MenuItem>
                                     ))}
                                 </TextField>
                                 <TextField
                                     value={search}
                                     onChange={event => setSearch(event.target.value)}
-                                    placeholder="Filter roles, channels, permissions, or members"
+                                    placeholder={t("permissions.filter")}
                                     size="small"
                                     fullWidth
                                     slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search sx={{ color: "rgba(255,255,255,0.48)" }} /></InputAdornment> } }}
@@ -191,7 +193,7 @@ export default function GuildPermissionsPage() {
                                         disabled={allAccordionsExpanded}
                                         sx={ghostActionButtonSx(dashboardAccents.settings)}
                                     >
-                                        Expand all
+                                        {t("permissions.expandAll")}
                                     </Button>
                                     <Button
                                         variant="outlined"
@@ -200,7 +202,7 @@ export default function GuildPermissionsPage() {
                                         disabled={expandedAccordionIds.size === 0}
                                         sx={ghostActionButtonSx(dashboardAccents.settings)}
                                     >
-                                        Collapse all
+                                        {t("permissions.collapseAll")}
                                     </Button>
                                     <Button
                                         variant="outlined"
@@ -208,7 +210,7 @@ export default function GuildPermissionsPage() {
                                         onClick={() => downloadSnapshot(activeSnapshot)}
                                         sx={ghostActionButtonSx(dashboardAccents.commands)}
                                     >
-                                        Export JSON
+                                        {t("permissions.exportJson")}
                                     </Button>
                                     {selection !== "live" ? (
                                         <Button
@@ -218,7 +220,7 @@ export default function GuildPermissionsPage() {
                                             disabled={permissions.deletingSnapshotId === selection}
                                             sx={ghostActionButtonSx(dashboardAccents.quotes)}
                                         >
-                                            Delete snapshot
+                                            {t("permissions.deleteSnapshot")}
                                         </Button>
                                     ) : null}
                                 </Stack>
@@ -226,7 +228,7 @@ export default function GuildPermissionsPage() {
 
                             {!activeSnapshot && !permissions.loading && !permissions.refreshingLive ? (
                                 <Alert severity="info" sx={{ bgcolor: "rgba(104,215,255,0.10)", color: "grey.100", border: "1px solid rgba(104,215,255,0.20)" }}>
-                                    No permission data is available yet. Refresh the live state or save a snapshot from the bot.
+                                    {t("permissions.noData")}
                                 </Alert>
                             ) : null}
 
@@ -235,7 +237,7 @@ export default function GuildPermissionsPage() {
                                     <SourceSummary snapshot={activeSnapshot} />
                                     {selection !== "live" ? (
                                         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.54)" }}>
-                                            Member IDs are historical; displayed names are resolved from the current live server state and may have changed.
+                                            {t("permissions.historicalMembers")}
                                         </Typography>
                                     ) : null}
                                     <RolePermissions
@@ -263,11 +265,12 @@ export default function GuildPermissionsPage() {
 }
 
 function SourceSummary({ snapshot }: { snapshot: RolePermissionSnapshotData }) {
+    const { t, formatDate } = useDashboardI18n();
     const rows = [
-        { label: "Captured", value: formatTimestamp(snapshot.capturedAt) },
-        { label: "Roles", value: `${snapshot.roleData?.capturedRoleCount ?? snapshot.roles.length} (${snapshot.roleData?.source ?? "unavailable"})` },
-        { label: "Members", value: `${snapshot.memberData?.capturedMemberCount ?? 0} (${snapshot.memberData?.source ?? "unavailable"})` },
-        { label: "Channels", value: `${snapshot.channelData?.capturedChannelCount ?? snapshot.channels?.length ?? 0} (${snapshot.channelData?.source ?? "unavailable"})` },
+        { label: t("permissions.captured"), value: formatDate(snapshot.capturedAt, { dateStyle: "medium", timeStyle: "short" }) },
+        { label: t("permissions.roles"), value: `${snapshot.roleData?.capturedRoleCount ?? snapshot.roles.length} (${snapshot.roleData?.source ?? t("common.unavailable")})` },
+        { label: t("permissions.members"), value: `${snapshot.memberData?.capturedMemberCount ?? 0} (${snapshot.memberData?.source ?? t("common.unavailable")})` },
+        { label: t("permissions.channels"), value: `${snapshot.channelData?.capturedChannelCount ?? snapshot.channels?.length ?? 0} (${snapshot.channelData?.source ?? t("common.unavailable")})` },
     ];
 
     return (
@@ -295,11 +298,12 @@ function RolePermissions({
     expandedAccordionIds: Set<string>;
     onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
+    const { t } = useDashboardI18n();
     const roles = snapshot.roles.filter(role => matchesRole(role, memberNames, search));
 
     return (
         <Box>
-            <SectionHeader icon={<Group />} title="Roles and Members" count={roles.length} />
+            <SectionHeader icon={<Group />} title={t("permissions.rolesAndMembers")} count={roles.length} />
             <Stack spacing={1}>
                 {roles.map(role => (
                     <RoleRow
@@ -310,7 +314,7 @@ function RolePermissions({
                         onExpandedChange={onAccordionExpandedChange}
                     />
                 ))}
-                {roles.length === 0 ? <EmptyState label="No roles match the current filter." /> : null}
+                {roles.length === 0 ? <EmptyState label={t("permissions.noRoles")} /> : null}
             </Stack>
         </Box>
     );
@@ -327,19 +331,20 @@ function RoleRow({
     expanded: boolean;
     onExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
+    const { t } = useDashboardI18n();
     return (
         <Accordion disableGutters expanded={expanded} onChange={(_event, nextExpanded) => onExpandedChange(roleAccordionId(role.id), nextExpanded)} sx={accordionSx}>
             <AccordionSummary expandIcon={<ExpandMore sx={{ color: "rgba(255,255,255,0.62)" }} />}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: role.hexColor, border: "1px solid rgba(255,255,255,0.28)" }} />
                     <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 800, overflowWrap: "anywhere" }}>{role.name}</Typography>
-                    <Chip size="small" label={`${role.members.length} members`} sx={chipSx(dashboardAccents.commands)} />
-                    <Chip size="small" label={`${role.permissions.length} permissions`} sx={chipSx(dashboardAccents.settings)} />
+                    <Chip size="small" label={t("permissions.membersCount", { count: role.members.length })} sx={chipSx(dashboardAccents.commands)} />
+                    <Chip size="small" label={t("permissions.permissionsCount", { count: role.permissions.length })} sx={chipSx(dashboardAccents.settings)} />
                 </Stack>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
                 <Stack spacing={1.25}>
-                    <PermissionLine label="Server permissions" permissions={role.permissions} emptyLabel="No explicit permissions" />
+                    <PermissionLine label={t("permissions.serverPermissions")} permissions={role.permissions} emptyLabel={t("permissions.noExplicitPermissions")} />
                     <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>Bitfield: {role.permissionsBitfield}</Typography>
                     <MemberList members={role.members} memberNames={memberNames} />
                 </Stack>
@@ -361,6 +366,7 @@ function ChannelPermissions({
     expandedAccordionIds: Set<string>;
     onAccordionExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
+    const { t } = useDashboardI18n();
     const allChannels = snapshot.channels ?? [];
     const roleNames = new Map(snapshot.roles.map(role => [role.id, role.name]));
     const categories = allChannels.filter(channel => channel.kind === "category");
@@ -378,7 +384,7 @@ function ChannelPermissions({
 
     return (
         <Box>
-            <SectionHeader icon={<Folder />} title="Categories and Channels" count={visibleCount} />
+            <SectionHeader icon={<Folder />} title={t("permissions.categoriesAndChannels")} count={visibleCount} />
             <Stack spacing={1.25}>
                 {categoryGroups.map(group => (
                     <ChannelGroup
@@ -394,7 +400,7 @@ function ChannelPermissions({
                 ))}
                 {rootChannels.length > 0 ? (
                     <ChannelGroup
-                        title="No category"
+                        title={t("permissions.noCategory")}
                         icon={<Tag fontSize="small" />}
                         channels={rootChannels}
                         roleNames={roleNames}
@@ -403,7 +409,7 @@ function ChannelPermissions({
                         onAccordionExpandedChange={onAccordionExpandedChange}
                     />
                 ) : null}
-                {visibleCount === 0 ? <EmptyState label="No channels or categories match the current filter." /> : null}
+                {visibleCount === 0 ? <EmptyState label={t("permissions.noChannels")} /> : null}
             </Stack>
         </Box>
     );
@@ -461,6 +467,7 @@ function ChannelRow({
     expanded: boolean;
     onExpandedChange: (accordionId: string, expanded: boolean) => void;
 }) {
+    const { t } = useDashboardI18n();
     const explicitOverwrites = channel.permissionOverwrites.filter(hasExplicitOverwrite);
     const neutralOverwriteCount = channel.permissionOverwrites.length - explicitOverwrites.length;
 
@@ -470,14 +477,14 @@ function ChannelRow({
                 <Stack direction="row" spacing={1} sx={{ alignItems: "center", minWidth: 0, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Typography variant="body2" sx={{ color: "grey.50", fontWeight: 800, overflowWrap: "anywhere" }}>{channel.name}</Typography>
                     <Chip size="small" label={channel.kind} sx={chipSx(dashboardAccents.settings)} />
-                    <Chip size="small" label={`${explicitOverwrites.length} explicit`} sx={chipSx(dashboardAccents.commands)} />
+                    <Chip size="small" label={t("permissions.explicitCount", { count: explicitOverwrites.length })} sx={chipSx(dashboardAccents.commands)} />
                 </Stack>
             </AccordionSummary>
             <AccordionDetails sx={{ pt: 0 }}>
                 {explicitOverwrites.length === 0 ? (
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
-                        No explicit allow or deny changes for this channel.
-                        {neutralOverwriteCount > 0 && ` ${neutralOverwriteCount} neutral Discord ${neutralOverwriteCount === 1 ? "record does" : "records do"} not change access.`}
+                        {t("permissions.noExplicitOverrides")}
+                        {neutralOverwriteCount > 0 && ` ${t("permissions.neutralRecords", { count: neutralOverwriteCount, records: neutralOverwriteCount === 1 ? t("permissions.record") : t("permissions.records") })}`}
                     </Typography>
                 ) : (
                     <Stack spacing={1}>
@@ -486,7 +493,7 @@ function ChannelRow({
                         ))}
                         {neutralOverwriteCount > 0 && (
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)" }}>
-                                {neutralOverwriteCount} neutral Discord {neutralOverwriteCount === 1 ? "record does" : "records do"} not change access.
+                                {t("permissions.neutralRecords", { count: neutralOverwriteCount, records: neutralOverwriteCount === 1 ? t("permissions.record") : t("permissions.records") })}
                             </Typography>
                         )}
                     </Stack>
@@ -505,17 +512,18 @@ function OverwriteRow({
     roleNames: Map<string, string>;
     memberNames: RolePermissionSnapshotMemberNames;
 }) {
+    const { t } = useDashboardI18n();
     const subject = overwrite.type === "role"
-        ? `Role: ${roleNames.get(overwrite.id) ?? overwrite.id}`
+        ? t("permissions.roleSubject", { value: roleNames.get(overwrite.id) ?? overwrite.id })
         : overwrite.type === "member"
-            ? `Member: ${memberNames[overwrite.id] ?? overwrite.id}`
-            : `Unknown: ${overwrite.id}`;
+            ? t("permissions.memberSubject", { value: memberNames[overwrite.id] ?? overwrite.id })
+            : t("permissions.unknownSubject", { value: overwrite.id });
 
     return (
         <Box sx={{ px: 1.25, py: 1, borderRadius: 1, border: "1px solid rgba(255,255,255,0.09)", bgcolor: "rgba(255,255,255,0.03)" }}>
-            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, mb: 0.75, overflowWrap: "anywhere" }}>Direct override: {subject}</Typography>
-            <PermissionLine label="Explicitly allowed" permissions={overwrite.allowPermissions} emptyLabel="None" accent={dashboardAccents.settings} />
-            <PermissionLine label="Explicitly denied" permissions={overwrite.denyPermissions} emptyLabel="None" accent={dashboardAccents.quotes} />
+            <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 750, mb: 0.75, overflowWrap: "anywhere" }}>{t("permissions.directOverride", { subject })}</Typography>
+            <PermissionLine label={t("permissions.explicitlyAllowed")} permissions={overwrite.allowPermissions} emptyLabel={t("common.none")} accent={dashboardAccents.settings} />
+            <PermissionLine label={t("permissions.explicitlyDenied")} permissions={overwrite.denyPermissions} emptyLabel={t("common.none")} accent={dashboardAccents.quotes} />
         </Box>
     );
 }
@@ -527,13 +535,14 @@ function MemberList({
     members: RolePermissionSnapshotRole["members"];
     memberNames: RolePermissionSnapshotMemberNames;
 }) {
+    const { t } = useDashboardI18n();
     if (members.length === 0) {
-        return <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>No members were available in this snapshot.</Typography>;
+        return <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>{t("permissions.noMembers")}</Typography>;
     }
 
     return (
         <Box>
-            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)", display: "block", mb: 0.5 }}>Members</Typography>
+            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)", display: "block", mb: 0.5 }}>{t("permissions.members")}</Typography>
             <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75 }}>
                 {members.map(member => (
                     <Chip
@@ -647,11 +656,6 @@ function downloadSnapshot(snapshot: RolePermissionSnapshotData): void {
     anchor.download = `role-permissions-${snapshot.guild.id}-${snapshot.capturedAt.replace(/[:.]/g, "-")}.json`;
     anchor.click();
     URL.revokeObjectURL(url);
-}
-
-function formatTimestamp(value: string): string {
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
 }
 
 const fieldSx = {

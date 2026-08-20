@@ -1,3 +1,5 @@
+import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
+
 export interface NotificationReviewRecord {
     provider: string;
     sourceKey: string;
@@ -37,7 +39,10 @@ interface BuildNotificationSetupReviewInput {
     birthdays: Array<Record<string, unknown>>;
 }
 
-export function buildNotificationSetupReview(input: BuildNotificationSetupReviewInput): NotificationSetupReview {
+export function buildNotificationSetupReview(
+    input: BuildNotificationSetupReviewInput,
+    locale: DashboardLocale = "en",
+): NotificationSetupReview {
     const records = [
         ...input.twitch.map((config) => toRecord("Twitch", config, "twitchUsername", "discordChannelId")),
         ...input.youtube.map((config) => toRecord("YouTube", config, "youtubeChannelId", "discordChannelId")),
@@ -50,8 +55,8 @@ export function buildNotificationSetupReview(input: BuildNotificationSetupReview
     ].filter((record): record is NotificationReviewRecord => record !== null);
 
     return {
-        duplicateRoutes: findDuplicateRoutes(records),
-        multiChannelFeeds: findMultiChannelFeeds(records),
+        duplicateRoutes: findDuplicateRoutes(records, locale),
+        multiChannelFeeds: findMultiChannelFeeds(records, locale),
         busyChannels: findBusyChannels(records),
     };
 }
@@ -77,13 +82,13 @@ function toRecord(
     };
 }
 
-function findDuplicateRoutes(records: NotificationReviewRecord[]): NotificationReviewGroup[] {
-    return toSortedGroups(records, (record) => `${record.provider}:${record.sourceKey}:${record.channelId}`)
+function findDuplicateRoutes(records: NotificationReviewRecord[], locale: DashboardLocale): NotificationReviewGroup[] {
+    return toSortedGroups(records, (record) => `${record.provider}:${record.sourceKey}:${record.channelId}`, locale)
         .filter((group) => group.records.length > 1);
 }
 
-function findMultiChannelFeeds(records: NotificationReviewRecord[]): NotificationReviewGroup[] {
-    return toSortedGroups(records, (record) => `${record.provider}:${record.sourceKey}`)
+function findMultiChannelFeeds(records: NotificationReviewRecord[], locale: DashboardLocale): NotificationReviewGroup[] {
+    return toSortedGroups(records, (record) => `${record.provider}:${record.sourceKey}`, locale)
         .filter((group) => group.channelIds.length > 1);
 }
 
@@ -105,7 +110,8 @@ function findBusyChannels(records: NotificationReviewRecord[]): NotificationChan
 
 function toSortedGroups(
     records: NotificationReviewRecord[],
-    getKey: (record: NotificationReviewRecord) => string
+    getKey: (record: NotificationReviewRecord) => string,
+    locale: DashboardLocale,
 ): NotificationReviewGroup[] {
     const groups = new Map<string, NotificationReviewRecord[]>();
     for (const record of records) {
@@ -114,13 +120,16 @@ function toSortedGroups(
     }
 
     return [...groups.entries()]
-        .map(([key, groupRecords]) => ({
-            key,
-            provider: groupRecords[0]?.provider ?? "Unknown",
-            sourceLabel: groupRecords[0]?.sourceLabel ?? "Unknown",
-            channelIds: [...new Set(groupRecords.map((record) => record.channelId))].sort(),
-            records: groupRecords,
-        }))
+        .map(([key, groupRecords]) => {
+            const unknown = getDashboardLocaleValue(locale, { en: "Unknown", nl: "Onbekend" });
+            return {
+                key,
+                provider: groupRecords[0]?.provider ?? unknown,
+                sourceLabel: groupRecords[0]?.sourceLabel ?? unknown,
+                channelIds: [...new Set(groupRecords.map((record) => record.channelId))].sort(),
+                records: groupRecords,
+            };
+        })
         .sort((a, b) => b.records.length - a.records.length || a.key.localeCompare(b.key));
 }
 

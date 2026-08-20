@@ -3,8 +3,18 @@ import React, { act } from 'react';
 import { useAnimeDashboard } from '@/components/hooks/useAnimeDashboard';
 import { api } from '@/lib/api-client';
 import { createHookProbe1, mountWithSnapshots } from '../testing/reactTesting';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
+import { DASHBOARD_LOCALE_STORAGE_KEY } from '@/lib/i18n/localeStore';
 
 const HookProbe = createHookProbe1((arg: string) => useAnimeDashboard(arg));
+
+function renderProbe(onSnapshot: (snap: any) => void): React.ReactElement {
+    return React.createElement(
+        DashboardI18nProvider,
+        null,
+        React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot }),
+    );
+}
 
 describe('useAnimeDashboard', () => {
     beforeEach(() => {
@@ -34,9 +44,7 @@ describe('useAnimeDashboard', () => {
         } as any);
         const pauseSpy = vi.spyOn(api, 'setAnimeSubscriptionPaused').mockResolvedValue({} as any);
 
-        const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot })
-        );
+        const { last, flush, unmount } = await mountWithSnapshots(renderProbe);
 
         await act(async () => {
             await (last() as any).setServerSubscriptionsPaused(true);
@@ -77,9 +85,7 @@ describe('useAnimeDashboard', () => {
         } as any);
         const deleteSpy = vi.spyOn(api, 'deleteAnimeSubscription').mockResolvedValue({ success: true });
 
-        const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: 'guild-1', onSnapshot })
-        );
+        const { last, flush, unmount } = await mountWithSnapshots(renderProbe);
 
         await act(async () => {
             await (last() as any).deleteSubscriptions([
@@ -93,6 +99,27 @@ describe('useAnimeDashboard', () => {
         expect(deleteSpy).toHaveBeenCalledTimes(2);
         expect(deleteSpy).toHaveBeenCalledWith(11);
         expect(deleteSpy).toHaveBeenCalledWith(12);
+
+        unmount();
+    });
+
+    it('uses Dutch fallback errors and season labels without translating provider titles', async () => {
+        window.localStorage.setItem(DASHBOARD_LOCALE_STORAGE_KEY, 'nl');
+        vi.spyOn(api, 'getAnimeSubscriptions').mockRejectedValue('offline');
+        vi.spyOn(api, 'getMyAnimeSubscriptions').mockResolvedValue([]);
+        vi.spyOn(api, 'getAnimeSeason').mockResolvedValue({
+            season: 'SUMMER',
+            year: 2026,
+            scope: 'airing',
+            scopeLabel: 'Airing / Upcoming',
+            results: [],
+            pageInfo: { hasNextPage: false },
+        } as any);
+
+        const { last, unmount } = await mountWithSnapshots(renderProbe);
+
+        expect((last() as any).error).toBe('Anime-abonnementen laden mislukt');
+        expect((last() as any).seasonLabel).toBe('Zomer 2026 - Wordt uitgezonden / binnenkort');
 
         unmount();
     });

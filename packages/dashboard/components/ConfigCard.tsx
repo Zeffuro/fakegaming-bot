@@ -4,6 +4,7 @@ import { alpha } from "@mui/material/styles";
 import { Delete, Edit, PauseCircleOutlined, PlayCircleOutlined } from "@mui/icons-material";
 import { dashboardAccents, dashboardCardSx, dangerActionButtonSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import type { ConfigNotificationInfo } from "@/lib/notificationTiming";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface ConfigStatusChip {
   label: string;
@@ -54,8 +55,9 @@ export default function ConfigCard({
   saving = false,
   showEdit = true,
 }: ConfigCardProps) {
+  const { t } = useDashboardI18n();
   const chips = [statusChip, ...extraStatusChips].filter((chip): chip is ConfigStatusChip => Boolean(chip));
-  const pauseLabel = paused ? "Resume" : "Pause";
+  const pauseLabel = paused ? t("common.resume") : t("common.pause");
   const PauseIcon = paused ? PlayCircleOutlined : PauseCircleOutlined;
 
   return (
@@ -88,11 +90,11 @@ export default function ConfigCard({
 
           <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", border: "1px solid rgba(255,255,255,0.07)", p: 1.25 }}>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.66)" }}>
-              Discord channel: <Box component="span" sx={{ color: "grey.100", fontWeight: 700 }}>{discordChannel}</Box>
+              {t("common.discordChannel")}: <Box component="span" sx={{ color: "grey.100", fontWeight: 700 }}>{discordChannel}</Box>
             </Typography>
             {customMessage && (
               <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)", mt: 0.75 }}>
-                Custom message: {customMessage}
+                {t("common.customMessageOptional")}: {customMessage}
               </Typography>
             )}
             {notificationInfo && notificationInfo.lines.map((line) => (
@@ -127,7 +129,7 @@ export default function ConfigCard({
           )}
           {showEdit && (
             <Button size="small" variant="outlined" startIcon={<Edit />} onClick={onEdit} sx={ghostActionButtonSx(accent)}>
-              Edit
+              {t("common.edit")}
             </Button>
           )}
           {!onTogglePaused && !showEdit && <Box />}

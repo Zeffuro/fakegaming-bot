@@ -5,12 +5,14 @@ import { CalendarMonth, ContentCopy, OpenInNew, Refresh } from "@mui/icons-mater
 import { Alert, Box, Button, Chip, Paper, Stack, TextField, Typography } from "@mui/material";
 import { api, type AnimeCalendarLink } from "@/lib/api-client";
 import { ANIME_GOLD, elevatedPanelSx, fieldSx, ghostButtonSx, primaryButtonSx } from "@/components/anime/animeTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AnimeCalendarExportPanelProps {
   personalCount: number;
 }
 
 export function AnimeCalendarExportPanel({ personalCount }: AnimeCalendarExportPanelProps) {
+  const { t } = useDashboardI18n();
   const [link, setLink] = useState<AnimeCalendarLink | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -23,7 +25,7 @@ export function AnimeCalendarExportPanel({ personalCount }: AnimeCalendarExportP
       setCopied(false);
       setLink(await api.getAnimeCalendarLink());
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load calendar link");
+      setError(err instanceof Error ? err.message : t("anime.calendarUnavailable"));
     } finally {
       setLoading(false);
     }
@@ -35,7 +37,7 @@ export function AnimeCalendarExportPanel({ personalCount }: AnimeCalendarExportP
       await navigator.clipboard.writeText(link.url);
       setCopied(true);
     } catch {
-      setError("Clipboard access failed");
+      setError(t("anime.clipboardFailed"));
     }
   };
 
@@ -46,16 +48,16 @@ export function AnimeCalendarExportPanel({ personalCount }: AnimeCalendarExportP
           <Box>
             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850, display: "flex", alignItems: "center", gap: 1 }}>
               <CalendarMonth fontSize="small" />
-              Calendar Export
+              {t("anime.calendarExport")}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.5 }}>
-              Your DM reminders as an ICS feed.
+              {t("anime.calendarDescription")}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
-            <Chip label={`${personalCount} personal`} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50", border: "1px solid rgba(255,200,87,0.24)" }} />
+            <Chip label={t("anime.personalCount", { count: personalCount })} sx={{ bgcolor: "rgba(255,200,87,0.12)", color: "grey.50", border: "1px solid rgba(255,200,87,0.24)" }} />
             <Button variant="contained" startIcon={link ? <Refresh /> : <CalendarMonth />} disabled={loading} onClick={loadLink} sx={primaryButtonSx}>
-              {link ? "Refresh Link" : "Create Link"}
+              {link ? t("anime.refreshLink") : t("anime.createLink")}
             </Button>
           </Stack>
         </Stack>
@@ -81,17 +83,17 @@ export function AnimeCalendarExportPanel({ personalCount }: AnimeCalendarExportP
             />
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
               <Button variant="outlined" startIcon={<ContentCopy />} onClick={copyLink} sx={ghostButtonSx}>
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("common.copied") : t("common.copy")}
               </Button>
               <Button component="a" href={link.url} target="_blank" rel="noreferrer" variant="outlined" startIcon={<OpenInNew />} sx={ghostButtonSx}>
-                Open
+                {t("common.open")}
               </Button>
             </Stack>
           </Stack>
         ) : (
           <Box sx={{ p: 2, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.045)", color: "rgba(255,255,255,0.58)", border: "1px solid rgba(255,255,255,0.08)" }}>
             <Typography variant="body2">
-              Feed events use cached AniList episode times and UTC timestamps.
+              {t("anime.feedHint")}
             </Typography>
           </Box>
         )}

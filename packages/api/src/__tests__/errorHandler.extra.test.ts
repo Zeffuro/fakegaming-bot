@@ -22,14 +22,14 @@ describe('errorHandler extra branches', () => {
         const err = new NotFoundError('missing');
         errorHandler(err, req as Request, res as Response, next);
         expect(status).toHaveBeenCalledWith(404);
-        expect(json).toHaveBeenCalledWith({ error: { code: 'NOT_FOUND', message: 'missing' } });
+        expect(json).toHaveBeenCalledWith({ error: { code: 'NOT_FOUND', message: 'Not found' } });
     });
 
     it('maps ForbiddenError to 403', () => {
         const err = new ForbiddenError('nope');
         errorHandler(err, req as Request, res as Response, next);
         expect(status).toHaveBeenCalledWith(403);
-        expect(json).toHaveBeenCalledWith({ error: { code: 'FORBIDDEN', message: 'nope' } });
+        expect(json).toHaveBeenCalledWith({ error: { code: 'FORBIDDEN', message: 'Forbidden' } });
     });
 
     it('maps explicit status object to proper title (403)', () => {
@@ -50,6 +50,6 @@ describe('errorHandler extra branches', () => {
         const err = { message: 'invalid payload' };
         errorHandler(err, req as Request, res as Response, next);
         expect(status).toHaveBeenCalledWith(400);
-        expect(json).toHaveBeenCalledWith({ error: { code: 'BAD_REQUEST', message: 'invalid payload' } });
+        expect(json).toHaveBeenCalledWith({ error: { code: 'BAD_REQUEST', message: 'Bad request' } });
     });
 });

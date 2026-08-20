@@ -15,11 +15,13 @@ import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import { useAdminAccess } from "@/components/hooks/useAdmin";
 import { useUserData } from "@/components/hooks/useUserData";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export default function UserMenu() {
   const router = useRouter();
   const {loading, getUserDisplayName, getUserAvatarUrl } = useUserData();
   const { isAdmin } = useAdminAccess();
+  const { t } = useDashboardI18n();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -107,21 +109,21 @@ export default function UserMenu() {
           <ListItemIcon>
             <Person sx={{ color: "grey.400" }} />
           </ListItemIcon>
-          <ListItemText primary="Your dashboard" />
+          <ListItemText primary={t("nav.yourDashboard")} />
         </MenuItem>
         {isAdmin && (
           <MenuItem onClick={handleAdmin} sx={{ color: "grey.200" }}>
             <ListItemIcon>
               <AdminPanelSettings sx={{ color: "grey.300" }} />
             </ListItemIcon>
-            <ListItemText primary="Admin Panel" />
+            <ListItemText primary={t("nav.adminPanel")} />
           </MenuItem>
         )}
         <MenuItem onClick={handleLogout} sx={{ color: "error.light" }}>
           <ListItemIcon>
             <Logout sx={{ color: "error.light" }} />
           </ListItemIcon>
-          <ListItemText primary="Logout" />
+          <ListItemText primary={t("nav.logout")} />
         </MenuItem>
       </Menu>
     </Box>

@@ -189,7 +189,9 @@ export {
     validateBody,
     validateBodyForModel,
     validateQuery,
-    validateParams
+    validateParams,
+    type ValidationErrorPayload,
+    type ValidatorOptions,
 } from './utils/validation.js';
 
 export {
@@ -204,7 +206,15 @@ export { SUPPORTED_GAMES } from './utils/supportedGames.js';
 export {
   SUPPORTED_OUTPUT_LOCALES,
   DEFAULT_OUTPUT_LOCALE,
+  NON_DEFAULT_OUTPUT_LOCALES,
+  OUTPUT_LOCALE_METADATA,
+  getOutputLocaleMetadata,
   isSupportedOutputLocale,
+  resolveOutputLocaleFromAcceptLanguage,
+  resolveLocaleValue,
+  type OutputLocaleMetadata,
+  type OutputLocaleValues,
+  type NonDefaultOutputLocale,
   type SupportedOutputLocale
 } from './utils/outputLocale.js';
 

@@ -117,4 +117,13 @@ describe('UserManager', () => {
             expect(result?.defaultReminderTimeSpan).toBe('1h');
         });
     });
+
+    describe('getPreferredLocale', () => {
+        it('returns a stored locale and falls back to English', async () => {
+            await UserConfig.create({ discordId: 'locale-user', preferredLocale: 'nl' });
+
+            await expect(userManager.getPreferredLocale('locale-user')).resolves.toBe('nl');
+            await expect(userManager.getPreferredLocale('missing-user')).resolves.toBe('en');
+        });
+    });
 });

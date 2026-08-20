@@ -12,8 +12,10 @@ import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardDialogPaperSx, dashboardFieldSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { api, type PatchNoteHistoryCompareResponse, type PatchNoteHistoryDiffLine, type PatchNoteHistoryItem } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export default function GuildPatchNotesPage() {
+  const { t } = useDashboardI18n();
   const { guildId } = useGuildFromParams();
   const configsApi = usePatchSubscriptions(guildId as string);
   const { games } = useSupportedGames();
@@ -23,25 +25,25 @@ export default function GuildPatchNotesPage() {
     <IntegrationConfigPage<PatchSubscriptionUIConfig>
       useConfigs={usePatchSubscriptions as unknown as (guildId: string) => any}
       configsApi={configsApi as any}
-      moduleTitle="Patch Note Subscriptions"
+      moduleTitle={t("provider.patchTitle")}
       moduleIcon={<SpeakerNotes color="secondary" />}
       moduleColor="#7C4DFF"
       moduleName="Patch Notes"
       provider="patchnotes"
       channelNameField="game"
-      channelNameLabel="Game"
+      channelNameLabel={t("patch.game")}
       channelNamePlaceholder="League of Legends"
       showCustomMessage={false}
       showNotificationControls={false}
-      itemSingularLabel="Game Subscription"
-      itemPluralLabel="Game Subscriptions"
+      itemSingularLabel={t("provider.gameSubscription")}
+      itemPluralLabel={t("provider.gameSubscriptions")}
       itemNameOptions={games}
       allowEdit={false}
       extraContent={<PatchNotesTimeline games={games} />}
       renderChip={(cfg) => {
         const info = (latestByGame as Record<string, { version?: string }>)[(cfg as any).game];
         if (!info) return undefined;
-        const label = info.version ? `Latest: ${info.version}` : 'Latest patch';
+        const label = info.version ? t("provider.latest", { version: info.version }) : t("provider.latestPatch");
         return { label, color: 'info', variant: 'outlined' };
       }}
     />
@@ -49,6 +51,7 @@ export default function GuildPatchNotesPage() {
 }
 
 function PatchNotesTimeline({ games }: { games: string[] }) {
+  const { formatNumber, t } = useDashboardI18n();
   const accent = dashboardAccents.patchNotes;
   const limit = 12;
   const [items, setItems] = useState<PatchNoteHistoryItem[]>([]);
@@ -94,7 +97,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
         if (cancelled) return;
         setItems([]);
         setTotal(0);
-        setError(err instanceof Error ? err.message : "Failed to load patch-note history");
+        setError(err instanceof Error ? err.message : t("patch.historyLoadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -104,7 +107,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
     return () => {
       cancelled = true;
     };
-  }, [game, offset, query, refreshToken]);
+  }, [game, offset, query, refreshToken, t]);
 
   const refresh = () => {
     setOffset(0);
@@ -150,7 +153,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
       });
       setCompareResult(result);
     } catch (err: unknown) {
-      setCompareError(err instanceof Error ? err.message : "Failed to compare patch notes");
+      setCompareError(err instanceof Error ? err.message : t("patch.compareFailed"));
     } finally {
       setCompareLoading(false);
     }
@@ -162,18 +165,18 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ justifyContent: "space-between", alignItems: { xs: "stretch", md: "center" } }}>
           <Box>
             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>
-              Patch note timeline
+              {t("patch.timelineTitle")}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.4 }}>
-              {total > 0 ? `${total} stored patches, latest first.` : "No stored patches match these filters."}
+              {total > 0 ? t("patch.storedCount", { count: formatNumber(total) }) : t("patch.noStoredMatch")}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
             <Button variant="outlined" onClick={refresh} disabled={loading} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-              Refresh
+              {t("patch.refresh")}
             </Button>
             <Button variant="contained" onClick={openCompare} disabled={!canCompare || compareLoading} startIcon={<CompareArrows />} sx={primaryActionButtonSx(accent)}>
-              Compare selected
+              {t("patch.compareSelected")}
             </Button>
           </Stack>
         </Stack>
@@ -181,7 +184,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
         <Stack direction={{ xs: "column", md: "row" }} spacing={1.25}>
           <TextField
             select
-            label="Game"
+            label={t("patch.game")}
             value={game}
             onChange={(event) => {
               setGame(event.target.value);
@@ -189,13 +192,13 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
             }}
             sx={{ minWidth: { xs: "100%", md: 220 }, ...dashboardFieldSx(accent) }}
           >
-            <MenuItem value="">All games</MenuItem>
+            <MenuItem value="">{t("patch.allGames")}</MenuItem>
             {gameOptions.map(option => (
               <MenuItem key={option} value={option}>{option}</MenuItem>
             ))}
           </TextField>
           <TextField
-            label="Search"
+            label={t("common.search")}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value);
@@ -217,7 +220,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
         {selectedItems.length > 0 ? (
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-              {selectedItems.length}/2 selected
+              {t("patch.selectedCount", { count: selectedItems.length })}
             </Typography>
             {selectedItems.map(item => (
               <Chip
@@ -228,7 +231,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
               />
             ))}
             <Button size="small" variant="text" onClick={clearCompareSelection} sx={{ color: "rgba(255,255,255,0.62)", textTransform: "none" }}>
-              Clear
+              {t("common.clear")}
             </Button>
           </Stack>
         ) : null}
@@ -252,20 +255,20 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
 
         {!loading && items.length === 0 ? (
           <Box sx={{ borderRadius: 2, border: "1px solid rgba(255,255,255,0.08)", bgcolor: "rgba(255,255,255,0.045)", p: 2, color: "rgba(255,255,255,0.62)" }}>
-            <Typography variant="body2">No patch notes found.</Typography>
+            <Typography variant="body2">{t("patch.noPatchNotes")}</Typography>
           </Box>
         ) : null}
 
         <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-            Page {pageNumber} of {pageCount}
+            {t("patch.pageOf", { page: pageNumber, pages: pageCount })}
           </Typography>
           <Stack direction="row" spacing={1}>
             <Button variant="outlined" disabled={loading || offset === 0} onClick={() => setOffset(Math.max(0, offset - limit))} sx={ghostActionButtonSx(accent)}>
-              Previous
+              {t("patch.previous")}
             </Button>
             <Button variant="outlined" disabled={loading || offset + limit >= total} onClick={() => setOffset(offset + limit)} sx={ghostActionButtonSx(accent)}>
-              Next
+              {t("patch.next")}
             </Button>
           </Stack>
         </Stack>
@@ -284,6 +287,7 @@ function PatchNotesTimeline({ games }: { games: string[] }) {
 
 function PatchNoteTimelineCard({ item, onToggleCompare, selected }: { item: PatchNoteHistoryItem; onToggleCompare: (item: PatchNoteHistoryItem) => void; selected: boolean }) {
   const accent = dashboardAccents.patchNotes;
+  const { formatDate, formatNumber, t } = useDashboardI18n();
   return (
     <Box sx={{ borderRadius: 2, border: selected ? `1px solid ${alpha(accent, 0.56)}` : "1px solid rgba(255,255,255,0.08)", bgcolor: selected ? alpha(accent, 0.10) : "rgba(255,255,255,0.045)", p: 2 }}>
       <Stack spacing={1.2}>
@@ -293,25 +297,25 @@ function PatchNoteTimelineCard({ item, onToggleCompare, selected }: { item: Patc
             <Chip size="small" label={item.version} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.76)" }} />
           ) : null}
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", ml: "auto" }}>
-            {formatPatchTimestamp(item.publishedAt)}
+            {formatPatchTimestamp(item.publishedAt, t, formatDate)}
           </Typography>
         </Stack>
         <Typography variant="subtitle1" sx={{ color: "grey.50", fontWeight: 850, lineHeight: 1.18 }}>
           {item.title}
         </Typography>
         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.66)" }}>
-          {item.contentPreview || "No preview available."}
+          {item.contentPreview || t("patch.noPreview")}
         </Typography>
         <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", rowGap: 1 }}>
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-            {formatBytes(item.contentBytes)}
+            {formatBytes(item.contentBytes, formatNumber)}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
             <Button size="small" variant={selected ? "contained" : "outlined"} startIcon={<CompareArrows />} onClick={() => onToggleCompare(item)} sx={selected ? primaryActionButtonSx(accent) : ghostActionButtonSx(accent)}>
-              {selected ? "Selected" : "Select"}
+              {selected ? t("patch.selected") : t("patch.select")}
             </Button>
             <Button component="a" href={item.url} target="_blank" rel="noreferrer" size="small" variant="outlined" startIcon={<OpenInNew />} sx={ghostActionButtonSx(accent)}>
-              Open
+              {t("patch.open")}
             </Button>
           </Stack>
         </Stack>
@@ -328,15 +332,16 @@ function PatchNoteCompareDialog({ error, loading, onClose, open, result }: {
   result: PatchNoteHistoryCompareResponse | null;
 }) {
   const accent = dashboardAccents.patchNotes;
+  const { formatNumber, t } = useDashboardI18n();
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg" slotProps={{ paper: { sx: dashboardDialogPaperSx(accent) } }}>
       <DialogTitle sx={{ color: "grey.100", fontWeight: 900 }}>
-        Patch compare
+        {t("patch.compareTitle")}
       </DialogTitle>
       <DialogContent>
         {loading ? (
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.66)" }}>
-            Loading compare...
+            {t("patch.compareLoading")}
           </Typography>
         ) : null}
         {error ? (
@@ -347,19 +352,19 @@ function PatchNoteCompareDialog({ error, loading, onClose, open, result }: {
         {!loading && result ? (
           <Stack spacing={2}>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.25 }}>
-              <PatchCompareRecordSummary label="From" record={result.left} />
-              <PatchCompareRecordSummary label="To" record={result.right} />
+              <PatchCompareRecordSummary label={t("patch.from")} record={result.left} />
+              <PatchCompareRecordSummary label={t("patch.to")} record={result.right} />
             </Box>
 
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
-              <Chip size="small" label={`+${result.summary.addedLines}`} sx={{ bgcolor: "rgba(34,197,94,0.14)", color: "#BBF7D0", border: "1px solid rgba(34,197,94,0.32)" }} />
-              <Chip size="small" label={`-${result.summary.removedLines}`} sx={{ bgcolor: "rgba(248,113,113,0.14)", color: "#FECACA", border: "1px solid rgba(248,113,113,0.32)" }} />
-              <Chip size="small" label={`${result.summary.unchangedLines} unchanged`} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.70)" }} />
+              <Chip size="small" label={`+${formatNumber(result.summary.addedLines)}`} sx={{ bgcolor: "rgba(34,197,94,0.14)", color: "#BBF7D0", border: "1px solid rgba(34,197,94,0.32)" }} />
+              <Chip size="small" label={`-${formatNumber(result.summary.removedLines)}`} sx={{ bgcolor: "rgba(248,113,113,0.14)", color: "#FECACA", border: "1px solid rgba(248,113,113,0.32)" }} />
+              <Chip size="small" label={t("patch.unchangedLines", { count: formatNumber(result.summary.unchangedLines) })} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.70)" }} />
             </Stack>
 
             {result.summary.truncated ? (
               <Alert severity="warning" sx={{ bgcolor: "rgba(251,191,36,0.12)", color: "grey.50", border: "1px solid rgba(251,191,36,0.24)" }}>
-                Diff truncated to {result.summary.emittedLines} of {result.summary.totalDiffLines} lines.
+                {t("patch.diffTruncated", { emitted: formatNumber(result.summary.emittedLines), total: formatNumber(result.summary.totalDiffLines) })}
               </Alert>
             ) : null}
 
@@ -373,7 +378,7 @@ function PatchNoteCompareDialog({ error, loading, onClose, open, result }: {
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2.5 }}>
         <Button onClick={onClose} variant="outlined" startIcon={<Close />} sx={ghostActionButtonSx(accent)}>
-          Close
+          {t("common.close")}
         </Button>
       </DialogActions>
     </Dialog>
@@ -381,6 +386,7 @@ function PatchNoteCompareDialog({ error, loading, onClose, open, result }: {
 }
 
 function PatchCompareRecordSummary({ label, record }: { label: string; record: PatchNoteHistoryCompareResponse["left"] }) {
+  const { formatDate, formatNumber, t } = useDashboardI18n();
   return (
     <Box sx={{ borderRadius: 2, border: "1px solid rgba(255,255,255,0.08)", bgcolor: "rgba(255,255,255,0.045)", p: 1.5 }}>
       <Stack spacing={0.75}>
@@ -395,7 +401,7 @@ function PatchCompareRecordSummary({ label, record }: { label: string; record: P
             <Chip size="small" label={record.version} sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.76)" }} />
           ) : null}
           <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.50)" }}>
-            {formatPatchTimestamp(record.publishedAt)} · {formatBytes(record.contentBytes)}
+            {formatPatchTimestamp(record.publishedAt, t, formatDate)} · {formatBytes(record.contentBytes, formatNumber)}
           </Typography>
         </Stack>
       </Stack>
@@ -422,12 +428,16 @@ function PatchCompareLine({ line }: { line: PatchNoteHistoryDiffLine }) {
   );
 }
 
-function formatPatchTimestamp(value: number): string {
+function formatPatchTimestamp(
+  value: number,
+  t: ReturnType<typeof useDashboardI18n>["t"],
+  formatDate: ReturnType<typeof useDashboardI18n>["formatDate"],
+): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "Unknown date" : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? t("patch.unknownDate") : formatDate(date, { dateStyle: "medium" });
 }
 
-function formatBytes(value: number): string {
+function formatBytes(value: number, formatNumber: ReturnType<typeof useDashboardI18n>["formatNumber"]): string {
   if (!Number.isFinite(value) || value <= 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
   let amount = value;
@@ -436,5 +446,5 @@ function formatBytes(value: number): string {
     amount /= 1024;
     unitIndex += 1;
   }
-  return `${amount >= 10 || unitIndex === 0 ? amount.toFixed(0) : amount.toFixed(1)} ${units[unitIndex]}`;
+  return `${formatNumber(amount, { maximumFractionDigits: amount >= 10 || unitIndex === 0 ? 0 : 1 })} ${units[unitIndex]}`;
 }

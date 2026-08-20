@@ -1,6 +1,7 @@
 import type { TikTokStreamConfig } from "@zeffuro/fakegaming-common";
 import { api } from "@/lib/api-client";
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 type TikTokUpdateRequest = Parameters<typeof api.updateTikTokStream>[1];
 
@@ -9,6 +10,7 @@ interface UseTikTokConfigsOptions {
 }
 
 export function useTikTokConfigs(guildId: string | string[], options: UseTikTokConfigsOptions = {}) {
+  const { t } = useDashboardI18n();
   return useConfigResource<TikTokStreamConfig, Omit<TikTokStreamConfig, 'id' | 'guildId'>>({
     guildId,
     enabled: options.enabled ?? true,
@@ -46,13 +48,13 @@ export function useTikTokConfigs(guildId: string | string[], options: UseTikTokC
     validateCreate: (configData) => (
       configData.tiktokUsername && configData.discordChannelId
         ? null
-        : 'TikTok Channel Name and Discord Channel ID are required'
+        : t("hooks.tiktokRequired")
     ),
     messages: {
-      loadFailed: 'Failed to load TikTok configurations',
-      createFailed: 'Failed to save TikTok configuration',
-      updateFailed: 'Failed to update TikTok configuration',
-      deleteFailed: 'Failed to delete TikTok configuration',
+      loadFailed: t("hooks.tiktokLoadFailed"),
+      createFailed: t("hooks.tiktokSaveFailed"),
+      updateFailed: t("hooks.tiktokUpdateFailed"),
+      deleteFailed: t("hooks.tiktokDeleteFailed"),
     }
   });
 }

@@ -3,8 +3,8 @@ import {
     computeNextDigestRunAt,
     getConfigManager,
     parseDigestCategories,
-    validateBody,
 } from '@zeffuro/fakegaming-common';
+import { validateBody } from '../localization/validation.js';
 import {
     userDigestSubscriptionPausedRequestSchema,
     userDigestSubscriptionRequestSchema,
@@ -13,6 +13,7 @@ import type { UserDigestSubscriptionRecord } from '@zeffuro/fakegaming-common/ma
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -109,7 +110,7 @@ router.put('/', validateBody(userDigestSubscriptionRequestSchema), async (req, r
         dayOfWeek: body.dayOfWeek,
     });
     if (nextRunAt === null) {
-        res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Invalid digest schedule or timezone.' } });
+        sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'digestInvalidSchedule');
         return;
     }
 
@@ -163,7 +164,7 @@ router.patch('/paused', validateBody(userDigestSubscriptionPausedRequestSchema),
     const body = req.body as z.infer<typeof userDigestSubscriptionPausedRequestSchema>;
     const existing = await getConfigManager().userDigestSubscriptionManager.getForUser(discordId);
     if (!existing) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Digest subscription not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'digestNotFound');
         return;
     }
 

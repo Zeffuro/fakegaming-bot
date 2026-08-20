@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   buildTikTokDebugMeta,
+  buildTikTokEmbedAndContent,
   buildTikTokHealthMetadata,
   getTikTokSessionDiagnostics,
   resolveTikTokLive,
@@ -78,6 +79,33 @@ describe('resolveTikTokLive', () => {
     });
     expect(JSON.stringify(diagnostics)).not.toContain('secret-value');
     expect(JSON.stringify(diagnostics)).not.toContain('another-secret');
+  });
+
+  it('localizes app-authored session diagnostics without changing diagnostic state', () => {
+    const diagnostics = getTikTokSessionDiagnostics('', 'nl');
+
+    expect(diagnostics).toMatchObject({
+      cookieConfigured: false,
+      cookiePairCount: 0,
+      likelySessionCookiePresent: false,
+      summary: 'Er is voor dit proces geen TikTok-cookiemateriaal ingesteld.',
+    });
+  });
+
+  it('localizes TikTok notification framing while preserving provider content', () => {
+    const result = buildTikTokEmbedAndContent({
+      username: 'creator',
+      info: { live: true, title: null, viewers: 1234 },
+      locale: 'nl',
+    });
+    const serialized = JSON.stringify(result.payload);
+
+    expect(result.content).toBe('Hallo @everyone, creator is nu live! <https://www.tiktok.com/@creator/live>');
+    expect(serialized).toContain('creator is nu live op TikTok!');
+    expect(serialized).toContain('Live op TikTok!');
+    expect(serialized).toContain('Kijkers');
+    expect(serialized).toContain('1.234');
+    expect(serialized).toContain('Livestream bekijken');
   });
 
   it('classifies fetch diagnostics without exposing raw connector errors', () => {

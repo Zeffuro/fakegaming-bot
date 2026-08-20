@@ -60,5 +60,7 @@ describe('reminder recurrence helpers', () => {
     it('formats recurrence labels for display', () => {
         expect(formatReminderRecurrence({ unit: 'week', interval: 1, timezone: 'UTC' })).toBe('Every week (UTC)');
         expect(formatReminderRecurrence({ unit: 'day', interval: 3, timezone: 'Europe/Amsterdam' })).toBe('Every 3 days (Europe/Amsterdam)');
+        expect(formatReminderRecurrence({ unit: 'week', interval: 1, timezone: 'UTC' }, 'nl')).toBe('Elke week (UTC)');
+        expect(formatReminderRecurrence({ unit: 'month', interval: 3, timezone: 'Europe/Amsterdam' }, 'nl')).toBe('Elke 3 maanden (Europe/Amsterdam)');
     });
 });

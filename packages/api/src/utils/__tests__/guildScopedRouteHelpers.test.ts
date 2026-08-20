@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { loadGuildScopedRecords } from '../guildScopedRouteHelpers.js';
+import { NotFoundError } from '@zeffuro/fakegaming-common';
+import { loadGuildScopedRecords, sendGuildScopedRecordById } from '../guildScopedRouteHelpers.js';
 
 interface TestGuildRecord {
     id: number;
@@ -44,5 +45,22 @@ describe('loadGuildScopedRecords', () => {
         expect(result).toBe(guildRecords);
         expect(manager.getAllPlain).not.toHaveBeenCalled();
         expect(manager.getManyPlain).toHaveBeenCalledWith({ guildId: 'guild-1' });
+    });
+});
+
+describe('sendGuildScopedRecordById', () => {
+    it('uses the route-owned not-found message when a manager throws NotFoundError', async () => {
+        const json = vi.fn();
+        const status = vi.fn(() => ({ json }));
+
+        await sendGuildScopedRecordById({} as never, { status } as never, 42, {
+            findByPk: vi.fn(async () => { throw new NotFoundError('Internal manager message'); }),
+            notFoundMessage: 'Localized route message',
+        });
+
+        expect(status).toHaveBeenCalledWith(404);
+        expect(json).toHaveBeenCalledWith({
+            error: { code: 'NOT_FOUND', message: 'Localized route message' },
+        });
     });
 });

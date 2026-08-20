@@ -1,5 +1,6 @@
 import {Table, Column, Model, DataType, PrimaryKey, HasOne} from 'sequelize-typescript';
 import {LeagueConfig} from './league-config.js';
+import type { SupportedOutputLocale } from '../utils/outputLocale.js';
 
 @Table
 export class UserConfig extends Model {
@@ -18,4 +19,7 @@ export class UserConfig extends Model {
 
     @Column(DataType.STRING)
     declare defaultReminderTimeSpan?: string;
+
+    @Column(DataType.STRING)
+    declare preferredLocale: SupportedOutputLocale | null;
 }

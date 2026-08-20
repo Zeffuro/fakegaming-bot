@@ -3,6 +3,7 @@ import { getDiscordGuildChannels, CACHE_KEYS, CACHE_TTL, defaultCacheManager } f
 import { authenticateUser, checkGuildAccess } from "@/lib/auth/authUtils";
 import type { APIChannel } from "discord-api-types/v10";
 import { createSimpleLogger } from "@/lib/simpleColorLogger";
+import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || "";
 const log = createSimpleLogger("dashboard:channels-api");
@@ -13,14 +14,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
 
     const authResult = await authenticateUser(req);
     if (!authResult.success) {
-        return NextResponse.json({ error: authResult.error }, { status: authResult.statusCode || 401 });
+        return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.invalidSession") }, { status: authResult.statusCode || 401 });
     }
     const user = authResult.user!;
 
     const guildAccess = await checkGuildAccess(user, guildId, req);
     if (!guildAccess.hasAccess) {
         return NextResponse.json(
-            { error: guildAccess.error || "Not authorized for this guild" },
+            { error: getRequestDashboardMessageFromRequest(req, "error.guildForbidden") },
             { status: guildAccess.statusCode || 403 }
         );
     }
@@ -46,13 +47,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ guil
         );
 
         if (!channels) {
-            return NextResponse.json({ error: "Failed to fetch guild channels" }, { status: 500 });
+            return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.channelsUnavailable") }, { status: 500 });
         }
 
         return NextResponse.json(channels);
     } catch (error) {
         log.error({ err: error, guildId }, "Error fetching guild channels");
-        return NextResponse.json({ error: "Failed to fetch guild channels" }, { status: 500 });
+        return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.channelsUnavailable") }, { status: 500 });
     }
 }
 

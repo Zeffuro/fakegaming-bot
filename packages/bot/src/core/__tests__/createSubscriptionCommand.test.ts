@@ -40,7 +40,7 @@ describe('createSubscriptionCommand', () => {
         const addSubscription = vi.fn(async () => undefined);
         const command = createSubscriptionCommand<string>({
             meta: {name: 'add-test-subscription', description: 'Add a test subscription'},
-            usernameOptionDescription: 'Test username',
+            usernameOptionDescriptions: {en: 'Test username', nl: 'Testgebruikersnaam'},
             resolveOrVerify: async (username) => ({ok: true, id: `external-${username}`}),
             addSubscription,
             auditAdd: {
@@ -53,9 +53,18 @@ describe('createSubscriptionCommand', () => {
                     externalId,
                 }),
             },
-            successMessage: ({username, channelId}) => `Added ${username} in <#${channelId}>.`,
-            alreadyConfiguredMessage: ({username}) => `${username} already exists.`,
-            notFoundMessage: ({username}) => `${username} not found.`,
+            successMessages: {
+                en: ({username, channelId}) => `Added ${username} in <#${channelId}>.`,
+                nl: ({username, channelId}) => `${username} toegevoegd in <#${channelId}>.`,
+            },
+            alreadyConfiguredMessages: {
+                en: ({username}) => `${username} already exists.`,
+                nl: ({username}) => `${username} bestaat al.`,
+            },
+            notFoundMessages: {
+                en: ({username}) => `${username} not found.`,
+                nl: ({username}) => `${username} niet gevonden.`,
+            },
         });
         const interaction = createInteraction();
 
@@ -97,7 +106,7 @@ describe('createSubscriptionCommand', () => {
         const addSubscription = vi.fn(async () => undefined);
         const command = createSubscriptionCommand<string>({
             meta: {name: 'add-test-subscription', description: 'Add a test subscription'},
-            usernameOptionDescription: 'Test username',
+            usernameOptionDescriptions: {en: 'Test username', nl: 'Testgebruikersnaam'},
             resolveOrVerify: async (username) => ({ok: true, id: `external-${username}`}),
             checkExistingPre: async () => true,
             addSubscription,
@@ -106,9 +115,18 @@ describe('createSubscriptionCommand', () => {
                 targetType: 'testConfig',
                 targetId: ({externalId}) => externalId,
             },
-            successMessage: ({username, channelId}) => `Added ${username} in <#${channelId}>.`,
-            alreadyConfiguredMessage: ({username}) => `${username} already exists.`,
-            notFoundMessage: ({username}) => `${username} not found.`,
+            successMessages: {
+                en: ({username, channelId}) => `Added ${username} in <#${channelId}>.`,
+                nl: ({username, channelId}) => `${username} toegevoegd in <#${channelId}>.`,
+            },
+            alreadyConfiguredMessages: {
+                en: ({username}) => `${username} already exists.`,
+                nl: ({username}) => `${username} bestaat al.`,
+            },
+            notFoundMessages: {
+                en: ({username}) => `${username} not found.`,
+                nl: ({username}) => `${username} niet gevonden.`,
+            },
         });
         const interaction = createInteraction();
 

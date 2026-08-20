@@ -1,6 +1,10 @@
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
+import {resolveInteractionOutputLocale, type SupportedOutputLocale} from '../../../core/localization.js';
+import {getGeneralCopy} from '../data/generalCopy.js';
 import {isValidTimezone, getTimezoneSuggestions} from '../../../utils/timezoneUtils.js';
 import {time as META} from '../commands.manifest.js';
 
@@ -17,12 +21,16 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option
             .setName('time')
+            .setNameLocalization('nl', 'tijd')
             .setDescription('now, 20:30, 2026-06-11 20:30, ISO time, or Unix timestamp')
+            .setDescriptionLocalization('nl', 'now, 20:30, 2026-06-11 20:30, ISO-tijd of Unix-tijdstempel')
             .setRequired(true)
     ).addStringOption(option =>
         option
             .setName('timezone')
+            .setNameLocalization('nl', 'tijdzone')
             .setDescription('Timezone for wall-clock input. Defaults to your saved timezone or UTC')
+            .setDescriptionLocalization('nl', 'Tijdzone voor kloktijd; standaard je opgeslagen tijdzone of UTC')
             .setRequired(false)
             .setAutocomplete(true)
     )
@@ -145,27 +153,28 @@ export function parseTimeInput(input: string, timezone: string, now = new Date()
     return parseWallClockInput(trimmed, timezone, now);
 }
 
-function formatInTimezone(date: Date, timezone: string): string {
-    return new Intl.DateTimeFormat('en-GB', {
+function formatInTimezone(date: Date, timezone: string, locale: SupportedOutputLocale): string {
+    return new Intl.DateTimeFormat(resolveLocaleValue(locale, { en: 'en-GB', nl: 'nl-NL' }), {
         dateStyle: 'full',
         timeStyle: 'medium',
         timeZone: timezone,
     }).format(date);
 }
 
-function buildTimeReply(date: Date, input: string, timezone: string): string {
+function buildTimeReply(date: Date, input: string, timezone: string, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    const copy = getGeneralCopy(locale).time;
     const unixSeconds = Math.floor(date.getTime() / 1000);
     return [
-        `Input: \`${input}\` in \`${timezone}\``,
-        `Local time: **${formatInTimezone(date, timezone)}**`,
+        `${copy.input}: \`${input}\` in \`${timezone}\``,
+        `${copy.local}: **${formatInTimezone(date, timezone, locale)}**`,
         '',
-        `Long: <t:${unixSeconds}:F>`,
-        `Short: <t:${unixSeconds}:f>`,
-        `Time: <t:${unixSeconds}:t>`,
-        `Relative: <t:${unixSeconds}:R>`,
+        `${copy.long}: <t:${unixSeconds}:F>`,
+        `${copy.short}: <t:${unixSeconds}:f>`,
+        `${copy.time}: <t:${unixSeconds}:t>`,
+        `${copy.relative}: <t:${unixSeconds}:R>`,
         '',
-        `Copy: \`<t:${unixSeconds}:F>\``,
-        `Unix: \`${unixSeconds}\``,
+        `${copy.copy}: \`<t:${unixSeconds}:F>\``,
+        `${copy.unix}: \`${unixSeconds}\``,
     ].join('\n');
 }
 
@@ -175,21 +184,23 @@ async function getDefaultTimezone(userId: string): Promise<string> {
 }
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
+    const copy = getGeneralCopy(locale);
     const input = interaction.options.getString('time', true);
     const timezone = interaction.options.getString('timezone') ?? await getDefaultTimezone(interaction.user.id);
 
     if (!isValidTimezone(timezone)) {
-        await interaction.reply('Invalid timezone. Please use a valid IANA timezone (for example, Europe/Amsterdam) or GMT offset.');
+        await interaction.reply(copy.time.invalidZone);
         return;
     }
 
     const parsed = parseTimeInput(input, timezone);
     if (!parsed) {
-        await interaction.reply('Invalid time. Try `now`, `20:30`, `2026-06-11 20:30`, an ISO timestamp, or a Unix timestamp.');
+        await interaction.reply(copy.time.invalidTime);
         return;
     }
 
-    await interaction.reply(buildTimeReply(parsed, input, timezone));
+    await interaction.reply(buildTimeReply(parsed, input, timezone, locale));
 }
 
 async function autocomplete(interaction: AutocompleteInteraction) {

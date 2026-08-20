@@ -5,18 +5,20 @@ import {
     Skeleton,
     Typography
 } from "@mui/material";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface LoadingSkeletonProps {
     variant?: "page" | "content";
 }
 
 function LoadingContent() {
+    const { t } = useDashboardI18n();
     return (
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 8 }}>
             <Box sx={{ textAlign: "center" }}>
                 <CircularProgress size={40} sx={{ mb: 2, color: "primary.light" }} />
                 <Typography variant="body2" sx={{ color: "grey.400" }}>
-                    Loading...
+                    {t("common.loading")}
                 </Typography>
             </Box>
         </Box>

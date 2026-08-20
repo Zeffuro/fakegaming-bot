@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
 
 interface User {
@@ -10,11 +11,12 @@ interface User {
 }
 
 export function useUserData() {
+  const { t } = useDashboardI18n();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/user', {
@@ -41,7 +43,7 @@ export function useUserData() {
           return; // stop further processing; navigation in progress
         }
         // Non-401 error: set generic error state and bail out
-        setError('Failed to fetch user data');
+        setError(t("hooks.failedToFetchUserData"));
         setUser(null);
         return;
       }
@@ -51,17 +53,17 @@ export function useUserData() {
       setError(null);
     } catch (err: unknown) {
       console.error('Error fetching user data:', err);
-      const message = err instanceof Error ? err.message : 'Failed to load user data';
+      const message = err instanceof Error ? err.message : t("hooks.failedToLoadUserData");
       setError(message);
       setUser(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   const getUserDisplayName = () => {
-    if (!user) return 'User';
-    return user.global_name || user.username || 'User';
+    if (!user) return t("hooks.userFallback");
+    return user.global_name || user.username || t("hooks.userFallback");
   };
 
   const getUserAvatarUrl = () => {
@@ -70,8 +72,8 @@ export function useUserData() {
   };
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    void fetchUser();
+  }, [fetchUser]);
 
   return {
     user,

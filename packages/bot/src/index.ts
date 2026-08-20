@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import './earlyEnv.js';
 
 import {
@@ -19,6 +20,7 @@ import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
 import { getLogger, startMetricsSummaryLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { startHealthServer } from './utils/healthServer.js';
 import { startGameNightExpiryRuntime } from './modules/game-night/shared/gameNightRuntime.js';
+import {resolveInteractionOutputLocale} from './core/localization.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -115,8 +117,9 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                     logger.error({ err: error, customId: interaction.customId }, 'Error handling component interaction');
                     try {
                         if (!interaction.replied && !interaction.deferred) {
+                            const locale = await resolveInteractionOutputLocale(interaction);
                             await interaction.reply({
-                                content: 'Error handling interaction.',
+                                content: resolveLocaleValue(locale, { en: 'Error handling interaction.', nl: 'De interactie kon niet worden verwerkt.' }),
                                 flags: MessageFlags.Ephemeral
                             });
                         }
@@ -147,6 +150,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                 return;
             }
             if (!isExecutableCommandInteraction(interaction)) return;
+            const locale = await resolveInteractionOutputLocale(interaction);
 
             // Enforce per-guild DisabledModuleConfig before executing
             const guildId = interaction.guildId ?? '';
@@ -155,7 +159,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                     const moduleDisabled = await getConfigManager().disabledModuleManager.isModuleDisabled(guildId, command.moduleName);
                     if (moduleDisabled) {
                         await interaction.reply({
-                            content: `The ${command.moduleName} module is disabled for this server.`,
+                            content: resolveLocaleValue(locale, { en: `The ${command.moduleName} module is disabled for this server.`, nl: `De module ${command.moduleName} is uitgeschakeld voor deze server.` }),
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -171,7 +175,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                     const disabled = await getConfigManager().disabledCommandManager.isCommandDisabled(guildId, interaction.commandName);
                     if (disabled) {
                         await interaction.reply({
-                            content: 'This command is disabled for this server.',
+                            content: resolveLocaleValue(locale, { en: 'This command is disabled for this server.', nl: 'Deze opdracht is uitgeschakeld voor deze server.' }),
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -191,11 +195,11 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                 try {
                     if (!interaction.replied && !interaction.deferred) {
                         await interaction.reply({
-                            content: 'Error executing command.',
+                            content: resolveLocaleValue(locale, { en: 'Error executing command.', nl: 'De opdracht kon niet worden uitgevoerd.' }),
                             flags: MessageFlags.Ephemeral
                         });
                     } else {
-                        await interaction.editReply({content: 'Error executing command.'});
+                        await interaction.editReply({content: resolveLocaleValue(locale, { en: 'Error executing command.', nl: 'De opdracht kon niet worden uitgevoerd.' })});
                     }
                 } catch (err) {
                     logger.error({ err }, 'Failed to send error reply:');

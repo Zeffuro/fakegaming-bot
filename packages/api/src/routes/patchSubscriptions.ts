@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
 import { patchSubscriptionRequestSchema, pausedStateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
@@ -12,6 +11,9 @@ import {
     sendGuildScopedRecordById,
     sendGuildScopedRecords,
 } from '../utils/guildScopedRouteHelpers.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale } from '../localization/locale.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const idParamSchema = z.object({ id: z.coerce.number().int() });
@@ -84,7 +86,7 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().patchSubscriptionManager;
     await sendGuildScopedRecordById(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
-        notFoundMessage: 'Subscription not found',
+        notFoundMessage: apiText(requestLocale(req), 'patchSubscriptionNotFound'),
     });
 });
 
@@ -200,12 +202,18 @@ router.patch('/:id', jwtAuth, validateParams(idParamSchema), validateBody(paused
     const id = Number(req.params.id);
     const body = req.body as z.infer<typeof pausedStateRequestSchema>;
     const manager = getConfigManager().patchSubscriptionManager;
-    const subscription = await manager.findByPkPlain(id) as unknown as PatchSubscriptionRecord;
+    const subscription = await manager.getOnePlain({ id }) as unknown as PatchSubscriptionRecord | null;
+    if (!subscription) {
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'patchSubscriptionNotFound');
+    }
     const access = await checkUserGuildAccess(req, res, subscription.guildId);
     if (!access.authorized) return;
 
     await manager.setPaused(id, body.paused);
-    const updated = await manager.findByPkPlain(id) as unknown as PatchSubscriptionRecord;
+    const updated = await manager.getOnePlain({ id }) as unknown as PatchSubscriptionRecord | null;
+    if (!updated) {
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'patchSubscriptionNotFound');
+    }
     await recordPatchSubscriptionPausedStatus(updated, body.paused);
     await recordAuditEvent(req, {
         action: body.paused ? 'patchSubscription.pause' : 'patchSubscription.resume',
@@ -248,7 +256,7 @@ router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) =
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
         findByPk: id => manager.findByPkPlain(id),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'Subscription not found',
+        notFoundMessage: apiText(requestLocale(req), 'patchSubscriptionNotFound'),
         auditAction: 'patchSubscription.delete',
         auditTargetType: 'patchSubscription',
         auditMetadata: subscription => ({

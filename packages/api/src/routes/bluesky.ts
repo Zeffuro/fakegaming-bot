@@ -1,5 +1,4 @@
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
 import { blueskyCreateRequestSchema, blueskyUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -18,6 +17,9 @@ import {
     upsertGuildScopedRecord,
 } from '../utils/guildScopedRouteHelpers.js';
 import { optionalGuildListQuerySchema } from './sharedSchemas.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -154,8 +156,8 @@ router.get('/profile', validateQuery(profileQuerySchema), async (req, res) => {
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().blueskyManager;
     await sendGuildScopedRecordById(req, res, Number(req.params.id), {
-        findByPk: id => manager.findByPkPlain(id),
-        notFoundMessage: 'Bluesky post config not found',
+        findByPk: id => manager.getOnePlain({ id }),
+        notFoundMessage: apiText(requestLocale(req), 'blueskyConfigNotFound'),
     });
 });
 
@@ -201,7 +203,7 @@ router.post('/', jwtAuth, validateBody(blueskyCreateRequestSchema), requireGuild
     const body = req.body as z.infer<typeof blueskyCreateRequestSchema>;
     const blueskyHandle = normalizeBlueskyHandle(body.blueskyHandle);
     if (!blueskyHandle) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'blueskyHandleRequired');
     }
     const normalizedBody = { ...body, blueskyHandle };
     const manager = getConfigManager().blueskyManager;
@@ -247,14 +249,14 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
     const body = req.body as z.infer<typeof blueskyUpdateRequestSchema>;
     const normalized = typeof body.blueskyHandle === 'string' ? normalizeBlueskyHandle(body.blueskyHandle) : undefined;
     if (typeof body.blueskyHandle === 'string' && !normalized) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'blueskyHandle is required' } });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'blueskyHandleRequired');
     }
     const normalizedBody = { ...body, ...(normalized ? { blueskyHandle: normalized } : {}) };
     const manager = getConfigManager().blueskyManager;
     await updateGuildScopedRecord(req, res, Number(req.params.id), normalizedBody, {
-        findByPk: id => manager.findByPkPlain(id),
+        findByPk: id => manager.getOnePlain({ id }),
         update: (id, data) => manager.updatePlain(data, { id }),
-        notFoundMessage: 'Bluesky post config not found',
+        notFoundMessage: apiText(requestLocale(req), 'blueskyConfigNotFound'),
         auditAction: 'bluesky.update',
         auditTargetType: 'blueskyConfig',
         auditMetadata: (updated, previous) => updatedChannelAuditMetadata(updated, previous),
@@ -289,9 +291,9 @@ router.put('/:id', jwtAuth, validateParams(idParamSchema), validateBody(blueskyU
 router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
     const manager = getConfigManager().blueskyManager;
     await deleteGuildScopedRecord(req, res, Number(req.params.id), {
-        findByPk: id => manager.findByPkPlain(id),
+        findByPk: id => manager.getOnePlain({ id }),
         removeByPk: id => manager.removeByPk(id),
-        notFoundMessage: 'Bluesky post config not found',
+        notFoundMessage: apiText(requestLocale(req), 'blueskyConfigNotFound'),
         auditAction: 'bluesky.delete',
         auditTargetType: 'blueskyConfig',
         auditMetadata: config => channelAuditMetadata(config),

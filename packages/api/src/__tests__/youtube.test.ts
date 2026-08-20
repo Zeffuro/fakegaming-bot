@@ -90,6 +90,12 @@ describe('YouTube API', () => {
         expectNotFound(res);
     });
 
+    it('localizes a non-existent YouTube config response', async () => {
+        const res = await client.get('/api/youtube/999999').set('Accept-Language', 'nl');
+        expectNotFound(res);
+        expect(res.body.error.message).toBe('YouTube-videoconfiguratie niet gevonden');
+    });
+
     it('should delete a youtube config', async () => {
         const all = await configManager.youtubeManager.getMany({
             youtubeChannelId: testYoutube.youtubeChannelId,

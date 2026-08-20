@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api, type UserReminder, type UserReminderInput, type UserReminderPausedInput, type UserReminderSnoozeInput } from "@/lib/api-client";
 
 export function useUserReminders() {
+    const { t } = useDashboardI18n();
     const [reminders, setReminders] = useState<UserReminder[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -16,12 +18,12 @@ export function useUserReminders() {
             setReminders(result.reminders.sort(compareReminders));
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load reminders";
+            const message = err instanceof Error ? err.message : t("hooks.failedToLoadReminders");
             setError(message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const createReminder = useCallback(async (input: UserReminderInput) => {
         setSaving(true);
@@ -31,13 +33,13 @@ export function useUserReminders() {
             setError(null);
             return reminder;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to create reminder";
+            const message = err instanceof Error ? err.message : t("hooks.failedToCreateReminder");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const snoozeReminder = useCallback(async (id: string, input: UserReminderSnoozeInput) => {
         setSaving(true);
@@ -47,13 +49,13 @@ export function useUserReminders() {
             setError(null);
             return reminder;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to snooze reminder";
+            const message = err instanceof Error ? err.message : t("hooks.failedToSnoozeReminder");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const setReminderPaused = useCallback(async (id: string, input: UserReminderPausedInput) => {
         setSaving(true);
@@ -63,13 +65,13 @@ export function useUserReminders() {
             setError(null);
             return reminder;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to update reminder";
+            const message = err instanceof Error ? err.message : t("hooks.failedToUpdateReminder");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const deleteReminder = useCallback(async (id: string) => {
         setSaving(true);
@@ -78,13 +80,13 @@ export function useUserReminders() {
             setReminders((current) => current.filter((reminder) => reminder.id !== id));
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to delete reminder";
+            const message = err instanceof Error ? err.message : t("hooks.failedToDeleteReminder");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();

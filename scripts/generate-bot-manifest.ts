@@ -8,6 +8,7 @@ import {
     titleize,
     findCommandFiles,
     loadCommands,
+    COMMAND_LOCALIZATION_LOCALES,
     type CommandOut,
 } from './lib/command-introspection.js';
 
@@ -62,6 +63,7 @@ async function main() {
                 default_member_permissions: c.default_member_permissions ?? null,
                 testOnly: c.testOnly ?? null,
                 type: c.type ?? null,
+                localizations: c.localizations ?? null,
             }))
         }));
 
@@ -69,11 +71,14 @@ async function main() {
     const flatCommands = tree.flatMap(n => n.commands);
 
     const target = path.join(PROJECT_ROOT, 'packages/common/src/manifest/bot-manifest.ts');
+    const localizationLocaleUnion = COMMAND_LOCALIZATION_LOCALES.map(locale => JSON.stringify(locale)).join(' | ') || 'never';
     const header = `// AUTO-GENERATED FILE. Do not edit manually.\n` +
         `// Run: pnpm exec tsx scripts/generate-bot-manifest.ts\n\n` +
         `export interface BotModuleDef { name: string; title: string; description: string; }\n` +
         `export type BotCommandType = 'chatInput' | 'user' | 'message';\n` +
-        `export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; }\n` +
+        `export interface BotCommandLocalization { name: string; description: string; }\n` +
+        `export type BotCommandLocalizationLocale = ${localizationLocaleUnion};\n` +
+        `export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; localizations?: Record<BotCommandLocalizationLocale, BotCommandLocalization> | null; }\n` +
         `export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<BotCommand>; }\n\n`;
 
     const modulesConst = `export const BOT_MODULES: ReadonlyArray<BotModuleDef> = ${JSON.stringify(flatModules, null, 4)} as const;\n\n`;

@@ -3,6 +3,8 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {v4 as uuidv4} from 'uuid';
 import {createMessageContextCommand, getTestOnly} from '../../../core/commandBuilder.js';
 import {remindMeInOneHour as META} from '../commands.manifest.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
+import {getReminderCopy} from '../copy/reminderCopy.js';
 
 const data = createMessageContextCommand(META);
 const oneHourMs = 60 * 60 * 1000;
@@ -12,9 +14,10 @@ function buildMessageLink(guildId: string, channelId: string, messageId: string)
 }
 
 async function execute(interaction: MessageContextMenuCommandInteraction): Promise<void> {
+    const copy = getReminderCopy(await resolveInteractionOutputLocale(interaction));
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({content: 'Message reminders only work in a server.', flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: copy.serverOnly, flags: MessageFlags.Ephemeral});
         return;
     }
 
@@ -25,13 +28,13 @@ async function execute(interaction: MessageContextMenuCommandInteraction): Promi
     await getConfigManager().reminderManager.addReminder({
         id: uuidv4(),
         userId: interaction.user.id,
-        message: `Follow up on this message: ${messageLink}`,
+        message: copy.followUpMessage(messageLink),
         timespan: '1h',
         timestamp,
     });
 
     await interaction.reply({
-        content: `Reminder set for <t:${Math.floor(timestamp / 1000)}:R>.`,
+        content: copy.oneHourSet(Math.floor(timestamp / 1000)),
         flags: MessageFlags.Ephemeral,
     });
 }

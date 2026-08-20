@@ -9,10 +9,10 @@ export const ANIME_SEASON_PAGE_SIZE = 12;
 
 export const SEASON_OPTIONS = ["current", "next", "WINTER", "SPRING", "SUMMER", "FALL"] as const;
 export const SEASON_SCOPES = [
-  { value: "airing", label: "Airing / Upcoming", description: "Best for reminders" },
-  { value: "chart", label: "Season Chart", description: "Closest to MAL season pages" },
-  { value: "tv", label: "TV Only", description: "Filters out specials and movies" },
-  { value: "all", label: "All Known Formats", description: "Broad AniList browse" },
+  { value: "airing" },
+  { value: "chart" },
+  { value: "tv" },
+  { value: "all" },
 ] as const;
 
 export type AnimeSeasonOption = (typeof SEASON_OPTIONS)[number];

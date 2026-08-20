@@ -5,6 +5,7 @@ import { Avatar, Box, Chip, Stack, Typography, type SxProps, type Theme } from "
 import { ANIME_ACCENT_SOFT, ANIME_GOLD, ANIME_PINK } from "@/components/anime/animeTheme";
 import { canSubscribe, formatAnimeMeta, formatAnimeTitle, formatNextEpisode, formatRankings, formatStatus } from "@/components/anime/animeUtils";
 import type { AnimeSearchResult } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface AnimeMediaRowProps {
   anime: AnimeSearchResult;
@@ -15,8 +16,10 @@ interface AnimeMediaRowProps {
 }
 
 export function AnimeMediaRow({ anime, actions, dense = false, showGenres = false, sx }: AnimeMediaRowProps) {
-  const nextEpisode = formatNextEpisode(anime);
-  const rankings = formatRankings(anime);
+  const { locale, t } = useDashboardI18n();
+  const title = formatAnimeTitle(anime);
+  const nextEpisode = formatNextEpisode(anime, locale);
+  const rankings = formatRankings(anime, locale);
   const posterWidth = dense ? 42 : 64;
   const posterHeight = dense ? 58 : 90;
 
@@ -24,6 +27,7 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
     <Box sx={{ display: "flex", flexWrap: { xs: "wrap", sm: "nowrap" }, gap: 1.5, alignItems: "flex-start", minWidth: 0, ...sx }}>
       <Avatar
         src={anime.coverImage?.large ?? undefined}
+        alt={t("anime.coverArt", { title })}
         variant="rounded"
         sx={{
           width: posterWidth,
@@ -40,16 +44,16 @@ export function AnimeMediaRow({ anime, actions, dense = false, showGenres = fals
           sx={{ color: "grey.50", fontWeight: 800, lineHeight: 1.2 }}
           noWrap={dense}
         >
-          {formatAnimeTitle(anime)}
+          {title}
         </Typography>
         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.58)" }}>
-          {formatAnimeMeta(anime)}
+          {formatAnimeMeta(anime, locale)}
         </Typography>
         {!dense && (
           <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", rowGap: 0.75, minWidth: 0 }}>
             <Chip
               size="small"
-              label={formatStatus(anime.status)}
+              label={formatStatus(anime.status, locale)}
               sx={{
                 bgcolor: canSubscribe(anime) ? "rgba(104,215,255,0.12)" : "rgba(255,107,154,0.12)",
                 color: canSubscribe(anime) ? ANIME_ACCENT_SOFT : ANIME_PINK,

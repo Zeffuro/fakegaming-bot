@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type RolePermissionSnapshotRecord } from '@/lib/api-client';
 import type { RolePermissionSnapshotData, RolePermissionSnapshotMemberNames } from '@zeffuro/fakegaming-common/models';
+import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
 
 interface UseRolePermissionSnapshotsOptions {
     enabled?: boolean;
 }
 
 export function useRolePermissionSnapshots(guildId: string, options: UseRolePermissionSnapshotsOptions = {}) {
+    const { t } = useDashboardI18n();
     const enabled = options.enabled ?? true;
     const [snapshots, setSnapshots] = useState<RolePermissionSnapshotRecord[]>([]);
     const [liveSnapshot, setLiveSnapshot] = useState<RolePermissionSnapshotData | null>(null);
@@ -30,12 +32,12 @@ export function useRolePermissionSnapshots(guildId: string, options: UseRolePerm
             setSnapshots(response.snapshots);
             setError(null);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load permission snapshots');
+            setError(err instanceof Error ? err.message : t('hooks.failedToLoadPermissionSnapshots'));
             setSnapshots([]);
         } finally {
             setLoading(false);
         }
-    }, [enabled, guildId]);
+    }, [enabled, guildId, t]);
 
     const refreshLive = useCallback(async () => {
         if (!enabled || !guildId) return;
@@ -47,11 +49,11 @@ export function useRolePermissionSnapshots(guildId: string, options: UseRolePerm
             setMemberNames(response.memberNames ?? {});
             setError(null);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to load live permission state');
+            setError(err instanceof Error ? err.message : t('hooks.failedToLoadLivePermissionState'));
         } finally {
             setRefreshingLive(false);
         }
-    }, [enabled, guildId]);
+    }, [enabled, guildId, t]);
 
     const saveLiveSnapshot = useCallback(async () => {
         if (!enabled || !guildId) return null;
@@ -65,12 +67,12 @@ export function useRolePermissionSnapshots(guildId: string, options: UseRolePerm
             setError(null);
             return response.snapshot;
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to save the live permission snapshot');
+            setError(err instanceof Error ? err.message : t('hooks.failedToSaveLivePermissionSnapshot'));
             return null;
         } finally {
             setSaving(false);
         }
-    }, [enabled, guildId]);
+    }, [enabled, guildId, t]);
 
     const deleteSnapshot = useCallback(async (id: number) => {
         if (!enabled || !guildId) return false;
@@ -81,12 +83,12 @@ export function useRolePermissionSnapshots(guildId: string, options: UseRolePerm
             setError(null);
             return true;
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to delete the permission snapshot');
+            setError(err instanceof Error ? err.message : t('hooks.failedToDeletePermissionSnapshot'));
             return false;
         } finally {
             setDeletingSnapshotId(null);
         }
-    }, [enabled, guildId]);
+    }, [enabled, guildId, t]);
 
     useEffect(() => {
         void loadSnapshots();

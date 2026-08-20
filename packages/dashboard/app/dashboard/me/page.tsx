@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Alert,
     AlertTitle,
@@ -60,7 +60,9 @@ import { useUserDigestSubscription } from "@/components/hooks/useUserDigestSubsc
 import { useUserNotes } from "@/components/hooks/useUserNotes";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api, type AnimeSearchResult, type AnimeSubscriptionDashboardConfig, type UserDigestCategory, type UserDigestFrequency, type UserNote, type UserReminder, type UserSettingsUpdateInput } from "@/lib/api-client";
+import type { DashboardMessageKey, DashboardTranslator } from "@/lib/i18n/messages";
 import { buildPersonalRiotSummary, type PersonalRiotSummary, type PersonalRiotSummaryTone } from "@/lib/personalRiotSummary";
 import {
     buildPersonalSubscriptionOverview,
@@ -97,14 +99,14 @@ const emptyDigestForm = {
 };
 
 const weekdayOptions = [
-    { value: "0", label: "Sunday" },
-    { value: "1", label: "Monday" },
-    { value: "2", label: "Tuesday" },
-    { value: "3", label: "Wednesday" },
-    { value: "4", label: "Thursday" },
-    { value: "5", label: "Friday" },
-    { value: "6", label: "Saturday" },
-];
+    { value: "0", labelKey: "personal.weekdaySunday" },
+    { value: "1", labelKey: "personal.weekdayMonday" },
+    { value: "2", labelKey: "personal.weekdayTuesday" },
+    { value: "3", labelKey: "personal.weekdayWednesday" },
+    { value: "4", labelKey: "personal.weekdayThursday" },
+    { value: "5", labelKey: "personal.weekdayFriday" },
+    { value: "6", labelKey: "personal.weekdaySaturday" },
+] as const satisfies ReadonlyArray<{ value: string; labelKey: DashboardMessageKey }>;
 
 type NoteFormState = typeof emptyNoteForm;
 type ReminderFormState = typeof emptyReminderForm;
@@ -112,6 +114,7 @@ type SettingsFormState = typeof emptySettingsForm;
 type DigestFormState = typeof emptyDigestForm;
 
 export default function PersonalDashboardPage() {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const { notes, loading: notesLoading, saving: notesSaving, error: notesError, createNote, updateNote, deleteNote } = useUserNotes();
     const {
         reminders,
@@ -169,6 +172,12 @@ export default function PersonalDashboardPage() {
     const [reminderLocalError, setReminderLocalError] = useState<string | null>(null);
     const [settingsLocalError, setSettingsLocalError] = useState<string | null>(null);
     const [digestLocalError, setDigestLocalError] = useState<string | null>(null);
+    const formatDateValue = useCallback((value: string | number | null): string => {
+        if (value === null || value === "") return t("common.unknown");
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return typeof value === "string" ? value : t("personal.unknownTime");
+        return formatDate(date, { dateStyle: "medium", timeStyle: "short" });
+    }, [formatDate, t]);
 
     useEffect(() => {
         setSettingsForm({
@@ -207,8 +216,8 @@ export default function PersonalDashboardPage() {
     const activeReminderCount = reminders.length - pausedReminderCount;
     const digestStatus = digestSubscription ? (digestSubscription.paused ? "paused" : "active") : "off";
     const riotSummary = useMemo(
-        () => buildPersonalRiotSummary(riotLink, formatDate),
-        [riotLink],
+        () => buildPersonalRiotSummary(riotLink, value => formatDateValue(value), t),
+        [formatDateValue, riotLink, t],
     );
     const subscriptionOverview = useMemo(
         () => buildPersonalSubscriptionOverview({
@@ -216,15 +225,18 @@ export default function PersonalDashboardPage() {
             animeSubscriptions,
             digestSubscription,
             settings,
-            formatDateTime,
+            formatDateTime: formatDateValue,
+            formatNumber,
+            t,
         }),
-        [animeSubscriptions, digestSubscription, reminders, settings],
+        [animeSubscriptions, digestSubscription, formatDateValue, formatNumber, reminders, settings, t],
     );
     const activityFeed = useMemo(() => buildUserActivityFeed({
         auditEvents: activity?.auditEvents ?? [],
         deliveries: activity?.deliveries ?? [],
         limit: 8,
-    }), [activity]);
+        t,
+    }), [activity, t]);
 
     const resetNoteForm = () => {
         setEditingId(null);
@@ -246,7 +258,7 @@ export default function PersonalDashboardPage() {
         const title = noteForm.title.trim();
         const body = noteForm.body;
         if (!title && !body.trim()) {
-            setNoteLocalError("Add a title or note before saving.");
+            setNoteLocalError(t("personal.noteRequired"));
             return;
         }
 
@@ -274,11 +286,11 @@ export default function PersonalDashboardPage() {
         const message = reminderForm.message.trim();
         const timespan = reminderForm.timespan.trim();
         if (!message) {
-            setReminderLocalError("Add a reminder message before saving.");
+            setReminderLocalError(t("personal.reminderMessageRequired"));
             return;
         }
         if (!timespan) {
-            setReminderLocalError("Add when you want to be reminded, such as 10m, 1h, or 2d.");
+            setReminderLocalError(t("personal.reminderTimeRequired"));
             return;
         }
 
@@ -286,7 +298,7 @@ export default function PersonalDashboardPage() {
             const recurrence = reminderForm.recurrence.trim();
             const recurrenceTimezone = reminderForm.recurrenceTimezone.trim() || settings?.timezone?.trim() || "";
             if (recurrence && !recurrenceTimezone) {
-                setReminderLocalError("Add a timezone for recurring reminders, such as Europe/Amsterdam.");
+                setReminderLocalError(t("personal.reminderTimezoneValidation"));
                 return;
             }
 
@@ -309,7 +321,7 @@ export default function PersonalDashboardPage() {
         if (timezone) input.timezone = timezone;
         if (defaultReminderTimeSpan) input.defaultReminderTimeSpan = defaultReminderTimeSpan;
         if (!input.timezone && !input.defaultReminderTimeSpan) {
-            setSettingsLocalError("Add a timezone, default reminder interval, or both before saving settings.");
+            setSettingsLocalError(t("personal.settingsValidation"));
             return;
         }
 
@@ -326,15 +338,15 @@ export default function PersonalDashboardPage() {
         const runAt = digestForm.runAt.trim();
         const frequency = digestForm.frequency === "weekly" ? "weekly" : "daily";
         if (!timezone) {
-            setDigestLocalError("Add a timezone for digest delivery.");
+            setDigestLocalError(t("personal.digestTimezoneValidation"));
             return;
         }
         if (!runAt) {
-            setDigestLocalError("Add a digest delivery time.");
+            setDigestLocalError(t("personal.digestTimeValidation"));
             return;
         }
         if (!digestForm.includeReminders && !digestForm.includeAnime) {
-            setDigestLocalError("Select at least one digest category.");
+            setDigestLocalError(t("personal.digestCategoryValidation"));
             return;
         }
 
@@ -359,7 +371,7 @@ export default function PersonalDashboardPage() {
 
     const toggleDigestPaused = async () => {
         if (!digestSubscription) {
-            setDigestLocalError("Save a digest schedule before pausing it.");
+            setDigestLocalError(t("personal.digestScheduleValidation"));
             return;
         }
 
@@ -380,7 +392,7 @@ export default function PersonalDashboardPage() {
     };
 
     const removeNote = async (note: UserNote) => {
-        if (!window.confirm(`Delete "${note.title}"?`)) return;
+        if (!window.confirm(t("personal.deleteNoteConfirmation", { title: note.title }))) return;
         try {
             await deleteNote(note.id);
             if (editingId === note.id) resetNoteForm();
@@ -408,7 +420,7 @@ export default function PersonalDashboardPage() {
     };
 
     const removeReminder = async (reminder: UserReminder) => {
-        if (!window.confirm(`Delete reminder "${reminder.message}"?`)) return;
+        if (!window.confirm(t("personal.deleteReminderConfirmation", { message: reminder.message }))) return;
         try {
             await deleteReminder(reminder.id);
         } catch {
@@ -417,7 +429,7 @@ export default function PersonalDashboardPage() {
     };
 
     const removeAnimeSubscription = async (subscription: AnimeSubscriptionDashboardConfig) => {
-        if (!window.confirm(`Remove anime subscription "${subscriptionTitle(subscription)}"?`)) return;
+        if (!window.confirm(t("anime.removePersonalSubscriptionConfirmation", { title: subscriptionTitle(subscription) }))) return;
         try {
             await deleteAnimeSubscription(subscription);
         } catch {
@@ -429,23 +441,23 @@ export default function PersonalDashboardPage() {
         <DashboardLayout
             loading={loading}
             maxWidth="xl"
-            currentTrail={[{ label: "Your dashboard", href: null, icon: <NoteAlt sx={{ fontSize: 16 }} /> }]}
+            currentTrail={[{ label: t("personal.title"), href: null, icon: <NoteAlt sx={{ fontSize: 16 }} /> }]}
         >
             <FeatureShell accent={dashboardAccents.commands} secondaryAccent={dashboardAccents.birthdays}>
                 <FeatureHero
                     icon={<NoteAlt />}
-                    eyebrow="Personal"
-                    title="Your dashboard"
-                    description="Account-level notes, reminders, settings, and DM subscriptions that follow your Discord login instead of a server."
+                    eyebrow={t("personal.eyebrow")}
+                    title={t("personal.title")}
+                    description={t("personal.description")}
                     accent={dashboardAccents.commands}
                     secondaryAccent={dashboardAccents.birthdays}
                     stats={[
-                        { label: "notes", value: notes.length },
-                        { label: "pinned", value: notes.filter((note) => note.pinned).length },
-                        { label: "reminders", value: activeReminderCount },
-                        { label: "anime subs", value: animeSubscriptions.length },
-                        { label: "digest", value: digestStatus },
-                        { label: "Riot link", value: riotSummary.linked ? "linked" : "none" },
+                        { label: t("personal.statNotes"), value: formatNumber(notes.length) },
+                        { label: t("personal.statPinned"), value: formatNumber(notes.filter((note) => note.pinned).length) },
+                        { label: t("personal.statReminders"), value: formatNumber(activeReminderCount) },
+                        { label: t("anime.personalSubscriptionStat"), value: formatNumber(animeSubscriptions.length) },
+                        { label: t("personal.statDigest"), value: formatDigestStatus(digestStatus, t) },
+                        { label: t("personal.statRiotLink"), value: riotSummary.linked ? t("personal.linked") : t("personal.none") },
                     ]}
                     actions={(
                         <Button
@@ -454,7 +466,7 @@ export default function PersonalDashboardPage() {
                             onClick={resetNoteForm}
                             sx={primaryActionButtonSx(dashboardAccents.commands)}
                         >
-                            New note
+                            {t("personal.newNote")}
                         </Button>
                     )}
                 />
@@ -473,14 +485,14 @@ export default function PersonalDashboardPage() {
                                     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                {editingNote ? "Edit note" : "Create note"}
+                                                {editingNote ? t("personal.editNote") : t("personal.createNote")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.62)", mt: 0.5 }}>
-                                                Titles are optional. Blank titles use the first line of the note.
+                                                {t("personal.noteFormDescription")}
                                             </Typography>
                                         </Box>
                                         <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-                                            <Typography sx={{ color: "grey.300", fontWeight: 700 }}>Pinned</Typography>
+                                            <Typography sx={{ color: "grey.300", fontWeight: 700 }}>{t("personal.pinned")}</Typography>
                                             <Switch
                                                 checked={noteForm.pinned}
                                                 onChange={(event) => setNoteForm((current) => ({ ...current, pinned: event.target.checked }))}
@@ -498,12 +510,12 @@ export default function PersonalDashboardPage() {
                                             "& .MuiAlert-icon": { color: "#FFC857" },
                                         }}
                                     >
-                                        <AlertTitle sx={{ color: "grey.50", fontWeight: 900 }}>Do not store secrets</AlertTitle>
-                                        Do not store passwords, API keys, tokens, recovery codes, private keys, or other secrets.
+                                        <AlertTitle sx={{ color: "grey.50", fontWeight: 900 }}>{t("personal.secretWarningTitle")}</AlertTitle>
+                                        {t("personal.secretWarningBody")}
                                     </Alert>
 
                                     <TextField
-                                        label="Title (optional)"
+                                        label={t("personal.titleOptional")}
                                         value={noteForm.title}
                                         onChange={(event) => setNoteForm((current) => ({ ...current, title: event.target.value }))}
                                         slotProps={{ htmlInput: { maxLength: 160 } }}
@@ -511,7 +523,7 @@ export default function PersonalDashboardPage() {
                                         sx={dashboardFieldSx(dashboardAccents.commands)}
                                     />
                                     <TextField
-                                        label="Note"
+                                        label={t("personal.noteLabel")}
                                         value={noteForm.body}
                                         onChange={(event) => setNoteForm((current) => ({ ...current, body: event.target.value }))}
                                         multiline
@@ -528,7 +540,7 @@ export default function PersonalDashboardPage() {
                                             onClick={() => void submitNoteForm()}
                                             sx={primaryActionButtonSx(dashboardAccents.commands)}
                                         >
-                                            {editingNote ? "Save changes" : "Save note"}
+                                            {editingNote ? t("personal.saveChanges") : t("personal.saveNote")}
                                         </Button>
                                         {editingNote && (
                                             <Button
@@ -536,7 +548,7 @@ export default function PersonalDashboardPage() {
                                                 onClick={resetNoteForm}
                                                 sx={ghostActionButtonSx(dashboardAccents.commands)}
                                             >
-                                                Cancel
+                                                {t("common.cancel")}
                                             </Button>
                                         )}
                                     </Stack>
@@ -548,16 +560,18 @@ export default function PersonalDashboardPage() {
                                     <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Notes
+                                                {t("personal.notesTitle")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {noteQuery.trim() ? `${filteredNotes.length} of ${notes.length} shown` : `${notes.length} saved`}
+                                                {noteQuery.trim()
+                                                    ? t("personal.notesFiltered", { shown: formatNumber(filteredNotes.length), total: formatNumber(notes.length) })
+                                                    : t("personal.notesSaved", { count: formatNumber(notes.length) })}
                                             </Typography>
                                         </Box>
                                         <TextField
                                             value={noteQuery}
                                             onChange={(event) => setNoteQuery(event.target.value)}
-                                            placeholder="Search notes"
+                                            placeholder={t("personal.searchNotes")}
                                             size="small"
                                             sx={{ width: { xs: "100%", md: 280 }, ...dashboardFieldSx(dashboardAccents.quotes) }}
                                             slotProps={{
@@ -573,9 +587,9 @@ export default function PersonalDashboardPage() {
                                     </Stack>
 
                                     {notes.length === 0 ? (
-                                        <EmptyPersonalState icon={<NoteAlt />} title="No notes yet" accent={dashboardAccents.commands} />
+                                        <EmptyPersonalState icon={<NoteAlt />} title={t("personal.noNotes")} accent={dashboardAccents.commands} />
                                     ) : filteredNotes.length === 0 ? (
-                                        <EmptyPersonalState icon={<Search />} title="No matching notes" accent={dashboardAccents.quotes} />
+                                        <EmptyPersonalState icon={<Search />} title={t("personal.noMatchingNotes")} accent={dashboardAccents.quotes} />
                                     ) : (
                                         <Stack spacing={1.5}>
                                             {filteredNotes.map((note) => (
@@ -597,16 +611,18 @@ export default function PersonalDashboardPage() {
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Reminders
+                                                {t("personal.remindersTitle")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {pausedReminderCount > 0 ? `${activeReminderCount} active, ${pausedReminderCount} paused` : `${activeReminderCount} active`}
+                                                {pausedReminderCount > 0
+                                                    ? t("personal.remindersSummary", { active: formatNumber(activeReminderCount), paused: formatNumber(pausedReminderCount) })
+                                                    : t("personal.remindersActive", { count: formatNumber(activeReminderCount) })}
                                             </Typography>
                                         </Box>
                                         <NotificationsActive sx={{ color: alpha(dashboardAccents.birthdays, 0.86) }} />
                                     </Stack>
                                     {reminders.length === 0 ? (
-                                        <EmptyPersonalState icon={<Schedule />} title="No reminders pending" accent={dashboardAccents.birthdays} />
+                                        <EmptyPersonalState icon={<Schedule />} title={t("personal.noReminders")} accent={dashboardAccents.birthdays} />
                                     ) : (
                                         <Stack spacing={1.5}>
                                             {reminders.map((reminder) => (
@@ -629,10 +645,10 @@ export default function PersonalDashboardPage() {
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Anime DM subscriptions
+                                                {t("anime.personalDashboardSubscriptionsTitle")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {animeSubscriptions.length} personal reminders
+                                                {t("anime.personalReminders", { count: formatNumber(animeSubscriptions.length) })}
                                             </Typography>
                                         </Box>
                                         <Movie sx={{ color: alpha(dashboardAccents.anime, 0.86) }} />
@@ -643,7 +659,7 @@ export default function PersonalDashboardPage() {
                                     />
                                     <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
                                     {animeSubscriptions.length === 0 ? (
-                                        <EmptyPersonalState icon={<Movie />} title="No anime DM subscriptions" accent={dashboardAccents.anime} />
+                                        <EmptyPersonalState icon={<Movie />} title={t("anime.noPersonalDmSubscriptions")} accent={dashboardAccents.anime} />
                                     ) : (
                                         <Stack spacing={1.5}>
                                             {animeSubscriptions.map((subscription) => (
@@ -666,14 +682,14 @@ export default function PersonalDashboardPage() {
                                 <Stack spacing={2.25} sx={{ position: "relative" }}>
                                     <Stack spacing={0.5}>
                                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                            Create reminder
+                                            {t("personal.createReminder")}
                                         </Typography>
                                         <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                            Reminders are sent as direct messages by the bot.
+                                            {t("personal.reminderDmDescription")}
                                         </Typography>
                                     </Stack>
                                     <TextField
-                                        label="Reminder"
+                                        label={t("personal.reminderLabel")}
                                         value={reminderForm.message}
                                         onChange={(event) => setReminderForm((current) => ({ ...current, message: event.target.value }))}
                                         multiline
@@ -683,27 +699,27 @@ export default function PersonalDashboardPage() {
                                         sx={dashboardFieldSx(dashboardAccents.birthdays)}
                                     />
                                     <TextField
-                                        label="When"
+                                        label={t("personal.when")}
                                         value={reminderForm.timespan}
                                         onChange={(event) => setReminderForm((current) => ({ ...current, timespan: event.target.value }))}
-                                        helperText="Examples: 10m, 1h, 2d"
+                                        helperText={t("personal.timespanExamples")}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.birthdays)}
                                     />
                                     <TextField
-                                        label="Repeat (optional)"
+                                        label={t("personal.repeatOptional")}
                                         value={reminderForm.recurrence}
                                         onChange={(event) => setReminderForm((current) => ({ ...current, recurrence: event.target.value }))}
-                                        helperText="Examples: daily, weekly, monthly, every 2 weeks"
+                                        helperText={t("personal.repeatExamples")}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.birthdays)}
                                     />
                                     <TextField
-                                        label="Repeat timezone"
+                                        label={t("personal.repeatTimezone")}
                                         value={reminderForm.recurrenceTimezone}
                                         onChange={(event) => setReminderForm((current) => ({ ...current, recurrenceTimezone: event.target.value }))}
                                         placeholder={settings?.timezone ?? "Europe/Amsterdam"}
-                                        helperText={settings?.timezone ? `Defaults to ${settings.timezone}` : "Required when Repeat is set"}
+                                        helperText={settings?.timezone ? t("personal.defaultsTo", { value: settings.timezone }) : t("personal.repeatTimezoneRequired")}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.birthdays)}
                                     />
@@ -714,7 +730,7 @@ export default function PersonalDashboardPage() {
                                         onClick={() => void submitReminderForm()}
                                         sx={primaryActionButtonSx(dashboardAccents.birthdays)}
                                     >
-                                        Save reminder
+                                        {t("personal.saveReminder")}
                                     </Button>
                                 </Stack>
                             </FeaturePanel>
@@ -726,29 +742,29 @@ export default function PersonalDashboardPage() {
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                User settings
+                                                {t("personal.settingsTitle")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                Timezone and reminder defaults
+                                                {t("personal.settingsDescription")}
                                             </Typography>
                                         </Box>
                                         <ManageAccounts sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
                                     </Stack>
                                     <TextField
-                                        label="Timezone"
+                                        label={t("personal.timezone")}
                                         value={settingsForm.timezone}
                                         onChange={(event) => setSettingsForm((current) => ({ ...current, timezone: event.target.value }))}
                                         placeholder="Europe/Amsterdam"
-                                        helperText={`Current: ${settings?.timezone ?? "Not set"}`}
+                                        helperText={t("personal.current", { value: settings?.timezone ?? t("personal.notSet") })}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.settings)}
                                     />
                                     <TextField
-                                        label="Default reminder interval"
+                                        label={t("personal.defaultReminderInterval")}
                                         value={settingsForm.defaultReminderTimeSpan}
                                         onChange={(event) => setSettingsForm((current) => ({ ...current, defaultReminderTimeSpan: event.target.value }))}
                                         placeholder="1h"
-                                        helperText={`Current: ${settings?.defaultReminderTimeSpan ?? "Not set"}; examples: 10m, 1h, 2d`}
+                                        helperText={t("personal.currentWithExamples", { value: settings?.defaultReminderTimeSpan ?? t("personal.notSet") })}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.settings)}
                                     />
@@ -759,7 +775,7 @@ export default function PersonalDashboardPage() {
                                         onClick={() => void submitSettingsForm()}
                                         sx={primaryActionButtonSx(dashboardAccents.settings)}
                                     >
-                                        Save settings
+                                        {t("personal.saveSettings")}
                                     </Button>
                                 </Stack>
                             </FeaturePanel>
@@ -769,17 +785,17 @@ export default function PersonalDashboardPage() {
                                     <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                                         <Box>
                                             <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                Personal digest
+                                                {t("personal.digestTitle")}
                                             </Typography>
                                             <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {formatDigestStatus(digestStatus)}
+                                                {formatDigestStatus(digestStatus, t)}
                                             </Typography>
                                         </Box>
                                         <NotificationsActive sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
                                     </Stack>
                                     <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
                                         <Chip
-                                            label={formatDigestStatus(digestStatus)}
+                                            label={formatDigestStatus(digestStatus, t)}
                                             size="small"
                                             sx={{
                                                 bgcolor: digestStatus === "active" ? alpha(dashboardAccents.settings, 0.16) : "rgba(255,255,255,0.08)",
@@ -788,7 +804,7 @@ export default function PersonalDashboardPage() {
                                         />
                                         {digestSubscription?.nextRunAt ? (
                                             <Chip
-                                                label={`Next: ${formatDateTime(digestSubscription.nextRunAt)}`}
+                                                label={t("personal.next", { date: formatDateValue(digestSubscription.nextRunAt) })}
                                                 size="small"
                                                 variant="outlined"
                                                 sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
@@ -796,7 +812,7 @@ export default function PersonalDashboardPage() {
                                         ) : null}
                                         {digestSubscription?.lastSentAt ? (
                                             <Chip
-                                                label={`Last sent: ${formatDateTime(digestSubscription.lastSentAt)}`}
+                                                label={t("personal.lastSent", { date: formatDateValue(digestSubscription.lastSentAt) })}
                                                 size="small"
                                                 variant="outlined"
                                                 sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
@@ -805,32 +821,32 @@ export default function PersonalDashboardPage() {
                                     </Stack>
                                     <TextField
                                         select
-                                        label="Frequency"
+                                        label={t("personal.frequency")}
                                         value={digestForm.frequency}
                                         onChange={(event) => setDigestForm((current) => ({ ...current, frequency: event.target.value === "weekly" ? "weekly" : "daily" }))}
                                         fullWidth
                                         sx={dashboardFieldSx(dashboardAccents.settings)}
                                     >
-                                        <MenuItem value="daily">Daily</MenuItem>
-                                        <MenuItem value="weekly">Weekly</MenuItem>
+                                        <MenuItem value="daily">{t("personal.daily")}</MenuItem>
+                                        <MenuItem value="weekly">{t("personal.weekly")}</MenuItem>
                                     </TextField>
                                     {digestForm.frequency === "weekly" ? (
                                         <TextField
                                             select
-                                            label="Weekday"
+                                            label={t("personal.weekday")}
                                             value={digestForm.dayOfWeek}
                                             onChange={(event) => setDigestForm((current) => ({ ...current, dayOfWeek: event.target.value }))}
                                             fullWidth
                                             sx={dashboardFieldSx(dashboardAccents.settings)}
                                         >
                                             {weekdayOptions.map((option) => (
-                                                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+                                                <MenuItem key={option.value} value={option.value}>{t(option.labelKey)}</MenuItem>
                                             ))}
                                         </TextField>
                                     ) : null}
                                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
                                         <TextField
-                                            label="Delivery time"
+                                            label={t("personal.deliveryTime")}
                                             value={digestForm.runAt}
                                             onChange={(event) => setDigestForm((current) => ({ ...current, runAt: event.target.value }))}
                                             placeholder="09:00"
@@ -838,7 +854,7 @@ export default function PersonalDashboardPage() {
                                             sx={dashboardFieldSx(dashboardAccents.settings)}
                                         />
                                         <TextField
-                                            label="Timezone"
+                                            label={t("personal.timezone")}
                                             value={digestForm.timezone}
                                             onChange={(event) => setDigestForm((current) => ({ ...current, timezone: event.target.value }))}
                                             placeholder={settings?.timezone ?? "Europe/Amsterdam"}
@@ -847,16 +863,16 @@ export default function PersonalDashboardPage() {
                                         />
                                     </Stack>
                                     <Stack spacing={1.25}>
-                                        <Typography sx={{ color: "grey.300", fontWeight: 800 }}>Digest categories</Typography>
+                                        <Typography sx={{ color: "grey.300", fontWeight: 800 }}>{t("personal.digestCategories")}</Typography>
                                         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
                                             <DigestCategoryToggle
-                                                label="Reminders"
+                                                label={t("personal.categoryReminders")}
                                                 checked={digestForm.includeReminders}
                                                 accent={dashboardAccents.birthdays}
                                                 onChange={(checked) => setDigestForm((current) => ({ ...current, includeReminders: checked }))}
                                             />
                                             <DigestCategoryToggle
-                                                label="Anime"
+                                                label={t("personal.categoryAnime")}
                                                 checked={digestForm.includeAnime}
                                                 accent={dashboardAccents.anime}
                                                 onChange={(checked) => setDigestForm((current) => ({ ...current, includeAnime: checked }))}
@@ -871,7 +887,7 @@ export default function PersonalDashboardPage() {
                                             onClick={() => void submitDigestForm()}
                                             sx={primaryActionButtonSx(dashboardAccents.settings)}
                                         >
-                                            Save digest
+                                            {t("personal.saveDigest")}
                                         </Button>
                                         {digestSubscription ? (
                                             <Button
@@ -881,7 +897,7 @@ export default function PersonalDashboardPage() {
                                                 onClick={() => void toggleDigestPaused()}
                                                 sx={ghostActionButtonSx(dashboardAccents.settings)}
                                             >
-                                                {digestSubscription.paused ? "Resume" : "Pause"}
+                                                {digestSubscription.paused ? t("common.resume") : t("common.pause")}
                                             </Button>
                                         ) : null}
                                     </Stack>
@@ -911,13 +927,15 @@ function RiotLinkPanel({ summary, loading, onRefresh }: {
     loading: boolean;
     onRefresh: () => void | Promise<void>;
 }) {
+    const { t } = useDashboardI18n();
+
     return (
         <FeaturePanel accent={dashboardAccents.patchNotes}>
             <Stack spacing={2.25} sx={{ position: "relative" }}>
                 <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                     <Box>
                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                            Riot linked account
+                            {t("personal.riotTitle")}
                         </Typography>
                         <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
                             {summary.helperText}
@@ -932,9 +950,9 @@ function RiotLinkPanel({ summary, loading, onRefresh }: {
                                 color: "grey.50",
                             }}
                         />
-                        <Tooltip title="Refresh Riot link">
+                        <Tooltip title={t("personal.refreshRiot")}>
                             <IconButton
-                                aria-label="Refresh Riot linked account"
+                                aria-label={t("personal.refreshRiotAria")}
                                 disabled={loading}
                                 onClick={() => void onRefresh()}
                                 sx={{ color: alpha(dashboardAccents.patchNotes, 0.86) }}
@@ -951,7 +969,7 @@ function RiotLinkPanel({ summary, loading, onRefresh }: {
                             <RiotLinkInfoRow key={row.label} label={row.label} value={row.value} tone={row.tone} />
                         ))}
                         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)", overflowWrap: "anywhere" }}>
-                            Account changes are handled through the existing Riot link flows.
+                            {t("personal.riotChangesHelp")}
                         </Typography>
                     </Stack>
                 ) : (
@@ -963,13 +981,15 @@ function RiotLinkPanel({ summary, loading, onRefresh }: {
 }
 
 function PersonalSubscriptionOverviewPanel({ overview }: { overview: PersonalSubscriptionOverview }) {
+    const { t } = useDashboardI18n();
+
     return (
         <FeaturePanel accent={dashboardAccents.settings}>
             <Stack spacing={2.25} sx={{ position: "relative" }}>
                 <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
                     <Box>
                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                            Subscription overview
+                            {t("personal.subscriptionOverviewTitle")}
                         </Typography>
                         <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
                             {overview.summary}
@@ -1050,9 +1070,13 @@ function UserActivityPanel({
     loading: boolean;
     onRefresh: () => void | Promise<void>;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     const summary = loading
-        ? "Loading recent activity"
-        : `${auditTotal} account ${auditTotal === 1 ? "event" : "events"}; ${deliveryTotal} birthday ${deliveryTotal === 1 ? "delivery" : "deliveries"}`;
+        ? t("personal.activityLoadingRecent")
+        : t("personal.activitySummary", {
+            events: t(auditTotal === 1 ? "personal.activityEventOne" : "personal.activityEventMany", { count: formatNumber(auditTotal) }),
+            deliveries: t(deliveryTotal === 1 ? "personal.activityDeliveryOne" : "personal.activityDeliveryMany", { count: formatNumber(deliveryTotal) }),
+        });
 
     return (
         <FeaturePanel accent={dashboardAccents.commands}>
@@ -1060,7 +1084,7 @@ function UserActivityPanel({
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { sm: "center" }, justifyContent: "space-between" }}>
                     <Box>
                         <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                            Account activity
+                            {t("personal.activityTitle")}
                         </Typography>
                         <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
                             {summary}
@@ -1074,12 +1098,12 @@ function UserActivityPanel({
                         onClick={() => void onRefresh()}
                         sx={ghostActionButtonSx(dashboardAccents.commands)}
                     >
-                        Refresh
+                        {t("common.refresh")}
                     </Button>
                 </Stack>
 
                 {items.length === 0 ? (
-                    <EmptyPersonalState icon={<AccessTime />} title={loading ? "Loading activity" : "No activity recorded"} accent={dashboardAccents.commands} />
+                    <EmptyPersonalState icon={<AccessTime />} title={loading ? t("personal.activityLoading") : t("personal.activityEmpty")} accent={dashboardAccents.commands} />
                 ) : (
                     <Stack spacing={1.25}>
                         {items.map(item => <UserActivityCard key={item.id} item={item} />)}
@@ -1091,12 +1115,13 @@ function UserActivityPanel({
 }
 
 function UserActivityCard({ item }: { item: UserActivityFeedItem }) {
+    const { t, formatDate } = useDashboardI18n();
     const accent = item.type === "delivery"
         ? dashboardAccents.birthdays
         : item.status === "failure" ? dashboardAccents.quotes : dashboardAccents.commands;
     const label = item.type === "delivery"
-        ? "Delivery"
-        : item.status === "failure" ? "Failed" : "Audit";
+        ? t("personal.activityDeliveryLabel")
+        : item.status === "failure" ? t("personal.activityFailedLabel") : t("personal.activityAuditLabel");
 
     return (
         <Box sx={{ ...dashboardCardSx(accent), p: 1.75 }}>
@@ -1117,7 +1142,7 @@ function UserActivityCard({ item }: { item: UserActivityFeedItem }) {
                     />
                 </Stack>
                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
-                    {formatDate(item.timestamp)}
+                    {formatOptionalDate(item.timestamp, formatDate, t("common.unknown"))}
                 </Typography>
             </Stack>
         </Box>
@@ -1156,6 +1181,7 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
     saving: boolean;
     onSubscribe: (input: { anilistId?: number; title?: string; reminderMinutes?: number }) => void | Promise<void>;
 }) {
+    const { locale, t } = useDashboardI18n();
     const [query, setQuery] = useState("");
     const [results, setResults] = useState<AnimeSearchResult[]>([]);
     const [selectedAnime, setSelectedAnime] = useState<AnimeSearchResult | null>(null);
@@ -1177,12 +1203,12 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
                     setResults(response.results);
                     setLocalError(null);
                 })
-                .catch((err: unknown) => setLocalError(errorMessage(err, "Anime search failed")))
+                .catch((err: unknown) => setLocalError(errorMessage(err, t("anime.searchFailed"))))
                 .finally(() => setSearchLoading(false));
         }, 250);
 
         return () => window.clearTimeout(handle);
-    }, [query, selectedAnime]);
+    }, [query, selectedAnime, t]);
 
     const invalidSelectedAnime = Boolean(selectedAnime && !canSubscribe(selectedAnime));
     const submitDisabled = saving || !query.trim() || invalidSelectedAnime;
@@ -1190,11 +1216,11 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
     const submit = async () => {
         const trimmed = query.trim();
         if (!trimmed) {
-            setLocalError("Pick an anime or enter an AniList ID.");
+            setLocalError(t("anime.pickAnimeOrEnterAniListId"));
             return;
         }
         if (selectedAnime && !canSubscribe(selectedAnime)) {
-            setLocalError(`${formatStatus(selectedAnime.status)} anime cannot receive episode reminders.`);
+            setLocalError(t("anime.statusCannotReceiveReminders", { status: formatStatus(selectedAnime.status, locale) }));
             return;
         }
 
@@ -1236,7 +1262,7 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
                         }}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
                         getOptionLabel={(option) => formatAnimeTitle(option)}
-                        noOptionsText={query.trim().length < 2 ? "Type at least 2 characters" : "No AniList results"}
+                        noOptionsText={query.trim().length < 2 ? t("config.typeAtLeastTwoCharacters") : t("anime.noResults")}
                         renderOption={(props, option) => (
                             <Box component="li" {...props} key={option.id} sx={{ bgcolor: "rgba(18,24,34,0.98)", color: "grey.100", py: 1 }}>
                                 <AnimeMediaRow anime={option} dense />
@@ -1245,9 +1271,9 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
                         renderInput={(params) => (
                             <TextField
                                 {...params}
-                                label="Anime"
-                                placeholder="Frieren or AniList ID"
-                                helperText={invalidSelectedAnime ? `${formatStatus(selectedAnime?.status)} anime cannot receive episode reminders.` : " "}
+                                label={t("anime.anime")}
+                                placeholder={t("anime.personalSearchPlaceholder", { example: "Frieren" })}
+                                helperText={invalidSelectedAnime ? t("anime.statusCannotReceiveReminders", { status: formatStatus(selectedAnime?.status, locale) }) : " "}
                                 sx={dashboardFieldSx(dashboardAccents.anime)}
                                 slotProps={{
                                     ...params.slotProps,
@@ -1277,14 +1303,14 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
                     />
                     <TextField
                         select
-                        label="Reminder"
+                        label={t("anime.reminderTiming")}
                         value={reminderMinutes}
                         onChange={(event) => setReminderMinutes(Number(event.target.value))}
                         sx={{ ...dashboardFieldSx(dashboardAccents.anime), minWidth: { md: 180 } }}
                     >
                         {[0, 5, 10, 15, 30, 60, 120, 360].map((minutes) => (
                             <MenuItem key={minutes} value={minutes}>
-                                {minutes === 0 ? "At air time" : `${minutes} min before`}
+                                {minutes === 0 ? t("anime.atAirTime") : t("anime.minutesBefore", { minutes })}
                             </MenuItem>
                         ))}
                     </TextField>
@@ -1310,7 +1336,7 @@ function PersonalAnimeSubscribeForm({ saving, onSubscribe }: {
                     onClick={() => void submit()}
                     sx={primaryActionButtonSx(dashboardAccents.anime)}
                 >
-                    {saving ? "Saving..." : "Add DM subscription"}
+                    {saving ? t("anime.saving") : t("anime.addDmSubscription")}
                 </Button>
             </Stack>
         </Box>
@@ -1323,6 +1349,7 @@ function AnimeSubscriptionCard({ subscription, saving, onTogglePaused, onDelete 
     onTogglePaused: (subscription: AnimeSubscriptionDashboardConfig) => void | Promise<unknown>;
     onDelete: (subscription: AnimeSubscriptionDashboardConfig) => void | Promise<void>;
 }) {
+    const { locale, t } = useDashboardI18n();
     const paused = Boolean(subscription.paused);
 
     return (
@@ -1334,26 +1361,26 @@ function AnimeSubscriptionCard({ subscription, saving, onTogglePaused, onDelete 
                             {subscriptionTitle(subscription)}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.5 }}>
-                            {subscriptionMeta(subscription)}
+                            {subscriptionMeta(subscription, locale)}
                         </Typography>
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 1, flexWrap: "wrap", rowGap: 0.75 }}>
                             <Chip
-                                label={`AniList #${subscription.anilistId}`}
+                                label={t("anime.anilistId", { id: subscription.anilistId })}
                                 size="small"
                                 variant="outlined"
                                 sx={{ color: "rgba(255,255,255,0.68)", borderColor: "rgba(255,255,255,0.16)" }}
                             />
                             {paused && (
                                 <Chip
-                                    label="Paused"
+                                    label={t("common.paused")}
                                     size="small"
                                     sx={{ bgcolor: "rgba(104,215,255,0.14)", color: "grey.50" }}
                                 />
                             )}
                         </Stack>
                     </Box>
-                    <Tooltip title="Delete">
-                        <IconButton aria-label="Delete anime subscription" onClick={() => void onDelete(subscription)} disabled={saving} sx={{ color: dashboardAccents.quotes }}>
+                    <Tooltip title={t("common.delete")}>
+                        <IconButton aria-label={t("anime.deletePersonalSubscription")} onClick={() => void onDelete(subscription)} disabled={saving} sx={{ color: dashboardAccents.quotes }}>
                             <Delete fontSize="small" />
                         </IconButton>
                     </Tooltip>
@@ -1365,7 +1392,7 @@ function AnimeSubscriptionCard({ subscription, saving, onTogglePaused, onDelete 
                     onClick={() => void onTogglePaused(subscription)}
                     sx={ghostActionButtonSx(dashboardAccents.anime)}
                 >
-                    {paused ? "Resume reminders" : "Pause reminders"}
+                    {paused ? t("anime.resumeReminders") : t("anime.pauseReminders")}
                 </Button>
             </Stack>
         </Box>
@@ -1378,6 +1405,8 @@ function NoteCard({ note, onTogglePinned, onEdit, onDelete }: {
     onEdit: (note: UserNote) => void;
     onDelete: (note: UserNote) => void | Promise<void>;
 }) {
+    const { t, formatDate } = useDashboardI18n();
+
     return (
         <Box sx={{ ...dashboardCardSx(note.pinned ? dashboardAccents.commands : dashboardAccents.quotes), p: 2.25 }}>
             <Stack spacing={1.5} sx={{ position: "relative" }}>
@@ -1390,33 +1419,33 @@ function NoteCard({ note, onTogglePinned, onEdit, onDelete }: {
                             {note.pinned && (
                                 <Chip
                                     icon={<PushPin fontSize="small" />}
-                                    label="Pinned"
+                                    label={t("personal.pinned")}
                                     size="small"
                                     sx={{ bgcolor: alpha(dashboardAccents.commands, 0.16), color: "grey.50" }}
                                 />
                             )}
                         </Stack>
                         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
-                            Updated {formatDate(note.updatedAt)}
+                            {t("personal.noteUpdated", { date: formatOptionalDate(note.updatedAt, formatDate, t("common.unknown")) })}
                         </Typography>
                     </Box>
                     <Stack direction="row" spacing={0.5}>
-                        <Tooltip title={note.pinned ? "Unpin" : "Pin"}>
+                        <Tooltip title={note.pinned ? t("personal.unpin") : t("personal.pin")}>
                             <IconButton
-                                aria-label={note.pinned ? "Unpin note" : "Pin note"}
+                                aria-label={note.pinned ? t("personal.unpinNoteAria") : t("personal.pinNoteAria")}
                                 onClick={() => void onTogglePinned(note)}
                                 sx={{ color: note.pinned ? dashboardAccents.commands : "grey.300" }}
                             >
                                 <PushPin fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Edit">
-                            <IconButton aria-label="Edit note" onClick={() => onEdit(note)} sx={{ color: "grey.300" }}>
+                        <Tooltip title={t("common.edit")}>
+                            <IconButton aria-label={t("personal.editNoteAria")} onClick={() => onEdit(note)} sx={{ color: "grey.300" }}>
                                 <Edit fontSize="small" />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete">
-                            <IconButton aria-label="Delete note" onClick={() => void onDelete(note)} sx={{ color: dashboardAccents.quotes }}>
+                        <Tooltip title={t("common.delete")}>
+                            <IconButton aria-label={t("personal.deleteNoteAria")} onClick={() => void onDelete(note)} sx={{ color: dashboardAccents.quotes }}>
                                 <Delete fontSize="small" />
                             </IconButton>
                         </Tooltip>
@@ -1442,6 +1471,7 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
     onTogglePaused: (reminder: UserReminder) => void | Promise<void>;
     onDelete: (reminder: UserReminder) => void | Promise<void>;
 }) {
+    const { t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     const recurring = isRecurringReminder(reminder);
     const paused = isPausedRecurringReminder(reminder);
     const nextPreviewAt = reminder.nextPreviewAt ?? reminder.timestamp;
@@ -1458,7 +1488,7 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                         <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 0.75, flexWrap: "wrap", rowGap: 0.75 }}>
                             <Chip
                                 icon={<AccessTime fontSize="small" />}
-                                label={paused ? "Paused" : formatReminderRelative(reminder.timestamp)}
+                                label={paused ? t("personal.statusPaused") : formatReminderRelative(reminder.timestamp, formatRelativeTime, t)}
                                 size="small"
                                 sx={{
                                     bgcolor: paused
@@ -1468,12 +1498,12 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                                 }}
                             />
                             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-                                {formatDateTime(reminder.timestamp)}
+                                {formatOptionalDate(reminder.timestamp, formatDate, t("personal.unknownTime"))}
                             </Typography>
                             {reminder.recurrenceUnit && reminder.recurrenceInterval && reminder.recurrenceTimezone ? (
                                 <Chip
                                     icon={<Schedule fontSize="small" />}
-                                    label={formatReminderRecurrenceLabel(reminder)}
+                                    label={formatReminderRecurrenceLabel(reminder, t, formatNumber)}
                                     size="small"
                                     sx={{
                                         bgcolor: alpha(dashboardAccents.settings, 0.14),
@@ -1483,7 +1513,9 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                             ) : null}
                             {recurring ? (
                                 <Chip
-                                    label={`${paused ? "Next after resume" : "Next run"}: ${formatDateTime(nextPreviewAt)}`}
+                                    label={t(paused ? "personal.reminderNextAfterResume" : "personal.reminderNextRun", {
+                                        date: formatOptionalDate(nextPreviewAt, formatDate, t("personal.unknownTime")),
+                                    })}
                                     size="small"
                                     variant="outlined"
                                     sx={{
@@ -1494,8 +1526,8 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                             ) : null}
                         </Stack>
                     </Box>
-                    <Tooltip title="Delete">
-                        <IconButton aria-label="Delete reminder" onClick={() => void onDelete(reminder)} disabled={saving} sx={{ color: dashboardAccents.quotes }}>
+                    <Tooltip title={t("common.delete")}>
+                        <IconButton aria-label={t("personal.deleteReminderAria")} onClick={() => void onDelete(reminder)} disabled={saving} sx={{ color: dashboardAccents.quotes }}>
                             <Delete fontSize="small" />
                         </IconButton>
                     </Tooltip>
@@ -1510,7 +1542,7 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                             onClick={() => void onTogglePaused(reminder)}
                             sx={ghostActionButtonSx(dashboardAccents.settings)}
                         >
-                            {paused ? "Resume" : "Pause"}
+                            {paused ? t("common.resume") : t("common.pause")}
                         </Button>
                     ) : null}
                     {["10m", "1h", "1d"].map((timespan) => (
@@ -1522,7 +1554,7 @@ function ReminderCard({ reminder, saving, onSnooze, onTogglePaused, onDelete }: 
                             onClick={() => void onSnooze(reminder, timespan)}
                             sx={ghostActionButtonSx(dashboardAccents.birthdays)}
                         >
-                            Snooze {timespan}
+                            {t("personal.snooze", { timespan })}
                         </Button>
                     ))}
                 </Stack>
@@ -1539,10 +1571,10 @@ function isPausedRecurringReminder(reminder: UserReminder): boolean {
     return reminder.completed && isRecurringReminder(reminder);
 }
 
-function formatDigestStatus(status: "active" | "paused" | "off"): string {
-    if (status === "active") return "Active";
-    if (status === "paused") return "Paused";
-    return "Not configured";
+function formatDigestStatus(status: "active" | "paused" | "off", t: DashboardTranslator): string {
+    if (status === "active") return t("personal.statusActive");
+    if (status === "paused") return t("personal.statusPaused");
+    return t("personal.statusNotConfigured");
 }
 
 function DigestCategoryToggle({ label, checked, accent, onChange }: {
@@ -1588,43 +1620,54 @@ function EmptyPersonalState({ icon, title, accent }: { icon: React.ReactNode; ti
     );
 }
 
-function formatDate(value: string | null): string {
-    if (!value) return "unknown";
+function formatOptionalDate(
+    value: string | number | null,
+    formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string,
+    fallback: string,
+): string {
+    if (value === null || value === "") return fallback;
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat(undefined, {
+    if (Number.isNaN(date.getTime())) return String(value);
+    return formatDate(date, {
         dateStyle: "medium",
         timeStyle: "short",
-    }).format(date);
+    });
 }
 
-function formatDateTime(value: number): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "unknown time";
-    return new Intl.DateTimeFormat(undefined, {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(date);
-}
-
-function formatReminderRecurrenceLabel(reminder: UserReminder): string {
-    if (!reminder.recurrenceUnit || !reminder.recurrenceInterval || !reminder.recurrenceTimezone) return "One-off";
-    const unit = reminder.recurrenceInterval === 1 ? reminder.recurrenceUnit : `${reminder.recurrenceUnit}s`;
-    const cadence = reminder.recurrenceInterval === 1 ? `Every ${reminder.recurrenceUnit}` : `Every ${reminder.recurrenceInterval} ${unit}`;
+function formatReminderRecurrenceLabel(
+    reminder: UserReminder,
+    t: DashboardTranslator,
+    formatNumber: (value: number) => string,
+): string {
+    if (!reminder.recurrenceUnit || !reminder.recurrenceInterval || !reminder.recurrenceTimezone) return t("personal.reminderOneOff");
+    const unit = formatReminderUnit(reminder.recurrenceUnit, reminder.recurrenceInterval !== 1, t);
+    const cadence = reminder.recurrenceInterval === 1
+        ? t("personal.reminderEveryOne", { unit })
+        : t("personal.reminderEveryMany", { count: formatNumber(reminder.recurrenceInterval), unit });
     return `${cadence} - ${reminder.recurrenceTimezone}`;
 }
 
-function formatReminderRelative(timestamp: number): string {
+function formatReminderUnit(unit: NonNullable<UserReminder["recurrenceUnit"]>, plural: boolean, t: DashboardTranslator): string {
+    if (unit === "day") return t(plural ? "personal.unitDays" : "personal.unitDay");
+    if (unit === "week") return t(plural ? "personal.unitWeeks" : "personal.unitWeek");
+    return t(plural ? "personal.unitMonths" : "personal.unitMonth");
+}
+
+function formatReminderRelative(
+    timestamp: number,
+    formatRelativeTime: (value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions) => string,
+    t: DashboardTranslator,
+): string {
     const diffMs = timestamp - Date.now();
-    if (diffMs <= 0) return "Due now";
+    if (diffMs <= 0) return t("personal.reminderDueNow");
 
     const minutes = Math.round(diffMs / 60_000);
-    if (minutes < 1) return "In under 1m";
-    if (minutes < 60) return `In ${minutes}m`;
+    if (minutes < 1) return t("personal.reminderDueUnderMinute");
+    if (minutes < 60) return formatRelativeTime(minutes, "minute", { numeric: "always" });
 
     const hours = Math.round(minutes / 60);
-    if (hours < 48) return `In ${hours}h`;
+    if (hours < 48) return formatRelativeTime(hours, "hour", { numeric: "always" });
 
     const days = Math.round(hours / 24);
-    return `In ${days}d`;
+    return formatRelativeTime(days, "day", { numeric: "always" });
 }

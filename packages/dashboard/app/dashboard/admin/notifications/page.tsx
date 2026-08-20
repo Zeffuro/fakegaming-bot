@@ -29,18 +29,23 @@ import { getAdminProviderOptions, normalizeAdminProviderFilter } from "@/compone
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { api, type AdminNotificationRecord, type AdminNotificationsResponse } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
-function formatDateTime(value?: string | null): string {
-    if (!value) return "Unknown";
+function formatDateTime(
+    value: string | null | undefined,
+    formatDate: (value: Date | number | string, options?: Intl.DateTimeFormatOptions) => string,
+    unknown: string,
+): string {
+    if (!value) return unknown;
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString();
+    return formatDate(parsed, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function InfoLine({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ minWidth: 0 }}>
-            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.42)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.42)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0 }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -51,6 +56,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 }
 
 function NotificationCard({ record }: { record: AdminNotificationRecord }) {
+    const { t, formatDate } = useDashboardI18n();
     const accent = dashboardAccents.commands;
 
     return (
@@ -68,7 +74,7 @@ function NotificationCard({ record }: { record: AdminNotificationRecord }) {
                     <Chip
                         size="small"
                         icon={<NotificationsActive />}
-                        label={record.messageId ? "message saved" : "dedupe only"}
+                        label={record.messageId ? t("admin.notificationsMessageSaved") : t("admin.notificationsDedupeOnly")}
                         sx={{
                             bgcolor: alpha(accent, 0.14),
                             color: "grey.50",
@@ -79,10 +85,10 @@ function NotificationCard({ record }: { record: AdminNotificationRecord }) {
                 </Stack>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
-                    <InfoLine label="Guild" value={record.guildId ?? "Unknown"} />
-                    <InfoLine label="Channel" value={record.channelId ?? "Unknown"} />
-                    <InfoLine label="Message" value={record.messageId ?? "Not stored"} />
-                    <InfoLine label="Recorded" value={formatDateTime(record.createdAt)} />
+                    <InfoLine label={t("admin.notificationsGuild")} value={record.guildId ?? t("common.unknown")} />
+                    <InfoLine label={t("admin.notificationsChannel")} value={record.channelId ?? t("common.unknown")} />
+                    <InfoLine label={t("admin.notificationsMessage")} value={record.messageId ?? t("admin.notificationsNotStored")} />
+                    <InfoLine label={t("admin.notificationsRecorded")} value={formatDateTime(record.createdAt, formatDate, t("common.unknown"))} />
                 </Box>
             </Stack>
         </FeaturePanel>
@@ -90,6 +96,7 @@ function NotificationCard({ record }: { record: AdminNotificationRecord }) {
 }
 
 function AdminNotificationsContent() {
+    const { t, formatNumber } = useDashboardI18n();
     const accent = dashboardAccents.admin;
     const searchParams = useSearchParams();
     const searchParamString = searchParams?.toString() ?? "";
@@ -114,11 +121,11 @@ function AdminNotificationsContent() {
             setError(null);
             setData(await api.getAdminNotifications(query));
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Failed to load notification deliveries");
+            setError(err instanceof Error ? err.message : t("admin.notificationsLoadFailed"));
         } finally {
             setLoading(false);
         }
-    }, [query]);
+    }, [query, t]);
 
     useEffect(() => {
         void load();
@@ -142,27 +149,27 @@ function AdminNotificationsContent() {
     const canGoNext = data ? offset + data.limit < data.total : false;
 
     return (
-        <AdminPage title="Notification Deliveries" trail={[{ label: "Notifications", href: "/dashboard/admin/notifications" }]}>
+        <AdminPage title={t("admin.notificationsPageTitle")} trail={[{ label: t("admin.notifications"), href: "/dashboard/admin/notifications" }]}>
             <Stack spacing={2.5}>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" }, gap: 2 }}>
                     <FeaturePanel accent={dashboardAccents.commands} sx={{ p: 2.25 }}>
                         <Stack spacing={0.5} sx={{ position: "relative" }}>
-                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                                Total
+                            <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: 0, textTransform: "uppercase" }}>
+                                {t("admin.notificationsTotal")}
                             </Typography>
-                            <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.05em" }}>
-                                {summary.total}
+                            <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
+                                {formatNumber(summary.total)}
                             </Typography>
                         </Stack>
                     </FeaturePanel>
                     {summary.byProvider.slice(0, 3).map(item => (
                         <FeaturePanel key={item.provider} accent={dashboardAccents.commands} sx={{ p: 2.25 }}>
                             <Stack spacing={0.5} sx={{ position: "relative" }}>
-                                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: 0, textTransform: "uppercase" }}>
                                     {item.provider}
                                 </Typography>
-                                <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.05em" }}>
-                                    {item.count}
+                                <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
+                                    {formatNumber(item.count)}
                                 </Typography>
                             </Stack>
                         </FeaturePanel>
@@ -172,20 +179,20 @@ function AdminNotificationsContent() {
                 <FeaturePanel accent={accent} sx={{ p: 2.5 }}>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ position: "relative", alignItems: { xs: "stretch", md: "center" } }}>
                         <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 180 }}>
-                            <InputLabel id="notification-provider-label">Provider</InputLabel>
+                            <InputLabel id="notification-provider-label">{t("admin.notificationsProvider")}</InputLabel>
                             <Select
                                 labelId="notification-provider-label"
-                                label="Provider"
+                                label={t("admin.notificationsProvider")}
                                 value={provider}
                                 onChange={(event) => { setProvider(event.target.value); setOffset(0); }}
                             >
-                                <MenuItem value="">All</MenuItem>
+                                <MenuItem value="">{t("admin.notificationsAll")}</MenuItem>
                                 {providerOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
                             </Select>
                         </FormControl>
 
                         <TextField
-                            label="Guild ID"
+                            label={t("admin.notificationsGuildId")}
                             size="small"
                             value={guildId}
                             onChange={(event) => { setGuildId(event.target.value); setOffset(0); }}
@@ -195,10 +202,10 @@ function AdminNotificationsContent() {
                         <Box sx={{ flex: 1 }} />
 
                         <Button variant="outlined" onClick={() => void load()} disabled={loading} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-                            Refresh
+                            {t("common.refresh")}
                         </Button>
                         <Button variant="outlined" onClick={clearFilters} disabled={loading} startIcon={<RestartAlt />} sx={ghostActionButtonSx(accent)}>
-                            Reset
+                            {t("admin.notificationsReset")}
                         </Button>
                     </Stack>
                 </FeaturePanel>
@@ -213,15 +220,15 @@ function AdminNotificationsContent() {
                     <Stack spacing={2} sx={{ position: "relative" }}>
                         <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { xs: "flex-start", md: "center" }, justifyContent: "space-between" }}>
                             <Box>
-                                <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.04em" }}>
-                                    Delivery records
+                                <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
+                                    {t("admin.notificationsRecords")}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.5 }}>
-                                    These are dedupe and delivery metadata records, not logged message content.
+                                    {t("admin.notificationsRecordsDescription")}
                                 </Typography>
                             </Box>
                             <Chip
-                                label={`${data?.total ?? 0} matching`}
+                                label={t("admin.notificationsMatching", { count: formatNumber(data?.total ?? 0) })}
                                 sx={{ bgcolor: alpha(dashboardAccents.commands, 0.14), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.commands, 0.28)}` }}
                             />
                         </Stack>
@@ -235,17 +242,17 @@ function AdminNotificationsContent() {
                         ) : (
                             <Box sx={{ borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.035)", border: "1px dashed rgba(255,255,255,0.12)", p: 2 }}>
                                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                    {loading ? "Loading notification records..." : "No notification records match the current filters."}
+                                    {loading ? t("admin.notificationsLoading") : t("admin.notificationsEmpty")}
                                 </Typography>
                             </Box>
                         )}
 
                         <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end", alignItems: "center" }}>
                             <Button variant="outlined" disabled={!canGoBack || loading} onClick={() => setOffset(current => Math.max(0, current - (data?.limit ?? 50)))} startIcon={<ArrowBack />} sx={ghostActionButtonSx(dashboardAccents.commands)}>
-                                Previous
+                                {t("admin.notificationsPrevious")}
                             </Button>
                             <Button variant="outlined" disabled={!canGoNext || loading} onClick={() => setOffset(current => current + (data?.limit ?? 50))} endIcon={<ArrowForward />} sx={ghostActionButtonSx(dashboardAccents.commands)}>
-                                Next
+                                {t("admin.notificationsNext")}
                             </Button>
                         </Stack>
                     </Stack>
@@ -256,8 +263,10 @@ function AdminNotificationsContent() {
 }
 
 export default function AdminNotificationsPage() {
+    const { t } = useDashboardI18n();
+
     return (
-        <Suspense fallback={<AdminPage title="Notification Deliveries"><Typography>Loading notification deliveries...</Typography></AdminPage>}>
+        <Suspense fallback={<AdminPage title={t("admin.notificationsPageTitle")}><Typography>{t("admin.notificationsLoadingDeliveries")}</Typography></AdminPage>}>
             <AdminNotificationsContent />
         </Suspense>
     );

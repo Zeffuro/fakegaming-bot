@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { expectOk, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
+import { expectBadRequest, expectOk, givenAuthenticatedClient } from '@zeffuro/fakegaming-common/testing';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
 
@@ -65,5 +65,12 @@ describe('Audit events API', () => {
                 }),
             }),
         ]);
+    });
+
+    it('localizes invalid query responses', async () => {
+        const res = await admin.get('/api/auditEvents?limit=0').set('Accept-Language', 'nl');
+
+        expectBadRequest(res);
+        expect(res.body.error.message).toBe('Validatie van de query is mislukt');
     });
 });

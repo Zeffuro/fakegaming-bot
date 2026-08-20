@@ -3,6 +3,7 @@ import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import { formatAdminProviderCooldownSummary, getAdminProviderCooldownHint } from "@/lib/adminProviderCooldown";
 import { formatAdminProviderPlaybookSummary, getAdminProviderPlaybookHint } from "@/lib/adminProviderPlaybooks";
 import type { AuditEventEntry, IntegrationHealthRecord, IntegrationHealthStatus, JobRunEntry } from "@/lib/api-client";
+import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
 
 export type AdminReviewSeverity = "critical" | "warning" | "info";
 export type AdminReviewSource = "operations" | "integration-health" | "jobs" | "audit";
@@ -56,13 +57,112 @@ const sourceRank: Record<AdminReviewSource, number> = {
     audit: 3,
 };
 
-export function buildAdminReviewQueue(input: BuildAdminReviewQueueInput): AdminReviewQueueItem[] {
-    const operationsItems = buildOperationsItems(input.operationsHealth?.issues ?? []);
-    const healthItems = buildHealthItems(input.healthRecords ?? []);
-    const jobItems = buildJobItems(input.jobs ?? []);
+interface ReviewQueueCopy {
+    groupedDetail: (detail: string, visibleCount: number, extraCount: number) => string;
+    failureCount: (count: number) => string;
+    noFailures: string;
+    healthTitle: (provider: string, configId: string) => string;
+    jobUnavailable: (name: string) => string;
+    jobFailedTitle: (name: string) => string;
+    jobFailedDetail: (failed: number, total: number, latestError: string) => string;
+    issueTitles: Readonly<Record<string, string>>;
+    issueDetails: Readonly<Record<string, (value: number) => string>>;
+    fallbackIssueDetail: (value: number, label: string) => string;
+    unknownProvider: string;
+    healthStatuses: Readonly<Record<IntegrationHealthStatus, string>>;
+    auditRiotTitle: string;
+    auditTitle: (action: string) => string;
+}
+
+const reviewQueueCopy: DashboardLocaleValues<ReviewQueueCopy> = {
+    en: {
+        groupedDetail: (detail, visibleCount, extraCount) => {
+            const visibleText = visibleCount === 1 ? "1 visible detail" : `${visibleCount} visible details`;
+            const extraText = extraCount > 0 ? `, plus ${extraCount} more summarized by the overview` : "";
+            return `${detail} Includes ${visibleText}${extraText}.`;
+        },
+        failureCount: (count) => `${count} consecutive ${pluralize("failure", count)}`,
+        noFailures: "No consecutive failures recorded",
+        healthTitle: (provider, configId) => `${provider} config ${configId}`,
+        jobUnavailable: (name) => `${name} status unavailable`,
+        jobFailedTitle: (name) => `${name} has failed runs`,
+        jobFailedDetail: (failed, total, latestError) => `${failed}/${total} recent ${pluralize("run", total)} failed${latestError}`,
+        issueTitles: {},
+        issueDetails: {
+            "Integration errors": (value) => `${value} integration ${pluralize("record", value)} currently failing.`,
+            "Failed job runs": (value) => `${value} recent job ${pluralize("run", value)} failed.`,
+            "Job status unavailable": (value) => `${value} job ${pluralize("status", value, "statuses")} could not be loaded.`,
+            "Stale worker heartbeat": (value) => `Worker heartbeat is ${value}m old.`,
+            "Health warnings": (value) => `${value} provider health ${pluralize("warning", value)} or unknown states.`,
+            "Missing worker heartbeat": () => "The worker has not reported a heartbeat yet.",
+            "Partial overview data": () => "One or more admin overview requests failed.",
+        },
+        fallbackIssueDetail: (value, label) => `${value} ${label.toLowerCase()} ${pluralize("signal", value)}.`,
+        unknownProvider: "Unknown provider",
+        healthStatuses: {
+            error: "Integration is failing",
+            warning: "Integration has warnings",
+            unknown: "Integration status is unknown",
+            healthy: "Integration status is healthy",
+            paused: "Integration status is paused",
+        },
+        auditRiotTitle: "Audit failed: Riot League form",
+        auditTitle: (action) => `Audit failed: ${action}`,
+    },
+    nl: {
+        groupedDetail: (detail, visibleCount, extraCount) => {
+            const visibleText = visibleCount === 1 ? "1 zichtbaar detail" : `${visibleCount} zichtbare details`;
+            const extraText = extraCount > 0 ? `, plus ${extraCount} meer samengevat in het overzicht` : "";
+            return `${detail} Bevat ${visibleText}${extraText}.`;
+        },
+        failureCount: (count) => `${count} opeenvolgende ${count === 1 ? "fout" : "fouten"}`,
+        noFailures: "Geen opeenvolgende fouten vastgelegd",
+        healthTitle: (provider, configId) => `${provider}-configuratie ${configId}`,
+        jobUnavailable: (name) => `Status van ${name} niet beschikbaar`,
+        jobFailedTitle: (name) => `${name} heeft mislukte uitvoeringen`,
+        jobFailedDetail: (failed, total, latestError) => `${failed}/${total} recente ${total === 1 ? "uitvoering" : "uitvoeringen"} mislukt${latestError}`,
+        issueTitles: {
+            "Integration errors": "Integratiefouten",
+            "Failed job runs": "Mislukte taakuitvoeringen",
+            "Job status unavailable": "Taakstatus niet beschikbaar",
+            "Stale worker heartbeat": "Verouderde workerheartbeat",
+            "Health warnings": "Statuswaarschuwingen",
+            "Missing worker heartbeat": "Workerheartbeat ontbreekt",
+            "Partial overview data": "Onvolledige overzichtsgegevens",
+        },
+        issueDetails: {
+            "Integration errors": (value) => `${value} ${value === 1 ? "integratierecord mislukt" : "integratierecords mislukken"} momenteel.`,
+            "Failed job runs": (value) => `${value} recente ${value === 1 ? "taakuitvoering is" : "taakuitvoeringen zijn"} mislukt.`,
+            "Job status unavailable": (value) => `${value} ${value === 1 ? "taakstatus kon" : "taakstatussen konden"} niet worden geladen.`,
+            "Stale worker heartbeat": (value) => `De workerheartbeat is ${value} min oud.`,
+            "Health warnings": (value) => `${value} ${value === 1 ? "statuswaarschuwing of onbekende status" : "statuswaarschuwingen of onbekende statussen"} van providers.`,
+            "Missing worker heartbeat": () => "De worker heeft nog geen heartbeat gemeld.",
+            "Partial overview data": () => "Een of meer aanvragen voor het beheeroverzicht zijn mislukt.",
+        },
+        fallbackIssueDetail: (value, label) => `${value} signalen: ${label.toLowerCase()}.`,
+        unknownProvider: "Onbekende provider",
+        healthStatuses: {
+            error: "Integratie mislukt",
+            warning: "Integratie heeft waarschuwingen",
+            unknown: "Integratiestatus is onbekend",
+            healthy: "Integratiestatus is healthy",
+            paused: "Integratiestatus is paused",
+        },
+        auditRiotTitle: "Audit mislukt: Riot League-formulier",
+        auditTitle: (action) => `Audit mislukt: ${action}`,
+    },
+};
+
+export function buildAdminReviewQueue(
+    input: BuildAdminReviewQueueInput,
+    locale: DashboardLocale = "en",
+): AdminReviewQueueItem[] {
+    const operationsItems = buildOperationsItems(input.operationsHealth?.issues ?? [], locale);
+    const healthItems = buildHealthItems(input.healthRecords ?? [], locale);
+    const jobItems = buildJobItems(input.jobs ?? [], locale);
     const items: AdminReviewQueueItem[] = [
-        ...groupOperationsWithDetails(operationsItems, healthItems, jobItems),
-        ...buildAuditItems(input.auditEvents ?? []),
+        ...groupOperationsWithDetails(operationsItems, healthItems, jobItems, locale),
+        ...buildAuditItems(input.auditEvents ?? [], locale),
     ];
     const limit = Number.isInteger(input.limit) && input.limit !== undefined ? Math.max(0, input.limit) : defaultLimit;
     return items.sort(compareReviewItems).slice(0, limit);
@@ -72,6 +172,7 @@ function groupOperationsWithDetails(
     operationsItems: AdminReviewQueueItem[],
     healthItems: AdminReviewQueueItem[],
     jobItems: AdminReviewQueueItem[],
+    locale: DashboardLocale,
 ): AdminReviewQueueItem[] {
     const ungroupedHealth = new Set(healthItems.map(item => item.id));
     const ungroupedJobs = new Set(jobItems.map(item => item.id));
@@ -86,7 +187,7 @@ function groupOperationsWithDetails(
 
         return {
             ...item,
-            detail: formatGroupedOperationsDetail(item, relatedItems),
+            detail: formatGroupedOperationsDetail(item, relatedItems, locale),
             timestamp: item.timestamp ?? getLatestRelatedTimestamp(relatedItems),
             relatedItems,
         };
@@ -145,14 +246,14 @@ function toRelatedItem(item: AdminReviewQueueItem): AdminReviewQueueRelatedItem 
     return relatedItem;
 }
 
-function formatGroupedOperationsDetail(item: AdminReviewQueueItem, relatedItems: AdminReviewQueueRelatedItem[]): string {
+function formatGroupedOperationsDetail(
+    item: AdminReviewQueueItem,
+    relatedItems: AdminReviewQueueRelatedItem[],
+    locale: DashboardLocale,
+): string {
     const relatedCount = relatedItems.length;
     const extraCount = Math.max(0, getOperationIssueValue(item) - relatedCount);
-    const visibleText = relatedCount === 1
-        ? "1 visible detail"
-        : `${relatedCount} visible details`;
-    const extraText = extraCount > 0 ? `, plus ${extraCount} more summarized by the overview` : "";
-    return `${item.detail} Includes ${visibleText}${extraText}.`;
+    return getDashboardLocaleValue(locale, reviewQueueCopy).groupedDetail(item.detail, relatedCount, extraCount);
 }
 
 function getOperationIssueValue(item: AdminReviewQueueItem): number {
@@ -165,32 +266,33 @@ function getLatestRelatedTimestamp(relatedItems: AdminReviewQueueRelatedItem[]):
     return sorted[0]?.timestamp ?? null;
 }
 
-function buildOperationsItems(issues: AdminOperationsHealthIssue[]): AdminReviewQueueItem[] {
+function buildOperationsItems(issues: AdminOperationsHealthIssue[], locale: DashboardLocale): AdminReviewQueueItem[] {
     return issues.map(issue => ({
         id: `operations:${normalizeIdPart(issue.label)}`,
-        title: issue.label,
-        detail: formatOperationsIssueDetail(issue),
+        title: formatOperationsIssueTitle(issue.label, locale),
+        detail: formatOperationsIssueDetail(issue, locale),
         severity: issue.severity,
         source: "operations",
         href: issue.href ?? "/dashboard/admin",
     }));
 }
 
-function buildHealthItems(records: IntegrationHealthRecord[]): AdminReviewQueueItem[] {
+function buildHealthItems(records: IntegrationHealthRecord[], locale: DashboardLocale): AdminReviewQueueItem[] {
     return records
         .filter(record => actionableHealthStatuses.has(record.status))
         .map(record => {
+            const copy = getDashboardLocaleValue(locale, reviewQueueCopy);
             const failures = Math.max(0, record.consecutiveFailures);
-            const issue = record.lastErrorMessage ?? record.lastErrorCode ?? getHealthStatusLabel(record.status);
+            const issue = record.lastErrorMessage ?? record.lastErrorCode ?? getHealthStatusLabel(record.status, locale);
             const failureText = failures > 0
-                ? `${failures} consecutive ${pluralize("failure", failures)}`
-                : "No consecutive failures recorded";
-            const cooldownSummary = formatAdminProviderCooldownSummary(getAdminProviderCooldownHint(record));
-            const playbookSummary = formatAdminProviderPlaybookSummary(getAdminProviderPlaybookHint(record));
+                ? copy.failureCount(failures)
+                : copy.noFailures;
+            const cooldownSummary = formatAdminProviderCooldownSummary(getAdminProviderCooldownHint(record, Date.now(), locale), locale);
+            const playbookSummary = formatAdminProviderPlaybookSummary(getAdminProviderPlaybookHint(record, locale), locale);
 
             return {
                 id: `integration-health:${record.provider}:${record.configId}`,
-                title: `${formatProviderLabel(record.provider)} config ${record.configId}`,
+                title: copy.healthTitle(formatProviderLabel(record.provider, locale), record.configId),
                 detail: [issue, failureText, cooldownSummary, playbookSummary].filter(Boolean).join(" - "),
                 severity: record.status === "error" ? "critical" : "warning",
                 source: "integration-health",
@@ -200,14 +302,15 @@ function buildHealthItems(records: IntegrationHealthRecord[]): AdminReviewQueueI
         });
 }
 
-function buildJobItems(jobs: AdminReviewQueueJob[]): AdminReviewQueueItem[] {
+function buildJobItems(jobs: AdminReviewQueueJob[], locale: DashboardLocale): AdminReviewQueueItem[] {
     const items: AdminReviewQueueItem[] = [];
+    const copy = getDashboardLocaleValue(locale, reviewQueueCopy);
 
     for (const job of jobs) {
         if (job.error) {
             items.push({
                 id: `jobs:${job.name}:unavailable`,
-                title: `${job.name} status unavailable`,
+                title: copy.jobUnavailable(job.name),
                 detail: job.error,
                 severity: "critical",
                 source: "jobs",
@@ -222,8 +325,8 @@ function buildJobItems(jobs: AdminReviewQueueJob[]): AdminReviewQueueItem[] {
         const latestError = latestRunFailed && job.latestRun?.error ? ` - ${job.latestRun.error}` : "";
         items.push({
             id: `jobs:${job.name}:failed`,
-            title: `${job.name} has failed runs`,
-            detail: `${job.failedRecentRuns}/${job.totalRecentRuns} recent ${pluralize("run", job.totalRecentRuns)} failed${latestError}`,
+            title: copy.jobFailedTitle(job.name),
+            detail: copy.jobFailedDetail(job.failedRecentRuns, job.totalRecentRuns, latestError),
             severity: "critical",
             source: "jobs",
             href: buildJobHref(job.name, "failed"),
@@ -234,13 +337,13 @@ function buildJobItems(jobs: AdminReviewQueueJob[]): AdminReviewQueueItem[] {
     return items;
 }
 
-function buildAuditItems(events: AuditEventEntry[]): AdminReviewQueueItem[] {
+function buildAuditItems(events: AuditEventEntry[], locale: DashboardLocale): AdminReviewQueueItem[] {
     return events
         .filter(event => event.status === "failure")
         .map(event => ({
             id: `audit:${event.id}`,
-            title: formatAuditFailureTitle(event),
-            detail: formatAuditFailureDetail(event),
+            title: formatAuditFailureTitle(event, locale),
+            detail: formatAuditFailureDetail(event, locale),
             severity: event.severity === "error" ? "critical" : "warning",
             source: "audit",
             href: buildAuditHref(event),
@@ -255,30 +358,14 @@ function compareReviewItems(a: AdminReviewQueueItem, b: AdminReviewQueueItem): n
         || a.title.localeCompare(b.title);
 }
 
-function formatOperationsIssueDetail(issue: AdminOperationsHealthIssue): string {
-    if (issue.label === "Integration errors") {
-        return `${issue.value} integration ${pluralize("record", issue.value)} currently failing.`;
-    }
-    if (issue.label === "Failed job runs") {
-        return `${issue.value} recent job ${pluralize("run", issue.value)} failed.`;
-    }
-    if (issue.label === "Job status unavailable") {
-        return `${issue.value} job ${pluralize("status", issue.value, "statuses")} could not be loaded.`;
-    }
-    if (issue.label === "Stale worker heartbeat") {
-        return `Worker heartbeat is ${issue.value}m old.`;
-    }
-    if (issue.label === "Health warnings") {
-        return `${issue.value} provider health ${pluralize("warning", issue.value)} or unknown states.`;
-    }
-    if (issue.label === "Missing worker heartbeat") {
-        return "The worker has not reported a heartbeat yet.";
-    }
-    if (issue.label === "Partial overview data") {
-        return "One or more admin overview requests failed.";
-    }
+function formatOperationsIssueTitle(label: string, locale: DashboardLocale): string {
+    return getDashboardLocaleValue(locale, reviewQueueCopy).issueTitles[label] ?? label;
+}
 
-    return `${issue.value} ${issue.label.toLowerCase()} ${pluralize("signal", issue.value)}.`;
+function formatOperationsIssueDetail(issue: AdminOperationsHealthIssue, locale: DashboardLocale): string {
+    const copy = getDashboardLocaleValue(locale, reviewQueueCopy);
+    return copy.issueDetails[issue.label]?.(issue.value)
+        ?? copy.fallbackIssueDetail(issue.value, issue.label);
 }
 
 function buildIntegrationHealthHref(record: IntegrationHealthRecord): string {
@@ -317,16 +404,13 @@ function normalizeProviderFilter(value: string): string {
     return normalized;
 }
 
-function formatProviderLabel(value: string): string {
+function formatProviderLabel(value: string, locale: DashboardLocale): string {
     const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : "Unknown provider";
+    return trimmed.length > 0 ? trimmed : getDashboardLocaleValue(locale, reviewQueueCopy).unknownProvider;
 }
 
-function getHealthStatusLabel(status: IntegrationHealthStatus): string {
-    if (status === "error") return "Integration is failing";
-    if (status === "warning") return "Integration has warnings";
-    if (status === "unknown") return "Integration status is unknown";
-    return `Integration status is ${status}`;
+function getHealthStatusLabel(status: IntegrationHealthStatus, locale: DashboardLocale): string {
+    return getDashboardLocaleValue(locale, reviewQueueCopy).healthStatuses[status];
 }
 
 function formatAuditActor(event: AuditEventEntry): string {
@@ -337,16 +421,16 @@ function formatAuditTarget(event: AuditEventEntry): string {
     return event.targetId ? `${event.targetType}:${event.targetId}` : event.targetType;
 }
 
-function formatAuditFailureTitle(event: AuditEventEntry): string {
-    if (event.action === "riot.leagueForm") return "Audit failed: Riot League form";
-    return `Audit failed: ${event.action}`;
+function formatAuditFailureTitle(event: AuditEventEntry, locale: DashboardLocale): string {
+    const copy = getDashboardLocaleValue(locale, reviewQueueCopy);
+    return event.action === "riot.leagueForm" ? copy.auditRiotTitle : copy.auditTitle(event.action);
 }
 
-function formatAuditFailureDetail(event: AuditEventEntry): string {
+function formatAuditFailureDetail(event: AuditEventEntry, locale: DashboardLocale): string {
     const baseDetail = `${formatAuditActor(event)} -> ${formatAuditTarget(event)}`;
     if (event.action !== "riot.leagueForm") return baseDetail;
 
-    const metadata = buildAdminAuditMetadataView(event.metadata);
+    const metadata = buildAdminAuditMetadataView(event.metadata, locale);
     return metadata.hasMetadata ? `${baseDetail} - ${metadata.summary}` : baseDetail;
 }
 

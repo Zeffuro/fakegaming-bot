@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { getMatchDetails, getMatchHistory } from '../../../services/riotService.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
@@ -19,12 +20,16 @@ import {
     getLeagueRecentFormCacheKey,
     setCachedLeagueRecentForm,
 } from '../recentForm/leagueRecentFormCache.js';
+import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
+import { leagueText, missingIdentity, unknownError } from '../copy/leagueCopy.js';
 
 const data = buildCommonLeagueOptions(createSlashCommand(META))
     .addBooleanOption(option =>
         option
             .setName('refresh')
+            .setNameLocalization('nl', 'vernieuwen')
             .setDescription('Bypass the short cache and refresh from Riot')
+            .setDescriptionLocalization('nl', 'Sla de korte cache over en vernieuw via Riot')
             .setRequired(false)
     );
 
@@ -50,6 +55,7 @@ type LeagueFormErrorCategory = 'missing_key' | 'rate_limited' | 'not_found' | 'm
 type LeagueFormCacheStatus = 'hit' | 'miss' | 'bypass' | 'not_checked';
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
     await interaction.deferReply();
     const refresh = interaction.options.getBoolean('refresh') ?? false;
 
@@ -68,8 +74,8 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             errorCategory: inputError ? undefined : categorizeRiotError(errorMessage),
         });
         await interaction.editReply(inputError
-            ? 'Please provide a Riot ID and region, or link your account first.'
-            : getIdentityFailureReply(errorMessage));
+            ? missingIdentity(locale)
+            : getIdentityFailureReply(errorMessage, locale));
         return;
     }
 
@@ -86,7 +92,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
                 refreshRequested: refresh,
                 cacheStatus: 'hit',
             });
-            await interaction.editReply({ embeds: [buildLeagueFormEmbed(identity, cached, 'Cached')] });
+            await interaction.editReply({ embeds: [buildLeagueFormEmbed(identity, cached, 'Cached', locale)] });
             return;
         }
     }
@@ -103,7 +109,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             severity: 'warn',
             success: false,
         });
-        await interaction.editReply(`Unsupported Riot region: ${identity.region}`);
+        await interaction.editReply(`${leagueText(locale, { en: 'Unsupported Riot region', nl: 'Niet-ondersteunde Riot-regio' })}: ${identity.region}`);
         return;
     }
 
@@ -119,7 +125,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             success: false,
             errorCategory: categorizeRiotError(history.error),
         });
-        await interaction.editReply(`Failed to fetch League recent form: ${history.error ?? 'Unknown error'}`);
+        await interaction.editReply(`${leagueText(locale, { en: 'Failed to fetch League recent form', nl: 'Ophalen van recente League-vorm mislukt' })}: ${history.error ?? unknownError(locale)}`);
         return;
     }
 
@@ -134,7 +140,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             success: false,
             errorCategory: 'malformed_data',
         });
-        await interaction.editReply('Failed to fetch League recent form: malformed match history.');
+        await interaction.editReply(leagueText(locale, { en: 'Failed to fetch League recent form: malformed match history.', nl: 'Ophalen van recente League-vorm mislukt: ongeldige wedstrijdgeschiedenis.' }));
         return;
     }
 
@@ -169,7 +175,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             failedDetailCount,
             errorCategory: categorizeRiotError(firstDetailError),
         });
-        await interaction.editReply(`Failed to fetch details for recent League matches: ${firstDetailError ?? 'Unknown error'}`);
+        await interaction.editReply(`${leagueText(locale, { en: 'Failed to fetch details for recent League matches', nl: 'Ophalen van details van recente League-wedstrijden mislukt' })}: ${firstDetailError ?? unknownError(locale)}`);
         return;
     }
 
@@ -195,7 +201,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         failedDetailCount,
     });
 
-    await interaction.editReply({ embeds: [buildLeagueFormEmbed(identity, snapshot, 'Live')] });
+    await interaction.editReply({ embeds: [buildLeagueFormEmbed(identity, snapshot, 'Live', locale)] });
 }
 
 async function recordLeagueFormAudit(
@@ -260,57 +266,64 @@ function isIdentityInputError(message: string | undefined): boolean {
         || normalized.includes('could not resolve puuid');
 }
 
-function getIdentityFailureReply(message: string | undefined): string {
+function getIdentityFailureReply(message: string | undefined, locale: SupportedOutputLocale): string {
     const category = categorizeRiotError(message);
     if (category === 'missing_key') {
-        return 'Riot account lookup is unavailable because the bot is missing a Riot API key.';
+        return leagueText(locale, { en: 'Riot account lookup is unavailable because the bot is missing a Riot API key.', nl: 'Riot-accountzoekopdracht is niet beschikbaar omdat de Riot API-sleutel ontbreekt.' });
     }
     if (category === 'not_found') {
-        return 'Failed to resolve Riot account. Please check the Riot ID and region.';
+        return leagueText(locale, { en: 'Failed to resolve Riot account. Please check the Riot ID and region.', nl: 'Riot-account kon niet worden gevonden. Controleer het Riot ID en de regio.' });
     }
-    return 'Riot account lookup is unavailable. Please try again later.';
+    return leagueText(locale, { en: 'Riot account lookup is unavailable. Please try again later.', nl: 'Riot-accountzoekopdracht is niet beschikbaar. Probeer het later opnieuw.' });
 }
 
 function buildLeagueFormEmbed(
     identity: Pick<LeagueIdentity, 'summoner' | 'region'>,
     snapshot: LeagueRecentFormSnapshot,
-    source: 'Cached' | 'Live'
+    source: 'Cached' | 'Live',
+    locale: SupportedOutputLocale,
 ): EmbedBuilder {
     const embed = new EmbedBuilder()
-        .setTitle(`League form for ${identity.summoner} [${identity.region}]`)
+        .setTitle(`${leagueText(locale, { en: 'League form for', nl: 'League-vorm voor' })} ${identity.summoner} [${identity.region}]`)
         .setColor(snapshot.status === 'partial' ? 0xf0b429 : 0x4f8cff)
-        .setFooter({ text: `${source} summary - refreshed ${formatDate(snapshot.refreshedAt)} - expires ${formatDate(snapshot.expiresAt)}` });
+        .setFooter({ text: `${source === 'Cached' ? leagueText(locale, { en: 'Cached', nl: 'Uit cache' }) : leagueText(locale, { en: 'Live', nl: 'Live' })} ${leagueText(locale, { en: 'summary', nl: 'samenvatting' })} - ${leagueText(locale, { en: 'refreshed', nl: 'vernieuwd' })} ${formatDate(snapshot.refreshedAt)} - ${leagueText(locale, { en: 'expires', nl: 'verloopt' })} ${formatDate(snapshot.expiresAt)}` });
 
     if (snapshot.status === 'empty_history') {
-        return embed.setDescription('No recent League matches found.');
+        return embed.setDescription(leagueText(locale, { en: 'No recent League matches found.', nl: 'Geen recente League-wedstrijden gevonden.' }));
     }
 
-    const statusSuffix = snapshot.status === 'partial' ? ' Partial summary; some matches could not be included.' : '';
+    const statusSuffix = snapshot.status === 'partial'
+        ? leagueText(locale, { en: ' Partial summary; some matches could not be included.', nl: ' Gedeeltelijke samenvatting; sommige wedstrijden konden niet worden meegenomen.' })
+        : '';
     embed
-        .setDescription(`${snapshot.wins}W-${snapshot.losses}L over ${snapshot.matchCount} recent games.${statusSuffix}`)
+        .setDescription(resolveLocaleValue(locale, { en: `${snapshot.wins}W-${snapshot.losses}L over ${snapshot.matchCount} recent games.${statusSuffix}`, nl: `${snapshot.wins}W-${snapshot.losses}V over ${snapshot.matchCount} recente wedstrijden.${statusSuffix}` }))
         .addFields(
             {
-                name: 'Recent results',
-                value: snapshot.recentResults.length > 0 ? snapshot.recentResults.join(' ') : 'None',
+                name: leagueText(locale, { en: 'Recent results', nl: 'Recente resultaten' }),
+                value: snapshot.recentResults.length > 0
+                    ? snapshot.recentResults.map(result => result === 'L'
+                        ? resolveLocaleValue(locale, { en: 'L', nl: 'V' })
+                        : result).join(' ')
+                    : leagueText(locale, { en: 'None', nl: 'Geen' }),
                 inline: true,
             },
             {
-                name: 'Average KDA',
+                name: leagueText(locale, { en: 'Average KDA', nl: 'Gemiddelde KDA' }),
                 value: `${snapshot.averageKills}/${snapshot.averageDeaths}/${snapshot.averageAssists}`,
                 inline: true,
             },
             {
-                name: 'Averages',
-                value: `${snapshot.averageCsPerMinute} CS/min\n${snapshot.averageVisionScore} vision`,
+                name: leagueText(locale, { en: 'Averages', nl: 'Gemiddelden' }),
+                value: `${snapshot.averageCsPerMinute} CS/min\n${snapshot.averageVisionScore} ${leagueText(locale, { en: 'vision', nl: 'zicht' })}`,
                 inline: true,
             }
         );
 
     if (snapshot.topChampions.length > 0) {
         embed.addFields({
-            name: 'Top champions',
+            name: leagueText(locale, { en: 'Top champions', nl: 'Topkampioenen' }),
             value: snapshot.topChampions
-                .map((champion) => `${champion.name}: ${champion.games} game${champion.games === 1 ? '' : 's'}, ${champion.wins}W`)
+                .map((champion) => `${champion.name}: ${champion.games} ${champion.games === 1 ? leagueText(locale, { en: 'game', nl: 'wedstrijd' }) : leagueText(locale, { en: 'games', nl: 'wedstrijden' })}, ${champion.wins}W`)
                 .join('\n'),
             inline: false,
         });
@@ -318,7 +331,7 @@ function buildLeagueFormEmbed(
 
     if (snapshot.lastMatchAt) {
         embed.addFields({
-            name: 'Last match',
+            name: leagueText(locale, { en: 'Last match', nl: 'Laatste wedstrijd' }),
             value: formatDate(snapshot.lastMatchAt),
             inline: true,
         });

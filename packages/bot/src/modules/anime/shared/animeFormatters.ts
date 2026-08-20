@@ -1,16 +1,22 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import type { AnimeTitle } from '@zeffuro/fakegaming-common/models';
 import type { AniListTitle } from '@zeffuro/fakegaming-common/anime';
 import type { CreationAttributes } from 'sequelize';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { getAnimeCopy } from '../copy/animeCopy.js';
 
-export function formatAnimeTitle(title: AniListTitle | CreationAttributes<AnimeTitle>): string {
+export function formatAnimeTitle(
+    title: AniListTitle | CreationAttributes<AnimeTitle>,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
     if ('title' in title) {
-        return title.title.english || title.title.romaji || title.title.native || 'Unknown anime';
+        return title.title.english || title.title.romaji || title.title.native || getAnimeCopy(locale).unknownAnime;
     }
     return title.titleEnglish || title.titleRomaji || title.titleNative || `AniList #${title.anilistId}`;
 }
 
-export function stripAniListDescription(description?: string | null): string {
-    if (!description) return 'No description available.';
+export function stripAniListDescription(description?: string | null, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    if (!description) return getAnimeCopy(locale).noDescription;
     return description
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/?[^>]+>/g, '')
@@ -23,17 +29,30 @@ export function truncateText(value: string, maxLength: number): string {
     return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
-export function formatAiringTimestamp(ms?: number | null): string {
-    if (!ms) return 'Unknown';
+export function formatAiringTimestamp(ms?: number | null, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    if (!ms) return getAnimeCopy(locale).unknown;
     const seconds = Math.floor(ms / 1000);
     return `<t:${seconds}:F> (<t:${seconds}:R>)`;
 }
 
-export function formatGenres(genres?: readonly string[] | null): string {
-    if (!genres?.length) return 'Unknown';
+export function formatGenres(genres?: readonly string[] | null, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    if (!genres?.length) return getAnimeCopy(locale).unknown;
     return genres.slice(0, 6).join(', ');
 }
 
-export function formatAnimeStatus(status?: string | null): string {
-    return status ? status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : 'Unknown';
+export function formatAnimeStatus(status?: string | null, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    if (!status) return getAnimeCopy(locale).unknown;
+    return resolveLocaleValue(locale, {
+        en: () => status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
+        nl: () => {
+            const labels: Readonly<Record<string, string>> = {
+            NOT_YET_RELEASED: 'Nog niet verschenen',
+            RELEASING: 'Wordt uitgezonden',
+            FINISHED: 'Afgerond',
+            CANCELLED: 'Geannuleerd',
+            HIATUS: 'Onderbroken',
+            };
+            return labels[status] ?? status.replace(/_/g, ' ');
+        },
+    })();
 }

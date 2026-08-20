@@ -5,6 +5,21 @@ export type SetupTemplateProvider = "Twitch" | "YouTube" | "Patch Notes" | "Anim
 export type SetupTemplateSkipReason = "duplicate" | "unsupported" | "invalid";
 export type SetupTemplateChannelSlotKey = "live" | "videos" | "patches" | "anime" | "steamNews";
 export type SetupTemplateInputGroupKey = "twitchUsernames" | "youtubeChannelIds" | "patchGames" | "animeIds" | "steamApps";
+export type SetupTemplateFindingId =
+    | "missingRecordFields"
+    | "duplicateRoute"
+    | "duplicateSource"
+    | "twitchUsernameRequired"
+    | "youtubeChannelId"
+    | "patchGameRequired"
+    | "anilistId"
+    | "steamAppId"
+    | "liveChannelRequired"
+    | "videoChannelRequired"
+    | "patchChannelRequired"
+    | "animeChannelRequired"
+    | "steamNewsChannelRequired";
+export type SetupTemplateWarningId = "addInput";
 
 export interface SetupTemplateChannelSlot {
     key: SetupTemplateChannelSlotKey;
@@ -63,6 +78,7 @@ export interface SetupTemplateItem {
 }
 
 export interface SetupTemplateSkippedItem extends SetupTemplateItem {
+    findingId: SetupTemplateFindingId;
     reason: SetupTemplateSkipReason;
     message: string;
 }
@@ -79,6 +95,7 @@ export interface SetupTemplatePlan {
         records: number;
         unsupported: number;
     };
+    warningIds: SetupTemplateWarningId[];
     warnings: string[];
 }
 

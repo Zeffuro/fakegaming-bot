@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import {
     getConfigManager,
-    validateBody,
-    validateParams,
+    isSupportedOutputLocale,
+    type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
+import { validateBody, validateParams } from '../localization/validation.js';
 import {
     userNoteCreateRequestSchema,
     userNoteUpdateRequestSchema,
@@ -11,6 +12,8 @@ import {
 import type { UserNoteRecord } from '@zeffuro/fakegaming-common/managers';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import {requestLocale} from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -20,6 +23,16 @@ const noteIdParamSchema = z.object({
 
 function getAuthenticatedDiscordId(req: AuthenticatedRequest): string {
     return req.user.discordId;
+}
+
+async function resolveNoteLocale(req: AuthenticatedRequest, discordId: string): Promise<SupportedOutputLocale> {
+    try {
+        const user = await getConfigManager().userManager.getUser({discordId});
+        if (isSupportedOutputLocale(user?.preferredLocale)) return user.preferredLocale;
+    } catch {
+        // The request locale is the safe fallback when user preferences are unavailable.
+    }
+    return requestLocale(req);
 }
 
 function serializeNote(note: UserNoteRecord) {
@@ -83,12 +96,14 @@ router.get('/', async (req, res) => {
  */
 router.post('/', validateBody(userNoteCreateRequestSchema), async (req, res) => {
     const discordId = getAuthenticatedDiscordId(req as AuthenticatedRequest);
+    const locale = await resolveNoteLocale(req as AuthenticatedRequest, discordId);
     const body = req.body as z.infer<typeof userNoteCreateRequestSchema>;
     const note = await getConfigManager().userNoteManager.createForUser({
         discordId,
         title: body.title,
         body: body.body ?? '',
         pinned: body.pinned,
+        locale,
     });
     res.status(201).json(serializeNote(note));
 });
@@ -118,7 +133,7 @@ router.get('/:id', validateParams(noteIdParamSchema), async (req, res) => {
     const { id } = req.params as z.infer<typeof noteIdParamSchema>;
     const note = await getConfigManager().userNoteManager.getForUser(id, discordId);
     if (!note) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Note not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'noteNotFound');
         return;
     }
     res.json(serializeNote(note));
@@ -152,10 +167,14 @@ router.get('/:id', validateParams(noteIdParamSchema), async (req, res) => {
  */
 router.put('/:id', validateParams(noteIdParamSchema), validateBody(userNoteUpdateRequestSchema), async (req, res) => {
     const discordId = getAuthenticatedDiscordId(req as AuthenticatedRequest);
+    const locale = await resolveNoteLocale(req as AuthenticatedRequest, discordId);
     const { id } = req.params as z.infer<typeof noteIdParamSchema>;
-    const note = await getConfigManager().userNoteManager.updateForUser(id, discordId, req.body as z.infer<typeof userNoteUpdateRequestSchema>);
+    const note = await getConfigManager().userNoteManager.updateForUser(id, discordId, {
+        ...(req.body as z.infer<typeof userNoteUpdateRequestSchema>),
+        locale,
+    });
     if (!note) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Note not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'noteNotFound');
         return;
     }
     res.json(serializeNote(note));
@@ -186,7 +205,7 @@ router.delete('/:id', validateParams(noteIdParamSchema), async (req, res) => {
     const { id } = req.params as z.infer<typeof noteIdParamSchema>;
     const deleted = await getConfigManager().userNoteManager.removeForUser(id, discordId);
     if (!deleted) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Note not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'noteNotFound');
         return;
     }
     res.json({ success: true });

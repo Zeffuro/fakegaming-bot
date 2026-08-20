@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { api } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export interface ResolvedUser {
     id: string;
@@ -15,8 +16,9 @@ interface UseResolvedUsersOptions {
 }
 
 export function useResolvedUsers(guildId: string, options: UseResolvedUsersOptions = {}) {
+    const { t } = useDashboardI18n();
     const [userMap, setUserMap] = useState<Record<string, ResolvedUser>>({});
-    const warningMessage = options.warningMessage ?? "Failed to resolve users";
+    const warningMessage = options.warningMessage ?? t("hooks.failedToResolveUsers");
 
     const resolveUsers = useCallback(async (ids: string[]) => {
         const unique = Array.from(new Set(ids.filter(Boolean)));

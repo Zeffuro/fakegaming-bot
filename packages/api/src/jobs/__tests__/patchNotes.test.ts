@@ -38,6 +38,10 @@ describe('jobs/patchNotes helpers', () => {
         expect(embed.thumbnail.url).toBe('https://logo');
         expect(embed.image.url).toBe('https://img');
         expect(embed.color).toBe(0x123456);
+        expect(embed).toMatchObject({
+            title: 'Title',
+            author: { name: 'G' },
+        });
     });
 
     it('computeNextQuarterHourDelaySeconds covers hour roll', () => {

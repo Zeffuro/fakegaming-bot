@@ -1,10 +1,24 @@
 import { describe, it, expect } from 'vitest';
 import { api, API_ENDPOINTS } from '@/lib/api-client';
 import { withFetchMock } from '@zeffuro/fakegaming-common/testing';
+import { setDashboardLocale } from '@/lib/i18n/localeStore';
 
 const { mockOkJsonOnce, mockErrorJsonOnce, expectFetchCalledWith, getFetchMock } = withFetchMock();
 
 describe('api-client', () => {
+    it('sends the active dashboard locale to the API', async () => {
+        setDashboardLocale('nl', false);
+        mockOkJsonOnce({ items: [] });
+
+        await api.getTwitchConfigs();
+
+        expectFetchCalledWith(API_ENDPOINTS.TWITCH, {
+            method: 'GET',
+            headers: expect.objectContaining({ 'Accept-Language': 'nl' }),
+        });
+        setDashboardLocale('en', false);
+    });
+
     it('getTwitchConfigs performs GET and returns data', async () => {
         const payload = { items: [{ id: '1' }] };
         mockOkJsonOnce(payload);
@@ -132,6 +146,13 @@ describe('api-client', () => {
         await expect(api.getYouTubeConfigs()).rejects.toThrow('Bad stuff');
     });
 
+    it('surfaces localized CSRF details instead of the stable error code', async () => {
+        const details = 'Het beveiligingstoken ontbreekt. Vernieuw de pagina en probeer het opnieuw.';
+        mockErrorJsonOnce(403, { error: 'CSRF', details });
+
+        await expect(api.getYouTubeConfigs()).rejects.toThrow(details);
+    });
+
     it('getMyRiotLink performs GET for the authenticated user Riot link', async () => {
         const payload = { link: { discordId: 'user-1', summonerName: 'Player#EUW', region: 'euw1', puuid: 'puuid-1' } };
         mockOkJsonOnce(payload);
@@ -167,6 +188,13 @@ describe('api-client', () => {
 
         expectFetchCalledWith(`${API_ENDPOINTS.QUOTES}/quote%2F1/card`, { method: 'GET' });
         expect(result).toBe(blob);
+    });
+
+    it('surfaces localized CSRF details for binary requests', async () => {
+        const details = 'Het beveiligingstoken is ongeldig. Vernieuw de pagina en probeer het opnieuw.';
+        mockErrorJsonOnce(403, { error: 'CSRF', details });
+
+        await expect(api.getQuoteCardImage('quote-1')).rejects.toThrow(details);
     });
 
     it('getProfileCardImage performs GET and returns a blob', async () => {

@@ -4,16 +4,19 @@ import {parseReminderRecurrence, parseTimespan} from '@zeffuro/fakegaming-common
 import {v4 as uuidv4} from 'uuid';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
 import {setReminder as META} from '../commands.manifest.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
+import {getReminderCopy} from '../copy/reminderCopy.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('timespan').setDescription('When to remind (e.g., 1h, 30m)').setRequired(true))
-        .addStringOption(option => option.setName('message').setDescription('Reminder message').setRequired(true))
-        .addStringOption(option => option.setName('repeat').setDescription('Optional repeat rule, e.g. daily, weekly, every 2 weeks').setRequired(false))
-        .addStringOption(option => option.setName('repeat-timezone').setDescription('Timezone for repeats; defaults to your saved timezone').setRequired(false))
+        .addStringOption(option => option.setName('timespan').setNameLocalization('nl', 'tijdsduur').setDescription('When to remind (e.g., 1h, 30m)').setDescriptionLocalization('nl', 'Wanneer je herinnerd wilt worden (bijv. 1h, 30m)').setRequired(true))
+        .addStringOption(option => option.setName('message').setNameLocalization('nl', 'bericht').setDescription('Reminder message').setDescriptionLocalization('nl', 'Bericht van de herinnering').setRequired(true))
+        .addStringOption(option => option.setName('repeat').setNameLocalization('nl', 'herhaling').setDescription('Optional repeat rule, e.g. daily, weekly, every 2 weeks').setDescriptionLocalization('nl', 'Optionele herhaling, bijv. daily, weekly of every 2 weeks').setRequired(false))
+        .addStringOption(option => option.setName('repeat-timezone').setNameLocalization('nl', 'herhaling-tijdzone').setDescription('Timezone for repeats; defaults to your saved timezone').setDescriptionLocalization('nl', 'Tijdzone voor herhaling; standaard je opgeslagen tijdzone').setRequired(false))
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const copy = getReminderCopy(await resolveInteractionOutputLocale(interaction));
     const timespan = interaction.options.getString('timespan', true);
     const message = interaction.options.getString('message', true);
     const repeat = interaction.options.getString('repeat', false)?.trim() ?? '';
@@ -22,7 +25,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     const ms = parseTimespan(timespan);
     if (ms === null || ms <= 0) {
-        await interaction.reply('Invalid timespan format. Use e.g., 1h, 30m, 2h30m, 90s.');
+        await interaction.reply(copy.invalidTimespan);
         return;
     }
 
@@ -34,7 +37,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const recurrence = repeat ? parseReminderRecurrence(repeat, repeatTimezone) : null;
     if (repeat && !recurrence) {
         await interaction.reply({
-            content: 'Invalid repeat rule. Use daily, weekly, monthly, every 2 weeks, or 3mo with a valid timezone.',
+            content: copy.invalidRepeat,
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -52,12 +55,11 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         lastTriggeredAt: null,
     });
 
-    const discordTime = `<t:${Math.floor(timestamp / 1000)}:R>`;
     const repeatText = recurrence
-        ? ` Repeats ${recurrence.interval === 1 ? `every ${recurrence.unit}` : `every ${recurrence.interval} ${recurrence.unit}s`} in ${recurrence.timezone}.`
+        ? copy.repeat(recurrence.interval, recurrence.unit, recurrence.timezone)
         : '';
     await interaction.reply({
-        content: `I'll remind you in ${timespan}: "${message}" (at ${discordTime}).${repeatText}`,
+        content: copy.set(timespan, message, Math.floor(timestamp / 1000), repeatText),
         flags: MessageFlags.Ephemeral,
     });
 }

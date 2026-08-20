@@ -1,4 +1,4 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { UserDigestSubscriptionRecord } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
@@ -10,6 +10,7 @@ import {
     type DigestFrequency,
 } from '@zeffuro/fakegaming-common/utils';
 import { sendDirectMessage } from '../utils/discord.js';
+import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 
 interface ReminderPlain {
@@ -66,14 +67,20 @@ export function buildReminderDigestContent(input: {
     runAt: string;
     reminders: DigestReminderItem[];
     windowEndsAt: number;
+    locale?: SupportedOutputLocale;
 }): string {
-    const title = input.frequency === 'weekly' ? 'Weekly reminder digest' : 'Daily reminder digest';
+    const locale = input.locale ?? DEFAULT_OUTPUT_LOCALE;
+    const title = apiText(locale, input.frequency === 'weekly' ? 'digestWeeklyReminderTitle' : 'digestDailyReminderTitle');
     const header = `${title} (${input.timezone}, ${input.runAt})`;
-    const windowLine = `Upcoming reminders through <t:${Math.floor(input.windowEndsAt / 1000)}:f>.`;
+    const windowLine = apiText(locale, 'digestUpcomingReminders', {
+        windowEndsAt: Math.floor(input.windowEndsAt / 1000),
+    });
     const lines = input.reminders.slice(0, 10).map((reminder) =>
         `- <t:${Math.floor(reminder.timestamp / 1000)}:f> (<t:${Math.floor(reminder.timestamp / 1000)}:R>) - ${reminder.message}`
     );
-    const suffix = input.reminders.length > 10 ? `\n...and ${input.reminders.length - 10} more.` : '';
+    const suffix = input.reminders.length > 10
+        ? `\n${apiText(locale, 'digestMore', { count: input.reminders.length - 10 })}`
+        : '';
     return `${header}\n${windowLine}\n\n${lines.join('\n')}${suffix}`;
 }
 
@@ -84,35 +91,44 @@ export function buildUserDigestContent(input: {
     reminders: DigestReminderItem[];
     animeItems: DigestAnimeItem[];
     windowEndsAt: number;
+    locale?: SupportedOutputLocale;
 }): string {
-    const title = input.frequency === 'weekly' ? 'Weekly personal digest' : 'Daily personal digest';
+    const locale = input.locale ?? DEFAULT_OUTPUT_LOCALE;
+    const title = apiText(locale, input.frequency === 'weekly' ? 'digestWeeklyPersonalTitle' : 'digestDailyPersonalTitle');
     const header = `${title} (${input.timezone}, ${input.runAt})`;
-    const windowLine = `Upcoming items through <t:${Math.floor(input.windowEndsAt / 1000)}:f>.`;
+    const windowLine = apiText(locale, 'digestUpcomingItems', {
+        windowEndsAt: Math.floor(input.windowEndsAt / 1000),
+    });
     const sections = [
-        buildReminderDigestSection(input.reminders),
-        buildAnimeDigestSection(input.animeItems),
+        buildReminderDigestSection(input.reminders, locale),
+        buildAnimeDigestSection(input.animeItems, locale),
     ].filter((section): section is string => section !== null);
 
     return `${header}\n${windowLine}\n\n${sections.join('\n\n')}`;
 }
 
-function buildReminderDigestSection(reminders: DigestReminderItem[]): string | null {
+function buildReminderDigestSection(reminders: DigestReminderItem[], locale: SupportedOutputLocale): string | null {
     if (reminders.length === 0) return null;
     const lines = reminders.slice(0, 10).map((reminder) =>
         `- <t:${Math.floor(reminder.timestamp / 1000)}:f> (<t:${Math.floor(reminder.timestamp / 1000)}:R>) - ${reminder.message}`
     );
-    const suffix = reminders.length > 10 ? `\n...and ${reminders.length - 10} more.` : '';
-    return `Reminders\n${lines.join('\n')}${suffix}`;
+    const suffix = reminders.length > 10
+        ? `\n${apiText(locale, 'digestMore', { count: reminders.length - 10 })}`
+        : '';
+    return `${apiText(locale, 'digestReminders')}\n${lines.join('\n')}${suffix}`;
 }
 
-function buildAnimeDigestSection(animeItems: DigestAnimeItem[]): string | null {
+function buildAnimeDigestSection(animeItems: DigestAnimeItem[], locale: SupportedOutputLocale): string | null {
     if (animeItems.length === 0) return null;
     const lines = animeItems.slice(0, 10).map((item) => {
-        const episodeLabel = item.episode === null ? '' : ` episode ${item.episode}`;
-        return `- <t:${Math.floor(item.reminderAt / 1000)}:f> (<t:${Math.floor(item.reminderAt / 1000)}:R>) - ${item.title}${episodeLabel} airs <t:${Math.floor(item.airingAt / 1000)}:R>.`;
+        const episodeLabel = item.episode === null ? '' : apiText(locale, 'digestEpisode', { episode: item.episode });
+        const airsLabel = apiText(locale, 'digestAirs', { airingAt: Math.floor(item.airingAt / 1000) });
+        return `- <t:${Math.floor(item.reminderAt / 1000)}:f> (<t:${Math.floor(item.reminderAt / 1000)}:R>) - ${item.title}${episodeLabel}${airsLabel}`;
     });
-    const suffix = animeItems.length > 10 ? `\n...and ${animeItems.length - 10} more.` : '';
-    return `Anime reminders\n${lines.join('\n')}${suffix}`;
+    const suffix = animeItems.length > 10
+        ? `\n${apiText(locale, 'digestMore', { count: animeItems.length - 10 })}`
+        : '';
+    return `${apiText(locale, 'digestAnimeReminders')}\n${lines.join('\n')}${suffix}`;
 }
 
 async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:user-digests' })): Promise<{ processed: number; sent: number; skipped: number; errors: number }> {
@@ -138,6 +154,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
         }
 
         try {
+            const locale = await resolveUserOutputLocale(subscription.discordId);
             const windowEndsAt = nowMs + getDigestWindowMs(frequency);
             const reminders = categories.includes('reminders')
                 ? await listDigestReminderItems(subscription.discordId, nowMs, windowEndsAt)
@@ -163,6 +180,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
                     reminders,
                     animeItems,
                     windowEndsAt,
+                    locale,
                 })
                 : buildReminderDigestContent({
                     frequency,
@@ -170,6 +188,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
                     runAt: subscription.runAt,
                     reminders,
                     windowEndsAt,
+                    locale,
                 });
             const delivered = await sendDirectMessage(subscription.discordId, content);
             if (!delivered) {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { buildUserActivityFeed } from "@/lib/userActivityFeed";
 import type { UserActivityAuditEvent, UserActivityDeliveryRecord } from "@/lib/api-client";
+import { formatDashboardMessage, type DashboardTranslator } from "@/lib/i18n/messages";
+
+const english: DashboardTranslator = (key, values) => formatDashboardMessage("en", key, values);
+const dutch: DashboardTranslator = (key, values) => formatDashboardMessage("nl", key, values);
 
 function auditEvent(partial: Partial<UserActivityAuditEvent>): UserActivityAuditEvent {
     return {
@@ -44,6 +48,7 @@ describe("userActivityFeed", () => {
             deliveries: [
                 deliveryRecord({ id: 3, createdAt: "2026-06-24T10:00:00.000Z" }),
             ],
+            t: english,
         });
 
         expect(items.map(item => item.id)).toEqual(["audit:2", "delivery:3", "audit:1"]);
@@ -53,7 +58,7 @@ describe("userActivityFeed", () => {
         });
         expect(items[1]).toMatchObject({
             title: "Birthday delivery",
-            detail: "Guild guild-1 - channel channel-1",
+            detail: "Server guild-1 - channel channel-1",
         });
     });
 
@@ -69,12 +74,13 @@ describe("userActivityFeed", () => {
                 }),
             ],
             deliveries: [],
+            t: english,
         });
 
         expect(items).toEqual([
             expect.objectContaining({
-                title: "Custom Thing run Now",
-                detail: "custom - guild guild-1 - failed",
+                title: "Activity: customThing.runNow",
+                detail: "custom - Server guild-1 - failed",
                 status: "failure",
             }),
         ]);
@@ -91,12 +97,13 @@ describe("userActivityFeed", () => {
                 }),
             ],
             deliveries: [],
+            t: english,
         });
 
         expect(items).toEqual([
             expect.objectContaining({
                 title: "Checked League form",
-                detail: "riotRecentForm EUW - guild guild-1",
+                detail: "riotRecentForm EUW - Server guild-1",
             }),
         ]);
     });
@@ -111,8 +118,28 @@ describe("userActivityFeed", () => {
                 deliveryRecord({ id: 3, createdAt: "2026-06-24T11:00:00.000Z" }),
             ],
             limit: 2,
+            t: english,
         });
 
         expect(items.map(item => item.id)).toEqual(["delivery:3", "audit:2"]);
+    });
+
+    it("localizes known activity framing and keeps IDs verbatim", () => {
+        const items = buildUserActivityFeed({
+            auditEvents: [auditEvent({ action: "riotLink.upsert", targetType: "riotLink", targetId: "user-1", guildId: "guild-1" })],
+            deliveries: [deliveryRecord({ guildId: "guild-1", channelId: "channel-1" })],
+            t: dutch,
+        });
+
+        expect(items).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                title: "Riot-koppeling bijgewerkt",
+                detail: "riotLink user-1 - Server guild-1",
+            }),
+            expect.objectContaining({
+                title: "Verjaardagsmelding",
+                detail: "Server guild-1 - kanaal channel-1",
+            }),
+        ]));
     });
 });

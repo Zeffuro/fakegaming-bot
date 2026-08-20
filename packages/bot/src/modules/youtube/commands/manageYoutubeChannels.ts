@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -13,8 +14,10 @@ interface YoutubeManagementRecord extends IntegrationManagementRecord {
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<YoutubeManagementRecord>({
     meta: META,
-    subjectSingular: 'YouTube channel',
-    subjectPlural: 'YouTube channels',
+    subjects: {
+        singular: { en: 'YouTube channel', nl: 'YouTube-kanaal' },
+        plural: { en: 'YouTube channels', nl: 'YouTube-kanalen' },
+    },
     listRecords: async (guildId) => {
         const records = await getConfigManager().youtubeManager.getManyPlain({guildId});
         return records as unknown as YoutubeManagementRecord[];
@@ -30,7 +33,7 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<YoutubeMana
         await getConfigManager().youtubeManager.setPaused(id, paused);
     },
     formatRecord: (record) => `${inlineCode(String(record.id))} ${inlineCode(record.youtubeChannelId)} -> <#${record.discordChannelId}>`,
-    describeRecord: (record) => `${inlineCode(record.youtubeChannelId)} from <#${record.discordChannelId}>`,
+    describeRecord: (record, locale) => `${inlineCode(record.youtubeChannelId)} ${resolveLocaleValue(locale, { en: 'from', nl: 'uit' })} <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'youtube.delete',
         targetType: 'youtubeConfig',

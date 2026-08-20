@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api, type AnimeSubscriptionDashboardConfig } from "@/lib/api-client";
 
 export function useUserAnimeSubscriptions() {
+    const { t } = useDashboardI18n();
     const [subscriptions, setSubscriptions] = useState<AnimeSubscriptionDashboardConfig[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -16,12 +18,12 @@ export function useUserAnimeSubscriptions() {
             setSubscriptions(result.sort(compareAnimeSubscriptions));
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load anime subscriptions";
+            const message = err instanceof Error ? err.message : t("hooks.failedToLoadAnimeSubscriptions");
             setError(message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const togglePaused = useCallback(async (subscription: AnimeSubscriptionDashboardConfig) => {
         if (!subscription.id) return null;
@@ -32,13 +34,13 @@ export function useUserAnimeSubscriptions() {
             setError(null);
             return updated;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to update anime subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToUpdateAnimeSubscription");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const createSubscription = useCallback(async (input: { anilistId?: number; title?: string; reminderMinutes?: number }) => {
         setSaving(true);
@@ -47,13 +49,13 @@ export function useUserAnimeSubscriptions() {
             await refresh();
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to create anime subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToCreateAnimeSubscription");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, [refresh]);
+    }, [refresh, t]);
 
     const deleteSubscription = useCallback(async (subscription: AnimeSubscriptionDashboardConfig) => {
         if (!subscription.id) return;
@@ -63,13 +65,13 @@ export function useUserAnimeSubscriptions() {
             setSubscriptions((current) => current.filter((item) => item.id !== subscription.id));
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to delete anime subscription";
+            const message = err instanceof Error ? err.message : t("hooks.failedToDeleteAnimeSubscription");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();

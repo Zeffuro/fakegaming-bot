@@ -1,3 +1,5 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from './outputLocale.js';
+
 export type ReminderRecurrenceUnit = 'day' | 'week' | 'month';
 
 export interface ReminderRecurrenceRule {
@@ -18,6 +20,28 @@ const maxIntervalByUnit: Record<ReminderRecurrenceUnit, number> = {
     month: 24,
 };
 const dayMs = 24 * 60 * 60 * 1000;
+
+const RECURRENCE_COPY = {
+    en: {
+        every: 'Every',
+        units: {
+            day: ['day', 'days'],
+            week: ['week', 'weeks'],
+            month: ['month', 'months'],
+        },
+    },
+    nl: {
+        every: 'Elke',
+        units: {
+            day: ['dag', 'dagen'],
+            week: ['week', 'weken'],
+            month: ['maand', 'maanden'],
+        },
+    },
+} as const satisfies OutputLocaleValues<{
+    every: string;
+    units: Record<ReminderRecurrenceUnit, readonly [string, string]>;
+}>;
 
 export function parseReminderRecurrence(input: string, timezone: string): ReminderRecurrenceRule | null {
     const normalizedTimezone = normalizeTimezone(timezone);
@@ -60,11 +84,12 @@ export function getNextRecurringReminderTimestamp(input: NextRecurringReminderIn
     return nextTimestamp > afterTimestamp ? nextTimestamp : null;
 }
 
-export function formatReminderRecurrence(rule: ReminderRecurrenceRule): string {
-    const unitLabel = rule.interval === 1 ? rule.unit : `${rule.unit}s`;
+export function formatReminderRecurrence(rule: ReminderRecurrenceRule, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
+    const copy = resolveLocaleValue(locale, RECURRENCE_COPY);
+    const unitLabel = copy.units[rule.unit][rule.interval === 1 ? 0 : 1];
     return rule.interval === 1
-        ? `Every ${rule.unit} (${rule.timezone})`
-        : `Every ${rule.interval} ${unitLabel} (${rule.timezone})`;
+        ? `${copy.every} ${unitLabel} (${rule.timezone})`
+        : `${copy.every} ${rule.interval} ${unitLabel} (${rule.timezone})`;
 }
 
 function buildRule(interval: number, unit: ReminderRecurrenceUnit | null, timezone: string): ReminderRecurrenceRule | null {

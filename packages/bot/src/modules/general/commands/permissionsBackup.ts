@@ -9,6 +9,8 @@ import {
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { RolePermissionSnapshotData } from '@zeffuro/fakegaming-common/models';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
+import { getGeneralCopy } from '../data/generalCopy.js';
 import { permissionsBackup as META } from '../commands.manifest.js';
 import { captureRolePermissionSnapshot } from '../shared/rolePermissionSnapshot.js';
 
@@ -20,21 +22,29 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addSubcommand(subcommand =>
             subcommand
                 .setName('create')
+                .setNameLocalization('nl', 'maken')
                 .setDescription('Capture role, member, category, and channel permissions')
+                .setDescriptionLocalization('nl', 'Leg rol-, leden-, categorie- en kanaalrechten vast')
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
+                .setNameLocalization('nl', 'lijst')
                 .setDescription('List the most recent saved permission snapshots')
+                .setDescriptionLocalization('nl', 'Toon de recentste opgeslagen momentopnamen van rechten')
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('export')
+                .setNameLocalization('nl', 'exporteren')
                 .setDescription('Download a saved permission snapshot')
+                .setDescriptionLocalization('nl', 'Download een opgeslagen momentopname van rechten')
                 .addIntegerOption(option =>
                     option
                         .setName('id')
+                        .setNameLocalization('nl', 'id')
                         .setDescription('Snapshot ID from the list')
+                        .setDescriptionLocalization('nl', 'ID van de momentopname uit de lijst')
                         .setMinValue(1)
                         .setRequired(true)
                 )
@@ -42,11 +52,15 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addSubcommand(subcommand =>
             subcommand
                 .setName('delete')
+                .setNameLocalization('nl', 'verwijderen')
                 .setDescription('Permanently delete a saved permission snapshot')
+                .setDescriptionLocalization('nl', 'Verwijder een opgeslagen momentopname van rechten permanent')
                 .addIntegerOption(option =>
                     option
                         .setName('id')
+                        .setNameLocalization('nl', 'id')
                         .setDescription('Snapshot ID from the list')
+                        .setDescriptionLocalization('nl', 'ID van de momentopname uit de lijst')
                         .setMinValue(1)
                         .setRequired(true)
                 )
@@ -54,9 +68,11 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
+    const copy = getGeneralCopy(locale).permissions;
     if (!interaction.guildId || !interaction.guild) {
         await interaction.reply({
-            content: 'Permission backups only work in a server.',
+            content: copy.serverOnly,
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -64,7 +80,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     if (!interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
         await interaction.reply({
-            content: 'Only server administrators can access permission backups.',
+            content: copy.adminOnly,
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -72,24 +88,24 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     const action = interaction.options.getSubcommand(true);
     if (action === 'create') {
-        await createSnapshot(interaction);
+        await createSnapshot(interaction, locale);
         return;
     }
 
     if (action === 'list') {
-        await listSnapshots(interaction);
+        await listSnapshots(interaction, locale);
         return;
     }
 
     if (action === 'export') {
-        await exportSnapshot(interaction);
+        await exportSnapshot(interaction, locale);
         return;
     }
 
-    await deleteSnapshot(interaction);
+    await deleteSnapshot(interaction, locale);
 }
 
-async function createSnapshot(interaction: ChatInputCommandInteraction): Promise<void> {
+async function createSnapshot(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
     const guild = interaction.guild;
     if (!guild) return;
 
@@ -105,16 +121,17 @@ async function createSnapshot(interaction: ChatInputCommandInteraction): Promise
     const attachment = createSnapshotAttachment(snapshot, saved.id);
 
     await interaction.editReply({
-        content: formatCreatedSnapshot(saved.id, snapshot, attachment),
+        content: formatCreatedSnapshot(saved.id, snapshot, attachment, locale),
         ...(attachment.file ? { files: [attachment.file] } : {}),
     });
 }
 
-async function listSnapshots(interaction: ChatInputCommandInteraction): Promise<void> {
+async function listSnapshots(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
+    const copy = getGeneralCopy(locale).permissions;
     const snapshots = await getConfigManager().rolePermissionSnapshotManager.listSnapshots(interaction.guildId!, 10);
     if (snapshots.length === 0) {
         await interaction.reply({
-            content: 'No permission snapshots have been saved for this server.',
+            content: copy.none,
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -122,21 +139,22 @@ async function listSnapshots(interaction: ChatInputCommandInteraction): Promise<
 
     const lines = snapshots.map(snapshot => {
         const timestamp = Math.floor(snapshot.createdAt.getTime() / 1000);
-        return `#${snapshot.id} - <t:${timestamp}:f> - ${formatSnapshotSummary(snapshot.snapshot)}`;
+        return `#${snapshot.id} - <t:${timestamp}:f> - ${formatSnapshotSummary(snapshot.snapshot, locale)}`;
     });
 
     await interaction.reply({
-        content: `Recent permission snapshots:\n${lines.join('\n')}`,
+        content: `${copy.recent}\n${lines.join('\n')}`,
         flags: MessageFlags.Ephemeral,
     });
 }
 
-async function exportSnapshot(interaction: ChatInputCommandInteraction): Promise<void> {
+async function exportSnapshot(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
+    const copy = getGeneralCopy(locale).permissions;
     const id = interaction.options.getInteger('id', true);
     const snapshot = await getConfigManager().rolePermissionSnapshotManager.getSnapshot(interaction.guildId!, id);
     if (!snapshot) {
         await interaction.reply({
-            content: `Permission snapshot #${id} was not found for this server.`,
+            content: copy.notFound(id),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -145,20 +163,21 @@ async function exportSnapshot(interaction: ChatInputCommandInteraction): Promise
     const attachment = createSnapshotAttachment(snapshot.snapshot, snapshot.id);
     await interaction.reply({
         content: attachment.file
-            ? `Permission snapshot #${snapshot.id}: ${formatSnapshotSummary(snapshot.snapshot)}`
-            : `Permission snapshot #${snapshot.id} is too large for a single Discord attachment.`,
+            ? `${copy.snapshot(snapshot.id)}: ${formatSnapshotSummary(snapshot.snapshot, locale)}`
+            : copy.tooLarge(snapshot.id),
         ...(attachment.file ? { files: [attachment.file] } : {}),
         flags: MessageFlags.Ephemeral,
     });
 }
 
-async function deleteSnapshot(interaction: ChatInputCommandInteraction): Promise<void> {
+async function deleteSnapshot(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {
+    const copy = getGeneralCopy(locale).permissions;
     const id = interaction.options.getInteger('id', true);
     const deleted = await getConfigManager().rolePermissionSnapshotManager.deleteSnapshot(interaction.guildId!, id);
     await interaction.reply({
         content: deleted
-            ? `Permission snapshot #${id} was deleted.`
-            : `Permission snapshot #${id} was not found for this server.`,
+            ? copy.deleted(id)
+            : copy.notFound(id),
         flags: MessageFlags.Ephemeral,
     });
 }
@@ -192,24 +211,31 @@ function formatCreatedSnapshot(
     id: number,
     snapshot: RolePermissionSnapshotData,
     attachment: { file: AttachmentBuilder | null; compressed: boolean },
+    locale: SupportedOutputLocale,
 ): string {
+    const copy = getGeneralCopy(locale).permissions;
     const attachmentNote = attachment.file
-        ? attachment.compressed ? ' The attached export is gzip-compressed.' : ''
-        : ' The export exceeds Discord\'s attachment limit, but the snapshot was saved.';
+        ? attachment.compressed ? copy.compressed : ''
+        : copy.attachmentTooLarge;
     const memberNote = snapshot.memberData.fetchFailed
-        ? ' Discord did not provide a complete member list, so cached members were used.'
+        ? copy.partialMembers
         : '';
     const roleNote = snapshot.roleData.fetchFailed
-        ? ' Discord did not provide refreshed role data, so cached roles were used.'
+        ? copy.partialRoles
         : '';
     const channelNote = snapshot.channelData.fetchFailed
-        ? ' Discord did not provide refreshed channel data, so cached channels were used.'
+        ? copy.partialChannels
         : '';
-    return `Saved permission snapshot #${id}: ${formatSnapshotSummary(snapshot)}.${attachmentNote}${roleNote}${memberNote}${channelNote}`;
+    return `${copy.saved(id)}: ${formatSnapshotSummary(snapshot, locale)}.${attachmentNote}${roleNote}${memberNote}${channelNote}`;
 }
 
-function formatSnapshotSummary(snapshot: RolePermissionSnapshotData): string {
-    return `${snapshot.roles.length} roles, ${snapshot.memberData.source} members (${snapshot.memberData.capturedMemberCount}), ${snapshot.channels.length} categories/channels`;
+function formatSnapshotSummary(snapshot: RolePermissionSnapshotData, locale: SupportedOutputLocale): string {
+    return getGeneralCopy(locale).permissions.summary(
+        snapshot.roles.length,
+        snapshot.memberData.source,
+        snapshot.memberData.capturedMemberCount,
+        snapshot.channels.length,
+    );
 }
 
 const testOnly = getTestOnly(META);

@@ -29,6 +29,7 @@ import {
 } from "@mui/icons-material";
 import { AdminPage } from "@/components/AdminPage";
 import { AdminSavedViews, type AdminSavedViewPreset } from "@/components/admin/AdminSavedViews";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { getAdminProviderOptions, normalizeAdminProviderFilter } from "@/components/admin/providerOptions";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
@@ -38,22 +39,17 @@ import { getAdminProviderCooldownHint } from "@/lib/adminProviderCooldown";
 import { getAdminProviderPlaybookHint } from "@/lib/adminProviderPlaybooks";
 import { adminIntegrationHealthCsvHeaders, buildAdminIntegrationHealthCsvRows } from "@/lib/adminAnalyticsExports";
 import { createCsvFilename, downloadCsv } from "@/lib/csvExport";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import { getDashboardIntlLocale, type DashboardLocale } from "@/lib/i18n/localeStore";
 
 type StatusFilter = "" | IntegrationHealthStatus;
 
 const integrationHealthStatuses = new Set<string>(["unknown", "healthy", "warning", "error", "paused"]);
-const integrationHealthSavedViewPresets: AdminSavedViewPreset[] = [
-    { id: "health:failing", label: "All failing", query: "status=error" },
-    { id: "health:twitch", label: "Failing Twitch", query: "provider=twitch&status=error" },
-    { id: "health:warnings", label: "Warnings", query: "status=warning" },
-    { id: "health:unknown", label: "Unknown state", query: "status=unknown" },
-];
-
-function formatDateTime(value?: string | null): string {
-    if (!value) return "Never";
+function formatDateTime(value: string | null | undefined, locale: DashboardLocale): string {
+    if (!value) return formatDashboardMessage(locale, "admin.healthNever");
     const parsed = new Date(value);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString();
+    return new Intl.DateTimeFormat(getDashboardIntlLocale(locale), { dateStyle: "medium", timeStyle: "short" }).format(parsed);
 }
 
 function parseStatusFilter(value: string | null, fallback: StatusFilter): StatusFilter {
@@ -73,12 +69,12 @@ function serializeIntegrationHealthFilters(input: { provider: string; guildId: s
     return params.toString();
 }
 
-function getStatusLabel(status: IntegrationHealthStatus, failures: number): string {
-    if (status === "error") return `Failing x${Math.max(1, failures)}`;
-    if (status === "healthy") return "Healthy";
-    if (status === "warning") return "Warning";
-    if (status === "paused") return "Paused";
-    return "Unknown";
+function getStatusLabel(status: IntegrationHealthStatus, failures: number, locale: DashboardLocale): string {
+    if (status === "error") return formatDashboardMessage(locale, "admin.healthStatusFailing", { count: Math.max(1, failures) });
+    if (status === "healthy") return formatDashboardMessage(locale, "admin.healthStatusHealthy");
+    if (status === "warning") return formatDashboardMessage(locale, "admin.healthStatusWarning");
+    if (status === "paused") return formatDashboardMessage(locale, "admin.healthStatusPaused");
+    return formatDashboardMessage(locale, "admin.healthStatusUnknown");
 }
 
 function getStatusAccent(status: IntegrationHealthStatus): string {
@@ -87,6 +83,20 @@ function getStatusAccent(status: IntegrationHealthStatus): string {
     if (status === "healthy") return dashboardAccents.settings;
     if (status === "paused") return dashboardAccents.commands;
     return dashboardAccents.neutral;
+}
+
+function getCooldownStateLabel(state: string, locale: DashboardLocale): string {
+    if (state === "paused") return formatDashboardMessage(locale, "admin.healthStatusPaused");
+    if (state === "retry") return formatDashboardMessage(locale, "admin.healthStateRetry");
+    if (state === "active") return formatDashboardMessage(locale, "admin.healthStateActive");
+    if (state === "suppressed") return formatDashboardMessage(locale, "admin.healthStateSuppressed");
+    return formatDashboardMessage(locale, "admin.healthStateConfigured");
+}
+
+function getUrgencyLabel(urgency: string, locale: DashboardLocale): string {
+    if (urgency === "critical") return formatDashboardMessage(locale, "admin.healthUrgencyCritical");
+    if (urgency === "warning") return formatDashboardMessage(locale, "admin.healthUrgencyWarning");
+    return formatDashboardMessage(locale, "admin.healthUrgencyInfo");
 }
 
 function getStatusIcon(status: IntegrationHealthStatus): React.ReactNode {
@@ -113,10 +123,10 @@ function HealthStat({
     return (
         <FeaturePanel accent={accent} sx={{ p: 2.25 }}>
             <Stack spacing={0.5} sx={{ position: "relative" }}>
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 800, letterSpacing: 0, textTransform: "uppercase" }}>
                     {label}
                 </Typography>
-                <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: "-0.05em" }}>
+                <Typography variant="h4" sx={{ color: "grey.50", fontWeight: 950, letterSpacing: 0 }}>
                     {value}
                 </Typography>
             </Stack>
@@ -133,10 +143,11 @@ function HealthCard({
     resolving: boolean;
     onResolve: (record: IntegrationHealthRecord) => void | Promise<void>;
 }) {
+    const { locale, t } = useDashboardI18n();
     const accent = getStatusAccent(record.status);
-    const cooldown = getAdminProviderCooldownHint(record);
-    const playbook = getAdminProviderPlaybookHint(record);
-    const dashboardLinks = getAdminProviderDashboardLinks(record);
+    const cooldown = getAdminProviderCooldownHint(record, Date.now(), locale);
+    const playbook = getAdminProviderPlaybookHint(record, locale);
+    const dashboardLinks = getAdminProviderDashboardLinks(record, locale);
     const canResolve = record.status === "error" || record.status === "warning" || record.status === "unknown";
 
     return (
@@ -148,13 +159,13 @@ function HealthCard({
                             {record.provider}
                         </Typography>
                         <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.48)" }}>
-                            config {record.configId}
+                            {t("admin.healthConfig", { id: record.configId })}
                         </Typography>
                     </Box>
                     <Chip
                         size="small"
                         icon={getStatusIcon(record.status) as React.ReactElement}
-                        label={getStatusLabel(record.status, record.consecutiveFailures)}
+                        label={getStatusLabel(record.status, record.consecutiveFailures, locale)}
                         sx={{
                             bgcolor: alpha(accent, 0.14),
                             color: "grey.50",
@@ -165,10 +176,10 @@ function HealthCard({
                 </Stack>
 
                 <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
-                    <InfoLine label="Guild" value={record.guildId ?? "Unknown"} />
-                    <InfoLine label="Channel" value={record.channelId ?? "Unknown"} />
-                    <InfoLine label="Checked" value={formatDateTime(record.lastCheckedAt)} />
-                    <InfoLine label="Delivered" value={formatDateTime(record.lastDeliveryAt)} />
+                    <InfoLine label={t("admin.healthGuild")} value={record.guildId ?? t("admin.healthStatusUnknown")} />
+                    <InfoLine label={t("admin.healthChannel")} value={record.channelId ?? t("admin.healthStatusUnknown")} />
+                    <InfoLine label={t("admin.healthChecked")} value={formatDateTime(record.lastCheckedAt, locale)} />
+                    <InfoLine label={t("admin.healthDelivered")} value={formatDateTime(record.lastDeliveryAt, locale)} />
                 </Box>
 
                 {dashboardLinks.length > 0 && (
@@ -196,7 +207,7 @@ function HealthCard({
                         onClick={() => void onResolve(record)}
                         sx={ghostActionButtonSx(dashboardAccents.settings)}
                     >
-                        {resolving ? "Resolving..." : "Mark resolved"}
+                        {resolving ? t("admin.healthResolving") : t("admin.healthMarkResolved")}
                     </Button>
                 ) : null}
 
@@ -223,7 +234,7 @@ function HealthCard({
                             </Typography>
                             <Chip
                                 size="small"
-                                label={cooldown.state}
+                                label={getCooldownStateLabel(cooldown.state, locale)}
                                 sx={{ bgcolor: alpha(dashboardAccents.commands, 0.14), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.commands, 0.28)}` }}
                             />
                         </Stack>
@@ -244,7 +255,7 @@ function HealthCard({
                             </Typography>
                             <Chip
                                 size="small"
-                                label={playbook.urgency}
+                                label={getUrgencyLabel(playbook.urgency, locale)}
                                 sx={{ bgcolor: alpha(accent, 0.14), color: "grey.100", border: `1px solid ${alpha(accent, 0.28)}` }}
                             />
                         </Stack>
@@ -264,7 +275,7 @@ function HealthCard({
 function InfoLine({ label, value }: { label: string; value: string }) {
     return (
         <Box sx={{ minWidth: 0 }}>
-            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.42)", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+            <Typography variant="caption" sx={{ display: "block", color: "rgba(255,255,255,0.42)", fontWeight: 800, textTransform: "uppercase", letterSpacing: 0 }}>
                 {label}
             </Typography>
             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.78)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -275,6 +286,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 }
 
 function AdminIntegrationHealthContent() {
+    const { locale, t, formatNumber } = useDashboardI18n();
     const accent = dashboardAccents.admin;
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -296,6 +308,12 @@ function AdminIntegrationHealthContent() {
         offset,
     }), [guildId, offset, provider, status]);
     const providerOptions = useMemo(() => getAdminProviderOptions(provider), [provider]);
+    const savedViewPresets = useMemo<AdminSavedViewPreset[]>(() => [
+        { id: "health:failing", label: t("admin.healthPresetFailing"), query: "status=error" },
+        { id: "health:twitch", label: t("admin.healthPresetTwitch"), query: "provider=twitch&status=error" },
+        { id: "health:warnings", label: t("admin.healthPresetWarnings"), query: "status=warning" },
+        { id: "health:unknown", label: t("admin.healthPresetUnknown"), query: "status=unknown" },
+    ], [t]);
     const savedViewQuery = useMemo(() => serializeIntegrationHealthFilters({ provider, guildId, status }), [guildId, provider, status]);
 
     const load = useCallback(async () => {
@@ -304,11 +322,11 @@ function AdminIntegrationHealthContent() {
             setError(null);
             setData(await api.getAdminIntegrationHealth(query));
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Failed to load integration health");
+            setError(err instanceof Error ? err.message : t("admin.healthLoadFailed"));
         } finally {
             setLoading(false);
         }
-    }, [query]);
+    }, [query, t]);
 
     useEffect(() => {
         void load();
@@ -354,57 +372,57 @@ function AdminIntegrationHealthContent() {
             await api.resolveAdminIntegrationHealth(record.provider, record.configId);
             await load();
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "Failed to mark integration health as resolved");
+            setError(err instanceof Error ? err.message : t("admin.healthResolveFailed"));
         } finally {
             setResolvingKey(null);
         }
     };
 
     return (
-        <AdminPage title="Integration Health" trail={[{ label: "Integration Health", href: "/dashboard/admin/integration-health" }]}>
+        <AdminPage title={t("admin.healthPageTitle")} trail={[{ label: t("admin.healthPageTitle"), href: "/dashboard/admin/integration-health" }]}>
             <Stack spacing={2.5}>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(5, 1fr)" }, gap: 2 }}>
-                    <HealthStat label="Total" value={summary.total} accent={dashboardAccents.neutral} />
-                    <HealthStat label="Errors" value={summary.error} accent={dashboardAccents.quotes} />
-                    <HealthStat label="Warnings" value={summary.warning} accent={dashboardAccents.patchNotes} />
-                    <HealthStat label="Healthy" value={summary.healthy} accent={dashboardAccents.settings} />
-                    <HealthStat label="Unknown" value={summary.unknown + summary.paused} accent={dashboardAccents.commands} />
+                    <HealthStat label={t("admin.healthTotal")} value={summary.total} accent={dashboardAccents.neutral} />
+                    <HealthStat label={t("admin.healthErrors")} value={summary.error} accent={dashboardAccents.quotes} />
+                    <HealthStat label={t("admin.healthWarnings")} value={summary.warning} accent={dashboardAccents.patchNotes} />
+                    <HealthStat label={t("admin.healthHealthy")} value={summary.healthy} accent={dashboardAccents.settings} />
+                    <HealthStat label={t("admin.healthUnknown")} value={summary.unknown + summary.paused} accent={dashboardAccents.commands} />
                 </Box>
 
                 <FeaturePanel accent={accent} sx={{ p: 2.5 }}>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ position: "relative", alignItems: { xs: "stretch", md: "center" } }}>
                         <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 170 }}>
-                            <InputLabel id="health-status-label">Status</InputLabel>
+                            <InputLabel id="health-status-label">{t("admin.healthStatus")}</InputLabel>
                             <Select
                                 labelId="health-status-label"
-                                label="Status"
+                                label={t("admin.healthStatus")}
                                 value={status}
                                 onChange={(event) => commitFilters({ provider, guildId, status: event.target.value as StatusFilter })}
                             >
-                                <MenuItem value="">All</MenuItem>
-                                <MenuItem value="error">Errors</MenuItem>
-                                <MenuItem value="warning">Warnings</MenuItem>
-                                <MenuItem value="healthy">Healthy</MenuItem>
-                                <MenuItem value="paused">Paused</MenuItem>
-                                <MenuItem value="unknown">Unknown</MenuItem>
+                                <MenuItem value="">{t("admin.healthAll")}</MenuItem>
+                                <MenuItem value="error">{t("admin.healthErrors")}</MenuItem>
+                                <MenuItem value="warning">{t("admin.healthWarnings")}</MenuItem>
+                                <MenuItem value="healthy">{t("admin.healthHealthy")}</MenuItem>
+                                <MenuItem value="paused">{t("admin.healthStatusPaused")}</MenuItem>
+                                <MenuItem value="unknown">{t("admin.healthUnknown")}</MenuItem>
                             </Select>
                         </FormControl>
 
                         <FormControl size="small" sx={{ ...dashboardFieldSx(accent), minWidth: 170 }}>
-                            <InputLabel id="health-provider-label">Provider</InputLabel>
+                            <InputLabel id="health-provider-label">{t("admin.healthProvider")}</InputLabel>
                             <Select
                                 labelId="health-provider-label"
-                                label="Provider"
+                                label={t("admin.healthProvider")}
                                 value={provider}
                                 onChange={(event) => commitFilters({ provider: event.target.value, guildId, status })}
                             >
-                                <MenuItem value="">All</MenuItem>
+                                <MenuItem value="">{t("admin.healthAll")}</MenuItem>
                                 {providerOptions.map(item => <MenuItem key={item} value={item}>{item}</MenuItem>)}
                             </Select>
                         </FormControl>
 
                         <TextField
-                            label="Guild ID"
+                            label={t("admin.healthGuildId")}
                             size="small"
                             value={guildId}
                             onChange={(event) => commitFilters({ provider, guildId: event.target.value, status })}
@@ -414,10 +432,10 @@ function AdminIntegrationHealthContent() {
                         <Box sx={{ flex: 1 }} />
 
                         <Button variant="outlined" onClick={() => void load()} disabled={loading} startIcon={<Refresh />} sx={ghostActionButtonSx(accent)}>
-                            Refresh
+                            {t("admin.healthRefresh")}
                         </Button>
                         <Button variant="outlined" onClick={clearFilters} disabled={loading} sx={ghostActionButtonSx(accent)}>
-                            Reset
+                            {t("admin.healthReset")}
                         </Button>
                     </Stack>
                 </FeaturePanel>
@@ -426,8 +444,12 @@ function AdminIntegrationHealthContent() {
                     scope="integration-health"
                     basePath="/dashboard/admin/integration-health"
                     currentQuery={savedViewQuery}
-                    defaultLabel={provider ? `${provider} health` : status ? `${status} health` : "Integration health"}
-                    presets={integrationHealthSavedViewPresets}
+                    defaultLabel={provider
+                        ? t("admin.healthProviderView", { provider })
+                        : status
+                            ? t("admin.healthStatusView", { status: getStatusLabel(status, 1, locale) })
+                            : t("admin.healthDefaultView")}
+                    presets={savedViewPresets}
                 />
 
                 {error && (
@@ -443,22 +465,26 @@ function AdminIntegrationHealthContent() {
                                 <MonitorHeart sx={{ color: accent }} />
                                 <Box>
                                     <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                        Matching integrations
+                                        {t("admin.healthMatching")}
                                     </Typography>
                                     <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)" }}>
-                                        {data ? `${data.total} result${data.total === 1 ? "" : "s"}` : "Loading..."}
+                                        {data
+                                            ? data.total === 1
+                                                ? t("admin.healthResultOne")
+                                                : t("admin.healthResultMany", { count: formatNumber(data.total) })
+                                            : t("admin.healthLoading")}
                                     </Typography>
                                 </Box>
                             </Stack>
                             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
                                 <Button variant="outlined" disabled={loading || !data || data.records.length === 0} onClick={exportHealthRecords} startIcon={<Download />} sx={ghostActionButtonSx(accent)}>
-                                    Export CSV
+                                    {t("admin.healthExportCsv")}
                                 </Button>
                                 <Button variant="outlined" disabled={!canGoBack || loading} onClick={() => setOffset(Math.max(0, offset - (data?.limit ?? 50)))} sx={ghostActionButtonSx(accent)}>
-                                    Previous
+                                    {t("admin.healthPrevious")}
                                 </Button>
                                 <Button variant="outlined" disabled={!canGoNext || loading} onClick={() => setOffset(offset + (data?.limit ?? 50))} sx={ghostActionButtonSx(accent)}>
-                                    Next
+                                    {t("admin.healthNext")}
                                 </Button>
                             </Stack>
                         </Stack>
@@ -477,7 +503,7 @@ function AdminIntegrationHealthContent() {
                         ) : (
                             <Stack spacing={1} sx={{ minHeight: 140, alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.56)", textAlign: "center" }}>
                                 <MonitorHeart sx={{ opacity: 0.65 }} />
-                                <Typography variant="body2">{loading ? "Loading integration health..." : "No integrations match these filters."}</Typography>
+                                <Typography variant="body2">{loading ? t("admin.healthLoading") : t("admin.healthEmpty")}</Typography>
                             </Stack>
                         )}
                     </Stack>
@@ -489,7 +515,7 @@ function AdminIntegrationHealthContent() {
 
 export default function AdminIntegrationHealthPage() {
     return (
-        <Suspense fallback={<AdminPage title="Integration Health"><Typography>Loading integration health...</Typography></AdminPage>}>
+        <Suspense fallback={null}>
             <AdminIntegrationHealthContent />
         </Suspense>
     );

@@ -13,6 +13,7 @@ import {
 } from '@zeffuro/fakegaming-common';
 import { isServiceRequest } from '../middleware/serviceAuth.js';
 import { isDashboardAdmin } from './dashboardAdmin.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 // Prefer the shared in-memory cache used by tests, fallback to default
 const _cache = ((globalThis as any).__testCacheManager ?? defaultCacheManager) as typeof defaultCacheManager;
@@ -52,7 +53,7 @@ export async function checkUserGuildAccess(
     const discordId = getDiscordId(req);
 
     if (!guildId) {
-        res.status(400).json({ error: 'Missing guild ID parameter' });
+        res.status(400).json({ error: apiText(requestLocale(req), 'missingGuildId') });
         return { authorized: false };
     }
 
@@ -61,18 +62,18 @@ export async function checkUserGuildAccess(
     }
 
     if (!discordId) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: apiText(requestLocale(req), 'authenticationRequired') });
         return { authorized: false };
     }
 
     const loadResult = await loadUserGuildsForAccess(req, discordId);
     if (!loadResult.guilds) {
-        sendGuildAccessUnavailable(res, loadResult);
+        sendGuildAccessUnavailable(req, res, loadResult);
         return { authorized: false };
     }
 
     if (!isGuildAdmin(loadResult.guilds, guildId)) {
-        res.status(403).json({ error: 'Not authorized for this guild' });
+        res.status(403).json({ error: apiText(requestLocale(req), 'guildForbidden') });
         return { authorized: false };
     }
 
@@ -96,7 +97,7 @@ export async function filterGuildScopedRecordsForRequest<T extends GuildScopedRe
     }
 
     if (!discordId) {
-        res.status(401).json({ error: 'Authentication required' });
+        res.status(401).json({ error: apiText(requestLocale(req), 'authenticationRequired') });
         return null;
     }
 
@@ -108,7 +109,7 @@ export async function filterGuildScopedRecordsForRequest<T extends GuildScopedRe
 
     const loadResult = await loadUserGuildsForAccess(req, discordId);
     if (!loadResult.guilds) {
-        sendGuildAccessUnavailable(res, loadResult);
+        sendGuildAccessUnavailable(req, res, loadResult);
         return null;
     }
 
@@ -130,7 +131,7 @@ export async function checkGuildScopedRecordAccess<T extends GuildScopedRecord>(
     const visibleRecords = await filterGuildScopedRecordsForRequest(req, res, [record], guildId);
     if (!visibleRecords) return false;
     if (visibleRecords.length === 0) {
-        res.status(403).json({ error: 'Not authorized for this guild' });
+        res.status(403).json({ error: apiText(requestLocale(req), 'guildForbidden') });
         return false;
     }
     return true;
@@ -167,7 +168,7 @@ export function requireGuildAdmin(req: Request, res: Response, next: NextFunctio
         })
         .catch(err => {
             log.error({ err }, 'Error checking guild access');
-            res.status(500).json({ error: 'Internal server error during authorization check' });
+            res.status(500).json({ error: apiText(requestLocale(req), 'authorizationCheckFailed') });
         });
 }
 
@@ -186,7 +187,7 @@ async function loadUserGuildsForAccess(req: Request, discordId: string): Promise
     return refreshUserGuildsForAccess(req, discordId);
 }
 
-async function refreshUserGuildsForAccess(_req: Request, discordId: string): Promise<UserGuildsLoadResult> {
+async function refreshUserGuildsForAccess(req: Request, discordId: string): Promise<UserGuildsLoadResult> {
     let accessToken: string | null = null;
     try {
         accessToken = await _cache.get<string>(CACHE_KEYS.userAccessToken(discordId));
@@ -194,7 +195,7 @@ async function refreshUserGuildsForAccess(_req: Request, discordId: string): Pro
         log.warn({ err, discordId }, 'Failed to read cached Discord access token');
         return {
             guilds: null,
-            message: 'Guild access could not be verified because the access cache is unavailable. Refresh the dashboard session and try again.',
+            message: apiText(requestLocale(req), 'guildAccessCacheUnavailable'),
             statusCode: 503,
         };
     }
@@ -202,7 +203,7 @@ async function refreshUserGuildsForAccess(_req: Request, discordId: string): Pro
     if (!accessToken) {
         return {
             guilds: null,
-            message: 'Guild access could not be verified because cached Discord guilds expired. Refresh the dashboard session and try again.',
+            message: apiText(requestLocale(req), 'guildAccessExpired'),
             statusCode: 503,
         };
     }
@@ -221,7 +222,7 @@ async function refreshUserGuildsForAccess(_req: Request, discordId: string): Pro
         log.warn({ err, discordId }, 'Failed to refresh Discord guild access');
         return {
             guilds: null,
-            message: 'Guild access could not be refreshed from Discord. Refresh the dashboard session and try again.',
+            message: apiText(requestLocale(req), 'guildAccessRefreshFailed'),
             statusCode: 503,
         };
     }
@@ -235,12 +236,12 @@ async function cacheUserGuilds(discordId: string, guilds: MinimalGuildData[]): P
     }
 }
 
-function sendGuildAccessUnavailable(res: Response, result: UserGuildsLoadResult): void {
+function sendGuildAccessUnavailable(req: Request, res: Response, result: UserGuildsLoadResult): void {
     res.status(result.statusCode ?? 503).json({
         error: {
             code: 'GUILD_ACCESS_UNAVAILABLE',
-            message: result.message ?? 'Guild access could not be verified. Refresh the dashboard session and try again.',
-            recovery: 'Refresh the dashboard session, then retry the request.',
+            message: result.message ?? apiText(requestLocale(req), 'guildAccessUnavailable'),
+            recovery: apiText(requestLocale(req), 'guildAccessRecovery'),
         },
     });
 }

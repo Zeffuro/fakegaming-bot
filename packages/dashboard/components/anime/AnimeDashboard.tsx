@@ -15,8 +15,10 @@ import { useAnimeDashboard } from "@/components/hooks/useAnimeDashboard";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import type { AnimeSearchResult } from "@/lib/api-client";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export function AnimeDashboard() {
+  const { t } = useDashboardI18n();
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const guildReady = Boolean(guild);
   const anime = useAnimeDashboard(guildId, { enabled: guildReady });
@@ -41,16 +43,16 @@ export function AnimeDashboard() {
   }, [anime.addSubscription, anime.channelId, focusNotificationChannel]);
 
   const currentTrail = guild ? [
-    { label: "Settings", href: `/dashboard/settings/${encodeURIComponent(guildId)}` },
-    { label: "Notifications", href: `/dashboard/settings/${encodeURIComponent(guildId)}/notifications` },
-    { label: "Anime", href: null },
+    { label: t("common.settings"), href: `/dashboard/settings/${encodeURIComponent(guildId)}` },
+    { label: t("nav.notifications"), href: `/dashboard/settings/${encodeURIComponent(guildId)}/notifications` },
+    { label: t("anime.anime"), href: null },
   ] : null;
 
   if (!guild && !guildsLoading) {
     return (
       <DashboardLayout>
         <Alert severity="error" sx={{ bgcolor: "error.dark", color: "error.light" }}>
-          Guild not found or you do not have access to this guild.
+          {t("error.guildNotFoundOrForbidden")}
         </Alert>
       </DashboardLayout>
     );

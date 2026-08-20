@@ -1,6 +1,7 @@
 import { BaseManager } from './baseManager.js';
 import { UserConfig } from '../models/user-config.js';
 import { LeagueConfig } from '../models/league-config.js';
+import { DEFAULT_OUTPUT_LOCALE, isSupportedOutputLocale, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 export class UserManager extends BaseManager<UserConfig> {
     constructor() {
@@ -42,5 +43,10 @@ export class UserManager extends BaseManager<UserConfig> {
         if (instance) {
             await instance.update({ defaultReminderTimeSpan: timespan });
         }
+    }
+
+    async getPreferredLocale(discordId: string): Promise<SupportedOutputLocale> {
+        const user = await this.getOnePlain({ discordId });
+        return isSupportedOutputLocale(user?.preferredLocale) ? user.preferredLocale : DEFAULT_OUTPUT_LOCALE;
     }
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { api, type UserNote, type UserNoteInput, type UserNoteUpdateInput } from "@/lib/api-client";
 
 export function useUserNotes() {
+    const { t } = useDashboardI18n();
     const [notes, setNotes] = useState<UserNote[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -16,12 +18,12 @@ export function useUserNotes() {
             setNotes(result.notes);
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to load notes";
+            const message = err instanceof Error ? err.message : t("hooks.failedToLoadNotes");
             setError(message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t]);
 
     const createNote = useCallback(async (input: UserNoteInput) => {
         setSaving(true);
@@ -31,13 +33,13 @@ export function useUserNotes() {
             setError(null);
             return note;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to create note";
+            const message = err instanceof Error ? err.message : t("hooks.failedToCreateNote");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const updateNote = useCallback(async (id: string, input: UserNoteUpdateInput) => {
         setSaving(true);
@@ -47,13 +49,13 @@ export function useUserNotes() {
             setError(null);
             return note;
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to update note";
+            const message = err instanceof Error ? err.message : t("hooks.failedToUpdateNote");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     const deleteNote = useCallback(async (id: string) => {
         setSaving(true);
@@ -62,13 +64,13 @@ export function useUserNotes() {
             setNotes((current) => current.filter((note) => note.id !== id));
             setError(null);
         } catch (err) {
-            const message = err instanceof Error ? err.message : "Failed to delete note";
+            const message = err instanceof Error ? err.message : t("hooks.failedToDeleteNote");
             setError(message);
             throw err;
         } finally {
             setSaving(false);
         }
-    }, []);
+    }, [t]);
 
     useEffect(() => {
         void refresh();

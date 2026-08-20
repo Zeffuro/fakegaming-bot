@@ -12,7 +12,27 @@ import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/da
 import { useGuildCommands } from "@/components/hooks/useGuildCommands";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useGuildModules } from "@/components/hooks/useGuildModules";
-import { BOT_TREE } from "@/lib/commands";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import { BOT_TREE, getLocalizedBotCommand } from "@/lib/commands";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
+
+const moduleCopyKeys: Record<string, { title: DashboardMessageKey; description: DashboardMessageKey }> = {
+  anime: { title: "commands.module.anime.title", description: "commands.module.anime.description" },
+  birthdays: { title: "commands.module.birthdays.title", description: "commands.module.birthdays.description" },
+  bluesky: { title: "commands.module.bluesky.title", description: "commands.module.bluesky.description" },
+  "game-night": { title: "commands.module.gameNight.title", description: "commands.module.gameNight.description" },
+  general: { title: "commands.module.general.title", description: "commands.module.general.description" },
+  league: { title: "commands.module.league.title", description: "commands.module.league.description" },
+  notes: { title: "commands.module.notes.title", description: "commands.module.notes.description" },
+  patchnotes: { title: "commands.module.patchnotes.title", description: "commands.module.patchnotes.description" },
+  quotes: { title: "commands.module.quotes.title", description: "commands.module.quotes.description" },
+  reminders: { title: "commands.module.reminders.title", description: "commands.module.reminders.description" },
+  shared: { title: "commands.module.shared.title", description: "commands.module.shared.description" },
+  steam: { title: "commands.module.steam.title", description: "commands.module.steam.description" },
+  tiktok: { title: "commands.module.tiktok.title", description: "commands.module.tiktok.description" },
+  twitch: { title: "commands.module.twitch.title", description: "commands.module.twitch.description" },
+  youtube: { title: "commands.module.youtube.title", description: "commands.module.youtube.description" },
+};
 
 function toTitleCase(value: string): string {
   return value
@@ -23,6 +43,7 @@ function toTitleCase(value: string): string {
 }
 
 export default function GuildCommandsPage() {
+  const { locale, t } = useDashboardI18n();
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const {
     disabledCommands,
@@ -60,16 +81,37 @@ export default function GuildCommandsPage() {
   };
 
   const disabledSet = useMemo(() => new Set(disabledCommands), [disabledCommands]);
-  const totalCommands = BOT_TREE.reduce((sum, node) => sum + node.commands.length, 0);
+  const localizedTree = useMemo(() => BOT_TREE.map(node => {
+    const moduleKeys = moduleCopyKeys[node.module.name];
+    return {
+      ...node,
+      module: {
+        ...node.module,
+        localizedTitle: moduleKeys ? t(moduleKeys.title) : node.module.title,
+        localizedDescription: moduleKeys ? t(moduleKeys.description) : node.module.description,
+      },
+      commands: node.commands.map(command => {
+        const localized = getLocalizedBotCommand(command, locale);
+        return {
+          ...command,
+          localizedName: localized.name,
+          localizedDescription: localized.description,
+        };
+      }),
+    };
+  }), [locale, t]);
+  const totalCommands = localizedTree.reduce((sum, node) => sum + node.commands.length, 0);
   const enabledCommands = totalCommands - disabledCommands.length;
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const filteredTree = useMemo(() => {
-    if (!normalizedSearch) return BOT_TREE;
-    return BOT_TREE.map(node => {
+    if (!normalizedSearch) return localizedTree;
+    return localizedTree.map(node => {
       const moduleMatches = [
         node.module.name,
         node.module.title,
         node.module.description,
+        node.module.localizedTitle,
+        node.module.localizedDescription,
       ].some(value => value.toLowerCase().includes(normalizedSearch));
       const commands = moduleMatches
         ? node.commands
@@ -77,10 +119,12 @@ export default function GuildCommandsPage() {
           command.name,
           toTitleCase(command.name),
           command.description,
+          command.localizedName,
+          command.localizedDescription,
         ].some(value => value.toLowerCase().includes(normalizedSearch)));
       return { ...node, commands };
     }).filter(node => node.commands.length > 0);
-  }, [normalizedSearch]);
+  }, [localizedTree, normalizedSearch]);
   const filteredCommandCount = filteredTree.reduce((sum, node) => sum + node.commands.length, 0);
 
   if (!guild && !guildsLoading) {
@@ -93,19 +137,19 @@ export default function GuildCommandsPage() {
         <FeatureShell accent={dashboardAccents.commands} secondaryAccent={dashboardAccents.settings}>
           <FeatureHero
             icon={<Block />}
-            eyebrow="Commands"
-            title="Command Management"
-            description="Enable or disable bot modules and individual commands without losing visibility into what each module contains."
+            eyebrow={t("commands.eyebrow")}
+            title={t("commands.title")}
+            description={t("commands.description")}
             accent={dashboardAccents.commands}
             secondaryAccent={dashboardAccents.settings}
             stats={[
-              { label: "Commands Enabled", value: `${enabledCommands}/${totalCommands}` },
-              { label: "Modules Disabled", value: disabledModules.length },
+              { label: t("commands.enabled"), value: `${enabledCommands}/${totalCommands}` },
+              { label: t("commands.modulesDisabled"), value: disabledModules.length },
             ]}
             actions={(
               <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", justifyContent: { xs: "flex-start", lg: "flex-end" }, rowGap: 1 }}>
-                <Button size="small" variant="outlined" onClick={() => setAll(false)} sx={ghostActionButtonSx(dashboardAccents.commands)}>Expand all</Button>
-                <Button size="small" variant="outlined" onClick={() => setAll(true)} sx={ghostActionButtonSx(dashboardAccents.commands)}>Collapse all</Button>
+                <Button size="small" variant="outlined" onClick={() => setAll(false)} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t("commands.expandAll")}</Button>
+                <Button size="small" variant="outlined" onClick={() => setAll(true)} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t("commands.collapseAll")}</Button>
               </Stack>
             )}
           />
@@ -121,7 +165,7 @@ export default function GuildCommandsPage() {
               <TextField
                 value={searchQuery}
                 onChange={event => setSearchQuery(event.target.value)}
-                placeholder="Search commands"
+                placeholder={t("commands.search")}
                 size="small"
                 fullWidth
                 slotProps={{
@@ -148,12 +192,12 @@ export default function GuildCommandsPage() {
               />
               {normalizedSearch && (
                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
-                  Showing {filteredCommandCount} {filteredCommandCount === 1 ? "command" : "commands"}
+                  {t(filteredCommandCount === 1 ? "commands.showingOne" : "commands.showingMany", { count: filteredCommandCount })}
                 </Typography>
               )}
               {filteredTree.length === 0 && (
                 <Alert severity="info" sx={{ bgcolor: "rgba(104,215,255,0.10)", color: "grey.100", border: "1px solid rgba(104,215,255,0.20)" }}>
-                  No commands match your search.
+                  {t("commands.noMatch")}
                 </Alert>
               )}
               {filteredTree.map((node) => {
@@ -164,21 +208,24 @@ export default function GuildCommandsPage() {
 
                 const total = node.commands.length;
                 const enabledCount = moduleDisabled ? 0 : node.commands.filter(c => !disabledSet.has(c.name)).length;
-                const headerChip = moduleDisabled ? "Module disabled" : `${enabledCount}/${total} enabled`;
+                const moduleTitle = node.module.localizedTitle;
+                const headerChip = moduleDisabled
+                  ? t("commands.moduleDisabled")
+                  : t("commands.enabledCount", { enabled: enabledCount, total });
 
                 return (
                   <Box key={moduleName} sx={{ border: "1px solid rgba(255,255,255,0.09)", borderRadius: 3, bgcolor: "rgba(8,13,22,0.72)", overflow: "hidden" }}>
                     <Box sx={{ alignItems: "center", display: "flex", justifyContent: "space-between", gap: 2, p: 2, flexWrap: { xs: "wrap", md: "nowrap" } }}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
-                        <IconButton size="small" onClick={() => toggleCollapsed(moduleName)} aria-label={isCollapsed ? `Expand ${node.module.title}` : `Collapse ${node.module.title}`} sx={ghostActionButtonSx(dashboardAccents.commands)}>
+                        <IconButton size="small" onClick={() => toggleCollapsed(moduleName)} aria-label={t(isCollapsed ? "commands.expandModule" : "commands.collapseModule", { module: moduleTitle })} sx={ghostActionButtonSx(dashboardAccents.commands)}>
                           {isCollapsed ? <ExpandMore /> : <ExpandLess />}
                         </IconButton>
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
-                            {node.module.title}
+                            {moduleTitle}
                           </Typography>
                           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.54)" }}>
-                            {node.module.description}
+                            {node.module.localizedDescription}
                           </Typography>
                         </Box>
                       </Box>
@@ -192,7 +239,7 @@ export default function GuildCommandsPage() {
                           }}
                           disabled={loadingModule === moduleName}
                           sx={{ "& .MuiSwitch-switchBase.Mui-checked": { color: dashboardAccents.commands } }}
-                          slotProps={{ input: { "aria-label": `Enable/disable ${node.module.title} module` } }}
+                          slotProps={{ input: { "aria-label": t("commands.toggleModule", { module: moduleTitle }) } }}
                         />
                       </Box>
                     </Box>
@@ -206,8 +253,8 @@ export default function GuildCommandsPage() {
                             <CommandToggle
                               key={cmd.name}
                               name={cmd.name}
-                              displayName={toTitleCase(cmd.name)}
-                              description={cmd.description}
+                              displayName={toTitleCase(cmd.localizedName)}
+                              description={cmd.localizedDescription}
                               disabled={effectiveDisabled}
                               interactiveDisabled={moduleDisabled}
                               onToggle={enabled => {

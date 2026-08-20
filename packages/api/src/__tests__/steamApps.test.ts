@@ -65,6 +65,22 @@ describe('Steam apps API', () => {
         expectNotFound(response);
     });
 
+    it('localizes missing apps without changing the response code', async () => {
+        const client = await loadClient();
+
+        const response = await client.raw
+            .get('/api/steamApps/resolve')
+            .set('Authorization', `Bearer ${client.token}`)
+            .set('Accept-Language', 'nl')
+            .query({ q: 'not a real game' });
+
+        expectNotFound(response);
+        expect(response.body.error).toMatchObject({
+            code: 'NOT_FOUND',
+            message: 'Steam-app niet gevonden',
+        });
+    });
+
     it('reports ambiguous title matches with suggestions', async () => {
         const client = await loadClient();
 

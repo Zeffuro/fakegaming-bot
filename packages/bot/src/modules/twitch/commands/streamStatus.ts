@@ -1,6 +1,8 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
 import {streamStatus as META} from '../commands.manifest.js';
+import {resolveInteractionOutputLocale, type SupportedOutputLocale} from '../../../core/localization.js';
 
 interface TwitchUser {
     id: string;
@@ -19,18 +21,22 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option
             .setName('username')
+            .setNameLocalization('nl', 'gebruikersnaam')
             .setDescription('Twitch username')
+            .setDescriptionLocalization('nl', 'Twitch-gebruikersnaam')
             .setRequired(true)
     )
 );
 
 let appToken: { token: string; expiresAt: number } | null = null;
 
-async function getTwitchAppToken(nowMs = Date.now()): Promise<string> {
+class TwitchStatusError extends Error {}
+
+async function getTwitchAppToken(locale: SupportedOutputLocale, nowMs = Date.now()): Promise<string> {
     const clientId = process.env.TWITCH_CLIENT_ID ?? '';
     const clientSecret = process.env.TWITCH_CLIENT_SECRET ?? '';
     if (!clientId || !clientSecret) {
-        throw new Error('Twitch credentials are not configured.');
+        throw new TwitchStatusError(resolveLocaleValue(locale, { en: 'Twitch credentials are not configured.', nl: 'Twitch-inloggegevens zijn niet ingesteld.' }));
     }
 
     if (appToken && appToken.expiresAt - nowMs > 60_000) {
@@ -39,7 +45,7 @@ async function getTwitchAppToken(nowMs = Date.now()): Promise<string> {
 
     const url = `https://id.twitch.tv/oauth2/token?client_id=${encodeURIComponent(clientId)}&client_secret=${encodeURIComponent(clientSecret)}&grant_type=client_credentials`;
     const response = await fetch(url, {method: 'POST'});
-    if (!response.ok) throw new Error('Failed to authenticate with Twitch.');
+    if (!response.ok) throw new TwitchStatusError(resolveLocaleValue(locale, { en: 'Failed to authenticate with Twitch.', nl: 'Authenticatie bij Twitch is mislukt.' }));
     const data = await response.json() as { access_token: string; expires_in?: number };
     appToken = {token: data.access_token, expiresAt: nowMs + (data.expires_in ?? 3600) * 1000};
     return data.access_token;
@@ -58,14 +64,15 @@ async function twitchGet<T>(path: string, token: string): Promise<T | null> {
 }
 
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const username = interaction.options.getString('username', true).trim().replace(/^@/, '').toLowerCase();
 
     try {
-        const token = await getTwitchAppToken();
+        const token = await getTwitchAppToken(locale);
         const users = await twitchGet<{ data: TwitchUser[] }>(`users?login=${encodeURIComponent(username)}`, token);
         const user = users?.data?.[0];
         if (!user) {
-            await interaction.reply(`Twitch channel \`${username}\` was not found.`);
+            await interaction.reply(resolveLocaleValue(locale, { en: `Twitch channel \`${username}\` was not found.`, nl: `Twitch-kanaal \`${username}\` is niet gevonden.` }));
             return;
         }
 
@@ -73,16 +80,20 @@ async function execute(interaction: ChatInputCommandInteraction) {
         const stream = streams?.data?.[0];
         const displayName = user.display_name ?? user.login;
         if (!stream) {
-            await interaction.reply(`${displayName} is currently offline. https://twitch.tv/${user.login}`);
+            await interaction.reply(resolveLocaleValue(locale, { en: `${displayName} is currently offline. https://twitch.tv/${user.login}`, nl: `${displayName} is momenteel offline. https://twitch.tv/${user.login}` }));
             return;
         }
 
-        const startedAt = stream.started_at ? `<t:${Math.floor(Date.parse(stream.started_at) / 1000)}:R>` : 'recently';
-        const game = stream.game_name ? ` playing **${stream.game_name}**` : '';
-        const viewers = typeof stream.viewer_count === 'number' ? ` with **${stream.viewer_count}** viewers` : '';
-        await interaction.reply(`${displayName} is live${game}${viewers}: **${stream.title}**\nStarted ${startedAt}\nhttps://twitch.tv/${user.login}`);
+        const startedAt = stream.started_at ? `<t:${Math.floor(Date.parse(stream.started_at) / 1000)}:R>` : resolveLocaleValue(locale, { en: 'recently', nl: 'onlangs' });
+        const game = stream.game_name ? resolveLocaleValue(locale, { en: ` playing **${stream.game_name}**`, nl: ` en speelt **${stream.game_name}**` }) : '';
+        const viewers = typeof stream.viewer_count === 'number'
+            ? resolveLocaleValue(locale, { en: ` with **${stream.viewer_count}** viewers`, nl: ` met **${stream.viewer_count}** kijkers` })
+            : '';
+        await interaction.reply(resolveLocaleValue(locale, { en: `${displayName} is live${game}${viewers}: **${stream.title}**\nStarted ${startedAt}\nhttps://twitch.tv/${user.login}`, nl: `${displayName} is live${game}${viewers}: **${stream.title}**\nGestart ${startedAt}\nhttps://twitch.tv/${user.login}` }));
     } catch (error) {
-        await interaction.reply(error instanceof Error ? error.message : 'Failed to check Twitch status.');
+        await interaction.reply(error instanceof TwitchStatusError
+            ? error.message
+            : resolveLocaleValue(locale, { en: 'Failed to check Twitch status.', nl: 'Twitch-status controleren is mislukt.' }));
     }
 }
 

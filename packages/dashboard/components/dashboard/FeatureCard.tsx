@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Avatar, Box, Button, Card, CardActions, CardContent, Chip, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { dashboardAccents, dashboardCardSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface FeatureCardProps {
   title: string;
@@ -27,8 +28,10 @@ export function FeatureCard({
   chipLabel,
   statusLabel,
   meta,
-  actionLabel = "Open",
+  actionLabel,
 }: FeatureCardProps) {
+  const { t } = useDashboardI18n();
+
   return (
     <Card sx={{ ...dashboardCardSx(accent), display: "flex", flexDirection: "column" }}>
       <CardContent sx={{ pb: 1.5, flex: 1 }}>
@@ -69,7 +72,7 @@ export function FeatureCard({
           variant="contained"
           sx={primaryActionButtonSx(accent)}
         >
-          {actionLabel}
+          {actionLabel ?? t("common.open")}
         </Button>
       </CardActions>
     </Card>

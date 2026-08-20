@@ -4,8 +4,8 @@ import { signTestJwt, expectForbidden, expectOk, expectUnauthorized } from '@zef
 
 const OLD_ENV = { ...process.env };
 
-function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf?: string; body?: any; requestId?: string; search?: string; authorization?: string }) {
-    const { method, jwt, csrf, headerCsrf, body, requestId, search = '', authorization } = opts;
+function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf?: string; body?: any; requestId?: string; search?: string; authorization?: string; acceptLanguage?: string; dashboardLocale?: string }) {
+    const { method, jwt, csrf, headerCsrf, body, requestId, search = '', authorization, acceptLanguage, dashboardLocale } = opts;
     return {
         method,
         nextUrl: { search },
@@ -15,6 +15,7 @@ function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf
                 if (name.toLowerCase() === 'x-csrf-token') return headerCsrf || null;
                 if (name.toLowerCase() === 'x-request-id') return requestId || null;
                 if (name.toLowerCase() === 'authorization') return authorization || null;
+                if (name.toLowerCase() === 'accept-language') return acceptLanguage || null;
                 return null;
             }
         },
@@ -22,6 +23,7 @@ function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf
             get: (name: string) => {
                 if (name === 'jwt' && jwt) return { value: jwt };
                 if (name === 'csrf' && csrf) return { value: csrf };
+                if (name === 'fg.dashboard.locale' && dashboardLocale) return { value: dashboardLocale };
                 return undefined;
             }
         },
@@ -104,6 +106,19 @@ describe('external proxy route CSRF', () => {
         expect(headers.Authorization).toBe(`Bearer ${jwt}`);
     });
 
+    it('forwards the persisted dashboard locale ahead of the browser language', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        const res = await GET(
+            makeReq({ method: 'GET', jwt, acceptLanguage: 'en-US', dashboardLocale: 'nl' }),
+            { params: Promise.resolve({ proxy: ['test'] }) } as any
+        );
+
+        expectOk(res);
+        const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        const headers = init.headers as Record<string, string>;
+        expect(headers['Accept-Language']).toBe('nl');
+    });
+
     it('passes binary responses through without text decoding', async () => {
         const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
         const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff]);
@@ -112,6 +127,7 @@ describe('external proxy route CSRF', () => {
             headers: {
                 'Content-Type': 'image/png',
                 'Content-Disposition': 'attachment; filename="quote-card.png"',
+                'Vary': 'Accept-Language',
             },
         }));
 
@@ -123,6 +139,7 @@ describe('external proxy route CSRF', () => {
         expectOk(res);
         expect(res.headers.get('content-type')).toBe('image/png');
         expect(res.headers.get('content-disposition')).toBe('attachment; filename="quote-card.png"');
+        expect(res.headers.get('vary')).toBe('Accept-Language');
         expect(Array.from(new Uint8Array(await res.arrayBuffer()))).toEqual(Array.from(bytes));
     });
 

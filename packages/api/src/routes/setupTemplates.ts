@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getConfigManager, validateBody } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
@@ -10,6 +10,9 @@ import {
     previewSetupTemplate,
     type SetupTemplateId,
 } from '../utils/setupTemplates.js';
+import { validateBody } from '../localization/validation.js';
+import { requestLocale } from '../localization/locale.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -36,16 +39,15 @@ const setupTemplateRequestSchema = z.object({
     }).strict().default({}),
 }).strict();
 
-router.get('/', jwtAuth, (_req, res) => {
-    res.json({ templates: listSetupTemplateDefinitions() });
+router.get('/', jwtAuth, (req, res) => {
+    res.json({ templates: listSetupTemplateDefinitions(requestLocale(req)) });
 });
 
 router.post('/:templateId/preview', jwtAuth, validateBody(setupTemplateRequestSchema), requireGuildAdmin, async (req, res) => {
     const templateId = String(req.params.templateId ?? '');
-    const plan = await previewSetupTemplate(getConfigManager(), templateId, req.body);
+    const plan = await previewSetupTemplate(getConfigManager(), templateId, req.body, requestLocale(req));
     if (!plan) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Setup template not found' } });
-        return;
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'setupTemplateNotFound');
     }
 
     res.json(plan);
@@ -53,10 +55,9 @@ router.post('/:templateId/preview', jwtAuth, validateBody(setupTemplateRequestSc
 
 router.post('/:templateId/apply', jwtAuth, validateBody(setupTemplateRequestSchema), requireGuildAdmin, async (req, res) => {
     const templateId = String(req.params.templateId ?? '');
-    const result = await applySetupTemplate(getConfigManager(), templateId, req.body);
+    const result = await applySetupTemplate(getConfigManager(), templateId, req.body, requestLocale(req));
     if (!result) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Setup template not found' } });
-        return;
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'setupTemplateNotFound');
     }
 
     await recordAuditEvent(req, {

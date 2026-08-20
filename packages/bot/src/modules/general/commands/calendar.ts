@@ -1,6 +1,8 @@
 import {ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
+import {getGeneralCopy} from '../data/generalCopy.js';
 import {calendar as META} from '../commands.manifest.js';
 import {formatBirthdayLine, getUpcomingBirthdays, type BirthdayRow} from '../../birthdays/shared/upcomingBirthdays.js';
 import {formatReminderLine, type ReminderLike} from '../../reminders/shared/reminderFormat.js';
@@ -9,7 +11,9 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addIntegerOption(option =>
         option
             .setName('days')
+            .setNameLocalization('nl', 'dagen')
             .setDescription('How many days ahead to show')
+            .setDescriptionLocalization('nl', 'Hoeveel dagen vooruit je wilt bekijken')
             .setMinValue(1)
             .setMaxValue(366)
             .setRequired(false)
@@ -21,9 +25,11 @@ function timestampValue(reminder: ReminderLike): number {
 }
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
+    const copy = getGeneralCopy(locale);
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({content: 'Calendar only works in a server.', flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: copy.calendar.serverOnly, flags: MessageFlags.Ephemeral});
         return;
     }
 
@@ -46,22 +52,22 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     const sections: string[] = [];
     if (birthdays.length > 0) {
-        sections.push(`**Birthdays**\n${birthdays.map(item => formatBirthdayLine(item.row, item.date, now)).join('\n')}`);
+        sections.push(`**${copy.calendar.birthdays}**\n${birthdays.map(item => formatBirthdayLine(item.row, item.date, now, locale)).join('\n')}`);
     }
     if (reminders.length > 0) {
-        sections.push(`**Your Reminders**\n${reminders.map(formatReminderLine).join('\n')}`);
+        sections.push(`**${copy.calendar.reminders}**\n${reminders.map((reminder, index) => formatReminderLine(reminder, index, locale)).join('\n')}`);
     }
 
     if (sections.length === 0) {
         await interaction.reply({
-            content: `No birthdays or reminders in the next ${days} days.`,
+            content: copy.calendar.empty(days),
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
     await interaction.reply({
-        content: `Upcoming calendar for the next ${days} days:\n\n${sections.join('\n\n')}`,
+        content: `${copy.calendar.title(days)}\n\n${sections.join('\n\n')}`,
         flags: MessageFlags.Ephemeral,
     });
 }

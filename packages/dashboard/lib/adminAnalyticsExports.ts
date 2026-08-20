@@ -2,6 +2,7 @@ import { buildAdminAuditMetadataView } from "@/lib/adminAuditDetail";
 import type { AuditEventEntry } from "@/lib/api/audit";
 import type { IntegrationHealthRecord, JobRunEntry } from "@/lib/api-client";
 import type { CsvRow } from "@/lib/csvExport";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export const adminAuditCsvHeaders = [
     "id",
@@ -44,9 +45,12 @@ export const adminJobRunsCsvHeaders = [
     "metadata",
 ] as const;
 
-export function buildAdminAuditCsvRows(events: readonly AuditEventEntry[]): CsvRow[] {
+export function buildAdminAuditCsvRows(
+    events: readonly AuditEventEntry[],
+    locale: DashboardLocale = "en",
+): CsvRow[] {
     return events.map((event) => {
-        const metadataView = buildAdminAuditMetadataView(event.metadata);
+        const metadataView = buildAdminAuditMetadataView(event.metadata, locale);
 
         return [
             event.id,

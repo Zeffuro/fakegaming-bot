@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { getConfigManager, validateBody } from '@zeffuro/fakegaming-common';
+import { getConfigManager, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { validateBody } from '../localization/validation.js';
 import { userUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import type { AuthenticatedRequest } from '../types/express.js';
@@ -9,6 +10,7 @@ const router = createBaseRouter();
 interface UserSettingsRecord {
     timezone?: string | null;
     defaultReminderTimeSpan?: string | null;
+    preferredLocale?: SupportedOutputLocale | null;
 }
 
 function getAuthenticatedDiscordId(req: AuthenticatedRequest): string {
@@ -20,6 +22,7 @@ function serializeSettings(discordId: string, user: UserSettingsRecord | null) {
         discordId,
         timezone: user?.timezone ?? null,
         defaultReminderTimeSpan: user?.defaultReminderTimeSpan ?? null,
+        preferredLocale: user?.preferredLocale ?? null,
     };
 }
 

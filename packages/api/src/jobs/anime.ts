@@ -1,11 +1,12 @@
 import { getAniListNextAiring, mapAniListTitleToInput, type AniListAiringScheduleItem } from '@zeffuro/fakegaming-common/anime';
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import type { CreationAttributes } from 'sequelize';
 import { sendChannelMessagePayload, sendDirectMessagePayload } from '../utils/discord.js';
+import { apiText, resolveGuildOutputLocale, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 
 function computeNextAnimeDelaySeconds(now: Date = new Date(), minSeconds = 30): number {
@@ -22,25 +23,32 @@ function animeTitle(item: AniListAiringScheduleItem): string {
     return title?.english || title?.romaji || title?.native || `AniList #${item.mediaId}`;
 }
 
-function buildAnimeReminderPayload(item: AniListAiringScheduleItem): Record<string, unknown> {
+export function buildAnimeReminderPayload(
+    item: AniListAiringScheduleItem,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): Record<string, unknown> {
     const airingMs = item.airingAt * 1000;
     const timestamp = new Date(airingMs).toISOString();
     const title = animeTitle(item);
     const embed: Record<string, unknown> = {
-        title: `${title} episode ${item.episode}`,
+        title: apiText(locale, 'animeTitle', { title, episode: item.episode }),
         url: item.media?.siteUrl ?? `https://anilist.co/anime/${item.mediaId}`,
-        description: `Episode ${item.episode} airs <t:${item.airingAt}:R>.`,
+        description: apiText(locale, 'animeDescription', { episode: item.episode, airingAt: item.airingAt }),
         timestamp,
         color: 0x02A9FF,
-        author: { name: 'Anime reminder' },
+        author: { name: apiText(locale, 'animeAuthor') },
     };
     if (item.media?.coverImage?.large) embed.thumbnail = { url: item.media.coverImage.large };
     if (item.media?.bannerImage) embed.image = { url: item.media.bannerImage };
     return { embeds: [embed] };
 }
 
-async function sendReminder(subscription: CreationAttributes<AnimeSubscriptionConfig>, item: AniListAiringScheduleItem): Promise<boolean> {
-    const payload = buildAnimeReminderPayload(item);
+async function sendReminder(
+    subscription: CreationAttributes<AnimeSubscriptionConfig>,
+    item: AniListAiringScheduleItem,
+    locale: SupportedOutputLocale,
+): Promise<boolean> {
+    const payload = buildAnimeReminderPayload(item, locale);
     if (subscription.targetType === 'channel' && subscription.channelId) {
         const sent = await sendChannelMessagePayload(subscription.channelId, payload);
         return Boolean(sent && typeof (sent as { id?: unknown }).id === 'string');
@@ -94,7 +102,10 @@ async function processAnimeNotifications(log = getLogger({ name: 'api:jobs:anime
             && Number(subscription.lastNotifiedAiringAt ?? 0) === airingMs;
         if (!shouldNotify || alreadyNotified) continue;
 
-        const sent = await sendReminder(subscription, item);
+        const locale = subscription.targetType === 'channel'
+            ? await resolveGuildOutputLocale(subscription.guildId)
+            : await resolveUserOutputLocale(subscription.userId);
+        const sent = await sendReminder(subscription, item, locale);
         if (!sent) {
             errors += 1;
             log.warn({ subscriptionId: subscription.id, anilistId: subscription.anilistId }, 'Failed to send anime reminder');

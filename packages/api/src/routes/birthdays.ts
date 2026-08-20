@@ -3,12 +3,13 @@ import type { Request, Response } from 'express';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { jwtAuth } from '../middleware/auth.js';
 import { requireGuildAdmin, checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
-import { validateParams, validateBody, validateQuery } from '@zeffuro/fakegaming-common';
+import { validateParams, validateBody, validateQuery } from '../localization/validation.js';
 import { birthdayCreateRequestSchema, birthdayUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
 import { UniqueConstraintError } from 'sequelize';
 import { recordAuditEvent } from '../utils/audit.js';
 import { loadGuildScopedRecords } from '../utils/guildScopedRouteHelpers.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 // Zod schemas
 const userGuildParamSchema = z.object({
@@ -27,7 +28,7 @@ type BirthdayRecord = Awaited<ReturnType<ReturnType<typeof getConfigManager>['bi
 async function getAuthorizedBirthday(req: Request, res: Response, userId: string, guildId: string): Promise<BirthdayRecord | null> {
     const birthday = await getConfigManager().birthdayManager.getBirthday(userId, guildId);
     if (!birthday) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+        sendLocalizedError(req, res, 404, 'NOT_FOUND', 'birthdayNotFound');
         return null;
     }
 
@@ -132,7 +133,7 @@ router.post('/', jwtAuth, validateBody(birthdayCreateRequestSchema), requireGuil
         res.status(201).json({ success: true });
     } catch (error) {
         if (error instanceof UniqueConstraintError) {
-            res.status(409).json({ error: { code: 'CONFLICT', message: 'Birthday already exists for this user in this guild' } });
+            sendLocalizedError(req, res, 409, 'CONFLICT', 'birthdayExists');
         } else {
             throw error;
         }
@@ -169,7 +170,7 @@ router.put('/:userId/:guildId', jwtAuth, validateParams(userGuildParamSchema), v
     if (!existing) return;
 
     const [affectedCount, rows] = await getConfigManager().birthdayManager.updatePlain(req.body, { userId, guildId });
-    if (affectedCount === 0) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Birthday not found' } });
+    if (affectedCount === 0) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'birthdayNotFound');
 
     await recordAuditEvent(req, {
         action: 'birthday.update',

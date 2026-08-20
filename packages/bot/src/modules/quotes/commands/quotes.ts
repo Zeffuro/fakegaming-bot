@@ -3,9 +3,10 @@ import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import { formatQuotesForUser, type QuoteLike } from '../shared/formatQuotes.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { quotes as META } from '../commands.manifest.js';
+import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
-    b.addUserOption(option => option.setName('user').setDescription('User to get quotes for').setRequired(true))
+    b.addUserOption(option => option.setName('user').setNameLocalization('nl', 'gebruiker').setDescription('User to get quotes for').setDescriptionLocalization('nl', 'Gebruiker van wie je citaten wilt tonen').setRequired(true))
 );
 
 /**
@@ -13,11 +14,12 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
  * Replies with a formatted list or a message if none are found.
  */
 async function execute(interaction: ChatInputCommandInteraction) {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const user = interaction.options.getUser('user', true);
     const guildId = interaction.guildId!;
     const quotes = await getConfigManager().quoteManager.getQuotesByAuthor(guildId, user.id) as unknown as QuoteLike[];
 
-    await interaction.reply(formatQuotesForUser(user.tag, quotes));
+    await interaction.reply(formatQuotesForUser(user.tag, quotes, locale));
 }
 
 const testOnly = getTestOnly(META);

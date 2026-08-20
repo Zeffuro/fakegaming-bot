@@ -1,5 +1,5 @@
 import { Column, DataType, Default, Model, PrimaryKey, Table } from 'sequelize-typescript';
-import type { SupportedOutputLocale } from '../utils/outputLocale.js';
+import { DEFAULT_OUTPUT_LOCALE, SUPPORTED_OUTPUT_LOCALES, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 @Table({ tableName: 'GuildLocaleConfigs' })
 export class GuildLocaleConfig extends Model {
@@ -7,10 +7,10 @@ export class GuildLocaleConfig extends Model {
     @Column(DataType.STRING)
     declare guildId: string;
 
-    @Default('en')
+    @Default(DEFAULT_OUTPUT_LOCALE)
     @Column({
         type: DataType.STRING,
-        validate: { isIn: [['en', 'nl']] },
+        validate: { isIn: [SUPPORTED_OUTPUT_LOCALES] },
     })
     declare outputLocale: SupportedOutputLocale;
 }

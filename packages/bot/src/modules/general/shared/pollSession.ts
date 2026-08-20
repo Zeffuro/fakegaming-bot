@@ -1,8 +1,12 @@
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
 import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
 } from 'discord.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { encodeComponentLocale } from '../../../core/componentLocale.js';
+import { getGeneralCopy } from '../data/generalCopy.js';
 
 const MAX_ACTIVE_POLLS = 200;
 const SESSION_RETENTION_MS = 60 * 60 * 1000;
@@ -30,6 +34,7 @@ export interface PollSession {
     renderTimer: ReturnType<typeof setTimeout> | null;
     expiryTimer: ReturnType<typeof setTimeout> | null;
     cleanupTimer: ReturnType<typeof setTimeout> | null;
+    locale: SupportedOutputLocale;
 }
 
 export interface PollMessagePayload {
@@ -54,6 +59,7 @@ export interface CreatePollSessionInput {
     options: readonly string[];
     durationMinutes: number;
     message: PollSessionMessage;
+    locale?: SupportedOutputLocale;
 }
 
 export interface PollVoteResult {
@@ -106,6 +112,7 @@ export class PollSessionStore {
             renderTimer: null,
             expiryTimer: null,
             cleanupTimer: null,
+            locale: input.locale ?? DEFAULT_OUTPUT_LOCALE,
         };
 
         session.expiryTimer = this.schedule(() => {
@@ -227,29 +234,30 @@ export class PollSessionStore {
 }
 
 export function renderPollMessage(session: PollSession): PollMessagePayload {
+    const copy = getGeneralCopy(session.locale).poll;
     const counts = optionCounts(session);
     const totalVotes = session.votes.size;
     const closed = session.closedAt !== null;
     const lines = [
         `**${session.question}**`,
         closed
-            ? `Poll closed ${session.closeReason === 'expired' ? 'when its duration elapsed' : 'by its creator'}.`
-            : `Closes <t:${Math.floor(session.expiresAt / 1_000)}:R>.`,
+            ? session.closeReason === 'expired' ? copy.closedByExpiry : copy.closedByCreator
+            : copy.closes(Math.floor(session.expiresAt / 1_000)),
         '',
         ...session.options.map((option, index) => {
             const count = counts[index] ?? 0;
             const percentage = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
-            return `${index + 1}. ${option} - ${count} vote${count === 1 ? '' : 's'} (${percentage}%)`;
+            return `${index + 1}. ${option} - ${copy.votes(count)} (${percentage}%)`;
         }),
         '',
-        `Total votes: ${totalVotes}`,
+        copy.total(totalVotes),
     ];
 
     if (closed) lines.push(formatResult(session, counts));
 
     return {
         content: lines.join('\n'),
-        components: pollComponents(session.id, session.options, closed),
+        components: pollComponents(session.id, session.options, closed, session.locale),
         allowedMentions: { parse: [] },
     };
 }
@@ -258,15 +266,16 @@ export function pollComponents(
     pollId: string,
     options: readonly string[],
     disabled: boolean,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
 ): ActionRowBuilder<ButtonBuilder>[] {
     const optionButtons = options.map((option, index) => new ButtonBuilder()
-        .setCustomId(`poll:vote:${pollId}:${index}`)
+        .setCustomId(`poll:vote:${pollId}:${index}${encodeComponentLocale(locale)}`)
         .setLabel(`${index + 1}. ${truncateButtonLabel(option)}`)
         .setStyle(ButtonStyle.Primary)
         .setDisabled(disabled));
     const closeButton = new ButtonBuilder()
-        .setCustomId(`poll:close:${pollId}`)
-        .setLabel('Close poll')
+        .setCustomId(`poll:close:${pollId}${encodeComponentLocale(locale)}`)
+        .setLabel(getGeneralCopy(locale).poll.closeButton)
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(disabled);
 
@@ -285,12 +294,13 @@ function optionCounts(session: PollSession): number[] {
 }
 
 function formatResult(session: PollSession, counts: readonly number[]): string {
+    const copy = getGeneralCopy(session.locale).poll;
     const highestCount = Math.max(...counts);
-    if (highestCount === 0) return 'Result: no votes were cast.';
+    if (highestCount === 0) return copy.noVotes;
 
     const winners = session.options.filter((_option, index) => counts[index] === highestCount);
-    if (winners.length === 1) return `Winner: **${winners[0] ?? ''}** (${highestCount} vote${highestCount === 1 ? '' : 's'}).`;
-    return `Result: tie between ${winners.map(winner => `**${winner}**`).join(', ')} (${highestCount} vote${highestCount === 1 ? '' : 's'} each).`;
+    if (winners.length === 1) return copy.winner(winners[0] ?? '', highestCount);
+    return copy.tie(winners.map(winner => `**${winner}**`).join(', '), highestCount);
 }
 
 function createPollId(): string {

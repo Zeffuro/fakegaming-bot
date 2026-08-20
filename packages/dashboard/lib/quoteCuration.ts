@@ -51,13 +51,13 @@ export interface QuoteCurationSummary {
     topTags: QuoteTagCount[];
 }
 
-export function getQuoteUserDisplayName(user?: QuoteCurationUser | null): string {
-    if (!user) return "Unknown";
+export function getQuoteUserDisplayName(user?: QuoteCurationUser | null, unknownLabel = ""): string {
+    if (!user) return unknownLabel;
     return user.nickname?.trim()
         || user.nick?.trim()
         || user.global_name?.trim()
         || user.username?.trim()
-        || "Unknown";
+        || unknownLabel;
 }
 
 export function filterQuotesForCuration<T extends QuoteCurationQuote>(

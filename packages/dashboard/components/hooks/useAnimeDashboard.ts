@@ -8,6 +8,7 @@ import {
   parseAnimeLookupHistory,
   type AnimeLookupHistoryEntry,
 } from "@/lib/animeLookupHistory";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 const animeLookupHistoryStorageKey = "fakegaming:animeLookupHistory:v1";
 
@@ -59,7 +60,24 @@ interface UseAnimeDashboardOptions {
   enabled?: boolean;
 }
 
+function formatSeasonLabel(value: string, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+  const normalized = value.trim().toUpperCase();
+  if (normalized === "WINTER") return t("anime.seasonWinter");
+  if (normalized === "SPRING") return t("anime.seasonSpring");
+  if (normalized === "SUMMER") return t("anime.seasonSummer");
+  if (normalized === "FALL") return t("anime.seasonFall");
+  return value;
+}
+
+function formatScopeLabel(value: AnimeSeasonScope, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+  if (value === "airing") return t("anime.scopeAiring");
+  if (value === "chart") return t("anime.scopeChart");
+  if (value === "tv") return t("anime.scopeTv");
+  return t("anime.scopeAll");
+}
+
 export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOptions = {}): UseAnimeDashboardResult {
+  const { locale, t } = useDashboardI18n();
   const enabled = options.enabled ?? true;
   const [serverSubs, setServerSubs] = useState<AnimeSubscriptionDashboardConfig[]>([]);
   const [personalSubs, setPersonalSubs] = useState<AnimeSubscriptionDashboardConfig[]>([]);
@@ -81,7 +99,7 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
   const [seasonYear, setSeasonYearState] = useState(new Date().getFullYear());
   const [seasonPage, setSeasonPageState] = useState(1);
   const [seasonResults, setSeasonResults] = useState<AnimeSearchResult[]>([]);
-  const [seasonLabel, setSeasonLabel] = useState("Current season");
+  const [seasonLabel, setSeasonLabel] = useState(() => t("anime.currentSeason"));
   const [seasonHasNext, setSeasonHasNext] = useState(false);
   const [seasonLoading, setSeasonLoading] = useState(false);
 
@@ -100,11 +118,11 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
       setServerSubs(server.map((config) => ({ ...config, discordChannelId: config.channelId ?? config.discordChannelId })));
       setPersonalSubs(personal);
     } catch (err: unknown) {
-      setError(errorMessage(err, "Failed to load anime subscriptions"));
+      setError(errorMessage(err, t("anime.loadSubscriptionsFailed")));
     } finally {
       setLoading(false);
     }
-  }, [enabled, guildId]);
+  }, [enabled, guildId, t]);
 
   useEffect(() => {
     if (!enabled) {
@@ -176,12 +194,12 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
       setSearchLoading(true);
       api.searchAnime(query, 1, 10, searchMediaType)
         .then((data) => setSearchResults(data.results))
-        .catch((err: unknown) => setError(errorMessage(err, searchMediaType === "manga" ? "Manga search failed" : "Anime search failed")))
+        .catch((err: unknown) => setError(errorMessage(err, searchMediaType === "manga" ? t("anime.mangaSearchFailed") : t("anime.searchFailed"))))
         .finally(() => setSearchLoading(false));
     }, 250);
 
     return () => window.clearTimeout(handle);
-  }, [searchInput, searchMediaType, selectedAnime]);
+  }, [searchInput, searchMediaType, selectedAnime, t]);
 
   const setSeason = useCallback((value: AnimeSeasonOption) => {
     setSeasonState(value);
@@ -213,14 +231,18 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
         seasonScope,
       );
       setSeasonResults(data.results);
-      setSeasonLabel(`${data.season} ${data.year} - ${data.scopeLabel}`);
+      setSeasonLabel(t("anime.seasonResultLabel", {
+        season: formatSeasonLabel(data.season, t),
+        year: data.year,
+        scope: formatScopeLabel(seasonScope, t),
+      }));
       setSeasonHasNext(Boolean(data.pageInfo?.hasNextPage));
     } catch (err: unknown) {
-      setError(errorMessage(err, "Failed to load anime season"));
+      setError(errorMessage(err, t("anime.loadSeasonFailed")));
     } finally {
       setSeasonLoading(false);
     }
-  }, [season, seasonScope, seasonYear, seasonPage]);
+  }, [season, seasonScope, seasonYear, seasonPage, t]);
 
   useEffect(() => {
     void loadSeason();
@@ -230,20 +252,22 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
     const target = anime ?? selectedAnime;
     const numericId = Number(searchInput.trim());
     if (!target && (!Number.isInteger(numericId) || numericId <= 0)) {
-      setError("Pick an anime from search or enter an AniList ID.");
+      setError(t("anime.pickAnimeOrEnterAniListId"));
       return;
     }
     if (!channelId) {
-      setError("Choose a Discord channel for server notifications first.");
+      setError(t("anime.chooseChannelFirst"));
       return;
     }
     if (searchMediaType === "manga" && !target) {
-      setError("Manga lookup is search-only; episode reminders are anime-only.");
+      setError(t("anime.mangaSearchOnly"));
       return;
     }
     if (target && !canSubscribe(target)) {
-      const reason = target.type === "MANGA" ? "manga entries do not have AniList airing schedules" : `it is ${formatStatus(target.status).toLowerCase()} and episode reminders would never fire`;
-      setError(`${formatAnimeTitle(target)} is lookup-only because ${reason}.`);
+      const reason = target.type === "MANGA"
+        ? t("anime.lookupOnlyMangaReason")
+        : t("anime.lookupOnlyStatusReason", { status: formatStatus(target.status, locale).toLowerCase() });
+      setError(t("anime.lookupOnlyBecause", { title: formatAnimeTitle(target), reason }));
       return;
     }
 
@@ -260,11 +284,11 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
       setSearchResults([]);
       await fetchSubscriptions();
     } catch (err: unknown) {
-      setError(errorMessage(err, "Failed to save anime subscription"));
+      setError(errorMessage(err, t("anime.saveSubscriptionFailed")));
     } finally {
       setSaving(false);
     }
-  }, [channelId, fetchSubscriptions, guildId, recordLookupHistory, reminderMinutes, searchInput, searchMediaType, selectedAnime, setSelectedAnime]);
+  }, [channelId, fetchSubscriptions, guildId, locale, recordLookupHistory, reminderMinutes, searchInput, searchMediaType, selectedAnime, setSelectedAnime, t]);
 
   const deleteSubscriptions = useCallback(async (configs: AnimeSubscriptionDashboardConfig[]) => {
     const targets = configs.filter((config): config is AnimeSubscriptionDashboardConfig & { id: number } => config.id !== undefined && config.id !== null);
@@ -275,11 +299,11 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
       await Promise.all(targets.map((config) => api.deleteAnimeSubscription(config.id)));
       await fetchSubscriptions();
     } catch (err: unknown) {
-      setError(errorMessage(err, targets.length === 1 ? "Failed to delete anime subscription" : "Failed to delete anime subscriptions"));
+      setError(errorMessage(err, targets.length === 1 ? t("anime.deleteSubscriptionFailed") : t("anime.deleteSubscriptionsFailed")));
     } finally {
       setSaving(false);
     }
-  }, [fetchSubscriptions]);
+  }, [fetchSubscriptions, t]);
 
   const deleteSubscription = useCallback(async (config: AnimeSubscriptionDashboardConfig) => {
     await deleteSubscriptions([config]);
@@ -292,11 +316,11 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
       await api.setAnimeSubscriptionPaused(config.id, !config.paused);
       await fetchSubscriptions();
     } catch (err: unknown) {
-      setError(errorMessage(err, "Failed to update anime subscription status"));
+      setError(errorMessage(err, t("anime.updateSubscriptionFailed")));
     } finally {
       setSaving(false);
     }
-  }, [fetchSubscriptions]);
+  }, [fetchSubscriptions, t]);
 
   const setSubscriptionsPaused = useCallback(async (
     subscriptions: AnimeSubscriptionDashboardConfig[],
@@ -318,16 +342,16 @@ export function useAnimeDashboard(guildId: string, options: UseAnimeDashboardOpt
   }, [fetchSubscriptions]);
 
   const setServerSubscriptionsPaused = useCallback(async (paused: boolean) => {
-    await setSubscriptionsPaused(serverSubs, paused, "Failed to update server anime subscriptions");
-  }, [serverSubs, setSubscriptionsPaused]);
+    await setSubscriptionsPaused(serverSubs, paused, t("anime.updateServerSubscriptionsFailed"));
+  }, [serverSubs, setSubscriptionsPaused, t]);
 
   const setPersonalSubscriptionsPaused = useCallback(async (paused: boolean) => {
-    await setSubscriptionsPaused(personalSubs, paused, "Failed to update personal anime subscriptions");
-  }, [personalSubs, setSubscriptionsPaused]);
+    await setSubscriptionsPaused(personalSubs, paused, t("anime.updatePersonalSubscriptionsFailed"));
+  }, [personalSubs, setSubscriptionsPaused, t]);
 
   const setSelectedSubscriptionsPaused = useCallback(async (configs: AnimeSubscriptionDashboardConfig[], paused: boolean) => {
-    await setSubscriptionsPaused(configs, paused, "Failed to update selected anime subscriptions");
-  }, [setSubscriptionsPaused]);
+    await setSubscriptionsPaused(configs, paused, t("anime.updateSelectedSubscriptionsFailed"));
+  }, [setSubscriptionsPaused, t]);
 
   return useMemo(() => ({
     serverSubs,

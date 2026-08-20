@@ -1,10 +1,12 @@
 import { z } from 'zod';
-import { getConfigManager, validateQuery } from '@zeffuro/fakegaming-common';
+import { getConfigManager } from '@zeffuro/fakegaming-common';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { jwtAuth, jwtOrService } from '../middleware/auth.js';
 import { requireGuildAdmin } from '../utils/authHelpers.js';
 import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
+import { validateQuery } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 
@@ -157,13 +159,13 @@ router.post('/admin/:provider/:configId/resolve', jwtOrService, requireDashboard
     const provider = String(req.params.provider ?? '').trim();
     const configId = String(req.params.configId ?? '').trim();
     if (!provider || !configId) {
-        return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'Provider and config ID are required' } });
+        return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'integrationProviderConfigRequired');
     }
 
     const manager = (getConfigManager() as unknown as { integrationHealthManager: IntegrationHealthRouteManager }).integrationHealthManager;
     const existing = await manager.getForConfig(provider, configId);
     if (!existing) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Integration health record not found' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'integrationHealthNotFound');
     }
 
     const resolvedAt = new Date();

@@ -1,8 +1,11 @@
 import React from "react";
 import {Box, Typography, Button, Link, Stack} from "@mui/material";
 import FakegamingLogo from "@/components/FakegamingLogo";
+import { DashboardLanguageSelector } from "@/components/i18n/DashboardLanguageSelector";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
+    const { t } = useDashboardI18n();
     return (
         <Box
             sx={{
@@ -17,12 +20,15 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
                 alignItems: "center",
             }}
         >
+            <Box sx={{ alignSelf: "stretch", display: "flex", justifyContent: "flex-end", mb: 1 }}>
+                <DashboardLanguageSelector syncAccount={isLoggedIn} />
+            </Box>
             <FakegamingLogo size={100} variant="circle" elevation={3}/>
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 2, mt: 2 }}>
-                Fakegaming Bot Dashboard
+                {t("login.title")}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                Log in with Discord to manage your servers and bot settings.
+                {t("login.description")}
             </Typography>
             {isLoggedIn ? (
                 <Link href="/dashboard" underline="none" sx={{width: "100%"}}>
@@ -33,7 +39,7 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
                         fullWidth
                         sx={{mt: 2, fontWeight: 600}}
                     >
-                        Go to Dashboard
+                        {t("login.goToDashboard")}
                     </Button>
                 </Link>
             ) : (
@@ -45,15 +51,15 @@ export default function LoginCard({isLoggedIn}: { isLoggedIn: boolean }) {
                     sx={{mt: 2, fontWeight: 600}}
                     onClick={() => window.location.href = "/api/auth/discord"}
                 >
-                    Login with Discord
+                    {t("login.withDiscord")}
                 </Button>
             )}
             <Stack direction="row" spacing={1.5} sx={{ mt: 2, fontSize: 13 }}>
                 <Link href="/privacy" underline="hover" sx={{ fontSize: 13 }}>
-                    Privacy and cookies
+                    {t("nav.privacy")}
                 </Link>
                 <Link href="/terms" underline="hover" sx={{ fontSize: 13 }}>
-                    Terms
+                    {t("nav.terms")}
                 </Link>
             </Stack>
         </Box>

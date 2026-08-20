@@ -74,6 +74,27 @@ describe('PollSessionStore', () => {
         store.clear();
     });
 
+    it('renders Dutch poll state and carries locale in new component IDs', () => {
+        const store = createStore();
+        const session = store.create({
+            creatorId: 'creator',
+            question: 'Welke optie?',
+            options: ['Alfa', 'Bèta'],
+            durationMinutes: 1,
+            message: createMessage(),
+            locale: 'nl',
+        });
+        if (!session) throw new Error('Expected poll session to be created.');
+        store.vote(session.id, 'one', 0);
+
+        const rendered = renderPollMessage(session);
+        expect(rendered.content).toContain('1 stem');
+        expect(rendered.content).toContain('Totaal aantal stemmen: 1');
+        expect(rendered.components[0]?.components[0]?.toJSON()).toMatchObject({ custom_id: 'poll:vote:poll-1:0:nl' });
+        expect(rendered.components[1]?.components[0]?.toJSON()).toMatchObject({ label: 'Peiling sluiten' });
+        store.clear();
+    });
+
     it('keeps one vote per user while allowing vote changes', () => {
         const store = createStore();
         const session = createSession(store);

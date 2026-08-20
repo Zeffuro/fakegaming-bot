@@ -72,7 +72,7 @@ describe('buildGuildNotificationAnalytics', () => {
         expect(analytics.providers).toMatchObject([
             {
                 providerKey: 'twitch',
-                providerLabel: 'Twitch',
+                providerLabel: 'twitch',
                 configured: 2,
                 active: 1,
                 paused: 1,
@@ -82,7 +82,7 @@ describe('buildGuildNotificationAnalytics', () => {
             },
             {
                 providerKey: 'youtube',
-                providerLabel: 'YouTube',
+                providerLabel: 'youtube',
                 configured: 1,
                 deliveries: 2,
                 healthWarnings: 1,
@@ -124,7 +124,7 @@ describe('buildGuildNotificationAnalytics', () => {
             },
             {
                 providerKey: 'birthday',
-                providerLabel: 'Birthdays',
+                providerLabel: 'birthdays',
                 deliveries: 3,
                 status: 'healthy',
             },
@@ -234,7 +234,7 @@ describe('buildGuildNotificationAnalytics', () => {
             ['summary', 30, '', '', 'healthErrors', 1, '', '', '', '', '', '', '', '', '', '', ''],
             ['summary', 30, '', '', 'healthWarnings', 0, '', '', '', '', '', '', '', '', '', '', ''],
             ['summary', 30, '', '', 'lastDeliveryAt', null, '', '', '', '', '', '', '', '', '', '', null],
-            ['provider', 30, 'Twitch', '', 'providerSummary', '', 'critical', 1, 1, 0, 4, 1, 0, 0, 2, '2026-06-22T08:00:00.000Z', null],
+            ['provider', 30, 'twitch', '', 'providerSummary', '', 'critical', 1, 1, 0, 4, 1, 0, 0, 2, '2026-06-22T08:00:00.000Z', null],
             ['trend', 30, '', '2026-06-21', 'deliveries', 1, '', '', '', '', 1, '', '', '', '', '', ''],
             ['trend', 30, '', '2026-06-22', 'deliveries', 3, '', '', '', '', 3, '', '', '', '', '', ''],
         ]);

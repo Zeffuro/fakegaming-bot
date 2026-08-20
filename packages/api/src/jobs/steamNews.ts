@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { getLogger, JobRun } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, JobRun, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager, type SteamNewsSubscriptionManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { formatMinuteKey, scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
@@ -8,6 +8,7 @@ import { getNotificationSuppression } from './notificationSuppression.js';
 import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
 import { recordJobRun } from './status.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 const STEAM_NEWS_PROVIDER = 'steamnews';
 const STEAM_NEWS_FEED = 'steam_community_announcements';
@@ -76,9 +77,14 @@ export async function fetchSteamNewsForApp(appId: number, count = 5): Promise<St
         .sort((a, b) => a.date - b.date);
 }
 
-export function buildSteamNewsEmbedPayload(subscription: SteamNewsSubscriptionPlain, item: SteamNewsItem, imageUrl?: string | null): Record<string, unknown> {
-    const appName = subscription.appName?.trim() || `Steam app ${subscription.steamAppId}`;
-    const description = formatSteamNewsDescription(item.contents);
+export function buildSteamNewsEmbedPayload(
+    subscription: SteamNewsSubscriptionPlain,
+    item: SteamNewsItem,
+    imageUrl?: string | null,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): Record<string, unknown> {
+    const appName = subscription.appName?.trim() || apiText(locale, 'steamAppFallback', { appId: subscription.steamAppId });
+    const description = formatSteamNewsDescription(item.contents, locale);
     const embed: Record<string, unknown> = {
         title: item.title,
         url: item.url,
@@ -89,7 +95,7 @@ export function buildSteamNewsEmbedPayload(subscription: SteamNewsSubscriptionPl
             name: appName,
         },
         footer: {
-            text: item.feedlabel || 'Steam News',
+            text: item.feedlabel || apiText(locale, 'steamNewsFooter'),
         },
         ...(imageUrl ? { image: { url: imageUrl } } : {}),
     };
@@ -162,13 +168,14 @@ async function processSteamNewsSubscriptions(log = getLogger({ name: 'api:jobs:s
                 log.debug({ err, newsUrl: nextItem.url }, 'Failed to fetch Steam news image metadata');
                 return null;
             });
+            const locale = await resolveGuildOutputLocale(enrichedSubscription.guildId);
             const sent = await sendJobNotification({
                 manager: notifications,
                 provider: STEAM_NEWS_PROVIDER,
                 eventId,
                 channelId: enrichedSubscription.discordChannelId,
                 guildId: enrichedSubscription.guildId,
-                payload: buildSteamNewsEmbedPayload(enrichedSubscription, nextItem, imageUrl),
+                payload: buildSteamNewsEmbedPayload(enrichedSubscription, nextItem, imageUrl, locale),
             });
 
             if (!sent) {
@@ -379,9 +386,9 @@ async function enrichSteamNewsSubscription(subscription: SteamNewsSubscriptionPl
     }
 }
 
-function formatSteamNewsDescription(value: string | undefined): string {
+function formatSteamNewsDescription(value: string | undefined, locale: SupportedOutputLocale): string {
     const text = stripSteamMarkup(value ?? '').replace(/\s+/g, ' ').trim();
-    if (text.length === 0) return 'New Steam announcement published.';
+    if (text.length === 0) return apiText(locale, 'steamNewsEmptyDescription');
     if (text.length <= 500) return text;
     return `${text.slice(0, 497)}...`;
 }

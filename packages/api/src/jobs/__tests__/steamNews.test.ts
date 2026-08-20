@@ -136,6 +136,34 @@ describe('steam news jobs', () => {
         });
     });
 
+    it('localizes application fallbacks while preserving Steam-provided fields', () => {
+        const subscription = {
+            id: 1,
+            steamAppId: 730,
+            discordChannelId: 'channel-1',
+            guildId: 'guild-1',
+        };
+        const english = buildSteamNewsEmbedPayload(subscription, baseItem, null, 'en');
+        const dutch = buildSteamNewsEmbedPayload(subscription, baseItem, null, 'nl');
+
+        expect(english).toMatchObject({
+            embeds: [{
+                title: 'Update',
+                author: { name: 'Steam app 730' },
+                description: 'New Steam announcement published.',
+                footer: { text: 'Steam News' },
+            }],
+        });
+        expect(dutch).toMatchObject({
+            embeds: [{
+                title: 'Update',
+                author: { name: 'Steam-app 730' },
+                description: 'Er is een nieuwe Steam-aankondiging gepubliceerd.',
+                footer: { text: 'Steam-nieuws' },
+            }],
+        });
+    });
+
     it('extracts Steam news images from OpenGraph metadata and body markup', () => {
         expect(extractSteamNewsImageUrl('<meta property="og:image" content="https://cdn.example.test/post.jpg">')).toBe('https://cdn.example.test/post.jpg');
         expect(extractSteamNewsImageUrl('[img]https://cdn.example.test/body.png[/img]')).toBe('https://cdn.example.test/body.png');

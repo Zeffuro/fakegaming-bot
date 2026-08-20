@@ -1,3 +1,4 @@
+import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {CanvasRenderingContext2D, Image, createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {
@@ -15,6 +16,8 @@ import type {TftItem, TftTrait} from '../types/leagueAssetTypes.js';
 import type {TftMatchDto, TftParticipantDto, TftTraitDto, TftUnitDto} from '../types/riotDtos.js';
 import {communityDragonAssetUrl, tftUnitIconUrlCandidates} from '../utils/assetUrl.js';
 import {historyFontString as fontString} from './textRender.js';
+import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { leagueText } from '../copy/leagueCopy.js';
 
 const ROW_HEIGHT = 160;
 const WIDTH = 940;
@@ -40,7 +43,7 @@ interface TftRenderUnit {
 
 export async function generateTftHistoryImage(matches: TftMatchDto[], identity: {
     puuid: string
-}): Promise<Buffer> {
+}, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): Promise<Buffer> {
     const [itemLookup, traitLookup] = await Promise.all([
         getTftItemData().then(buildTftItemLookup),
         getTftTraitData().then(buildTftTraitLookup),
@@ -57,7 +60,7 @@ export async function generateTftHistoryImage(matches: TftMatchDto[], identity: 
         const participant = match.info.participants.find((p) => p.puuid === identity.puuid);
         if (!participant) continue;
 
-        await drawMatchRow(ctx, match, participant, itemLookup, traitLookup, PADDING, y);
+        await drawMatchRow(ctx, match, participant, itemLookup, traitLookup, PADDING, y, locale);
     }
 
     return canvas.toBuffer('image/png');
@@ -70,7 +73,8 @@ async function drawMatchRow(
     itemLookup: TftItemLookup,
     traitLookup: TftTraitLookup,
     x: number,
-    y: number
+    y: number,
+    locale: SupportedOutputLocale,
 ): Promise<void> {
     const rowWidth = WIDTH - PADDING * 2;
     const rowHeight = ROW_HEIGHT - 8;
@@ -85,19 +89,19 @@ async function drawMatchRow(
     drawRoundedRect(ctx, x, y, 7, rowHeight, 5);
     ctx.restore();
 
-    drawMatchInfo(ctx, match, participant, x + 16, y + 14, placementColor);
+    drawMatchInfo(ctx, match, participant, x + 16, y + 14, placementColor, locale);
     await drawTraits(ctx, participant.traits, traitLookup, contentX, y + 14);
     await drawUnits(ctx, participant.units, itemLookup, contentX, y + 72);
-    drawStats(ctx, participant, statsX, y + 25);
+    drawStats(ctx, participant, statsX, y + 25, locale);
 }
 
-function drawMatchInfo(ctx: CanvasRenderingContext2D, match: TftMatchDto, participant: TftParticipantDto, x: number, y: number, placementColor: string): void {
-    const mode = getTftModeLabel(match);
-    const placementLabel = getPlacementLabel(participant.placement);
-    const result = participant.placement <= 4 ? 'Top 4' : 'Bottom 4';
+function drawMatchInfo(ctx: CanvasRenderingContext2D, match: TftMatchDto, participant: TftParticipantDto, x: number, y: number, placementColor: string, locale: SupportedOutputLocale): void {
+    const mode = getTftModeLabel(match, locale);
+    const placementLabel = getPlacementLabel(participant.placement, locale);
+    const result = participant.placement <= 4 ? 'Top 4' : leagueText(locale, { en: 'Bottom 4', nl: 'Onderste 4' });
     const timestamp = match.info.game_datetime;
-    const elapsed = typeof timestamp === 'number' ? timeAgo(timestamp) : '';
-    const duration = formatDuration(Math.floor(match.info.game_length ?? participant.time_eliminated ?? 0));
+    const elapsed = typeof timestamp === 'number' ? timeAgo(timestamp, undefined, locale) : '';
+    const duration = formatDuration(Math.floor(match.info.game_length ?? participant.time_eliminated ?? 0), locale);
 
     ctx.save();
     ctx.font = fontString({size: 15, weight: 'bold'});
@@ -163,15 +167,15 @@ function drawEmptyUnitSlot(ctx: CanvasRenderingContext2D, x: number, y: number):
     ctx.restore();
 }
 
-function drawStats(ctx: CanvasRenderingContext2D, participant: TftParticipantDto, x: number, y: number): void {
+function drawStats(ctx: CanvasRenderingContext2D, participant: TftParticipantDto, x: number, y: number, locale: SupportedOutputLocale): void {
     const carry = getCarryUnit(participant.units);
     const lines = [
-        {label: 'Level', value: `${participant.level ?? '-'}`},
-        {label: 'Round', value: formatTftRound(participant.last_round)},
-        {label: 'Damage', value: formatNumber(participant.total_damage_to_players)},
-        {label: 'Elims', value: `${participant.players_eliminated ?? 0}`},
-        {label: 'Gold', value: `${participant.gold_left ?? 0}`},
-        {label: 'Carry', value: carry ? getTftUnitDisplayName(carry) : '-'},
+        {label: leagueText(locale, { en: 'Level', nl: 'Niveau' }), value: `${participant.level ?? '-'}`},
+        {label: leagueText(locale, { en: 'Round', nl: 'Ronde' }), value: formatTftRound(participant.last_round)},
+        {label: leagueText(locale, { en: 'Damage', nl: 'Schade' }), value: formatNumber(participant.total_damage_to_players)},
+        {label: leagueText(locale, { en: 'Elims', nl: 'Elims' }), value: `${participant.players_eliminated ?? 0}`},
+        {label: leagueText(locale, { en: 'Gold', nl: 'Goud' }), value: `${participant.gold_left ?? 0}`},
+        {label: leagueText(locale, { en: 'Carry', nl: 'Carry' }), value: carry ? getTftUnitDisplayName(carry) : '-'},
     ];
 
     ctx.save();
@@ -312,10 +316,10 @@ async function getFirstAvailableAsset(urls: string[], assetName: string, type: s
     return {buffer: null, path: ''};
 }
 
-function getTftModeLabel(match: TftMatchDto): string {
+function getTftModeLabel(match: TftMatchDto, locale: SupportedOutputLocale): string {
     const queueName = match.info.queue_id ? queueMapper[match.info.queue_id] : undefined;
     const gameType = match.info.tft_game_type ? titleCase(match.info.tft_game_type) : undefined;
-    const setLabel = match.info.tft_set_number ? `Set ${match.info.tft_set_number}` : 'TFT';
+    const setLabel = match.info.tft_set_number ? `${leagueText(locale, { en: 'Set', nl: 'Set' })} ${match.info.tft_set_number}` : 'TFT';
     return [queueName ?? gameType ?? 'TFT', setLabel].filter(Boolean).join(' - ');
 }
 
@@ -343,10 +347,15 @@ function normalizeTftItemKey(value: string): string {
     return value.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-function getPlacementLabel(placement: number): string {
+function getPlacementLabel(placement: number, locale: SupportedOutputLocale): string {
     if (!placement) return '-';
-    const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
-    return `${placement}${suffix}`;
+    return resolveLocaleValue(locale, {
+        en: () => {
+            const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
+            return `${placement}${suffix}`;
+        },
+        nl: () => `${placement}e`,
+    })();
 }
 
 function getRowColor(placement: number): string {

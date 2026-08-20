@@ -101,4 +101,21 @@ describe('leagueHistory command', () => {
 
         H.expectErrorText(interaction, 'Failed to fetch match history');
     });
+
+    it('passes the stored Dutch locale into image generation and reply copy', async () => {
+        await H.mockIdentity('EUW' as Regions, 'test-puuid-12345', 'ProviderPlayer');
+        await H.mockHistory(['match-1']);
+        const details = { info: { gameMode: 'CLASSIC', participants: [] } };
+        await H.mockDetails(details);
+        const { generateLeagueHistoryImage } = await import('../image/leagueHistoryImage.js');
+        vi.mocked(generateLeagueHistoryImage).mockResolvedValue(Buffer.from('fake-image-data'));
+        const { command, interaction } = await H.setupCmd();
+        const { getConfigManager } = await import('@zeffuro/fakegaming-common/managers');
+        vi.mocked(getConfigManager().guildLocaleConfigManager.getOutputLocale).mockResolvedValueOnce('nl');
+
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+
+        expect(generateLeagueHistoryImage).toHaveBeenCalledWith([details], { puuid: 'test-puuid-12345' }, 'nl');
+        H.expectAttachment(interaction, 'Recente League-wedstrijden voor ProviderPlayer');
+    });
 });

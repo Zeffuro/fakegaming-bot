@@ -44,6 +44,17 @@ describe('POST /auth/login', () => {
         expect(Array.isArray(response.body.error.details)).toBe(true);
     });
 
+    it('localizes validation failures from Accept-Language', async () => {
+        const response = await request(app)
+            .post('/auth/login')
+            .set('Accept-Language', 'nl-NL')
+            .send({});
+
+        expectBadRequest(response);
+        expect(response.body.error.message).toBe('Validatie van de inhoud is mislukt');
+        expect(response.body.error.details[0]?.message).toBe('Verplicht');
+    });
+
     it('should return 401 if access token is missing', async () => {
         (exchangeCodeForToken as any).mockResolvedValue({ access_token: null });
 
@@ -53,6 +64,19 @@ describe('POST /auth/login', () => {
 
         expectUnauthorized(response);
         expect(response.body.error.message).toBe('Invalid Discord OAuth code');
+        expectErrorCode(response, 'UNAUTHORIZED');
+    });
+
+    it('localizes invalid Discord OAuth codes', async () => {
+        (exchangeCodeForToken as any).mockResolvedValue({ access_token: null });
+
+        const response = await request(app)
+            .post('/auth/login')
+            .set('Accept-Language', 'nl')
+            .send({ code: 'test-code' });
+
+        expectUnauthorized(response);
+        expect(response.body.error.message).toBe('Ongeldige Discord OAuth-code');
         expectErrorCode(response, 'UNAUTHORIZED');
     });
 

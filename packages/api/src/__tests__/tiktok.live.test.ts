@@ -5,6 +5,7 @@ import { expectOk, expectUnauthorized, expectBadRequest } from '@zeffuro/fakegam
 
 const client = givenAuthenticatedClient(app);
 const ORIGINAL_DASHBOARD_ADMINS = process.env.DASHBOARD_ADMINS;
+const ORIGINAL_TIKTOK_COOKIE = process.env.TIKTOK_COOKIE;
 
 // Mock the connector module once; we'll set its implementation per-test in beforeEach
 vi.mock('tiktok-live-connector', () => ({
@@ -15,6 +16,7 @@ describe('GET /api/tiktok/live', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         process.env.DASHBOARD_ADMINS = 'testuser';
+        delete process.env.TIKTOK_COOKIE;
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
         (TikTokLiveConnection as any).mockImplementation(function () {
             return {
@@ -29,6 +31,11 @@ describe('GET /api/tiktok/live', () => {
             delete process.env.DASHBOARD_ADMINS;
         } else {
             process.env.DASHBOARD_ADMINS = ORIGINAL_DASHBOARD_ADMINS;
+        }
+        if (ORIGINAL_TIKTOK_COOKIE === undefined) {
+            delete process.env.TIKTOK_COOKIE;
+        } else {
+            process.env.TIKTOK_COOKIE = ORIGINAL_TIKTOK_COOKIE;
         }
     });
 
@@ -82,5 +89,14 @@ describe('GET /api/tiktok/live', () => {
             errorCode: 'TIKTOK_ROOM_UNAVAILABLE',
         });
         expect('raw' in res.body.debugMeta).toBe(false);
+    });
+
+    it('localizes debug diagnostics from Accept-Language', async () => {
+        const res = await client.get('/api/tiktok/live')
+            .set('Accept-Language', 'nl-NL,nl;q=0.9')
+            .query({ username: 'creator', debug: true });
+
+        expectOk(res);
+        expect(res.body.debugMeta.session.summary).toBe('Er is voor dit proces geen TikTok-cookiemateriaal ingesteld.');
     });
 });

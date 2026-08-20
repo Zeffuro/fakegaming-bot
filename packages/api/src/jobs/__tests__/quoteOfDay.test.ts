@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     getNotification: vi.fn(),
     sendChannelMessage: vi.fn(),
     recordJobRun: vi.fn(),
+    getGuildOutputLocale: vi.fn(),
 }));
 
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({
@@ -23,6 +24,9 @@ vi.mock('@zeffuro/fakegaming-common/managers', () => ({
             recordIfNew: mocks.recordIfNew,
             setMessageMeta: mocks.setMessageMeta,
             getOnePlain: mocks.getNotification,
+        },
+        guildLocaleConfigManager: {
+            getOutputLocale: mocks.getGuildOutputLocale,
         },
     }),
 }));
@@ -56,6 +60,7 @@ describe('quote-of-the-day jobs', () => {
         ]);
         mocks.recordIfNew.mockResolvedValue({ created: true });
         mocks.sendChannelMessage.mockResolvedValue({ id: 'message-1' });
+        mocks.getGuildOutputLocale.mockResolvedValue('en');
     });
 
     it('computes the next UTC hour boundary', () => {
@@ -67,6 +72,23 @@ describe('quote-of-the-day jobs', () => {
             dateKey: '2026-06-24',
             quote: { id: 'quote-1', guildId: 'guild-1', quote: 'Ship it', authorId: 'author-1', submitterId: 'submitter-1', timestamp: 1 },
         })).toBe('Quote of the day (2026-06-24)\n"Ship it"\n- <@author-1>');
+
+        expect(buildQuoteOfDayContent({
+            dateKey: '2026-06-24',
+            quote: { id: 'quote-1', guildId: 'guild-1', quote: 'Ship it', authorId: 'author-1', submitterId: 'submitter-1', timestamp: 1 },
+        }, 'nl')).toBe('Citaat van de dag (2026-06-24)\n"Ship it"\n- <@author-1>');
+    });
+
+    it('uses the stored guild locale for delivered content', async () => {
+        mocks.getGuildOutputLocale.mockResolvedValue('nl');
+
+        await runQuoteOfDayOnce(date);
+
+        expect(mocks.getGuildOutputLocale).toHaveBeenCalledWith('guild-1');
+        expect(mocks.sendChannelMessage).toHaveBeenCalledWith(
+            'channel-1',
+            expect.stringContaining('Citaat van de dag'),
+        );
     });
 
     it('sends the selected approved quote and records delivery metadata', async () => {

@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { validateBody, validateParams } from '@zeffuro/fakegaming-common';
 import { riotLinkUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { formatRiotId, parseRiotId } from '@zeffuro/fakegaming-common/utils';
@@ -8,6 +7,9 @@ import { requireDashboardAdmin } from '../utils/dashboardAdmin.js';
 import { recordAuditEvent } from '../utils/audit.js';
 import { validateRiotAccountLink } from '../utils/riotAccountValidation.js';
 import type { AuthenticatedRequest } from '../types/express.js';
+import { validateBody, validateParams } from '../localization/validation.js';
+import { sendLocalizedError } from '../localization/responses.js';
+import { requestLocale } from '../localization/locale.js';
 
 const router = createBaseRouter();
 
@@ -80,7 +82,7 @@ router.get('/:discordId', requireDashboardAdmin, validateParams(discordIdParamSc
     const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
     const link = await getConfigManager().leagueManager.getLinkedAccountPlain(discordId);
     if (!link) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Riot link not found' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'riotLinkNotFound');
     }
     res.json(link);
 });
@@ -125,12 +127,7 @@ router.put(
         const body = req.body as z.infer<typeof riotLinkUpdateRequestSchema>;
         const riotId = parseRiotId(formatRiotId(body.riotIdGameName, body.riotIdTagLine, body.summonerName));
         if (!riotId?.tagLine) {
-            return res.status(400).json({
-                error: {
-                    code: 'BAD_REQUEST',
-                    message: 'Riot ID must include a tag line for Account-V1 validation.',
-                },
-            });
+            return sendLocalizedError(req, res, 400, 'BAD_REQUEST', 'riotTagRequired');
         }
 
         const validation = await validateRiotAccountLink({
@@ -138,7 +135,7 @@ router.put(
             tagLine: riotId.tagLine,
             region: body.region,
             puuid: body.puuid,
-        });
+        }, requestLocale(req));
         if (!validation.ok) {
             return res.status(validation.statusCode).json({
                 error: {

@@ -17,6 +17,7 @@ import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useIntegrationHealth } from "@/components/hooks/useIntegrationHealth";
 import { filterNotificationConfigs, type NotificationConfigStatusFilter } from "@/lib/notificationConfigFilters";
 import type { ConfigDialogItemOption } from "@/components/config-dialog/ConfigDialogFields";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface NotificationConfigPageProps<T extends StreamingConfig> {
     guildId: string;
@@ -78,14 +79,14 @@ export type NotificationConfigPageOptions<T extends StreamingConfig> = Pick<
     | "extraContent"
 >;
 
-function moduleDescription(moduleName: string, plural: string): string {
-    if (moduleName === "Twitch") return "Track live streams, route announcements to the right channel, and tune cooldowns or quiet hours.";
-    if (moduleName === "TikTok") return "Track creators going live and keep noisy alerts under control with per-channel notification settings.";
-    if (moduleName === "Bluesky") return "Watch Bluesky accounts for new posts and route announcements with cooldowns and quiet hours.";
-    if (moduleName === "YouTube") return "Watch channels for new uploads and post clean video announcements where your server expects them.";
-    if (moduleName === "Steam News") return "Subscribe Discord channels to official Steam game announcements with cooldowns and quiet hours.";
-    if (moduleName === "Patch Notes") return "Subscribe Discord channels to game update feeds so patch posts land in predictable places.";
-    return `Configure ${moduleName} ${plural.toLowerCase()} for this server.`;
+function moduleDescription(moduleName: string, plural: string, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+    if (moduleName === "Twitch") return t("provider.twitchDescription");
+    if (moduleName === "TikTok") return t("provider.tiktokDescription");
+    if (moduleName === "Bluesky") return t("provider.blueskyDescription");
+    if (moduleName === "YouTube") return t("provider.youtubeDescription");
+    if (moduleName === "Steam News") return t("provider.steamDescription");
+    if (moduleName === "Patch Notes") return t("provider.patchDescription");
+    return t("provider.genericDescription", { module: moduleName, items: plural.toLowerCase() });
 }
 
 function toFeatureModule(moduleName: string): FeatureNavModule {
@@ -95,14 +96,26 @@ function toFeatureModule(moduleName: string): FeatureNavModule {
     return "Twitch";
 }
 
-const statusFilterOptions: Array<{ label: string; value: NotificationConfigStatusFilter }> = [
-    { label: "All", value: "all" },
-    { label: "Active", value: "active" },
-    { label: "Paused", value: "paused" },
-    { label: "Healthy", value: "healthy" },
-    { label: "Warning", value: "warning" },
-    { label: "Error", value: "error" },
-    { label: "Unknown", value: "unknown" },
+function localizedModuleName(moduleName: string, t: ReturnType<typeof useDashboardI18n>["t"]): string {
+    if (moduleName === "Twitch") return t("featureNav.twitch");
+    if (moduleName === "TikTok") return t("featureNav.tiktok");
+    if (moduleName === "Bluesky") return t("featureNav.bluesky");
+    if (moduleName === "YouTube") return t("featureNav.youtube");
+    if (moduleName === "Steam News") return t("featureNav.steamNews");
+    if (moduleName === "Patch Notes") return t("featureNav.patchNotes");
+    if (moduleName === "Anime") return t("featureNav.anime");
+    if (moduleName === "Birthdays") return t("featureNav.birthdays");
+    return moduleName;
+}
+
+const statusFilterOptions: Array<{ labelKey: "status.all" | "status.active" | "common.paused" | "common.healthy" | "common.warning" | "status.error" | "common.unknown"; value: NotificationConfigStatusFilter }> = [
+    { labelKey: "status.all", value: "all" },
+    { labelKey: "status.active", value: "active" },
+    { labelKey: "common.paused", value: "paused" },
+    { labelKey: "common.healthy", value: "healthy" },
+    { labelKey: "common.warning", value: "warning" },
+    { labelKey: "status.error", value: "error" },
+    { labelKey: "common.unknown", value: "unknown" },
 ];
 
 export default function NotificationConfigPage<T extends StreamingConfig>(props: NotificationConfigPageProps<T>) {
@@ -144,6 +157,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
     allowEdit = true,
     extraContent,
 }: NotificationConfigPageProps<T>) {
+    const { t } = useDashboardI18n();
     const { channels, loading: loadingChannels, getChannelName, refetch: refetchChannels } = useGuildChannels(guildId, { enabled: Boolean(guild) });
     const health = useIntegrationHealth(guildId, provider, { enabled: Boolean(guild && provider) });
     const searchParams = useSearchParams();
@@ -153,8 +167,9 @@ function NotificationConfigContent<T extends StreamingConfig>({
     const [bulkChannelId, setBulkChannelId] = useState("");
     const [bulkMoving, setBulkMoving] = useState(false);
 
-    const singular = itemSingularLabel ?? (moduleName === "YouTube" ? "Channel" : "Streamer");
-    const plural = itemPluralLabel ?? (moduleName === "YouTube" ? "Channels" : "Streamers");
+    const singular = itemSingularLabel ?? (moduleName === "YouTube" ? t("config.channel") : t("config.streamer"));
+    const plural = itemPluralLabel ?? (moduleName === "YouTube" ? t("config.channels") : t("config.streamers"));
+    const displayModuleName = localizedModuleName(moduleName, t);
     const pausedCount = configs.filter((config) => Boolean(config.paused)).length;
     const activeCount = configs.length - pausedCount;
     const filtersActive = query.trim().length > 0 || statusFilter !== "all";
@@ -203,15 +218,15 @@ function NotificationConfigContent<T extends StreamingConfig>({
 
     const handleBulkMoveChannel = async () => {
         if (!bulkChannelId) {
-            onSetError("Choose the destination Discord channel before moving configurations.");
+            onSetError(t("notifications.destinationRequired"));
             return;
         }
         if (bulkMoveTargets.length === 0) {
-            onSetError("No visible configurations need to move to that channel.");
+            onSetError(t("notifications.nothingToMove"));
             return;
         }
         const channelLabel = getChannelName(bulkChannelId);
-        if (!window.confirm(`Move ${bulkMoveTargets.length} visible ${moduleName} ${bulkMoveTargets.length === 1 ? singular.toLowerCase() : plural.toLowerCase()} to ${channelLabel}?`)) return;
+        if (!window.confirm(t("notifications.moveConfirmation", { count: bulkMoveTargets.length, module: displayModuleName, items: bulkMoveTargets.length === 1 ? singular.toLowerCase() : plural.toLowerCase(), channel: channelLabel }))) return;
 
         try {
             setBulkMoving(true);
@@ -231,9 +246,9 @@ function NotificationConfigContent<T extends StreamingConfig>({
     };
 
     const currentTrail = guild ? [
-        { label: "Settings", href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
-        { label: "Notifications", href: `/dashboard/settings/${encodeURIComponent(guild.id)}/notifications` },
-        { label: moduleName, href: null }
+        { label: t("common.settings"), href: `/dashboard/settings/${encodeURIComponent(guild.id)}` },
+        { label: t("notifications.back"), href: `/dashboard/settings/${encodeURIComponent(guild.id)}/notifications` },
+        { label: displayModuleName, href: null }
     ] : null;
 
     return (
@@ -242,12 +257,12 @@ function NotificationConfigContent<T extends StreamingConfig>({
                 <FeatureShell accent={moduleColor} secondaryAccent={dashboardAccents.settings}>
                     <FeatureHero
                         icon={moduleIcon}
-                        eyebrow={moduleName}
+                        eyebrow={displayModuleName}
                         title={moduleTitle}
-                        description={moduleDescription(moduleName, plural)}
+                        description={moduleDescription(moduleName, plural, t)}
                         accent={moduleColor}
                         secondaryAccent={dashboardAccents.settings}
-                        stats={[{ label: `${plural} Configured`, value: configs.length }]}
+                        stats={[{ label: t("notifications.configured", { items: plural }), value: configs.length }]}
                         actions={(
                             <Stack direction="row" spacing={1} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", lg: "flex-end" }, flexWrap: "wrap", rowGap: 1 }}>
                                 <Button
@@ -256,7 +271,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                     variant="outlined"
                                     sx={ghostActionButtonSx(moduleColor)}
                                 >
-                                    Back To Notifications
+                                    {t("notifications.back")}
                                 </Button>
                                 <Button
                                     variant="contained"
@@ -265,7 +280,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                     disabled={saving}
                                     sx={primaryActionButtonSx(moduleColor)}
                                 >
-                                    Add {singular}
+                                    {t("notifications.add", { item: singular })}
                                 </Button>
                             </Stack>
                         )}
@@ -282,12 +297,12 @@ function NotificationConfigContent<T extends StreamingConfig>({
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, mb: 3, flexWrap: "wrap", position: "relative" }}>
                             <Box>
                                 <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>
-                                    Configured {moduleName} {plural}
+                                    {t("notifications.configuredItems", { module: displayModuleName, items: plural })}
                                 </Typography>
                                 <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>
                                     {filtersActive
-                                        ? `${filteredConfigs.length} of ${configs.length} shown.`
-                                        : "Edit destinations, messages, cooldowns, and quiet hours from one place."}
+                                        ? t("notifications.shown", { shown: filteredConfigs.length, total: configs.length })
+                                        : t("notifications.editHelp")}
                                 </Typography>
                             </Box>
                             <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
@@ -300,7 +315,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                             disabled={saving || activeCount === 0}
                                             sx={ghostActionButtonSx(moduleColor)}
                                         >
-                                            Pause Active ({activeCount})
+                                            {t("notifications.pauseActive", { count: activeCount })}
                                         </Button>
                                         <Button
                                             variant="outlined"
@@ -309,7 +324,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                             disabled={saving || pausedCount === 0}
                                             sx={ghostActionButtonSx(moduleColor)}
                                         >
-                                            Resume Paused ({pausedCount})
+                                            {t("notifications.resumePaused", { count: pausedCount })}
                                         </Button>
                                     </>
                                 )}
@@ -320,7 +335,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                     disabled={saving}
                                     sx={primaryActionButtonSx(moduleColor)}
                                 >
-                                    Add {singular}
+                                    {t("notifications.add", { item: singular })}
                                 </Button>
                             </Stack>
                         </Box>
@@ -329,7 +344,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             <TextField
                                 value={query}
                                 onChange={(event) => setQuery(event.target.value)}
-                                placeholder={`Search ${plural.toLowerCase()}`}
+                                placeholder={t("notifications.search", { items: plural.toLowerCase() })}
                                 size="small"
                                 sx={{ flex: 1, minWidth: { xs: "100%", md: 280 }, ...filterFieldSx(moduleColor) }}
                                 slotProps={{
@@ -344,7 +359,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             />
                             <TextField
                                 select
-                                label="Status"
+                                label={t("common.status")}
                                 value={statusFilter}
                                 onChange={(event) => setStatusFilter(event.target.value as NotificationConfigStatusFilter)}
                                 size="small"
@@ -361,7 +376,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             >
                                 {statusFilterOptions.map((option) => (
                                     <MenuItem key={option.value} value={option.value}>
-                                        {option.label}
+                                        {t(option.labelKey)}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -383,14 +398,14 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             >
                                 <TextField
                                     select
-                                    label="Move visible configs to channel"
+                                    label={t("notifications.moveVisible")}
                                     value={bulkChannelId}
                                     onChange={(event) => setBulkChannelId(event.target.value)}
                                     size="small"
                                     disabled={loadingChannels || saving || bulkMoving}
                                     sx={filterFieldSx(moduleColor)}
                                 >
-                                    <MenuItem value="">Choose channel</MenuItem>
+                                    <MenuItem value="">{t("notifications.chooseChannel")}</MenuItem>
                                     {channels.map((channel) => (
                                         <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>
                                     ))}
@@ -402,7 +417,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                     onClick={() => void handleBulkMoveChannel()}
                                     sx={ghostActionButtonSx(moduleColor)}
                                 >
-                                    {bulkMoving ? "Moving..." : `Move visible (${bulkMoveTargets.length})`}
+                                    {bulkMoving ? t("notifications.moving") : t("notifications.moveVisibleCount", { count: bulkMoveTargets.length })}
                                 </Button>
                             </Box>
                         ) : null}
@@ -418,6 +433,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                                 void onTogglePaused(config);
                             } : undefined}
                             moduleName={moduleName}
+                            moduleDisplayName={displayModuleName}
                             moduleColor={moduleColor}
                             saving={saving}
                             emptyStateIcon={moduleIcon as React.ReactElement}
@@ -427,8 +443,12 @@ function NotificationConfigContent<T extends StreamingConfig>({
                             itemSingularLabel={singular}
                             itemPluralLabel={plural}
                             canEdit={allowEdit}
-                            emptyTitle={filtersActive ? `No Matching ${moduleName} ${plural}` : undefined}
-                            emptyDescription={filtersActive ? "Adjust the search or status filter to show more configurations." : undefined}
+                            emptyTitle={filtersActive
+                                ? t("notifications.noMatches", { module: displayModuleName, items: plural })
+                                : t("notifications.noConfigured", { module: displayModuleName, items: plural.toLowerCase() })}
+                            emptyDescription={filtersActive
+                                ? t("notifications.adjustFilters")
+                                : t("notifications.addFirst", { module: displayModuleName, item: singular.toLowerCase() })}
                         />
                     </FeaturePanel>
 
@@ -443,6 +463,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                         channelNamePlaceholder={channelNamePlaceholder}
                         guildId={guildId as string}
                         moduleName={moduleName}
+                        moduleDisplayName={displayModuleName}
                         moduleColor={moduleColor}
                         channels={channels}
                         loadingChannels={loadingChannels}
@@ -464,6 +485,7 @@ function NotificationConfigContent<T extends StreamingConfig>({
                         channelNameField={channelNameField}
                         channelNameLabel={channelNameLabel}
                         moduleName={moduleName}
+                        moduleDisplayName={displayModuleName}
                         moduleColor={moduleColor}
                         channels={channels}
                         loadingChannels={loadingChannels}

@@ -1,4 +1,5 @@
 import type { NotificationSetupExport, NotificationSetupExportRecord } from "@/lib/notificationSetupExport";
+import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
 
 export type NotificationSetupImportProvider = "Twitch" | "YouTube" | "TikTok" | "Bluesky" | "Steam News" | "Patch Notes" | "Anime" | "Birthdays";
 export type NotificationSetupImportSkipReason = "duplicate" | "unsupported" | "invalid";
@@ -37,25 +38,96 @@ const supportedProviders = new Set<string>(["Twitch", "YouTube", "TikTok", "Blue
 const youtubeChannelIdPattern = /^UC[\w-]{22}$/;
 const hhmmPattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
-export function parseNotificationSetupImportJson(text: string): NotificationSetupExport {
+interface NotificationImportCopy {
+    invalidJson: string;
+    invalidObject: string;
+    unsupportedVersion: string;
+    missingGuildId: string;
+    missingRecords: string;
+    crossGuild: (sourceGuildId: string, currentGuildId: string) => string;
+    missingRoute: string;
+    unsupportedRestore: (provider: string) => string;
+    youtubeChannelId: string;
+    animeId: string;
+    steamAppId: string;
+    birthdayValues: string;
+    duplicateRoute: string;
+    unsupportedProvider: (provider: string) => string;
+    recordObject: string;
+    cooldownInvalid: string;
+    quietHoursInvalid: string;
+    reminderInvalid: string;
+    birthdayInvalid: string;
+    unknown: string;
+}
+
+const notificationImportCopy = {
+    en: {
+        invalidJson: "Import file is not valid JSON.",
+        invalidObject: "Import file must contain a notification setup object.",
+        unsupportedVersion: "Only notification setup export version 1 is supported.",
+        missingGuildId: "Import file is missing a source guild ID.",
+        missingRecords: "Import file is missing notification records.",
+        crossGuild: (sourceGuildId, currentGuildId) => `This export came from guild ${sourceGuildId}; imports will be created in guild ${currentGuildId}.`,
+        missingRoute: "Record is missing a provider, source, or Discord channel.",
+        unsupportedRestore: (provider) => `${provider} import is not supported by the dashboard restore flow yet.`,
+        youtubeChannelId: "YouTube imports require a channel ID. Re-export from the updated dashboard or add the channel manually.",
+        animeId: "Anime imports require an AniList ID. Re-export from the updated dashboard or add the subscription manually.",
+        steamAppId: "Steam News imports require a numeric Steam App ID. Re-export from the updated dashboard or add the subscription manually.",
+        birthdayValues: "Birthday imports require day and month values. Re-export from the updated dashboard or add the birthday manually.",
+        duplicateRoute: "This provider/source/channel route already exists.",
+        unsupportedProvider: (provider) => `${provider} import is not supported.`,
+        recordObject: "Record must be an object.",
+        cooldownInvalid: "Cooldown must be a non-negative whole number when provided.",
+        quietHoursInvalid: "Quiet hours must use HH:mm format when provided.",
+        reminderInvalid: "Reminder minutes must be a whole number between 0 and 1440 when provided.",
+        birthdayInvalid: "Birthday details must include a valid day, month, and optional year.",
+        unknown: "Unknown",
+    },
+    nl: {
+        invalidJson: "Het importbestand bevat geen geldige JSON.",
+        invalidObject: "Het importbestand moet een object met meldingsinstellingen bevatten.",
+        unsupportedVersion: "Alleen versie 1 van de export van meldingsinstellingen wordt ondersteund.",
+        missingGuildId: "In het importbestand ontbreekt de bronserver-ID.",
+        missingRecords: "In het importbestand ontbreken meldingsrecords.",
+        crossGuild: (sourceGuildId, currentGuildId) => `Deze export komt van server ${sourceGuildId}; imports worden aangemaakt op server ${currentGuildId}.`,
+        missingRoute: "In het record ontbreekt een provider, bron of Discord-kanaal.",
+        unsupportedRestore: (provider) => `Importeren van ${provider} wordt nog niet ondersteund door het herstelproces van het dashboard.`,
+        youtubeChannelId: "Voor YouTube-imports is een kanaal-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het kanaal handmatig toe.",
+        animeId: "Voor anime-imports is een AniList-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
+        steamAppId: "Voor Steam-nieuwsimports is een numerieke Steam-app-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
+        birthdayValues: "Voor verjaardagsimports zijn een dag en maand vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg de verjaardag handmatig toe.",
+        duplicateRoute: "Deze route voor provider, bron en kanaal bestaat al.",
+        unsupportedProvider: (provider) => `Importeren van ${provider} wordt niet ondersteund.`,
+        recordObject: "Het record moet een object zijn.",
+        cooldownInvalid: "De afkoelperiode moet, indien opgegeven, een niet-negatief geheel getal zijn.",
+        quietHoursInvalid: "Stille uren moeten, indien opgegeven, de notatie HH:mm gebruiken.",
+        reminderInvalid: "Herinneringsminuten moeten, indien opgegeven, een geheel getal tussen 0 en 1440 zijn.",
+        birthdayInvalid: "Verjaardagsgegevens moeten een geldige dag, maand en optioneel jaar bevatten.",
+        unknown: "Onbekend",
+    },
+} satisfies DashboardLocaleValues<NotificationImportCopy>;
+
+export function parseNotificationSetupImportJson(text: string, locale: DashboardLocale = "en"): NotificationSetupExport {
+    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     let parsed: unknown;
     try {
         parsed = JSON.parse(text);
     } catch {
-        throw new Error("Import file is not valid JSON.");
+        throw new Error(copy.invalidJson);
     }
 
     if (!isRecord(parsed)) {
-        throw new Error("Import file must contain a notification setup object.");
+        throw new Error(copy.invalidObject);
     }
     if (parsed.version !== 1) {
-        throw new Error("Only notification setup export version 1 is supported.");
+        throw new Error(copy.unsupportedVersion);
     }
     if (typeof parsed.guildId !== "string" || parsed.guildId.trim().length === 0) {
-        throw new Error("Import file is missing a source guild ID.");
+        throw new Error(copy.missingGuildId);
     }
     if (!Array.isArray(parsed.records)) {
-        throw new Error("Import file is missing notification records.");
+        throw new Error(copy.missingRecords);
     }
 
     return parsed as unknown as NotificationSetupExport;
@@ -65,22 +137,23 @@ export function buildNotificationSetupImportPlan(input: {
     exportPayload: NotificationSetupExport;
     currentGuildId: string;
     currentRecords: NotificationSetupExportRecord[];
-}): NotificationSetupImportPlan {
+}, locale: DashboardLocale = "en"): NotificationSetupImportPlan {
+    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     const sourceGuildId = input.exportPayload.guildId;
     const warnings = sourceGuildId === input.currentGuildId
         ? []
-        : [`This export came from guild ${sourceGuildId}; imports will be created in guild ${input.currentGuildId}.`];
+        : [copy.crossGuild(sourceGuildId, input.currentGuildId)];
 
     const seenKeys = new Set(input.currentRecords.map((record) => getImportKey(record)).filter((key): key is string => key !== null));
     const ready: NotificationSetupImportItem[] = [];
     const skipped: NotificationSetupImportSkippedItem[] = [];
 
     for (const rawRecord of input.exportPayload.records) {
-        const normalized = normalizeImportRecord(rawRecord);
+        const normalized = normalizeImportRecord(rawRecord, locale);
         if (!normalized.record) {
             skipped.push({
                 key: `invalid:${skipped.length}`,
-                record: fallbackRecord(rawRecord),
+                record: fallbackRecord(rawRecord, locale),
                 reason: "invalid",
                 message: normalized.message,
             });
@@ -93,7 +166,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key: `invalid:${skipped.length}`,
                 record: normalized.record,
                 reason: "invalid",
-                message: "Record is missing a provider, source, or Discord channel.",
+                message: copy.missingRoute,
             });
             continue;
         }
@@ -102,7 +175,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "unsupported",
-                message: `${normalized.record.provider} import is not supported by the dashboard restore flow yet.`,
+                message: copy.unsupportedRestore(normalized.record.provider),
             });
             continue;
         }
@@ -111,7 +184,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: "YouTube imports require a channel ID. Re-export from the updated dashboard or add the channel manually.",
+                message: copy.youtubeChannelId,
             });
             continue;
         }
@@ -120,7 +193,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: "Anime imports require an AniList ID. Re-export from the updated dashboard or add the subscription manually.",
+                message: copy.animeId,
             });
             continue;
         }
@@ -129,7 +202,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: "Steam News imports require a numeric Steam App ID. Re-export from the updated dashboard or add the subscription manually.",
+                message: copy.steamAppId,
             });
             continue;
         }
@@ -138,7 +211,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: "Birthday imports require day and month values. Re-export from the updated dashboard or add the birthday manually.",
+                message: copy.birthdayValues,
             });
             continue;
         }
@@ -147,7 +220,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "duplicate",
-                message: "This provider/source/channel route already exists.",
+                message: copy.duplicateRoute,
             });
             continue;
         }
@@ -174,8 +247,10 @@ export function buildNotificationSetupImportPlan(input: {
 
 export function buildNotificationSetupImportCreatePayload(
     guildId: string,
-    record: NotificationSetupExportRecord
+    record: NotificationSetupExportRecord,
+    locale: DashboardLocale = "en",
 ): NotificationSetupImportCreatePayload {
+    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     const source = getRecordIdentity(record);
     const timing = buildTimingPayload(record);
 
@@ -237,7 +312,7 @@ export function buildNotificationSetupImportCreatePayload(
     if (record.provider === "Steam News") {
         const steamAppId = getPositiveIntegerIdentity(record);
         if (steamAppId === null) {
-            throw new Error("Steam News imports require a numeric Steam App ID.");
+            throw new Error(copy.steamAppId);
         }
 
         return {
@@ -254,7 +329,7 @@ export function buildNotificationSetupImportCreatePayload(
     if (record.provider === "Anime") {
         const anilistId = getPositiveIntegerIdentity(record);
         if (anilistId === null) {
-            throw new Error("Anime imports require an AniList ID.");
+            throw new Error(copy.animeId);
         }
 
         return {
@@ -269,7 +344,7 @@ export function buildNotificationSetupImportCreatePayload(
     }
     if (record.provider === "Birthdays") {
         if (!record.birthday) {
-            throw new Error("Birthday imports require day and month values.");
+            throw new Error(copy.birthdayValues);
         }
 
         return {
@@ -285,12 +360,13 @@ export function buildNotificationSetupImportCreatePayload(
         };
     }
 
-    throw new Error(`${record.provider} import is not supported.`);
+    throw new Error(copy.unsupportedProvider(record.provider));
 }
 
-function normalizeImportRecord(value: unknown): { record: NotificationSetupExportRecord | null; message: string } {
+function normalizeImportRecord(value: unknown, locale: DashboardLocale): { record: NotificationSetupExportRecord | null; message: string } {
+    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     if (!isRecord(value)) {
-        return { record: null, message: "Record must be an object." };
+        return { record: null, message: copy.recordObject };
     }
 
     const provider = normalizeString(value.provider);
@@ -298,26 +374,26 @@ function normalizeImportRecord(value: unknown): { record: NotificationSetupExpor
     const sourceId = normalizeString(value.sourceId);
     const channelId = normalizeString(value.channelId);
     if (!provider || !source || !channelId) {
-        return { record: null, message: "Record is missing a provider, source, or Discord channel." };
+        return { record: null, message: copy.missingRoute };
     }
 
     const cooldownMinutes = normalizeCooldown(value.cooldownMinutes);
     if (cooldownMinutes.invalid) {
-        return { record: null, message: "Cooldown must be a non-negative whole number when provided." };
+        return { record: null, message: copy.cooldownInvalid };
     }
 
     const quietHoursStart = normalizeTime(value.quietHoursStart);
     const quietHoursEnd = normalizeTime(value.quietHoursEnd);
     if (quietHoursStart.invalid || quietHoursEnd.invalid) {
-        return { record: null, message: "Quiet hours must use HH:mm format when provided." };
+        return { record: null, message: copy.quietHoursInvalid };
     }
     const reminderMinutes = normalizeReminder(value.reminderMinutes);
     if (reminderMinutes.invalid) {
-        return { record: null, message: "Reminder minutes must be a whole number between 0 and 1440 when provided." };
+        return { record: null, message: copy.reminderInvalid };
     }
     const birthday = normalizeBirthday(value.birthday);
     if (birthday.invalid) {
-        return { record: null, message: "Birthday details must include a valid day, month, and optional year." };
+        return { record: null, message: copy.birthdayInvalid };
     }
 
     return {
@@ -338,15 +414,16 @@ function normalizeImportRecord(value: unknown): { record: NotificationSetupExpor
     };
 }
 
-function fallbackRecord(value: unknown): NotificationSetupExportRecord {
+function fallbackRecord(value: unknown, locale: DashboardLocale): NotificationSetupExportRecord {
+    const unknown = getDashboardLocaleValue(locale, notificationImportCopy).unknown;
     if (!isRecord(value)) {
-        return { provider: "Unknown", source: "Unknown", channelId: "Unknown" };
+        return { provider: unknown, source: unknown, channelId: unknown };
     }
     return {
-        provider: normalizeString(value.provider) ?? "Unknown",
-        source: normalizeString(value.source) ?? "Unknown",
+        provider: normalizeString(value.provider) ?? unknown,
+        source: normalizeString(value.source) ?? unknown,
         sourceId: normalizeString(value.sourceId),
-        channelId: normalizeString(value.channelId) ?? "Unknown",
+        channelId: normalizeString(value.channelId) ?? unknown,
         birthday: normalizeBirthday(value.birthday).value,
     };
 }

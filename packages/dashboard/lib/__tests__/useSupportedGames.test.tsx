@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import React, { useEffect, useRef } from 'react';
 import { useSupportedGames } from '@/components/hooks/useSupportedGames';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
 import { api } from '@/lib/api-client';
 import { mountWithSnapshots } from '../testing/reactTesting';
 
@@ -21,7 +22,7 @@ describe('useSupportedGames', () => {
     const spy = vi.spyOn(api, 'getSupportedGames').mockResolvedValueOnce(['Game A', 'Game B']);
 
     const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-      React.createElement(HookProbe, { onSnapshot })
+      React.createElement(DashboardI18nProvider, null, React.createElement(HookProbe, { onSnapshot }))
     );
 
     // After initial render, loading should eventually be false with games populated
@@ -39,7 +40,7 @@ describe('useSupportedGames', () => {
     const spy = vi.spyOn(api, 'getSupportedGames').mockRejectedValueOnce(new Error('boom'));
 
     const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-      React.createElement(HookProbe, { onSnapshot })
+      React.createElement(DashboardI18nProvider, null, React.createElement(HookProbe, { onSnapshot }))
     );
 
     const final = last();

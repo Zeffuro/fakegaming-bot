@@ -1,3 +1,4 @@
+import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     AutocompleteInteraction,
     ChatInputCommandInteraction,
@@ -12,6 +13,7 @@ import {
 } from '@zeffuro/fakegaming-common/anime';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
+import { resolveInteractionOutputLocale } from '../../../core/localization.js';
 import { manga as META } from '../commands.manifest.js';
 import { anilistAutocomplete, parseAniListChoice } from '../shared/anilistAutocomplete.js';
 import { buildAnimeEmbed, buildAnimeSearchResultsEmbed } from '../shared/animeEmbed.js';
@@ -20,7 +22,9 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption((option) =>
         option
             .setName('title')
+            .setNameLocalization('nl', 'titel')
             .setDescription('Manga, manhwa, webtoon, or light novel title')
+            .setDescriptionLocalization('nl', 'Titel van een manga, manhwa, webtoon of light novel')
             .setRequired(true)
             .setAutocomplete(true)
     )
@@ -39,6 +43,7 @@ async function resolveManga(input: string): Promise<AniListTitle | null> {
 }
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    const locale = await resolveInteractionOutputLocale(interaction);
     const input = interaction.options.getString('title', true);
     const selectedId = parseAniListChoice(input);
     if (!selectedId) {
@@ -47,7 +52,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
             await cacheManga(result);
         }
         await interaction.reply({
-            embeds: [buildAnimeSearchResultsEmbed(results, input, 'MANGA')],
+            embeds: [buildAnimeSearchResultsEmbed(results, input, 'MANGA', locale)],
             components: [],
             flags: results.length ? undefined : MessageFlags.Ephemeral,
         });
@@ -56,18 +61,19 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     const manga = await resolveManga(input);
     if (!manga) {
-        await interaction.reply({ content: `No manga found for \`${input}\`.`, flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No manga found for \`${input}\`.`, nl: `Geen manga gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
         return;
     }
 
     await interaction.reply({
-        embeds: [buildAnimeEmbed(manga)],
+        embeds: [buildAnimeEmbed(manga, locale)],
         components: [],
     });
 }
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
-    await anilistAutocomplete(interaction, 'MANGA');
+    const locale = await resolveInteractionOutputLocale(interaction);
+    await anilistAutocomplete(interaction, 'MANGA', locale);
 }
 
 const testOnly = getTestOnly(META);

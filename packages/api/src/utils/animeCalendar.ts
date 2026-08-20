@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { CreationAttributes } from 'sequelize';
 import type { AnimeEpisode, AnimeSubscriptionConfig, AnimeTitle } from '@zeffuro/fakegaming-common/models';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { apiText } from '../localization/locale.js';
 
 const TOKEN_VERSION = 1;
 const CALENDAR_WINDOW_PAST_DAYS = 7;
@@ -24,6 +26,7 @@ export interface AnimeCalendarFeedInput {
     subscriptions: CreationAttributes<AnimeSubscriptionConfig>[];
     titlesByAnilistId: Map<number, CreationAttributes<AnimeTitle>>;
     userId: string;
+    locale?: SupportedOutputLocale;
 }
 
 interface AnimeCalendarEvent {
@@ -71,6 +74,7 @@ export function buildAnimeCalendarLink(args: { publicBaseUrl: string; token: str
 
 export function buildAnimeCalendarFeed(input: AnimeCalendarFeedInput): string {
     const generatedAt = input.generatedAt ?? new Date();
+    const locale = input.locale ?? DEFAULT_OUTPUT_LOCALE;
     const events = buildAnimeCalendarEvents(input, generatedAt);
     const lines = [
         'BEGIN:VCALENDAR',
@@ -78,7 +82,7 @@ export function buildAnimeCalendarFeed(input: AnimeCalendarFeedInput): string {
         'PRODID:-//Fakegaming//Anime Calendar//EN',
         'CALSCALE:GREGORIAN',
         'METHOD:PUBLISH',
-        'X-WR-CALNAME:Fakegaming Anime Reminders',
+        `X-WR-CALNAME:${escapeIcsText(apiText(locale, 'animeCalendarName'))}`,
         'X-WR-TIMEZONE:UTC',
         `DTSTAMP:${formatIcsDate(generatedAt.getTime())}`,
         ...events.flatMap(event => serializeAnimeCalendarEvent(event, generatedAt)),
@@ -89,6 +93,7 @@ export function buildAnimeCalendarFeed(input: AnimeCalendarFeedInput): string {
 }
 
 function buildAnimeCalendarEvents(input: AnimeCalendarFeedInput, generatedAt: Date): AnimeCalendarEvent[] {
+    const locale = input.locale ?? DEFAULT_OUTPUT_LOCALE;
     const from = generatedAt.getTime() - (CALENDAR_WINDOW_PAST_DAYS * DAY_MS);
     const to = generatedAt.getTime() + (CALENDAR_WINDOW_FUTURE_DAYS * DAY_MS);
     const events = new Map<string, AnimeCalendarEvent>();
@@ -108,13 +113,13 @@ function buildAnimeCalendarEvents(input: AnimeCalendarFeedInput, generatedAt: Da
             if (!Number.isFinite(episode.airingAt) || episode.airingAt < from || episode.airingAt > to) continue;
             const key = `${subscription.anilistId}:${episode.episode}`;
             if (events.has(key)) continue;
-            const summary = `${titleText} Episode ${episode.episode}`;
+            const summary = apiText(locale, 'animeCalendarEpisode', { title: titleText, episode: episode.episode });
             events.set(key, {
                 airingAt: episode.airingAt,
                 anilistId: subscription.anilistId,
                 description: [
                     `AniList #${subscription.anilistId}`,
-                    `Reminder ${subscription.reminderMinutes ?? 30} minutes before airing`,
+                    apiText(locale, 'animeCalendarReminder', { minutes: subscription.reminderMinutes ?? 30 }),
                     siteUrl,
                 ].filter(Boolean).join('\n'),
                 durationMinutes,

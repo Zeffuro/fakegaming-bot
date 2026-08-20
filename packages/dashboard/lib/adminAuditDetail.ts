@@ -1,3 +1,6 @@
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+
 const summaryKeyLimit = 4;
 const sensitiveKeyPattern = /(?:authorization|cookie|csrf|jwt|password|secret|token|key|credential|session)/i;
 const maxStringLength = 512;
@@ -12,15 +15,18 @@ export interface AdminAuditMetadataView {
     formatted: string;
 }
 
-export function buildAdminAuditMetadataView(metadata: Record<string, unknown> | null): AdminAuditMetadataView {
+export function buildAdminAuditMetadataView(
+    metadata: Record<string, unknown> | null,
+    locale: DashboardLocale = "en",
+): AdminAuditMetadataView {
     const sanitized = sanitizeAuditMetadataForDisplay(metadata);
     if (!sanitized || Object.keys(sanitized).length === 0) {
         return {
             hasMetadata: false,
             keyCount: 0,
             keys: [],
-            summary: "No metadata",
-            formatted: "No metadata recorded for this event.",
+            summary: formatDashboardMessage(locale, "admin.auditNoMetadata"),
+            formatted: formatDashboardMessage(locale, "admin.auditNoMetadataRecorded"),
         };
     }
 
@@ -29,28 +35,38 @@ export function buildAdminAuditMetadataView(metadata: Record<string, unknown> | 
         hasMetadata: true,
         keyCount: keys.length,
         keys,
-        summary: formatMetadataSummary(sanitized, keys),
+        summary: formatMetadataSummary(sanitized, keys, locale),
         formatted: JSON.stringify(sanitized, null, 2),
     };
 }
 
-function formatMetadataSummary(metadata: Record<string, unknown>, keys: readonly string[]): string {
-    const leagueFormSummary = formatLeagueFormSummary(metadata);
+function formatMetadataSummary(
+    metadata: Record<string, unknown>,
+    keys: readonly string[],
+    locale: DashboardLocale,
+): string {
+    const leagueFormSummary = formatLeagueFormSummary(metadata, locale);
     if (leagueFormSummary) return leagueFormSummary;
 
     const visibleKeys = keys.slice(0, summaryKeyLimit);
     const hiddenCount = Math.max(0, keys.length - visibleKeys.length);
-    const suffix = hiddenCount > 0 ? `, +${hiddenCount} more` : "";
-    return `${keys.length} metadata ${keys.length === 1 ? "key" : "keys"}: ${visibleKeys.join(", ")}${suffix}`;
+    const suffix = hiddenCount > 0
+        ? formatDashboardMessage(locale, "admin.auditMetadataMore", { count: hiddenCount })
+        : "";
+    return formatDashboardMessage(
+        locale,
+        keys.length === 1 ? "admin.auditMetadataSummaryOne" : "admin.auditMetadataSummaryMany",
+        { count: keys.length, keys: visibleKeys.join(", "), suffix },
+    );
 }
 
-function formatLeagueFormSummary(metadata: Record<string, unknown>): string | null {
+function formatLeagueFormSummary(metadata: Record<string, unknown>, locale: DashboardLocale): string | null {
     if (readString(metadata.provider) !== "riot" || readString(metadata.game) !== "league") return null;
 
     const outcome = readString(metadata.outcome);
     if (!outcome) return null;
 
-    const parts = [`League form ${outcome}`];
+    const parts = [formatDashboardMessage(locale, "admin.auditLeagueForm", { outcome })];
     const source = readString(metadata.source);
     const cacheStatus = readString(metadata.cacheStatus);
     const refreshRequested = readBoolean(metadata.refreshRequested);
@@ -62,14 +78,21 @@ function formatLeagueFormSummary(metadata: Record<string, unknown>): string | nu
     const requestedMatchCount = readNumber(metadata.requestedMatchCount);
     const errorCategory = readString(metadata.errorCategory);
 
-    if (source) parts.push(`from ${source}`);
-    if (cacheStatus) parts.push(`cache ${cacheStatus}`);
-    if (refreshRequested === true) parts.push("refresh requested");
+    if (source) parts.push(formatDashboardMessage(locale, "admin.auditFrom", { source }));
+    if (cacheStatus) parts.push(formatDashboardMessage(locale, "admin.auditCache", { status: cacheStatus }));
+    if (refreshRequested === true) parts.push(formatDashboardMessage(locale, "admin.auditRefreshRequested"));
     if (summaryStatus) parts.push(summaryStatus);
-    if (matchCount !== null) parts.push(`${matchCount} ${matchCount === 1 ? "match" : "matches"}`);
-    if (wins !== null && losses !== null) parts.push(`${wins}W-${losses}L`);
+    if (matchCount !== null) parts.push(formatDashboardMessage(
+        locale,
+        matchCount === 1 ? "admin.auditMatchOne" : "admin.auditMatchMany",
+        { count: matchCount },
+    ));
+    if (wins !== null && losses !== null) parts.push(formatDashboardMessage(locale, "admin.auditRecord", { wins, losses }));
     if (failedDetailCount !== null && failedDetailCount > 0) {
-        parts.push(`${failedDetailCount}/${requestedMatchCount ?? "?"} detail failures`);
+        parts.push(formatDashboardMessage(locale, "admin.auditDetailFailures", {
+            failed: failedDetailCount,
+            requested: requestedMatchCount ?? "?",
+        }));
     }
     if (errorCategory) parts.push(errorCategory);
 

@@ -168,8 +168,20 @@ describe('Quotes API', () => {
         expectOk(res);
         expect(res.headers['content-type']).toContain('image/png');
         expect(res.headers['content-disposition']).toContain('quote-card-test-quote-1.png');
+        expect(res.headers.vary).toBe('Accept-Language');
         const body = res.body as Buffer;
         expect(body.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+
+        const dutch = await request(app)
+            .get(`/api/quotes/${quoteId}/card`)
+            .set('Authorization', `Bearer ${token}`)
+            .set('Accept-Language', 'nl')
+            .buffer(true)
+            .parse(parseBinaryResponse);
+
+        expectOk(dutch);
+        expect(dutch.headers.vary).toBe('Accept-Language');
+        expect(dutch.body as Buffer).not.toEqual(body);
     });
 
     it('should reject quote card rendering for unapproved quotes', async () => {

@@ -21,6 +21,7 @@ import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
 import { GuildAccessError } from "@/components/GuildAccessError";
 import { dashboardAccents, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { useAnimeConfigs } from "@/components/hooks/useAnime";
 import { useBirthdays } from "@/components/hooks/useBirthdays";
 import { useBlueskyConfigs } from "@/components/hooks/useBluesky";
@@ -67,6 +68,7 @@ const providerRoutes = new Map<string, string>([
 ]);
 
 function GuildAnalyticsContent() {
+    const { t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     const router = useRouter();
     const searchParams = useSearchParams();
     const searchParamString = searchParams?.toString() ?? "";
@@ -176,8 +178,8 @@ function GuildAnalyticsContent() {
     }
 
     const trail = guild ? [
-        { label: "Dashboard", href: `/dashboard/${encodedGuildId}` },
-        { label: "Analytics", href: null },
+        { label: t("nav.dashboard"), href: `/dashboard/${encodedGuildId}` },
+        { label: t("analytics.title"), href: null },
     ] : null;
 
     return (
@@ -186,15 +188,15 @@ function GuildAnalyticsContent() {
                 <FeatureShell accent={dashboardAccents.commands} secondaryAccent={dashboardAccents.settings}>
                     <FeatureHero
                         icon={<Timeline />}
-                        eyebrow="Analytics"
-                        title="Notification Analytics"
-                        description="Delivery history, provider health, and notification setup coverage for this server."
+                        eyebrow={t("analytics.title")}
+                        title={t("analytics.title")}
+                        description={t("analytics.description")}
                         accent={dashboardAccents.commands}
                         secondaryAccent={dashboardAccents.settings}
                         stats={[
-                            { label: "Configured Feeds", value: loading ? "..." : analytics.totalConfigured },
-                            { label: "Deliveries Recorded", value: historyApi.loading ? "..." : analytics.totalDeliveries },
-                            { label: "Health Issues", value: loading ? "..." : analytics.healthErrors + analytics.healthWarnings },
+                            { label: t("analytics.configuredFeeds"), value: loading ? "..." : formatNumber(analytics.totalConfigured) },
+                            { label: t("analytics.deliveriesRecorded"), value: historyApi.loading ? "..." : formatNumber(analytics.totalDeliveries) },
+                            { label: t("analytics.healthIssues"), value: loading ? "..." : formatNumber(analytics.healthErrors + analytics.healthWarnings) },
                         ]}
                         actions={(
                             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
@@ -204,7 +206,7 @@ function GuildAnalyticsContent() {
                                     variant="outlined"
                                     sx={ghostActionButtonSx(dashboardAccents.commands)}
                                 >
-                                    Open Notifications
+                                    {t("analytics.openNotifications")}
                                 </Button>
                                 <Button
                                     disabled={loading}
@@ -213,7 +215,7 @@ function GuildAnalyticsContent() {
                                     variant="outlined"
                                     sx={ghostActionButtonSx(dashboardAccents.settings)}
                                 >
-                                    Export CSV
+                                    {t("analytics.exportCsv")}
                                 </Button>
                             </Stack>
                         )}
@@ -222,17 +224,17 @@ function GuildAnalyticsContent() {
                     {loading && <LinearProgress sx={{ mb: 2.5, borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)" }} />}
                     {errors.length > 0 && (
                         <Alert severity="warning" icon={<WarningAmber />} sx={{ mb: 2.5, bgcolor: alpha(dashboardAccents.patchNotes, 0.12), color: "grey.50", border: `1px solid ${alpha(dashboardAccents.patchNotes, 0.25)}` }}>
-                            Some analytics data could not be loaded: {errors.join(" / ")}
+                            {t("analytics.partialData", { errors: errors.join(" / ") })}
                         </Alert>
                     )}
 
                     <AnalyticsWindowSelector value={analyticsWindowDays} onChange={updateAnalyticsWindowDays} />
 
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2, mb: 2.5 }}>
-                        <MetricPanel label="Active feeds" value={analytics.activeConfigs} accent={dashboardAccents.settings} icon={<CheckCircle />} />
-                        <MetricPanel label="Paused feeds" value={analytics.pausedConfigs} accent={dashboardAccents.commands} icon={<PauseCircle />} />
-                        <MetricPanel label="Health errors" value={analytics.healthErrors} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
-                        <MetricPanel label="Last delivery" value={formatRelativeTimestamp(analytics.lastDeliveryAt)} accent={dashboardAccents.youtube} icon={<NotificationsActive />} />
+                        <MetricPanel label={t("analytics.activeFeeds")} value={formatNumber(analytics.activeConfigs)} accent={dashboardAccents.settings} icon={<CheckCircle />} />
+                        <MetricPanel label={t("analytics.pausedFeeds")} value={formatNumber(analytics.pausedConfigs)} accent={dashboardAccents.commands} icon={<PauseCircle />} />
+                        <MetricPanel label={t("analytics.healthErrors")} value={formatNumber(analytics.healthErrors)} accent={dashboardAccents.quotes} icon={<ErrorOutlined />} />
+                        <MetricPanel label={t("analytics.lastDelivery")} value={formatRelativeTimestamp(analytics.lastDeliveryAt, formatDate, formatRelativeTime, t)} accent={dashboardAccents.youtube} icon={<NotificationsActive />} />
                     </Box>
 
                     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", xl: "minmax(0, 0.95fr) minmax(0, 1.35fr)" }, gap: 2.5 }}>
@@ -307,6 +309,7 @@ function AnalyticsWindowSelector({
     value: GuildAnalyticsWindowDays;
     onChange: (days: GuildAnalyticsWindowDays) => void;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     const handleChange = (_event: React.MouseEvent<HTMLElement>, nextValue: unknown): void => {
         if (typeof nextValue !== "number" || !isGuildAnalyticsWindowDays(nextValue)) return;
         onChange(nextValue);
@@ -315,14 +318,14 @@ function AnalyticsWindowSelector({
     return (
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", mb: 2.5 }}>
             <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.56)", fontWeight: 850, letterSpacing: 0, textTransform: "uppercase" }}>
-                Analytics window
+                {t("analytics.window")}
             </Typography>
             <ToggleButtonGroup
                 exclusive
                 size="small"
                 value={value}
                 onChange={handleChange}
-                aria-label="Analytics window"
+                aria-label={t("analytics.windowAria")}
                 sx={{
                     alignSelf: { xs: "flex-start", sm: "center" },
                     bgcolor: "rgba(255,255,255,0.045)",
@@ -347,8 +350,8 @@ function AnalyticsWindowSelector({
                 }}
             >
                 {guildAnalyticsWindowDaysOptions.map((days) => (
-                    <ToggleButton key={days} value={days} aria-label={`${days} day analytics window`}>
-                        {days}d
+                    <ToggleButton key={days} value={days} aria-label={t("analytics.windowOptionAria", { days: formatNumber(days) })}>
+                        {t("analytics.days", { days: formatNumber(days) })}
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
@@ -357,6 +360,7 @@ function AnalyticsWindowSelector({
 }
 
 function DeliveryTrendPanel({ trend, days }: { trend: GuildAnalyticsTrendPoint[]; days: number }) {
+    const { t, formatNumber } = useDashboardI18n();
     const totalDeliveries = trend.reduce((total, point) => total + point.deliveries, 0);
 
     return (
@@ -366,18 +370,18 @@ function DeliveryTrendPanel({ trend, days }: { trend: GuildAnalyticsTrendPoint[]
                     <BarChart sx={{ color: dashboardAccents.commands }} />
                     <Box>
                         <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
-                            Delivery trend
+                            {t("analytics.deliveryTrend")}
                         </Typography>
                         <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                            Last {trend.length || days} UTC days, independent of the recent-record page size.
+                            {t("analytics.trendDescription", { days: formatNumber(trend.length || days) })}
                         </Typography>
                     </Box>
                 </Stack>
                 <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
                 {trend.length > 0 ? (
-                    <TrendBarStrip trend={trend} accent={dashboardAccents.commands} totalLabel={`${totalDeliveries} deliveries`} />
+                    <TrendBarStrip trend={trend} accent={dashboardAccents.commands} totalLabel={t("analytics.deliveries", { count: formatNumber(totalDeliveries) })} />
                 ) : (
-                    <EmptyState label="No delivery trend data is available yet." />
+                    <EmptyState label={t("analytics.noTrend")} />
                 )}
             </Stack>
         </FeaturePanel>
@@ -385,6 +389,7 @@ function DeliveryTrendPanel({ trend, days }: { trend: GuildAnalyticsTrendPoint[]
 }
 
 function TrendBarStrip({ trend, accent, totalLabel }: { trend: GuildAnalyticsTrendPoint[]; accent: string; totalLabel: string }) {
+    const { t, formatDate, formatNumber } = useDashboardI18n();
     const maxDeliveries = Math.max(1, ...trend.map((item) => item.deliveries));
     const firstDate = trend[0]?.date ?? null;
     const lastDate = trend[trend.length - 1]?.date ?? null;
@@ -407,7 +412,7 @@ function TrendBarStrip({ trend, accent, totalLabel }: { trend: GuildAnalyticsTre
                         : Math.max(8, (point.deliveries / maxDeliveries) * 100);
 
                     return (
-                        <Tooltip key={point.date} title={`${formatShortDate(point.date)}: ${point.deliveries} deliveries`} arrow>
+                        <Tooltip key={point.date} title={t("analytics.trendPoint", { date: formatShortDate(point.date, formatDate), count: formatNumber(point.deliveries) })} arrow>
                             <Box
                                 sx={{
                                     height: `${height}%`,
@@ -423,7 +428,7 @@ function TrendBarStrip({ trend, accent, totalLabel }: { trend: GuildAnalyticsTre
             </Box>
             <Stack direction="row" spacing={1.2} sx={{ alignItems: "center", justifyContent: "space-between", gap: 1 }}>
                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", minWidth: 72 }}>
-                    {firstDate ? formatShortDate(firstDate) : ""}
+                    {firstDate ? formatShortDate(firstDate, formatDate) : ""}
                 </Typography>
                 <Chip
                     size="small"
@@ -431,7 +436,7 @@ function TrendBarStrip({ trend, accent, totalLabel }: { trend: GuildAnalyticsTre
                     sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
                 />
                 <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.52)", minWidth: 72, textAlign: "right" }}>
-                    {lastDate ? formatShortDate(lastDate) : ""}
+                    {lastDate ? formatShortDate(lastDate, formatDate) : ""}
                 </Typography>
             </Stack>
         </Stack>
@@ -449,6 +454,7 @@ function ProviderAnalyticsPanel({
     selectedProviderKey: string | null;
     onSelectProvider: (providerKey: string | null) => void;
 }) {
+    const { t, formatNumber } = useDashboardI18n();
     return (
         <FeaturePanel accent={dashboardAccents.settings} sx={{ p: 2.5, minHeight: 360 }}>
             <Stack spacing={2} sx={{ position: "relative" }}>
@@ -457,15 +463,15 @@ function ProviderAnalyticsPanel({
                         <Timeline sx={{ color: dashboardAccents.settings }} />
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
-                                Provider performance
+                                {t("analytics.providerPerformance")}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                                Setup volume, delivery counts, and current health by provider.
+                                {t("analytics.providerDescription")}
                             </Typography>
                         </Box>
                     </Stack>
                     <Chip
-                        label={`${providers.length} providers`}
+                        label={t("analytics.providers", { count: formatNumber(providers.length) })}
                         sx={{ bgcolor: alpha(dashboardAccents.settings, 0.12), color: "grey.100", border: `1px solid ${alpha(dashboardAccents.settings, 0.24)}`, flexShrink: 0 }}
                     />
                 </Stack>
@@ -483,7 +489,7 @@ function ProviderAnalyticsPanel({
                         ))}
                     </Stack>
                 ) : (
-                    <EmptyState label="No notification setup or delivery history found yet." />
+                    <EmptyState label={t("analytics.noProviders")} />
                 )}
             </Stack>
         </FeaturePanel>
@@ -501,6 +507,7 @@ function ProviderAnalyticsRow({
     selected: boolean;
     onSelectProvider: (providerKey: string | null) => void;
 }) {
+    const { t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     const accent = getStatusAccent(provider.status);
     const route = providerRoutes.get(provider.providerKey);
     const href = route ? `/dashboard/${route}/${encodeURIComponent(guildId)}` : `/dashboard/settings/${encodeURIComponent(guildId)}/notifications`;
@@ -512,17 +519,17 @@ function ProviderAnalyticsRow({
                     <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", minWidth: 0 }}>
                         {getStatusIcon(provider.status, accent)}
                         <Typography variant="body2" sx={{ color: "grey.100", fontWeight: 850, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {provider.providerLabel}
+                            {getLocalizedProviderLabel(provider.providerKey, provider.providerLabel, t)}
                         </Typography>
                     </Stack>
                     <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                        {formatProviderSummaryLine(provider)}
+                        {formatProviderSummaryLine(provider, formatDate, formatNumber, formatRelativeTime, t)}
                     </Typography>
                 </Box>
                 <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" }, flexWrap: "wrap", rowGap: 0.8 }}>
                     <Chip
                         size="small"
-                        label={formatStatusLabel(provider)}
+                        label={formatStatusLabel(provider, formatNumber, t)}
                         sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
                     />
                     <Button
@@ -531,10 +538,10 @@ function ProviderAnalyticsRow({
                         variant={selected ? "contained" : "outlined"}
                         sx={selected ? { bgcolor: accent, color: "grey.950", fontWeight: 850, "&:hover": { bgcolor: accent } } : ghostActionButtonSx(accent)}
                     >
-                        Details
+                        {t("analytics.details")}
                     </Button>
                     <Button component={Link} href={href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
-                        Manage
+                        {t("analytics.manage")}
                     </Button>
                 </Stack>
             </Stack>
@@ -561,6 +568,7 @@ function ProviderDrilldownPanel({
     error: string | null;
     onClear: () => void;
 }) {
+    const { t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     const accent = getStatusAccent(provider.status);
     const route = providerRoutes.get(provider.providerKey);
     const href = route ? `/dashboard/${route}/${encodeURIComponent(guildId)}` : `/dashboard/settings/${encodeURIComponent(guildId)}/notifications`;
@@ -574,24 +582,24 @@ function ProviderDrilldownPanel({
                         {getStatusIcon(provider.status, accent)}
                         <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 900, lineHeight: 1.15 }}>
-                                {provider.providerLabel} details
+                                {t("analytics.providerDetails", { provider: getLocalizedProviderLabel(provider.providerKey, provider.providerLabel, t) })}
                             </Typography>
                             <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.58)", mt: 0.35 }}>
-                                {provider.configured} configured - {provider.active} active - {provider.paused} paused - {provider.deliveries} total deliveries
+                                {t("analytics.providerTotals", { configured: formatNumber(provider.configured), active: formatNumber(provider.active), paused: formatNumber(provider.paused), deliveries: formatNumber(provider.deliveries) })}
                             </Typography>
                         </Box>
                     </Stack>
                     <Stack direction="row" spacing={0.8} sx={{ alignItems: "center", justifyContent: { xs: "flex-start", md: "flex-end" }, flexWrap: "wrap", rowGap: 0.8 }}>
                         <Chip
                             size="small"
-                            label={formatStatusLabel(provider)}
+                            label={formatStatusLabel(provider, formatNumber, t)}
                             sx={{ bgcolor: alpha(accent, 0.12), color: "grey.100", border: `1px solid ${alpha(accent, 0.24)}` }}
                         />
                         <Button component={Link} href={href} size="small" variant="outlined" sx={ghostActionButtonSx(accent)}>
-                            Manage
+                            {t("analytics.manage")}
                         </Button>
                         <Button onClick={onClear} size="small" variant="outlined" sx={ghostActionButtonSx(dashboardAccents.neutral)}>
-                            Close
+                            {t("analytics.close")}
                         </Button>
                     </Stack>
                 </Stack>
@@ -606,37 +614,37 @@ function ProviderDrilldownPanel({
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.1fr) minmax(0, 0.9fr)" }, gap: 2.2 }}>
                     <Stack spacing={1.5}>
                         <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
-                            Delivery trend
+                            {t("analytics.deliveryTrend")}
                         </Typography>
                         {trend.length > 0 ? (
-                            <TrendBarStrip trend={trend} accent={accent} totalLabel={`${totalDeliveries} provider deliveries`} />
+                            <TrendBarStrip trend={trend} accent={accent} totalLabel={t("analytics.deliveries", { count: formatNumber(totalDeliveries) })} />
                         ) : (
-                            <EmptyState label="No delivery trend data is available for this provider yet." />
+                            <EmptyState label={t("analytics.noProviderTrend")} />
                         )}
                     </Stack>
                     <Stack spacing={1.5}>
                         <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
-                            Current health
+                            {t("analytics.currentHealth")}
                         </Typography>
                         {healthRecords.length > 0 ? (
                             <Stack spacing={1}>
                                 {healthRecords.slice(0, 5).map((record) => (
                                     <ProviderDetailLine
                                         key={`${record.provider}:${record.configId}`}
-                                        primary={`${record.status} - ${record.configId}`}
-                                        secondary={record.lastErrorMessage || `Last checked ${formatRelativeTimestamp(record.lastCheckedAt ?? null)}`}
+                                        primary={`${getHealthRecordStatusLabel(record.status, t)} - ${record.configId}`}
+                                        secondary={record.lastErrorMessage || t("analytics.lastChecked", { value: formatRelativeTimestamp(record.lastCheckedAt ?? null, formatDate, formatRelativeTime, t) })}
                                         accent={getStatusAccent(record.status === "error" ? "critical" : record.status === "warning" || record.status === "unknown" ? "warning" : "healthy")}
                                     />
                                 ))}
                             </Stack>
                         ) : (
-                            <EmptyState label="No health records have been reported for this provider." />
+                            <EmptyState label={t("analytics.noHealth")} />
                         )}
                     </Stack>
                 </Box>
                 <Stack spacing={1.2}>
                     <Typography variant="subtitle2" sx={{ color: "grey.100", fontWeight: 900 }}>
-                        Recent deliveries
+                        {t("analytics.recentDeliveries")}
                     </Typography>
                     {records.length > 0 ? (
                         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
@@ -644,13 +652,13 @@ function ProviderDrilldownPanel({
                                 <ProviderDetailLine
                                     key={`${record.provider}:${record.id}:${record.eventId}`}
                                     primary={record.eventId}
-                                    secondary={`${record.channelId ?? "unknown channel"} - ${formatRelativeTimestamp(record.createdAt ?? null)}`}
+                                    secondary={`${record.channelId ?? t("analytics.unknownChannel")} - ${formatRelativeTimestamp(record.createdAt ?? null, formatDate, formatRelativeTime, t)}`}
                                     accent={accent}
                                 />
                             ))}
                         </Box>
                     ) : (
-                        <EmptyState label="No recent delivery records match this provider." />
+                        <EmptyState label={t("analytics.noRecords")} />
                     )}
                 </Stack>
             </Stack>
@@ -659,11 +667,12 @@ function ProviderDrilldownPanel({
 }
 
 function ProviderOutcomeSummary({ provider, accent }: { provider: GuildAnalyticsProvider; accent: string }) {
+    const { t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     const outcomes = [
-        { label: "Deliveries", value: String(provider.deliveries), detail: `last ${formatRelativeTimestamp(provider.lastDeliveryAt)}` },
-        { label: "Failing configs", value: String(provider.healthErrors), detail: `${provider.healthWarnings + provider.healthUnknown} warning state${provider.healthWarnings + provider.healthUnknown === 1 ? "" : "s"}` },
-        { label: "Current failures", value: String(provider.consecutiveFailures), detail: "from integration health" },
-        { label: "Last failure", value: formatRelativeTimestamp(provider.lastFailureAt), detail: provider.lastFailureAt ? "most recent provider failure" : "no failures recorded" },
+        { label: t("analytics.outcome.deliveries"), value: formatNumber(provider.deliveries), detail: t("analytics.outcome.last", { value: formatRelativeTimestamp(provider.lastDeliveryAt, formatDate, formatRelativeTime, t) }) },
+        { label: t("analytics.outcome.failingConfigs"), value: formatNumber(provider.healthErrors), detail: t("analytics.outcome.warningStates", { count: formatNumber(provider.healthWarnings + provider.healthUnknown) }) },
+        { label: t("analytics.outcome.currentFailures"), value: formatNumber(provider.consecutiveFailures), detail: t("analytics.outcome.fromHealth") },
+        { label: t("analytics.outcome.lastFailure"), value: formatRelativeTimestamp(provider.lastFailureAt, formatDate, formatRelativeTime, t), detail: provider.lastFailureAt ? t("analytics.outcome.mostRecentFailure") : t("analytics.outcome.noFailures") },
     ];
 
     return (
@@ -742,44 +751,71 @@ function getStatusIcon(status: GuildAnalyticsHealthStatus, accent: string): Reac
     return <CheckCircle sx={{ color: accent, fontSize: 17 }} />;
 }
 
-function formatStatusLabel(provider: GuildAnalyticsProvider): string {
-    if (provider.healthErrors > 0) return `${provider.healthErrors} errors`;
-    if (provider.healthWarnings + provider.healthUnknown > 0) return `${provider.healthWarnings + provider.healthUnknown} warnings`;
-    if (provider.paused > 0) return `${provider.paused} paused`;
-    return provider.status;
+type DashboardTranslator = ReturnType<typeof useDashboardI18n>["t"];
+type DashboardNumberFormatter = ReturnType<typeof useDashboardI18n>["formatNumber"];
+type DashboardDateFormatter = ReturnType<typeof useDashboardI18n>["formatDate"];
+type DashboardRelativeTimeFormatter = ReturnType<typeof useDashboardI18n>["formatRelativeTime"];
+
+function formatStatusLabel(provider: GuildAnalyticsProvider, formatNumber: DashboardNumberFormatter, t: DashboardTranslator): string {
+    if (provider.healthErrors > 0) return t("analytics.status.errors", { count: formatNumber(provider.healthErrors) });
+    if (provider.healthWarnings + provider.healthUnknown > 0) return t("analytics.status.warnings", { count: formatNumber(provider.healthWarnings + provider.healthUnknown) });
+    if (provider.paused > 0) return t("analytics.status.paused", { count: formatNumber(provider.paused) });
+    if (provider.status === "healthy") return t("analytics.status.healthy");
+    if (provider.status === "warning") return t("analytics.status.warning");
+    if (provider.status === "critical") return t("analytics.status.critical");
+    return t("analytics.status.quiet");
 }
 
-function formatProviderSummaryLine(provider: GuildAnalyticsProvider): string {
+function formatProviderSummaryLine(provider: GuildAnalyticsProvider, formatDate: DashboardDateFormatter, formatNumber: DashboardNumberFormatter, formatRelativeTime: DashboardRelativeTimeFormatter, t: DashboardTranslator): string {
     const parts = [
-        `${provider.configured} configured`,
-        `${provider.active} active`,
-        `${provider.deliveries} deliveries`,
+        t("analytics.summary.configured", { count: formatNumber(provider.configured) }),
+        t("analytics.summary.active", { count: formatNumber(provider.active) }),
+        t("analytics.summary.deliveries", { count: formatNumber(provider.deliveries) }),
     ];
 
-    if (provider.healthErrors > 0) parts.push(`${provider.healthErrors} failing`);
-    if (provider.consecutiveFailures > 0) parts.push(`${provider.consecutiveFailures} current failures`);
-    if (provider.lastFailureAt) parts.push(`last failure ${formatRelativeTimestamp(provider.lastFailureAt)}`);
-    parts.push(`last delivery ${formatRelativeTimestamp(provider.lastDeliveryAt)}`);
+    if (provider.healthErrors > 0) parts.push(t("analytics.summary.failing", { count: formatNumber(provider.healthErrors) }));
+    if (provider.consecutiveFailures > 0) parts.push(t("analytics.summary.currentFailures", { count: formatNumber(provider.consecutiveFailures) }));
+    if (provider.lastFailureAt) parts.push(t("analytics.summary.lastFailure", { value: formatRelativeTimestamp(provider.lastFailureAt, formatDate, formatRelativeTime, t) }));
+    parts.push(t("analytics.summary.lastDelivery", { value: formatRelativeTimestamp(provider.lastDeliveryAt, formatDate, formatRelativeTime, t) }));
 
     return parts.join(" - ");
 }
 
-function formatRelativeTimestamp(value: string | null): string {
-    if (!value) return "never";
+function formatRelativeTimestamp(value: string | null, formatDate: DashboardDateFormatter, formatRelativeTime: DashboardRelativeTimeFormatter, t: DashboardTranslator): string {
+    if (!value) return t("analytics.never");
     const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return "unknown";
+    if (Number.isNaN(parsed.getTime())) return t("analytics.unknown");
     const minutes = Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 60000));
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t("analytics.justNow");
+    if (minutes < 60) return t("analytics.minutesAgo", { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 48) return `${hours}h ago`;
-    return parsed.toLocaleDateString();
+    if (hours < 48) return t("analytics.hoursAgo", { count: hours });
+    return formatDate(parsed, { dateStyle: "medium" });
 }
 
-function formatShortDate(value: string): string {
+function formatShortDate(value: string, formatDate: DashboardDateFormatter): string {
     const parsed = new Date(`${value}T00:00:00.000Z`);
     if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+    return formatDate(parsed, { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+function getLocalizedProviderLabel(providerKey: string, fallback: string, t: DashboardTranslator): string {
+    if (providerKey === "twitch") return t("setupTemplates.provider.twitch");
+    if (providerKey === "youtube") return t("setupTemplates.provider.youtube");
+    if (providerKey === "steamnews") return t("featureNav.steamNews");
+    if (providerKey === "tiktok") return t("featureNav.tiktok");
+    if (providerKey === "bluesky") return t("featureNav.bluesky");
+    if (providerKey === "patchnotes") return t("featureNav.patchNotes");
+    if (providerKey === "anime") return t("featureNav.anime");
+    if (providerKey === "birthday") return t("featureNav.birthdays");
+    return fallback;
+}
+
+function getHealthRecordStatusLabel(status: IntegrationHealthRecord["status"], t: DashboardTranslator): string {
+    if (status === "healthy") return t("analytics.status.healthy");
+    if (status === "warning") return t("analytics.status.warning");
+    if (status === "error") return t("analytics.status.critical");
+    return t("analytics.unknown");
 }
 
 function normalizeProviderKey(provider: string): string {

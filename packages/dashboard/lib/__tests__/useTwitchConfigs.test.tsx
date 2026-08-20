@@ -1,11 +1,19 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import React, { act } from 'react';
 import { useTwitchConfigs } from '@/components/hooks/useTwitch';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
 import { api } from '@/lib/api-client';
 import { mountWithSnapshots, createHookProbe1 } from '../testing/reactTesting';
 
 // Use shared probe component for a hook with one argument
 const HookProbe = createHookProbe1((arg: string) => useTwitchConfigs(arg));
+
+const renderHook = (guildId: string, onSnapshot: (snap: any) => void) =>
+    React.createElement(
+        DashboardI18nProvider,
+        null,
+        React.createElement(HookProbe as any, { arg: guildId, onSnapshot }),
+    );
 
 describe('useTwitchConfigs', () => {
     afterEach(() => {
@@ -20,7 +28,7 @@ describe('useTwitchConfigs', () => {
         ] as any);
 
         const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+            renderHook(guildId, onSnapshot)
         );
 
         const final = last();
@@ -38,7 +46,7 @@ describe('useTwitchConfigs', () => {
         const createSpy = vi.spyOn(api, 'createTwitchStream').mockResolvedValue({ success: true } as any);
 
         const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+            renderHook(guildId, onSnapshot)
         );
 
         // call addConfig with missing fields
@@ -69,7 +77,7 @@ describe('useTwitchConfigs', () => {
         const updateSpy = vi.spyOn(api, 'updateTwitchStream').mockResolvedValue({} as any);
 
         const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+            renderHook(guildId, onSnapshot)
         );
 
         let result = false;
@@ -106,7 +114,7 @@ describe('useTwitchConfigs', () => {
         const createSpy = vi.spyOn(api, 'createTwitchStream').mockResolvedValue({ success: true } as any);
 
         const { last, flush, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { arg: guildId, onSnapshot })
+            renderHook(guildId, onSnapshot)
         );
 
         let result = false;

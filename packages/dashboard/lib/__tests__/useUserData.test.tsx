@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { useUserData } from '@/components/hooks/useUserData';
+import { DashboardI18nProvider } from '@/components/i18n/DashboardI18nProvider';
 import { mountWithSnapshots, createHookProbe0 } from '../testing/reactTesting';
 import { withFetchMock } from '@zeffuro/fakegaming-common/testing';
+import { DASHBOARD_LOCALE_STORAGE_KEY } from '@/lib/i18n/localeStore';
 
 // Generic hook probe to capture state over renders
 const HookProbe = createHookProbe0(useUserData);
+
+const renderHook = (onSnapshot: (snap: any) => void) =>
+    React.createElement(
+        DashboardI18nProvider,
+        null,
+        React.createElement(HookProbe as any, { onSnapshot }),
+    );
 
 const { mockOkJsonOnce, mockErrorJsonOnce } = withFetchMock();
 
@@ -13,11 +22,13 @@ describe('useUserData', () => {
     beforeEach(() => {
         // reset cookie between tests
         Object.defineProperty(document, 'cookie', { value: '', writable: true });
+        window.localStorage.clear();
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
         Object.defineProperty(document, 'cookie', { value: '', writable: true });
+        window.localStorage.clear();
     });
 
     it('loads user successfully via /api/user', async () => {
@@ -25,7 +36,7 @@ describe('useUserData', () => {
         mockOkJsonOnce(payload);
 
         const { snapshots, last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { onSnapshot })
+            renderHook(onSnapshot)
         );
 
         const final = last();
@@ -44,7 +55,7 @@ describe('useUserData', () => {
         mockErrorJsonOnce(400, { error: 'nope' });
 
         const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
-            React.createElement(HookProbe as any, { onSnapshot })
+            renderHook(onSnapshot)
         );
 
         const final = last();
@@ -53,6 +64,32 @@ describe('useUserData', () => {
         expect(typeof final?.error).toBe('string');
         expect(final?.error).toBe('Failed to fetch user data');
 
+        unmount();
+    });
+
+    it('uses the selected dashboard locale for fetch fallbacks', async () => {
+        window.localStorage.setItem(DASHBOARD_LOCALE_STORAGE_KEY, 'nl');
+        mockErrorJsonOnce(400, { error: 'nope' });
+
+        const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
+            renderHook(onSnapshot)
+        );
+
+        expect(last()?.error).toBe('Gebruikersgegevens ophalen mislukt');
+        unmount();
+    });
+
+    it('uses the selected dashboard locale for unexpected load failures', async () => {
+        window.localStorage.setItem(DASHBOARD_LOCALE_STORAGE_KEY, 'nl');
+        vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(null);
+        vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+        const { last, unmount } = await mountWithSnapshots((onSnapshot: (snap: any) => void) =>
+            renderHook(onSnapshot)
+        );
+
+        expect(last()?.error).toBe('Gebruikersgegevens laden mislukt');
+        expect(last()?.getUserDisplayName()).toBe('Gebruiker');
         unmount();
     });
 });

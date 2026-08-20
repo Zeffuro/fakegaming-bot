@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { PostgresRateLimiter, getSequelize, getLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { getRouteLabel, getSafeRequestContext, getSafeRequestPath } from '../utils/requestContext.js';
+import { apiText, requestLocale } from '../localization/locale.js';
 
 // Build-time flag to skip DB initialization (e.g., during OpenAPI export)
 const SKIP = process.env.API_BUILD_MODE === 'openapi' || process.env.SKIP_DB_INIT === '1';
@@ -79,7 +80,9 @@ export async function rateLimit(req: Request, res: Response, next: NextFunction)
             const route = getRouteLabel(req);
             incMetric('rate_limit_denied', { route });
             log.warn({ ...getSafeRequestContext(req), route, retryAfterSeconds }, 'Rate limit denied request');
-            res.status(429).json({ error: { code: 'RATE_LIMIT', message: 'Rate limit exceeded', retryAfterSeconds } });
+            res.status(429).json({
+                error: { code: 'RATE_LIMIT', message: apiText(requestLocale(req), 'rateLimit'), retryAfterSeconds },
+            });
             return;
         }
         next();

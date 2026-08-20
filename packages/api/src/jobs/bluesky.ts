@@ -1,4 +1,4 @@
-import { getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { getNotificationSuppression } from './notificationSuppression.js';
@@ -7,6 +7,7 @@ import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 import { hasRecordedJobNotification, sendJobNotification, type JobNotificationManager } from './jobNotifications.js';
 import { registerRecurringPollingJob } from './recurringPollingJob.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from './integrationHealth.js';
+import { apiText, resolveGuildOutputLocale } from '../localization/locale.js';
 
 const BLUESKY_APPVIEW = 'https://public.api.bsky.app';
 
@@ -224,8 +225,13 @@ export async function fetchBlueskyAuthorPosts(handle: string, log = getLogger({ 
     }
 }
 
-function buildBlueskyEmbedAndContent(opts: { post: BlueskyPostView; customMessage?: string | null }): { content: string; payload: Record<string, unknown> } {
+export function buildBlueskyEmbedAndContent(opts: {
+    post: BlueskyPostView;
+    customMessage?: string | null;
+    locale?: SupportedOutputLocale;
+}): { content: string; payload: Record<string, unknown> } {
     const { post } = opts;
+    const locale = opts.locale ?? DEFAULT_OUTPUT_LOCALE;
     const authorName = post.author.displayName || post.author.handle;
     const url = getPostUrl(post);
     const urlSafe = `<${url}>`;
@@ -233,22 +239,23 @@ function buildBlueskyEmbedAndContent(opts: { post: BlueskyPostView; customMessag
     const imageUrl = getImageFromEmbed(post.embed);
 
     const embed: Record<string, unknown> = {
-        title: `${authorName} posted on Bluesky`,
+        title: apiText(locale, 'blueskyTitle', { author: authorName }),
         url,
         author: {
             name: authorName,
             icon_url: post.author.avatar,
             url: getProfileUrl(post.author.handle),
         },
-        description: text ? truncate(text, 4000) : 'New post on Bluesky',
+        description: text ? truncate(text, 4000) : apiText(locale, 'blueskyFallback'),
         color: 0x1185fe,
         timestamp: getPostCreatedAt(post),
     };
 
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
-    if (typeof post.likeCount === 'number') fields.push({ name: 'Likes', value: String(post.likeCount), inline: true });
-    if (typeof post.repostCount === 'number') fields.push({ name: 'Reposts', value: String(post.repostCount), inline: true });
-    if (typeof post.replyCount === 'number') fields.push({ name: 'Replies', value: String(post.replyCount), inline: true });
+    const numberFormatter = new Intl.NumberFormat(locale);
+    if (typeof post.likeCount === 'number') fields.push({ name: apiText(locale, 'blueskyLikes'), value: numberFormatter.format(post.likeCount), inline: true });
+    if (typeof post.repostCount === 'number') fields.push({ name: apiText(locale, 'blueskyReposts'), value: numberFormatter.format(post.repostCount), inline: true });
+    if (typeof post.replyCount === 'number') fields.push({ name: apiText(locale, 'blueskyReplies'), value: numberFormatter.format(post.replyCount), inline: true });
     if (fields.length > 0) embed.fields = fields;
     if (imageUrl) embed.image = { url: imageUrl };
 
@@ -257,15 +264,15 @@ function buildBlueskyEmbedAndContent(opts: { post: BlueskyPostView; customMessag
         handle: post.author.handle,
         text,
         url: urlSafe,
-        likes: typeof post.likeCount === 'number' ? String(post.likeCount) : '',
-        reposts: typeof post.repostCount === 'number' ? String(post.repostCount) : '',
-        replies: typeof post.replyCount === 'number' ? String(post.replyCount) : '',
+        likes: typeof post.likeCount === 'number' ? numberFormatter.format(post.likeCount) : '',
+        reposts: typeof post.repostCount === 'number' ? numberFormatter.format(post.repostCount) : '',
+        replies: typeof post.replyCount === 'number' ? numberFormatter.format(post.replyCount) : '',
     };
 
     return buildDiscordNotificationPayload({
-        defaultContent: `Hey @everyone, new Bluesky post from ${authorName}: ${urlSafe}`,
+        defaultContent: apiText(locale, 'blueskyDefaultContent', { author: authorName, url: urlSafe }),
         embed,
-        buttonLabel: 'View Post',
+        buttonLabel: apiText(locale, 'blueskyViewPost'),
         buttonUrl: url,
         tokens,
         customMessage: opts.customMessage,
@@ -334,6 +341,7 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
 
             const now = new Date();
             const suppression = getNotificationSuppression(cfg, now);
+            const locale = await resolveGuildOutputLocale(cfg.guildId);
 
             let sentAny = false;
             for (const post of newPosts) {
@@ -350,7 +358,7 @@ async function processBlueskyPoll(log = getLogger({ name: 'api:jobs:bluesky' }))
                     continue;
                 }
 
-                const built = buildBlueskyEmbedAndContent({ post, customMessage: cfg.customMessage ?? null });
+                const built = buildBlueskyEmbedAndContent({ post, customMessage: cfg.customMessage ?? null, locale });
                 const sent = await sendJobNotification({
                     manager: notifications,
                     provider: 'bluesky',

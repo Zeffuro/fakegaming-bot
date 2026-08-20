@@ -6,6 +6,7 @@ import {
     getCurrentAniListSeason,
     getNextAniListSeason,
     formatAniListSeasonScope,
+    formatAniListStatus,
     isAniListSubscribable,
     mapAniListTitleToInput,
     searchAniListAnime,
@@ -18,7 +19,7 @@ import {
 } from '@zeffuro/fakegaming-common/anime';
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { defaultCacheManager, validateBody, validateParams, validateQuery } from '@zeffuro/fakegaming-common';
+import { defaultCacheManager, getOutputLocaleMetadata, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { animeSubscribeRequestSchema, pausedStateRequestSchema, userAnimeSubscribeRequestSchema } from '@zeffuro/fakegaming-common/api';
 import type { CreationAttributes } from 'sequelize';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -32,6 +33,9 @@ import {
     signAnimeCalendarToken,
     verifyAnimeCalendarToken,
 } from '../utils/animeCalendar.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
+import { apiText, requestLocale, resolveUserOutputLocale } from '../localization/locale.js';
+import { sendLocalizedError } from '../localization/responses.js';
 
 const router = createBaseRouter();
 const ANIME_SEASON_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -150,7 +154,7 @@ async function ensureAnimeSubscriptionAccess(
     }
 
     if (subscription.userId !== req.user.discordId) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized for this anime subscription' } });
+        sendLocalizedError(req, res, 403, 'FORBIDDEN', 'animeSubscriptionForbidden');
         return false;
     }
 
@@ -168,7 +172,7 @@ function getPublicApiBaseUrl(req: Request): string {
     return `${proto}://${host}`;
 }
 
-async function buildCalendarFeedForUser(userId: string): Promise<string> {
+async function buildCalendarFeedForUser(userId: string, locale: SupportedOutputLocale): Promise<string> {
     const manager = getConfigManager().animeManager;
     const subscriptions = await manager.subscriptions.getUserSubscriptions(userId);
     const anilistIds = [...new Set(subscriptions.map(subscription => subscription.anilistId))];
@@ -186,6 +190,7 @@ async function buildCalendarFeedForUser(userId: string): Promise<string> {
         subscriptions,
         titlesByAnilistId: new Map(titlePairs.flatMap(pair => pair.title ? [[pair.anilistId, pair.title] as const] : [])),
         userId,
+        locale,
     });
 }
 
@@ -247,10 +252,11 @@ router.get('/calendar.ics', validateQuery(calendarTokenQuerySchema), async (req,
     const query = req.query as unknown as z.infer<typeof calendarTokenQuerySchema>;
     const payload = verifyAnimeCalendarToken(query.token, getJwtSecret());
     if (!payload) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Calendar not found' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'calendarNotFound');
     }
 
-    const feed = await buildCalendarFeedForUser(payload.u);
+    const locale = await resolveUserOutputLocale(payload.u);
+    const feed = await buildCalendarFeedForUser(payload.u, locale);
     res
         .status(200)
         .set({
@@ -424,14 +430,13 @@ router.post('/me', jwtAuth, validateBody(userAnimeSubscribeRequestSchema), async
     const body = req.body as z.infer<typeof userAnimeSubscribeRequestSchema>;
     const anime = await resolveAnime(body);
     if (!anime) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Anime not found' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'animeNotFound');
     }
     if (!isAniListSubscribable(anime)) {
-        return res.status(400).json({
-            error: {
-                code: 'ANIME_NOT_SUBSCRIBABLE',
-                message: `${anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`} is ${anime.status?.toLowerCase() ?? 'not subscribable'}.`,
-            },
+        const locale = requestLocale(req);
+        return sendLocalizedError(req, res, 400, 'ANIME_NOT_SUBSCRIBABLE', 'animeNotSubscribable', {
+            title: anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`,
+            status: formatAnimeSubscriptionStatus(anime.status, locale),
         });
     }
 
@@ -487,14 +492,13 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
     const body = req.body as z.infer<typeof animeSubscribeRequestSchema>;
     const anime = await resolveAnime(body);
     if (!anime) {
-        return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Anime not found' } });
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'animeNotFound');
     }
     if (!isAniListSubscribable(anime)) {
-        return res.status(400).json({
-            error: {
-                code: 'ANIME_NOT_SUBSCRIBABLE',
-                message: `${anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`} is ${anime.status?.toLowerCase() ?? 'not subscribable'}.`,
-            },
+        const locale = requestLocale(req);
+        return sendLocalizedError(req, res, 400, 'ANIME_NOT_SUBSCRIBABLE', 'animeNotSubscribable', {
+            title: anime.title.english ?? anime.title.romaji ?? anime.title.native ?? `AniList #${anime.id}`,
+            status: formatAnimeSubscriptionStatus(anime.status, locale),
         });
     }
     const created = await getConfigManager().animeManager.subscriptions.subscribeChannel({
@@ -515,6 +519,11 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
     });
     res.status(created ? 201 : 200).json({ success: true, created, anilistId: anime.id });
 });
+
+function formatAnimeSubscriptionStatus(status: string | null | undefined, locale: SupportedOutputLocale): string {
+    if (!status) return apiText(locale, 'animeNotSubscribableStatus');
+    return formatAniListStatus(status, locale).toLocaleLowerCase(getOutputLocaleMetadata(locale).languageTag);
+}
 
 /**
  * @openapi
