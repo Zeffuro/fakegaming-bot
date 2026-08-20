@@ -38,10 +38,13 @@ const emptySummaryCounts: GuildDashboardSummaryCounts = {
 };
 
 export default function GuildDashboard() {
-  const { t } = useDashboardI18n();
+  const { t, formatNumber } = useDashboardI18n();
   const { guildId, guild, guildsLoading } = useGuildFromParams();
   const encodedGuildId = encodeURIComponent(guildId);
   const guildReady = Boolean(guild);
+  const memberCount = typeof guild?.member_count === "number"
+    ? formatNumber(guild.member_count)
+    : t("guildDashboard.notAvailable");
 
   const summaryApi = useGuildDashboardSummary(guildId, { enabled: guildReady });
   const counts = summaryApi.summary?.counts ?? emptySummaryCounts;
@@ -182,7 +185,7 @@ export default function GuildDashboard() {
             accent={dashboardAccents.settings}
             secondaryAccent={dashboardAccents.anime}
             stats={[
-              { label: t("guildDashboard.members"), value: guild.member_count || t("guildDashboard.notAvailable") },
+              { label: t("guildDashboard.members"), value: memberCount },
               { label: t("guildDashboard.configuredNotifications"), value: notificationLoading ? "..." : totalConfigured },
               { label: t("guildDashboard.managementPages"), value: modules.length },
             ]}
@@ -191,7 +194,7 @@ export default function GuildDashboard() {
           <FeaturePanel accent={dashboardAccents.settings} sx={{ mb: 3 }}>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" }, gap: 2, position: "relative" }}>
               {[
-                { label: t("guildDashboard.members"), value: guild.member_count || t("guildDashboard.notAvailable"), color: dashboardAccents.settings },
+                { label: t("guildDashboard.members"), value: memberCount, color: dashboardAccents.settings },
                 { label: t("guildDashboard.managementPages"), value: modules.length, color: dashboardAccents.commands },
                 { label: t("guildDashboard.notificationConfigs"), value: notificationLoading ? "..." : totalConfigured, color: dashboardAccents.anime },
                 { label: t("guildDashboard.configuredTypes"), value: notificationLoading ? "..." : configuredNotificationTypes, color: dashboardAccents.neutral },

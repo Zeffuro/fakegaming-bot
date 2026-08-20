@@ -98,7 +98,7 @@ export default function GuildCard({ guild, onClick }: GuildCardProps) {
             )}
           </Box>
 
-          {guild.member_count && (
+          {typeof guild.member_count === "number" && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
               <People sx={{ fontSize: 16, color: 'rgba(255,255,255,0.54)' }} />
               <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.54)' }}>

@@ -100,6 +100,23 @@ describe('getDiscordGuilds', () => {
         } as any);
         const result = await getDiscordGuilds('token');
         expect(result).toEqual([{ id: 'guild' }]);
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://discord.com/api/users/@me/guilds',
+            { headers: { Authorization: 'Bearer token' } },
+        );
+    });
+    it('should request approximate counts when enabled', async () => {
+        vi.mocked(global.fetch).mockResolvedValueOnce({
+            status: 200,
+            ok: true,
+            json: vi.fn().mockResolvedValue([{ id: 'guild', approximate_member_count: 42 }])
+        } as any);
+        const result = await getDiscordGuilds('bot-token', 'Bot', { withCounts: true });
+        expect(result).toEqual([{ id: 'guild', approximate_member_count: 42 }]);
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://discord.com/api/users/@me/guilds?with_counts=true',
+            { headers: { Authorization: 'Bot bot-token' } },
+        );
     });
     it('should retry on rate limit and succeed', async () => {
         mockRateLimitThenSuccess([{ id: 'guild' }]);

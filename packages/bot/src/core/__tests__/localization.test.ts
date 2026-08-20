@@ -48,6 +48,29 @@ describe('output locale resolution', () => {
             async () => { throw new Error('unavailable'); },
         )).resolves.toBe('en');
     });
+
+    it('falls back safely for missing or invalid direct-message preferences', async () => {
+        await expect(resolveInteractionOutputLocale(
+            { guildId: null, locale: 'nl' },
+            async () => 'en',
+            async () => 'fr',
+        )).resolves.toBe('nl');
+        await expect(resolveInteractionOutputLocale(
+            { guildId: null, locale: 'fr', user: { id: 'user' } },
+            async () => 'en',
+            async () => 'fr',
+        )).resolves.toBe('en');
+        await expect(resolveInteractionOutputLocale(
+            { guildId: null, locale: undefined, user: { id: 'user' } },
+            async () => 'en',
+            async () => { throw new Error('unavailable'); },
+        )).resolves.toBe(DEFAULT_OUTPUT_LOCALE);
+        await expect(resolveInteractionOutputLocale(
+            { guildId: null, locale: 'nl', user: { id: '' } },
+            async () => 'en',
+            async () => 'nl',
+        )).resolves.toBe('nl');
+    });
 });
 
 describe('translation catalog', () => {

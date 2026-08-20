@@ -91,9 +91,14 @@ export async function fetchDiscordUser(accessToken: string) {
     });
 }
 
-export async function getDiscordGuilds(accessToken: string, tokenType: "Bearer" | "Bot" = "Bearer") {
+export async function getDiscordGuilds(
+    accessToken: string,
+    tokenType: "Bearer" | "Bot" = "Bearer",
+    options: { withCounts?: boolean } = {},
+) {
+    const query = options.withCounts ? "?with_counts=true" : "";
     return retryFetchJson<any>({
-        url: "https://discord.com/api/users/@me/guilds",
+        url: `https://discord.com/api/users/@me/guilds${query}`,
         init: {
             headers: { Authorization: `${tokenType} ${accessToken}` },
         },
