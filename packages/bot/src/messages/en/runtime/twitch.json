@@ -1,0 +1,17 @@
+{
+    "archiveUnavailable": "{displayName} does not have an archive VOD available right now. https://twitch.tv/{username}",
+    "failedToAuthenticateWithTwitch": "Failed to authenticate with Twitch.",
+    "failedToCheckTwitchStatus": "Failed to check Twitch status.",
+    "failedToFetchTheLatestTwitchVod": "Failed to fetch the latest Twitch VOD.",
+    "from": "from",
+    "offline": "{displayName} is currently offline. https://twitch.tv/{username}",
+    "liveStatus": "{displayName} is live{game}{viewers}: **{title}**\nStarted {startedAt}\nhttps://twitch.tv/{username}",
+    "playing": " playing **{game}**",
+    "published": "Published",
+    "untitledVod": "Untitled VOD",
+    "latestVod": "Latest VOD from {displayName}: **{title}**{duration}{published}\n{url}",
+    "recently": "recently",
+    "twitchChannelWasNotFound": "Twitch channel `{username}` was not found.",
+    "twitchCredentialsAreNotConfigured": "Twitch credentials are not configured.",
+    "withViewers": " with **{count}** viewers"
+}

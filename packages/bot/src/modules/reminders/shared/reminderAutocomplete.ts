@@ -1,5 +1,5 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import type {ApplicationCommandOptionChoiceData, AutocompleteInteraction} from 'discord.js';
 import {isRecurringReminder, isReminderPaused, shortReminderId, type ReminderLike} from './reminderFormat.js';
 import {listPendingRemindersForUser, listRemindersForUser, sortReminderByTimestamp} from './reminderLookup.js';
@@ -76,26 +76,26 @@ function formatReminderChoiceName(reminder: ReminderLike, state: string | null, 
     const shortId = shortReminderId(reminder.id);
     const message = truncateChoicePart(reminder.message.replace(/\s+/g, ' ').trim(), 52);
     const due = formatReminderDueTime(reminder.timestamp, nowMs, locale);
-    const localizedState = resolveLocaleValue(locale, { en: state, nl: state === 'paused' ? 'gepauzeerd' : 'herhalend' });
+    const localizedState = state ? runtimeText(locale, 'reminders', state === 'paused' ? 'statePaused' : 'stateRecurring') : null;
     const stateText = localizedState ? ` [${localizedState}]` : '';
     return truncateChoicePart(`${shortId} - ${message} - ${due}${stateText}`, 100);
 }
 
 function formatReminderDueTime(value: ReminderLike['timestamp'], nowMs: number, locale: SupportedOutputLocale): string {
     const timestamp = Number(value);
-    if (!Number.isFinite(timestamp)) return resolveLocaleValue(locale, { en: 'unknown time', nl: 'onbekende tijd' });
+    if (!Number.isFinite(timestamp)) return runtimeText(locale, "reminders", "unknownTime");
 
     const diffMs = timestamp - nowMs;
-    if (diffMs <= 0) return resolveLocaleValue(locale, { en: 'due now', nl: 'nu verwacht' });
+    if (diffMs <= 0) return runtimeText(locale, "reminders", "dueNow");
 
     const minutes = Math.max(1, Math.round(diffMs / 60_000));
-    if (minutes < 60) return `over ${minutes}m`.replace('over', resolveLocaleValue(locale, { en: 'in', nl: 'over' }));
+    if (minutes < 60) return `over ${minutes}m`.replace('over', runtimeText(locale, "reminders", "in"));
 
     const hours = Math.round(minutes / 60);
-    if (hours < 48) return `${resolveLocaleValue(locale, { en: 'in', nl: 'over' })} ${hours}h`;
+    if (hours < 48) return `${runtimeText(locale, "reminders", "in")} ${hours}h`;
 
     const days = Math.round(hours / 24);
-    return `${resolveLocaleValue(locale, { en: 'in', nl: 'over' })} ${days}d`;
+    return `${runtimeText(locale, "reminders", "in")} ${days}d`;
 }
 
 function truncateChoicePart(value: string, maxLength: number): string {

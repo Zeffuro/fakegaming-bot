@@ -1,4 +1,4 @@
-import { dashboardMessages, type DashboardMessageKey } from "./messages";
+import { formatDashboardMessage, type DashboardMessageKey } from "./messages";
 import {
     DASHBOARD_LOCALE_COOKIE_KEY,
     getDashboardLocaleFromAcceptLanguage,
@@ -26,8 +26,13 @@ export function getRequestDashboardMessage(
     acceptLanguage: string | null | undefined,
     key: DashboardMessageKey,
     preferredLocale?: string | null,
+    values?: Record<string, string | number>,
 ): string {
-    return dashboardMessages[getRequestDashboardLocale(acceptLanguage, preferredLocale)][key];
+    return formatDashboardMessage(
+        getRequestDashboardLocale(acceptLanguage, preferredLocale),
+        key,
+        values,
+    );
 }
 
 export function getRequestDashboardLocaleFromRequest(request: DashboardLocaleRequest) {
@@ -40,6 +45,7 @@ export function getRequestDashboardLocaleFromRequest(request: DashboardLocaleReq
 export function getRequestDashboardMessageFromRequest(
     request: DashboardLocaleRequest,
     key: DashboardMessageKey,
+    values?: Record<string, string | number>,
 ): string {
-    return dashboardMessages[getRequestDashboardLocaleFromRequest(request)][key];
+    return formatDashboardMessage(getRequestDashboardLocaleFromRequest(request), key, values);
 }

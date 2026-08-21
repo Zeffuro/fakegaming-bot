@@ -1,11 +1,13 @@
 import {
     DEFAULT_OUTPUT_LOCALE,
+    getOutputLocaleMetadata,
     isSupportedOutputLocale,
     resolveLocaleValue,
     type OutputLocaleValues,
     type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { createTranslator } from 'use-intl/core';
 
 export {
     SUPPORTED_OUTPUT_LOCALES,
@@ -81,4 +83,28 @@ export function translate<Key extends string>(
 
 export function formatTranslation(template: string, values: Readonly<Record<string, string>>): string {
     return template.replace(/\{([a-zA-Z0-9_]+)\}/g, (placeholder, name: string) => values[name] ?? placeholder);
+}
+
+export type BotMessages = Readonly<Record<string, unknown>>;
+export type BotTranslationValues = Readonly<Record<string, string | number | Date>>;
+export type NestedMessageKey<Messages> = {
+    [Key in keyof Messages & string]: Messages[Key] extends string
+        ? Key
+        : Messages[Key] extends Readonly<Record<string, unknown>>
+            ? `${Key}.${NestedMessageKey<Messages[Key]>}`
+            : never;
+}[keyof Messages & string];
+
+/** Creates an isolated translator for one interaction or background operation. */
+export function createBotTranslator<Messages extends BotMessages>(
+    locale: SupportedOutputLocale,
+    messages: Messages,
+): (key: NestedMessageKey<Messages>, values?: BotTranslationValues) => string {
+    const translator = createTranslator({
+        locale: getOutputLocaleMetadata(locale).formatTag,
+        messages,
+        onError: () => undefined,
+        getMessageFallback: ({ key }) => key,
+    });
+    return (key, values) => translator(key as never, values as never);
 }

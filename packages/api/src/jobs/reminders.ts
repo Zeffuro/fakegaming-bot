@@ -1,4 +1,4 @@
-import { DEFAULT_OUTPUT_LOCALE, getLogger } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, getLogger, getOutputLocaleMetadata } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, computeNextMinuteBoundaryDelaySeconds, formatMinuteKey, computeBackoffWithNearWindow } from '@zeffuro/fakegaming-common/jobs';
@@ -55,7 +55,10 @@ export function formatReminderElapsed(ms: number, locale: SupportedOutputLocale 
             : seconds >= 60
                 ? [Math.floor(seconds / 60), 'minute'] as const
                 : [seconds, 'second'] as const;
-    return new Intl.RelativeTimeFormat(locale, { numeric: 'always' }).format(-value, unit);
+    return new Intl.RelativeTimeFormat(
+        getOutputLocaleMetadata(locale).formatTag,
+        { numeric: 'always' },
+    ).format(-value, unit);
 }
 
 async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:reminders' })): Promise<{ processed: number; errors: number }>{

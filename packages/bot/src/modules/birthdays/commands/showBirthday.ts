@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {MessageFlags, UserContextMenuCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createUserContextCommand, getTestOnly} from '../../../core/commandBuilder.js';
@@ -33,7 +33,9 @@ async function execute(interaction: UserContextMenuCommandInteraction): Promise<
     }
 
     await interaction.reply({
-        content: resolveLocaleValue(locale, { en: `${targetUser.tag}'s birthday: ${formatBirthday(birthday.day, birthday.month, locale, birthday.year)}`, nl: `De verjaardag van ${targetUser.tag}: ${formatBirthday(birthday.day, birthday.month, locale, birthday.year)}` }),
+        content: runtimeText(locale, 'birthdays', 'birthdayFor', {
+            user: targetUser.tag, date: formatBirthday(birthday.day, birthday.month, locale, birthday.year),
+        }),
         flags: MessageFlags.Ephemeral,
     });
 }

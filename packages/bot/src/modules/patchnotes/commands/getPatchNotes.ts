@@ -1,3 +1,4 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     SlashCommandBuilder,
@@ -15,7 +16,7 @@ import type { CreationAttributes } from 'sequelize';
 import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
-    b.addStringOption(option => option.setName('game').setNameLocalization('nl', 'spel').setDescription('Game to get patch notes for').setDescriptionLocalization('nl', 'Spel waarvoor je patchnotes wilt tonen').setRequired(true).setAutocomplete(true))
+    b.addStringOption(option => option.setName('game').setDescription('Game to get patch notes for').setRequired(true).setAutocomplete(true))
 );
 
 function toPatchNoteAttrs(dto: LatestPatchNoteDto): CreationAttributes<PatchNoteConfig> {
@@ -51,7 +52,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
             const attrs = toPatchNoteAttrs(patch);
             await interaction.reply({embeds: [resolveLocaleValue(locale, { en: buildPatchNoteEmbed(attrs), nl: buildPatchNoteEmbed(attrs, locale) })]});
         } else {
-            await interaction.reply(resolveLocaleValue(locale, { en: `No patch notes found for \`${game}\`.`, nl: `Geen patchnotes gevonden voor \`${game}\`.` }));
+            await interaction.reply(runtimeText(locale, 'patchnotes', 'noPatchNotesFoundFor', {game}));
         }
     }
 }

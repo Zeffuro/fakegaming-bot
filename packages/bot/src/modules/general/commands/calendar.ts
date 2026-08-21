@@ -11,9 +11,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addIntegerOption(option =>
         option
             .setName('days')
-            .setNameLocalization('nl', 'dagen')
             .setDescription('How many days ahead to show')
-            .setDescriptionLocalization('nl', 'Hoeveel dagen vooruit je wilt bekijken')
             .setMinValue(1)
             .setMaxValue(366)
             .setRequired(false)

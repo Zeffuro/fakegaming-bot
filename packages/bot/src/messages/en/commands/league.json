@@ -1,0 +1,252 @@
+{
+    "league-history": {
+        "name": "league-history",
+        "description": "Get recent League of Legends match history by Riot ID or linked user",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID, including tag (for example Name#TAG)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user"
+            }
+        }
+    },
+    "league-form": {
+        "name": "league-form",
+        "description": "Summarize recent League of Legends form by Riot ID or linked user",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID, including tag (for example Name#TAG)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user"
+            },
+            "refresh": {
+                "name": "refresh",
+                "description": "Bypass the short cache and refresh from Riot"
+            }
+        }
+    },
+    "league-stats": {
+        "name": "league-stats",
+        "description": "Get League of Legends stats by Riot ID or linked user",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID, including tag (for example Name#TAG)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user"
+            }
+        }
+    },
+    "link-riot": {
+        "name": "link-riot",
+        "description": "Link your Discord account or another user to a Riot account",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID (e.g. Zeffuro#EUW)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user to link (admin only)"
+            }
+        }
+    },
+    "riot-links": {
+        "name": "riot-links",
+        "description": "Manage linked Riot accounts",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List linked Riot accounts"
+            },
+            "show": {
+                "name": "show",
+                "description": "Show a linked Riot account",
+                "options": {
+                    "user": {
+                        "name": "user",
+                        "description": "Discord user"
+                    }
+                }
+            },
+            "unlink": {
+                "name": "unlink",
+                "description": "Remove a linked Riot account",
+                "options": {
+                    "user": {
+                        "name": "user",
+                        "description": "Discord user"
+                    }
+                }
+            }
+        }
+    },
+    "tft-history": {
+        "name": "tft-history",
+        "description": "Get recent Teamfight Tactics match history by Riot ID or linked user",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID, including tag (for example Name#TAG)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user"
+            }
+        }
+    },
+    "tft-stats": {
+        "name": "tft-stats",
+        "description": "Get Teamfight Tactics ranked stats by Riot ID or linked user",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID, including tag (for example Name#TAG)"
+            },
+            "region": {
+                "name": "region",
+                "description": "Region",
+                "choices": {
+                    "BR1": "Brazil",
+                    "EUN1": "Europe Nordic & East",
+                    "EUW1": "Europe West",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Latin America North",
+                    "LA2": "Latin America South",
+                    "ME1": "Middle East",
+                    "NA1": "North America",
+                    "OC1": "Oceania",
+                    "PBE1": "PBE Test Server",
+                    "RU": "Russia",
+                    "SG2": "Singapore",
+                    "TR1": "Turkey",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "user",
+                "description": "Discord user"
+            }
+        }
+    }
+}

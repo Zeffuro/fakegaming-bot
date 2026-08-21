@@ -1,0 +1,27 @@
+{
+    "verificationFailed": "Account `{username}` controleren is mislukt. Probeer het later opnieuw.",
+    "bluesky": {
+        "usernameDescription": "Bluesky-handle (met of zonder @)",
+        "success": "Bluesky-account `{username}` toegevoegd voor meldingen in <#{channelId}>.",
+        "alreadyConfigured": "Bluesky-account `{username}` is al ingesteld voor meldingen in dit kanaal.",
+        "notFound": "Bluesky-account `{username}` bestaat niet."
+    },
+    "tiktok": {
+        "usernameDescription": "TikTok-gebruikersnaam (met of zonder @)",
+        "success": "TikTok-account `{username}` toegevoegd voor meldingen in <#{channelId}>.",
+        "alreadyConfigured": "TikTok-account `{username}` is al ingesteld voor meldingen in dit kanaal.",
+        "notFound": "TikTok-gebruiker `{username}` bestaat niet."
+    },
+    "twitch": {
+        "usernameDescription": "Twitch-gebruikersnaam",
+        "success": "Twitch-stream `{username}` toegevoegd voor meldingen in <#{channelId}>.",
+        "alreadyConfigured": "Twitch-stream `{username}` is al ingesteld voor meldingen in dit kanaal.",
+        "notFound": "Twitch-gebruiker `{username}` bestaat niet."
+    },
+    "youtube": {
+        "usernameDescription": "YouTube-gebruikersnaam, handle, URL of kanaal-ID",
+        "success": "YouTube-kanaal `{username}` toegevoegd voor videomeldingen in <#{channelId}>.",
+        "alreadyConfigured": "YouTube-kanaal `{username}` is al ingesteld voor videomeldingen in dit kanaal.",
+        "notFound": "YouTube-kanaal `{username}` bestaat niet."
+    }
+}

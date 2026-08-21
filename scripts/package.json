@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.17",
     "@zeffuro/fakegaming-common": "workspace:*"
   }
 }

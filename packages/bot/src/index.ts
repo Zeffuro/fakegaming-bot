@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from './core/runtimeCopy.js';
 import './earlyEnv.js';
 
 import {
@@ -128,7 +128,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                         if (!interaction.replied && !interaction.deferred) {
                             const locale = await resolveInteractionOutputLocale(interaction);
                             await interaction.reply({
-                                content: resolveLocaleValue(locale, { en: 'Error handling interaction.', nl: 'De interactie kon niet worden verwerkt.' }),
+                                content: runtimeText(locale, "core", "errorHandlingInteraction"),
                                 flags: MessageFlags.Ephemeral
                             });
                         }
@@ -168,7 +168,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                     const moduleDisabled = await getConfigManager().disabledModuleManager.isModuleDisabled(guildId, command.moduleName);
                     if (moduleDisabled) {
                         await interaction.reply({
-                            content: resolveLocaleValue(locale, { en: `The ${command.moduleName} module is disabled for this server.`, nl: `De module ${command.moduleName} is uitgeschakeld voor deze server.` }),
+                            content: runtimeText(locale, 'core', 'theModuleIsDisabledForThisServer', {module: command.moduleName}),
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -184,7 +184,7 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                     const disabled = await getConfigManager().disabledCommandManager.isCommandDisabled(guildId, interaction.commandName);
                     if (disabled) {
                         await interaction.reply({
-                            content: resolveLocaleValue(locale, { en: 'This command is disabled for this server.', nl: 'Deze opdracht is uitgeschakeld voor deze server.' }),
+                            content: runtimeText(locale, "core", "thisCommandIsDisabledForThisServer"),
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -204,11 +204,11 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                 try {
                     if (!interaction.replied && !interaction.deferred) {
                         await interaction.reply({
-                            content: resolveLocaleValue(locale, { en: 'Error executing command.', nl: 'De opdracht kon niet worden uitgevoerd.' }),
+                            content: runtimeText(locale, "core", "errorExecutingCommand"),
                             flags: MessageFlags.Ephemeral
                         });
                     } else {
-                        await interaction.editReply({content: resolveLocaleValue(locale, { en: 'Error executing command.', nl: 'De opdracht kon niet worden uitgevoerd.' })});
+                        await interaction.editReply({content: runtimeText(locale, "core", "errorExecutingCommand")});
                     }
                 } catch (err) {
                     logger.error({ err }, 'Failed to send error reply:');

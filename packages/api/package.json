@@ -36,6 +36,7 @@
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "tiktok-live-connector": "2.4.4",
+    "use-intl": "4.13.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {

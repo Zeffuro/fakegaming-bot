@@ -18,9 +18,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
         fetchHistory: getTftMatchHistory,
         fetchDetails: getTftMatchDetails,
         generateImage: generateTftHistoryImage,
-        contentPrefix: { en: 'Recent TFT matches', nl: 'Recente TFT-wedstrijden' },
-        historyErrorPrefix: { en: 'Failed to fetch TFT match history', nl: 'Ophalen van TFT-wedstrijdgeschiedenis mislukt' },
-        detailsErrorPrefix: { en: 'Failed to fetch details for match', nl: 'Ophalen van details mislukt voor wedstrijd' },
+        historyKind: 'tft',
         count: 5,
     });
 }

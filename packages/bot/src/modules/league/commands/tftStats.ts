@@ -35,39 +35,39 @@ async function execute(interaction: ChatInputCommandInteraction) {
 
     const summonerResult = await getTftSummoner(identity.puuid, identity.region);
     if (!summonerResult.success || !summonerResult.data) {
-        await interaction.editReply(`${leagueText(locale, { en: 'Failed to fetch TFT summoner', nl: 'Ophalen van TFT-summoner mislukt' })}: ${summonerResult.error ?? unknownError(locale)}`);
+        await interaction.editReply(`${leagueText(locale, "failedToFetchTftSummoner")}: ${summonerResult.error ?? unknownError(locale)}`);
         return;
     }
 
     const leagueResult = await getTftLeagueEntries(identity.puuid, identity.region);
     if (!leagueResult.success || !leagueResult.data) {
-        await interaction.editReply(`${leagueText(locale, { en: 'Failed to fetch TFT ranked stats', nl: 'Ophalen van TFT-rangstatistieken mislukt' })}: ${leagueResult.error ?? unknownError(locale)}`);
+        await interaction.editReply(`${leagueText(locale, "failedToFetchTftRankedStats")}: ${leagueResult.error ?? unknownError(locale)}`);
         return;
     }
 
     const summoner = summonerResult.data as { profileIconId?: number; summonerLevel?: number };
     const entries = leagueResult.data as TftLeagueEntry[];
     const embed = new EmbedBuilder()
-        .setTitle(`${leagueText(locale, { en: 'TFT Stats for', nl: 'TFT-statistieken voor' })} ${identity.summoner} [${identity.region}]`)
+        .setTitle(`${leagueText(locale, "tftStatsFor")} ${identity.summoner} [${identity.region}]`)
         .setThumbnail(`https://raw.communitydragon.org/latest/game/assets/ux/summonericons/profileicon${summoner.profileIconId ?? 0}.png`)
-        .addFields({name: leagueText(locale, { en: 'Level', nl: 'Niveau' }), value: `${summoner.summonerLevel ?? leagueText(locale, { en: 'N/A', nl: 'N.v.t.' })}`, inline: true});
+        .addFields({name: leagueText(locale, "level"), value: `${summoner.summonerLevel ?? leagueText(locale, "nA")}`, inline: true});
 
     if (Array.isArray(entries) && entries.length > 0) {
         for (const entry of entries) {
-            const tier = entry.tier ?? leagueText(locale, { en: 'Unranked', nl: 'Ongerangschikt' });
+            const tier = entry.tier ?? leagueText(locale, "unranked");
             const rank = entry.rank ?? '';
             const lp = entry.leaguePoints ?? 0;
             const wins = entry.wins ?? 0;
             const losses = entry.losses ?? 0;
             const emoji = getTierEmoji(interaction.guild, tier);
             embed.addFields({
-                name: entry.queueType ?? leagueText(locale, { en: 'TFT Ranked', nl: 'TFT-ranglijst' }),
-                value: `**${tier} ${rank}** ${emoji} (${lp} LP)\n${leagueText(locale, { en: 'Wins', nl: 'Overwinningen' })}: ${wins}, ${leagueText(locale, { en: 'Losses', nl: 'Nederlagen' })}: ${losses}`,
+                name: entry.queueType ?? leagueText(locale, "tftRanked"),
+                value: `**${tier} ${rank}** ${emoji} (${lp} LP)\n${leagueText(locale, "wins")}: ${wins}, ${leagueText(locale, "losses")}: ${losses}`,
                 inline: false,
             });
         }
     } else {
-        embed.addFields({name: leagueText(locale, { en: 'Ranked', nl: 'Ranglijst' }), value: leagueText(locale, { en: 'No TFT ranked data found.', nl: 'Geen TFT-ranggegevens gevonden.' }), inline: false});
+        embed.addFields({name: leagueText(locale, "ranked"), value: leagueText(locale, "noTftRankedDataFound"), inline: false});
     }
 
     await interaction.editReply({embeds: [embed]});

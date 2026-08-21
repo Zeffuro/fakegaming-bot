@@ -1,10 +1,11 @@
 import {
     DEFAULT_OUTPUT_LOCALE,
-    resolveLocaleValue,
+    getOutputLocaleMetadata,
     resolveOutputLocaleFromAcceptLanguage,
     type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
+import { createTranslator } from 'use-intl/core';
 import { API_COPY, type ApiCopyKey } from './catalog.js';
 
 export function resolveApiLocale(value: string | string[] | undefined): SupportedOutputLocale {
@@ -33,13 +34,25 @@ export async function resolveUserOutputLocale(discordId: string | null | undefin
     }
 }
 
-export function apiText(
-    locale: SupportedOutputLocale,
-    key: ApiCopyKey,
-    values: Readonly<Record<string, string | number>> = {},
-): string {
-    return resolveLocaleValue(locale, API_COPY)[key].replace(/\{([A-Za-z][A-Za-z0-9]*)\}/g, (placeholder, name: string) => {
-        const value = values[name];
-        return value === undefined ? placeholder : String(value);
+export type ApiTextValues = Readonly<Record<string, string | number | Date>>;
+type ApiTranslator = (key: ApiCopyKey, values?: ApiTextValues) => string;
+
+const apiTranslators = new Map<SupportedOutputLocale, ApiTranslator>();
+
+export function createApiTranslator(locale: SupportedOutputLocale): ApiTranslator {
+    const existing = apiTranslators.get(locale);
+    if (existing) return existing;
+
+    const translate = createTranslator({
+        locale: getOutputLocaleMetadata(locale).formatTag,
+        messages: API_COPY[locale],
     });
+
+    const translator: ApiTranslator = (key, values = {}) => translate(key, values);
+    apiTranslators.set(locale, translator);
+    return translator;
+}
+
+export function apiText(locale: SupportedOutputLocale, key: ApiCopyKey, values: ApiTextValues = {}): string {
+    return createApiTranslator(locale)(key, values);
 }

@@ -54,7 +54,7 @@ describe('weather command', () => {
 
         // Verify the weather services were called with the right location
         expect(getCurrentWeather).toHaveBeenCalledWith('Rotterdam,NL');
-        expect(getShortTermForecast).toHaveBeenCalledWith('Rotterdam,NL', 4);
+        expect(getShortTermForecast).toHaveBeenCalledWith('Rotterdam,NL', 4, 'en');
 
         // Verify the interaction reply contains the expected weather information
         expectReplyTextContains(interaction, '\ud83c\udf24\ufe0f Weather for Rotterdam, NL');

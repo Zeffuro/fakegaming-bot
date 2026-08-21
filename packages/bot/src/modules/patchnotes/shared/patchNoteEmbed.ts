@@ -1,11 +1,11 @@
 import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {EmbedBuilder} from 'discord.js';
 import {PatchNoteConfig} from '@zeffuro/fakegaming-common/models';
 import {parseDateSafe} from '@zeffuro/fakegaming-common/utils';
 import {formatPatchNoteEmbedDescription} from '@zeffuro/fakegaming-common/patchnotes';
 import {CreationAttributes} from 'sequelize';
 import type {SupportedOutputLocale} from '../../../core/localization.js';
+import {getOutputLocaleMetadata} from '../../../core/localization.js';
 
 interface PatchNoteEmbedSource {
     game: string;
@@ -34,7 +34,7 @@ export function buildPatchNoteEmbed(
         .setAuthor({name: note.game});
 
     if (publishedAt) {
-        embed.setFooter({text: publishedAt.toLocaleString(resolveLocaleValue(locale, { en: 'en-US', nl: 'nl-NL' }))});
+        embed.setFooter({text: publishedAt.toLocaleString(getOutputLocaleMetadata(locale).formatTag)});
     }
 
     return embed;

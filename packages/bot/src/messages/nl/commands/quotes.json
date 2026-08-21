@@ -1,0 +1,72 @@
+{
+    "add-quote": {
+        "name": "citaat-toevoegen",
+        "description": "Voeg een citaat toe",
+        "options": {
+            "quote": {
+                "name": "citaat",
+                "description": "De tekst van het citaat"
+            },
+            "author": {
+                "name": "auteur",
+                "description": "Gebruiker die het citaat uitsprak"
+            }
+        }
+    },
+    "delete-quote": {
+        "name": "citaat-verwijderen",
+        "description": "Verwijder een citaat dat je toevoegde of uitsprak",
+        "options": {
+            "id": {
+                "name": "id",
+                "description": "Citaat-ID of verkort ID"
+            }
+        }
+    },
+    "quote-leaderboard": {
+        "name": "citaten-klassement",
+        "description": "Toon de meest geciteerde gebruikers op deze server"
+    },
+    "quote-card": {
+        "name": "citaatkaart",
+        "description": "Maak van een goedgekeurd citaat een deelbare afbeelding",
+        "options": {
+            "id": {
+                "name": "id",
+                "description": "Citaat-ID of verkort ID. Laat leeg voor een willekeurig goedgekeurd citaat."
+            }
+        }
+    },
+    "quotes": {
+        "name": "citaten",
+        "description": "Toon alle citaten van een gebruiker",
+        "options": {
+            "user": {
+                "name": "gebruiker",
+                "description": "Gebruiker van wie je citaten wilt tonen"
+            }
+        }
+    },
+    "random-quote": {
+        "name": "willekeurig-citaat",
+        "description": "Toon een willekeurig citaat van de server"
+    },
+    "Save as Quote": {
+        "name": "Opslaan als citaat",
+        "description": "Bewaar een bericht als citaat via het berichtenmenu"
+    },
+    "search-quote": {
+        "name": "citaten-zoeken",
+        "description": "Zoek citaten op tekst",
+        "options": {
+            "text": {
+                "name": "tekst",
+                "description": "Tekst om naar te zoeken"
+            }
+        }
+    },
+    "Show Quotes": {
+        "name": "Citaten tonen",
+        "description": "Toon citaten via het gebruikersmenu"
+    }
+}

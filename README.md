@@ -140,6 +140,7 @@ This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage
 
 ### 🏗️ Architecture & Patterns
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Service boundaries and code organization
+- [LOCALIZATION.md](./LOCALIZATION.md) - Locale ownership, catalogs, and adding a language
 - [TYPESCRIPT.md](./TYPESCRIPT.md) - TypeScript & ESLint conventions
 - [TESTING.md](./TESTING.md) - Testing strategy and helpers
 

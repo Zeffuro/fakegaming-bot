@@ -14,18 +14,14 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addStringOption(option =>
             option
                 .setName('reminder')
-                .setNameLocalization('nl', 'herinnering')
                 .setDescription('Reminder number from /reminders or its short ID')
-                .setDescriptionLocalization('nl', 'Nummer uit /herinneringen of het korte ID')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addStringOption(option =>
             option
                 .setName('timespan')
-                .setNameLocalization('nl', 'tijdsduur')
                 .setDescription('How long to snooze for, e.g. 10m or 2h')
-                .setDescriptionLocalization('nl', 'Hoe lang je wilt uitstellen, bijv. 10m of 2h')
                 .setRequired(true)
         )
 );

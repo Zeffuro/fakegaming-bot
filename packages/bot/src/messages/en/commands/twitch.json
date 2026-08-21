@@ -1,0 +1,90 @@
+{
+    "add-twitch-stream": {
+        "name": "add-twitch-stream",
+        "description": "Add a Twitch stream for notifications",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "Twitch username"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Discord channel for notifications"
+            },
+            "message": {
+                "name": "message",
+                "description": "Custom notification message (optional)"
+            }
+        }
+    },
+    "manage-twitch-streams": {
+        "name": "manage-twitch-streams",
+        "description": "List, test, pause, resume, or remove Twitch stream notifications",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured Twitch streams"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured Twitch stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-twitch-streams list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured Twitch stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-twitch-streams list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured Twitch stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-twitch-streams list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured Twitch stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-twitch-streams list"
+                    }
+                }
+            }
+        }
+    },
+    "stream-status": {
+        "name": "stream-status",
+        "description": "Check whether a Twitch channel is live",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "Twitch username"
+            }
+        }
+    },
+    "twitch-latest-vod": {
+        "name": "twitch-latest-vod",
+        "description": "Show the latest Twitch archive VOD for a channel",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "Twitch username"
+            }
+        }
+    }
+}

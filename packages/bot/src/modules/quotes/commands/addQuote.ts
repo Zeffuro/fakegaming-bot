@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {v4 as uuidv4} from 'uuid';
@@ -8,8 +8,8 @@ import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('quote').setNameLocalization('nl', 'citaat').setDescription('The quote text').setDescriptionLocalization('nl', 'De tekst van het citaat').setRequired(true))
-        .addUserOption(option => option.setName('author').setNameLocalization('nl', 'auteur').setDescription('User who said the quote').setDescriptionLocalization('nl', 'Gebruiker die het citaat uitsprak').setRequired(true))
+        .addStringOption(option => option.setName('quote').setDescription('The quote text').setRequired(true))
+        .addUserOption(option => option.setName('author').setDescription('User who said the quote').setRequired(true))
 );
 
 /**
@@ -32,11 +32,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
         timestamp: Date.now(),
     });
 
-    await interaction.reply(
-        resolveLocaleValue(locale, { en: created
-            ? `Quote added for ${author.tag}: "${quoteText}"`
-            : `Quote updated for ${author.tag}: "${quoteText}"`, nl: `${created ? 'Citaat toegevoegd' : 'Citaat bijgewerkt'} voor ${author.tag}: "${quoteText}"` })
-    );
+    await interaction.reply(runtimeText(locale, 'quotes', 'quoteSaved', {
+        created: String(created), author: author.tag, quote: quoteText,
+    }));
 }
 
 const testOnly = getTestOnly(META);

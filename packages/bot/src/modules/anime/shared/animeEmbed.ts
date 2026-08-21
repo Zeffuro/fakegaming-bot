@@ -1,5 +1,5 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import { EmbedBuilder } from 'discord.js';
 import {
     formatAniListCountryOfOrigin,
@@ -90,8 +90,8 @@ export function buildAnimeEmbed(anime: AniListTitle, locale: SupportedOutputLoca
             { name: copy.status, value: formatAniListStatus(anime.status, locale), inline: true },
             { name: copy.format, value: formatAniListMediaFormat({ format: anime.format, type: mediaType, countryOfOrigin: anime.countryOfOrigin }, locale), inline: true },
             { name: copy.origin, value: formatAniListCountryOfOrigin(anime.countryOfOrigin, locale), inline: true },
-            { name: copy.chapters, value: formatMediaCount(anime.chapters, resolveLocaleValue(locale, { en: 'chapter', nl: 'hoofdstuk' }), resolveLocaleValue(locale, { en: 'chapters', nl: 'hoofdstukken' }), locale), inline: true },
-            { name: copy.volumes, value: formatMediaCount(anime.volumes, resolveLocaleValue(locale, { en: 'volume', nl: 'deel' }), resolveLocaleValue(locale, { en: 'volumes', nl: 'delen' }), locale), inline: true },
+            { name: copy.chapters, value: formatMediaCount(anime.chapters, runtimeText(locale, "anime", "chapter"), runtimeText(locale, "anime", "chapters"), locale), inline: true },
+            { name: copy.volumes, value: formatMediaCount(anime.volumes, runtimeText(locale, "anime", "volume"), runtimeText(locale, "anime", "volumes"), locale), inline: true },
             { name: copy.rating, value: formatAniListScore(anime, locale), inline: true },
             { name: copy.popularity, value: formatAniListPopularity(anime.popularity, locale), inline: true },
             { name: copy.genres, value: formatGenres(anime.genres, locale), inline: false },
@@ -111,7 +111,7 @@ export function buildAnimeEmbed(anime: AniListTitle, locale: SupportedOutputLoca
         {
             name: copy.nextEpisode,
             value: anime.nextAiringEpisode
-                ? `${resolveLocaleValue(locale, { en: 'Episode', nl: 'Aflevering' })} ${anime.nextAiringEpisode.episode}: ${formatAiringTimestamp(nextAiringMs, locale)}`
+                ? `${runtimeText(locale, "anime", "episode")} ${anime.nextAiringEpisode.episode}: ${formatAiringTimestamp(nextAiringMs, locale)}`
                 : copy.noUpcomingEpisode,
             inline: false,
         },
@@ -156,7 +156,7 @@ export function buildAnimeNextEmbed(items: AniListAiringScheduleItem[], locale: 
             .slice(0, 10)
             .map((item) => {
                 const title = item.media ? formatAnimeTitle(item.media, locale) : `AniList #${item.mediaId}`;
-                return `- **${title}** ${resolveLocaleValue(locale, { en: 'episode', nl: 'aflevering' })} ${item.episode}: ${formatAiringTimestamp(item.airingAt * 1000, locale)}`;
+                return `- **${title}** ${runtimeText(locale, 'anime', 'episodeLowercase')} ${item.episode}: ${formatAiringTimestamp(item.airingAt * 1000, locale)}`;
             })
             .join('\n')
         : copy.noUpcomingSubscriptions;
@@ -181,7 +181,7 @@ export function buildAnimeSearchResultsEmbed(
                 mediaType === 'MANGA' ? formatAniListCountryOfOrigin(anime.countryOfOrigin, locale) : anime.seasonYear ?? copy.unknownYear,
                 formatAniListMediaFormat({ format: anime.format, type: mediaType, countryOfOrigin: anime.countryOfOrigin }, locale),
                 formatAniListStatus(anime.status, locale),
-                mediaType === 'MANGA' ? formatMediaCount(anime.chapters, resolveLocaleValue(locale, { en: 'chapter', nl: 'hoofdstuk' }), resolveLocaleValue(locale, { en: 'chapters', nl: 'hoofdstukken' }), locale) : anime.episodes ? `${anime.episodes} ${copy.episodesShort}` : null,
+                mediaType === 'MANGA' ? formatMediaCount(anime.chapters, runtimeText(locale, "anime", "chapter"), runtimeText(locale, "anime", "chapters"), locale) : anime.episodes ? `${anime.episodes} ${copy.episodesShort}` : null,
                 anime.averageScore ? `${anime.averageScore}/100` : null,
                 anime.popularity ? `${formatAniListPopularity(anime.popularity, locale)} ${copy.users}` : null,
                 mediaType === 'ANIME' && anime.nextAiringEpisode ? `${copy.episodeShort} ${anime.nextAiringEpisode.episode} ${formatAiringTimestamp(anime.nextAiringEpisode.airingAt * 1000, locale)}` : null,
@@ -189,7 +189,7 @@ export function buildAnimeSearchResultsEmbed(
             const romaji = anime.title.romaji && anime.title.romaji !== formatAnimeTitle(anime, locale) ? `\n${copy.romaji}: ${anime.title.romaji}` : '';
             return `**${index + 1}. ${formatAnimeTitle(anime, locale)}**${romaji}\n${meta}\n${getAniListMediaUrl(anime)}`;
         }).join('\n\n')
-        : resolveLocaleValue(locale, { en: `No ${label.toLowerCase()} found for \`${query}\`.`, nl: `Geen ${label.toLowerCase()} gevonden voor \`${query}\`.` });
+        : runtimeText(locale, 'anime', 'noMediaFound', {mediaType: label.toLowerCase(), query});
 
     const embed = new EmbedBuilder()
         .setColor(0x02A9FF)
@@ -214,7 +214,7 @@ function formatSeasonLine(anime: AniListTitle, index: number, locale: SupportedO
         anime.popularity ? `${formatAniListPopularity(anime.popularity, locale)} ${copy.users}` : null,
     ].filter(Boolean).join(' - ');
     const next = anime.nextAiringEpisode
-        ? `\n${resolveLocaleValue(locale, { en: 'Next: episode', nl: 'Volgende: aflevering' })} ${anime.nextAiringEpisode.episode} ${formatAiringTimestamp(anime.nextAiringEpisode.airingAt * 1000, locale)}`
+        ? `\n${runtimeText(locale, "anime", "nextEpisode")} ${anime.nextAiringEpisode.episode} ${formatAiringTimestamp(anime.nextAiringEpisode.airingAt * 1000, locale)}`
         : '';
     return `**${index}. ${formatAnimeTitle(anime, locale)}**\n${meta}${next}`;
 }

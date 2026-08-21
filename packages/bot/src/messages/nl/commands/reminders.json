@@ -1,0 +1,86 @@
+{
+    "set-reminder": {
+        "name": "herinnering-instellen",
+        "description": "Stel een herinnering in",
+        "options": {
+            "timespan": {
+                "name": "tijdsduur",
+                "description": "Wanneer je herinnerd wilt worden (bijv. 1h, 30m)"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Bericht van de herinnering"
+            },
+            "repeat": {
+                "name": "herhaling",
+                "description": "Optionele herhaling, bijv. daily, weekly of every 2 weeks"
+            },
+            "repeat-timezone": {
+                "name": "herhaling-tijdzone",
+                "description": "Tijdzone voor herhaling; standaard je opgeslagen tijdzone"
+            }
+        }
+    },
+    "set-timezone": {
+        "name": "tijdzone-instellen",
+        "description": "Stel je tijdzone in",
+        "options": {
+            "timezone": {
+                "name": "tijdzone",
+                "description": "Je IANA-tijdzone (bijv. Europe/Berlin of GMT+2)"
+            }
+        }
+    },
+    "reminders": {
+        "name": "herinneringen",
+        "description": "Toon je actieve en gepauzeerde herinneringen"
+    },
+    "Remind Me in 1h": {
+        "name": "Herinner mij over 1u",
+        "description": "Stel via het berichtenmenu een herinnering over één uur in"
+    },
+    "delete-reminder": {
+        "name": "herinnering-verwijderen",
+        "description": "Verwijder een openstaande herinnering",
+        "options": {
+            "reminder": {
+                "name": "herinnering",
+                "description": "Nummer uit /herinneringen of het korte ID"
+            }
+        }
+    },
+    "snooze-reminder": {
+        "name": "herinnering-uitstellen",
+        "description": "Stel een openstaande herinnering uit",
+        "options": {
+            "reminder": {
+                "name": "herinnering",
+                "description": "Nummer uit /herinneringen of het korte ID"
+            },
+            "timespan": {
+                "name": "tijdsduur",
+                "description": "Hoe lang je wilt uitstellen, bijv. 10m of 2h"
+            }
+        }
+    },
+    "pause-reminder": {
+        "name": "herinnering-pauzeren",
+        "description": "Pauzeer een herhalende herinnering",
+        "options": {
+            "reminder": {
+                "name": "herinnering",
+                "description": "Nummer uit /herinneringen of het korte ID"
+            }
+        }
+    },
+    "resume-reminder": {
+        "name": "herinnering-hervatten",
+        "description": "Hervat een herhalende herinnering",
+        "options": {
+            "reminder": {
+                "name": "herinnering",
+                "description": "Nummer uit /herinneringen of het korte ID"
+            }
+        }
+    }
+}

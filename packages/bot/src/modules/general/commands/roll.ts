@@ -7,9 +7,7 @@ import { getGeneralCopy } from '../data/generalCopy.js';
 const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
     builder.addStringOption(option => option
         .setName('dice')
-        .setNameLocalization('nl', 'dobbelstenen')
-        .setDescription('Dice notation or max number (e.g., 2d6, d20, or 100)')
-        .setDescriptionLocalization('nl', 'Dobbelnotatie of maximumgetal (bijv. 2d6, d20 of 100)'))
+        .setDescription('Dice notation or max number (e.g., 2d6, d20, or 100)'))
 );
 
 function parseDice(input: string): { count: number; sides: number } | null {

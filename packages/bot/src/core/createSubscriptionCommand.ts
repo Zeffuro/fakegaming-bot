@@ -1,14 +1,18 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, MessageFlags } from 'discord.js';
 import {
     DEFAULT_OUTPUT_LOCALE,
-    NON_DEFAULT_OUTPUT_LOCALES,
     resolveLocaleValue,
     type OutputLocaleValues,
 } from '@zeffuro/fakegaming-common';
 import { requireAdmin } from '../utils/permissions.js';
 import { recordBotAuditEvent } from '../utils/audit.js';
 import { createSlashCommand, getTestOnly, type LocalizedCommandMetadata } from './commandBuilder.js';
-import { resolveInteractionOutputLocale } from './localization.js';
+import { resolveInteractionOutputLocale, type SupportedOutputLocale } from './localization.js';
+import { createBotTranslator, type BotMessages } from './localization.js';
+import englishMessages from '../messages/en/subscriptions.json' with { type: 'json' };
+import dutchMessages from '../messages/nl/subscriptions.json' with { type: 'json' };
+
+export type SubscriptionCopyNamespace = 'bluesky' | 'tiktok' | 'twitch' | 'youtube';
 
 export interface SubscriptionActionArgs<TId> {
     username: string;
@@ -31,16 +35,17 @@ export interface CreateSubscriptionCommandOptions<TId> {
     // Back-compat: explicit name/description (will be ignored if meta provided)
     commandName?: string;
     description?: string;
-    usernameOptionDescriptions: OutputLocaleValues<string>;
+    copyNamespace?: SubscriptionCopyNamespace;
+    usernameOptionDescriptions?: OutputLocaleValues<string>;
     resolveOrVerify: (username: string) => Promise<{ ok: true; id: TId } | { ok: false }>;
     // Optional: check existence using only username/channel/guild before resolving (e.g., Twitch)
     checkExistingPre?: (args: { username: string; discordChannelId: string; guildId: string }) => Promise<boolean>;
     // Optional: check existence using resolved externalId (e.g., YouTube)
     checkExistingPost?: (args: { username: string; externalId: TId; discordChannelId: string; guildId: string }) => Promise<boolean>;
     addSubscription: (args: SubscriptionActionArgs<TId>) => Promise<void>;
-    successMessages: OutputLocaleValues<(args: { username: string; channelId: string }) => string>;
-    alreadyConfiguredMessages: OutputLocaleValues<(args: { username: string }) => string>;
-    notFoundMessages: OutputLocaleValues<(args: { username: string }) => string>;
+    successMessages?: OutputLocaleValues<(args: { username: string; channelId: string }) => string>;
+    alreadyConfiguredMessages?: OutputLocaleValues<(args: { username: string }) => string>;
+    notFoundMessages?: OutputLocaleValues<(args: { username: string }) => string>;
     verificationFailedMessages?: OutputLocaleValues<(args: { username: string }) => string>;
     auditAdd?: SubscriptionAuditOptions<TId>;
     testOnly?: boolean;
@@ -56,47 +61,22 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
         throw new Error('createSubscriptionCommand: either opts.meta or opts.commandName/opts.description must be provided');
     }
 
-    const optionCopy = {
-        en: {
-            usernameName: 'username', usernameDescription: resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.usernameOptionDescriptions),
-            channelName: 'channel', channelDescription: 'Discord channel for notifications',
-            messageName: 'message', messageDescription: 'Custom notification message (optional)',
-        },
-        nl: {
-            usernameName: 'gebruikersnaam', usernameDescription: resolveLocaleValue('nl', opts.usernameOptionDescriptions),
-            channelName: 'kanaal', channelDescription: 'Discord-kanaal voor meldingen',
-            messageName: 'bericht', messageDescription: 'Aangepast meldingsbericht (optioneel)',
-        },
-    } satisfies OutputLocaleValues<{
-        usernameName: string; usernameDescription: string;
-        channelName: string; channelDescription: string;
-        messageName: string; messageDescription: string;
-    }>;
-    const defaultCopy = resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, optionCopy);
+    const sourceTranslator = createSubscriptionTranslator(DEFAULT_OUTPUT_LOCALE);
+    const usernameDescription = opts.copyNamespace
+        ? sourceTranslator(`${opts.copyNamespace}.usernameDescription`)
+        : resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.usernameOptionDescriptions!);
     const data = createSlashCommand(meta, (b: SlashCommandBuilder) =>
         b
             .addStringOption((option) => {
-                option.setName(defaultCopy.usernameName).setDescription(defaultCopy.usernameDescription).setRequired(true);
-                for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-                    const copy = resolveLocaleValue(locale, optionCopy);
-                    option.setNameLocalization(locale, copy.usernameName).setDescriptionLocalization(locale, copy.usernameDescription);
-                }
+                option.setName('username').setDescription(usernameDescription).setRequired(true);
                 return option;
             })
             .addChannelOption((option) => {
-                option.setName(defaultCopy.channelName).setDescription(defaultCopy.channelDescription).setRequired(true);
-                for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-                    const copy = resolveLocaleValue(locale, optionCopy);
-                    option.setNameLocalization(locale, copy.channelName).setDescriptionLocalization(locale, copy.channelDescription);
-                }
+                option.setName('channel').setDescription('Discord channel for notifications').setRequired(true);
                 return option;
             })
             .addStringOption((option) => {
-                option.setName(defaultCopy.messageName).setDescription(defaultCopy.messageDescription).setRequired(false);
-                for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-                    const copy = resolveLocaleValue(locale, optionCopy);
-                    option.setNameLocalization(locale, copy.messageName).setDescriptionLocalization(locale, copy.messageDescription);
-                }
+                option.setName('message').setDescription('Custom notification message (optional)').setRequired(false);
                 return option;
             })
     ).setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
@@ -113,7 +93,7 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
         if (opts.checkExistingPre) {
             const preExists = await opts.checkExistingPre({ username, discordChannelId: discordChannel.id, guildId });
             if (preExists) {
-                const message = resolveLocaleValue(locale, opts.alreadyConfiguredMessages)({ username });
+                const message = subscriptionMessage(opts, locale, 'alreadyConfigured', { username });
                 await interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
                 return;
             }
@@ -123,15 +103,14 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
         try {
             verified = await opts.resolveOrVerify(username);
         } catch {
-            const message = resolveLocaleValue(locale, opts.verificationFailedMessages ?? {
-                en: ({ username: value }) => `Failed to verify account \`${value}\`. Please try again later.`,
-                nl: ({ username: value }) => `Account \`${value}\` controleren is mislukt. Probeer het later opnieuw.`,
-            })({ username });
+            const message = opts.verificationFailedMessages
+                ? resolveLocaleValue(locale, opts.verificationFailedMessages)({ username })
+                : createSubscriptionTranslator(locale)('verificationFailed', { username });
             await interaction.reply({content: message, flags: MessageFlags.Ephemeral});
             return;
         }
         if (!verified.ok) {
-            const message = resolveLocaleValue(locale, opts.notFoundMessages)({ username });
+            const message = subscriptionMessage(opts, locale, 'notFound', { username });
             await interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
             return;
         }
@@ -140,7 +119,7 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
         if (opts.checkExistingPost) {
             const postExists = await opts.checkExistingPost({ username, externalId, discordChannelId: discordChannel.id, guildId });
             if (postExists) {
-                const message = resolveLocaleValue(locale, opts.alreadyConfiguredMessages)({ username });
+                const message = subscriptionMessage(opts, locale, 'alreadyConfigured', { username });
                 await interaction.reply({ content: message, flags: MessageFlags.Ephemeral });
                 return;
             }
@@ -157,9 +136,29 @@ export function createSubscriptionCommand<TId>(opts: CreateSubscriptionCommandOp
                 metadata: opts.auditAdd.metadata?.(actionArgs) ?? null,
             });
         }
-        await interaction.reply(resolveLocaleValue(locale, opts.successMessages)({ username, channelId: discordChannel.id }));
+        await interaction.reply(subscriptionMessage(opts, locale, 'success', { username, channelId: discordChannel.id }));
     }
 
     const testOnly = Boolean(opts.testOnly ?? getTestOnly(meta));
     return { data, execute, testOnly };
+}
+
+function createSubscriptionTranslator(locale: SupportedOutputLocale) {
+    const messages = resolveLocaleValue(locale, {
+        en: englishMessages,
+        nl: dutchMessages,
+    } satisfies OutputLocaleValues<BotMessages>) as typeof englishMessages;
+    return createBotTranslator(locale, messages);
+}
+
+function subscriptionMessage<TId>(
+    opts: CreateSubscriptionCommandOptions<TId>,
+    locale: SupportedOutputLocale,
+    key: 'success' | 'alreadyConfigured' | 'notFound',
+    values: { username: string; channelId?: string },
+): string {
+    if (opts.copyNamespace) return createSubscriptionTranslator(locale)(`${opts.copyNamespace}.${key}`, values);
+    if (key === 'success') return resolveLocaleValue(locale, opts.successMessages!)({ username: values.username, channelId: values.channelId! });
+    if (key === 'alreadyConfigured') return resolveLocaleValue(locale, opts.alreadyConfiguredMessages!)({ username: values.username });
+    return resolveLocaleValue(locale, opts.notFoundMessages!)({ username: values.username });
 }

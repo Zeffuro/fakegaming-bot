@@ -1,5 +1,10 @@
 import Parser from 'rss-parser';
-import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getLogger,
+    getOutputLocaleMetadata,
+    type SupportedOutputLocale,
+} from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { fetchYouTubeChannelPageLatestVideo, getHttpStatusFromError } from '../utils/youtubePublic.js';
@@ -24,11 +29,6 @@ interface YoutubeChannelConfigPlain {
     lastNotifiedAt?: string | number | Date | null;
     paused?: boolean | null;
 }
-
-const DURATION_HOUR_UNITS = {
-    en: 'h',
-    nl: 'u',
-} as const satisfies OutputLocaleValues<string>;
 
 interface YoutubeFeedItem {
     ['yt:videoId']?: string;
@@ -98,7 +98,7 @@ function formatYoutubeDuration(iso8601: string, locale: SupportedOutputLocale): 
     const seconds = m[4] ? Number(m[4]) : 0;
     const parts: string[] = [];
     if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}${resolveLocaleValue(locale, DURATION_HOUR_UNITS)}`);
+    if (hours > 0) parts.push(`${hours}${apiText(locale, 'durationHourUnit')}`);
     if (minutes > 0) parts.push(`${minutes}m`);
     if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
     return parts.join(' ');
@@ -196,7 +196,9 @@ export function buildYoutubeEmbedPayload(
         const count = Number(details.viewCount);
         fields.push({
             name: apiText(locale, 'youtubeViews'),
-            value: Number.isFinite(count) ? new Intl.NumberFormat(locale).format(count) : details.viewCount,
+            value: Number.isFinite(count)
+                ? new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(count)
+                : details.viewCount,
             inline: true,
         });
     }
@@ -208,7 +210,7 @@ export function buildYoutubeEmbedPayload(
         url: urlSafe,
         duration: details?.duration ? (formatYoutubeDuration(details.duration, locale) ?? '') : '',
         views: details?.viewCount && Number.isFinite(Number(details.viewCount))
-            ? new Intl.NumberFormat(locale).format(Number(details.viewCount))
+            ? new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(Number(details.viewCount))
             : details?.viewCount ?? ''
     };
     return buildDiscordNotificationPayload({

@@ -1,4 +1,5 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
+import {DEFAULT_OUTPUT_LOCALE} from '@zeffuro/fakegaming-common';
 import { AttachmentBuilder, ChatInputCommandInteraction, MessageFlags, SlashCommandBuilder, type GuildMember } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { parseStoredQuoteTags } from '@zeffuro/fakegaming-common/utils';
@@ -23,9 +24,7 @@ interface QuoteCardRow {
 const data = createSlashCommand(META, (builder: SlashCommandBuilder) => {
     builder.addStringOption(option => option
         .setName('id')
-        .setNameLocalization('nl', 'id')
         .setDescription('Quote ID or short ID. Leave empty for a random approved quote.')
-        .setDescriptionLocalization('nl', 'Citaat-ID of verkort ID. Laat leeg voor een willekeurig goedgekeurd citaat.')
         .setRequired(false));
 });
 
@@ -33,7 +32,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const locale = await resolveInteractionOutputLocale(interaction);
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({ content: resolveLocaleValue(locale, { en: 'Quote cards only work in a server.', nl: 'Citaatkaarten werken alleen op een server.' }), flags: MessageFlags.Ephemeral });
+        await interaction.reply({ content: runtimeText(locale, "quotes", "quoteCardsOnlyWorkInAServer"), flags: MessageFlags.Ephemeral });
         return;
     }
 
@@ -49,12 +48,12 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     }
 
     if (!quote) {
-        await interaction.editReply(resolveLocaleValue(locale, { en: idInput ? 'Quote not found in this server.' : 'No approved quotes found for this server.', nl: idInput ? 'Citaat niet gevonden op deze server.' : 'Geen goedgekeurde citaten gevonden op deze server.' }));
+        await interaction.editReply(runtimeText(locale, 'quotes', 'quoteCardMissing', {hasId: String(Boolean(idInput))}));
         return;
     }
 
     if (normalizeQuoteModerationStatus(quote.moderationStatus) !== 'approved') {
-        await interaction.editReply(resolveLocaleValue(locale, { en: 'That quote is not approved yet. Approve it before rendering a card.', nl: 'Dat citaat is nog niet goedgekeurd. Keur het goed voordat je een kaart maakt.' }));
+        await interaction.editReply(runtimeText(locale, "quotes", "thatQuoteIsNotApprovedYetApproveIt"));
         return;
     }
 
@@ -73,11 +72,13 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         context: normalizeOptionalText(quote.context),
         guildName: interaction.guild?.name ?? null,
     };
-    const buffer = resolveLocaleValue(locale, { en: renderQuoteCard(cardInput), nl: renderQuoteCard(cardInput, { locale }) });
+    const buffer = locale === DEFAULT_OUTPUT_LOCALE
+        ? renderQuoteCard(cardInput)
+        : renderQuoteCard(cardInput, {locale});
     const attachment = new AttachmentBuilder(buffer, { name: buildQuoteCardFilename(quote.id) });
 
     await interaction.editReply({
-        content: resolveLocaleValue(locale, { en: `Quote card for <@${quote.authorId}>`, nl: `Citaatkaart voor <@${quote.authorId}>` }),
+        content: runtimeText(locale, 'quotes', 'quoteCardFor', {authorId: quote.authorId}),
         files: [attachment],
     });
 }
@@ -87,7 +88,7 @@ function findQuoteByIdInput(quotes: readonly QuoteCardRow[], input: string, loca
         const id = quote.id.toLowerCase();
         return id === input || id.startsWith(input);
     });
-    if (matches.length > 1) return resolveLocaleValue(locale, { en: 'That short quote ID matches multiple quotes. Use more characters from the ID.', nl: 'Dat verkorte citaat-ID komt overeen met meerdere citaten. Gebruik meer tekens van het ID.' });
+    if (matches.length > 1) return runtimeText(locale, 'quotes', 'ambiguousShortId');
     return matches[0] ?? null;
 }
 
@@ -108,7 +109,7 @@ async function resolveDisplayName(interaction: ChatInputCommandInteraction, user
         // Fall back to a stable label if the member cannot be fetched.
     }
 
-    return `${resolveLocaleValue(locale, { en: 'Discord user', nl: 'Discord-gebruiker' })} ${userId.slice(-6)}`;
+    return `${runtimeText(locale, "quotes", "discordUser")} ${userId.slice(-6)}`;
 }
 
 function normalizeQuoteModerationStatus(value: string | null | undefined): string {

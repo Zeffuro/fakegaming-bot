@@ -1,4 +1,5 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
+import {runtimeText} from '../../../core/runtimeCopy.js';
 import {CanvasRenderingContext2D, Image, createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {
@@ -98,7 +99,7 @@ async function drawMatchRow(
 function drawMatchInfo(ctx: CanvasRenderingContext2D, match: TftMatchDto, participant: TftParticipantDto, x: number, y: number, placementColor: string, locale: SupportedOutputLocale): void {
     const mode = getTftModeLabel(match, locale);
     const placementLabel = getPlacementLabel(participant.placement, locale);
-    const result = participant.placement <= 4 ? 'Top 4' : leagueText(locale, { en: 'Bottom 4', nl: 'Onderste 4' });
+    const result = participant.placement <= 4 ? 'Top 4' : leagueText(locale, "bottom4");
     const timestamp = match.info.game_datetime;
     const elapsed = typeof timestamp === 'number' ? timeAgo(timestamp, undefined, locale) : '';
     const duration = formatDuration(Math.floor(match.info.game_length ?? participant.time_eliminated ?? 0), locale);
@@ -170,12 +171,12 @@ function drawEmptyUnitSlot(ctx: CanvasRenderingContext2D, x: number, y: number):
 function drawStats(ctx: CanvasRenderingContext2D, participant: TftParticipantDto, x: number, y: number, locale: SupportedOutputLocale): void {
     const carry = getCarryUnit(participant.units);
     const lines = [
-        {label: leagueText(locale, { en: 'Level', nl: 'Niveau' }), value: `${participant.level ?? '-'}`},
-        {label: leagueText(locale, { en: 'Round', nl: 'Ronde' }), value: formatTftRound(participant.last_round)},
-        {label: leagueText(locale, { en: 'Damage', nl: 'Schade' }), value: formatNumber(participant.total_damage_to_players)},
-        {label: leagueText(locale, { en: 'Elims', nl: 'Elims' }), value: `${participant.players_eliminated ?? 0}`},
-        {label: leagueText(locale, { en: 'Gold', nl: 'Goud' }), value: `${participant.gold_left ?? 0}`},
-        {label: leagueText(locale, { en: 'Carry', nl: 'Carry' }), value: carry ? getTftUnitDisplayName(carry) : '-'},
+        {label: leagueText(locale, "level"), value: `${participant.level ?? '-'}`},
+        {label: leagueText(locale, "round"), value: formatTftRound(participant.last_round)},
+        {label: leagueText(locale, "damage"), value: formatNumber(participant.total_damage_to_players)},
+        {label: leagueText(locale, "elims"), value: `${participant.players_eliminated ?? 0}`},
+        {label: leagueText(locale, "gold"), value: `${participant.gold_left ?? 0}`},
+        {label: leagueText(locale, "carry"), value: carry ? getTftUnitDisplayName(carry) : '-'},
     ];
 
     ctx.save();
@@ -319,7 +320,7 @@ async function getFirstAvailableAsset(urls: string[], assetName: string, type: s
 function getTftModeLabel(match: TftMatchDto, locale: SupportedOutputLocale): string {
     const queueName = match.info.queue_id ? queueMapper[match.info.queue_id] : undefined;
     const gameType = match.info.tft_game_type ? titleCase(match.info.tft_game_type) : undefined;
-    const setLabel = match.info.tft_set_number ? `${leagueText(locale, { en: 'Set', nl: 'Set' })} ${match.info.tft_set_number}` : 'TFT';
+    const setLabel = match.info.tft_set_number ? `${leagueText(locale, "set")} ${match.info.tft_set_number}` : 'TFT';
     return [queueName ?? gameType ?? 'TFT', setLabel].filter(Boolean).join(' - ');
 }
 
@@ -349,13 +350,8 @@ function normalizeTftItemKey(value: string): string {
 
 function getPlacementLabel(placement: number, locale: SupportedOutputLocale): string {
     if (!placement) return '-';
-    return resolveLocaleValue(locale, {
-        en: () => {
-            const suffix = placement === 1 ? 'st' : placement === 2 ? 'nd' : placement === 3 ? 'rd' : 'th';
-            return `${placement}${suffix}`;
-        },
-        nl: () => `${placement}e`,
-    })();
+    const key = placement === 1 ? 'placementSt' : placement === 2 ? 'placementNd' : placement === 3 ? 'placementRd' : 'placementTh';
+    return runtimeText(locale, 'league', key, {placement});
 }
 
 function getRowColor(placement: number): string {

@@ -1,0 +1,70 @@
+{
+    "add-tiktok-stream": {
+        "name": "tiktok-stream-toevoegen",
+        "description": "Voeg een TikTok-account toe voor livemeldingen",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "TikTok-gebruikersnaam (met of zonder @)"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Discord-kanaal voor meldingen"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Aangepast meldingsbericht (optioneel)"
+            }
+        }
+    },
+    "manage-tiktok-streams": {
+        "name": "tiktok-streams-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder TikTok-livemeldingen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde TikTok-streams"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld TikTok-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van tiktok-streams-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld TikTok-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van tiktok-streams-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld TikTok-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van tiktok-streams-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld TikTok-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van tiktok-streams-beheren"
+                    }
+                }
+            }
+        }
+    }
+}

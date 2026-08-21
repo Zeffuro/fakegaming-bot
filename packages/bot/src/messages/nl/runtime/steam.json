@@ -1,0 +1,9 @@
+{
+    "appNotFound": "Ik kon geen Steam-app vinden voor `{query}`. Probeer een Steam-winkel-URL of app-ID.",
+    "multipleAppsMatched": "Meerdere Steam-apps kwamen overeen met `{query}`. Kies er een via automatisch aanvullen of plak een Steam-winkel-URL/app-ID.",
+    "steamApp": "Steam-app",
+    "appLookupFailed": "Steam-apps zoeken is momenteel mislukt. Probeer het later opnieuw.",
+    "alreadyConfigured": "Steamnieuws voor `{appName}` is al ingesteld in <#{channelId}>.",
+    "subscribed": "<#{channelId}> is geabonneerd op Steamnieuws voor `{appName}` ({storeUrl}).",
+    "thisCommandCanOnlyBeUsedInA": "Deze opdracht kan alleen op een server worden gebruikt."
+}

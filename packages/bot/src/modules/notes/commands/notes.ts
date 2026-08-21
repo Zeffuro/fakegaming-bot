@@ -17,70 +17,52 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('add')
-                .setNameLocalization('nl', 'toevoegen')
                 .setDescription('Save a personal note')
-                .setDescriptionLocalization('nl', 'Sla een persoonlijke notitie op')
                 .addStringOption((option) =>
                     option
                         .setName('body')
-                        .setNameLocalization('nl', 'inhoud')
                         .setDescription('Note text')
-                        .setDescriptionLocalization('nl', 'Tekst van de notitie')
                         .setRequired(true)
                         .setMaxLength(2000)
                 )
                 .addStringOption((option) =>
                     option
                         .setName('title')
-                        .setNameLocalization('nl', 'titel')
                         .setDescription('Optional note title')
-                        .setDescriptionLocalization('nl', 'Optionele titel van de notitie')
                         .setRequired(false)
                         .setMaxLength(160)
                 )
                 .addBooleanOption((option) =>
                     option
                         .setName('pinned')
-                        .setNameLocalization('nl', 'vastgezet')
                         .setDescription('Pin this note to the top of your list')
-                        .setDescriptionLocalization('nl', 'Zet deze notitie bovenaan je lijst vast')
                         .setRequired(false)
                 )
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('list')
-                .setNameLocalization('nl', 'lijst')
                 .setDescription('List your personal notes')
-                .setDescriptionLocalization('nl', 'Toon je persoonlijke notities')
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('show')
-                .setNameLocalization('nl', 'tonen')
                 .setDescription('Show one of your notes')
-                .setDescriptionLocalization('nl', 'Toon een van je notities')
                 .addStringOption((option) =>
                     option
                         .setName('note')
-                        .setNameLocalization('nl', 'notitie')
                         .setDescription('Note number from /notes list or its short ID')
-                        .setDescriptionLocalization('nl', 'Nummer uit /notities lijst of het korte ID')
                         .setRequired(true)
                 )
         )
         .addSubcommand((subcommand) =>
             subcommand
                 .setName('delete')
-                .setNameLocalization('nl', 'verwijderen')
                 .setDescription('Delete one of your notes')
-                .setDescriptionLocalization('nl', 'Verwijder een van je notities')
                 .addStringOption((option) =>
                     option
                         .setName('note')
-                        .setNameLocalization('nl', 'notitie')
                         .setDescription('Note number from /notes list or its short ID')
-                        .setDescriptionLocalization('nl', 'Nummer uit /notities lijst of het korte ID')
                         .setRequired(true)
                 )
         )

@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -15,10 +15,7 @@ interface TikTokManagementRecord extends IntegrationManagementRecord {
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<TikTokManagementRecord>({
     meta: META,
-    subjects: {
-        singular: { en: 'TikTok stream', nl: 'TikTok-stream' },
-        plural: { en: 'TikTok streams', nl: 'TikTok-streams' },
-    },
+    subjectKey: 'tiktok',
     listRecords: async (guildId) => {
         const records = await getConfigManager().tiktokManager.getManyPlain({guildId});
         return records as unknown as TikTokManagementRecord[];
@@ -37,7 +34,7 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<TikTokManag
         const liveState = record.isLive ? ' live' : '';
         return `${inlineCode(String(record.id))} ${inlineCode(record.tiktokUsername)} -> <#${record.discordChannelId}>${liveState}`;
     },
-    describeRecord: (record, locale) => `${inlineCode(record.tiktokUsername)} ${resolveLocaleValue(locale, { en: 'from', nl: 'uit' })} <#${record.discordChannelId}>`,
+    describeRecord: (record, locale) => `${inlineCode(record.tiktokUsername)} ${runtimeText(locale, "tiktok", "from")} <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'tiktok.delete',
         targetType: 'tiktokConfig',

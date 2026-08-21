@@ -1,0 +1,83 @@
+{
+  "commands": {
+    "eyebrow": "Opdrachten",
+    "title": "Opdrachten beheren",
+    "description": "Schakel botmodules en afzonderlijke opdrachten in of uit en blijf zien welke opdrachten elke module bevat.",
+    "enabled": "Ingeschakelde opdrachten",
+    "modulesDisabled": "Uitgeschakelde modules",
+    "expandAll": "Alles uitvouwen",
+    "collapseAll": "Alles invouwen",
+    "search": "Opdrachten zoeken",
+    "showingOne": "1 opdracht getoond",
+    "showingMany": "{count} opdrachten getoond",
+    "noMatch": "Geen opdrachten komen overeen met je zoekopdracht.",
+    "moduleDisabled": "Module uitgeschakeld",
+    "enabledCount": "{enabled}/{total} ingeschakeld",
+    "expandModule": "{module} uitvouwen",
+    "collapseModule": "{module} invouwen",
+    "toggleModule": "De module {module} in- of uitschakelen",
+    "toggleCommand": "{command} in- of uitschakelen",
+    "module": {
+      "anime": {
+        "title": "Anime",
+        "description": "Anime-opdrachten"
+      },
+      "birthdays": {
+        "title": "Verjaardagen",
+        "description": "Verjaardagsopdrachten"
+      },
+      "bluesky": {
+        "title": "Bluesky",
+        "description": "Bluesky-opdrachten"
+      },
+      "gameNight": {
+        "title": "Spelavond",
+        "description": "Opdrachten voor spelavonden"
+      },
+      "general": {
+        "title": "Algemeen",
+        "description": "Algemene opdrachten"
+      },
+      "league": {
+        "title": "League",
+        "description": "Opdrachten voor League of Legends en Teamfight Tactics"
+      },
+      "notes": {
+        "title": "Notities",
+        "description": "Persoonlijke notitie-opdrachten"
+      },
+      "patchnotes": {
+        "title": "Patchnotes",
+        "description": "Patchnote-opdrachten"
+      },
+      "quotes": {
+        "title": "Citaten",
+        "description": "Citaatopdrachten"
+      },
+      "reminders": {
+        "title": "Herinneringen",
+        "description": "Herinneringsopdrachten"
+      },
+      "shared": {
+        "title": "Gedeeld",
+        "description": "Gedeelde opdrachten"
+      },
+      "steam": {
+        "title": "Steam",
+        "description": "Meldingsopdrachten voor Steam-spelnieuws"
+      },
+      "tiktok": {
+        "title": "TikTok",
+        "description": "TikTok-opdrachten"
+      },
+      "twitch": {
+        "title": "Twitch",
+        "description": "Twitch-opdrachten"
+      },
+      "youtube": {
+        "title": "YouTube",
+        "description": "YouTube-opdrachten"
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {MessageFlags, UserContextMenuCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createUserContextCommand, getTestOnly} from '../../../core/commandBuilder.js';
@@ -12,7 +12,7 @@ async function execute(interaction: UserContextMenuCommandInteraction): Promise<
     const locale = await resolveInteractionOutputLocale(interaction);
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({content: resolveLocaleValue(locale, { en: 'Quote lookup only works in a server.', nl: 'Citaten opzoeken werkt alleen op een server.' }), flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: runtimeText(locale, "quotes", "quoteLookupOnlyWorksInAServer"), flags: MessageFlags.Ephemeral});
         return;
     }
 

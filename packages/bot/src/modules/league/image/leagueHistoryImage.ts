@@ -1,4 +1,5 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
+import {runtimeText} from '../../../core/runtimeCopy.js';
 import {CanvasRenderingContext2D, Image, createCanvas, loadImage} from 'canvas';
 import {getAsset} from '../../../utils/assetCache.js';
 import {
@@ -152,7 +153,7 @@ function drawRowBackground(ctx: CanvasRenderingContext2D, win: boolean, mode: st
 function drawMatchInfo(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, participant: LeagueMatchParticipantDto, x: number, y: number, locale: SupportedOutputLocale): void {
     const mode = getModeLabel(match, locale);
     const elapsed = match.info.gameEndTimestamp ? timeAgo(match.info.gameEndTimestamp, undefined, locale) : '';
-    const result = participant.win ? leagueText(locale, { en: 'Victory', nl: 'Overwinning' }) : leagueText(locale, { en: 'Defeat', nl: 'Nederlaag' });
+    const result = participant.win ? leagueText(locale, "victory") : leagueText(locale, "defeat");
     const durationSec = participant.timePlayed || Math.floor((match.info.gameDuration || 0) / 1000);
     const modeColor = participant.win ? '#4fa3ff' : '#e05c5c';
     const resultColor = participant.win ? '#4fd18b' : '#e05c5c';
@@ -231,7 +232,7 @@ function drawStats(ctx: CanvasRenderingContext2D, match: LeagueMatchDto, partici
 function getStatLines(match: LeagueMatchDto, participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): { text: string; color: string; size: number; bold: boolean }[] {
     if (gameModeConvertMap[match.info.gameMode ?? ''] === 'Arena') {
         const placement = participant.placement ? String(participant.placement) : '-';
-        return [{text: `${leagueText(locale, { en: 'Placement', nl: 'Plaats' })}: ${placement}`, color: '#e05c5c', size: 15, bold: true}];
+        return [{text: `${leagueText(locale, "placement")}: ${placement}`, color: '#e05c5c', size: 15, bold: true}];
     }
 
     const team = match.info.participants.filter((p) => p.teamId === participant.teamId);
@@ -244,10 +245,10 @@ function getStatLines(match: LeagueMatchDto, participant: LeagueMatchParticipant
     const rank = getParticipantRank(participant, locale);
 
     return [
-        {text: `${killP}% ${leagueText(locale, { en: 'Kill P.', nl: 'Killdeelname' })}`, color: '#e05c5c', size: 13, bold: true},
+        {text: `${killP}% ${leagueText(locale, "killP")}`, color: '#e05c5c', size: 13, bold: true},
         {text: `${cs} CS (${csPerMin.toFixed(1)})`, color: '#cccccc', size: 13, bold: false},
-        {text: `${vision} ${leagueText(locale, { en: 'Vision', nl: 'Zicht' })}`, color: '#cccccc', size: 13, bold: false},
-        {text: rank, color: rank === leagueText(locale, { en: 'Unranked', nl: 'Ongerangschikt' }) ? MUTED_COLOR : '#cccccc', size: 13, bold: true},
+        {text: `${vision} ${leagueText(locale, "vision2")}`, color: '#cccccc', size: 13, bold: false},
+        {text: rank, color: rank === leagueText(locale, "unranked") ? MUTED_COLOR : '#cccccc', size: 13, bold: true},
     ];
 }
 
@@ -446,15 +447,13 @@ function getModeLabel(match: LeagueMatchDto, locale: SupportedOutputLocale): str
         : match.info.gameMode && gameModeConvertMap[match.info.gameMode]
             ? gameModeConvertMap[match.info.gameMode]
             : match.info.gameMode;
-    if (!label) return leagueText(locale, { en: 'Unknown', nl: 'Onbekend' });
-    const translations: Readonly<Record<string, string>> = resolveLocaleValue(locale, {
-        en: {},
-        nl: {
-            'Draft Pick': 'Draftkeuze', 'Blind Pick': 'Blinde keuze', 'Ranked Solo': 'Solo-ranglijst',
-            'Ranked Flex': 'Flex-ranglijst', Tutorial: 'Training', Arena: 'Arena', 'One for All': 'Een voor allen',
-        },
-    } satisfies OutputLocaleValues<Readonly<Record<string, string>>>);
-    return translations[label] ?? label;
+    if (!label) return leagueText(locale, "unknown");
+    const keys = {
+        'Draft Pick': 'modeDraftPick', 'Blind Pick': 'modeBlindPick', 'Ranked Solo': 'modeRankedSolo',
+        'Ranked Flex': 'modeRankedFlex', Tutorial: 'modeTutorial', Arena: 'modeArena', 'One for All': 'modeOneForAll',
+    } as const;
+    const key = keys[label as keyof typeof keys];
+    return key ? runtimeText(locale, 'league', key) : label;
 }
 
 function getResultColor(win: boolean, _mode: string): string {
@@ -463,21 +462,21 @@ function getResultColor(win: boolean, _mode: string): string {
 
 function getParticipantRank(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
     const rank = participant.tier ? `${participant.tier} ${participant.rank ?? ''}`.trim() : participant.leagueTier;
-    return rank || leagueText(locale, { en: 'Unranked', nl: 'Ongerangschikt' });
+    return rank || leagueText(locale, "unranked");
 }
 
 function getParticipantName(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
     if (participant.riotIdGameName && participant.riotIdTagline) {
         return `${participant.riotIdGameName}#${participant.riotIdTagline}`;
     }
-    return participant.riotIdGameName ?? participant.summonerName ?? participant.championName ?? `${leagueText(locale, { en: 'Champion', nl: 'Kampioen' })} ${participant.championId}`;
+    return participant.riotIdGameName ?? participant.summonerName ?? participant.championName ?? `${leagueText(locale, "champion")} ${participant.championId}`;
 }
 
 function getMultikillLabel(participant: LeagueMatchParticipantDto, locale: SupportedOutputLocale): string {
-    if ((participant as { pentaKills?: number }).pentaKills) return leagueText(locale, { en: 'Penta Kill', nl: 'Pentakill' });
-    if ((participant as { quadraKills?: number }).quadraKills) return leagueText(locale, { en: 'Quadra Kill', nl: 'Quadrakill' });
-    if ((participant as { tripleKills?: number }).tripleKills) return leagueText(locale, { en: 'Triple Kill', nl: 'Triplekill' });
-    if ((participant as { doubleKills?: number }).doubleKills) return leagueText(locale, { en: 'Double Kill', nl: 'Doublekill' });
+    if ((participant as { pentaKills?: number }).pentaKills) return leagueText(locale, "pentaKill");
+    if ((participant as { quadraKills?: number }).quadraKills) return leagueText(locale, "quadraKill");
+    if ((participant as { tripleKills?: number }).tripleKills) return leagueText(locale, "tripleKill");
+    if ((participant as { doubleKills?: number }).doubleKills) return leagueText(locale, "doubleKill");
     return '';
 }
 

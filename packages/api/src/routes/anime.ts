@@ -522,7 +522,7 @@ router.post('/', jwtAuth, validateBody(animeSubscribeRequestSchema), requireGuil
 
 function formatAnimeSubscriptionStatus(status: string | null | undefined, locale: SupportedOutputLocale): string {
     if (!status) return apiText(locale, 'animeNotSubscribableStatus');
-    return formatAniListStatus(status, locale).toLocaleLowerCase(getOutputLocaleMetadata(locale).languageTag);
+    return formatAniListStatus(status, locale).toLocaleLowerCase(getOutputLocaleMetadata(locale).formatTag);
 }
 
 /**

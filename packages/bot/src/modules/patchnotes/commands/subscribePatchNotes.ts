@@ -1,3 +1,4 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {
     SlashCommandBuilder,
@@ -16,8 +17,8 @@ import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('game').setNameLocalization('nl', 'spel').setDescription('Game to subscribe to').setDescriptionLocalization('nl', 'Spel waarop je je wilt abonneren').setRequired(true).setAutocomplete(true))
-        .addChannelOption(option => option.setName('channel').setNameLocalization('nl', 'kanaal').setDescription('Channel to receive patch notes').setDescriptionLocalization('nl', 'Kanaal dat patchnotes ontvangt').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
+        .addStringOption(option => option.setName('game').setDescription('Game to subscribe to').setRequired(true).setAutocomplete(true))
+        .addChannelOption(option => option.setName('channel').setDescription('Channel to receive patch notes').setRequired(true).addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement))
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 );
 
@@ -33,11 +34,11 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const latestPatch = await getConfigManager().patchNotesManager.getLatestPatch(game);
     if (latestPatch) {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: `Subscribed <#${channel.id}> to patch notes for \`${game}\`. Latest patch:`, nl: `<#${channel.id}> geabonneerd op patchnotes voor \`${game}\`. Nieuwste patch:` }),
+            content: runtimeText(locale, 'patchnotes', 'subscribedToPatchNotesForLatestPatch', {channelId: channel.id, game}),
             embeds: [resolveLocaleValue(locale, { en: buildPatchNoteEmbed(latestPatch), nl: buildPatchNoteEmbed(latestPatch, locale) })]
         });
     } else {
-        await interaction.reply(resolveLocaleValue(locale, { en: `Subscribed <#${channel.id}> to patch notes for \`${game}\`.`, nl: `<#${channel.id}> geabonneerd op patchnotes voor \`${game}\`.` }));
+        await interaction.reply(runtimeText(locale, 'patchnotes', 'subscribedToPatchNotesFor', {channelId: channel.id, game}));
     }
 }
 

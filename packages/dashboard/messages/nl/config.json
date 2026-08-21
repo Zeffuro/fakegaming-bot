@@ -1,0 +1,32 @@
+{
+  "config": {
+    "searchProviderHelp": "Zoek in {module} op naam, app-ID of URL",
+    "enterProviderField": "Voer {field} voor {module} in",
+    "cooldownHelp": "Minimumaantal minuten tussen meldingen (optioneel)",
+    "time24hHelp": "HH:mm (24 uur)",
+    "vodFollowup": "VOD-opvolging",
+    "vodDelay": "VOD-vertraging (minuten)",
+    "vodDelayHelp": "Wacht na offline gaan voordat het nieuwste archief wordt gecontroleerd",
+    "youtubeTemplateHelp": "Tokens: {title}, {channel}, {url}, {duration}, {views}. Als {url} ontbreekt, wordt deze automatisch toegevoegd.",
+    "youtubeTemplatePlaceholder": "Nieuwe video van {channel}: {title} {url}",
+    "youtubeTemplateExample": "Voorbeeld: nieuwe video van {channel}: {title} {url}",
+    "blueskyTemplateHelp": "Tokens: {author}, {handle}, {text}, {url}, {likes}, {reposts}, {replies}. Als {url} ontbreekt, wordt deze automatisch toegevoegd.",
+    "blueskyTemplatePlaceholder": "Nieuw bericht van {author}: {text} {url}",
+    "blueskyTemplateExample": "Voorbeeld: nieuw bericht van {author}: {text} {url}",
+    "streamTemplateHelp": "Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers}. Als {url} ontbreekt, wordt deze automatisch toegevoegd.",
+    "streamTemplatePlaceholder": "{streamer} is nu live! {url}",
+    "streamTemplateExample": "{streamer} is live: {title} {url}",
+    "typeAtLeastTwoCharacters": "Typ minstens 2 tekens",
+    "noGamesFound": "Geen spellen gevonden",
+    "loadingChannels": "Kanalen laden...",
+    "noChannelsAvailable": "Geen kanalen beschikbaar",
+    "failingCount": "Mislukt x{count}",
+    "lastChecked": "Laatst gecontroleerd: {value}",
+    "lastDelivery": "Laatste bezorging: {value}",
+    "lastErrorCode": "Laatste foutcode: {value}",
+    "channel": "Kanaal",
+    "channels": "Kanalen",
+    "streamer": "Streamer",
+    "streamers": "Streamers"
+  }
+}

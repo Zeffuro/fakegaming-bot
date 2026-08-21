@@ -1,4 +1,5 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from './outputLocale.js';
+import { createCommonTranslator } from '../messages/index.js';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from './outputLocale.js';
 
 export type ReminderRecurrenceUnit = 'day' | 'week' | 'month';
 
@@ -21,27 +22,11 @@ const maxIntervalByUnit: Record<ReminderRecurrenceUnit, number> = {
 };
 const dayMs = 24 * 60 * 60 * 1000;
 
-const RECURRENCE_COPY = {
-    en: {
-        every: 'Every',
-        units: {
-            day: ['day', 'days'],
-            week: ['week', 'weeks'],
-            month: ['month', 'months'],
-        },
-    },
-    nl: {
-        every: 'Elke',
-        units: {
-            day: ['dag', 'dagen'],
-            week: ['week', 'weken'],
-            month: ['maand', 'maanden'],
-        },
-    },
-} as const satisfies OutputLocaleValues<{
-    every: string;
-    units: Record<ReminderRecurrenceUnit, readonly [string, string]>;
-}>;
+const RECURRENCE_UNIT_KEYS = {
+    day: 'shared.recurrence.unit.day',
+    week: 'shared.recurrence.unit.week',
+    month: 'shared.recurrence.unit.month',
+} as const;
 
 export function parseReminderRecurrence(input: string, timezone: string): ReminderRecurrenceRule | null {
     const normalizedTimezone = normalizeTimezone(timezone);
@@ -85,11 +70,13 @@ export function getNextRecurringReminderTimestamp(input: NextRecurringReminderIn
 }
 
 export function formatReminderRecurrence(rule: ReminderRecurrenceRule, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
-    const copy = resolveLocaleValue(locale, RECURRENCE_COPY);
-    const unitLabel = copy.units[rule.unit][rule.interval === 1 ? 0 : 1];
-    return rule.interval === 1
-        ? `${copy.every} ${unitLabel} (${rule.timezone})`
-        : `${copy.every} ${rule.interval} ${unitLabel} (${rule.timezone})`;
+    const t = createCommonTranslator(locale);
+    const unit = t(RECURRENCE_UNIT_KEYS[rule.unit], { interval: rule.interval });
+    return t('shared.recurrence.every', {
+        interval: rule.interval,
+        timezone: rule.timezone,
+        unit,
+    });
 }
 
 function buildRule(interval: number, unit: ReminderRecurrenceUnit | null, timezone: string): ReminderRecurrenceRule | null {

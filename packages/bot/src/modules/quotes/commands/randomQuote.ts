@@ -1,4 +1,5 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
+import {getOutputLocaleMetadata} from '@zeffuro/fakegaming-common';
 import { ChatInputCommandInteraction } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
@@ -13,7 +14,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const quotes = await getConfigManager().quoteManager.getQuotesByGuild(guildId);
 
     if (!quotes.length) {
-        await interaction.reply(resolveLocaleValue(locale, { en: 'No quotes found for this server.', nl: 'Geen citaten gevonden op deze server.' }));
+        await interaction.reply(runtimeText(locale, "quotes", "noQuotesFoundForThisServer"));
         return;
     }
 
@@ -21,8 +22,8 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const tsRaw = (random as { timestamp: number | string | null | undefined }).timestamp;
     const ts = typeof tsRaw === 'string' ? Number(tsRaw) : tsRaw ?? 0;
     const dateStr = Number.isFinite(ts) && ts > 0
-        ? new Date(ts).toLocaleString(resolveLocaleValue(locale, { en: 'en-US', nl: 'nl-NL' }))
-        : resolveLocaleValue(locale, { en: 'Unknown date', nl: 'Onbekende datum' });
+        ? new Date(ts).toLocaleString(getOutputLocaleMetadata(locale).formatTag)
+        : runtimeText(locale, "quotes", "unknownDate");
     await interaction.reply(`> ${random.quote}\n- <@${random.authorId}> (${dateStr})`);
 }
 

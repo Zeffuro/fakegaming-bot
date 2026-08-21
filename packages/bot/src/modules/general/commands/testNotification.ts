@@ -10,18 +10,14 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addChannelOption(option =>
             option
                 .setName('channel')
-                .setNameLocalization('nl', 'kanaal')
                 .setDescription('Channel to send the test notification to')
-                .setDescriptionLocalization('nl', 'Kanaal waar de testmelding naartoe wordt gestuurd')
                 .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
                 .setRequired(false)
         )
         .addStringOption(option =>
             option
                 .setName('message')
-                .setNameLocalization('nl', 'bericht')
                 .setDescription('Optional custom test message')
-                .setDescriptionLocalization('nl', 'Optioneel aangepast testbericht')
                 .setRequired(false)
         )
 );

@@ -1,4 +1,9 @@
-import { DEFAULT_OUTPUT_LOCALE, getLogger, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getLogger,
+    getOutputLocaleMetadata,
+    type SupportedOutputLocale,
+} from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { getNotificationSuppression } from './notificationSuppression.js';
@@ -252,7 +257,7 @@ export function buildBlueskyEmbedAndContent(opts: {
     };
 
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
-    const numberFormatter = new Intl.NumberFormat(locale);
+    const numberFormatter = new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag);
     if (typeof post.likeCount === 'number') fields.push({ name: apiText(locale, 'blueskyLikes'), value: numberFormatter.format(post.likeCount), inline: true });
     if (typeof post.repostCount === 'number') fields.push({ name: apiText(locale, 'blueskyReposts'), value: numberFormatter.format(post.repostCount), inline: true });
     if (typeof post.replyCount === 'number') fields.push({ name: apiText(locale, 'blueskyReplies'), value: numberFormatter.format(post.replyCount), inline: true });

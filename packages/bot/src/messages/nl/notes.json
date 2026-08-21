@@ -1,0 +1,21 @@
+{
+    "unknown": "Onbekende notitieopdracht.",
+    "bodyRequired": "Voeg tekst toe voordat je de notitie opslaat.",
+    "saved": "Notitie `{id}` opgeslagen: {title}",
+    "none": "Je hebt geen opgeslagen notities.",
+    "title": "Je notities:",
+    "more": "\n...en nog {count}.",
+    "notFound": "Notitie niet gevonden. Gebruik `/notities lijst` om je notities te bekijken.",
+    "pinned": "vastgezet",
+    "noBody": "_Geen inhoud_",
+    "deleted": "Notitie `{id}` verwijderd: {title}",
+    "savedMessageTitle": "Opgeslagen bericht",
+    "emptyMessage": "[Bericht bevat geen tekst.]",
+    "source": "Bron",
+    "messageContains": "[Bericht bevat {parts}; bestanden zijn niet gedownload.]",
+    "attachments": "{count, plural, one {# bijlage} other {# bijlagen}}",
+    "stickers": "{count, plural, one {# sticker} other {# stickers}}",
+    "and": "en",
+    "contextSaved": "Dit bericht is als `{id}` opgeslagen in je privénotities.",
+    "contextFailed": "Ik kon dat bericht niet opslaan in je privénotities. Probeer het later opnieuw."
+}

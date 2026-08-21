@@ -13,39 +13,29 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
         .addIntegerOption(option =>
             option.setName('day')
-                .setNameLocalization('nl', 'dag')
                 .setDescription('Day of your birthday (1-31)')
-                .setDescriptionLocalization('nl', 'Dag van je verjaardag (1-31)')
                 .setRequired(true)
         )
         .addStringOption(option =>
             option.setName('month')
-                .setNameLocalization('nl', 'maand')
                 .setDescription('Month of your birthday')
-                .setDescriptionLocalization('nl', 'Maand van je verjaardag')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addIntegerOption(option =>
             option.setName('year')
-                .setNameLocalization('nl', 'jaar')
                 .setDescription('Year of your birthday (optional)')
-                .setDescriptionLocalization('nl', 'Geboortejaar (optioneel)')
                 .setRequired(false)
         )
         .addChannelOption(option =>
             option.setName('channel')
-                .setNameLocalization('nl', 'kanaal')
                 .setDescription('Channel to post your birthday message (defaults to current channel)')
-                .setDescriptionLocalization('nl', 'Kanaal voor de verjaardagsmelding (standaard het huidige kanaal)')
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(false)
         )
         .addUserOption(option =>
             option.setName('user')
-                .setNameLocalization('nl', 'gebruiker')
                 .setDescription('User to set birthday for (admins only)')
-                .setDescriptionLocalization('nl', 'Gebruiker voor wie je de verjaardag instelt (alleen beheerders)')
                 .setRequired(false)
         )
 );

@@ -1,0 +1,16 @@
+{
+    "title": "Question Deck",
+    "anotherQuestion": "Another question",
+    "categoryUnavailable": "That question category is not available.",
+    "questionsUnavailable": "No questions are available in that category.",
+    "buttonUnavailable": "This question button is not available.",
+    "categoryFooter": "Category: {category}",
+    "category": {
+        "any": "Any category",
+        "gaming": "Gaming",
+        "silly": "Silly",
+        "would-you-rather": "Would you rather",
+        "getting-to-know-you": "Getting to know you",
+        "deep": "Deep"
+    }
+}

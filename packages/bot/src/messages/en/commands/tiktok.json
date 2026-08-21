@@ -1,0 +1,70 @@
+{
+    "add-tiktok-stream": {
+        "name": "add-tiktok-stream",
+        "description": "Add a TikTok account for live notifications",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "TikTok username (with or without @)"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Discord channel for notifications"
+            },
+            "message": {
+                "name": "message",
+                "description": "Custom notification message (optional)"
+            }
+        }
+    },
+    "manage-tiktok-streams": {
+        "name": "manage-tiktok-streams",
+        "description": "List, test, pause, resume, or remove TikTok live notifications",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured TikTok streams"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured TikTok stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-tiktok-streams list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured TikTok stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-tiktok-streams list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured TikTok stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-tiktok-streams list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured TikTok stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-tiktok-streams list"
+                    }
+                }
+            }
+        }
+    }
+}

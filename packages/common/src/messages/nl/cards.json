@@ -1,0 +1,18 @@
+{
+  "profile": {
+    "profile": "profiel",
+    "fakeGamingProfile": "FakeGaming-profiel",
+    "serverNickname": "Serverbijnaam",
+    "globalName": "Globale naam",
+    "discordId": "Discord-ID",
+    "discordUser": "Discord-gebruiker"
+  },
+  "quote": {
+    "fallbackTitle": "FakeGaming Citaten",
+    "submittedBy": "ingediend door",
+    "submittedByUser": "ingediend door {name}",
+    "unknownAuthor": "Onbekende auteur",
+    "discordUser": "Discord-gebruiker",
+    "discordUserSuffix": "Discord-gebruiker {suffix}"
+  }
+}

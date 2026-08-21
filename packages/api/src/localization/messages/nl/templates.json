@@ -1,0 +1,89 @@
+{
+  "definitions": {
+    "channelSlots": {
+      "live": {
+        "label": "Kanaal voor livemeldingen",
+        "description": "Bestemming voor Twitch-livemeldingen."
+      },
+      "videos": {
+        "label": "Kanaal voor videomeldingen",
+        "description": "Bestemming voor meldingen over YouTube-uploads."
+      },
+      "patches": {
+        "label": "Kanaal voor patchnotities",
+        "description": "Bestemming voor patchnotities van games."
+      },
+      "anime": {
+        "label": "Animekanaal",
+        "description": "Bestemming voor herinneringen aan anime-afleveringen."
+      },
+      "steamNews": {
+        "label": "Kanaal voor Steam-nieuws",
+        "description": "Bestemming voor officiële nieuwsberichten van Steam."
+      }
+    },
+    "inputGroups": {
+      "twitchUsernames": {
+        "label": "Twitch-gebruikersnamen",
+        "description": "Twitch-aanmeldnamen waarvoor je livemeldingen wilt ontvangen.",
+        "placeholder": "riotgames\ncohhcarnage"
+      },
+      "youtubeChannelIds": {
+        "label": "YouTube-kanaal-ID's",
+        "description": "YouTube-kanaal-ID's die met UC beginnen.",
+        "placeholder": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+      },
+      "patchGames": {
+        "label": "Games met patchnotities",
+        "description": "Namen van games die door de patchnotitiefeed worden ondersteund.",
+        "placeholder": "League of Legends\nValorant"
+      },
+      "animeIds": {
+        "label": "AniList-ID's",
+        "description": "Numerieke AniList-ID's van series die je wilt volgen.",
+        "placeholder": "154587\n170942"
+      },
+      "steamApps": {
+        "label": "Steam-apps",
+        "description": "Steam-app-ID's met optionele namen.",
+        "placeholder": "730: Counter-Strike 2\n570: Dota 2"
+      }
+    },
+    "templates": {
+      "streamer-alerts": {
+        "name": "Streamermeldingen",
+        "description": "Maak live- en uploadroutes voor makers die je server volgt."
+      },
+      "patch-notes": {
+        "name": "Patchnotities",
+        "description": "Maak een gericht patchnotitiekanaal voor de games die je server speelt."
+      },
+      "anime-club": {
+        "name": "Animeclub",
+        "description": "Maak herinneringen aan anime-afleveringen voor een gedeeld kijkkanaal."
+      },
+      "gaming-community": {
+        "name": "Gamecommunity",
+        "description": "Combineer meldingen van makers, patchnotities, animeherinneringen en Steam-nieuws."
+      }
+    }
+  },
+  "messages": {
+    "recordMissingRoute": "Bij deze configuratie ontbreekt een provider, bron of Discord-kanaal.",
+    "routeExists": "Deze route voor provider, bron en kanaal bestaat al.",
+    "sourceExists": "Deze provider en bron bestaan al in deze server; toepassen zou het kanaal wijzigen.",
+    "addInput": "Voeg ten minste een invoer toe voordat je deze instellingen toepast.",
+    "invalidTwitchUsername": "Ongeldige Twitch-gebruikersnaam",
+    "twitchUsernameRequired": "De Twitch-gebruikersnaam is verplicht.",
+    "invalidYouTubeChannel": "Ongeldig YouTube-kanaal",
+    "youtubeChannelRequired": "Voor YouTube-sjablonen is een kanaal-ID dat met UC begint verplicht.",
+    "invalidPatchGame": "Ongeldige game voor patchnotities",
+    "patchGameRequired": "Een game voor patchnotities is verplicht.",
+    "invalidAniListId": "Ongeldige AniList-ID",
+    "anilistIdRequired": "De AniList-ID moet een positief geheel getal zijn.",
+    "invalidSteamApp": "Ongeldige Steam-app",
+    "steamAppIdRequired": "De Steam-app-ID moet een positief geheel getal zijn.",
+    "missingChannel": "Kanaal ontbreekt",
+    "channelRequired": "{label} is verplicht voor {provider}."
+  }
+}

@@ -1,0 +1,234 @@
+{
+    "help": {
+        "name": "help",
+        "description": "List all available commands and their descriptions."
+    },
+    "calendar": {
+        "name": "calendar",
+        "description": "Show upcoming birthdays and your reminders",
+        "options": {
+            "days": {
+                "name": "days",
+                "description": "How many days ahead to show"
+            }
+        }
+    },
+    "poll": {
+        "name": "poll",
+        "description": "Create a button poll with live results",
+        "options": {
+            "question": {
+                "name": "question",
+                "description": "The poll question"
+            },
+            "option1": {
+                "name": "option1",
+                "description": "Option 1"
+            },
+            "option2": {
+                "name": "option2",
+                "description": "Option 2"
+            },
+            "option3": {
+                "name": "option3",
+                "description": "Option 3"
+            },
+            "option4": {
+                "name": "option4",
+                "description": "Option 4"
+            },
+            "option5": {
+                "name": "option5",
+                "description": "Option 5"
+            },
+            "duration": {
+                "name": "duration",
+                "description": "Minutes before this poll closes (default: 10)"
+            }
+        }
+    },
+    "question": {
+        "name": "question",
+        "description": "Draw a conversation question from a local deck",
+        "options": {
+            "category": {
+                "name": "category",
+                "description": "Choose a question category",
+                "choices": {
+                    "any": "Any category",
+                    "gaming": "Gaming",
+                    "silly": "Silly",
+                    "would-you-rather": "Would you rather",
+                    "getting-to-know-you": "Getting to know you",
+                    "deep": "Deep"
+                }
+            },
+            "private": {
+                "name": "private",
+                "description": "Show the question only to you"
+            }
+        }
+    },
+    "permissions-backup": {
+        "name": "permissions-backup",
+        "description": "Save and export role, category, and channel permissions",
+        "options": {
+            "create": {
+                "name": "create",
+                "description": "Capture role, member, category, and channel permissions"
+            },
+            "list": {
+                "name": "list",
+                "description": "List the most recent saved permission snapshots"
+            },
+            "export": {
+                "name": "export",
+                "description": "Download a saved permission snapshot",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Snapshot ID from the list"
+                    }
+                }
+            },
+            "delete": {
+                "name": "delete",
+                "description": "Permanently delete a saved permission snapshot",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Snapshot ID from the list"
+                    }
+                }
+            }
+        }
+    },
+    "occupy-channel": {
+        "name": "occupy-channel",
+        "description": "Keep a voice channel occupied while the bot is online",
+        "options": {
+            "enable": {
+                "name": "enable",
+                "description": "Keep a voice channel occupied while the bot is online",
+                "options": {
+                    "channel": {
+                        "name": "channel",
+                        "description": "Voice channel for the bot to occupy"
+                    }
+                }
+            },
+            "disable": {
+                "name": "disable",
+                "description": "Stop occupying the configured voice channel"
+            },
+            "status": {
+                "name": "status",
+                "description": "Show the occupied voice channel and connection state"
+            }
+        }
+    },
+    "profile-card": {
+        "name": "profile-card",
+        "description": "Render a Discord profile card",
+        "options": {
+            "user": {
+                "name": "user",
+                "description": "User to render. Defaults to you."
+            }
+        }
+    },
+    "roll": {
+        "name": "roll",
+        "description": "Roll dice or generate a random number",
+        "options": {
+            "dice": {
+                "name": "dice",
+                "description": "Dice notation or max number (e.g., 2d6, d20, or 100)"
+            }
+        }
+    },
+    "spin": {
+        "name": "spin",
+        "description": "Spin the wheel to pick someone!",
+        "options": {
+            "name1": {
+                "name": "name1",
+                "description": "Name 1"
+            },
+            "name2": {
+                "name": "name2",
+                "description": "Name 2"
+            },
+            "name3": {
+                "name": "name3",
+                "description": "Name 3"
+            },
+            "name4": {
+                "name": "name4",
+                "description": "Name 4"
+            },
+            "name5": {
+                "name": "name5",
+                "description": "Name 5"
+            },
+            "name6": {
+                "name": "name6",
+                "description": "Name 6"
+            },
+            "name7": {
+                "name": "name7",
+                "description": "Name 7"
+            },
+            "name8": {
+                "name": "name8",
+                "description": "Name 8"
+            },
+            "name9": {
+                "name": "name9",
+                "description": "Name 9"
+            },
+            "name10": {
+                "name": "name10",
+                "description": "Name 10"
+            }
+        }
+    },
+    "test-notification": {
+        "name": "test-notification",
+        "description": "Send a sample notification to a channel",
+        "options": {
+            "channel": {
+                "name": "channel",
+                "description": "Channel to send the test notification to"
+            },
+            "message": {
+                "name": "message",
+                "description": "Optional custom test message"
+            }
+        }
+    },
+    "time": {
+        "name": "time",
+        "description": "Convert a time into Discord timestamp formats",
+        "options": {
+            "time": {
+                "name": "time",
+                "description": "now, 20:30, 2026-06-11 20:30, ISO time, or Unix timestamp"
+            },
+            "timezone": {
+                "name": "timezone",
+                "description": "Timezone for wall-clock input. Defaults to your saved timezone or UTC"
+            }
+        }
+    },
+    "weather": {
+        "name": "weather",
+        "description": "Get the current weather and a short forecast for a specified location",
+        "options": {
+            "location": {
+                "name": "location",
+                "description": "City name or city,country (e.g., Rotterdam or Rotterdam,NL)"
+            }
+        }
+    }
+}

@@ -1,5 +1,5 @@
-import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
+import { DEFAULT_OUTPUT_LOCALE, getOutputLocaleMetadata } from '@zeffuro/fakegaming-common';
 export interface QuoteLike {
     quote: string;
     authorId: string;
@@ -10,8 +10,8 @@ export function formatQuoteDisplay(q: QuoteLike, locale: SupportedOutputLocale =
     const tsRaw = q.timestamp;
     const ts = typeof tsRaw === 'string' ? Number(tsRaw) : (tsRaw ?? 0);
     const dateStr = Number.isFinite(ts) && ts > 0
-        ? new Date(ts).toLocaleString(resolveLocaleValue(locale, { en: 'en-US', nl: 'nl-NL' }))
-        : quoteText(locale, { en: 'Unknown date', nl: 'Onbekende datum' });
+        ? new Date(ts).toLocaleString(getOutputLocaleMetadata(locale).formatTag)
+        : quoteText(locale, "unknownDate");
     return `> ${q.quote}\n- <@${q.authorId}> (${dateStr})`;
 }
 
@@ -21,10 +21,10 @@ export function formatQuotesBlock(quotes: readonly QuoteLike[], locale: Supporte
 
 export function formatQuotesForUser(userLabel: string, quotes: readonly QuoteLike[], locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
     if (quotes.length === 0) {
-        return resolveLocaleValue(locale, { en: `No quotes found for ${userLabel}.`, nl: `Geen citaten gevonden voor ${userLabel}.` });
+        return runtimeText(locale, 'quotes', 'noQuotesFoundFor', {user: userLabel});
     }
 
-    return `${quoteText(locale, { en: 'Quotes for', nl: 'Citaten van' })} ${userLabel}:\n${formatQuotesBlock(quotes, locale)}`;
+    return `${quoteText(locale, "quotesFor")} ${userLabel}:\n${formatQuotesBlock(quotes, locale)}`;
 }
 
 export function formatQuotePreview(text: string, maxLength = 180): string {

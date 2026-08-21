@@ -1,0 +1,260 @@
+{
+  "notificationsHub": {
+    "eyebrow": "Meldingen",
+    "title": "Meldingencentrum",
+    "description": "Beheer op een plek alle meldingsfeeds voor de server: livestreams, uploads, gamenieuws, patchnotities, anime-afleveringen en verjaardagsmeldingen.",
+    "configuredFeeds": "Ingestelde feeds",
+    "configuredCount": "{count} ingesteld",
+    "importJson": "JSON importeren",
+    "exportJson": "JSON exporteren",
+    "backSettings": "Terug naar instellingen",
+    "active": "actief",
+    "twitchTitle": "Twitch Live",
+    "twitchDescription": "Streammeldingen met doelkanalen, aangepaste berichten, afkoelperioden en stille uren.",
+    "twitchAction": "Twitch beheren",
+    "tiktokTitle": "TikTok Live",
+    "tiktokDescription": "Livestreammeldingen van makers met dezelfde kanaalroutering en meldingsopties als Twitch.",
+    "tiktokAction": "TikTok beheren",
+    "blueskyTitle": "Bluesky-berichten",
+    "blueskyDescription": "Berichtmeldingen met Discord-kanaalroutering, aangepaste berichten, afkoelperioden en stille uren.",
+    "blueskyAction": "Bluesky beheren",
+    "youtubeTitle": "YouTube-uploads",
+    "youtubeDescription": "Volg kanalen voor nieuwe uploads en plaats duidelijke videoaankondigingen op Discord.",
+    "youtubeAction": "YouTube beheren",
+    "steamTitle": "Steam-nieuws",
+    "steamDescription": "Officiële Steam-gameaankondigingen met doelkanalen, aangepaste berichten, afkoelperioden en stille uren.",
+    "steamAction": "Steam beheren",
+    "patchTitle": "Patchnotities",
+    "patchDescription": "Abonneer kanalen op game-updatefeeds zodat patchberichten op de verwachte plek verschijnen.",
+    "patchAction": "Patchnotities beheren",
+    "animeTitle": "Anime-afleveringen",
+    "animeDescription": "Zoeken via AniList, door seizoenen bladeren en kanaalherinneringen voor komende afleveringen.",
+    "animeAction": "Anime beheren",
+    "birthdayTitle": "Verjaardagsaankondigingen",
+    "birthdayDescription": "Verjaardagsmeldingen voor leden met leden zoeken en een doelkanaal per verjaardag.",
+    "birthdayAction": "Verjaardagen beheren",
+    "importReadFailed": "Kan de import van meldingsinstellingen niet lezen.",
+    "importFailed": "Kan de meldingsinstellingen niet importeren.",
+    "imported": "{count} ontbrekende routes geïmporteerd.",
+    "importedOne": "1 ontbrekende route geïmporteerd.",
+    "previewTitle": "Importvoorbeeld",
+    "previewDescription": "Ontbrekende ondersteunde routes kunnen worden aangemaakt zonder bestaande meldingsinstellingen te overschrijven.",
+    "readyCount": "{count} gereed",
+    "skippedCount": "{count} overgeslagen",
+    "readyTitle": "Gereed voor import",
+    "noReady": "Er zijn geen ontbrekende ondersteunde routes gevonden.",
+    "skippedTitle": "Overgeslagen",
+    "noSkipped": "Geen overgeslagen routes.",
+    "channel": "Kanaal: {channel}",
+    "importing": "Importeren...",
+    "importMissing": "Ontbrekende importeren ({count})",
+    "reviewTitle": "Instellingen beoordelen",
+    "reviewDescription": "Dubbele routes, feeds verdeeld over meerdere kanalen en drukke meldingskanalen.",
+    "noFindings": "Geen bevindingen",
+    "findingOne": "1 bevinding",
+    "findingMany": "{count} bevindingen",
+    "reviewClean": "Er zijn geen dubbele meldingsroutes of drukke doelkanalen gevonden.",
+    "duplicateRoutes": "Dubbele routes",
+    "multiChannel": "Dezelfde feed, meerdere kanalen",
+    "busyChannels": "Drukke kanalen",
+    "routeSummary": "{routes} routes verdeeld over {channels} kanalen: {ids}",
+    "busySummary": "{count} feeds van {providers}"
+  },
+  "provider": {
+    "twitchTitle": "Twitch-livemeldingen",
+    "youtubeTitle": "YouTube-meldingen",
+    "tiktokTitle": "TikTok-livemeldingen",
+    "blueskyTitle": "Bluesky-berichtmeldingen",
+    "steamTitle": "Steam-nieuwsabonnementen",
+    "patchTitle": "Patchnotitieabonnementen",
+    "channelName": "Kanaalnaam",
+    "channelId": "Kanaal-ID",
+    "handle": "Gebruikersnaam",
+    "account": "Account",
+    "accounts": "Accounts",
+    "gameSubscription": "Spelabonnement",
+    "gameSubscriptions": "Spelabonnementen",
+    "gameAppOrUrl": "Spel, app-ID of Steam-URL",
+    "lastVideo": "Laatste video: {id}",
+    "lastAnnouncementSaved": "Laatste aankondiging opgeslagen",
+    "lastAnnouncement": "Laatste: {date}",
+    "latest": "Nieuwste: {version}",
+    "latestPatch": "Nieuwste patch",
+    "twitchDescription": "Volg livestreams, stuur aankondigingen naar het juiste kanaal en stel afkoeltijden of stille uren in.",
+    "tiktokDescription": "Volg makers die live gaan en beheer waarschuwingen met meldingsinstellingen per kanaal.",
+    "blueskyDescription": "Volg Bluesky-accounts voor nieuwe berichten en stuur aankondigingen met afkoeltijden en stille uren.",
+    "youtubeDescription": "Volg kanalen voor nieuwe uploads en plaats videoaankondigingen waar je server ze verwacht.",
+    "steamDescription": "Abonneer Discord-kanalen op officiële Steam-gameaankondigingen met afkoeltijden en stille uren.",
+    "patchDescription": "Abonneer Discord-kanalen op game-updatefeeds zodat patchberichten op vaste plekken terechtkomen.",
+    "genericDescription": "Stel {module} {items} voor deze server in."
+  },
+  "notifications": {
+    "back": "Terug naar meldingen",
+    "configured": "{items} ingesteld",
+    "add": "{item} toevoegen",
+    "configuredItems": "Ingestelde {module} {items}",
+    "shown": "{shown} van {total} getoond.",
+    "editHelp": "Bewerk bestemmingen, berichten, afkoeltijden en stille uren op één plek.",
+    "pauseActive": "Actieve pauzeren ({count})",
+    "resumePaused": "Gepauzeerde hervatten ({count})",
+    "search": "{items} zoeken",
+    "moveVisible": "Zichtbare configuraties naar kanaal verplaatsen",
+    "chooseChannel": "Kies kanaal",
+    "moving": "Verplaatsen...",
+    "moveVisibleCount": "Zichtbare verplaatsen ({count})",
+    "noMatches": "Geen overeenkomende {module} {items}",
+    "adjustFilters": "Pas de zoek- of statusfilter aan om meer configuraties te tonen.",
+    "destinationRequired": "Kies het doel-Discord-kanaal voordat je configuraties verplaatst.",
+    "nothingToMove": "Geen zichtbare configuraties hoeven naar dat kanaal te worden verplaatst.",
+    "moveConfirmation": "{count} zichtbare {module} {items} verplaatsen naar {channel}?",
+    "noConfigured": "Geen {module} {items} ingesteld",
+    "addFirst": "Voeg je eerste {module} {item} toe om meldingen te ontvangen."
+  },
+  "setupTemplates": {
+    "title": "Instelsjablonen",
+    "description": "Voorinstellingen maken ontbrekende meldingsroutes aan na een servervoorbeeld.",
+    "openProvider": "{provider} openen",
+    "readyCount": "{count} klaar",
+    "skippedCount": "{count} overgeslagen",
+    "template": {
+      "streamerAlerts": {
+        "name": "Streamermeldingen",
+        "description": "Maak live- en uploadroutes voor makers die je server volgt."
+      },
+      "patchNotes": {
+        "name": "Patchnotities",
+        "description": "Maak een gericht patchnotitiekanaal voor de spellen die je server speelt."
+      },
+      "animeClub": {
+        "name": "Animeclub",
+        "description": "Maak anime-afleveringsherinneringen voor een gedeeld kijkkanaal."
+      },
+      "gamingCommunity": {
+        "name": "Gamecommunity",
+        "description": "Combineer makersmeldingen, patchnotities, anime-herinneringen en Steam-nieuwsroutes."
+      }
+    },
+    "channelSummary": "Kanaal: {channel}",
+    "channel": {
+      "live": {
+        "label": "Kanaal voor livemeldingen",
+        "description": "Bestemming voor Twitch-livemeldingen."
+      },
+      "videos": {
+        "label": "Kanaal voor videomeldingen",
+        "description": "Bestemming voor YouTube-uploadmeldingen."
+      },
+      "patches": {
+        "label": "Patchnotitiekanaal",
+        "description": "Bestemming voor patchnotities van spellen."
+      },
+      "anime": {
+        "label": "Animekanaal",
+        "description": "Bestemming voor anime-afleveringsherinneringen."
+      },
+      "steamNews": {
+        "label": "Steam-nieuwskanaal",
+        "description": "Bestemming voor officiële Steam-nieuwsberichten."
+      }
+    },
+    "input": {
+      "twitchUsernames": {
+        "label": "Twitch-gebruikersnamen",
+        "description": "Twitch-logins die je wilt aankondigen wanneer ze live gaan.",
+        "placeholder": "riotgames\ncohhcarnage"
+      },
+      "youtubeChannelIds": {
+        "label": "YouTube-kanaal-ID's",
+        "description": "YouTube-kanaal-ID's die met UC beginnen.",
+        "placeholder": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+      },
+      "patchGames": {
+        "label": "Spellen met patchnotities",
+        "description": "Spelnamen die door de patchnotitiefeed worden ondersteund.",
+        "placeholder": "League of Legends\nValorant"
+      },
+      "animeIds": {
+        "label": "AniList-ID's",
+        "description": "Numerieke AniList-ID's van series om te volgen.",
+        "placeholder": "154587\n170942"
+      },
+      "steamApps": {
+        "label": "Steam-apps",
+        "description": "Steam-app-ID's met optionele namen.",
+        "placeholder": "730: Counter-Strike 2\n570: Dota 2"
+      }
+    },
+    "provider": {
+      "twitch": "Twitch",
+      "youtube": "YouTube",
+      "patchNotes": "Patchnotities",
+      "anime": "Anime",
+      "steamNews": "Steam-nieuws"
+    },
+    "steamAppFallback": "Steam-app {appId}",
+    "preview": "Sjabloon bekijken",
+    "previewing": "Voorbeeld laden...",
+    "applyReady": "Klaar toepassen ({count})",
+    "applying": "Toepassen...",
+    "result": {
+      "applied": "{count} {routes} uit {template} toegepast."
+    },
+    "route": "route",
+    "routes": "routes",
+    "readyToApply": "Klaar om toe te passen",
+    "noReadyRoutes": "Er zijn geen ontbrekende ondersteunde routes gevonden.",
+    "skipped": "Overgeslagen",
+    "noSkippedRoutes": "Geen overgeslagen routes.",
+    "routeProviderSource": "{provider}: {source}",
+    "skippedRouteDetails": "{finding} Kanaal: {channel}",
+    "warning": {
+      "addInput": "Voeg minstens één sjablooninvoer toe voordat je deze instelling toepast."
+    },
+    "finding": {
+      "missingRecordFields": "Record mist een provider, bron of Discord-kanaal.",
+      "duplicateRoute": "Deze provider/bron/kanaalroute bestaat al.",
+      "duplicateSource": "Deze provider/bron bestaat al in deze server; toepassen zou het kanaal bijwerken.",
+      "twitchUsernameRequired": "Twitch-gebruikersnaam is vereist.",
+      "youtubeChannelId": "YouTube-sjablonen vereisen een kanaal-ID die met UC begint.",
+      "patchGameRequired": "Spel met patchnotities is vereist.",
+      "anilistId": "AniList-ID moet een positief geheel getal zijn.",
+      "steamAppId": "Steam-app-ID moet een positief geheel getal zijn.",
+      "liveChannelRequired": "Kanaal voor livemeldingen is vereist voor Twitch.",
+      "videoChannelRequired": "Kanaal voor videomeldingen is vereist voor YouTube.",
+      "patchChannelRequired": "Patchnotitiekanaal is vereist voor patchnotities.",
+      "animeChannelRequired": "Animekanaal is vereist voor anime.",
+      "steamNewsChannelRequired": "Steam-nieuwskanaal is vereist voor Steam-nieuws."
+    },
+    "validation": {
+      "anilistIds": "AniList-ID's moeten positieve gehele getallen bevatten.",
+      "steamApps": "Steam-apps moeten beginnen met een positieve app-ID."
+    },
+    "error": {
+      "load": "Instelsjablonen laden mislukt.",
+      "preview": "Voorbeeld van instelsjabloon laden mislukt.",
+      "apply": "Instelsjabloon toepassen mislukt."
+    },
+    "importCopy": {
+      "invalidJson": "Het importbestand bevat geen geldige JSON.",
+      "invalidObject": "Het importbestand moet een object met meldingsinstellingen bevatten.",
+      "unsupportedVersion": "Alleen versie 1 van de export van meldingsinstellingen wordt ondersteund.",
+      "missingGuildId": "In het importbestand ontbreekt de bronserver-ID.",
+      "missingRecords": "In het importbestand ontbreken meldingsrecords.",
+      "crossGuild": "Deze export komt van server {sourceGuildId}; imports worden aangemaakt op server {currentGuildId}.",
+      "missingRoute": "In het record ontbreekt een provider, bron of Discord-kanaal.",
+      "unsupportedRestore": "Importeren van {provider} wordt nog niet ondersteund door het herstelproces van het dashboard.",
+      "youtubeChannelId": "Voor YouTube-imports is een kanaal-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het kanaal handmatig toe.",
+      "animeId": "Voor anime-imports is een AniList-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
+      "steamAppId": "Voor Steam-nieuwsimports is een numerieke Steam-app-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
+      "birthdayValues": "Voor verjaardagsimports zijn een dag en maand vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg de verjaardag handmatig toe.",
+      "duplicateRoute": "Deze route voor provider, bron en kanaal bestaat al.",
+      "unsupportedProvider": "Importeren van {provider} wordt niet ondersteund.",
+      "recordObject": "Het record moet een object zijn.",
+      "cooldownInvalid": "De afkoelperiode moet, indien opgegeven, een niet-negatief geheel getal zijn.",
+      "quietHoursInvalid": "Stille uren moeten, indien opgegeven, de notatie HH:mm gebruiken.",
+      "reminderInvalid": "Herinneringsminuten moeten, indien opgegeven, een geheel getal tussen 0 en 1440 zijn.",
+      "birthdayInvalid": "Verjaardagsgegevens moeten een geldige dag, maand en optioneel jaar bevatten.",
+      "unknown": "Onbekend"
+    }
+  }
+}

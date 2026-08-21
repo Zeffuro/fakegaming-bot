@@ -1,9 +1,8 @@
 import { createCanvas, type CanvasRenderingContext2D } from 'canvas';
+import { createCommonTranslator } from '../messages/index.js';
 import {
     DEFAULT_OUTPUT_LOCALE,
     isSupportedOutputLocale,
-    resolveLocaleValue,
-    type OutputLocaleValues,
     type SupportedOutputLocale,
 } from '../utils/outputLocale.js';
 
@@ -42,25 +41,6 @@ const TITLE_FONT = `900 56px ${FONT_FAMILY}`;
 const SUBTITLE_FONT = `700 30px ${FONT_FAMILY}`;
 const META_FONT = `650 24px ${FONT_FAMILY}`;
 const SMALL_FONT = `650 20px ${FONT_FAMILY}`;
-const PROFILE_CARD_LABELS = {
-    en: {
-        profile: 'profile',
-        fakeGamingProfile: 'FakeGaming profile',
-        serverNickname: 'Server nickname',
-        globalName: 'Global name',
-        discordId: 'Discord ID',
-        discordUser: 'Discord user',
-    },
-    nl: {
-        profile: 'profiel',
-        fakeGamingProfile: 'FakeGaming-profiel',
-        serverNickname: 'Serverbijnaam',
-        globalName: 'Globale naam',
-        discordId: 'Discord-ID',
-        discordUser: 'Discord-gebruiker',
-    },
-} as const satisfies OutputLocaleValues<ProfileCardLabels>;
-
 export function renderProfileCard(input: ProfileCardInput, options: ProfileCardRenderOptions = {}): Buffer {
     const width = normalizeDimension(options.width, DEFAULT_WIDTH);
     const height = normalizeDimension(options.height, DEFAULT_HEIGHT);
@@ -69,7 +49,15 @@ export function renderProfileCard(input: ProfileCardInput, options: ProfileCardR
 
     drawBackground(ctx, width, height);
     const locale = isSupportedOutputLocale(options.locale) ? options.locale : DEFAULT_OUTPUT_LOCALE;
-    const localizedLabels = resolveLocaleValue(locale, PROFILE_CARD_LABELS);
+    const t = createCommonTranslator(locale);
+    const localizedLabels: ProfileCardLabels = {
+        profile: t('cards.profile.profile'),
+        fakeGamingProfile: t('cards.profile.fakeGamingProfile'),
+        serverNickname: t('cards.profile.serverNickname'),
+        globalName: t('cards.profile.globalName'),
+        discordId: t('cards.profile.discordId'),
+        discordUser: t('cards.profile.discordUser'),
+    };
     drawProfileContent(ctx, input, width, height, { ...localizedLabels, ...options.labels });
 
     return canvas.toBuffer(PROFILE_CARD_MIME_TYPE);

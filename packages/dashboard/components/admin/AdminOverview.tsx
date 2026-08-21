@@ -39,16 +39,9 @@ import type {
 } from "@/lib/api-client";
 import {
     getDashboardIntlLocale,
-    getDashboardLocaleValue,
     type DashboardLocale,
-    type DashboardLocaleValues,
 } from "@/lib/i18n/localeStore";
 import { formatDashboardMessage } from "@/lib/i18n/messages";
-
-const staleHeartbeatMinuteSuffix = {
-    en: "m",
-    nl: " min",
-} satisfies DashboardLocaleValues<string>;
 
 const emptyHealthSummary = {
     total: 0,
@@ -778,7 +771,7 @@ function formatIssueLabel(label: string, locale: DashboardLocale): string {
 function formatIssueValue(label: string, value: number, locale: DashboardLocale): string {
     const formatted = new Intl.NumberFormat(getDashboardIntlLocale(locale)).format(value);
     if (label === "Stale worker heartbeat") {
-        return `${formatted}${getDashboardLocaleValue(locale, staleHeartbeatMinuteSuffix)}`;
+        return formatDashboardMessage(locale, "admin.overviewStaleHeartbeatValue", { value: formatted });
     }
     return formatted;
 }

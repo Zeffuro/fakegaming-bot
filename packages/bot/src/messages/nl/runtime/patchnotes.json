@@ -1,0 +1,7 @@
+{
+    "noPatchNotesFoundFor": "Geen patchnotes gevonden voor `{game}`.",
+    "noStoredPatchHistoryFoundForYet": "Nog geen opgeslagen patchnote-geschiedenis gevonden voor `{game}`.",
+    "storedPatchHistoryFor": "Opgeslagen patchnote-geschiedenis voor {game}:",
+    "subscribedToPatchNotesFor": "<#{channelId}> geabonneerd op patchnotes voor `{game}`.",
+    "subscribedToPatchNotesForLatestPatch": "<#{channelId}> geabonneerd op patchnotes voor `{game}`. Nieuwste patch:"
+}

@@ -1,0 +1,68 @@
+{
+    "birthday": {
+        "name": "verjaardag",
+        "description": "Toon de verjaardag van jezelf of een andere gebruiker",
+        "options": {
+            "user": {
+                "name": "gebruiker",
+                "description": "Gebruiker om op te zoeken (optioneel)"
+            }
+        }
+    },
+    "birthdays": {
+        "name": "verjaardagen",
+        "description": "Toon komende verjaardagen op deze server",
+        "options": {
+            "upcoming": {
+                "name": "komend",
+                "description": "Toon komende verjaardagen op deze server",
+                "options": {
+                    "days": {
+                        "name": "dagen",
+                        "description": "Hoeveel dagen vooruit je wilt bekijken"
+                    }
+                }
+            }
+        }
+    },
+    "remove-birthday": {
+        "name": "verjaardag-verwijderen",
+        "description": "Verwijder jouw verjaardag of die van een ander (alleen beheerders)",
+        "options": {
+            "user": {
+                "name": "gebruiker",
+                "description": "Gebruiker van wie je de verjaardag verwijdert (alleen beheerders)"
+            }
+        }
+    },
+    "set-birthday": {
+        "name": "verjaardag-instellen",
+        "description": "Stel je verjaardag en het kanaal voor meldingen in",
+        "options": {
+            "day": {
+                "name": "dag",
+                "description": "Dag van je verjaardag (1-31)"
+            },
+            "month": {
+                "name": "maand",
+                "description": "Maand van je verjaardag"
+            },
+            "year": {
+                "name": "jaar",
+                "description": "Geboortejaar (optioneel)"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Kanaal voor de verjaardagsmelding (standaard het huidige kanaal)"
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Gebruiker voor wie je de verjaardag instelt (alleen beheerders)"
+            }
+        }
+    },
+    "Show Birthday": {
+        "name": "Verjaardag tonen",
+        "description": "Toon een verjaardag via het gebruikersmenu"
+    }
+}

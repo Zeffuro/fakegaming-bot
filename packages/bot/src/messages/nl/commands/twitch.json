@@ -1,0 +1,90 @@
+{
+    "add-twitch-stream": {
+        "name": "twitch-stream-toevoegen",
+        "description": "Voeg een Twitch-stream toe voor meldingen",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "Twitch-gebruikersnaam"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Discord-kanaal voor meldingen"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Aangepast meldingsbericht (optioneel)"
+            }
+        }
+    },
+    "manage-twitch-streams": {
+        "name": "twitch-streams-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder Twitch-streammeldingen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde Twitch-streams"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld Twitch-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van twitch-streams-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld Twitch-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van twitch-streams-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld Twitch-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van twitch-streams-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld Twitch-stream",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van twitch-streams-beheren"
+                    }
+                }
+            }
+        }
+    },
+    "stream-status": {
+        "name": "streamstatus",
+        "description": "Controleer of een Twitch-kanaal live is",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "Twitch-gebruikersnaam"
+            }
+        }
+    },
+    "twitch-latest-vod": {
+        "name": "nieuwste-twitch-vod",
+        "description": "Toon de nieuwste Twitch-archief-VOD van een kanaal",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "Twitch-gebruikersnaam"
+            }
+        }
+    }
+}

@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {MessageContextMenuCommandInteraction, MessageFlags} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {v4 as uuidv4} from 'uuid';
@@ -13,7 +13,7 @@ async function execute(interaction: MessageContextMenuCommandInteraction): Promi
     const locale = await resolveInteractionOutputLocale(interaction);
     const guildId = interaction.guildId;
     if (!guildId) {
-        await interaction.reply({content: resolveLocaleValue(locale, { en: 'Saving quotes only works in a server.', nl: 'Citaten opslaan werkt alleen op een server.' }), flags: MessageFlags.Ephemeral});
+        await interaction.reply({content: runtimeText(locale, "quotes", "savingQuotesOnlyWorksInAServer"), flags: MessageFlags.Ephemeral});
         return;
     }
 
@@ -21,7 +21,7 @@ async function execute(interaction: MessageContextMenuCommandInteraction): Promi
     const quoteText = targetMessage.content.trim();
     if (!quoteText) {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: 'That message has no text content to save as a quote.', nl: 'Dat bericht bevat geen tekst om als citaat op te slaan.' }),
+            content: runtimeText(locale, "quotes", "thatMessageHasNoTextContentToSave"),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -36,9 +36,11 @@ async function execute(interaction: MessageContextMenuCommandInteraction): Promi
         timestamp: targetMessage.createdTimestamp || Date.now(),
     });
 
-    const action = resolveLocaleValue(locale, { en: (created ? 'Saved' : 'Updated'), nl: (created ? 'Opgeslagen' : 'Bijgewerkt') });
+    const action = runtimeText(locale, 'quotes', 'saveAction', {created: String(created)});
     await interaction.reply({
-        content: resolveLocaleValue(locale, { en: `${action} quote for ${targetMessage.author.tag}: "${formatQuotePreview(quoteText)}"`, nl: `${action} citaat van ${targetMessage.author.tag}: "${formatQuotePreview(quoteText)}"` }),
+        content: runtimeText(locale, 'quotes', 'savedQuote', {
+            action, author: targetMessage.author.tag, quote: formatQuotePreview(quoteText),
+        }),
         flags: MessageFlags.Ephemeral,
     });
 }

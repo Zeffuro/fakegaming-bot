@@ -1,0 +1,119 @@
+{
+    "calendar": {
+        "serverOnly": "Calendar only works in a server.",
+        "birthdays": "Birthdays",
+        "reminders": "Your Reminders",
+        "empty": "No birthdays or reminders in the next {days} days.",
+        "title": "Upcoming calendar for the next {days} days:"
+    },
+    "help": {
+        "userMenu": "User menu",
+        "messageMenu": "Message menu",
+        "available": "Available Commands",
+        "more": "More Commands",
+        "noDescription": "No description available"
+    },
+    "permissions": {
+        "serverOnly": "Permission backups only work in a server.",
+        "adminOnly": "Only server administrators can access permission backups.",
+        "none": "No permission snapshots have been saved for this server.",
+        "recent": "Recent permission snapshots:",
+        "notFound": "Permission snapshot #{id} was not found for this server.",
+        "deleted": "Permission snapshot #{id} was deleted.",
+        "tooLarge": "Permission snapshot #{id} is too large for a single Discord attachment.",
+        "snapshot": "Permission snapshot #{id}",
+        "saved": "Saved permission snapshot #{id}",
+        "compressed": " The attached export is gzip-compressed.",
+        "attachmentTooLarge": " The export exceeds Discord's attachment limit, but the snapshot was saved.",
+        "partialMembers": " Discord did not provide a complete member list, so cached members were used.",
+        "partialRoles": " Discord did not provide refreshed role data, so cached roles were used.",
+        "partialChannels": " Discord did not provide refreshed channel data, so cached channels were used.",
+        "summary": "{roles} roles, {source} members ({members}), {channels} categories/channels"
+    },
+    "occupyChannel": {
+        "serverOnly": "Voice channel occupancy only works in a server.",
+        "enabled": "I am now occupying <#{channelId}> while the bot is online. I am muted and deafened.",
+        "enabledRetrying": "<#{channelId}> is configured, but the voice connection is still retrying. Use `/occupy-channel status` to check it.",
+        "disabled": "Voice channel occupancy is disabled and the bot has left the channel.",
+        "alreadyDisabled": "Voice channel occupancy was already disabled.",
+        "statusDisabled": "Voice channel occupancy is disabled for this server.",
+        "statusReady": "Voice channel occupancy is active in <#{channelId}>.",
+        "statusConnecting": "Voice channel occupancy is configured for <#{channelId}> and is connecting or retrying.",
+        "statusDisconnected": "Voice channel occupancy is configured for <#{channelId}>, but the bot is not connected.",
+        "failure": {
+            "guild-unavailable": "This server is currently unavailable to the bot.",
+            "channel-unavailable": "That voice channel is unavailable or no longer exists.",
+            "not-voice-channel": "Choose a normal voice channel.",
+            "missing-permissions": "I need View Channel and Connect permissions in that voice channel.",
+            "channel-full": "That voice channel is full. Choose a channel with an available slot."
+        }
+    },
+    "poll": {
+        "questionRequired": "Please provide a poll question.",
+        "twoOptions": "Please provide at least two options for the poll.",
+        "unique": "Poll options must be unique.",
+        "duration": "Duration must be between {min} and {max} minutes.",
+        "creating": "Creating poll...",
+        "capacity": "Too many active polls are already running. Please try again shortly.",
+        "creatorOnly": "Only the poll creator can close this poll.",
+        "unavailable": "This poll is no longer available. It may have expired or the bot restarted.",
+        "closed": "This poll is closed.",
+        "closeButton": "Close poll",
+        "closes": "Closes '<t:'{unix}:R>.",
+        "closedByExpiry": "Poll closed when its duration elapsed.",
+        "closedByCreator": "Poll closed by its creator.",
+        "votes": "{count, plural, one {# vote} other {# votes}}",
+        "total": "Total votes: {count}",
+        "noVotes": "Result: no votes were cast.",
+        "winner": "Winner: **{name}** ({count, plural, one {# vote} other {# votes}}).",
+        "tie": "Result: tie between {names} ({count, plural, one {# vote} other {# votes}} each)."
+    },
+    "profile": {
+        "caption": "Profile card for {mention}",
+        "fallback": "Discord user"
+    },
+    "roll": {
+        "rolled": "🎲 You rolled a **{roll}** ({detail})",
+        "rolls": "🎲 You rolled: {rolls} (Total: **{total}**) [{detail}]",
+        "reasonable": "Please use a reasonable dice notation (e.g., 1d20, max 20 dice, 1000 sides).",
+        "invalid": "Invalid input. Use dice notation (e.g., 2d6) or a max number (e.g., 100).",
+        "total": "Total"
+    },
+    "spin": {
+        "twoNames": "Please provide at least two names.",
+        "starting": "Spinning the wheel...",
+        "spinning": "🔄 Spinning... **{name}**",
+        "winner": "🎉 The wheel stopped at: **{name}**!"
+    },
+    "testNotification": {
+        "cannotSend": "I cannot send a test notification in that channel.",
+        "defaultMessage": "This is a test notification from Fakegaming Bot.",
+        "title": "Test Notification",
+        "description": "If you can see this, bot notifications can be delivered to this channel.",
+        "sent": "Sent a test notification to {channel}."
+    },
+    "time": {
+        "invalidZone": "Invalid timezone. Please use a valid IANA timezone (for example, Europe/Amsterdam) or GMT offset.",
+        "invalidTime": "Invalid time. Try `now`, `20:30`, `2026-06-11 20:30`, an ISO timestamp, or a Unix timestamp.",
+        "input": "Input",
+        "local": "Local time",
+        "long": "Long",
+        "short": "Short",
+        "time": "Time",
+        "relative": "Relative",
+        "copy": "Copy",
+        "unix": "Unix"
+    },
+    "weather": {
+        "forecast": "Short-term forecast:",
+        "weatherFor": "Weather for",
+        "current": "Current",
+        "temperature": "Temperature",
+        "feelsLike": "feels like",
+        "humidity": "Humidity",
+        "wind": "Wind",
+        "notFound": "Could not fetch weather data. Please check the location and try again.",
+        "noKey": "Weather API key is not configured.",
+        "error": "An error occurred while fetching weather data."
+    }
+}

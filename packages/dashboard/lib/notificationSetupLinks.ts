@@ -1,6 +1,7 @@
 import type { NotificationChannelLoad, NotificationReviewGroup } from "@/lib/notificationSetupReview";
 import type { NotificationConfigStatusFilter } from "@/lib/notificationConfigFilters";
-import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export interface NotificationSetupLink {
     label: string;
@@ -45,10 +46,7 @@ export function buildNotificationReviewGroupLink(
 ): NotificationSetupLink | null {
     const href = buildNotificationProviderFilterHref(guildId, group.provider, group.sourceLabel);
     return href ? {
-        label: getDashboardLocaleValue(locale, {
-            en: `Open ${group.provider}`,
-            nl: `${group.provider} openen`,
-        }),
+        label: formatDashboardMessage(locale, "setupTemplates.openProvider", { provider: group.provider }),
         href,
     } : null;
 }

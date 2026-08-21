@@ -1,55 +1,47 @@
 import {
-    DEFAULT_OUTPUT_LOCALE,
-    NON_DEFAULT_OUTPUT_LOCALES,
-    OUTPUT_LOCALE_METADATA,
-    SUPPORTED_OUTPUT_LOCALES,
-    isSupportedOutputLocale,
-    resolveLocaleValue,
-    resolveOutputLocaleFromAcceptLanguage,
-    type OutputLocaleValues,
-    type SupportedOutputLocale,
+    DEFAULT_LOCALE,
+    LOCALE_METADATA,
+    NON_DEFAULT_LOCALES,
+    SUPPORTED_LOCALES,
+    isSupportedLocale,
+    resolveLocaleFromAcceptLanguage,
+    type LocaleValues,
+    type SupportedLocale,
 } from "@zeffuro/fakegaming-common/output-locale";
 
 export const DASHBOARD_LOCALE_STORAGE_KEY = "fg.dashboard.locale";
 export const DASHBOARD_LOCALE_COOKIE_KEY = "fg.dashboard.locale";
 
-export type DashboardLocale = SupportedOutputLocale;
-export type DashboardLocaleValues<T> = OutputLocaleValues<T>;
+export type DashboardLocale = SupportedLocale;
+export type DashboardLocaleValues<T> = LocaleValues<T>;
 
-export const dashboardLocales = SUPPORTED_OUTPUT_LOCALES;
-export const nonDefaultDashboardLocales = NON_DEFAULT_OUTPUT_LOCALES;
-export const dashboardLocaleMetadata = OUTPUT_LOCALE_METADATA;
-export const defaultDashboardLocale = DEFAULT_OUTPUT_LOCALE;
+export const dashboardLocales = SUPPORTED_LOCALES;
+export const nonDefaultDashboardLocales = NON_DEFAULT_LOCALES;
+export const dashboardLocaleMetadata = LOCALE_METADATA;
+export const defaultDashboardLocale = DEFAULT_LOCALE;
 
 type LocaleListener = (locale: DashboardLocale) => void;
 
-let currentLocale: DashboardLocale = DEFAULT_OUTPUT_LOCALE;
+let currentLocale: DashboardLocale = DEFAULT_LOCALE;
 const listeners = new Set<LocaleListener>();
 
 export function isDashboardLocale(value: unknown): value is DashboardLocale {
-    return isSupportedOutputLocale(value);
+    return isSupportedLocale(value);
 }
 
 export function getDashboardLocaleFromAcceptLanguage(header: string | readonly string[] | null | undefined): DashboardLocale {
-    return resolveOutputLocaleFromAcceptLanguage(header);
+    return resolveLocaleFromAcceptLanguage(header);
 }
 
 export function getBrowserPreferredLocale(): DashboardLocale {
-    if (typeof navigator === "undefined") return DEFAULT_OUTPUT_LOCALE;
+    if (typeof navigator === "undefined") return DEFAULT_LOCALE;
 
     const preferred = navigator.languages ?? [navigator.language];
     return getDashboardLocaleFromAcceptLanguage(preferred);
 }
 
 export function getDashboardIntlLocale(locale: DashboardLocale): string {
-    return dashboardLocaleMetadata[locale].languageTag;
-}
-
-export function getDashboardLocaleValue<Values extends DashboardLocaleValues<unknown>>(
-    locale: DashboardLocale,
-    values: Values,
-): Values[DashboardLocale] {
-    return resolveLocaleValue(locale, values);
+    return dashboardLocaleMetadata[locale].formatTag;
 }
 
 export function getStoredDashboardLocale(): DashboardLocale | null {
@@ -88,6 +80,10 @@ export function getInitialDashboardLocale(): DashboardLocale {
 
 export function getDashboardLocale(): DashboardLocale {
     return currentLocale;
+}
+
+export function initializeDashboardLocale(locale: DashboardLocale): void {
+    if (typeof window !== "undefined") currentLocale = locale;
 }
 
 export function setDashboardLocale(locale: DashboardLocale, persist = true): void {

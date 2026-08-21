@@ -1,5 +1,6 @@
 import type { NotificationSetupExport, NotificationSetupExportRecord } from "@/lib/notificationSetupExport";
-import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage, type DashboardMessageKey } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export type NotificationSetupImportProvider = "Twitch" | "YouTube" | "TikTok" | "Bluesky" | "Steam News" | "Patch Notes" | "Anime" | "Birthdays";
 export type NotificationSetupImportSkipReason = "duplicate" | "unsupported" | "invalid";
@@ -38,96 +39,35 @@ const supportedProviders = new Set<string>(["Twitch", "YouTube", "TikTok", "Blue
 const youtubeChannelIdPattern = /^UC[\w-]{22}$/;
 const hhmmPattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
-interface NotificationImportCopy {
-    invalidJson: string;
-    invalidObject: string;
-    unsupportedVersion: string;
-    missingGuildId: string;
-    missingRecords: string;
-    crossGuild: (sourceGuildId: string, currentGuildId: string) => string;
-    missingRoute: string;
-    unsupportedRestore: (provider: string) => string;
-    youtubeChannelId: string;
-    animeId: string;
-    steamAppId: string;
-    birthdayValues: string;
-    duplicateRoute: string;
-    unsupportedProvider: (provider: string) => string;
-    recordObject: string;
-    cooldownInvalid: string;
-    quietHoursInvalid: string;
-    reminderInvalid: string;
-    birthdayInvalid: string;
-    unknown: string;
+type NotificationImportMessageKey = Extract<DashboardMessageKey, `setupTemplates.importCopy.${string}`>;
+
+function getNotificationImportMessage(
+    locale: DashboardLocale,
+    key: NotificationImportMessageKey,
+    values?: Record<string, string | number>,
+): string {
+    return formatDashboardMessage(locale, key, values);
 }
 
-const notificationImportCopy = {
-    en: {
-        invalidJson: "Import file is not valid JSON.",
-        invalidObject: "Import file must contain a notification setup object.",
-        unsupportedVersion: "Only notification setup export version 1 is supported.",
-        missingGuildId: "Import file is missing a source guild ID.",
-        missingRecords: "Import file is missing notification records.",
-        crossGuild: (sourceGuildId, currentGuildId) => `This export came from guild ${sourceGuildId}; imports will be created in guild ${currentGuildId}.`,
-        missingRoute: "Record is missing a provider, source, or Discord channel.",
-        unsupportedRestore: (provider) => `${provider} import is not supported by the dashboard restore flow yet.`,
-        youtubeChannelId: "YouTube imports require a channel ID. Re-export from the updated dashboard or add the channel manually.",
-        animeId: "Anime imports require an AniList ID. Re-export from the updated dashboard or add the subscription manually.",
-        steamAppId: "Steam News imports require a numeric Steam App ID. Re-export from the updated dashboard or add the subscription manually.",
-        birthdayValues: "Birthday imports require day and month values. Re-export from the updated dashboard or add the birthday manually.",
-        duplicateRoute: "This provider/source/channel route already exists.",
-        unsupportedProvider: (provider) => `${provider} import is not supported.`,
-        recordObject: "Record must be an object.",
-        cooldownInvalid: "Cooldown must be a non-negative whole number when provided.",
-        quietHoursInvalid: "Quiet hours must use HH:mm format when provided.",
-        reminderInvalid: "Reminder minutes must be a whole number between 0 and 1440 when provided.",
-        birthdayInvalid: "Birthday details must include a valid day, month, and optional year.",
-        unknown: "Unknown",
-    },
-    nl: {
-        invalidJson: "Het importbestand bevat geen geldige JSON.",
-        invalidObject: "Het importbestand moet een object met meldingsinstellingen bevatten.",
-        unsupportedVersion: "Alleen versie 1 van de export van meldingsinstellingen wordt ondersteund.",
-        missingGuildId: "In het importbestand ontbreekt de bronserver-ID.",
-        missingRecords: "In het importbestand ontbreken meldingsrecords.",
-        crossGuild: (sourceGuildId, currentGuildId) => `Deze export komt van server ${sourceGuildId}; imports worden aangemaakt op server ${currentGuildId}.`,
-        missingRoute: "In het record ontbreekt een provider, bron of Discord-kanaal.",
-        unsupportedRestore: (provider) => `Importeren van ${provider} wordt nog niet ondersteund door het herstelproces van het dashboard.`,
-        youtubeChannelId: "Voor YouTube-imports is een kanaal-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het kanaal handmatig toe.",
-        animeId: "Voor anime-imports is een AniList-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
-        steamAppId: "Voor Steam-nieuwsimports is een numerieke Steam-app-ID vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg het abonnement handmatig toe.",
-        birthdayValues: "Voor verjaardagsimports zijn een dag en maand vereist. Exporteer opnieuw vanuit het bijgewerkte dashboard of voeg de verjaardag handmatig toe.",
-        duplicateRoute: "Deze route voor provider, bron en kanaal bestaat al.",
-        unsupportedProvider: (provider) => `Importeren van ${provider} wordt niet ondersteund.`,
-        recordObject: "Het record moet een object zijn.",
-        cooldownInvalid: "De afkoelperiode moet, indien opgegeven, een niet-negatief geheel getal zijn.",
-        quietHoursInvalid: "Stille uren moeten, indien opgegeven, de notatie HH:mm gebruiken.",
-        reminderInvalid: "Herinneringsminuten moeten, indien opgegeven, een geheel getal tussen 0 en 1440 zijn.",
-        birthdayInvalid: "Verjaardagsgegevens moeten een geldige dag, maand en optioneel jaar bevatten.",
-        unknown: "Onbekend",
-    },
-} satisfies DashboardLocaleValues<NotificationImportCopy>;
-
 export function parseNotificationSetupImportJson(text: string, locale: DashboardLocale = "en"): NotificationSetupExport {
-    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     let parsed: unknown;
     try {
         parsed = JSON.parse(text);
     } catch {
-        throw new Error(copy.invalidJson);
+        throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.invalidJson"));
     }
 
     if (!isRecord(parsed)) {
-        throw new Error(copy.invalidObject);
+        throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.invalidObject"));
     }
     if (parsed.version !== 1) {
-        throw new Error(copy.unsupportedVersion);
+        throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.unsupportedVersion"));
     }
     if (typeof parsed.guildId !== "string" || parsed.guildId.trim().length === 0) {
-        throw new Error(copy.missingGuildId);
+        throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.missingGuildId"));
     }
     if (!Array.isArray(parsed.records)) {
-        throw new Error(copy.missingRecords);
+        throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.missingRecords"));
     }
 
     return parsed as unknown as NotificationSetupExport;
@@ -138,11 +78,13 @@ export function buildNotificationSetupImportPlan(input: {
     currentGuildId: string;
     currentRecords: NotificationSetupExportRecord[];
 }, locale: DashboardLocale = "en"): NotificationSetupImportPlan {
-    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     const sourceGuildId = input.exportPayload.guildId;
     const warnings = sourceGuildId === input.currentGuildId
         ? []
-        : [copy.crossGuild(sourceGuildId, input.currentGuildId)];
+        : [getNotificationImportMessage(locale, "setupTemplates.importCopy.crossGuild", {
+            sourceGuildId,
+            currentGuildId: input.currentGuildId,
+        })];
 
     const seenKeys = new Set(input.currentRecords.map((record) => getImportKey(record)).filter((key): key is string => key !== null));
     const ready: NotificationSetupImportItem[] = [];
@@ -166,7 +108,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key: `invalid:${skipped.length}`,
                 record: normalized.record,
                 reason: "invalid",
-                message: copy.missingRoute,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.missingRoute"),
             });
             continue;
         }
@@ -175,7 +117,9 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "unsupported",
-                message: copy.unsupportedRestore(normalized.record.provider),
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.unsupportedRestore", {
+                    provider: normalized.record.provider,
+                }),
             });
             continue;
         }
@@ -184,7 +128,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: copy.youtubeChannelId,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.youtubeChannelId"),
             });
             continue;
         }
@@ -193,7 +137,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: copy.animeId,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.animeId"),
             });
             continue;
         }
@@ -202,7 +146,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: copy.steamAppId,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.steamAppId"),
             });
             continue;
         }
@@ -211,7 +155,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "invalid",
-                message: copy.birthdayValues,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.birthdayValues"),
             });
             continue;
         }
@@ -220,7 +164,7 @@ export function buildNotificationSetupImportPlan(input: {
                 key,
                 record: normalized.record,
                 reason: "duplicate",
-                message: copy.duplicateRoute,
+                message: getNotificationImportMessage(locale, "setupTemplates.importCopy.duplicateRoute"),
             });
             continue;
         }
@@ -250,7 +194,6 @@ export function buildNotificationSetupImportCreatePayload(
     record: NotificationSetupExportRecord,
     locale: DashboardLocale = "en",
 ): NotificationSetupImportCreatePayload {
-    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     const source = getRecordIdentity(record);
     const timing = buildTimingPayload(record);
 
@@ -312,7 +255,7 @@ export function buildNotificationSetupImportCreatePayload(
     if (record.provider === "Steam News") {
         const steamAppId = getPositiveIntegerIdentity(record);
         if (steamAppId === null) {
-            throw new Error(copy.steamAppId);
+            throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.steamAppId"));
         }
 
         return {
@@ -329,7 +272,7 @@ export function buildNotificationSetupImportCreatePayload(
     if (record.provider === "Anime") {
         const anilistId = getPositiveIntegerIdentity(record);
         if (anilistId === null) {
-            throw new Error(copy.animeId);
+            throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.animeId"));
         }
 
         return {
@@ -344,7 +287,7 @@ export function buildNotificationSetupImportCreatePayload(
     }
     if (record.provider === "Birthdays") {
         if (!record.birthday) {
-            throw new Error(copy.birthdayValues);
+            throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.birthdayValues"));
         }
 
         return {
@@ -360,13 +303,14 @@ export function buildNotificationSetupImportCreatePayload(
         };
     }
 
-    throw new Error(copy.unsupportedProvider(record.provider));
+    throw new Error(getNotificationImportMessage(locale, "setupTemplates.importCopy.unsupportedProvider", {
+        provider: record.provider,
+    }));
 }
 
 function normalizeImportRecord(value: unknown, locale: DashboardLocale): { record: NotificationSetupExportRecord | null; message: string } {
-    const copy = getDashboardLocaleValue(locale, notificationImportCopy);
     if (!isRecord(value)) {
-        return { record: null, message: copy.recordObject };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.recordObject") };
     }
 
     const provider = normalizeString(value.provider);
@@ -374,26 +318,26 @@ function normalizeImportRecord(value: unknown, locale: DashboardLocale): { recor
     const sourceId = normalizeString(value.sourceId);
     const channelId = normalizeString(value.channelId);
     if (!provider || !source || !channelId) {
-        return { record: null, message: copy.missingRoute };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.missingRoute") };
     }
 
     const cooldownMinutes = normalizeCooldown(value.cooldownMinutes);
     if (cooldownMinutes.invalid) {
-        return { record: null, message: copy.cooldownInvalid };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.cooldownInvalid") };
     }
 
     const quietHoursStart = normalizeTime(value.quietHoursStart);
     const quietHoursEnd = normalizeTime(value.quietHoursEnd);
     if (quietHoursStart.invalid || quietHoursEnd.invalid) {
-        return { record: null, message: copy.quietHoursInvalid };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.quietHoursInvalid") };
     }
     const reminderMinutes = normalizeReminder(value.reminderMinutes);
     if (reminderMinutes.invalid) {
-        return { record: null, message: copy.reminderInvalid };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.reminderInvalid") };
     }
     const birthday = normalizeBirthday(value.birthday);
     if (birthday.invalid) {
-        return { record: null, message: copy.birthdayInvalid };
+        return { record: null, message: getNotificationImportMessage(locale, "setupTemplates.importCopy.birthdayInvalid") };
     }
 
     return {
@@ -415,7 +359,7 @@ function normalizeImportRecord(value: unknown, locale: DashboardLocale): { recor
 }
 
 function fallbackRecord(value: unknown, locale: DashboardLocale): NotificationSetupExportRecord {
-    const unknown = getDashboardLocaleValue(locale, notificationImportCopy).unknown;
+    const unknown = getNotificationImportMessage(locale, "setupTemplates.importCopy.unknown");
     if (!isRecord(value)) {
         return { provider: unknown, source: unknown, channelId: unknown };
     }

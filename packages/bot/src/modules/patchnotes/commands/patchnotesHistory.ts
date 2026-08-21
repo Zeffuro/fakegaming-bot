@@ -1,3 +1,4 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
@@ -12,18 +13,14 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addStringOption(option =>
             option
                 .setName('game')
-                .setNameLocalization('nl', 'spel')
                 .setDescription('Game to show patch history for')
-                .setDescriptionLocalization('nl', 'Spel waarvoor je patchnote-geschiedenis wilt tonen')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addIntegerOption(option =>
             option
                 .setName('count')
-                .setNameLocalization('nl', 'aantal')
                 .setDescription('Number of stored patches to show')
-                .setDescriptionLocalization('nl', 'Aantal opgeslagen patches om te tonen')
                 .setMinValue(1)
                 .setMaxValue(5)
                 .setRequired(false)
@@ -37,12 +34,12 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const history = await getConfigManager().patchNoteHistoryManager.getHistory(game, count);
 
     if (history.length === 0) {
-        await interaction.reply(resolveLocaleValue(locale, { en: `No stored patch history found for \`${game}\` yet.`, nl: `Nog geen opgeslagen patchnote-geschiedenis gevonden voor \`${game}\`.` }));
+        await interaction.reply(runtimeText(locale, 'patchnotes', 'noStoredPatchHistoryFoundForYet', {game}));
         return;
     }
 
     await interaction.reply({
-        content: resolveLocaleValue(locale, { en: `Stored patch history for ${game}:`, nl: `Opgeslagen patchnote-geschiedenis voor ${game}:` }),
+        content: runtimeText(locale, 'patchnotes', 'storedPatchHistoryFor', {game}),
         embeds: history.map(note => resolveLocaleValue(locale, { en: buildPatchNoteEmbed(note), nl: buildPatchNoteEmbed(note, locale) })),
     });
 }

@@ -1,0 +1,86 @@
+{
+    "set-reminder": {
+        "name": "set-reminder",
+        "description": "Set a reminder",
+        "options": {
+            "timespan": {
+                "name": "timespan",
+                "description": "When to remind (e.g., 1h, 30m)"
+            },
+            "message": {
+                "name": "message",
+                "description": "Reminder message"
+            },
+            "repeat": {
+                "name": "repeat",
+                "description": "Optional repeat rule, e.g. daily, weekly, every 2 weeks"
+            },
+            "repeat-timezone": {
+                "name": "repeat-timezone",
+                "description": "Timezone for repeats; defaults to your saved timezone"
+            }
+        }
+    },
+    "set-timezone": {
+        "name": "set-timezone",
+        "description": "Set your timezone",
+        "options": {
+            "timezone": {
+                "name": "timezone",
+                "description": "Your IANA timezone (e.g., Europe/Berlin or GMT+2)"
+            }
+        }
+    },
+    "reminders": {
+        "name": "reminders",
+        "description": "List your active and paused reminders"
+    },
+    "Remind Me in 1h": {
+        "name": "Remind Me in 1h",
+        "description": "Set a one-hour reminder for a message from the message context menu"
+    },
+    "delete-reminder": {
+        "name": "delete-reminder",
+        "description": "Delete one of your pending reminders",
+        "options": {
+            "reminder": {
+                "name": "reminder",
+                "description": "Reminder number from /reminders or its short ID"
+            }
+        }
+    },
+    "snooze-reminder": {
+        "name": "snooze-reminder",
+        "description": "Snooze one of your pending reminders",
+        "options": {
+            "reminder": {
+                "name": "reminder",
+                "description": "Reminder number from /reminders or its short ID"
+            },
+            "timespan": {
+                "name": "timespan",
+                "description": "How long to snooze for, e.g. 10m or 2h"
+            }
+        }
+    },
+    "pause-reminder": {
+        "name": "pause-reminder",
+        "description": "Pause one of your recurring reminders",
+        "options": {
+            "reminder": {
+                "name": "reminder",
+                "description": "Reminder number from /reminders or its short ID"
+            }
+        }
+    },
+    "resume-reminder": {
+        "name": "resume-reminder",
+        "description": "Resume one of your recurring reminders",
+        "options": {
+            "reminder": {
+                "name": "reminder",
+                "description": "Reminder number from /reminders or its short ID"
+            }
+        }
+    }
+}

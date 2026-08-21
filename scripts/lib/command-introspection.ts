@@ -101,7 +101,8 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                 default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                 testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
                 type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
-                localizations: normalizeCommandLocalizations(c.localizations),
+                localizations: normalizeCommandLocalizations(c.localizations)
+                    ?? loadCatalogCommandLocalizations(moduleDir, String(c.name ?? '')),
                 module: null,
             })).filter(c => c.name && c.description);
         }
@@ -119,7 +120,8 @@ export async function loadCommandsFromManifest(moduleDir: string): Promise<Comma
                     default_member_permissions: c.default_member_permissions == null ? null : String(c.default_member_permissions),
                     testOnly: (typeof c.testOnly === 'boolean' ? c.testOnly : null) as boolean | null,
                     type: typeof c.type === 'string' && ['chatInput', 'user', 'message'].includes(c.type) ? c.type as CommandKind : null,
-                    localizations: normalizeCommandLocalizations(c.localizations),
+                    localizations: normalizeCommandLocalizations(c.localizations)
+                        ?? loadCatalogCommandLocalizations(moduleDir, String(c.name ?? '')),
                     module: null,
                 })).filter(c => c.name && c.description);
             }
@@ -261,6 +263,26 @@ function normalizeCommandLocalizations(value: unknown): CommandLocalizations | n
         if (name && description) normalized[locale] = { name, description };
     }
     return Object.keys(normalized).length > 0 ? normalized : null;
+}
+
+function loadCatalogCommandLocalizations(moduleDir: string, commandName: string): CommandLocalizations | null {
+    const moduleName = path.basename(moduleDir);
+    const botSourceRoot = path.resolve(moduleDir, '..', '..');
+    const localizations: CommandLocalizations = {};
+    for (const locale of COMMAND_LOCALIZATION_LOCALES) {
+        const catalogPath = path.join(botSourceRoot, 'messages', locale, 'commands', `${moduleName}.json`);
+        if (!fs.existsSync(catalogPath)) continue;
+        try {
+            const catalog = getRecord(JSON.parse(fs.readFileSync(catalogPath, 'utf8')));
+            const command = getRecord(catalog?.[commandName]);
+            const name = getNonEmptyString(command?.name);
+            const description = getNonEmptyString(command?.description);
+            if (name && description) localizations[locale] = { name, description };
+        } catch {
+            // The dedicated i18n validator reports malformed translation resources.
+        }
+    }
+    return Object.keys(localizations).length > 0 ? localizations : null;
 }
 
 function collectLocalizationIssues(value: unknown, path: string): string[] {

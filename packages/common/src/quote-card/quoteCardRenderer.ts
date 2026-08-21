@@ -1,9 +1,8 @@
 import { createCanvas, type CanvasRenderingContext2D } from 'canvas';
+import { createCommonTranslator } from '../messages/index.js';
 import {
     DEFAULT_OUTPUT_LOCALE,
     getOutputLocaleMetadata,
-    resolveLocaleValue,
-    type OutputLocaleValues,
     type SupportedOutputLocale,
 } from '../utils/outputLocale.js';
 
@@ -30,20 +29,6 @@ export interface QuoteCardRenderOptions {
 const DEFAULT_WIDTH = 1200;
 const DEFAULT_HEIGHT = 630;
 
-const QUOTE_CARD_COPY = {
-    en: {
-        fallbackTitle: 'FakeGaming Quotes',
-        submittedBy: 'submitted by',
-        unknownAuthor: 'Unknown author',
-        discordUser: 'Discord user',
-    },
-    nl: {
-        fallbackTitle: 'FakeGaming Citaten',
-        submittedBy: 'ingediend door',
-        unknownAuthor: 'Onbekende auteur',
-        discordUser: 'Discord-gebruiker',
-    },
-} as const satisfies OutputLocaleValues<Record<string, string>>;
 const CARD_PADDING = 64;
 const FONT_FAMILY = '"Segoe UI", "Noto Sans", Arial, sans-serif';
 const TITLE_FONT = `800 50px ${FONT_FAMILY}`;
@@ -113,8 +98,8 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
 
 function drawQuoteCardContent(ctx: CanvasRenderingContext2D, input: QuoteCardInput, width: number, height: number, locale: SupportedOutputLocale): void {
     const quote = normalizeWhitespace(input.quote);
-    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
-    const title = input.guildName?.trim() || copy.fallbackTitle;
+    const t = createCommonTranslator(locale);
+    const title = input.guildName?.trim() || t('cards.quote.fallbackTitle');
     const source = normalizeOptional(input.source);
     const context = normalizeOptional(input.context);
     const tags = normalizeTags(input.tags);
@@ -175,10 +160,10 @@ function drawDetails(
     locale: SupportedOutputLocale,
 ): void {
     const submitter = normalizeOptional(input.submitterName);
-    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
+    const t = createCommonTranslator(locale);
     const parts = [
         formatQuoteCardDate(input.timestamp, locale),
-        submitter ? `${copy.submittedBy} ${submitter}` : null,
+        submitter ? t('cards.quote.submittedByUser', { name: submitter }) : null,
         input.source,
         input.context,
     ]
@@ -293,16 +278,16 @@ function normalizeTags(tags: readonly string[] | null | undefined): string[] {
 
 function formatFallbackUser(userId: string | null | undefined, locale: SupportedOutputLocale): string {
     const normalized = userId?.trim();
-    const copy = resolveLocaleValue(locale, QUOTE_CARD_COPY);
-    if (!normalized) return copy.unknownAuthor;
-    return `${copy.discordUser} ${normalized.slice(-6)}`;
+    const t = createCommonTranslator(locale);
+    if (!normalized) return t('cards.quote.unknownAuthor');
+    return t('cards.quote.discordUserSuffix', { suffix: normalized.slice(-6) });
 }
 
 function formatQuoteCardDate(value: number | string | null | undefined, locale: SupportedOutputLocale): string | null {
     if (value === null || value === undefined) return null;
     const timestamp = typeof value === 'string' ? Number(value) : value;
     if (!Number.isFinite(timestamp) || timestamp <= 0) return null;
-    return new Intl.DateTimeFormat(getOutputLocaleMetadata(locale).languageTag, {
+    return new Intl.DateTimeFormat(getOutputLocaleMetadata(locale).formatTag, {
         dateStyle: 'medium',
         timeZone: 'UTC',
     }).format(new Date(timestamp));

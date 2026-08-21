@@ -13,9 +13,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option
             .setName('reminder')
-            .setNameLocalization('nl', 'herinnering')
             .setDescription('Reminder number from /reminders or its short ID')
-            .setDescriptionLocalization('nl', 'Nummer uit /herinneringen of het korte ID')
             .setRequired(true)
             .setAutocomplete(true)
     )

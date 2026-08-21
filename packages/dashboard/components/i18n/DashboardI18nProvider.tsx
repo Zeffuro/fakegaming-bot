@@ -1,15 +1,18 @@
 "use client";
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { NextIntlClientProvider, useFormatter, useTranslations } from "next-intl";
+import type { DashboardMessageKey } from "@/lib/i18n/messages";
+import { dashboardMessages } from "@/lib/i18n/messages";
 import type { DashboardLocale } from "@/lib/i18n/localeStore";
 import {
     dashboardLocaleMetadata,
     defaultDashboardLocale,
     getDashboardIntlLocale,
     getInitialDashboardLocale,
+    initializeDashboardLocale,
     setDashboardLocale as persistDashboardLocale,
 } from "@/lib/i18n/localeStore";
-import { formatDashboardMessage, type DashboardMessageKey } from "@/lib/i18n/messages";
 
 interface DashboardI18nContextValue {
     locale: DashboardLocale;
@@ -20,16 +23,28 @@ interface DashboardI18nContextValue {
     formatRelativeTime: (value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions) => string;
 }
 
+interface DashboardI18nProviderProps {
+    children: React.ReactNode;
+    initialLocale?: DashboardLocale;
+}
+
 const DashboardI18nContext = createContext<DashboardI18nContextValue | null>(null);
 
-export function DashboardI18nProvider({ children }: { children: React.ReactNode }) {
-    const [locale, setLocaleState] = useState<DashboardLocale>(defaultDashboardLocale);
-    const [ready, setReady] = useState(false);
+export function DashboardI18nProvider({
+    children,
+    initialLocale,
+}: DashboardI18nProviderProps) {
+    const [locale, setLocaleState] = useState<DashboardLocale>(() => {
+        const resolvedLocale = initialLocale ?? defaultDashboardLocale;
+        initializeDashboardLocale(resolvedLocale);
+        return resolvedLocale;
+    });
+    const [ready, setReady] = useState(initialLocale !== undefined);
 
     useEffect(() => {
-        const initialLocale = getInitialDashboardLocale();
-        persistDashboardLocale(initialLocale, false);
-        setLocaleState(initialLocale);
+        const browserLocale = getInitialDashboardLocale();
+        persistDashboardLocale(browserLocale, false);
+        setLocaleState(browserLocale);
         setReady(true);
     }, []);
 
@@ -42,18 +57,41 @@ export function DashboardI18nProvider({ children }: { children: React.ReactNode 
         document.documentElement.lang = dashboardLocaleMetadata[locale].htmlLang;
     }, [locale]);
 
+    return (
+        <NextIntlClientProvider
+            locale={locale}
+            messages={dashboardMessages[locale]}
+        >
+            <DashboardI18nContextBridge locale={locale} setLocale={setLocale}>
+                {ready ? children : null}
+            </DashboardI18nContextBridge>
+        </NextIntlClientProvider>
+    );
+}
+
+function DashboardI18nContextBridge({
+    children,
+    locale,
+    setLocale,
+}: React.PropsWithChildren<Pick<DashboardI18nContextValue, "locale" | "setLocale">>) {
+    const translations = useTranslations();
+    const formatter = useFormatter();
+
     const value = useMemo<DashboardI18nContextValue>(() => ({
         locale,
         setLocale,
-        t: (key, values) => formatDashboardMessage(locale, key, values),
-        formatDate: (date, options) => new Intl.DateTimeFormat(getDashboardIntlLocale(locale), options).format(new Date(date)),
-        formatNumber: (number, options) => new Intl.NumberFormat(getDashboardIntlLocale(locale), options).format(number),
-        formatRelativeTime: (number, unit, options) => new Intl.RelativeTimeFormat(getDashboardIntlLocale(locale), options).format(number, unit),
-    }), [locale, setLocale]);
+        t: (key, values) => translations(key, values),
+        formatDate: (date, options) => formatter.dateTime(new Date(date), options as never),
+        formatNumber: (number, options) => formatter.number(number, options as never),
+        formatRelativeTime: (number, unit, options) => new Intl.RelativeTimeFormat(
+            getDashboardIntlLocale(locale),
+            options,
+        ).format(number, unit),
+    }), [formatter, locale, setLocale, translations]);
 
     return (
         <DashboardI18nContext.Provider value={value}>
-            {ready ? children : null}
+            {children}
         </DashboardI18nContext.Provider>
     );
 }

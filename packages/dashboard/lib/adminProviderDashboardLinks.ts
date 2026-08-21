@@ -1,5 +1,6 @@
 import type { IntegrationHealthRecord } from "@/lib/api-client";
-import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export type AdminProviderDashboardLinkKind = "provider" | "guild" | "notifications";
 
@@ -21,19 +22,6 @@ const providerDashboardPaths: Record<string, string> = {
     youtube: "youtube",
 };
 
-const linkLabels = {
-    en: {
-        provider: "Provider page",
-        guild: "Server overview",
-        notifications: "Notification setup",
-    },
-    nl: {
-        provider: "Providerpagina",
-        guild: "Serveroverzicht",
-        notifications: "Meldingsinstellingen",
-    },
-} satisfies DashboardLocaleValues<Record<AdminProviderDashboardLinkKind, string>>;
-
 export function getAdminProviderDashboardLinks(
     record: Pick<IntegrationHealthRecord, "provider" | "guildId">,
     locale: DashboardLocale = "en",
@@ -45,7 +33,11 @@ export function getAdminProviderDashboardLinks(
     const providerKey = normalizeProviderDashboardKey(record.provider);
     const providerPath = providerDashboardPaths[providerKey];
     const links: AdminProviderDashboardLink[] = [];
-    const labels = getDashboardLocaleValue(locale, linkLabels);
+    const labels: Record<AdminProviderDashboardLinkKind, string> = {
+        provider: formatDashboardMessage(locale, "admin.helperCopy.dashboardLinks.provider"),
+        guild: formatDashboardMessage(locale, "admin.helperCopy.dashboardLinks.guild"),
+        notifications: formatDashboardMessage(locale, "admin.helperCopy.dashboardLinks.notifications"),
+    };
 
     if (providerPath) {
         links.push({

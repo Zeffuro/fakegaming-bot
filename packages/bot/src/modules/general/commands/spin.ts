@@ -10,9 +10,7 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) => {
     for (let index = 1; index <= 10; index += 1) {
         builder.addStringOption(option => option
             .setName(`name${index}`)
-            .setNameLocalization('nl', `naam${index}`)
-            .setDescription(`Name ${index}`)
-            .setDescriptionLocalization('nl', `Naam ${index}`));
+            .setDescription(`Name ${index}`));
     }
 });
 

@@ -1,0 +1,80 @@
+{
+    "add-youtube-channel": {
+        "name": "youtube-kanaal-toevoegen",
+        "description": "Voeg een YouTube-kanaal toe voor nieuwe videomeldingen",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "YouTube-gebruikersnaam, handle, URL of kanaal-ID"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Discord-kanaal voor meldingen"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Aangepast meldingsbericht (optioneel)"
+            }
+        }
+    },
+    "manage-youtube-channels": {
+        "name": "youtube-kanalen-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder YouTube-videomeldingen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde YouTube-kanalen"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld YouTube-kanaal",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van youtube-kanalen-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld YouTube-kanaal",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van youtube-kanalen-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld YouTube-kanaal",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van youtube-kanalen-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld YouTube-kanaal",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van youtube-kanalen-beheren"
+                    }
+                }
+            }
+        }
+    },
+    "youtube-latest": {
+        "name": "nieuwste-youtube-video",
+        "description": "Toon de nieuwste video van een YouTube-kanaal-ID",
+        "options": {
+            "channel": {
+                "name": "kanaal",
+                "description": "YouTube-kanaal-ID, handle, URL of gebruikersnaam"
+            }
+        }
+    }
+}

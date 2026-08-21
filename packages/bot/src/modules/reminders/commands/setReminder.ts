@@ -9,10 +9,10 @@ import {getReminderCopy} from '../copy/reminderCopy.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('timespan').setNameLocalization('nl', 'tijdsduur').setDescription('When to remind (e.g., 1h, 30m)').setDescriptionLocalization('nl', 'Wanneer je herinnerd wilt worden (bijv. 1h, 30m)').setRequired(true))
-        .addStringOption(option => option.setName('message').setNameLocalization('nl', 'bericht').setDescription('Reminder message').setDescriptionLocalization('nl', 'Bericht van de herinnering').setRequired(true))
-        .addStringOption(option => option.setName('repeat').setNameLocalization('nl', 'herhaling').setDescription('Optional repeat rule, e.g. daily, weekly, every 2 weeks').setDescriptionLocalization('nl', 'Optionele herhaling, bijv. daily, weekly of every 2 weeks').setRequired(false))
-        .addStringOption(option => option.setName('repeat-timezone').setNameLocalization('nl', 'herhaling-tijdzone').setDescription('Timezone for repeats; defaults to your saved timezone').setDescriptionLocalization('nl', 'Tijdzone voor herhaling; standaard je opgeslagen tijdzone').setRequired(false))
+        .addStringOption(option => option.setName('timespan').setDescription('When to remind (e.g., 1h, 30m)').setRequired(true))
+        .addStringOption(option => option.setName('message').setDescription('Reminder message').setRequired(true))
+        .addStringOption(option => option.setName('repeat').setDescription('Optional repeat rule, e.g. daily, weekly, every 2 weeks').setRequired(false))
+        .addStringOption(option => option.setName('repeat-timezone').setDescription('Timezone for repeats; defaults to your saved timezone').setRequired(false))
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {

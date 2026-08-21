@@ -1,0 +1,17 @@
+{
+    "archiveUnavailable": "{displayName} heeft momenteel geen archief-VOD beschikbaar. https://twitch.tv/{username}",
+    "failedToAuthenticateWithTwitch": "Authenticatie bij Twitch is mislukt.",
+    "failedToCheckTwitchStatus": "Twitch-status controleren is mislukt.",
+    "failedToFetchTheLatestTwitchVod": "De nieuwste Twitch-VOD ophalen is mislukt.",
+    "from": "uit",
+    "offline": "{displayName} is momenteel offline. https://twitch.tv/{username}",
+    "liveStatus": "{displayName} is live{game}{viewers}: **{title}**\nGestart {startedAt}\nhttps://twitch.tv/{username}",
+    "playing": " en speelt **{game}**",
+    "published": "Gepubliceerd",
+    "untitledVod": "Naamloze VOD",
+    "latestVod": "Nieuwste VOD van {displayName}: **{title}**{duration}{published}\n{url}",
+    "recently": "onlangs",
+    "twitchChannelWasNotFound": "Twitch-kanaal `{username}` is niet gevonden.",
+    "twitchCredentialsAreNotConfigured": "Twitch-inloggegevens zijn niet ingesteld.",
+    "withViewers": " met **{count}** kijkers"
+}

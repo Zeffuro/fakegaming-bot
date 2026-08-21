@@ -1,38 +1,22 @@
-import { createLocaleCatalog } from '../../../core/localization.js';
+import { resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
+import { createBotTranslator, type BotMessages, type BotTranslationValues, type SupportedOutputLocale } from '../../../core/localization.js';
 import type { QuestionCategorySelection } from '../shared/questionDeck.js';
+import englishMessages from '../../../messages/en/question.json' with { type: 'json' };
+import dutchMessages from '../../../messages/nl/question.json' with { type: 'json' };
 
-const _QUESTION_COPY_KEYS = [
-    'title',
-    'anotherQuestion',
-    'categoryUnavailable',
-    'questionsUnavailable',
-    'buttonUnavailable',
-    'categoryFooter',
-    'category.any',
-    'category.gaming',
-    'category.silly',
-    'category.would-you-rather',
-    'category.getting-to-know-you',
-    'category.deep',
-] as const;
+export type QuestionCopyKey =
+    | 'title' | 'anotherQuestion' | 'categoryUnavailable' | 'questionsUnavailable' | 'buttonUnavailable'
+    | 'categoryFooter' | `category.${QuestionCategorySelection}`;
 
-export type QuestionCopyKey = typeof _QUESTION_COPY_KEYS[number];
-
-export const QUESTION_COPY = createLocaleCatalog<QuestionCopyKey>({
-    title: { en: 'Question Deck', nl: 'Vragenkaartspel' },
-    anotherQuestion: { en: 'Another question', nl: 'Nog een vraag' },
-    categoryUnavailable: { en: 'That question category is not available.', nl: 'Die vraagcategorie is niet beschikbaar.' },
-    questionsUnavailable: { en: 'No questions are available in that category.', nl: 'Er zijn geen vragen beschikbaar in die categorie.' },
-    buttonUnavailable: { en: 'This question button is not available.', nl: 'Deze vragenknop is niet beschikbaar.' },
-    categoryFooter: { en: 'Category: {category}', nl: 'Categorie: {category}' },
-    'category.any': { en: 'Any category', nl: 'Elke categorie' },
-    'category.gaming': { en: 'Gaming', nl: 'Gamen' },
-    'category.silly': { en: 'Silly', nl: 'Gek' },
-    'category.would-you-rather': { en: 'Would you rather', nl: 'Zou je liever' },
-    'category.getting-to-know-you': { en: 'Getting to know you', nl: 'Elkaar leren kennen' },
-    'category.deep': { en: 'Deep', nl: 'Diepgaand' },
-});
+export function translateQuestion(
+    locale: SupportedOutputLocale,
+    key: QuestionCopyKey,
+    values?: BotTranslationValues,
+): string {
+    const messages = resolveLocaleValue(locale, { en: englishMessages, nl: dutchMessages } satisfies OutputLocaleValues<BotMessages>) as typeof englishMessages;
+    return createBotTranslator(locale, messages)(key, values);
+}
 
 export function questionCategoryCopyKey(category: QuestionCategorySelection): QuestionCopyKey {
-    return `category.${category}` as QuestionCopyKey;
+    return `category.${category}`;
 }

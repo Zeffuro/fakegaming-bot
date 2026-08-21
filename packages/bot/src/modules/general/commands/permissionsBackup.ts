@@ -22,29 +22,21 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addSubcommand(subcommand =>
             subcommand
                 .setName('create')
-                .setNameLocalization('nl', 'maken')
                 .setDescription('Capture role, member, category, and channel permissions')
-                .setDescriptionLocalization('nl', 'Leg rol-, leden-, categorie- en kanaalrechten vast')
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
-                .setNameLocalization('nl', 'lijst')
                 .setDescription('List the most recent saved permission snapshots')
-                .setDescriptionLocalization('nl', 'Toon de recentste opgeslagen momentopnamen van rechten')
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('export')
-                .setNameLocalization('nl', 'exporteren')
                 .setDescription('Download a saved permission snapshot')
-                .setDescriptionLocalization('nl', 'Download een opgeslagen momentopname van rechten')
                 .addIntegerOption(option =>
                     option
                         .setName('id')
-                        .setNameLocalization('nl', 'id')
                         .setDescription('Snapshot ID from the list')
-                        .setDescriptionLocalization('nl', 'ID van de momentopname uit de lijst')
                         .setMinValue(1)
                         .setRequired(true)
                 )
@@ -52,15 +44,11 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addSubcommand(subcommand =>
             subcommand
                 .setName('delete')
-                .setNameLocalization('nl', 'verwijderen')
                 .setDescription('Permanently delete a saved permission snapshot')
-                .setDescriptionLocalization('nl', 'Verwijder een opgeslagen momentopname van rechten permanent')
                 .addIntegerOption(option =>
                     option
                         .setName('id')
-                        .setNameLocalization('nl', 'id')
                         .setDescription('Snapshot ID from the list')
-                        .setDescriptionLocalization('nl', 'ID van de momentopname uit de lijst')
                         .setMinValue(1)
                         .setRequired(true)
                 )

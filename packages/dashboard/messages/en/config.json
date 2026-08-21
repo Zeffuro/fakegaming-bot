@@ -1,0 +1,32 @@
+{
+  "config": {
+    "searchProviderHelp": "Search {module} by name, App ID, or URL",
+    "enterProviderField": "Enter the {module} {field}",
+    "cooldownHelp": "Minimum minutes between notifications (optional)",
+    "time24hHelp": "HH:mm (24h)",
+    "vodFollowup": "VOD follow-up",
+    "vodDelay": "VOD delay (minutes)",
+    "vodDelayHelp": "Wait after offline before checking the latest archive",
+    "youtubeTemplateHelp": "Tokens: {title}, {channel}, {url}, {duration}, {views}. If {url} is omitted, it will be appended automatically.",
+    "youtubeTemplatePlaceholder": "New video from {channel}: {title} {url}",
+    "youtubeTemplateExample": "Example: New video from {channel}: {title} {url}",
+    "blueskyTemplateHelp": "Tokens: {author}, {handle}, {text}, {url}, {likes}, {reposts}, {replies}. If {url} is omitted, it will be appended automatically.",
+    "blueskyTemplatePlaceholder": "New post from {author}: {text} {url}",
+    "blueskyTemplateExample": "Example: New post from {author}: {text} {url}",
+    "streamTemplateHelp": "Tokens: {streamer}, {title}, {game}, {url}, {uptime}, {viewers}. If {url} is omitted, it will be appended automatically.",
+    "streamTemplatePlaceholder": "{streamer} is now live! {url}",
+    "streamTemplateExample": "{streamer} is live: {title} {url}",
+    "typeAtLeastTwoCharacters": "Type at least 2 characters",
+    "noGamesFound": "No games found",
+    "loadingChannels": "Loading channels...",
+    "noChannelsAvailable": "No channels available",
+    "failingCount": "Failing x{count}",
+    "lastChecked": "Last checked: {value}",
+    "lastDelivery": "Last delivery: {value}",
+    "lastErrorCode": "Last error code: {value}",
+    "channel": "Channel",
+    "channels": "Channels",
+    "streamer": "Streamer",
+    "streamers": "Streamers"
+  }
+}

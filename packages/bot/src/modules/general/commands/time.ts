@@ -1,5 +1,4 @@
-import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
 import {SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
@@ -17,20 +16,21 @@ interface DateParts {
     second: number;
 }
 
+const DATE_FORMAT_LOCALES = {
+    en: 'en-GB',
+    nl: 'nl-NL',
+} satisfies OutputLocaleValues<string>;
+
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option
             .setName('time')
-            .setNameLocalization('nl', 'tijd')
             .setDescription('now, 20:30, 2026-06-11 20:30, ISO time, or Unix timestamp')
-            .setDescriptionLocalization('nl', 'now, 20:30, 2026-06-11 20:30, ISO-tijd of Unix-tijdstempel')
             .setRequired(true)
     ).addStringOption(option =>
         option
             .setName('timezone')
-            .setNameLocalization('nl', 'tijdzone')
             .setDescription('Timezone for wall-clock input. Defaults to your saved timezone or UTC')
-            .setDescriptionLocalization('nl', 'Tijdzone voor kloktijd; standaard je opgeslagen tijdzone of UTC')
             .setRequired(false)
             .setAutocomplete(true)
     )
@@ -154,7 +154,7 @@ export function parseTimeInput(input: string, timezone: string, now = new Date()
 }
 
 function formatInTimezone(date: Date, timezone: string, locale: SupportedOutputLocale): string {
-    return new Intl.DateTimeFormat(resolveLocaleValue(locale, { en: 'en-GB', nl: 'nl-NL' }), {
+    return new Intl.DateTimeFormat(DATE_FORMAT_LOCALES[locale], {
         dateStyle: 'full',
         timeStyle: 'medium',
         timeZone: timezone,

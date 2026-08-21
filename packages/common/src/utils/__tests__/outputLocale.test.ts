@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-    getOutputLocaleMetadata,
-    isSupportedOutputLocale,
-    NON_DEFAULT_OUTPUT_LOCALES,
-    resolveOutputLocaleFromAcceptLanguage,
-    type NonDefaultOutputLocale,
+    getLocaleMetadata,
+    isSupportedLocale,
+    NON_DEFAULT_LOCALES,
+    resolveLocaleFromAcceptLanguage,
+    type NonDefaultLocale,
     resolveLocaleValue,
-    type OutputLocaleValues,
+    type LocaleValues,
 } from '../outputLocale.js';
 
 describe('output locale registry', () => {
@@ -14,27 +14,27 @@ describe('output locale registry', () => {
         const values = {
             en: 'Save',
             nl: 'Opslaan',
-        } satisfies OutputLocaleValues<string>;
+        } satisfies LocaleValues<string>;
 
         expect(resolveLocaleValue('en', values)).toBe('Save');
         expect(resolveLocaleValue('nl', values)).toBe('Opslaan');
     });
 
     it('keeps locale metadata in the shared registry', () => {
-        const translatedLocale: NonDefaultOutputLocale = 'nl';
+        const translatedLocale: NonDefaultLocale = 'nl';
 
-        expect(getOutputLocaleMetadata('en')).toMatchObject({ languageTag: 'en-US', htmlLang: 'en' });
-        expect(getOutputLocaleMetadata(translatedLocale)).toMatchObject({ languageTag: 'nl-NL', htmlLang: 'nl' });
-        expect(isSupportedOutputLocale('nl')).toBe(true);
-        expect(isSupportedOutputLocale('fr')).toBe(false);
-        expect(NON_DEFAULT_OUTPUT_LOCALES).toEqual(['nl']);
+        expect(getLocaleMetadata('en')).toMatchObject({ formatTag: 'en-US', htmlLang: 'en' });
+        expect(getLocaleMetadata(translatedLocale)).toMatchObject({ formatTag: 'nl-NL', htmlLang: 'nl' });
+        expect(isSupportedLocale('nl')).toBe(true);
+        expect(isSupportedLocale('fr')).toBe(false);
+        expect(NON_DEFAULT_LOCALES).toEqual(['nl']);
     });
 
     it('negotiates regional Accept-Language tags by quality', () => {
-        expect(resolveOutputLocaleFromAcceptLanguage('nl-NL,nl;q=0.9,en;q=0.8')).toBe('nl');
-        expect(resolveOutputLocaleFromAcceptLanguage('nl;q=0.3,en-GB;q=0.9')).toBe('en');
-        expect(resolveOutputLocaleFromAcceptLanguage(['fr-FR', 'nl;q=0.8'])).toBe('nl');
-        expect(resolveOutputLocaleFromAcceptLanguage('nl;q=0,*;q=0.5')).toBe('en');
-        expect(resolveOutputLocaleFromAcceptLanguage(undefined)).toBe('en');
+        expect(resolveLocaleFromAcceptLanguage('nl-NL,nl;q=0.9,en;q=0.8')).toBe('nl');
+        expect(resolveLocaleFromAcceptLanguage('nl;q=0.3,en-GB;q=0.9')).toBe('en');
+        expect(resolveLocaleFromAcceptLanguage(['fr-FR', 'nl;q=0.8'])).toBe('nl');
+        expect(resolveLocaleFromAcceptLanguage('nl;q=0,*;q=0.5')).toBe('en');
+        expect(resolveLocaleFromAcceptLanguage(undefined)).toBe('en');
     });
 });

@@ -1,0 +1,16 @@
+{
+    "title": "Vragenkaartspel",
+    "anotherQuestion": "Nog een vraag",
+    "categoryUnavailable": "Die vraagcategorie is niet beschikbaar.",
+    "questionsUnavailable": "Er zijn geen vragen beschikbaar in die categorie.",
+    "buttonUnavailable": "Deze vragenknop is niet beschikbaar.",
+    "categoryFooter": "Categorie: {category}",
+    "category": {
+        "any": "Elke categorie",
+        "gaming": "Gamen",
+        "silly": "Gek",
+        "would-you-rather": "Zou je liever",
+        "getting-to-know-you": "Elkaar leren kennen",
+        "deep": "Diepgaand"
+    }
+}

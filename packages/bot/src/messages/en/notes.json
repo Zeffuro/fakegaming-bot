@@ -1,0 +1,21 @@
+{
+    "unknown": "Unknown notes subcommand.",
+    "bodyRequired": "Add note text before saving.",
+    "saved": "Saved note `{id}`: {title}",
+    "none": "You have no saved notes.",
+    "title": "Your notes:",
+    "more": "\n...and {count} more.",
+    "notFound": "Note not found. Use `/notes list` to see your notes.",
+    "pinned": "pinned",
+    "noBody": "_No body_",
+    "deleted": "Deleted note `{id}`: {title}",
+    "savedMessageTitle": "Saved message",
+    "emptyMessage": "[Message has no text content.]",
+    "source": "Source",
+    "messageContains": "[Message contains {parts}; files were not downloaded.]",
+    "attachments": "{count, plural, one {# attachment} other {# attachments}}",
+    "stickers": "{count, plural, one {# sticker} other {# stickers}}",
+    "and": "and",
+    "contextSaved": "Saved this message to your private notes as `{id}`.",
+    "contextFailed": "I could not save that message to your private notes. Please try again later."
+}

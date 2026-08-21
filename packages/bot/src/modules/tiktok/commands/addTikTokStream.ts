@@ -9,7 +9,7 @@ function normalizeUsername(input: string): string {
 
 const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
     meta: META,
-    usernameOptionDescriptions: tiktokCommandConfig.usernameOptionDescriptions,
+    copyNamespace: tiktokCommandConfig.copyNamespace,
     resolveOrVerify: async (_username) => {
         return { ok: true, id: undefined } as const;
     },
@@ -34,9 +34,6 @@ const { data, execute, testOnly } = createSubscriptionCommand<undefined>({
             tiktokUsername: normalizeUsername(username),
         }),
     },
-    successMessages: tiktokCommandConfig.successMessages,
-    alreadyConfiguredMessages: tiktokCommandConfig.alreadyConfiguredMessages,
-    notFoundMessages: tiktokCommandConfig.notFoundMessages,
 });
 
 // noinspection JSUnusedGlobalSymbols

@@ -23,17 +23,15 @@ const pollSessions = new PollSessionStore();
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
-        .addStringOption(option => option.setName('question').setNameLocalization('nl', 'vraag').setDescription('The poll question').setDescriptionLocalization('nl', 'De vraag van de peiling').setMaxLength(MAX_QUESTION_LENGTH).setRequired(true))
-        .addStringOption(option => option.setName('option1').setNameLocalization('nl', 'optie1').setDescription('Option 1').setDescriptionLocalization('nl', 'Optie 1').setMaxLength(MAX_OPTION_LENGTH).setRequired(true))
-        .addStringOption(option => option.setName('option2').setNameLocalization('nl', 'optie2').setDescription('Option 2').setDescriptionLocalization('nl', 'Optie 2').setMaxLength(MAX_OPTION_LENGTH).setRequired(true))
-        .addStringOption(option => option.setName('option3').setNameLocalization('nl', 'optie3').setDescription('Option 3').setDescriptionLocalization('nl', 'Optie 3').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
-        .addStringOption(option => option.setName('option4').setNameLocalization('nl', 'optie4').setDescription('Option 4').setDescriptionLocalization('nl', 'Optie 4').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
-        .addStringOption(option => option.setName('option5').setNameLocalization('nl', 'optie5').setDescription('Option 5').setDescriptionLocalization('nl', 'Optie 5').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
+        .addStringOption(option => option.setName('question').setDescription('The poll question').setMaxLength(MAX_QUESTION_LENGTH).setRequired(true))
+        .addStringOption(option => option.setName('option1').setDescription('Option 1').setMaxLength(MAX_OPTION_LENGTH).setRequired(true))
+        .addStringOption(option => option.setName('option2').setDescription('Option 2').setMaxLength(MAX_OPTION_LENGTH).setRequired(true))
+        .addStringOption(option => option.setName('option3').setDescription('Option 3').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
+        .addStringOption(option => option.setName('option4').setDescription('Option 4').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
+        .addStringOption(option => option.setName('option5').setDescription('Option 5').setMaxLength(MAX_OPTION_LENGTH).setRequired(false))
         .addIntegerOption(option => option
             .setName('duration')
-            .setNameLocalization('nl', 'duur')
             .setDescription('Minutes before this poll closes (default: 10)')
-            .setDescriptionLocalization('nl', 'Minuten voordat de peiling sluit (standaard: 10)')
             .setMinValue(POLL_MIN_DURATION_MINUTES)
             .setMaxValue(POLL_MAX_DURATION_MINUTES)
             .setRequired(false))

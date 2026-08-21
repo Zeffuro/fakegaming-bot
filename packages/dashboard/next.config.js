@@ -1,5 +1,6 @@
 import path from "path";
 import {fileURLToPath} from "node:url";
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Compute the trace root from the directory containing this config file
 const traceRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -55,4 +56,6 @@ const nextConfig = {
     },
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+export default withNextIntl(nextConfig);

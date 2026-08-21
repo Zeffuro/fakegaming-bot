@@ -14,7 +14,7 @@
     "start": "next start",
     "start:dev": "pnpm --filter @zeffuro/fakegaming-bot-api export:openapi && pnpm -w run gen:api-types && next dev",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint app components lib --ext .ts,.tsx --config ../../eslint.config.mjs",
+    "lint": "eslint app components i18n lib --ext .ts,.tsx --config ../../eslint.config.mjs",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -28,6 +28,7 @@
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
     "next": "^16.3.1",
+    "next-intl": "4.13.6",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

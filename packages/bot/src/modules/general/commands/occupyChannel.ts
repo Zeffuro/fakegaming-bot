@@ -21,26 +21,18 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(command => command
             .setName('enable')
-            .setNameLocalization('nl', 'inschakelen')
             .setDescription('Keep a voice channel occupied while the bot is online')
-            .setDescriptionLocalization('nl', 'Houd een spraakkanaal bezet zolang de bot online is')
             .addChannelOption(option => option
                 .setName('channel')
-                .setNameLocalization('nl', 'kanaal')
                 .setDescription('Voice channel for the bot to occupy')
-                .setDescriptionLocalization('nl', 'Spraakkanaal dat de bot bezet houdt')
                 .addChannelTypes(ChannelType.GuildVoice)
                 .setRequired(true)))
         .addSubcommand(command => command
             .setName('disable')
-            .setNameLocalization('nl', 'uitschakelen')
-            .setDescription('Stop occupying the configured voice channel')
-            .setDescriptionLocalization('nl', 'Stop met het bezet houden van het ingestelde spraakkanaal'))
+            .setDescription('Stop occupying the configured voice channel'))
         .addSubcommand(command => command
             .setName('status')
-            .setNameLocalization('nl', 'status')
-            .setDescription('Show the occupied voice channel and connection state')
-            .setDescriptionLocalization('nl', 'Toon het bezette spraakkanaal en de verbindingsstatus'))
+            .setDescription('Show the occupied voice channel and connection state'))
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {

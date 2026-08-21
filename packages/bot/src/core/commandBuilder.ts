@@ -1,8 +1,6 @@
 import {ApplicationCommandType, ContextMenuCommandBuilder, SlashCommandBuilder} from 'discord.js';
-import {
-    NON_DEFAULT_OUTPUT_LOCALES,
-    type NonDefaultOutputLocale,
-} from '@zeffuro/fakegaming-common';
+import {type NonDefaultOutputLocale} from '@zeffuro/fakegaming-common';
+import {attachCommandLocalizations} from './commandLocalization.js';
 
 export interface LocalizedCommandMetadata {
     name: string;
@@ -27,37 +25,22 @@ export function createSlashCommand(
     const builder = new SlashCommandBuilder()
         .setName(meta.name)
         .setDescription(meta.description);
-    for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-        const translation = meta.localizations?.[locale];
-        if (!translation) continue;
-        builder
-            .setNameLocalization(locale, translation.name)
-            .setDescriptionLocalization(locale, translation.description);
-    }
     if (addOptions) addOptions(builder);
-    return builder;
+    return attachCommandLocalizations(builder, meta.name, meta.localizations);
 }
 
 export function createUserContextCommand(meta: Pick<LocalizedCommandMetadata, 'name' | 'localizations'>): ContextMenuCommandBuilder {
     const builder = new ContextMenuCommandBuilder()
         .setName(meta.name)
         .setType(ApplicationCommandType.User);
-    for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-        const name = meta.localizations?.[locale]?.name;
-        if (name) builder.setNameLocalization(locale, name);
-    }
-    return builder;
+    return attachCommandLocalizations(builder, meta.name, meta.localizations);
 }
 
 export function createMessageContextCommand(meta: Pick<LocalizedCommandMetadata, 'name' | 'localizations'>): ContextMenuCommandBuilder {
     const builder = new ContextMenuCommandBuilder()
         .setName(meta.name)
         .setType(ApplicationCommandType.Message);
-    for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-        const name = meta.localizations?.[locale]?.name;
-        if (name) builder.setNameLocalization(locale, name);
-    }
-    return builder;
+    return attachCommandLocalizations(builder, meta.name, meta.localizations);
 }
 
 /**

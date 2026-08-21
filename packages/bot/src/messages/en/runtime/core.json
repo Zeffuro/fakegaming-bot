@@ -1,0 +1,12 @@
+{
+    "errorExecutingCommand": "Error executing command.",
+    "errorHandlingInteraction": "Error handling interaction.",
+    "durationMinutesSeconds": "{minutes}m {seconds}s",
+    "timeAgoDays": "{count, plural, one {# day ago} other {# days ago}}",
+    "timeAgoHours": "{count, plural, one {# hour ago} other {# hours ago}}",
+    "timeAgoMinutes": "{count} min ago",
+    "timeAgoNow": "just now",
+    "onlyAdminsCanUseThisCommand": "Only admins can use this command.",
+    "theModuleIsDisabledForThisServer": "The {module} module is disabled for this server.",
+    "thisCommandIsDisabledForThisServer": "This command is disabled for this server."
+}

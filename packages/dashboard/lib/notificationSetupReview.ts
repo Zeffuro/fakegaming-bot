@@ -1,4 +1,5 @@
-import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export interface NotificationReviewRecord {
     provider: string;
@@ -121,7 +122,7 @@ function toSortedGroups(
 
     return [...groups.entries()]
         .map(([key, groupRecords]) => {
-            const unknown = getDashboardLocaleValue(locale, { en: "Unknown", nl: "Onbekend" });
+            const unknown = formatDashboardMessage(locale, "setupTemplates.importCopy.unknown");
             return {
                 key,
                 provider: groupRecords[0]?.provider ?? unknown,

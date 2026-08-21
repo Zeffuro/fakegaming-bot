@@ -1,4 +1,9 @@
-import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getLogger,
+    getOutputLocaleMetadata,
+    type SupportedOutputLocale,
+} from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { formatMinuteKey, scheduleSingleton, type JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { buildDiscordNotificationPayload } from './discordNotificationPayload.js';
@@ -25,11 +30,6 @@ interface TwitchStreamConfigPlain {
     vodFollowupDelayMinutes?: number | null;
     lastVodId?: string | null;
 }
-
-const UPTIME_HOUR_UNITS = {
-    en: 'h',
-    nl: 'u',
-} as const satisfies OutputLocaleValues<string>;
 
 interface HelixUser { id: string; login: string; display_name?: string; profile_image_url?: string }
 interface HelixStream { id: string; user_id: string; title: string; viewer_count?: number; started_at?: string; thumbnail_url?: string; game_id?: string }
@@ -218,7 +218,7 @@ export function buildTwitchEmbedAndContent(opts: {
     const startedAtMs = stream.started_at ? Date.parse(stream.started_at) : NaN;
     const uptimeMs = Number.isFinite(startedAtMs) ? Math.max(0, Date.now() - startedAtMs) : null;
     const uptimeStr = typeof uptimeMs === 'number' && uptimeMs > 0 ? formatTwitchUptime(uptimeMs, locale) : null;
-    const numberFormatter = new Intl.NumberFormat(locale);
+    const numberFormatter = new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag);
 
     const embed: Record<string, unknown> = {
         title: apiText(locale, 'twitchLiveTitle', { streamer: streamerName }),
@@ -280,7 +280,7 @@ export function buildTwitchVodEmbedAndContent(opts: {
     if (typeof video.view_count === 'number') {
         fields.push({
             name: apiText(locale, 'twitchVodViews'),
-            value: new Intl.NumberFormat(locale).format(video.view_count),
+            value: new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(video.view_count),
             inline: true,
         });
     }
@@ -317,7 +317,9 @@ export function buildTwitchVodEmbedAndContent(opts: {
             title: video.title || '',
             url: urlSafe,
             duration: video.duration || '',
-            views: typeof video.view_count === 'number' ? new Intl.NumberFormat(locale).format(video.view_count) : '',
+            views: typeof video.view_count === 'number'
+                ? new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(video.view_count)
+                : '',
         },
         urlToken: urlSafe,
     });
@@ -329,7 +331,7 @@ function formatTwitchUptime(msValue: number, locale: SupportedOutputLocale): str
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    const hourUnit = resolveLocaleValue(locale, UPTIME_HOUR_UNITS);
+    const hourUnit = apiText(locale, 'durationHourUnit');
 
     if (days > 0) return `${days}d ${hours}${hourUnit}`;
     if (hours > 0) return `${hours}${hourUnit} ${minutes}m`;

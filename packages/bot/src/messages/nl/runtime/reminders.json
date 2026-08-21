@@ -1,0 +1,18 @@
+{
+    "active": " [actief]",
+    "dueNow": "nu verwacht",
+    "in": "over",
+    "statePaused": "gepauzeerd",
+    "stateRecurring": "herhalend",
+    "recurrenceMinute": " (elke {interval, plural, one {minuut} other {# minuten}}, {timezone})",
+    "recurrenceHour": " (elke {interval, plural, one {uur} other {# uur}}, {timezone})",
+    "recurrenceDay": " (elke {interval, plural, one {dag} other {# dagen}}, {timezone})",
+    "recurrenceWeek": " (elke {interval, plural, one {week} other {# weken}}, {timezone})",
+    "recurrenceMonth": " (elke {interval, plural, one {maand} other {# maanden}}, {timezone})",
+    "recurrenceYear": " (elke {interval, plural, one {jaar} other {# jaar}}, {timezone})",
+    "recurrenceOtherSingular": " (elke {unit}, {timezone})",
+    "recurrenceOtherPlural": " (elke {interval} {unit}, {timezone})",
+    "nextRun": " Volgende uitvoering '<t:'{timestamp}:R>.",
+    "paused": " [gepauzeerd]",
+    "unknownTime": "onbekende tijd"
+}

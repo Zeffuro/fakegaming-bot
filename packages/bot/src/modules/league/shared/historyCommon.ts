@@ -1,10 +1,10 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
 import { AttachmentBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { regionToRegionGroupForAccountAPI } from '../constants/riotRegions.js';
 import type { AccountAPIRegionGroups, Regions } from '../constants/riotRegions.js';
 import { getLeagueIdentityFromInteraction } from '../utils/leagueUtils.js';
 import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
 import { leagueText, missingIdentity, unknownError } from '../copy/leagueCopy.js';
+import {runtimeText} from '../../../core/runtimeCopy.js';
 
 export interface LeagueIdentity {
     summoner: string;
@@ -16,9 +16,7 @@ export interface HistoryCommandOptions<TMatch> {
     fetchHistory: (puuid: string, regionGroup: AccountAPIRegionGroups, start: number, count: number) => Promise<{ success: boolean; data?: unknown; error?: string }>;
     fetchDetails: (matchId: string, regionGroup: AccountAPIRegionGroups) => Promise<{ success: boolean; data?: unknown; error?: string }>;
     generateImage: (matches: TMatch[], identity: { puuid: string }, locale?: SupportedOutputLocale) => Promise<Buffer>;
-    contentPrefix: OutputLocaleValues<string>;
-    historyErrorPrefix: OutputLocaleValues<string>;
-    detailsErrorPrefix: OutputLocaleValues<string>;
+    historyKind: 'league' | 'tft';
     count?: number; // default 5
 }
 
@@ -42,12 +40,12 @@ export async function runHistoryCommand<TMatch>(interaction: ChatInputCommandInt
     const regionGroup = regionToRegionGroupForAccountAPI(identity.region);
     const history = await opts.fetchHistory(identity.puuid, regionGroup, 0, count);
     if (!history.success) {
-        await interaction.editReply(`${opts.historyErrorPrefix[locale]}: ${history.error ?? unknownError(locale)}`);
+        await interaction.editReply(`${runtimeText(locale, 'league', opts.historyKind === 'league' ? 'leagueHistoryError' : 'tftHistoryError')}: ${history.error ?? unknownError(locale)}`);
         return;
     }
     const matchIds = history.data as string[] | undefined;
     if (!Array.isArray(matchIds) || matchIds.length === 0) {
-        await interaction.editReply(leagueText(locale, { en: 'No match history found.', nl: 'Geen wedstrijdgeschiedenis gevonden.' }));
+        await interaction.editReply(leagueText(locale, "noMatchHistoryFound"));
         return;
     }
 
@@ -55,7 +53,7 @@ export async function runHistoryCommand<TMatch>(interaction: ChatInputCommandInt
     for (const matchId of matchIds) {
         const details = await opts.fetchDetails(matchId, regionGroup);
         if (!details.success) {
-            await interaction.editReply(`${opts.detailsErrorPrefix[locale]} ${matchId}: ${details.error ?? unknownError(locale)}`);
+            await interaction.editReply(`${runtimeText(locale, 'league', opts.historyKind === 'league' ? 'leagueDetailsError' : 'tftDetailsError')} ${matchId}: ${details.error ?? unknownError(locale)}`);
             return;
         }
         const data = details.data as TMatch | undefined;
@@ -65,13 +63,11 @@ export async function runHistoryCommand<TMatch>(interaction: ChatInputCommandInt
     }
 
     const buffer = await opts.generateImage(matches, { puuid: identity.puuid }, locale);
-    const fileBase = resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.contentPrefix).toLowerCase().includes('tft') ? 'tft' : 'league';
-    const attachment = new AttachmentBuilder(buffer, { name: `${fileBase}-history.png` });
+    const attachment = new AttachmentBuilder(buffer, { name: `${opts.historyKind}-history.png` });
 
     await interaction.editReply({
-        content: resolveLocaleValue(locale, {
-            en: `${resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.contentPrefix)} for ${identity.summoner} [${identity.region}]`,
-            nl: `${resolveLocaleValue('nl', opts.contentPrefix)} voor ${identity.summoner} [${identity.region}]`,
+        content: runtimeText(locale, 'league', opts.historyKind === 'league' ? 'leagueHistoryContent' : 'tftHistoryContent', {
+            summoner: identity.summoner, region: identity.region,
         }),
         files: [attachment]
     });

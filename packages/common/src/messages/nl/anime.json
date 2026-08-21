@@ -1,0 +1,55 @@
+{
+  "seasonScope": {
+    "airing": "wordt uitgezonden/komend",
+    "chart": "seizoensoverzicht",
+    "tv": "alleen tv",
+    "all": "alle bekende indelingen"
+  },
+  "country": {
+    "JP": "Japan",
+    "KR": "Zuid-Korea",
+    "CN": "China",
+    "TW": "Taiwan"
+  },
+  "mangaOrigin": {
+    "JP": "Manga",
+    "KR": "Manhwa",
+    "CN": "Manhua",
+    "TW": "Manhua"
+  },
+  "enum": {
+    "TV": "TV",
+    "TV_SHORT": "Korte tv-serie",
+    "OVA": "OVA",
+    "ONA": "ONA",
+    "MOVIE": "Film",
+    "SPECIAL": "Special",
+    "MUSIC": "Muziek",
+    "MANGA": "Manga",
+    "NOVEL": "Roman",
+    "ONE_SHOT": "One-shot",
+    "RELEASING": "Wordt uitgezonden",
+    "FINISHED": "Afgerond",
+    "NOT_YET_RELEASED": "Nog niet verschenen",
+    "CANCELLED": "Geannuleerd",
+    "HIATUS": "Onderbroken",
+    "WINTER": "Winter",
+    "SPRING": "Lente",
+    "SUMMER": "Zomer",
+    "FALL": "Herfst",
+    "POPULAR": "Populairst",
+    "RATED": "Hoogst beoordeeld",
+    "RANKED": "Ranglijst"
+  },
+  "copy": {
+    "unknown": "Onbekend",
+    "unknownTitle": "Onbekende titel",
+    "unknownYear": "Onbekend jaar",
+    "average": "Gemiddeld",
+    "mean": "Gemiddelde score",
+    "novel": "Roman",
+    "mostPopular": "Populairst",
+    "highestRated": "Hoogst beoordeeld",
+    "allTime": "aller tijden"
+  }
+}

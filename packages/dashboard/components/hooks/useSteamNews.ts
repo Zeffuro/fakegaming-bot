@@ -2,7 +2,8 @@ import { api, type SteamNewsSubscriptionConfig, type SteamNewsSubscriptionReques
 import { buildNotificationTimingPayload, useConfigResource } from "@/components/hooks/useConfigResource";
 import type { ConfigDialogItemOption } from "@/components/config-dialog/ConfigDialogFields";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
-import { getDashboardLocaleValue, type DashboardLocale } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 interface UseSteamNewsConfigsOptions {
     enabled?: boolean;
@@ -105,7 +106,7 @@ function toDashboardConfig(config: SteamNewsSubscriptionConfig, locale: Dashboar
         quietHoursStart: config.quietHoursStart ?? null,
         quietHoursEnd: config.quietHoursEnd ?? null,
         paused: config.paused ?? false,
-        youtubeChannelTitle: appName ?? `${getDashboardLocaleValue(locale, { en: "Steam app", nl: "Steam-app" })} ${config.steamAppId}`,
+        youtubeChannelTitle: appName ?? formatDashboardMessage(locale, "hooks.steamAppFallback", { id: config.steamAppId }),
     };
 }
 

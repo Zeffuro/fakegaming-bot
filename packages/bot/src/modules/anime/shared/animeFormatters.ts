@@ -1,9 +1,10 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
 import type { AnimeTitle } from '@zeffuro/fakegaming-common/models';
 import type { AniListTitle } from '@zeffuro/fakegaming-common/anime';
 import type { CreationAttributes } from 'sequelize';
 import type { SupportedOutputLocale } from '../../../core/localization.js';
 import { getAnimeCopy } from '../copy/animeCopy.js';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 
 export function formatAnimeTitle(
     title: AniListTitle | CreationAttributes<AnimeTitle>,
@@ -42,17 +43,12 @@ export function formatGenres(genres?: readonly string[] | null, locale: Supporte
 
 export function formatAnimeStatus(status?: string | null, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
     if (!status) return getAnimeCopy(locale).unknown;
-    return resolveLocaleValue(locale, {
-        en: () => status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
-        nl: () => {
-            const labels: Readonly<Record<string, string>> = {
-            NOT_YET_RELEASED: 'Nog niet verschenen',
-            RELEASING: 'Wordt uitgezonden',
-            FINISHED: 'Afgerond',
-            CANCELLED: 'Geannuleerd',
-            HIATUS: 'Onderbroken',
-            };
-            return labels[status] ?? status.replace(/_/g, ' ');
-        },
-    })();
+    const keys = {
+        NOT_YET_RELEASED: 'statusNotYetReleased', RELEASING: 'statusReleasing', FINISHED: 'statusFinished',
+        CANCELLED: 'statusCancelled', HIATUS: 'statusHiatus',
+    } as const;
+    const key = keys[status as keyof typeof keys];
+    return key
+        ? runtimeText(locale, 'anime', key)
+        : status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 }

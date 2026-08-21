@@ -227,6 +227,29 @@ describe('weatherService', () => {
             });
         });
 
+        it('formats forecast weekdays and times in Dutch', async () => {
+            axiosMocks.get.mockResolvedValue({
+                data: {
+                    list: [{
+                        dt: 1696780800,
+                        weather: [{main: 'Clear', description: 'clear sky'}],
+                        main: {temp: 18.5},
+                    }],
+                },
+            });
+
+            const result = await getShortTermForecast('Rotterdam', 1, 'nl');
+            const expectedTime = new Intl.DateTimeFormat('nl-NL', {
+                hour: '2-digit',
+                minute: '2-digit',
+                weekday: 'short',
+                hour12: false,
+                timeZone: 'UTC',
+            }).format(new Date(1696780800 * 1000));
+
+            expect(result[0]?.time).toBe(expectedTime);
+        });
+
         it('should default to 4 periods if not specified', async () => {
             const mockResponse = {
                 data: {

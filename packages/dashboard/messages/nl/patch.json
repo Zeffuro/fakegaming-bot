@@ -1,0 +1,29 @@
+{
+  "patch": {
+    "game": "Spel",
+    "timelineTitle": "Tijdlijn met patchnotities",
+    "storedCount": "{count} opgeslagen patches, nieuwste eerst.",
+    "noStoredMatch": "Geen opgeslagen patches komen overeen met deze filters.",
+    "refresh": "Vernieuwen",
+    "compareSelected": "Selectie vergelijken",
+    "allGames": "Alle spellen",
+    "selectedCount": "{count}/2 geselecteerd",
+    "historyLoadFailed": "Geschiedenis met patchnotities laden mislukt",
+    "compareFailed": "Patchnotities vergelijken mislukt",
+    "noPatchNotes": "Geen patchnotities gevonden.",
+    "pageOf": "Pagina {page} van {pages}",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "noPreview": "Geen voorbeeld beschikbaar.",
+    "selected": "Geselecteerd",
+    "select": "Selecteren",
+    "open": "Openen",
+    "compareTitle": "Patches vergelijken",
+    "compareLoading": "Vergelijking laden...",
+    "from": "Van",
+    "to": "Naar",
+    "unchangedLines": "{count} ongewijzigd",
+    "diffTruncated": "Verschil ingekort tot {emitted} van {total} regels.",
+    "unknownDate": "Onbekende datum"
+  }
+}

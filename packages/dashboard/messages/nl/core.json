@@ -1,0 +1,112 @@
+{
+  "language": {
+    "label": "Taal",
+    "english": "Engels",
+    "dutch": "Nederlands"
+  },
+  "brand": {
+    "logoAlt": "Fakegaming-logo"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "backToGuilds": "Terug naar servers",
+    "backToServers": "Terug naar servers",
+    "notifications": "Meldingen",
+    "birthdays": "Verjaardagen",
+    "privacy": "Privacy en cookies",
+    "terms": "Voorwaarden",
+    "yourDashboard": "Jouw dashboard",
+    "adminPanel": "Beheerpaneel",
+    "logout": "Uitloggen"
+  },
+  "app": {
+    "controlPanel": "Bedieningspaneel"
+  },
+  "common": {
+    "loading": "Laden...",
+    "error": "Er is iets misgegaan!",
+    "tryAgain": "Opnieuw proberen",
+    "save": "Opslaan",
+    "add": "Toevoegen",
+    "update": "Bijwerken",
+    "addItem": "{item} toevoegen",
+    "editItem": "{item} bewerken",
+    "cancel": "Annuleren",
+    "close": "Sluiten",
+    "delete": "Verwijderen",
+    "edit": "Bewerken",
+    "refresh": "Vernieuwen",
+    "search": "Zoeken",
+    "clear": "Wissen",
+    "enabled": "Ingeschakeld",
+    "disabled": "Uitgeschakeld",
+    "none": "Geen",
+    "unknown": "Onbekend",
+    "unavailable": "niet beschikbaar",
+    "noResults": "Geen resultaten gevonden",
+    "copied": "Gekopieerd",
+    "copy": "Kopiëren",
+    "download": "Downloaden",
+    "open": "Openen",
+    "viewDetails": "Details bekijken",
+    "configuration": "Configuratie",
+    "settings": "Instellingen",
+    "status": "Status",
+    "required": "Vereist",
+    "optional": "Optioneel",
+    "yes": "Ja",
+    "no": "Nee",
+    "minutes": "minuten",
+    "hours": "uur",
+    "days": "dagen",
+    "discordChannel": "Discord-kanaal",
+    "refreshChannels": "Kanalen vernieuwen",
+    "customMessageOptional": "Aangepast bericht (optioneel)",
+    "availableTokens": "Beschikbare tokens:",
+    "cooldownMinutes": "Afkoeltijd (minuten)",
+    "quietStart": "Begin stille uren",
+    "quietEnd": "Einde stille uren",
+    "paused": "Gepauzeerd",
+    "pause": "Pauzeren",
+    "resume": "Hervatten",
+    "checking": "Controleren...",
+    "notChecked": "Niet gecontroleerd",
+    "healthy": "Gezond",
+    "warning": "Waarschuwing",
+    "never": "Nooit"
+  },
+  "breadcrumb": {
+    "analytics": "Analyse",
+    "quotes": "Citaten",
+    "notifications": "Meldingen"
+  },
+  "error": {
+    "notAuthenticated": "Niet aangemeld",
+    "invalidSession": "Je sessie is niet meer geldig. Log opnieuw in.",
+    "serviceUnavailable": "De dashboarddienst is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
+    "profileNotFound": "Gebruikersprofiel niet gevonden",
+    "profileUnavailable": "Gebruikersgegevens konden niet worden opgehaald",
+    "guildDataUnavailable": "Servergegevens zijn tijdelijk niet beschikbaar. Probeer het opnieuw.",
+    "guildAccessUnavailable": "Servertoegang is tijdelijk niet beschikbaar. Vernieuw je dashboardsessie en probeer het opnieuw.",
+    "guildForbidden": "Je bent niet gemachtigd om deze server te beheren.",
+    "guildNotFoundOrForbidden": "Server niet gevonden of je hebt geen toegang tot deze server.",
+    "channelsUnavailable": "Serverkanalen konden niet worden opgehaald",
+    "oauthCodeMissing": "De Discord-inlogcode ontbreekt.",
+    "oauthCodeInvalid": "De Discord-inlogcode is ongeldig.",
+    "requestFailed": "API-aanvraag mislukt met status: {status}",
+    "network": "De dashboarddienst is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
+    "csrfMissing": "Het beveiligingstoken ontbreekt. Vernieuw de pagina en probeer het opnieuw.",
+    "csrfInvalid": "Het beveiligingstoken is ongeldig. Vernieuw de pagina en probeer het opnieuw."
+  },
+  "status": {
+    "all": "Alle",
+    "active": "Actief",
+    "error": "Fout"
+  },
+  "login": {
+    "title": "Fakegaming Bot-dashboard",
+    "description": "Log in met Discord om je servers en botinstellingen te beheren.",
+    "goToDashboard": "Naar dashboard",
+    "withDiscord": "Inloggen met Discord"
+  }
+}

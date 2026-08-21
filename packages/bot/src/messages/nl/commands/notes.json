@@ -1,0 +1,54 @@
+{
+    "notes": {
+        "name": "notities",
+        "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze",
+        "options": {
+            "add": {
+                "name": "toevoegen",
+                "description": "Sla een persoonlijke notitie op",
+                "options": {
+                    "body": {
+                        "name": "inhoud",
+                        "description": "Tekst van de notitie"
+                    },
+                    "title": {
+                        "name": "titel",
+                        "description": "Optionele titel van de notitie"
+                    },
+                    "pinned": {
+                        "name": "vastgezet",
+                        "description": "Zet deze notitie bovenaan je lijst vast"
+                    }
+                }
+            },
+            "list": {
+                "name": "lijst",
+                "description": "Toon je persoonlijke notities"
+            },
+            "show": {
+                "name": "tonen",
+                "description": "Toon een van je notities",
+                "options": {
+                    "note": {
+                        "name": "notitie",
+                        "description": "Nummer uit /notities lijst of het korte ID"
+                    }
+                }
+            },
+            "delete": {
+                "name": "verwijderen",
+                "description": "Verwijder een van je notities",
+                "options": {
+                    "note": {
+                        "name": "notitie",
+                        "description": "Nummer uit /notities lijst of het korte ID"
+                    }
+                }
+            }
+        }
+    },
+    "Save to Notes": {
+        "name": "Opslaan in notities",
+        "description": "Bewaar een berichtfragment en link in je privénotities"
+    }
+}

@@ -1,5 +1,6 @@
 import { getLogger } from '../utils/logger.js';
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '../utils/outputLocale.js';
+import { createCommonTranslator } from '../messages/index.js';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 const ANILIST_GRAPHQL_URL = 'https://graphql.anilist.co';
 
@@ -65,20 +66,12 @@ export type AniListMediaFormat = AniListAnimeFormat | AniListMangaFormat;
 export type AniListMediaStatus = 'FINISHED' | 'RELEASING' | 'NOT_YET_RELEASED' | 'CANCELLED' | 'HIATUS';
 export type AniListSeasonScope = 'airing' | 'chart' | 'tv' | 'all';
 
-const ANILIST_SEASON_SCOPE_LABELS = {
-    en: {
-        airing: 'airing/upcoming',
-        chart: 'season chart',
-        tv: 'TV only',
-        all: 'all known formats',
-    },
-    nl: {
-        airing: 'wordt uitgezonden/komend',
-        chart: 'seizoensoverzicht',
-        tv: 'alleen tv',
-        all: 'alle bekende indelingen',
-    },
-} as const satisfies OutputLocaleValues<Record<AniListSeasonScope, string>>;
+const ANILIST_SEASON_SCOPE_KEYS = {
+    airing: 'anime.seasonScope.airing',
+    chart: 'anime.seasonScope.chart',
+    tv: 'anime.seasonScope.tv',
+    all: 'anime.seasonScope.all',
+} as const;
 
 export interface AniListSeasonFilter {
     scope?: AniListSeasonScope;
@@ -282,7 +275,7 @@ export function formatAniListSeasonScope(
     scope: AniListSeasonScope = 'airing',
     locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
 ): string {
-    return resolveLocaleValue(locale, ANILIST_SEASON_SCOPE_LABELS)[scope];
+    return createCommonTranslator(locale)(ANILIST_SEASON_SCOPE_KEYS[scope]);
 }
 
 export async function searchAniListMediaPage(
@@ -413,8 +406,11 @@ export function getNextAniListSeason(now: Date = new Date()): { season: AniListS
     return { season: 'WINTER', year: current.year + 1 };
 }
 
-export function getAniListDisplayTitle(title: Pick<AniListTitle, 'title'>): string {
-    return title.title.english || title.title.romaji || title.title.native || 'Unknown title';
+export function getAniListDisplayTitle(
+    title: Pick<AniListTitle, 'title'>,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
+    return title.title.english || title.title.romaji || title.title.native || createCommonTranslator(locale)('anime.copy.unknownTitle');
 }
 
 export function isAniListSubscribable(title: Pick<AniListTitle, 'status'>): boolean {

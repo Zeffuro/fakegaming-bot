@@ -1,0 +1,260 @@
+{
+  "notificationsHub": {
+    "eyebrow": "Notifications",
+    "title": "Notification Command Center",
+    "description": "One place to manage every server-facing notification feed: live streams, uploads, game news, patch notes, anime episodes, and birthday announcements.",
+    "configuredFeeds": "Configured Feeds",
+    "configuredCount": "{count} Configured",
+    "importJson": "Import JSON",
+    "exportJson": "Export JSON",
+    "backSettings": "Back To Settings",
+    "active": "active",
+    "twitchTitle": "Twitch Live",
+    "twitchDescription": "Stream alerts with destination channels, custom messages, cooldowns, and quiet hours.",
+    "twitchAction": "Manage Twitch",
+    "tiktokTitle": "TikTok Live",
+    "tiktokDescription": "Creator live alerts using the same channel routing and notification controls as Twitch.",
+    "tiktokAction": "Manage TikTok",
+    "blueskyTitle": "Bluesky Posts",
+    "blueskyDescription": "Account post alerts with Discord channel routing, custom messages, cooldowns, and quiet hours.",
+    "blueskyAction": "Manage Bluesky",
+    "youtubeTitle": "YouTube Uploads",
+    "youtubeDescription": "Watch channels for new uploads and post clean video announcements to Discord.",
+    "youtubeAction": "Manage YouTube",
+    "steamTitle": "Steam News",
+    "steamDescription": "Official Steam game announcements with destination channels, custom messages, cooldowns, and quiet hours.",
+    "steamAction": "Manage Steam",
+    "patchTitle": "Patch Notes",
+    "patchDescription": "Subscribe channels to game update feeds so patch posts land where people expect them.",
+    "patchAction": "Manage Patch Notes",
+    "animeTitle": "Anime Episodes",
+    "animeDescription": "AniList search, season browsing, and channel reminders for upcoming episodes.",
+    "animeAction": "Manage Anime",
+    "birthdayTitle": "Birthday Announcements",
+    "birthdayDescription": "Member birthday announcements with member search and per-birthday destination channels.",
+    "birthdayAction": "Manage Birthdays",
+    "importReadFailed": "Failed to read notification setup import.",
+    "importFailed": "Failed to import notification setup.",
+    "imported": "Imported {count} missing routes.",
+    "importedOne": "Imported 1 missing route.",
+    "previewTitle": "Import Preview",
+    "previewDescription": "Missing supported routes can be created without overwriting existing notification setup.",
+    "readyCount": "{count} ready",
+    "skippedCount": "{count} skipped",
+    "readyTitle": "Ready To Import",
+    "noReady": "No missing supported routes were found.",
+    "skippedTitle": "Skipped",
+    "noSkipped": "No skipped routes.",
+    "channel": "Channel: {channel}",
+    "importing": "Importing...",
+    "importMissing": "Import Missing ({count})",
+    "reviewTitle": "Setup Review",
+    "reviewDescription": "Duplicate routes, cross-channel feed overlap, and high-volume notification channels.",
+    "noFindings": "No findings",
+    "findingOne": "1 finding",
+    "findingMany": "{count} findings",
+    "reviewClean": "No duplicate notification routes or crowded destination channels were detected.",
+    "duplicateRoutes": "Duplicate Routes",
+    "multiChannel": "Same Feed, Multiple Channels",
+    "busyChannels": "Busy Channels",
+    "routeSummary": "{routes} routes across {channels} channels: {ids}",
+    "busySummary": "{count} feeds from {providers}"
+  },
+  "provider": {
+    "twitchTitle": "Twitch live notifications",
+    "youtubeTitle": "YouTube notifications",
+    "tiktokTitle": "TikTok live notifications",
+    "blueskyTitle": "Bluesky post notifications",
+    "steamTitle": "Steam news subscriptions",
+    "patchTitle": "Patch note subscriptions",
+    "channelName": "Channel name",
+    "channelId": "Channel ID",
+    "handle": "Handle",
+    "account": "Account",
+    "accounts": "Accounts",
+    "gameSubscription": "Game subscription",
+    "gameSubscriptions": "Game subscriptions",
+    "gameAppOrUrl": "Game, App ID, or Steam URL",
+    "lastVideo": "Last video: {id}",
+    "lastAnnouncementSaved": "Last announcement saved",
+    "lastAnnouncement": "Last: {date}",
+    "latest": "Latest: {version}",
+    "latestPatch": "Latest patch",
+    "twitchDescription": "Track live streams, route announcements to the right channel, and tune cooldowns or quiet hours.",
+    "tiktokDescription": "Track creators going live and control alerts with per-channel notification settings.",
+    "blueskyDescription": "Watch Bluesky accounts for new posts and route announcements with cooldowns and quiet hours.",
+    "youtubeDescription": "Watch channels for new uploads and post video announcements where your server expects them.",
+    "steamDescription": "Subscribe Discord channels to official Steam game announcements with cooldowns and quiet hours.",
+    "patchDescription": "Subscribe Discord channels to game update feeds so patch posts reach predictable places.",
+    "genericDescription": "Configure {module} {items} for this server."
+  },
+  "notifications": {
+    "back": "Back to notifications",
+    "configured": "{items} configured",
+    "add": "Add {item}",
+    "configuredItems": "Configured {module} {items}",
+    "shown": "{shown} of {total} shown.",
+    "editHelp": "Edit destinations, messages, cooldowns, and quiet hours from one place.",
+    "pauseActive": "Pause active ({count})",
+    "resumePaused": "Resume paused ({count})",
+    "search": "Search {items}",
+    "moveVisible": "Move visible configs to channel",
+    "chooseChannel": "Choose channel",
+    "moving": "Moving...",
+    "moveVisibleCount": "Move visible ({count})",
+    "noMatches": "No matching {module} {items}",
+    "adjustFilters": "Adjust the search or status filter to show more configurations.",
+    "destinationRequired": "Choose the destination Discord channel before moving configurations.",
+    "nothingToMove": "No visible configurations need to move to that channel.",
+    "moveConfirmation": "Move {count} visible {module} {items} to {channel}?",
+    "noConfigured": "No {module} {items} configured",
+    "addFirst": "Add your first {module} {item} to start receiving notifications."
+  },
+  "setupTemplates": {
+    "title": "Setup templates",
+    "description": "Presets create missing notification routes after a server-side preview.",
+    "openProvider": "Open {provider}",
+    "readyCount": "{count} ready",
+    "skippedCount": "{count} skipped",
+    "template": {
+      "streamerAlerts": {
+        "name": "Streamer alerts",
+        "description": "Create live and upload routes for creators your server follows."
+      },
+      "patchNotes": {
+        "name": "Patch notes",
+        "description": "Create a focused patch-note channel for the games your server plays."
+      },
+      "animeClub": {
+        "name": "Anime club",
+        "description": "Create anime episode reminders for a shared watch channel."
+      },
+      "gamingCommunity": {
+        "name": "Gaming community",
+        "description": "Combine creator alerts, patch notes, anime reminders, and Steam news routes."
+      }
+    },
+    "channelSummary": "Channel: {channel}",
+    "channel": {
+      "live": {
+        "label": "Live alerts channel",
+        "description": "Destination for Twitch live alerts."
+      },
+      "videos": {
+        "label": "Video alerts channel",
+        "description": "Destination for YouTube upload alerts."
+      },
+      "patches": {
+        "label": "Patch notes channel",
+        "description": "Destination for game patch notes."
+      },
+      "anime": {
+        "label": "Anime channel",
+        "description": "Destination for anime episode reminders."
+      },
+      "steamNews": {
+        "label": "Steam news channel",
+        "description": "Destination for official Steam news posts."
+      }
+    },
+    "input": {
+      "twitchUsernames": {
+        "label": "Twitch usernames",
+        "description": "Twitch logins to announce when they go live.",
+        "placeholder": "riotgames\ncohhcarnage"
+      },
+      "youtubeChannelIds": {
+        "label": "YouTube channel IDs",
+        "description": "YouTube channel IDs beginning with UC.",
+        "placeholder": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+      },
+      "patchGames": {
+        "label": "Patch note games",
+        "description": "Game names supported by the patch-note feed.",
+        "placeholder": "League of Legends\nValorant"
+      },
+      "animeIds": {
+        "label": "AniList IDs",
+        "description": "AniList numeric IDs for shows to track.",
+        "placeholder": "154587\n170942"
+      },
+      "steamApps": {
+        "label": "Steam apps",
+        "description": "Steam app IDs with optional names.",
+        "placeholder": "730: Counter-Strike 2\n570: Dota 2"
+      }
+    },
+    "provider": {
+      "twitch": "Twitch",
+      "youtube": "YouTube",
+      "patchNotes": "Patch notes",
+      "anime": "Anime",
+      "steamNews": "Steam news"
+    },
+    "steamAppFallback": "Steam app {appId}",
+    "preview": "Preview template",
+    "previewing": "Previewing...",
+    "applyReady": "Apply ready ({count})",
+    "applying": "Applying...",
+    "result": {
+      "applied": "Applied {count} {routes} from {template}."
+    },
+    "route": "route",
+    "routes": "routes",
+    "readyToApply": "Ready to apply",
+    "noReadyRoutes": "No missing supported routes were found.",
+    "skipped": "Skipped",
+    "noSkippedRoutes": "No skipped routes.",
+    "routeProviderSource": "{provider}: {source}",
+    "skippedRouteDetails": "{finding} Channel: {channel}",
+    "warning": {
+      "addInput": "Add at least one template input before applying this setup."
+    },
+    "finding": {
+      "missingRecordFields": "Record is missing a provider, source, or Discord channel.",
+      "duplicateRoute": "This provider/source/channel route already exists.",
+      "duplicateSource": "This provider/source already exists in this server; applying would update its channel.",
+      "twitchUsernameRequired": "Twitch username is required.",
+      "youtubeChannelId": "YouTube templates require a channel ID beginning with UC.",
+      "patchGameRequired": "Patch-note game is required.",
+      "anilistId": "AniList ID must be a positive whole number.",
+      "steamAppId": "Steam app ID must be a positive whole number.",
+      "liveChannelRequired": "Live alerts channel is required for Twitch.",
+      "videoChannelRequired": "Video alerts channel is required for YouTube.",
+      "patchChannelRequired": "Patch notes channel is required for patch notes.",
+      "animeChannelRequired": "Anime channel is required for anime.",
+      "steamNewsChannelRequired": "Steam news channel is required for Steam news."
+    },
+    "validation": {
+      "anilistIds": "AniList IDs must contain positive whole numbers.",
+      "steamApps": "Steam apps must start with a positive app ID."
+    },
+    "error": {
+      "load": "Failed to load setup templates.",
+      "preview": "Failed to preview setup template.",
+      "apply": "Failed to apply setup template."
+    },
+    "importCopy": {
+      "invalidJson": "Import file is not valid JSON.",
+      "invalidObject": "Import file must contain a notification setup object.",
+      "unsupportedVersion": "Only notification setup export version 1 is supported.",
+      "missingGuildId": "Import file is missing a source guild ID.",
+      "missingRecords": "Import file is missing notification records.",
+      "crossGuild": "This export came from guild {sourceGuildId}; imports will be created in guild {currentGuildId}.",
+      "missingRoute": "Record is missing a provider, source, or Discord channel.",
+      "unsupportedRestore": "{provider} import is not supported by the dashboard restore flow yet.",
+      "youtubeChannelId": "YouTube imports require a channel ID. Re-export from the updated dashboard or add the channel manually.",
+      "animeId": "Anime imports require an AniList ID. Re-export from the updated dashboard or add the subscription manually.",
+      "steamAppId": "Steam News imports require a numeric Steam App ID. Re-export from the updated dashboard or add the subscription manually.",
+      "birthdayValues": "Birthday imports require day and month values. Re-export from the updated dashboard or add the birthday manually.",
+      "duplicateRoute": "This provider/source/channel route already exists.",
+      "unsupportedProvider": "{provider} import is not supported.",
+      "recordObject": "Record must be an object.",
+      "cooldownInvalid": "Cooldown must be a non-negative whole number when provided.",
+      "quietHoursInvalid": "Quiet hours must use HH:mm format when provided.",
+      "reminderInvalid": "Reminder minutes must be a whole number between 0 and 1440 when provided.",
+      "birthdayInvalid": "Birthday details must include a valid day, month, and optional year.",
+      "unknown": "Unknown"
+    }
+  }
+}

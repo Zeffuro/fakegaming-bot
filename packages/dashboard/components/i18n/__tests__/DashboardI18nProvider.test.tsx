@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DASHBOARD_LOCALE_COOKIE_KEY, DASHBOARD_LOCALE_STORAGE_KEY } from "@/lib/i18n/localeStore";
+import { apiRequest } from "@/lib/api/core";
+import {
+    DASHBOARD_LOCALE_COOKIE_KEY,
+    DASHBOARD_LOCALE_STORAGE_KEY,
+    getDashboardLocale,
+    setDashboardLocale,
+    type DashboardLocale,
+} from "@/lib/i18n/localeStore";
 import { DashboardI18nProvider, useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { DashboardLanguageSelector } from "@/components/i18n/DashboardLanguageSelector";
 
@@ -26,6 +34,15 @@ function Consumer() {
     );
 }
 
+function InitialRequestProbe({ onRequest }: { onRequest: (locale: DashboardLocale) => void }) {
+    useEffect(() => {
+        onRequest(getDashboardLocale());
+        void apiRequest("/api/locale-probe");
+    }, [onRequest]);
+
+    return null;
+}
+
 describe("DashboardI18nProvider", () => {
     beforeEach(() => {
         apiMocks.getUserSettings.mockReset();
@@ -35,6 +52,44 @@ describe("DashboardI18nProvider", () => {
     afterEach(() => {
         window.localStorage.clear();
         document.cookie = `${DASHBOARD_LOCALE_COOKIE_KEY}=; Path=/; Max-Age=0`;
+        setDashboardLocale("en", false);
+        vi.restoreAllMocks();
+    });
+
+    it("server-renders with the request locale before browser preference synchronization", () => {
+        const html = renderToString(
+            <DashboardI18nProvider initialLocale="nl"><Consumer /></DashboardI18nProvider>,
+        );
+
+        expect(html).toContain("Opslaan");
+        expect(html).toContain("1.234,5");
+    });
+
+    it("synchronizes the request locale before a child sends its first API request", async () => {
+        setDashboardLocale("en", false);
+        document.cookie = `${DASHBOARD_LOCALE_COOKIE_KEY}=nl; Path=/`;
+        const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(
+            JSON.stringify({ ok: true }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+        ));
+        const observedLocales: DashboardLocale[] = [];
+        const container = document.createElement("div");
+        const root = createRoot(container);
+
+        await act(async () => {
+            root.render(
+                <DashboardI18nProvider initialLocale="nl">
+                    <InitialRequestProbe onRequest={locale => observedLocales.push(locale)} />
+                </DashboardI18nProvider>,
+            );
+        });
+
+        expect(observedLocales).toEqual(["nl"]);
+        expect(fetchMock).toHaveBeenCalledWith("/api/locale-probe", expect.objectContaining({
+            headers: expect.objectContaining({ "Accept-Language": "nl" }),
+        }));
+
+        await act(async () => root.unmount());
     });
 
     it("uses the persisted dashboard locale before rendering children", async () => {

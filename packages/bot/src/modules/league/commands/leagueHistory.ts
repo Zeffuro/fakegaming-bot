@@ -16,9 +16,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         fetchHistory: getMatchHistory,
         fetchDetails: getMatchDetails,
         generateImage: generateLeagueHistoryImage,
-        contentPrefix: { en: 'Recent League matches', nl: 'Recente League-wedstrijden' },
-        historyErrorPrefix: { en: 'Failed to fetch match history', nl: 'Ophalen van wedstrijdgeschiedenis mislukt' },
-        detailsErrorPrefix: { en: 'Failed to fetch details for match', nl: 'Ophalen van details mislukt voor wedstrijd' },
+        historyKind: 'league',
         count: 5,
     });
 }

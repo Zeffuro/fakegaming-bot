@@ -1,48 +1,27 @@
-import type { SupportedOutputLocale } from '../../../core/localization.js';
+import { resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
+import { createBotTranslator, type BotMessages, type SupportedOutputLocale } from '../../../core/localization.js';
+import englishMessages from '../../../messages/en/notes.json' with { type: 'json' };
+import dutchMessages from '../../../messages/nl/notes.json' with { type: 'json' };
 
 export interface NotesCopy {
-    unknown: string;
-    bodyRequired: string;
-    saved: (id: string, title: string) => string;
-    none: string;
-    title: string;
-    more: (count: number) => string;
-    notFound: string;
-    pinned: string;
-    noBody: string;
-    deleted: (id: string, title: string) => string;
-    savedMessageTitle: string;
-    emptyMessage: string;
-    source: string;
-    messageContains: (parts: string) => string;
-    attachments: (count: number) => string;
-    stickers: (count: number) => string;
-    and: string;
-    contextSaved: (id: string) => string;
-    contextFailed: string;
+    unknown: string; bodyRequired: string; saved: (id: string, title: string) => string; none: string; title: string;
+    more: (count: number) => string; notFound: string; pinned: string; noBody: string;
+    deleted: (id: string, title: string) => string; savedMessageTitle: string; emptyMessage: string; source: string;
+    messageContains: (parts: string) => string; attachments: (count: number) => string; stickers: (count: number) => string;
+    and: string; contextSaved: (id: string) => string; contextFailed: string;
 }
 
-const copies: Record<SupportedOutputLocale, NotesCopy> = {
-    en: {
-        unknown: 'Unknown notes subcommand.', bodyRequired: 'Add note text before saving.', saved: (id, title) => `Saved note \`${id}\`: ${title}`,
-        none: 'You have no saved notes.', title: 'Your notes:', more: count => `\n...and ${count} more.`,
-        notFound: 'Note not found. Use `/notes list` to see your notes.', pinned: 'pinned', noBody: '_No body_',
-        deleted: (id, title) => `Deleted note \`${id}\`: ${title}`, savedMessageTitle: 'Saved message',
-        emptyMessage: '[Message has no text content.]', source: 'Source', messageContains: parts => `[Message contains ${parts}; files were not downloaded.]`,
-        attachments: count => `${count} attachment${count === 1 ? '' : 's'}`, stickers: count => `${count} sticker${count === 1 ? '' : 's'}`, and: 'and',
-        contextSaved: id => `Saved this message to your private notes as \`${id}\`.`, contextFailed: 'I could not save that message to your private notes. Please try again later.',
-    },
-    nl: {
-        unknown: 'Onbekende notitieopdracht.', bodyRequired: 'Voeg tekst toe voordat je de notitie opslaat.', saved: (id, title) => `Notitie \`${id}\` opgeslagen: ${title}`,
-        none: 'Je hebt geen opgeslagen notities.', title: 'Je notities:', more: count => `\n...en nog ${count}.`,
-        notFound: 'Notitie niet gevonden. Gebruik `/notities lijst` om je notities te bekijken.', pinned: 'vastgezet', noBody: '_Geen inhoud_',
-        deleted: (id, title) => `Notitie \`${id}\` verwijderd: ${title}`, savedMessageTitle: 'Opgeslagen bericht',
-        emptyMessage: '[Bericht bevat geen tekst.]', source: 'Bron', messageContains: parts => `[Bericht bevat ${parts}; bestanden zijn niet gedownload.]`,
-        attachments: count => `${count} ${count === 1 ? 'bijlage' : 'bijlagen'}`, stickers: count => `${count} ${count === 1 ? 'sticker' : 'stickers'}`, and: 'en',
-        contextSaved: id => `Dit bericht is als \`${id}\` opgeslagen in je privénotities.`, contextFailed: 'Ik kon dat bericht niet opslaan in je privénotities. Probeer het later opnieuw.',
-    },
-};
-
 export function getNotesCopy(locale: SupportedOutputLocale): NotesCopy {
-    return copies[locale];
+    const messages = resolveLocaleValue(locale, { en: englishMessages, nl: dutchMessages } satisfies OutputLocaleValues<BotMessages>) as typeof englishMessages;
+    const raw = messages as typeof englishMessages;
+    const t = createBotTranslator(locale, messages);
+    return {
+        unknown: raw.unknown, bodyRequired: raw.bodyRequired, none: raw.none, title: raw.title, notFound: raw.notFound,
+        pinned: raw.pinned, noBody: raw.noBody, savedMessageTitle: raw.savedMessageTitle, emptyMessage: raw.emptyMessage,
+        source: raw.source, and: raw.and, contextFailed: raw.contextFailed,
+        saved: (id, title) => t('saved', { id, title }), more: count => t('more', { count }),
+        deleted: (id, title) => t('deleted', { id, title }), messageContains: parts => t('messageContains', { parts }),
+        attachments: count => t('attachments', { count }), stickers: count => t('stickers', { count }),
+        contextSaved: id => t('contextSaved', { id }),
+    };
 }

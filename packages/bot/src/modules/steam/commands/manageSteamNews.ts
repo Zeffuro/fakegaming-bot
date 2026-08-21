@@ -1,4 +1,5 @@
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -34,15 +35,12 @@ function toManagementRecord(record: SteamNewsSubscriptionRecord): SteamNewsManag
 }
 
 function appLabel(record: SteamNewsManagementRecord, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
-    return record.appName?.trim() || `${resolveLocaleValue(locale, { en: 'Steam app', nl: 'Steam-app' })} ${record.steamAppId}`;
+    return record.appName?.trim() || `${runtimeText(locale, "steam", "steamApp")} ${record.steamAppId}`;
 }
 
 const { data, execute, testOnly } = createIntegrationManagementCommand<SteamNewsManagementRecord>({
     meta: META,
-    subjects: {
-        singular: { en: 'Steam news subscription', nl: 'Steamnieuwsabonnement' },
-        plural: { en: 'Steam news subscriptions', nl: 'Steamnieuwsabonnementen' },
-    },
+    subjectKey: 'steam',
     listRecords: async (guildId) => {
         const records = await getConfigManager().steamNewsSubscriptionManager.getManyPlain({ guildId } as never) as unknown as SteamNewsSubscriptionRecord[];
         return records.map(toManagementRecord);

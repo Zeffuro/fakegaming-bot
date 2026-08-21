@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {
     AutocompleteInteraction,
     ChannelType,
@@ -22,27 +22,21 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
         .addStringOption((option) =>
             option
                 .setName('game')
-                .setNameLocalization('nl', 'spel')
                 .setDescription('Steam game name, App ID, or store URL')
-                .setDescriptionLocalization('nl', 'Naam, app-ID of winkel-URL van het Steam-spel')
                 .setRequired(true)
                 .setAutocomplete(true)
         )
         .addChannelOption((option) =>
             option
                 .setName('channel')
-                .setNameLocalization('nl', 'kanaal')
                 .setDescription('Discord channel for Steam news')
-                .setDescriptionLocalization('nl', 'Discord-kanaal voor Steamnieuws')
                 .setRequired(true)
                 .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
         )
         .addStringOption((option) =>
             option
                 .setName('message')
-                .setNameLocalization('nl', 'bericht')
                 .setDescription('Custom notification message (optional)')
-                .setDescriptionLocalization('nl', 'Aangepast meldingsbericht (optioneel)')
                 .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
@@ -53,7 +47,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const guildId = interaction.guildId;
     if (!guildId) {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: 'This command can only be used in a server.', nl: 'Deze opdracht kan alleen op een server worden gebruikt.' }),
+            content: runtimeText(locale, "steam", "thisCommandCanOnlyBeUsedInA"),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -70,14 +64,14 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         resolved = await resolveSteamAppInput(gameInput, { limit: MAX_SUGGESTIONS });
     } catch {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: 'Steam app lookup failed. Please try again later.', nl: 'Steam-apps zoeken is momenteel mislukt. Probeer het later opnieuw.' }),
+            content: runtimeText(locale, 'steam', 'appLookupFailed'),
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
     if (resolved.status === 'not_found') {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: `I could not find a Steam app for \`${sanitizeInline(gameInput)}\`. Try a Steam store URL or App ID.`, nl: `Ik kon geen Steam-app vinden voor \`${sanitizeInline(gameInput)}\`. Probeer een Steam-winkel-URL of app-ID.` }),
+            content: runtimeText(locale, 'steam', 'appNotFound', {query: sanitizeInline(gameInput)}),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -100,7 +94,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     } as never);
     if (existing) {
         await interaction.reply({
-            content: resolveLocaleValue(locale, { en: `Steam news for \`${sanitizeInline(app.appName)}\` is already configured in <#${discordChannel.id}>.`, nl: `Steamnieuws voor \`${sanitizeInline(app.appName)}\` is al ingesteld in <#${discordChannel.id}>.` }),
+            content: runtimeText(locale, 'steam', 'alreadyConfigured', {appName: sanitizeInline(app.appName), channelId: discordChannel.id}),
             flags: MessageFlags.Ephemeral,
         });
         return;
@@ -126,7 +120,9 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         },
     });
 
-    await interaction.reply(resolveLocaleValue(locale, { en: `Subscribed <#${discordChannel.id}> to Steam news for \`${sanitizeInline(app.appName)}\` (${formatSteamStoreUrl(app.steamAppId)}).`, nl: `<#${discordChannel.id}> is geabonneerd op Steamnieuws voor \`${sanitizeInline(app.appName)}\` (${formatSteamStoreUrl(app.steamAppId)}).` }));
+    await interaction.reply(runtimeText(locale, 'steam', 'subscribed', {
+        channelId: discordChannel.id, appName: sanitizeInline(app.appName), storeUrl: formatSteamStoreUrl(app.steamAppId),
+    }));
 }
 
 async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
@@ -157,7 +153,7 @@ function formatAmbiguousReply(input: string, suggestions: SteamAppSearchResult[]
         `- \`${suggestion.appName}\` (${suggestion.steamAppId})`
     );
     return [
-        resolveLocaleValue(locale, { en: `Multiple Steam apps matched \`${sanitizeInline(input)}\`. Pick one from autocomplete or paste a Steam store URL/App ID.`, nl: `Meerdere Steam-apps kwamen overeen met \`${sanitizeInline(input)}\`. Kies er een via automatisch aanvullen of plak een Steam-winkel-URL/app-ID.` }),
+        runtimeText(locale, 'steam', 'multipleAppsMatched', {query: sanitizeInline(input)}),
         ...lines,
     ].join('\n');
 }

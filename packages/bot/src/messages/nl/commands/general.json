@@ -1,0 +1,234 @@
+{
+    "help": {
+        "name": "help",
+        "description": "Toon alle beschikbare opdrachten en hun beschrijvingen"
+    },
+    "calendar": {
+        "name": "kalender",
+        "description": "Toon komende verjaardagen en je herinneringen",
+        "options": {
+            "days": {
+                "name": "dagen",
+                "description": "Hoeveel dagen vooruit je wilt bekijken"
+            }
+        }
+    },
+    "poll": {
+        "name": "peiling",
+        "description": "Maak een peiling met knoppen en live resultaten",
+        "options": {
+            "question": {
+                "name": "vraag",
+                "description": "De vraag van de peiling"
+            },
+            "option1": {
+                "name": "optie1",
+                "description": "Optie 1"
+            },
+            "option2": {
+                "name": "optie2",
+                "description": "Optie 2"
+            },
+            "option3": {
+                "name": "optie3",
+                "description": "Optie 3"
+            },
+            "option4": {
+                "name": "optie4",
+                "description": "Optie 4"
+            },
+            "option5": {
+                "name": "optie5",
+                "description": "Optie 5"
+            },
+            "duration": {
+                "name": "duur",
+                "description": "Minuten voordat de peiling sluit (standaard: 10)"
+            }
+        }
+    },
+    "question": {
+        "name": "vraag",
+        "description": "Trek een gespreksvraag uit een lokaal kaartspel",
+        "options": {
+            "category": {
+                "name": "categorie",
+                "description": "Kies een vraagcategorie",
+                "choices": {
+                    "any": "Elke categorie",
+                    "gaming": "Gamen",
+                    "silly": "Gek",
+                    "would-you-rather": "Zou je liever",
+                    "getting-to-know-you": "Elkaar leren kennen",
+                    "deep": "Diepgaand"
+                }
+            },
+            "private": {
+                "name": "privé",
+                "description": "Toon de vraag alleen aan jou"
+            }
+        }
+    },
+    "permissions-backup": {
+        "name": "rechten-back-up",
+        "description": "Bewaar en exporteer rol-, categorie- en kanaalrechten",
+        "options": {
+            "create": {
+                "name": "maken",
+                "description": "Leg rol-, leden-, categorie- en kanaalrechten vast"
+            },
+            "list": {
+                "name": "lijst",
+                "description": "Toon de recentste opgeslagen momentopnamen van rechten"
+            },
+            "export": {
+                "name": "exporteren",
+                "description": "Download een opgeslagen momentopname van rechten",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "ID van de momentopname uit de lijst"
+                    }
+                }
+            },
+            "delete": {
+                "name": "verwijderen",
+                "description": "Verwijder een opgeslagen momentopname van rechten permanent",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "ID van de momentopname uit de lijst"
+                    }
+                }
+            }
+        }
+    },
+    "occupy-channel": {
+        "name": "kanaal-bezetten",
+        "description": "Houd een spraakkanaal bezet zolang de bot online is",
+        "options": {
+            "enable": {
+                "name": "inschakelen",
+                "description": "Houd een spraakkanaal bezet zolang de bot online is",
+                "options": {
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Spraakkanaal dat de bot bezet houdt"
+                    }
+                }
+            },
+            "disable": {
+                "name": "uitschakelen",
+                "description": "Stop met het bezet houden van het ingestelde spraakkanaal"
+            },
+            "status": {
+                "name": "status",
+                "description": "Toon het bezette spraakkanaal en de verbindingsstatus"
+            }
+        }
+    },
+    "profile-card": {
+        "name": "profielkaart",
+        "description": "Maak een Discord-profielkaart",
+        "options": {
+            "user": {
+                "name": "gebruiker",
+                "description": "Gebruiker voor de kaart; standaard ben jij dat"
+            }
+        }
+    },
+    "roll": {
+        "name": "werpen",
+        "description": "Werp dobbelstenen of maak een willekeurig getal",
+        "options": {
+            "dice": {
+                "name": "dobbelstenen",
+                "description": "Dobbelnotatie of maximumgetal (bijv. 2d6, d20 of 100)"
+            }
+        }
+    },
+    "spin": {
+        "name": "draaien",
+        "description": "Draai aan het rad om iemand te kiezen",
+        "options": {
+            "name1": {
+                "name": "naam1",
+                "description": "Naam 1"
+            },
+            "name2": {
+                "name": "naam2",
+                "description": "Naam 2"
+            },
+            "name3": {
+                "name": "naam3",
+                "description": "Naam 3"
+            },
+            "name4": {
+                "name": "naam4",
+                "description": "Naam 4"
+            },
+            "name5": {
+                "name": "naam5",
+                "description": "Naam 5"
+            },
+            "name6": {
+                "name": "naam6",
+                "description": "Naam 6"
+            },
+            "name7": {
+                "name": "naam7",
+                "description": "Naam 7"
+            },
+            "name8": {
+                "name": "naam8",
+                "description": "Naam 8"
+            },
+            "name9": {
+                "name": "naam9",
+                "description": "Naam 9"
+            },
+            "name10": {
+                "name": "naam10",
+                "description": "Naam 10"
+            }
+        }
+    },
+    "test-notification": {
+        "name": "testmelding",
+        "description": "Stuur een testmelding naar een kanaal",
+        "options": {
+            "channel": {
+                "name": "kanaal",
+                "description": "Kanaal waar de testmelding naartoe wordt gestuurd"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Optioneel aangepast testbericht"
+            }
+        }
+    },
+    "time": {
+        "name": "tijd",
+        "description": "Zet een tijd om naar Discord-tijdstempelindelingen",
+        "options": {
+            "time": {
+                "name": "tijd",
+                "description": "now, 20:30, 2026-06-11 20:30, ISO-tijd of Unix-tijdstempel"
+            },
+            "timezone": {
+                "name": "tijdzone",
+                "description": "Tijdzone voor kloktijd; standaard je opgeslagen tijdzone of UTC"
+            }
+        }
+    },
+    "weather": {
+        "name": "weer",
+        "description": "Toon het huidige weer en een korte verwachting voor een locatie",
+        "options": {
+            "location": {
+                "name": "locatie",
+                "description": "Plaatsnaam of plaats,land (bijv. Rotterdam of Rotterdam,NL)"
+            }
+        }
+    }
+}

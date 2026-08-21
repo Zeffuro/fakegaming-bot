@@ -68,6 +68,7 @@ describe('time utils', () => {
         expect(formatUptimeShort(5 * 3600 * 1000 + 12 * 60 * 1000)).toBe('5h 12m');
         expect(formatUptimeShort(42 * 60 * 1000 + 10 * 1000)).toBe('42m 10s');
         expect(formatUptimeShort(8000)).toBe('8s');
+        expect(formatUptimeShort(5 * 3600 * 1000 + 12 * 60 * 1000, 'nl')).toBe('5u 12m');
     });
 });
 

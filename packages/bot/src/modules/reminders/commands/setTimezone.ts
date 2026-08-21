@@ -10,9 +10,7 @@ import { getReminderCopy } from '../copy/reminderCopy.js';
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option.setName('timezone')
-            .setNameLocalization('nl', 'tijdzone')
             .setDescription('Your IANA timezone (e.g., Europe/Berlin or GMT+2)')
-            .setDescriptionLocalization('nl', 'Je IANA-tijdzone (bijv. Europe/Berlin of GMT+2)')
             .setRequired(true)
             .setAutocomplete(true)
     )

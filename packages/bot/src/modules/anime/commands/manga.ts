@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {
     AutocompleteInteraction,
     ChatInputCommandInteraction,
@@ -22,9 +22,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption((option) =>
         option
             .setName('title')
-            .setNameLocalization('nl', 'titel')
             .setDescription('Manga, manhwa, webtoon, or light novel title')
-            .setDescriptionLocalization('nl', 'Titel van een manga, manhwa, webtoon of light novel')
             .setRequired(true)
             .setAutocomplete(true)
     )
@@ -61,7 +59,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
 
     const manga = await resolveManga(input);
     if (!manga) {
-        await interaction.reply({ content: resolveLocaleValue(locale, { en: `No manga found for \`${input}\`.`, nl: `Geen manga gevonden voor \`${input}\`.` }), flags: MessageFlags.Ephemeral });
+        await interaction.reply({content: runtimeText(locale, 'anime', 'noMangaFoundFor', {query: input}), flags: MessageFlags.Ephemeral});
         return;
     }
 

@@ -1,0 +1,119 @@
+{
+    "calendar": {
+        "serverOnly": "De kalender werkt alleen op een server.",
+        "birthdays": "Verjaardagen",
+        "reminders": "Je herinneringen",
+        "empty": "Geen verjaardagen of herinneringen in de komende {days} dagen.",
+        "title": "Kalender voor de komende {days} dagen:"
+    },
+    "help": {
+        "userMenu": "Gebruikersmenu",
+        "messageMenu": "Berichtenmenu",
+        "available": "Beschikbare opdrachten",
+        "more": "Meer opdrachten",
+        "noDescription": "Geen beschrijving beschikbaar"
+    },
+    "permissions": {
+        "serverOnly": "Back-ups van rechten werken alleen op een server.",
+        "adminOnly": "Alleen serverbeheerders hebben toegang tot back-ups van rechten.",
+        "none": "Er zijn geen momentopnamen van rechten voor deze server opgeslagen.",
+        "recent": "Recente momentopnamen van rechten:",
+        "notFound": "Momentopname van rechten #{id} is niet gevonden voor deze server.",
+        "deleted": "Momentopname van rechten #{id} is verwijderd.",
+        "tooLarge": "Momentopname van rechten #{id} is te groot voor één Discord-bijlage.",
+        "snapshot": "Momentopname van rechten #{id}",
+        "saved": "Momentopname van rechten #{id} opgeslagen",
+        "compressed": " De bijgevoegde export is met gzip gecomprimeerd.",
+        "attachmentTooLarge": " De export overschrijdt de bijlagelimiet van Discord, maar de momentopname is opgeslagen.",
+        "partialMembers": " Discord gaf geen volledige ledenlijst; daarom zijn leden uit de cache gebruikt.",
+        "partialRoles": " Discord gaf geen vernieuwde rolgegevens; daarom zijn rollen uit de cache gebruikt.",
+        "partialChannels": " Discord gaf geen vernieuwde kanaalgegevens; daarom zijn kanalen uit de cache gebruikt.",
+        "summary": "{roles} rollen, {source, select, fetched {opgehaalde} other {gecachete}} leden ({members}), {channels} categorieën/kanalen"
+    },
+    "occupyChannel": {
+        "serverOnly": "Spraakkanaalbezetting werkt alleen op een server.",
+        "enabled": "Ik houd <#{channelId}> nu bezet zolang de bot online is. Ik ben gedempt en doof geschakeld.",
+        "enabledRetrying": "<#{channelId}> is ingesteld, maar de spraakverbinding probeert nog te herstellen. Controleer dit met `/occupy-channel status`.",
+        "disabled": "Spraakkanaalbezetting is uitgeschakeld en de bot heeft het kanaal verlaten.",
+        "alreadyDisabled": "Spraakkanaalbezetting was al uitgeschakeld.",
+        "statusDisabled": "Spraakkanaalbezetting is uitgeschakeld voor deze server.",
+        "statusReady": "Spraakkanaalbezetting is actief in <#{channelId}>.",
+        "statusConnecting": "Spraakkanaalbezetting is ingesteld voor <#{channelId}> en maakt verbinding of probeert opnieuw.",
+        "statusDisconnected": "Spraakkanaalbezetting is ingesteld voor <#{channelId}>, maar de bot is niet verbonden.",
+        "failure": {
+            "guild-unavailable": "Deze server is momenteel niet beschikbaar voor de bot.",
+            "channel-unavailable": "Dat spraakkanaal is niet beschikbaar of bestaat niet meer.",
+            "not-voice-channel": "Kies een normaal spraakkanaal.",
+            "missing-permissions": "Ik heb de rechten Kanaal bekijken en Verbinden nodig in dat spraakkanaal.",
+            "channel-full": "Dat spraakkanaal is vol. Kies een kanaal met een beschikbare plek."
+        }
+    },
+    "poll": {
+        "questionRequired": "Geef een vraag voor de peiling op.",
+        "twoOptions": "Geef minstens twee opties voor de peiling op.",
+        "unique": "De opties van een peiling moeten uniek zijn.",
+        "duration": "De duur moet tussen {min} en {max} minuten liggen.",
+        "creating": "Peiling wordt gemaakt...",
+        "capacity": "Er zijn te veel actieve peilingen. Probeer het binnenkort opnieuw.",
+        "creatorOnly": "Alleen de maker kan deze peiling sluiten.",
+        "unavailable": "Deze peiling is niet meer beschikbaar. Mogelijk is deze verlopen of is de bot opnieuw gestart.",
+        "closed": "Deze peiling is gesloten.",
+        "closeButton": "Peiling sluiten",
+        "closes": "Sluit '<t:'{unix}:R>.",
+        "closedByExpiry": "De peiling is gesloten toen de duur verstreek.",
+        "closedByCreator": "De peiling is door de maker gesloten.",
+        "votes": "{count, plural, one {# stem} other {# stemmen}}",
+        "total": "Totaal aantal stemmen: {count}",
+        "noVotes": "Resultaat: er zijn geen stemmen uitgebracht.",
+        "winner": "Winnaar: **{name}** ({count, plural, one {# stem} other {# stemmen}}).",
+        "tie": "Resultaat: gelijkspel tussen {names} (elk {count, plural, one {# stem} other {# stemmen}})."
+    },
+    "profile": {
+        "caption": "Profielkaart voor {mention}",
+        "fallback": "Discord-gebruiker"
+    },
+    "roll": {
+        "rolled": "🎲 Je wierp **{roll}** ({detail})",
+        "rolls": "🎲 Je wierp: {rolls} (Totaal: **{total}**) [{detail}]",
+        "reasonable": "Gebruik een redelijke dobbelnotatie (bijv. 1d20, maximaal 20 dobbelstenen en 1000 zijden).",
+        "invalid": "Ongeldige invoer. Gebruik dobbelnotatie (bijv. 2d6) of een maximumgetal (bijv. 100).",
+        "total": "Totaal"
+    },
+    "spin": {
+        "twoNames": "Geef minstens twee namen op.",
+        "starting": "Het rad draait...",
+        "spinning": "🔄 Draaien... **{name}**",
+        "winner": "🎉 Het rad stopte bij: **{name}**!"
+    },
+    "testNotification": {
+        "cannotSend": "Ik kan in dat kanaal geen testmelding sturen.",
+        "defaultMessage": "Dit is een testmelding van Fakegaming Bot.",
+        "title": "Testmelding",
+        "description": "Als je dit ziet, kunnen botmeldingen in dit kanaal worden afgeleverd.",
+        "sent": "Testmelding verstuurd naar {channel}."
+    },
+    "time": {
+        "invalidZone": "Ongeldige tijdzone. Gebruik een geldige IANA-tijdzone (bijvoorbeeld Europe/Amsterdam) of GMT-afwijking.",
+        "invalidTime": "Ongeldige tijd. Probeer `now`, `20:30`, `2026-06-11 20:30`, een ISO-tijdstempel of Unix-tijdstempel.",
+        "input": "Invoer",
+        "local": "Lokale tijd",
+        "long": "Lang",
+        "short": "Kort",
+        "time": "Tijd",
+        "relative": "Relatief",
+        "copy": "Kopiëren",
+        "unix": "Unix"
+    },
+    "weather": {
+        "forecast": "Korte verwachting:",
+        "weatherFor": "Weer voor",
+        "current": "Nu",
+        "temperature": "Temperatuur",
+        "feelsLike": "voelt als",
+        "humidity": "Luchtvochtigheid",
+        "wind": "Wind",
+        "notFound": "Kon geen weergegevens ophalen. Controleer de locatie en probeer het opnieuw.",
+        "noKey": "De API-sleutel voor het weer is niet ingesteld.",
+        "error": "Er is een fout opgetreden bij het ophalen van weergegevens."
+    }
+}

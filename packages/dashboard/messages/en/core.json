@@ -1,0 +1,112 @@
+{
+  "language": {
+    "label": "Language",
+    "english": "English",
+    "dutch": "Nederlands"
+  },
+  "brand": {
+    "logoAlt": "Fakegaming logo"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "backToGuilds": "Back to Guilds",
+    "backToServers": "Back to servers",
+    "notifications": "Notifications",
+    "birthdays": "Birthdays",
+    "privacy": "Privacy and cookies",
+    "terms": "Terms",
+    "yourDashboard": "Your dashboard",
+    "adminPanel": "Admin Panel",
+    "logout": "Logout"
+  },
+  "app": {
+    "controlPanel": "Control panel"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong!",
+    "tryAgain": "Try again",
+    "save": "Save",
+    "add": "Add",
+    "update": "Update",
+    "addItem": "Add {item}",
+    "editItem": "Edit {item}",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "refresh": "Refresh",
+    "search": "Search",
+    "clear": "Clear",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "none": "None",
+    "unknown": "Unknown",
+    "unavailable": "unavailable",
+    "noResults": "No results found",
+    "copied": "Copied",
+    "copy": "Copy",
+    "download": "Download",
+    "open": "Open",
+    "viewDetails": "View details",
+    "configuration": "Configuration",
+    "settings": "Settings",
+    "status": "Status",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "minutes": "minutes",
+    "hours": "hours",
+    "days": "days",
+    "discordChannel": "Discord channel",
+    "refreshChannels": "Refresh channels",
+    "customMessageOptional": "Custom message (optional)",
+    "availableTokens": "Available tokens:",
+    "cooldownMinutes": "Cooldown (minutes)",
+    "quietStart": "Quiet start",
+    "quietEnd": "Quiet end",
+    "paused": "Paused",
+    "pause": "Pause",
+    "resume": "Resume",
+    "checking": "Checking...",
+    "notChecked": "Not checked",
+    "healthy": "Healthy",
+    "warning": "Warning",
+    "never": "Never"
+  },
+  "breadcrumb": {
+    "analytics": "Analytics",
+    "quotes": "Quotes",
+    "notifications": "Notifications"
+  },
+  "error": {
+    "notAuthenticated": "Not authenticated",
+    "invalidSession": "Your session is no longer valid. Please sign in again.",
+    "serviceUnavailable": "The dashboard service is temporarily unavailable. Please try again later.",
+    "profileNotFound": "User profile not found",
+    "profileUnavailable": "Failed to retrieve user data",
+    "guildDataUnavailable": "Guild data is temporarily unavailable. Please try again.",
+    "guildAccessUnavailable": "Guild access is temporarily unavailable. Refresh your dashboard session and try again.",
+    "guildForbidden": "You are not authorized to manage this server.",
+    "guildNotFoundOrForbidden": "Guild not found or you do not have access to this guild.",
+    "channelsUnavailable": "Failed to fetch server channels",
+    "oauthCodeMissing": "The Discord sign-in code is missing.",
+    "oauthCodeInvalid": "The Discord sign-in code is invalid.",
+    "requestFailed": "API request failed with status: {status}",
+    "network": "Unable to reach the dashboard service. Check your connection and try again.",
+    "csrfMissing": "The security token is missing. Refresh the page and try again.",
+    "csrfInvalid": "The security token is invalid. Refresh the page and try again."
+  },
+  "status": {
+    "all": "All",
+    "active": "Active",
+    "error": "Error"
+  },
+  "login": {
+    "title": "Fakegaming Bot Dashboard",
+    "description": "Log in with Discord to manage your servers and bot settings.",
+    "goToDashboard": "Go to Dashboard",
+    "withDiscord": "Login with Discord"
+  }
+}

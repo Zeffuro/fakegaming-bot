@@ -1,4 +1,9 @@
-import { DEFAULT_OUTPUT_LOCALE, getLogger, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getLogger,
+    getOutputLocaleMetadata,
+    type SupportedOutputLocale,
+} from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { TikTokLiveConnection } from 'tiktok-live-connector';
@@ -21,11 +26,6 @@ interface TikTokStreamConfigPlain {
     lastNotifiedAt?: string | number | Date | null;
     paused?: boolean | null;
 }
-
-const UPTIME_HOUR_UNITS = {
-    en: 'h',
-    nl: 'u',
-} as const satisfies OutputLocaleValues<string>;
 
 interface TikTokLiveInfo {
     live: boolean;
@@ -292,7 +292,7 @@ export function buildTikTokEmbedAndContent(opts: {
     const fields: Array<{ name: string; value: string; inline?: boolean }> = [];
     if (typeof info.viewers === 'number') fields.push({
         name: apiText(locale, 'tiktokViewers'),
-        value: new Intl.NumberFormat(locale).format(info.viewers),
+        value: new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(info.viewers),
         inline: true,
     });
     if (uptimeStr) fields.push({ name: apiText(locale, 'tiktokUptime'), value: uptimeStr, inline: true });
@@ -304,7 +304,9 @@ export function buildTikTokEmbedAndContent(opts: {
         title: info.title || '',
         url: urlSafe,
         uptime: uptimeStr || '',
-        viewers: typeof info.viewers === 'number' ? new Intl.NumberFormat(locale).format(info.viewers) : ''
+        viewers: typeof info.viewers === 'number'
+            ? new Intl.NumberFormat(getOutputLocaleMetadata(locale).formatTag).format(info.viewers)
+            : ''
     };
     return buildDiscordNotificationPayload({
         defaultContent: apiText(locale, 'tiktokDefaultContent', { username, url: urlSafe }),
@@ -323,7 +325,7 @@ function formatTikTokUptime(msValue: number, locale: SupportedOutputLocale): str
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    const hourUnit = resolveLocaleValue(locale, UPTIME_HOUR_UNITS);
+    const hourUnit = apiText(locale, 'durationHourUnit');
 
     if (days > 0) return `${days}d ${hours}${hourUnit}`;
     if (hours > 0) return `${hours}${hourUnit} ${minutes}m`;

@@ -1,0 +1,142 @@
+{
+    "anime": {
+        "name": "anime",
+        "description": "Zoek anime, beheer abonnementen en bekijk komende afleveringen",
+        "options": {
+            "search": {
+                "name": "zoeken",
+                "description": "Zoek een anime",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    }
+                }
+            },
+            "subscribe": {
+                "name": "abonneren",
+                "description": "Abonneer je op meldingen voor anime-afleveringen",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    },
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Optioneel openbaar meldingskanaal (alleen beheerders)"
+                    },
+                    "reminder-minutes": {
+                        "name": "melding-minuten",
+                        "description": "Minuten voor uitzending waarop je een melding krijgt"
+                    }
+                }
+            },
+            "list": {
+                "name": "lijst",
+                "description": "Toon je anime-abonnementen"
+            },
+            "unsubscribe": {
+                "name": "opzeggen",
+                "description": "Zeg meldingen voor anime-afleveringen op",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    },
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Optioneel kanaalabonnement om op te zeggen (alleen beheerders)"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor anime-afleveringen",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    },
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Optioneel kanaalabonnement om te pauzeren (alleen beheerders)"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor anime-afleveringen",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    },
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Optioneel kanaalabonnement om te hervatten (alleen beheerders)"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van meldingen voor anime-afleveringen",
+                "options": {
+                    "title": {
+                        "name": "titel",
+                        "description": "Animetitel"
+                    },
+                    "channel": {
+                        "name": "kanaal",
+                        "description": "Optioneel kanaalabonnement om te controleren (alleen beheerders)"
+                    }
+                }
+            },
+            "next": {
+                "name": "komend",
+                "description": "Toon komende afleveringen voor je abonnementen"
+            },
+            "season": {
+                "name": "seizoen",
+                "description": "Bekijk anime die in een seizoen wordt uitgezonden",
+                "options": {
+                    "season": {
+                        "name": "seizoen",
+                        "description": "Seizoen om te bekijken",
+                        "choices": {
+                            "current": "Huidig",
+                            "next": "Volgend",
+                            "WINTER": "Winter",
+                            "SPRING": "Lente",
+                            "SUMMER": "Zomer",
+                            "FALL": "Herfst"
+                        }
+                    },
+                    "year": {
+                        "name": "jaar",
+                        "description": "Jaar van een specifiek seizoen"
+                    },
+                    "scope": {
+                        "name": "bereik",
+                        "description": "Filter de seizoensresultaten",
+                        "choices": {
+                            "airing": "Wordt uitgezonden/komend",
+                            "chart": "Seizoensoverzicht",
+                            "tv": "Alleen tv",
+                            "all": "Alle bekende indelingen"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "manga": {
+        "name": "manga",
+        "description": "Zoek manga, manhwa, webtoons en light novels op AniList",
+        "options": {
+            "title": {
+                "name": "titel",
+                "description": "Titel van een manga, manhwa, webtoon of light novel"
+            }
+        }
+    }
+}

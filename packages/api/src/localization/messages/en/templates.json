@@ -1,0 +1,89 @@
+{
+  "definitions": {
+    "channelSlots": {
+      "live": {
+        "label": "Live Alerts Channel",
+        "description": "Destination for Twitch live alerts."
+      },
+      "videos": {
+        "label": "Video Alerts Channel",
+        "description": "Destination for YouTube upload alerts."
+      },
+      "patches": {
+        "label": "Patch Notes Channel",
+        "description": "Destination for game patch notes."
+      },
+      "anime": {
+        "label": "Anime Channel",
+        "description": "Destination for anime episode reminders."
+      },
+      "steamNews": {
+        "label": "Steam News Channel",
+        "description": "Destination for official Steam news posts."
+      }
+    },
+    "inputGroups": {
+      "twitchUsernames": {
+        "label": "Twitch Usernames",
+        "description": "Twitch logins to announce when they go live.",
+        "placeholder": "riotgames\ncohhcarnage"
+      },
+      "youtubeChannelIds": {
+        "label": "YouTube Channel IDs",
+        "description": "YouTube channel IDs beginning with UC.",
+        "placeholder": "UC_x5XG1OV2P6uZZ5FSM9Ttw"
+      },
+      "patchGames": {
+        "label": "Patch Note Games",
+        "description": "Game names supported by the patch-note feed.",
+        "placeholder": "League of Legends\nValorant"
+      },
+      "animeIds": {
+        "label": "AniList IDs",
+        "description": "AniList numeric IDs for shows to track.",
+        "placeholder": "154587\n170942"
+      },
+      "steamApps": {
+        "label": "Steam Apps",
+        "description": "Steam app IDs with optional names.",
+        "placeholder": "730: Counter-Strike 2\n570: Dota 2"
+      }
+    },
+    "templates": {
+      "streamer-alerts": {
+        "name": "Streamer Alerts",
+        "description": "Create live and upload routes for creators your server follows."
+      },
+      "patch-notes": {
+        "name": "Patch Notes",
+        "description": "Create a focused patch-note channel for the games your server plays."
+      },
+      "anime-club": {
+        "name": "Anime Club",
+        "description": "Create anime episode reminders for a shared watch channel."
+      },
+      "gaming-community": {
+        "name": "Gaming Community",
+        "description": "Combine creator alerts, patch notes, anime reminders, and Steam news routes."
+      }
+    }
+  },
+  "messages": {
+    "recordMissingRoute": "Record is missing a provider, source, or Discord channel.",
+    "routeExists": "This provider/source/channel route already exists.",
+    "sourceExists": "This provider/source already exists in this server; applying would update its channel.",
+    "addInput": "Add at least one template input before applying this setup.",
+    "invalidTwitchUsername": "Invalid Twitch username",
+    "twitchUsernameRequired": "Twitch username is required.",
+    "invalidYouTubeChannel": "Invalid YouTube channel",
+    "youtubeChannelRequired": "YouTube templates require a channel ID beginning with UC.",
+    "invalidPatchGame": "Invalid patch game",
+    "patchGameRequired": "Patch-note game is required.",
+    "invalidAniListId": "Invalid AniList ID",
+    "anilistIdRequired": "AniList ID must be a positive whole number.",
+    "invalidSteamApp": "Invalid Steam app",
+    "steamAppIdRequired": "Steam app ID must be a positive whole number.",
+    "missingChannel": "Missing channel",
+    "channelRequired": "{label} is required for {provider}."
+  }
+}

@@ -1,13 +1,20 @@
-"use client";
 import React from "react";
+import { getLocale } from "next-intl/server";
 import Layout from "../components/Layout";
 import { DashboardI18nProvider } from "../components/i18n/DashboardI18nProvider";
-import { dashboardLocaleMetadata, defaultDashboardLocale } from "../lib/i18n/localeStore";
+import {
+    dashboardLocaleMetadata,
+    defaultDashboardLocale,
+    isDashboardLocale,
+} from "../lib/i18n/localeStore";
 import './globals.css';
 
-export default function RootLayout({children}: { children: React.ReactNode }) {
+export default async function RootLayout({children}: { children: React.ReactNode }) {
+    const requestLocale = await getLocale();
+    const locale = isDashboardLocale(requestLocale) ? requestLocale : defaultDashboardLocale;
+
     return (
-        <html lang={dashboardLocaleMetadata[defaultDashboardLocale].htmlLang}>
+        <html lang={dashboardLocaleMetadata[locale].htmlLang}>
         <head>
             <link rel="icon" href="/favicon.ico"/>
             <link rel="manifest" href="/site.webmanifest"/>
@@ -18,7 +25,7 @@ export default function RootLayout({children}: { children: React.ReactNode }) {
         </head>
         <body>
         <Layout>
-            <DashboardI18nProvider>{children}</DashboardI18nProvider>
+            <DashboardI18nProvider initialLocale={locale}>{children}</DashboardI18nProvider>
         </Layout>
         </body>
         </html>

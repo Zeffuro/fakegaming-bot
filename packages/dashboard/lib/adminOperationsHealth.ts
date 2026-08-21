@@ -1,4 +1,5 @@
-import { getDashboardLocaleValue, type DashboardLocale, type DashboardLocaleValues } from "@/lib/i18n/localeStore";
+import { formatDashboardMessage } from "@/lib/i18n/messages";
+import type { DashboardLocale } from "@/lib/i18n/localeStore";
 
 export type AdminOperationsStatus = "healthy" | "warning" | "critical";
 
@@ -36,37 +37,6 @@ export interface AdminOperationsHealth {
 }
 
 const staleHeartbeatMinutes = 10;
-
-const statusCopy = {
-    en: {
-        critical: {
-            title: "Attention Needed",
-            description: "One or more operational signals need immediate review.",
-        },
-        warning: {
-            title: "Monitor Closely",
-            description: "No critical failures detected, but some signals need follow-up.",
-        },
-        healthy: {
-            title: "Healthy",
-            description: "No current integration, job, or heartbeat issues detected.",
-        },
-    },
-    nl: {
-        critical: {
-            title: "Aandacht vereist",
-            description: "Een of meer operationele signalen moeten direct worden beoordeeld.",
-        },
-        warning: {
-            title: "Nauwlettend volgen",
-            description: "Er zijn geen kritieke fouten, maar enkele signalen moeten worden opgevolgd.",
-        },
-        healthy: {
-            title: "Gezond",
-            description: "Er zijn momenteel geen problemen met integraties, taken of de heartbeat.",
-        },
-    },
-} satisfies DashboardLocaleValues<Record<AdminOperationsStatus, { title: string; description: string }>>;
 
 export function buildAdminOperationsHealth(input: {
     integrationSummary?: AdminOperationsHealthSummary | null;
@@ -170,9 +140,9 @@ function getHeartbeatAgeMinutes(heartbeat: AdminOperationsHeartbeat | null | und
 }
 
 function getStatusTitle(status: AdminOperationsStatus, locale: DashboardLocale): string {
-    return getDashboardLocaleValue(locale, statusCopy)[status].title;
+    return formatDashboardMessage(locale, `admin.helperCopy.operationsHealth.${status}.title`);
 }
 
 function getStatusDescription(status: AdminOperationsStatus, locale: DashboardLocale): string {
-    return getDashboardLocaleValue(locale, statusCopy)[status].description;
+    return formatDashboardMessage(locale, `admin.helperCopy.operationsHealth.${status}.description`);
 }

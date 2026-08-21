@@ -6,7 +6,7 @@ import { quotes as META } from '../commands.manifest.js';
 import {resolveInteractionOutputLocale} from '../../../core/localization.js';
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
-    b.addUserOption(option => option.setName('user').setNameLocalization('nl', 'gebruiker').setDescription('User to get quotes for').setDescriptionLocalization('nl', 'Gebruiker van wie je citaten wilt tonen').setRequired(true))
+    b.addUserOption(option => option.setName('user').setDescription('User to get quotes for').setRequired(true))
 );
 
 /**

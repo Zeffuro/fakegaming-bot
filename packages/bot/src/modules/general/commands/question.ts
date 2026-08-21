@@ -12,13 +12,11 @@ import {
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import {
     isSupportedOutputLocale,
-    formatTranslation,
     resolveInteractionOutputLocale,
-    translate,
     type SupportedOutputLocale,
 } from '../../../core/localization.js';
 import { question as META } from '../commands.manifest.js';
-import { QUESTION_COPY, questionCategoryCopyKey } from '../data/questionCopy.js';
+import { questionCategoryCopyKey, translateQuestion } from '../data/questionCopy.js';
 import { ENGLISH_QUESTION_PROMPTS } from '../data/questions.en.js';
 import { DUTCH_QUESTION_PROMPTS } from '../data/questions.nl.js';
 import {
@@ -43,9 +41,7 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
     builder
         .addStringOption(option => option
             .setName('category')
-            .setNameLocalization('nl', 'categorie')
             .setDescription('Choose a question category')
-            .setDescriptionLocalization('nl', 'Kies een vraagcategorie')
             .setRequired(false)
             .addChoices(
                 questionChoice('any'), questionChoice('gaming'), questionChoice('silly'),
@@ -53,17 +49,14 @@ const data = createSlashCommand(META, (builder: SlashCommandBuilder) =>
             ))
         .addBooleanOption(option => option
             .setName('private')
-            .setNameLocalization('nl', 'privé')
             .setDescription('Show the question only to you')
-            .setDescriptionLocalization('nl', 'Toon de vraag alleen aan jou')
             .setRequired(false))
 );
 
 function questionChoice(category: QuestionCategorySelection) {
     const key = questionCategoryCopyKey(category);
     return {
-        name: translate(QUESTION_COPY, 'en', key),
-        name_localizations: { nl: translate(QUESTION_COPY, 'nl', key) },
+        name: translateQuestion('en', key),
         value: category,
     };
 }
@@ -73,7 +66,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const rawCategory = interaction.options.getString('category') ?? 'any';
     if (!isQuestionCategorySelection(rawCategory)) {
         await interaction.reply({
-            content: translate(QUESTION_COPY, locale, 'categoryUnavailable'),
+            content: translateQuestion(locale, 'categoryUnavailable'),
             flags: MessageFlags.Ephemeral,
             allowedMentions: { parse: [] },
         });
@@ -84,7 +77,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const prompt = questionDecks[locale].draw(rawCategory, questionScopeKey(interaction, privateResponse));
     if (!prompt) {
         await interaction.reply({
-            content: translate(QUESTION_COPY, locale, 'questionsUnavailable'),
+            content: translateQuestion(locale, 'questionsUnavailable'),
             flags: MessageFlags.Ephemeral,
             allowedMentions: { parse: [] },
         });
@@ -139,16 +132,16 @@ export function buildQuestionMessage(
 ) {
     const embed = new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle(translate(QUESTION_COPY, locale, 'title'))
+        .setTitle(translateQuestion(locale, 'title'))
         .setDescription(prompt.text)
         .setFooter({
-            text: formatTranslation(translate(QUESTION_COPY, locale, 'categoryFooter'), {
-                category: translate(QUESTION_COPY, locale, questionCategoryCopyKey(prompt.category)),
+            text: translateQuestion(locale, 'categoryFooter', {
+                category: translateQuestion(locale, questionCategoryCopyKey(prompt.category)),
             }),
         });
     const button = new ButtonBuilder()
         .setCustomId(`question:next:${selection}:${privateResponse ? 'private' : 'public'}:${locale}`)
-        .setLabel(translate(QUESTION_COPY, locale, 'anotherQuestion'))
+        .setLabel(translateQuestion(locale, 'anotherQuestion'))
         .setStyle(ButtonStyle.Primary);
 
     return {
@@ -167,7 +160,7 @@ function questionScopeKey(
 
 async function replyUnavailable(interaction: ButtonInteraction, locale: SupportedOutputLocale): Promise<boolean> {
     await interaction.reply({
-        content: translate(QUESTION_COPY, locale, 'buttonUnavailable'),
+        content: translateQuestion(locale, 'buttonUnavailable'),
         flags: MessageFlags.Ephemeral,
         allowedMentions: { parse: [] },
     });

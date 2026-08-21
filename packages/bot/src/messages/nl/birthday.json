@@ -1,0 +1,14 @@
+{
+    "notSet": "{subject} {kind, select, self {hebt} other {heeft}} geen verjaardag ingesteld op deze server.",
+    "birthday": "{subject} verjaardag: {date}",
+    "removed": "{kind, select, mention {De verjaardag van {subject} is verwijderd.} other {{subject} verjaardag is verwijderd.}}",
+    "invalidDate": "Ongeldige dag of maand.",
+    "alreadySet": "{kind, select, self {Je hebt al een verjaardag ingesteld op deze server.} other {{subject} heeft al een verjaardag ingesteld op deze server.}}",
+    "reminderSet": "{kind, select, mention {De verjaardagsmelding voor {subject} is ingesteld.} other {{subject} verjaardagsmelding is ingesteld.}}",
+    "unknownSubcommand": "Onbekende verjaardagopdracht.",
+    "noneUpcoming": "Geen verjaardagen in de komende {days} dagen.",
+    "upcoming": "Komende verjaardagen in de komende {days} dagen:",
+    "serverOnly": "Verjaardagen opzoeken werkt alleen op een server.",
+    "your": "Jouw",
+    "you": "Je"
+}

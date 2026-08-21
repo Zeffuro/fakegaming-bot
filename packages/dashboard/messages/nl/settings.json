@@ -1,0 +1,172 @@
+{
+  "settings": {
+    "eyebrow": "Instellingen",
+    "title": "Serverbedieningscentrum",
+    "description": "Een overzicht van de instellingen die nu bestaan: meldingsinstellingen, bezorganalyses, opdrachtbeschikbaarheid en communityinhoud.",
+    "stats": {
+      "commandsEnabled": "Ingeschakelde opdrachten",
+      "configuredFeeds": "Ingestelde feeds",
+      "reviewFindings": "Bevindingen uit controle",
+      "members": "Leden"
+    },
+    "notAvailable": "Niet beschikbaar",
+    "destination": {
+      "notifications": {
+        "title": "Meldingsinstellingen",
+        "description": "Beheer feedroutering, afkoeltijden, stille uren, import/export en controle van dubbele instellingen.",
+        "action": "Meldingen openen",
+        "chip": "Routering"
+      },
+      "analytics": {
+        "title": "Bezorganalyses",
+        "description": "Bekijk meldingsgeschiedenis, providerstatus, bezorgpercentages en providertrends.",
+        "action": "Analyses openen",
+        "chip": "Status"
+      },
+      "commands": {
+        "title": "Opdrachttoegang",
+        "description": "Schakel botmodules en opdrachten in of uit die voor deze server beschikbaar zijn.",
+        "action": "Opdrachten beheren",
+        "chip": "Toegang"
+      },
+      "permissions": {
+        "title": "Rechtenstatus",
+        "description": "Bekijk live rollen, leden, categorieoverschrijvingen en kanaalrechten met historische momentopnamen.",
+        "action": "Rechten openen",
+        "chip": "Alleen lezen"
+      },
+      "quotes": {
+        "title": "Citatenbibliotheek",
+        "description": "Bekijk, voeg toe, zoek en ruim de citaten op die voor deze community zijn opgeslagen.",
+        "action": "Citaten beheren",
+        "chip": "Inhoud"
+      },
+      "birthdays": {
+        "title": "Verjaardagskalender",
+        "description": "Beheer verjaardagen van leden en hun aankondigingsbestemmingen.",
+        "action": "Verjaardagen beheren",
+        "chip": "Community"
+      },
+      "overview": {
+        "title": "Serveroverzicht",
+        "description": "Ga terug naar de volledige dashboardindex voor elke beschikbare module op deze server.",
+        "action": "Overzicht openen",
+        "chip": "Index"
+      }
+    },
+    "botOutputLanguage": {
+      "title": "Taal van botuitvoer",
+      "description": "Kies de taal die door ondersteunde botreacties in deze server wordt gebruikt.",
+      "aria": "Taal van botuitvoer"
+    },
+    "snapshot": {
+      "title": "Servermomentopname",
+      "description": "Discord blijft de bron van waarheid voor rollen, kanalen, rechten en ledendata.",
+      "server": "Server",
+      "serverId": "Server-ID"
+    },
+    "capability": {
+      "title": "Mogelijkhedencontrole",
+      "description": "Ontbrekende bestemmingen, providerstatus, instellingscontrole, gepauzeerde routes en opdrachtoverschrijvingen.",
+      "missingChannels": {
+        "title": "Ontbrekende bezorgkanalen",
+        "detail": "Routes zonder Discord-kanaal: {count}. Kies een kanaal om bezorging te starten."
+      },
+      "providerHealthFailures": {
+        "title": "Fouten in providerstatus"
+      },
+      "providerHealthWarnings": {
+        "title": "Waarschuwingen in providerstatus"
+      },
+      "providerHealth": {
+        "detail": "Controleer in bezorganalyses: {summary}."
+      },
+      "healthFailure": "Fouten: {count}",
+      "healthWarning": "Waarschuwingen: {count}",
+      "healthUnknown": "Onbekende statussen: {count}",
+      "review": {
+        "title": "Meldingsinstellingscontrole",
+        "detail": "Bevindingen: {count}. Controleer dubbele routes, overlappingen en drukke kanalen."
+      },
+      "paused": {
+        "title": "Gepauzeerde integraties",
+        "detail": "Gepauzeerde routes: {count}. Hervat ze om meldingen te verzenden."
+      },
+      "commands": {
+        "title": "Opdrachttoegangsoverschrijvingen",
+        "detail": "Uitgeschakelde opdrachten: {commands}. Uitgeschakelde modules: {modules}."
+      },
+      "ready": {
+        "title": "Servermogelijkheden zijn klaar",
+        "detail": "Opdrachten, ingestelde routes, providerstatus en meldingsroutering hebben geen actuele waarschuwingen."
+      }
+    },
+    "modules": {
+      "title": "Live modulestatus",
+      "description": "Effectieve opdrachtbeschikbaarheid per module, inclusief uitgeschakelde modules en overschrijvingen per opdracht."
+    },
+    "integrations": {
+      "title": "Integratie-instellingen",
+      "description": "Ingestelde meldingsproviders met gepauzeerde routes en statussignalen.",
+      "empty": "Er zijn nog geen meldingsintegraties ingesteld."
+    },
+    "review": {
+      "title": "Meldingscontrole",
+      "description": "Dubbele routes, overlap tussen hetzelfde feed op meerdere kanalen en drukke bestemmingskanalen.",
+      "noFindings": "Geen instellingsbevindingen",
+      "needsAttention": "Instellingscontrole vereist aandacht",
+      "clearDetail": "Er zijn geen dubbele routes of drukke bestemmingskanalen gevonden.",
+      "findingsDetail": "Bevindingen: {count}. Controleer de meldingsroutering."
+    },
+    "transfer": {
+      "title": "Meldingsoverdracht",
+      "description": "Ga naar de import- en exportbesturingselementen voor meldingsinstellingen.",
+      "import": "JSON importeren",
+      "export": "JSON exporteren"
+    },
+    "status": {
+      "active": "Actief",
+      "needsReview": "Controle nodig",
+      "disabled": "Uitgeschakeld",
+      "quiet": "Rustig",
+      "warning": "Waarschuwing",
+      "critical": "Kritiek",
+      "paused": "Gepauzeerd",
+      "unconfigured": "Niet ingesteld",
+      "ready": "Klaar",
+      "clear": "Vrij"
+    },
+    "count": {
+      "missingChannels": "Ontbrekende kanalen: {count}",
+      "healthIssues": "Statusproblemen: {count}",
+      "active": "Actief: {count}",
+      "needsReview": "Controle nodig: {count}",
+      "disabled": "Uitgeschakeld: {count}",
+      "paused": "Gepauzeerd: {count}",
+      "duplicates": "Dubbele: {count}",
+      "overlaps": "Overlappingen: {count}",
+      "busyChannels": "Drukke kanalen: {count}",
+      "findings": "Bevindingen: {count}"
+    },
+    "module": {
+      "commandsEnabled": "Ingeschakelde opdrachten: {enabled}/{total}",
+      "integrationsActive": "Actieve integraties: {active}/{configured}",
+      "paused": "Gepauzeerd: {count}",
+      "missingChannels": "Ontbrekende kanalen: {count}",
+      "healthIssues": "Statusproblemen: {count}"
+    },
+    "provider": {
+      "active": "Actief: {active}/{configured}",
+      "paused": "Gepauzeerd: {count}",
+      "missingChannels": "Ontbrekende kanalen: {count}",
+      "healthIssues": "Statusproblemen: {count}",
+      "quoteOfDay": "Citaat van de dag"
+    },
+    "aria": {
+      "open": "{item} openen",
+      "openCommandControls": "Opdrachtbesturing voor {module} openen",
+      "openProviderSetup": "Instellingen voor {provider} openen",
+      "openNotificationReview": "Meldingsinstellingscontrole openen"
+    }
+  }
+}

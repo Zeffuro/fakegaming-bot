@@ -8,7 +8,7 @@ import {
     formatAniListScore,
     formatAniListStatus,
 } from '../mediaMetadata.js';
-import { formatAniListSeasonScope } from '../anilistClient.js';
+import { formatAniListSeasonScope, getAniListDisplayTitle } from '../anilistClient.js';
 
 describe('AniList media metadata formatters', () => {
     it('formats manga country-origin names', () => {
@@ -44,12 +44,20 @@ describe('AniList media metadata formatters', () => {
         expect(formatAniListStatus('NOT_YET_RELEASED', 'nl')).toBe('Nog niet verschenen');
         expect(formatAniListCountryOfOrigin('KR', 'nl')).toBe('Zuid-Korea');
         expect(formatAniListMediaFormat({ format: 'MOVIE', type: 'ANIME' }, 'nl')).toBe('Film');
+        expect(formatAniListMediaFormat({ format: 'MANGA', type: 'MANGA', countryOfOrigin: 'KR' }, 'nl')).toBe('Manhwa');
         expect(formatAniListMediaFormat({ format: 'NOVEL', type: 'MANGA' }, 'nl')).toBe('Roman');
+        expect(formatAniListMediaFormat({ format: 'ONE_SHOT', type: 'MANGA' }, 'nl')).toBe('One-shot');
         expect(formatAniListScore({ averageScore: 84 }, 'nl')).toBe('Gemiddeld 84/100');
         expect(formatAniListPopularity(12345, 'nl')).toBe('12.345');
         expect(formatAniListRanking({ rank: 16, type: 'POPULAR', allTime: true }, 'nl'))
             .toBe('#16 Populairst aller tijden');
         expect(formatAniListStatus('CUSTOM_PROVIDER_STATUS', 'nl')).toBe('Custom Provider Status');
         expect(formatAniListSeasonScope('chart', 'nl')).toBe('seizoensoverzicht');
+    });
+
+    it('localizes a missing AniList title while retaining provider titles verbatim', () => {
+        expect(getAniListDisplayTitle({ title: {} })).toBe('Unknown title');
+        expect(getAniListDisplayTitle({ title: {} }, 'nl')).toBe('Onbekende titel');
+        expect(getAniListDisplayTitle({ title: { native: '葬送のフリーレン' } }, 'nl')).toBe('葬送のフリーレン');
     });
 });

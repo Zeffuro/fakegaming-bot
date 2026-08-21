@@ -1,0 +1,90 @@
+{
+    "get-patchnotes": {
+        "name": "patchnotes-ophalen",
+        "description": "Toon de nieuwste patchnotes voor een spel",
+        "options": {
+            "game": {
+                "name": "spel",
+                "description": "Spel waarvoor je patchnotes wilt tonen"
+            }
+        }
+    },
+    "patchnotes-history": {
+        "name": "patchnotes-geschiedenis",
+        "description": "Toon opgeslagen patchnote-geschiedenis voor een spel",
+        "options": {
+            "game": {
+                "name": "spel",
+                "description": "Spel waarvoor je patchnote-geschiedenis wilt tonen"
+            },
+            "count": {
+                "name": "aantal",
+                "description": "Aantal opgeslagen patches om te tonen"
+            }
+        }
+    },
+    "subscribe-patchnotes": {
+        "name": "patchnotes-abonneren",
+        "description": "Abonneer een kanaal op patchnotes voor een spel",
+        "options": {
+            "game": {
+                "name": "spel",
+                "description": "Spel waarop je je wilt abonneren"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Kanaal dat patchnotes ontvangt"
+            }
+        }
+    },
+    "manage-patchnotes": {
+        "name": "patchnotes-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder patchnote-abonnementen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde patchnote-abonnementen"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld patchnote-abonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van patchnotes-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld patchnote-abonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van patchnotes-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld patchnote-abonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van patchnotes-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld patchnote-abonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van patchnotes-beheren"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -282,7 +282,7 @@ function TemplateItemSection({ title, items, emptyText, t }: { title: string; it
                         <PreviewLine key={item.key} primary={t("setupTemplates.routeProviderSource", {
                             provider: getLocalizedProvider(t, item.record.provider),
                             source: getLocalizedSource(t, item.record),
-                        })} secondary={t("setupTemplates.channel", { channel: item.record.channelId })} />
+                        })} secondary={t("setupTemplates.channelSummary", { channel: item.record.channelId })} />
                     ))}
                 </Stack>
             )}

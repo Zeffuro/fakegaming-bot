@@ -30,6 +30,7 @@
   "include": [
     "app",
     "components",
+    "i18n",
     "lib",
     "next-env.d.ts",
     "scripts",

@@ -1,10 +1,9 @@
+import { runtimeText } from '../../core/runtimeCopy.js';
 import {
     DEFAULT_OUTPUT_LOCALE,
-    NON_DEFAULT_OUTPUT_LOCALES,
     resolveLocaleValue,
     type IntegrationHealthRecord,
     type IntegrationHealthStatus,
-    type NonDefaultOutputLocale,
     type OutputLocaleValues,
 } from '@zeffuro/fakegaming-common';
 import {ChatInputCommandInteraction, MessageFlags, PermissionFlagsBits, SlashCommandBuilder} from 'discord.js';
@@ -20,8 +19,6 @@ const MAX_REPLY_LENGTH = 1900;
 interface LocalizableBuilder {
     setName(name: string): unknown;
     setDescription(description: string): unknown;
-    setNameLocalization(locale: NonDefaultOutputLocale, name: string | null): unknown;
-    setDescriptionLocalization(locale: NonDefaultOutputLocale, description: string | null): unknown;
 }
 
 interface LocalizedBuilderCopy {
@@ -31,16 +28,10 @@ interface LocalizedBuilderCopy {
 
 function applyLocalizedBuilderCopy<T extends LocalizableBuilder>(
     builder: T,
-    values: OutputLocaleValues<LocalizedBuilderCopy>,
+    copy: LocalizedBuilderCopy,
 ): T {
-    const defaultCopy = resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, values);
-    builder.setName(defaultCopy.name);
-    builder.setDescription(defaultCopy.description);
-    for (const locale of NON_DEFAULT_OUTPUT_LOCALES) {
-        const copy = resolveLocaleValue(locale, values);
-        builder.setNameLocalization(locale, copy.name);
-        builder.setDescriptionLocalization(locale, copy.description);
-    }
+    builder.setName(copy.name);
+    builder.setDescription(copy.description);
     return builder;
 }
 
@@ -53,7 +44,8 @@ export interface IntegrationManagementRecord {
 
 export interface IntegrationManagementCommandOptions<TRecord extends IntegrationManagementRecord> {
     meta: LocalizedCommandMetadata & {testOnly?: boolean};
-    subjects: {
+    subjectKey?: IntegrationSubjectKey;
+    subjects?: {
         singular: OutputLocaleValues<string>;
         plural: OutputLocaleValues<string>;
     };
@@ -80,32 +72,26 @@ export interface IntegrationManagementCommandOptions<TRecord extends Integration
     };
 }
 
+type IntegrationSubjectKey = 'bluesky' | 'tiktok' | 'twitch' | 'youtube' | 'steam' | 'patchnotes';
+
 /**
  * Creates a guild-admin-only slash command for listing, removing, pausing, and resuming integration configs.
  */
 export function createIntegrationManagementCommand<TRecord extends IntegrationManagementRecord>(
     opts: IntegrationManagementCommandOptions<TRecord>
 ) {
-    const defaultSubjectSingular = resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.subjects.singular);
-    const defaultSubjectPlural = resolveLocaleValue(DEFAULT_OUTPUT_LOCALE, opts.subjects.plural);
-    const dutchSubjectSingular = resolveLocaleValue('nl', opts.subjects.singular);
-    const dutchSubjectPlural = resolveLocaleValue('nl', opts.subjects.plural);
-    const localizedCommandName = opts.meta.localizations?.['nl']?.name ?? opts.meta.name;
-    const idCopy = {
-        en: {name: 'id', description: `Configuration ID from ${opts.meta.name} list`},
-        nl: {name: 'id', description: `Configuratie-ID uit de lijst van ${localizedCommandName}`},
-    } satisfies OutputLocaleValues<LocalizedBuilderCopy>;
+    const defaultSubjectSingular = subjectSingular(opts, DEFAULT_OUTPUT_LOCALE);
+    const defaultSubjectPlural = subjectPlural(opts, DEFAULT_OUTPUT_LOCALE);
+    const idCopy = {name: 'id', description: `Configuration ID from ${opts.meta.name} list`};
     const data = createSlashCommand(opts.meta, (builder: SlashCommandBuilder) => {
         builder
             .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
             .addSubcommand((subcommand) => applyLocalizedBuilderCopy(subcommand, {
-                en: {name: 'list', description: `List configured ${defaultSubjectPlural}`},
-                nl: {name: 'lijst', description: `Toon ingestelde ${dutchSubjectPlural}`},
+                name: 'list', description: `List configured ${defaultSubjectPlural}`,
             }))
             .addSubcommand((subcommand) => {
                 applyLocalizedBuilderCopy(subcommand, {
-                    en: {name: 'remove', description: `Remove a configured ${defaultSubjectSingular}`},
-                    nl: {name: 'verwijderen', description: `Verwijder een ingesteld ${dutchSubjectSingular}`},
+                    name: 'remove', description: `Remove a configured ${defaultSubjectSingular}`,
                 });
                 return subcommand.addIntegerOption(option => applyLocalizedBuilderCopy(option, idCopy).setRequired(true));
             });
@@ -113,15 +99,13 @@ export function createIntegrationManagementCommand<TRecord extends IntegrationMa
             builder
                 .addSubcommand((subcommand) => {
                     applyLocalizedBuilderCopy(subcommand, {
-                        en: {name: 'pause', description: `Pause notifications for a configured ${defaultSubjectSingular}`},
-                        nl: {name: 'pauzeren', description: `Pauzeer meldingen voor een ingesteld ${dutchSubjectSingular}`},
+                        name: 'pause', description: `Pause notifications for a configured ${defaultSubjectSingular}`,
                     });
                     return subcommand.addIntegerOption(option => applyLocalizedBuilderCopy(option, idCopy).setRequired(true));
                 })
                 .addSubcommand((subcommand) => {
                     applyLocalizedBuilderCopy(subcommand, {
-                        en: {name: 'resume', description: `Resume notifications for a configured ${defaultSubjectSingular}`},
-                        nl: {name: 'hervatten', description: `Hervat meldingen voor een ingesteld ${dutchSubjectSingular}`},
+                        name: 'resume', description: `Resume notifications for a configured ${defaultSubjectSingular}`,
                     });
                     return subcommand.addIntegerOption(option => applyLocalizedBuilderCopy(option, idCopy).setRequired(true));
                 });
@@ -129,8 +113,7 @@ export function createIntegrationManagementCommand<TRecord extends IntegrationMa
         if (opts.health) {
             builder.addSubcommand((subcommand) => {
                 applyLocalizedBuilderCopy(subcommand, {
-                    en: {name: 'test', description: `Show latest health for a configured ${defaultSubjectSingular}`},
-                    nl: {name: 'status', description: `Toon de laatste status van een ingesteld ${dutchSubjectSingular}`},
+                    name: 'test', description: `Show latest health for a configured ${defaultSubjectSingular}`,
                 });
                 return subcommand.addIntegerOption(option => applyLocalizedBuilderCopy(option, idCopy).setRequired(true));
             });
@@ -141,7 +124,7 @@ export function createIntegrationManagementCommand<TRecord extends IntegrationMa
         const locale = await resolveInteractionOutputLocale(interaction);
         const guildId = interaction.guildId;
         if (!guildId) {
-            await replyEphemeral(interaction, localize(locale, { en: 'This command can only be used in a server.', nl: 'Deze opdracht kan alleen op een server worden gebruikt.' }));
+            await replyEphemeral(interaction, runtimeText(locale, 'shared', 'serverOnly'));
             return;
         }
 
@@ -173,7 +156,7 @@ export function createIntegrationManagementCommand<TRecord extends IntegrationMa
             return;
         }
 
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `Unknown ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} management action.`, nl: `Onbekende beheeractie voor ${subjectSingular(opts, locale)}.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'unknownManagementAction', {subject: subjectSingular(opts, locale)}));
     }
 
     const testOnly = getTestOnly(opts.meta);
@@ -196,22 +179,22 @@ async function listRecords<TRecord extends IntegrationManagementRecord>(
 ): Promise<void> {
     const records = await opts.listRecords(guildId);
     if (records.length === 0) {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `No ${subjectPlural(opts, DEFAULT_OUTPUT_LOCALE)} are configured for this server.`, nl: `Er zijn geen ${subjectPlural(opts, locale)} ingesteld voor deze server.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'noneConfigured', {subjects: subjectPlural(opts, locale)}));
         return;
     }
 
     const visibleRecords = records.slice(0, MAX_LISTED_RECORDS);
     const lines = visibleRecords.map((record) => {
-        const state = record.paused ? localize(locale, { en: ' paused', nl: ' gepauzeerd' }) : '';
+        const state = record.paused ? runtimeText(locale, 'shared', 'pausedSuffix') : '';
         return `${opts.formatRecord(record, locale)}${state}`;
     });
     const hiddenCount = records.length - visibleRecords.length;
     if (hiddenCount > 0) {
-        lines.push(resolveLocaleValue(locale, { en: `Showing first ${MAX_LISTED_RECORDS}; ${hiddenCount} more not shown.`, nl: `De eerste ${MAX_LISTED_RECORDS} worden getoond; ${hiddenCount} niet getoond.` }));
+        lines.push(runtimeText(locale, 'shared', 'showingFirstMoreNotShown', {limit: MAX_LISTED_RECORDS, hiddenCount}));
     }
 
     const content = truncateReply([
-        resolveLocaleValue(locale, { en: `Configured ${subjectPlural(opts, DEFAULT_OUTPUT_LOCALE)}:`, nl: `Ingestelde ${subjectPlural(opts, locale)}:` }),
+        runtimeText(locale, 'shared', 'configuredHeading', {subjects: subjectPlural(opts, locale)}),
         ...lines,
     ].join('\n'), locale);
     await replyEphemeral(interaction, content);
@@ -240,7 +223,11 @@ async function removeRecord<TRecord extends IntegrationManagementRecord>(
             metadata: opts.auditRemove.metadata?.(record) ?? null,
         });
     }
-    await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `Removed ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)}.`, nl: `${capitalizeNl(subjectSingular(opts, locale))} ${opts.describeRecord(record, locale)} verwijderd.` }));
+    const subject = subjectSingular(opts, locale);
+    await replyEphemeral(interaction, runtimeText(locale, 'shared', 'removed', {
+        removedSubject: locale === 'nl' ? capitalizeNl(subject) : subject,
+        description: opts.describeRecord(record, locale),
+    }));
 }
 
 async function setPausedRecord<TRecord extends IntegrationManagementRecord>(
@@ -251,7 +238,7 @@ async function setPausedRecord<TRecord extends IntegrationManagementRecord>(
     locale: SupportedOutputLocale,
 ): Promise<void> {
     if (!opts.setPausedRecord) {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `That ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} cannot be ${paused ? 'paused' : 'resumed'}.`, nl: `Dat ${subjectSingular(opts, locale)} kan niet worden ${paused ? 'gepauzeerd' : 'hervat'}.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'cannotChangeState', {subject: subjectSingular(opts, locale), paused: String(paused)}));
         return;
     }
 
@@ -263,7 +250,9 @@ async function setPausedRecord<TRecord extends IntegrationManagementRecord>(
     }
 
     if (Boolean(record.paused) === paused) {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `That ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)} is already ${paused ? 'paused' : 'active'}.`, nl: `Dat ${subjectSingular(opts, locale)} ${opts.describeRecord(record, locale)} is al ${paused ? 'gepauzeerd' : 'actief'}.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'alreadyState', {
+            subject: subjectSingular(opts, locale), description: opts.describeRecord(record, locale), paused: String(paused),
+        }));
         return;
     }
 
@@ -280,7 +269,9 @@ async function setPausedRecord<TRecord extends IntegrationManagementRecord>(
     }
 
     await recordHealthStatus(record, opts, paused);
-    await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `${capitalizeAction(paused)}d ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)}.`, nl: `${subjectSingular(opts, locale)} ${opts.describeRecord(record, locale)} ${paused ? 'gepauzeerd' : 'hervat'}.` }));
+    await replyEphemeral(interaction, runtimeText(locale, 'shared', 'stateChanged', {
+        subject: subjectSingular(opts, locale), description: opts.describeRecord(record, locale), paused: String(paused),
+    }));
 }
 
 async function reportHealth<TRecord extends IntegrationManagementRecord>(
@@ -290,7 +281,7 @@ async function reportHealth<TRecord extends IntegrationManagementRecord>(
     locale: SupportedOutputLocale,
 ): Promise<void> {
     if (!opts.health) {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `That ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} does not have health checks configured.`, nl: `Voor dat ${subjectSingular(opts, locale)} zijn geen statuscontroles ingesteld.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'noHealthChecks', {subject: subjectSingular(opts, locale)}));
         return;
     }
 
@@ -303,7 +294,7 @@ async function reportHealth<TRecord extends IntegrationManagementRecord>(
 
     const integrationHealthManager = getIntegrationHealthManager();
     if (typeof integrationHealthManager.getForConfig !== 'function') {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `Health data is not available for ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)}.`, nl: `Statusgegevens zijn niet beschikbaar voor ${subjectSingular(opts, locale)} ${opts.describeRecord(record, locale)}.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'healthUnavailable', {subject: subjectSingular(opts, locale), description: opts.describeRecord(record, locale)}));
         return;
     }
 
@@ -311,14 +302,14 @@ async function reportHealth<TRecord extends IntegrationManagementRecord>(
     try {
         health = await integrationHealthManager.getForConfig(opts.health.provider, id);
     } catch {
-        await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `Health data could not be loaded for ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)}.`, nl: `Statusgegevens konden niet worden geladen voor ${subjectSingular(opts, locale)} ${opts.describeRecord(record, locale)}.` }));
+        await replyEphemeral(interaction, runtimeText(locale, 'shared', 'healthLoadFailed', {subject: subjectSingular(opts, locale), description: opts.describeRecord(record, locale)}));
         return;
     }
 
     if (!health) {
         await replyEphemeral(
             interaction,
-            resolveLocaleValue(locale, { en: `No health record has been recorded yet for ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} ${opts.describeRecord(record, locale)}. The next worker poll will populate it.`, nl: `Er is nog geen status vastgelegd voor ${subjectSingular(opts, locale)} ${opts.describeRecord(record, locale)}. De volgende controle vult deze in.` })
+            runtimeText(locale, 'shared', 'noHealthRecord', {subject: subjectSingular(opts, locale), description: opts.describeRecord(record, locale)})
         );
         return;
     }
@@ -333,33 +324,42 @@ async function replyEphemeral(interaction: ChatInputCommandInteraction, content:
 function truncateReply(content: string, locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE): string {
     if (content.length <= MAX_REPLY_LENGTH) return content;
     const truncated = content.slice(0, MAX_REPLY_LENGTH - 13).trimEnd();
-    return `${truncated}\n...${resolveLocaleValue(locale, { en: 'truncated', nl: 'afgekapt' })}`;
-}
-
-function localize(locale: SupportedOutputLocale, values: OutputLocaleValues<string>): string {
-    return resolveLocaleValue(locale, values);
+    return `${truncated}\n...${runtimeText(locale, "shared", "truncated")}`;
 }
 
 function subjectSingular<TRecord extends IntegrationManagementRecord>(
     opts: IntegrationManagementCommandOptions<TRecord>,
     locale: SupportedOutputLocale,
 ): string {
-    return resolveLocaleValue(locale, opts.subjects.singular);
+    if (opts.subjectKey) return runtimeText(locale, 'shared', SUBJECT_KEYS[opts.subjectKey].singular);
+    if (opts.subjects) return resolveLocaleValue(locale, opts.subjects.singular);
+    throw new Error('Integration management commands require subjectKey or subjects.');
 }
 
 function subjectPlural<TRecord extends IntegrationManagementRecord>(
     opts: IntegrationManagementCommandOptions<TRecord>,
     locale: SupportedOutputLocale,
 ): string {
-    return resolveLocaleValue(locale, opts.subjects.plural);
+    if (opts.subjectKey) return runtimeText(locale, 'shared', SUBJECT_KEYS[opts.subjectKey].plural);
+    if (opts.subjects) return resolveLocaleValue(locale, opts.subjects.plural);
+    throw new Error('Integration management commands require subjectKey or subjects.');
 }
+
+const SUBJECT_KEYS = {
+    bluesky: {singular: 'subjectBlueskySingular', plural: 'subjectBlueskyPlural'},
+    tiktok: {singular: 'subjectTikTokSingular', plural: 'subjectTikTokPlural'},
+    twitch: {singular: 'subjectTwitchSingular', plural: 'subjectTwitchPlural'},
+    youtube: {singular: 'subjectYouTubeSingular', plural: 'subjectYouTubePlural'},
+    steam: {singular: 'subjectSteamSingular', plural: 'subjectSteamPlural'},
+    patchnotes: {singular: 'subjectPatchnotesSingular', plural: 'subjectPatchnotesPlural'},
+} as const;
 
 async function replyNotFound<TRecord extends IntegrationManagementRecord>(
     interaction: ChatInputCommandInteraction,
     opts: IntegrationManagementCommandOptions<TRecord>,
     locale: SupportedOutputLocale,
 ): Promise<void> {
-    await replyEphemeral(interaction, resolveLocaleValue(locale, { en: `That ${subjectSingular(opts, DEFAULT_OUTPUT_LOCALE)} was not found in this server.`, nl: `Dat ${subjectSingular(opts, locale)} is niet gevonden op deze server.` }));
+    await replyEphemeral(interaction, runtimeText(locale, 'shared', 'notFound', {subject: subjectSingular(opts, locale)}));
 }
 
 function capitalizeNl(value: string): string {
@@ -390,10 +390,6 @@ async function recordHealthStatus<TRecord extends IntegrationManagementRecord>(
     } catch {
         // Health status should not block the Discord management action.
     }
-}
-
-function capitalizeAction(paused: boolean): string {
-    return paused ? 'Pause' : 'Resume';
 }
 
 function getIntegrationHealthManager(): {
@@ -427,40 +423,39 @@ function formatHealthReply(
     locale: SupportedOutputLocale,
 ): string {
     const lines = [
-        resolveLocaleValue(locale, { en: `Latest health for ${subjectSingular} ${recordDescription}:`, nl: `Laatste status voor ${subjectSingular} ${recordDescription}:` }),
-        `${localize(locale, { en: 'Status', nl: 'Status' })}: ${inlineCode(formatHealthStatus(health.status, locale))}`,
-        `${localize(locale, { en: 'Last checked', nl: 'Laatst gecontroleerd' })}: ${formatHealthDate(health.lastCheckedAt, locale)}`,
-        `${localize(locale, { en: 'Last success', nl: 'Laatste succes' })}: ${formatHealthDate(health.lastSuccessAt, locale)}`,
-        `${localize(locale, { en: 'Last failure', nl: 'Laatste fout' })}: ${formatHealthDate(health.lastFailureAt, locale)}`,
-        `${localize(locale, { en: 'Last delivery', nl: 'Laatst afgeleverd' })}: ${formatHealthDate(health.lastDeliveryAt, locale)}`,
-        `${localize(locale, { en: 'Consecutive failures', nl: 'Opeenvolgende fouten' })}: ${health.consecutiveFailures}`,
+        runtimeText(locale, 'shared', 'latestHealthFor', {subject: subjectSingular, description: recordDescription}),
+        `${runtimeText(locale, 'shared', 'healthStatus')}: ${inlineCode(formatHealthStatus(health.status, locale))}`,
+        `${runtimeText(locale, 'shared', 'healthLastChecked')}: ${formatHealthDate(health.lastCheckedAt, locale)}`,
+        `${runtimeText(locale, 'shared', 'healthLastSuccess')}: ${formatHealthDate(health.lastSuccessAt, locale)}`,
+        `${runtimeText(locale, 'shared', 'healthLastFailure')}: ${formatHealthDate(health.lastFailureAt, locale)}`,
+        `${runtimeText(locale, 'shared', 'healthLastDelivery')}: ${formatHealthDate(health.lastDeliveryAt, locale)}`,
+        `${runtimeText(locale, 'shared', 'healthConsecutiveFailures')}: ${health.consecutiveFailures}`,
     ];
 
     if (health.lastErrorCode || health.lastErrorMessage) {
         const code = health.lastErrorCode ? `${inlineCode(health.lastErrorCode)} ` : '';
-        lines.push(`${localize(locale, { en: 'Last error', nl: 'Laatste foutmelding' })}: ${code}${truncateHealthLine(health.lastErrorMessage ?? localize(locale, { en: 'Unknown error', nl: 'Onbekende fout' }))}`);
+        lines.push(`${runtimeText(locale, 'shared', 'healthLastError')}: ${code}${truncateHealthLine(health.lastErrorMessage ?? runtimeText(locale, 'shared', 'healthUnknownError'))}`);
     }
 
     return truncateReply(lines.join('\n'), locale);
 }
 
 function formatHealthDate(value: Date | string | null | undefined, locale: SupportedOutputLocale): string {
-    if (!value) return localize(locale, { en: 'Never', nl: 'Nooit' });
+    if (!value) return runtimeText(locale, 'shared', 'healthNever');
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toISOString();
 }
 
 function formatHealthStatus(status: string, locale: SupportedOutputLocale): string {
-    const labels: Readonly<Record<string, string>> = resolveLocaleValue(locale, {
-        en: {},
-        nl: {
-            healthy: 'gezond', success: 'geslaagd', warning: 'waarschuwing', error: 'fout', failed: 'mislukt',
-            paused: 'gepauzeerd', unknown: 'onbekend',
-        },
-    } satisfies OutputLocaleValues<Readonly<Record<string, string>>>);
-    return labels[status] ?? status;
+    const key = HEALTH_STATUS_KEYS[status];
+    return key ? runtimeText(locale, 'shared', key) : status;
 }
+
+const HEALTH_STATUS_KEYS: Readonly<Record<string, 'healthStatusHealthy' | 'healthStatusSuccess' | 'healthStatusWarning' | 'healthStatusError' | 'healthStatusFailed' | 'healthStatusPaused' | 'healthStatusUnknown'>> = {
+    healthy: 'healthStatusHealthy', success: 'healthStatusSuccess', warning: 'healthStatusWarning', error: 'healthStatusError',
+    failed: 'healthStatusFailed', paused: 'healthStatusPaused', unknown: 'healthStatusUnknown',
+};
 
 function truncateHealthLine(value: string): string {
     const normalized = value.trim();

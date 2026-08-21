@@ -1,0 +1,20 @@
+{
+  "notes": {
+    "untitled": "Naamloze notitie"
+  },
+  "recurrence": {
+    "every": "Elke {interval, plural, =1 {{unit}} other {{interval} {unit}}} ({timezone})",
+    "unit": {
+      "day": "{interval, plural, one {dag} other {dagen}}",
+      "week": "{interval, plural, one {week} other {weken}}",
+      "month": "{interval, plural, one {maand} other {maanden}}"
+    }
+  },
+  "elapsed": "{days, plural, one {# dag} other {# dagen}}, {hours} uur, {minutes} min, {seconds} sec geleden",
+  "uptimeShort": {
+    "dayHour": "{days}d {hours}u",
+    "hourMinute": "{hours}u {minutes}m",
+    "minuteSecond": "{minutes}m {seconds}s",
+    "second": "{seconds}s"
+  }
+}

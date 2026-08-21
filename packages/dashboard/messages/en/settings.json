@@ -1,0 +1,172 @@
+{
+  "settings": {
+    "eyebrow": "Settings",
+    "title": "Server control center",
+    "description": "A hub for the settings that exist today: notification setup, delivery analytics, command availability, and community content.",
+    "stats": {
+      "commandsEnabled": "Commands enabled",
+      "configuredFeeds": "Configured feeds",
+      "reviewFindings": "Review findings",
+      "members": "Members"
+    },
+    "notAvailable": "Not available",
+    "destination": {
+      "notifications": {
+        "title": "Notification setup",
+        "description": "Manage feed routing, cooldowns, quiet hours, import/export, and duplicate setup review.",
+        "action": "Open notifications",
+        "chip": "Routing"
+      },
+      "analytics": {
+        "title": "Delivery analytics",
+        "description": "Review notification history, provider health, delivery rates, and provider trends.",
+        "action": "Open analytics",
+        "chip": "Health"
+      },
+      "commands": {
+        "title": "Command access",
+        "description": "Enable or disable bot modules and commands that are available to this server.",
+        "action": "Manage commands",
+        "chip": "Access"
+      },
+      "permissions": {
+        "title": "Permission state",
+        "description": "Inspect live roles, members, category overwrites, and channel permissions with historical snapshots.",
+        "action": "Open permissions",
+        "chip": "Read only"
+      },
+      "quotes": {
+        "title": "Quote library",
+        "description": "View, add, search, and prune the quotes stored for this community.",
+        "action": "Manage quotes",
+        "chip": "Content"
+      },
+      "birthdays": {
+        "title": "Birthday calendar",
+        "description": "Maintain member birthdays and their announcement destinations.",
+        "action": "Manage birthdays",
+        "chip": "Community"
+      },
+      "overview": {
+        "title": "Server overview",
+        "description": "Return to the full dashboard index for every available module on this server.",
+        "action": "Open overview",
+        "chip": "Index"
+      }
+    },
+    "botOutputLanguage": {
+      "title": "Bot output language",
+      "description": "Choose the language used by supported bot responses in this server.",
+      "aria": "Bot output language"
+    },
+    "snapshot": {
+      "title": "Server snapshot",
+      "description": "Discord remains the source of truth for roles, channels, permissions, and member data.",
+      "server": "Server",
+      "serverId": "Server ID"
+    },
+    "capability": {
+      "title": "Capability checklist",
+      "description": "Missing destinations, provider health, setup review, paused routes, and command overrides.",
+      "missingChannels": {
+        "title": "Missing delivery channels",
+        "detail": "Routes without a Discord channel: {count}. Select a channel to start delivery."
+      },
+      "providerHealthFailures": {
+        "title": "Provider health failures"
+      },
+      "providerHealthWarnings": {
+        "title": "Provider health warnings"
+      },
+      "providerHealth": {
+        "detail": "Review in delivery analytics: {summary}."
+      },
+      "healthFailure": "Failures: {count}",
+      "healthWarning": "Warnings: {count}",
+      "healthUnknown": "Unknown states: {count}",
+      "review": {
+        "title": "Notification setup review",
+        "detail": "Findings: {count}. Review duplicate routes, overlaps, and crowded channels."
+      },
+      "paused": {
+        "title": "Paused integrations",
+        "detail": "Paused routes: {count}. Resume them to send notifications."
+      },
+      "commands": {
+        "title": "Command access overrides",
+        "detail": "Disabled commands: {commands}. Disabled modules: {modules}."
+      },
+      "ready": {
+        "title": "Server capabilities look ready",
+        "detail": "Commands, configured routes, provider health, and notification routing have no current warnings."
+      }
+    },
+    "modules": {
+      "title": "Live module status",
+      "description": "Effective command availability by module, including disabled modules and per-command overrides."
+    },
+    "integrations": {
+      "title": "Integration setup",
+      "description": "Configured notification providers with paused routes and health signals.",
+      "empty": "No notification integrations are configured yet."
+    },
+    "review": {
+      "title": "Notification review",
+      "description": "Duplicate routes, same-feed multi-channel overlap, and crowded destination channels.",
+      "noFindings": "No setup findings",
+      "needsAttention": "Setup review needs attention",
+      "clearDetail": "No duplicate routes or crowded destination channels were detected.",
+      "findingsDetail": "Findings: {count}. Review notification routing."
+    },
+    "transfer": {
+      "title": "Notification transfer",
+      "description": "Jump to the notification setup import and export controls.",
+      "import": "Import JSON",
+      "export": "Export JSON"
+    },
+    "status": {
+      "active": "Active",
+      "needsReview": "Needs review",
+      "disabled": "Disabled",
+      "quiet": "Quiet",
+      "warning": "Warning",
+      "critical": "Critical",
+      "paused": "Paused",
+      "unconfigured": "Not configured",
+      "ready": "Ready",
+      "clear": "Clear"
+    },
+    "count": {
+      "missingChannels": "Missing channels: {count}",
+      "healthIssues": "Health issues: {count}",
+      "active": "Active: {count}",
+      "needsReview": "Needs review: {count}",
+      "disabled": "Disabled: {count}",
+      "paused": "Paused: {count}",
+      "duplicates": "Duplicates: {count}",
+      "overlaps": "Overlaps: {count}",
+      "busyChannels": "Busy channels: {count}",
+      "findings": "Findings: {count}"
+    },
+    "module": {
+      "commandsEnabled": "Commands enabled: {enabled}/{total}",
+      "integrationsActive": "Active integrations: {active}/{configured}",
+      "paused": "Paused: {count}",
+      "missingChannels": "Missing channels: {count}",
+      "healthIssues": "Health issues: {count}"
+    },
+    "provider": {
+      "active": "Active: {active}/{configured}",
+      "paused": "Paused: {count}",
+      "missingChannels": "Missing channels: {count}",
+      "healthIssues": "Health issues: {count}",
+      "quoteOfDay": "Quote of the Day"
+    },
+    "aria": {
+      "open": "Open {item}",
+      "openCommandControls": "Open command controls for {module}",
+      "openProviderSetup": "Open {provider} setup",
+      "openNotificationReview": "Open notification setup review"
+    }
+  }
+}

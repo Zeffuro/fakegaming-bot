@@ -1,0 +1,107 @@
+{
+  "quotes": {
+    "title": "Citaten",
+    "description": "Zoek, voeg toe en ruim servercitaten op met Discord-ledenzoekfunctie en leesbare bronvermelding.",
+    "stats": {
+      "stored": "Opgeslagen citaten",
+      "quotedMembers": "Geciteerde leden",
+      "curators": "Beheerders",
+      "pending": "In afwachting",
+      "approved": "Goedgekeurd",
+      "shown": "Getoond"
+    },
+    "findAdd": {
+      "title": "Citaten zoeken en toevoegen",
+      "description": "Zoek bestaande citaten en voeg daarna nieuwe citaten met een gekoppelde auteur toe."
+    },
+    "search": "Citaten, personen of ID's zoeken",
+    "author": "Auteur",
+    "authorPlaceholder": "Typ een naam of bijnaam, of plak een Discord-gebruikers-ID",
+    "typeThree": "Typ minstens 3 tekens",
+    "noMembers": "Geen leden gevonden",
+    "quote": "Citaat",
+    "quotePlaceholder": "Een nieuw citaat toevoegen...",
+    "add": "Citaat toevoegen",
+    "tags": "Tags",
+    "tagsPlaceholder": "grappig raid-avond",
+    "tagsHelp": "Scheid tags met spaties of komma's",
+    "source": "Bron",
+    "sourcePlaceholder": "Voicechat, stream, berichtlink",
+    "context": "Context",
+    "contextPlaceholder": "Optionele notitie over wanneer of waarom dit is gezegd",
+    "none": "Geen",
+    "unknown": "Onbekend",
+    "by": "door {author}",
+    "attribution": "Door {author} | toegevoegd door {submitter} | {date}",
+    "timestamp": "{date} UTC",
+    "sourceValue": "Bron: {source}",
+    "contextValue": "Context: {context}",
+    "empty": {
+      "none": "Nog geen citaten",
+      "filtered": "Geen citaten komen overeen met deze filters",
+      "noneDescription": "Voeg hierboven het eerste citaat toe om het citaatarchief van deze server op te bouwen.",
+      "filteredDescription": "Pas de zoek- of moderatiestatusfilters aan om meer citaten te tonen."
+    },
+    "status": {
+      "all": "Alle",
+      "pending": "In afwachting",
+      "approved": "Goedgekeurd",
+      "rejected": "Afgewezen"
+    },
+    "filterAria": "Moderatiefilter voor citaten",
+    "filterOptionAria": "Citaatfilter {status}",
+    "action": {
+      "approve": "Citaat goedkeuren",
+      "reject": "Citaat afwijzen",
+      "delete": "Citaat verwijderen",
+      "downloadCard": "Citaatkaart downloaden",
+      "downloadProfile": "Profielkaart van auteur downloaden",
+      "approveBeforeDownload": "Keur het citaat goed voordat je de kaart downloadt",
+      "deleteDuplicate": "Dubbel citaat verwijderen",
+      "approveAria": "Citaat {id} goedkeuren",
+      "rejectAria": "Citaat {id} afwijzen",
+      "downloadCardAria": "Citaatkaart {id} downloaden",
+      "downloadProfileAria": "Profielkaart van auteur {id} downloaden",
+      "deleteDuplicateAria": "Dubbel citaat {id} verwijderen"
+    },
+    "curation": {
+      "title": "Citaatbeheer",
+      "description": "Bekijk citaatdekking, actieve beheerders en de nieuwste archiefitems.",
+      "total": "Totaal",
+      "quoted": "Geciteerd",
+      "tagged": "Getagd",
+      "duplicates": "Dubbele",
+      "latest": "Nieuwste",
+      "topMembers": "Meest geciteerde leden",
+      "noMembers": "Nog geen geciteerde leden.",
+      "recent": "Recente toevoegingen",
+      "noRecent": "Nog geen recente toevoegingen.",
+      "topTags": "Top-tags",
+      "noTags": "Er zijn nog geen tags toegevoegd.",
+      "duplicateReview": "Controle van dubbele citaten",
+      "noDuplicates": "Geen dubbele citaattekst gevonden.",
+      "tagCount": "{tag} x{count}",
+      "quoteCount": "Citaten: {count}",
+      "duplicateSummary": "Overeenkomende items: {count} | nieuwste {date}"
+    },
+    "day": {
+      "title": "Citaat van de dag",
+      "eligible": "Goedgekeurde citaten beschikbaar: {count} | {date}",
+      "loadingPreview": "Voorbeeld laden...",
+      "loadingTitle": "Citaatvoorbeeld laden",
+      "emptyTitle": "Geen goedgekeurd citaat beschikbaar",
+      "loadingDescription": "Voorbeeld van citaat van de dag laden.",
+      "emptyDescription": "Keur minstens één citaat goed voordat je dagelijkse bezorging inschakelt.",
+      "channel": "Kanaal",
+      "utcHour": "UTC-uur",
+      "dailyDelivery": "Dagelijkse bezorging",
+      "deliverySummary": "{channel} om {hour}:00 UTC",
+      "chooseChannel": "Kies een kanaal",
+      "save": "Dagelijks citaat opslaan"
+    },
+    "error": {
+      "downloadCard": "Citaatkaart downloaden mislukt",
+      "downloadProfileCard": "Profielkaart downloaden mislukt"
+    }
+  }
+}

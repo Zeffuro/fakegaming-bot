@@ -1,0 +1,70 @@
+{
+    "add-bluesky-account": {
+        "name": "bluesky-account-toevoegen",
+        "description": "Voeg een Bluesky-account toe voor berichtmeldingen",
+        "options": {
+            "username": {
+                "name": "gebruikersnaam",
+                "description": "Bluesky-handle (met of zonder @)"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Discord-kanaal voor meldingen"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Aangepast meldingsbericht (optioneel)"
+            }
+        }
+    },
+    "manage-bluesky-accounts": {
+        "name": "bluesky-accounts-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder Bluesky-meldingen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde Bluesky-accounts"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld Bluesky-account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van bluesky-accounts-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld Bluesky-account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van bluesky-accounts-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld Bluesky-account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van bluesky-accounts-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld Bluesky-account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van bluesky-accounts-beheren"
+                    }
+                }
+            }
+        }
+    }
+}

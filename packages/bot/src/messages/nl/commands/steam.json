@@ -1,0 +1,70 @@
+{
+    "add-steam-news": {
+        "name": "steamnieuws-toevoegen",
+        "description": "Voeg meldingen voor Steam-spelnieuws toe",
+        "options": {
+            "game": {
+                "name": "spel",
+                "description": "Naam, app-ID of winkel-URL van het Steam-spel"
+            },
+            "channel": {
+                "name": "kanaal",
+                "description": "Discord-kanaal voor Steamnieuws"
+            },
+            "message": {
+                "name": "bericht",
+                "description": "Aangepast meldingsbericht (optioneel)"
+            }
+        }
+    },
+    "manage-steam-news": {
+        "name": "steamnieuws-beheren",
+        "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon ingestelde Steamnieuwsabonnementen"
+            },
+            "remove": {
+                "name": "verwijderen",
+                "description": "Verwijder een ingesteld Steamnieuwsabonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van steamnieuws-beheren"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pauzeren",
+                "description": "Pauzeer meldingen voor een ingesteld Steamnieuwsabonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van steamnieuws-beheren"
+                    }
+                }
+            },
+            "resume": {
+                "name": "hervatten",
+                "description": "Hervat meldingen voor een ingesteld Steamnieuwsabonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van steamnieuws-beheren"
+                    }
+                }
+            },
+            "test": {
+                "name": "status",
+                "description": "Toon de laatste status van een ingesteld Steamnieuwsabonnement",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuratie-ID uit de lijst van steamnieuws-beheren"
+                    }
+                }
+            }
+        }
+    }
+}

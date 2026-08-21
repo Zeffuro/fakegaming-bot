@@ -1,13 +1,19 @@
-import { resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '../../../core/localization.js';
+import { resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
+import { createBotTranslator, type BotMessages, type SupportedOutputLocale } from '../../../core/localization.js';
+import englishMessages from '../../../messages/en/league.json' with { type: 'json' };
+import dutchMessages from '../../../messages/nl/league.json' with { type: 'json' };
 
-export function leagueText(locale: SupportedOutputLocale, values: OutputLocaleValues<string>): string {
-    return resolveLocaleValue(locale, values);
+export type LeagueCopyKey = keyof typeof englishMessages;
+
+export function leagueText(locale: SupportedOutputLocale, key: LeagueCopyKey): string {
+    const messages = resolveLocaleValue(locale, { en: englishMessages, nl: dutchMessages } satisfies OutputLocaleValues<BotMessages>) as typeof englishMessages;
+    return createBotTranslator(locale, messages)(key);
 }
 
 export function unknownError(locale: SupportedOutputLocale): string {
-    return leagueText(locale, { en: 'Unknown error', nl: 'Onbekende fout' });
+    return leagueText(locale, 'unknownError');
 }
 
 export function missingIdentity(locale: SupportedOutputLocale): string {
-    return leagueText(locale, { en: 'Please provide a Riot ID and region, or link your account first.', nl: 'Geef een Riot ID en regio op, of koppel eerst je account.' });
+    return leagueText(locale, 'pleaseProvideARiotIdAndRegionOr');
 }

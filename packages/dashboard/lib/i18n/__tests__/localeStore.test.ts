@@ -9,7 +9,6 @@ import {
     getDashboardLocaleFromAcceptLanguage,
     getDashboardIntlLocale,
     getInitialDashboardLocale,
-    getDashboardLocaleValue,
     getStoredDashboardLocale,
     getStoredDashboardCookieLocale,
     setDashboardLocale,
@@ -37,11 +36,10 @@ describe("dashboard locale store", () => {
         expect(getDashboardLocaleFromAcceptLanguage(["fr-FR", "nl-NL"])).toBe("nl");
     });
 
-    it("derives locale metadata and values from the shared registry", () => {
+    it("derives locale metadata from the shared registry", () => {
         expect(Object.keys(dashboardLocaleMetadata)).toEqual([...dashboardLocales]);
         expect(dashboardLocales).toContain(defaultDashboardLocale);
-        expect(getDashboardIntlLocale("nl")).toBe(dashboardLocaleMetadata.nl.languageTag);
-        expect(getDashboardLocaleValue("nl", { en: "Save", nl: "Opslaan" })).toBe("Opslaan");
+        expect(getDashboardIntlLocale("nl")).toBe(dashboardLocaleMetadata.nl.formatTag);
     });
 
     it("notifies subscribers and persists explicit changes", () => {

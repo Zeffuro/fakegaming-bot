@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import type { CreationAttributes } from 'sequelize';
+import { createCommonTranslator } from '../messages/index.js';
 import { BaseManager } from './baseManager.js';
 import { UserNoteConfig } from '../models/user-note-config.js';
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '../utils/outputLocale.js';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '../utils/outputLocale.js';
 
 export interface UserNoteCreateInput {
     discordId: string;
@@ -21,11 +22,6 @@ export interface UserNoteUpdateInput {
 
 export type UserNoteRecord = CreationAttributes<UserNoteConfig>;
 
-const UNTITLED_NOTE_LABEL = {
-    en: 'Untitled note',
-    nl: 'Naamloze notitie',
-} as const satisfies OutputLocaleValues<string>;
-
 export function deriveUserNoteTitle(
     title: string | null | undefined,
     body: string,
@@ -38,7 +34,7 @@ export function deriveUserNoteTitle(
         .split(/\r?\n/)
         .map((line) => line.trim())
         .find((line) => line.length > 0);
-    if (!firstBodyLine) return resolveLocaleValue(locale, UNTITLED_NOTE_LABEL);
+    if (!firstBodyLine) return createCommonTranslator(locale)('shared.notes.untitled');
 
     return firstBodyLine.replace(/\s+/g, ' ').slice(0, 160);
 }

@@ -1,0 +1,12 @@
+{
+    "errorExecutingCommand": "De opdracht kon niet worden uitgevoerd.",
+    "errorHandlingInteraction": "De interactie kon niet worden verwerkt.",
+    "durationMinutesSeconds": "{minutes} min. {seconds} sec.",
+    "timeAgoDays": "{count, plural, one {# dag geleden} other {# dagen geleden}}",
+    "timeAgoHours": "{count} uur geleden",
+    "timeAgoMinutes": "{count} min. geleden",
+    "timeAgoNow": "zojuist",
+    "onlyAdminsCanUseThisCommand": "Alleen beheerders kunnen deze opdracht gebruiken.",
+    "theModuleIsDisabledForThisServer": "De module {module} is uitgeschakeld voor deze server.",
+    "thisCommandIsDisabledForThisServer": "Deze opdracht is uitgeschakeld voor deze server."
+}

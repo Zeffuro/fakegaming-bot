@@ -10,9 +10,7 @@ import { getBirthdayCopy } from '../copy/birthdayCopy.js';
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addUserOption(option =>
         option.setName('user')
-            .setNameLocalization('nl', 'gebruiker')
             .setDescription('User to remove birthday for (admins only)')
-            .setDescriptionLocalization('nl', 'Gebruiker van wie je de verjaardag verwijdert (alleen beheerders)')
             .setRequired(false)
     )
 );

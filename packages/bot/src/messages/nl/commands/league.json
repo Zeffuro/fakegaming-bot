@@ -1,0 +1,252 @@
+{
+    "league-history": {
+        "name": "league-geschiedenis",
+        "description": "Toon recente League of Legends-wedstrijden via Riot ID of gekoppelde gebruiker",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID inclusief tag (bijvoorbeeld Naam#TAG)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker"
+            }
+        }
+    },
+    "league-form": {
+        "name": "league-vorm",
+        "description": "Vat recente League of Legends-vorm samen via Riot ID of gekoppelde gebruiker",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID inclusief tag (bijvoorbeeld Naam#TAG)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker"
+            },
+            "refresh": {
+                "name": "vernieuwen",
+                "description": "Sla de korte cache over en vernieuw via Riot"
+            }
+        }
+    },
+    "league-stats": {
+        "name": "league-statistieken",
+        "description": "Toon League of Legends-statistieken via Riot ID of gekoppelde gebruiker",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID inclusief tag (bijvoorbeeld Naam#TAG)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker"
+            }
+        }
+    },
+    "link-riot": {
+        "name": "riot-koppelen",
+        "description": "Koppel jouw Discord-account of een andere gebruiker aan een Riot-account",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID (bijv. Zeffuro#EUW)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker om te koppelen (alleen beheerders)"
+            }
+        }
+    },
+    "riot-links": {
+        "name": "riot-koppelingen",
+        "description": "Beheer gekoppelde Riot-accounts",
+        "options": {
+            "list": {
+                "name": "lijst",
+                "description": "Toon gekoppelde Riot-accounts"
+            },
+            "show": {
+                "name": "tonen",
+                "description": "Toon een gekoppeld Riot-account",
+                "options": {
+                    "user": {
+                        "name": "gebruiker",
+                        "description": "Discord-gebruiker"
+                    }
+                }
+            },
+            "unlink": {
+                "name": "ontkoppelen",
+                "description": "Verwijder een gekoppeld Riot-account",
+                "options": {
+                    "user": {
+                        "name": "gebruiker",
+                        "description": "Discord-gebruiker"
+                    }
+                }
+            }
+        }
+    },
+    "tft-history": {
+        "name": "tft-geschiedenis",
+        "description": "Toon recente TFT-wedstrijden via Riot ID of gekoppelde gebruiker",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID inclusief tag (bijvoorbeeld Naam#TAG)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker"
+            }
+        }
+    },
+    "tft-stats": {
+        "name": "tft-statistieken",
+        "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker",
+        "options": {
+            "riot-id": {
+                "name": "riot-id",
+                "description": "Riot ID inclusief tag (bijvoorbeeld Naam#TAG)"
+            },
+            "region": {
+                "name": "regio",
+                "description": "Regio",
+                "choices": {
+                    "BR1": "Brazilië",
+                    "EUN1": "Noord- en Oost-Europa",
+                    "EUW1": "West-Europa",
+                    "JP1": "Japan",
+                    "KR": "Korea",
+                    "LA1": "Noord-Latijns-Amerika",
+                    "LA2": "Zuid-Latijns-Amerika",
+                    "ME1": "Midden-Oosten",
+                    "NA1": "Noord-Amerika",
+                    "OC1": "Oceanië",
+                    "PBE1": "PBE-testserver",
+                    "RU": "Rusland",
+                    "SG2": "Singapore",
+                    "TR1": "Turkije",
+                    "TW2": "Taiwan",
+                    "VN2": "Vietnam"
+                }
+            },
+            "user": {
+                "name": "gebruiker",
+                "description": "Discord-gebruiker"
+            }
+        }
+    }
+}

@@ -1,0 +1,32 @@
+{
+  "birthdays": {
+    "eyebrow": "Verjaardagen",
+    "title": "Verjaardagsaankondigingen",
+    "description": "Zoek Discord-leden, sla hun verjaardag op en kies precies waar felicitatieberichten worden geplaatst.",
+    "configuredStat": "Verjaardagen ingesteld",
+    "next30DaysStat": "Volgende 30 dagen",
+    "upcomingCalendar": "Aankomende kalender",
+    "upcomingCalendarDescription": "De eerstvolgende verjaardagen vanaf vandaag, inclusief een terugval van schrikkeldag naar 28 februari in niet-schrikkeljaren.",
+    "noUpcomingTitle": "Geen aankomende verjaardagen",
+    "noUpcomingDescription": "Voeg hieronder verjaardagen toe om deze kalender te vullen.",
+    "addBirthday": "Verjaardag toevoegen",
+    "editBirthday": "Verjaardag bewerken",
+    "formDescription": "Gebruik waar mogelijk leden zoeken; een Discord-gebruikers-ID plakken werkt nog steeds voor uitzonderingen.",
+    "invalidForm": "Gebruiker, kanaal, dag en maand zijn vereist. Jaar moet een getal zijn als het wordt ingevuld.",
+    "typeAtLeastThreeCharacters": "Typ minstens 3 tekens",
+    "noMembersFound": "Geen leden gevonden",
+    "member": "Lid",
+    "memberPlaceholder": "Zoek lid of plak gebruikers-ID",
+    "month": "Maand",
+    "day": "Dag",
+    "year": "Jaar",
+    "announcementChannel": "Aankondigingskanaal",
+    "configuredTitle": "Ingestelde verjaardagen",
+    "configuredDescription": "Gesorteerd op maand en dag zodat aankomende datums makkelijker te bekijken zijn.",
+    "noConfiguredTitle": "Geen verjaardagen ingesteld",
+    "noConfiguredDescription": "Voeg hierboven de eerste verjaardag van een lid toe om aankondigingen in te schakelen.",
+    "editAria": "Verjaardag van {user} bewerken",
+    "deleteAria": "Verjaardag van {user} verwijderen",
+    "cancelEdit": "Verjaardag bewerken annuleren"
+  }
+}

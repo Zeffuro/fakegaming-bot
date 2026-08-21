@@ -208,9 +208,11 @@
     "sequelize-typescript": "^2.1.6",
     "sqlite3": "^6.0.1",
     "umzug": "^3.8.3",
+    "use-intl": "4.13.6",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.17",
     "@types/ms": "^2.1.0",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "^10.8.1",

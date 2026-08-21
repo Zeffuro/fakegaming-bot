@@ -1,0 +1,44 @@
+{
+    "game-night": {
+        "name": "spelavond",
+        "description": "Nomineer en stem op spellen voor een spelavond van de server",
+        "options": {
+            "start": {
+                "name": "starten",
+                "description": "Start een nieuwe spelavond in dit kanaal",
+                "options": {
+                    "name": {
+                        "name": "naam",
+                        "description": "Een korte naam voor deze spelavond"
+                    },
+                    "duration": {
+                        "name": "duur",
+                        "description": "Uren voordat een onvoltooide spelavond verloopt"
+                    }
+                }
+            },
+            "nominate": {
+                "name": "nomineren",
+                "description": "Nomineer één spel voor de actieve spelavond",
+                "options": {
+                    "game": {
+                        "name": "spel",
+                        "description": "Het spel dat je wilt nomineren"
+                    }
+                }
+            },
+            "open": {
+                "name": "openen",
+                "description": "Open de stemming over de nominaties"
+            },
+            "close": {
+                "name": "sluiten",
+                "description": "Sluit de stemming en kies de winnaar"
+            },
+            "status": {
+                "name": "status",
+                "description": "Toon de huidige status van de spelavond"
+            }
+        }
+    }
+}

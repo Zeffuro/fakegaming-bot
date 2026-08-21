@@ -10,9 +10,7 @@ const weatherEmoji = '\uD83C\uDF24\uFE0F';
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option.setName('location')
-            .setNameLocalization('nl', 'locatie')
             .setDescription('City name or city,country (e.g., Rotterdam or Rotterdam,NL)')
-            .setDescriptionLocalization('nl', 'Plaatsnaam of plaats,land (bijv. Rotterdam of Rotterdam,NL)')
             .setRequired(true)
     )
 );
@@ -36,11 +34,12 @@ function getResponseStatus(error: unknown): number | null {
 }
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const copy = getGeneralCopy(await resolveInteractionOutputLocale(interaction));
+    const locale = await resolveInteractionOutputLocale(interaction);
+    const copy = getGeneralCopy(locale);
     const location = interaction.options.getString('location', true);
     try {
         const weather = await getCurrentWeather(location);
-        const forecast = await getShortTermForecast(location, 4);
+        const forecast = await getShortTermForecast(location, 4, locale);
         let forecastMsg = `${copy.weather.forecast}\n`;
         for (const entry of forecast) {
             forecastMsg += `${entry.emoji} ${entry.time}: ${capitalize(entry.description)} | ${entry.temp}\u00B0C ${entry.rain}\n`;

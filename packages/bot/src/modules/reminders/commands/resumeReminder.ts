@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {SlashCommandBuilder, ChatInputCommandInteraction, MessageFlags, AutocompleteInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
@@ -14,9 +14,7 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b.addStringOption(option =>
         option
             .setName('reminder')
-            .setNameLocalization('nl', 'herinnering')
             .setDescription('Reminder number from /reminders or its short ID')
-            .setDescriptionLocalization('nl', 'Nummer uit /herinneringen of het korte ID')
             .setRequired(true)
             .setAutocomplete(true)
     )
@@ -51,7 +49,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     });
 
     const nextRun = timestamp !== undefined
-        ? resolveLocaleValue(locale, { en: ` Next run <t:${Math.floor(timestamp / 1000)}:R>.`, nl: ` Volgende uitvoering <t:${Math.floor(timestamp / 1000)}:R>.` })
+        ? runtimeText(locale, 'reminders', 'nextRun', {timestamp: Math.floor(timestamp / 1000)})
         : '';
     await interaction.reply({
         content: copy.resumed(shortReminderId(reminder.id), reminder.message, nextRun),

@@ -1,5 +1,5 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import { AttachmentBuilder, ChatInputCommandInteraction, SlashCommandBuilder, type GuildMember } from 'discord.js';
+import {DEFAULT_OUTPUT_LOCALE} from '@zeffuro/fakegaming-common';
 import { buildProfileCardFilename, renderProfileCard } from '@zeffuro/fakegaming-common/profile-card';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
 import { resolveInteractionOutputLocale } from '../../../core/localization.js';
@@ -9,9 +9,7 @@ import { profileCard as META } from '../commands.manifest.js';
 const data = createSlashCommand(META, (builder: SlashCommandBuilder) => {
     builder.addUserOption(option => option
         .setName('user')
-        .setNameLocalization('nl', 'gebruiker')
         .setDescription('User to render. Defaults to you.')
-        .setDescriptionLocalization('nl', 'Gebruiker voor de kaart; standaard ben jij dat')
         .setRequired(false));
 });
 
@@ -34,16 +32,9 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         nickname: member?.nickname ?? null,
         guildName: interaction.guild?.name ?? null,
     };
-    const buffer = resolveLocaleValue(locale, { en: renderProfileCard(profileInput), nl: renderProfileCard(profileInput, {
-        labels: {
-            profile: 'profiel',
-            fakeGamingProfile: 'FakeGaming-profiel',
-            serverNickname: 'Serverbijnaam',
-            globalName: 'Globale naam',
-            discordId: 'Discord-ID',
-            discordUser: copy.profile.fallback,
-        },
-    }) });
+    const buffer = locale === DEFAULT_OUTPUT_LOCALE
+        ? renderProfileCard(profileInput)
+        : renderProfileCard(profileInput, {locale});
     const attachment = new AttachmentBuilder(buffer, { name: buildProfileCardFilename(target.id) });
 
     await interaction.reply({

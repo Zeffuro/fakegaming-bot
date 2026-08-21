@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {ChatInputCommandInteraction} from 'discord.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {createSlashCommand, getTestOnly} from '../../../core/commandBuilder.js';
@@ -15,7 +15,7 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const locale = await resolveInteractionOutputLocale(interaction);
     const quotes = await getConfigManager().quoteManager.getQuotesByGuild(interaction.guildId!) as unknown as QuoteRow[];
     if (quotes.length === 0) {
-        await interaction.reply(resolveLocaleValue(locale, { en: 'No quotes found for this server.', nl: 'Geen citaten gevonden op deze server.' }));
+        await interaction.reply(runtimeText(locale, "quotes", "noQuotesFoundForThisServer"));
         return;
     }
 
@@ -27,9 +27,9 @@ async function execute(interaction: ChatInputCommandInteraction) {
     const rows = Array.from(counts.entries())
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
-        .map(([authorId, count], index) => `${index + 1}. <@${authorId}> - ${count} ${resolveLocaleValue(locale, { en: `quote${count === 1 ? '' : 's'}`, nl: (count === 1 ? 'citaat' : 'citaten') })}`);
+        .map(([authorId, count], index) => `${index + 1}. <@${authorId}> - ${count} ${runtimeText(locale, 'quotes', 'quoteCount', {count})}`);
 
-    await interaction.reply(`${resolveLocaleValue(locale, { en: 'Quote leaderboard', nl: 'Citatenklassement' })}:\n${rows.join('\n')}`);
+    await interaction.reply(`${runtimeText(locale, "quotes", "quoteLeaderboard")}:\n${rows.join('\n')}`);
 }
 
 const testOnly = getTestOnly(META);

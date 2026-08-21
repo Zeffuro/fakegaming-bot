@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import {getConfigManager} from '@zeffuro/fakegaming-common/managers';
 import {
     createIntegrationManagementCommand,
@@ -14,10 +14,7 @@ interface BlueskyManagementRecord extends IntegrationManagementRecord {
 
 const {data, execute, testOnly} = createIntegrationManagementCommand<BlueskyManagementRecord>({
     meta: META,
-    subjects: {
-        singular: { en: 'Bluesky account', nl: 'Bluesky-account' },
-        plural: { en: 'Bluesky accounts', nl: 'Bluesky-accounts' },
-    },
+    subjectKey: 'bluesky',
     listRecords: async (guildId) => {
         const records = await getConfigManager().blueskyManager.getManyPlain({guildId});
         return records as unknown as BlueskyManagementRecord[];
@@ -33,7 +30,7 @@ const {data, execute, testOnly} = createIntegrationManagementCommand<BlueskyMana
         await getConfigManager().blueskyManager.setPaused(id, paused);
     },
     formatRecord: (record) => `${inlineCode(String(record.id))} ${inlineCode(record.blueskyHandle)} -> <#${record.discordChannelId}>`,
-    describeRecord: (record, locale) => `${inlineCode(record.blueskyHandle)} ${resolveLocaleValue(locale, { en: 'from', nl: 'uit' })} <#${record.discordChannelId}>`,
+    describeRecord: (record, locale) => `${inlineCode(record.blueskyHandle)} ${runtimeText(locale, "bluesky", "from")} <#${record.discordChannelId}>`,
     auditRemove: {
         action: 'bluesky.delete',
         targetType: 'blueskyConfig',

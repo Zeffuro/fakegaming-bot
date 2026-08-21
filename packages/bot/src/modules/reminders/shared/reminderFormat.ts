@@ -1,5 +1,5 @@
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
 import type { SupportedOutputLocale } from '../../../core/localization.js';
 
 export interface ReminderLike {
@@ -23,10 +23,10 @@ export function formatReminderLine(
 ): string {
     const timestamp = typeof reminder.timestamp === 'string' ? Number(reminder.timestamp) : reminder.timestamp;
     const unix = Number.isFinite(timestamp) ? Math.floor(timestamp / 1000) : 0;
-    const when = unix > 0 ? `<t:${unix}:R>` : resolveLocaleValue(locale, { en: 'unknown time', nl: 'onbekende tijd' });
+    const when = unix > 0 ? `<t:${unix}:R>` : runtimeText(locale, "reminders", "unknownTime");
     const state = isReminderPaused(reminder)
-        ? resolveLocaleValue(locale, { en: ' [paused]', nl: ' [gepauzeerd]' })
-        : isRecurringReminder(reminder) ? resolveLocaleValue(locale, { en: ' [active]', nl: ' [actief]' }) : '';
+        ? runtimeText(locale, "reminders", "paused")
+        : isRecurringReminder(reminder) ? runtimeText(locale, "reminders", "active") : '';
     const recurrence = formatReminderRecurrenceSuffix(reminder, locale);
     return `${index + 1}. \`${shortReminderId(reminder.id)}\` ${when}${recurrence}${state} - ${reminder.message}`;
 }
@@ -59,13 +59,14 @@ function formatReminderRecurrenceSuffix(reminder: ReminderLike, locale: Supporte
         : Number(reminder.recurrenceInterval);
     if (!Number.isInteger(interval) || interval < 1 || !reminder.recurrenceUnit || !reminder.recurrenceTimezone) return '';
 
-    const unit = resolveLocaleValue(locale, { en: interval === 1 ? reminder.recurrenceUnit : `${reminder.recurrenceUnit}s`, nl: dutchRecurrenceUnit(reminder.recurrenceUnit, interval) });
-    const cadence = resolveLocaleValue(locale, { en: interval === 1 ? `every ${reminder.recurrenceUnit}` : `every ${interval} ${unit}`, nl: interval === 1 ? `elke ${unit}` : `elke ${interval} ${unit}` });
-    return ` (${cadence}, ${reminder.recurrenceTimezone})`;
-}
+    const keys = {
+        minute: 'recurrenceMinute', hour: 'recurrenceHour', day: 'recurrenceDay', week: 'recurrenceWeek',
+        month: 'recurrenceMonth', year: 'recurrenceYear',
+    } as const;
+    const key = keys[reminder.recurrenceUnit as keyof typeof keys];
+    if (key) return runtimeText(locale, 'reminders', key, {interval, timezone: reminder.recurrenceTimezone});
 
-function dutchRecurrenceUnit(unit: string, interval: number): string {
-    const singular: Record<string, string> = { minute: 'minuut', hour: 'uur', day: 'dag', week: 'week', month: 'maand', year: 'jaar' };
-    const plural: Record<string, string> = { minute: 'minuten', hour: 'uur', day: 'dagen', week: 'weken', month: 'maanden', year: 'jaar' };
-    return (interval === 1 ? singular[unit] : plural[unit]) ?? unit;
+    return interval === 1
+        ? runtimeText(locale, 'reminders', 'recurrenceOtherSingular', {unit: reminder.recurrenceUnit, timezone: reminder.recurrenceTimezone})
+        : runtimeText(locale, 'reminders', 'recurrenceOtherPlural', {interval, unit: reminder.recurrenceUnit, timezone: reminder.recurrenceTimezone});
 }

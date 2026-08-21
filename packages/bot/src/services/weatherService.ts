@@ -1,4 +1,9 @@
 import axios from 'axios';
+import {
+    DEFAULT_OUTPUT_LOCALE,
+    getOutputLocaleMetadata,
+    type SupportedOutputLocale,
+} from '@zeffuro/fakegaming-common';
 
 const WEATHER_REQUEST_TIMEOUT_MS = 5000;
 const WEATHER_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -100,13 +105,7 @@ const forecastCache = new Map<string, CacheEntry<ForecastEntry[]>>();
 const openMeteoLocationCache = new Map<string, CacheEntry<OpenMeteoLocation>>();
 const openMeteoForecastCache = new Map<string, CacheEntry<OpenMeteoForecastResponse>>();
 
-const forecastTimeFormatter = new Intl.DateTimeFormat('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    weekday: 'short',
-    hour12: false,
-    timeZone: 'UTC',
-});
+const forecastTimeFormatters = new Map<string, Intl.DateTimeFormat>();
 
 class WeatherLocationNotFoundError extends Error {
     response = {status: 404};
@@ -156,8 +155,20 @@ async function getOrSetCache<T>(
     return writeCache(cache, key, value, ttlMs);
 }
 
-function formatForecastDate(date: Date): string {
-    return forecastTimeFormatter.format(date);
+function formatForecastDate(date: Date, locale: SupportedOutputLocale): string {
+    const formatTag = getOutputLocaleMetadata(locale).formatTag;
+    let formatter = forecastTimeFormatters.get(formatTag);
+    if (!formatter) {
+        formatter = new Intl.DateTimeFormat(formatTag, {
+            hour: '2-digit',
+            minute: '2-digit',
+            weekday: 'short',
+            hour12: false,
+            timeZone: 'UTC',
+        });
+        forecastTimeFormatters.set(formatTag, formatter);
+    }
+    return formatter.format(date);
 }
 
 function parseOpenMeteoForecastDate(timeValue: string): Date {
@@ -211,7 +222,7 @@ function parseCurrentWeather(data: OpenWeatherCurrentResponse): WeatherData {
     };
 }
 
-function parseForecastEntry(entry: OpenWeatherForecastEntry): ForecastEntry {
+function parseForecastEntry(entry: OpenWeatherForecastEntry, locale: SupportedOutputLocale): ForecastEntry {
     const dt = typeof entry.dt === 'number' ? entry.dt : 0;
     const firstWeather = Array.isArray(entry.weather) ? entry.weather[0] : undefined;
     const main = typeof firstWeather?.main === 'string' ? firstWeather.main : 'N/A';
@@ -219,7 +230,7 @@ function parseForecastEntry(entry: OpenWeatherForecastEntry): ForecastEntry {
     const temp = typeof entry.main?.temp === 'number' ? entry.main.temp : 0;
     const rainAmount = typeof entry.rain?.['3h'] === 'number' ? entry.rain['3h'] : null;
 
-    const time = formatForecastDate(new Date(dt * 1000));
+    const time = formatForecastDate(new Date(dt * 1000), locale);
     const rain = rainAmount ? `${rainEmoji} ${rainAmount}mm` : '';
     const emoji = getForecastEmoji(main);
 
@@ -283,7 +294,7 @@ function parseOpenMeteoCurrent(location: OpenMeteoLocation, data: OpenMeteoForec
     };
 }
 
-function parseOpenMeteoForecast(data: OpenMeteoForecastResponse, periods: number): ForecastEntry[] {
+function parseOpenMeteoForecast(data: OpenMeteoForecastResponse, periods: number, locale: SupportedOutputLocale): ForecastEntry[] {
     const hourly = data.hourly;
     if (
         !Array.isArray(hourly?.time)
@@ -310,7 +321,7 @@ function parseOpenMeteoForecast(data: OpenMeteoForecastResponse, periods: number
         }
 
         const weather = getOpenMeteoWeatherDescription(weatherCode);
-        const time = formatForecastDate(parseOpenMeteoForecastDate(timeValue));
+        const time = formatForecastDate(parseOpenMeteoForecastDate(timeValue), locale);
         entries.push({
             time,
             main: weather.main,
@@ -397,15 +408,19 @@ async function getOpenMeteoCurrentWeather(location: string): Promise<WeatherData
     );
 }
 
-async function getOpenMeteoShortTermForecast(location: string, periods: number): Promise<ForecastEntry[]> {
+async function getOpenMeteoShortTermForecast(
+    location: string,
+    periods: number,
+    locale: SupportedOutputLocale,
+): Promise<ForecastEntry[]> {
     return getOrSetCache(
         forecastCache,
-        `openmeteo:forecast:${normalizeLocationKey(location)}:${periods}`,
+        `openmeteo:forecast:${normalizeLocationKey(location)}:${periods}:${locale}`,
         WEATHER_CACHE_TTL_MS,
         async () => {
             const resolvedLocation = await resolveOpenMeteoLocation(location);
             const data = await getOpenMeteoForecastData(resolvedLocation);
-            return parseOpenMeteoForecast(data, periods);
+            return parseOpenMeteoForecast(data, periods, locale);
         }
     );
 }
@@ -433,15 +448,19 @@ export async function getCurrentWeather(location: string): Promise<WeatherData> 
     );
 }
 
-export async function getShortTermForecast(location: string, periods = 4): Promise<ForecastEntry[]> {
+export async function getShortTermForecast(
+    location: string,
+    periods = 4,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): Promise<ForecastEntry[]> {
     const apiKey = getApiKey();
     if (!apiKey) {
-        return getOpenMeteoShortTermForecast(location, periods);
+        return getOpenMeteoShortTermForecast(location, periods, locale);
     }
 
     return getOrSetCache(
         forecastCache,
-        `openweather:forecast:${normalizeLocationKey(location)}:${periods}`,
+        `openweather:forecast:${normalizeLocationKey(location)}:${periods}:${locale}`,
         WEATHER_CACHE_TTL_MS,
         async () => {
             const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&appid=${apiKey}&units=metric`;
@@ -453,10 +472,10 @@ export async function getShortTermForecast(location: string, periods = 4): Promi
 
                 return (res.data.list as OpenWeatherForecastEntry[])
                     .slice(0, periods)
-                    .map(parseForecastEntry);
+                    .map(entry => parseForecastEntry(entry, locale));
             } catch (error: unknown) {
                 if (!shouldUseFallback(error)) throw error;
-                return getOpenMeteoShortTermForecast(location, periods);
+                return getOpenMeteoShortTermForecast(location, periods, locale);
             }
         }
     );

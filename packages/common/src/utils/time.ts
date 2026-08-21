@@ -1,24 +1,6 @@
 import ms from 'ms';
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from './outputLocale.js';
-
-const ELAPSED_TIME_COPY = {
-    en: {
-        day: 'day',
-        days: 'days',
-        hour: 'hrs',
-        minute: 'mins',
-        second: 'secs',
-        ago: 'ago',
-    },
-    nl: {
-        day: 'dag',
-        days: 'dagen',
-        hour: 'uur',
-        minute: 'min',
-        second: 'sec',
-        ago: 'geleden',
-    },
-} as const satisfies OutputLocaleValues<Record<string, string>>;
+import { createCommonTranslator } from '../messages/index.js';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from './outputLocale.js';
 
 /**
  * Normalize various timestamp representations to milliseconds since epoch.
@@ -80,8 +62,12 @@ export function formatElapsed(msValue: number, locale: SupportedOutputLocale = D
     const mins = Math.floor(msValue / 1000 / 60) % 60;
     const hrs = Math.floor(msValue / 1000 / 60 / 60) % 24;
     const days = Math.floor(msValue / 1000 / 60 / 60 / 24);
-    const copy = resolveLocaleValue(locale, ELAPSED_TIME_COPY);
-    return `${days} ${days === 1 ? copy.day : copy.days}, ${hrs} ${copy.hour}, ${mins} ${copy.minute}, ${secs} ${copy.second} ${copy.ago}`;
+    return createCommonTranslator(locale)('shared.elapsed', {
+        days,
+        hours: hrs,
+        minutes: mins,
+        seconds: secs,
+    });
 }
 
 /**
@@ -139,15 +125,19 @@ export function isWithinQuietHours(
  * Format a short human-readable uptime from milliseconds.
  * Examples: 2d 3h; 5h 12m; 42m 10s; 8s
  */
-export function formatUptimeShort(msValue: number): string {
+export function formatUptimeShort(
+    msValue: number,
+    locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+): string {
     const totalSeconds = Math.max(0, Math.floor(msValue / 1000));
     const days = Math.floor(totalSeconds / 86400);
     const hours = Math.floor((totalSeconds % 86400) / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
+    const t = createCommonTranslator(locale);
 
-    if (days > 0) return `${days}d ${hours}h`;
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    if (minutes > 0) return `${minutes}m ${seconds}s`;
-    return `${seconds}s`;
+    if (days > 0) return t('shared.uptimeShort.dayHour', { days, hours });
+    if (hours > 0) return t('shared.uptimeShort.hourMinute', { hours, minutes });
+    if (minutes > 0) return t('shared.uptimeShort.minuteSecond', { minutes, seconds });
+    return t('shared.uptimeShort.second', { seconds });
 }

@@ -29,43 +29,32 @@ import {
 
 const data = createSlashCommand(META, (builder: SlashCommandBuilder) => {
     const english = getGameNightCopy('en');
-    const dutch = getGameNightCopy('nl');
     builder
         .setDMPermission(false)
         .addSubcommand(command => command
             .setName('start')
-            .setNameLocalization('nl', 'starten')
             .setDescription(english.command.start)
-            .setDescriptionLocalization('nl', dutch.command.start)
             .addStringOption(option => option
                 .setName('name')
-                .setNameLocalization('nl', 'naam')
                 .setDescription(english.command.startName)
-                .setDescriptionLocalization('nl', dutch.command.startName)
                 .setMaxLength(GAME_NIGHT_MAX_NAME_LENGTH)
                 .setRequired(true))
             .addIntegerOption(option => option
                 .setName('duration')
-                .setNameLocalization('nl', 'duur')
                 .setDescription(english.command.duration)
-                .setDescriptionLocalization('nl', dutch.command.duration)
                 .setMinValue(GAME_NIGHT_MIN_DURATION_HOURS)
                 .setMaxValue(GAME_NIGHT_MAX_DURATION_HOURS)))
         .addSubcommand(command => command
             .setName('nominate')
-            .setNameLocalization('nl', 'nomineren')
             .setDescription(english.command.nominate)
-            .setDescriptionLocalization('nl', dutch.command.nominate)
             .addStringOption(option => option
                 .setName('game')
-                .setNameLocalization('nl', 'spel')
                 .setDescription(english.command.game)
-                .setDescriptionLocalization('nl', dutch.command.game)
                 .setMaxLength(GAME_NIGHT_MAX_NAME_LENGTH)
                 .setRequired(true)))
-        .addSubcommand(command => command.setName('open').setNameLocalization('nl', 'openen').setDescription(english.command.open).setDescriptionLocalization('nl', dutch.command.open))
-        .addSubcommand(command => command.setName('close').setNameLocalization('nl', 'sluiten').setDescription(english.command.close).setDescriptionLocalization('nl', dutch.command.close))
-        .addSubcommand(command => command.setName('status').setNameLocalization('nl', 'status').setDescription(english.command.status).setDescriptionLocalization('nl', dutch.command.status));
+        .addSubcommand(command => command.setName('open').setDescription(english.command.open))
+        .addSubcommand(command => command.setName('close').setDescription(english.command.close))
+        .addSubcommand(command => command.setName('status').setDescription(english.command.status));
 });
 
 export interface GameNightRuntimeActions {

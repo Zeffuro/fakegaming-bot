@@ -7,7 +7,9 @@ import type {
     TwitchStreamConfig,
     YoutubeVideoConfig,
 } from '@zeffuro/fakegaming-common';
-import { DEFAULT_OUTPUT_LOCALE, resolveLocaleValue, type OutputLocaleValues, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { DEFAULT_OUTPUT_LOCALE, type SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { API_TEMPLATE_COPY, type ApiCopyKey } from '../localization/catalog.js';
+import { apiText } from '../localization/locale.js';
 
 export type SetupTemplateId = 'streamer-alerts' | 'patch-notes' | 'anime-club' | 'gaming-community';
 export type SetupTemplateProvider = 'Twitch' | 'YouTube' | 'Patch Notes' | 'Anime' | 'Steam News';
@@ -116,203 +118,89 @@ interface TemplateRecordCandidate {
     record: SetupTemplateRecord;
 }
 
-interface SetupDefinitionCopy {
-    channelSlots: Record<SetupTemplateChannelSlotKey, { label: string; description: string }>;
-    inputGroups: Record<SetupTemplateInputGroupKey, { label: string; description: string; placeholder: string }>;
-    templates: Record<SetupTemplateId, { name: string; description: string }>;
-}
+type SetupMessageKey = keyof typeof API_TEMPLATE_COPY.en.messages;
 
 const setupDefinitionCopy = {
-    en: {
-        channelSlots: {
-            live: { label: 'Live Alerts Channel', description: 'Destination for Twitch live alerts.' },
-            videos: { label: 'Video Alerts Channel', description: 'Destination for YouTube upload alerts.' },
-            patches: { label: 'Patch Notes Channel', description: 'Destination for game patch notes.' },
-            anime: { label: 'Anime Channel', description: 'Destination for anime episode reminders.' },
-            steamNews: { label: 'Steam News Channel', description: 'Destination for official Steam news posts.' },
-        },
-        inputGroups: {
-            twitchUsernames: { label: 'Twitch Usernames', description: 'Twitch logins to announce when they go live.', placeholder: 'riotgames\ncohhcarnage' },
-            youtubeChannelIds: { label: 'YouTube Channel IDs', description: 'YouTube channel IDs beginning with UC.', placeholder: 'UC_x5XG1OV2P6uZZ5FSM9Ttw' },
-            patchGames: { label: 'Patch Note Games', description: 'Game names supported by the patch-note feed.', placeholder: 'League of Legends\nValorant' },
-            animeIds: { label: 'AniList IDs', description: 'AniList numeric IDs for shows to track.', placeholder: '154587\n170942' },
-            steamApps: { label: 'Steam Apps', description: 'Steam app IDs with optional names.', placeholder: '730: Counter-Strike 2\n570: Dota 2' },
-        },
-        templates: {
-            'streamer-alerts': { name: 'Streamer Alerts', description: 'Create live and upload routes for creators your server follows.' },
-            'patch-notes': { name: 'Patch Notes', description: 'Create a focused patch-note channel for the games your server plays.' },
-            'anime-club': { name: 'Anime Club', description: 'Create anime episode reminders for a shared watch channel.' },
-            'gaming-community': { name: 'Gaming Community', description: 'Combine creator alerts, patch notes, anime reminders, and Steam news routes.' },
-        },
-    },
-    nl: {
-        channelSlots: {
-            live: { label: 'Kanaal voor livemeldingen', description: 'Bestemming voor Twitch-livemeldingen.' },
-            videos: { label: 'Kanaal voor videomeldingen', description: 'Bestemming voor meldingen over YouTube-uploads.' },
-            patches: { label: 'Kanaal voor patchnotities', description: 'Bestemming voor patchnotities van games.' },
-            anime: { label: 'Animekanaal', description: 'Bestemming voor herinneringen aan anime-afleveringen.' },
-            steamNews: { label: 'Kanaal voor Steam-nieuws', description: 'Bestemming voor officiële nieuwsberichten van Steam.' },
-        },
-        inputGroups: {
-            twitchUsernames: { label: 'Twitch-gebruikersnamen', description: 'Twitch-aanmeldnamen waarvoor je livemeldingen wilt ontvangen.', placeholder: 'riotgames\ncohhcarnage' },
-            youtubeChannelIds: { label: 'YouTube-kanaal-ID\'s', description: 'YouTube-kanaal-ID\'s die met UC beginnen.', placeholder: 'UC_x5XG1OV2P6uZZ5FSM9Ttw' },
-            patchGames: { label: 'Games met patchnotities', description: 'Namen van games die door de patchnotitiefeed worden ondersteund.', placeholder: 'League of Legends\nValorant' },
-            animeIds: { label: 'AniList-ID\'s', description: 'Numerieke AniList-ID\'s van series die je wilt volgen.', placeholder: '154587\n170942' },
-            steamApps: { label: 'Steam-apps', description: 'Steam-app-ID\'s met optionele namen.', placeholder: '730: Counter-Strike 2\n570: Dota 2' },
-        },
-        templates: {
-            'streamer-alerts': { name: 'Streamermeldingen', description: 'Maak live- en uploadroutes voor makers die je server volgt.' },
-            'patch-notes': { name: 'Patchnotities', description: 'Maak een gericht patchnotitiekanaal voor de games die je server speelt.' },
-            'anime-club': { name: 'Animeclub', description: 'Maak herinneringen aan anime-afleveringen voor een gedeeld kijkkanaal.' },
-            'gaming-community': { name: 'Gamecommunity', description: 'Combineer meldingen van makers, patchnotities, animeherinneringen en Steam-nieuws.' },
-        },
-    },
-} as const satisfies Record<SupportedOutputLocale, SetupDefinitionCopy>;
-
-const SETUP_MESSAGES_EN = {
-    recordMissingRoute: 'Record is missing a provider, source, or Discord channel.',
-    routeExists: 'This provider/source/channel route already exists.',
-    sourceExists: 'This provider/source already exists in this server; applying would update its channel.',
-    addInput: 'Add at least one template input before applying this setup.',
-    invalidTwitchUsername: 'Invalid Twitch username',
-    twitchUsernameRequired: 'Twitch username is required.',
-    invalidYouTubeChannel: 'Invalid YouTube channel',
-    youtubeChannelRequired: 'YouTube templates require a channel ID beginning with UC.',
-    invalidPatchGame: 'Invalid patch game',
-    patchGameRequired: 'Patch-note game is required.',
-    invalidAniListId: 'Invalid AniList ID',
-    anilistIdRequired: 'AniList ID must be a positive whole number.',
-    invalidSteamApp: 'Invalid Steam app',
-    steamAppIdRequired: 'Steam app ID must be a positive whole number.',
-    missingChannel: 'Missing channel',
-    channelRequired: '{label} is required for {provider}.',
+    en: API_TEMPLATE_COPY.en.definitions,
+    nl: API_TEMPLATE_COPY.nl.definitions,
 } as const;
-
-type SetupMessageKey = keyof typeof SETUP_MESSAGES_EN;
-
-const SETUP_MESSAGES_NL = {
-    recordMissingRoute: 'Bij deze configuratie ontbreekt een provider, bron of Discord-kanaal.',
-    routeExists: 'Deze route voor provider, bron en kanaal bestaat al.',
-    sourceExists: 'Deze provider en bron bestaan al in deze server; toepassen zou het kanaal wijzigen.',
-    addInput: 'Voeg ten minste een invoer toe voordat je deze instellingen toepast.',
-    invalidTwitchUsername: 'Ongeldige Twitch-gebruikersnaam',
-    twitchUsernameRequired: 'De Twitch-gebruikersnaam is verplicht.',
-    invalidYouTubeChannel: 'Ongeldig YouTube-kanaal',
-    youtubeChannelRequired: 'Voor YouTube-sjablonen is een kanaal-ID dat met UC begint verplicht.',
-    invalidPatchGame: 'Ongeldige game voor patchnotities',
-    patchGameRequired: 'Een game voor patchnotities is verplicht.',
-    invalidAniListId: 'Ongeldige AniList-ID',
-    anilistIdRequired: 'De AniList-ID moet een positief geheel getal zijn.',
-    invalidSteamApp: 'Ongeldige Steam-app',
-    steamAppIdRequired: 'De Steam-app-ID moet een positief geheel getal zijn.',
-    missingChannel: 'Kanaal ontbreekt',
-    channelRequired: '{label} is verplicht voor {provider}.',
-} as const satisfies Record<SetupMessageKey, string>;
-
-const SETUP_MESSAGES: OutputLocaleValues<Readonly<Record<SetupMessageKey, string>>> = {
-    en: SETUP_MESSAGES_EN,
-    nl: SETUP_MESSAGES_NL,
-};
 
 function setupMessage(
     locale: SupportedOutputLocale,
     key: SetupMessageKey,
     values: Readonly<Record<string, string | number>> = {},
 ): string {
-    const copy = resolveLocaleValue(locale, SETUP_MESSAGES)[key];
-    return copy.replace(/\{([A-Za-z][A-Za-z0-9]*)\}/g, (placeholder, name: string) => {
-        const value = values[name];
-        return value === undefined ? placeholder : String(value);
-    });
+    return apiText(locale, key as ApiCopyKey, values);
 }
 
 const channelSlots: Record<SetupTemplateChannelSlotKey, SetupTemplateChannelSlot> = {
     live: {
         key: 'live',
-        label: 'Live Alerts Channel',
-        description: 'Destination for Twitch live alerts.',
+        ...setupDefinitionCopy.en.channelSlots.live,
     },
     videos: {
         key: 'videos',
-        label: 'Video Alerts Channel',
-        description: 'Destination for YouTube upload alerts.',
+        ...setupDefinitionCopy.en.channelSlots.videos,
     },
     patches: {
         key: 'patches',
-        label: 'Patch Notes Channel',
-        description: 'Destination for game patch notes.',
+        ...setupDefinitionCopy.en.channelSlots.patches,
     },
     anime: {
         key: 'anime',
-        label: 'Anime Channel',
-        description: 'Destination for anime episode reminders.',
+        ...setupDefinitionCopy.en.channelSlots.anime,
     },
     steamNews: {
         key: 'steamNews',
-        label: 'Steam News Channel',
-        description: 'Destination for official Steam news posts.',
+        ...setupDefinitionCopy.en.channelSlots.steamNews,
     },
 };
 
 const inputGroups: Record<SetupTemplateInputGroupKey, SetupTemplateInputGroup> = {
     twitchUsernames: {
         key: 'twitchUsernames',
-        label: 'Twitch Usernames',
-        description: 'Twitch logins to announce when they go live.',
-        placeholder: 'riotgames\ncohhcarnage',
+        ...setupDefinitionCopy.en.inputGroups.twitchUsernames,
     },
     youtubeChannelIds: {
         key: 'youtubeChannelIds',
-        label: 'YouTube Channel IDs',
-        description: 'YouTube channel IDs beginning with UC.',
-        placeholder: 'UC_x5XG1OV2P6uZZ5FSM9Ttw',
+        ...setupDefinitionCopy.en.inputGroups.youtubeChannelIds,
     },
     patchGames: {
         key: 'patchGames',
-        label: 'Patch Note Games',
-        description: 'Game names supported by the patch-note feed.',
-        placeholder: 'League of Legends\nValorant',
+        ...setupDefinitionCopy.en.inputGroups.patchGames,
     },
     animeIds: {
         key: 'animeIds',
-        label: 'AniList IDs',
-        description: 'AniList numeric IDs for shows to track.',
-        placeholder: '154587\n170942',
+        ...setupDefinitionCopy.en.inputGroups.animeIds,
     },
     steamApps: {
         key: 'steamApps',
-        label: 'Steam Apps',
-        description: 'Steam app IDs with optional names.',
-        placeholder: '730: Counter-Strike 2\n570: Dota 2',
+        ...setupDefinitionCopy.en.inputGroups.steamApps,
     },
 };
 
 const setupTemplates: SetupTemplateDefinition[] = [
     {
         id: 'streamer-alerts',
-        name: 'Streamer Alerts',
-        description: 'Create live and upload routes for creators your server follows.',
+        ...setupDefinitionCopy.en.templates['streamer-alerts'],
         channelSlots: [channelSlots.live, channelSlots.videos],
         inputGroups: [inputGroups.twitchUsernames, inputGroups.youtubeChannelIds],
     },
     {
         id: 'patch-notes',
-        name: 'Patch Notes',
-        description: 'Create a focused patch-note channel for the games your server plays.',
+        ...setupDefinitionCopy.en.templates['patch-notes'],
         channelSlots: [channelSlots.patches],
         inputGroups: [inputGroups.patchGames],
     },
     {
         id: 'anime-club',
-        name: 'Anime Club',
-        description: 'Create anime episode reminders for a shared watch channel.',
+        ...setupDefinitionCopy.en.templates['anime-club'],
         channelSlots: [channelSlots.anime],
         inputGroups: [inputGroups.animeIds],
     },
     {
         id: 'gaming-community',
-        name: 'Gaming Community',
-        description: 'Combine creator alerts, patch notes, anime reminders, and Steam news routes.',
+        ...setupDefinitionCopy.en.templates['gaming-community'],
         channelSlots: [channelSlots.live, channelSlots.videos, channelSlots.patches, channelSlots.anime, channelSlots.steamNews],
         inputGroups: [
             inputGroups.twitchUsernames,

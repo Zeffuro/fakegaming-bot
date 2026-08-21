@@ -1,0 +1,23 @@
+{
+  "validationBody": "Validatie van de inhoud is mislukt",
+  "validationQuery": "Validatie van de query is mislukt",
+  "validationParams": "Validatie van de parameters is mislukt",
+  "validationRequired": "Verplicht",
+  "validationInvalid": "Ongeldige waarde",
+  "validationString": "Tekst verwacht",
+  "validationNumber": "Een getal verwacht",
+  "validationBoolean": "Waar of onwaar verwacht",
+  "validationArray": "Een lijst verwacht",
+  "validationTooSmall": "De waarde is te klein",
+  "validationTooBig": "De waarde is te groot",
+  "validationFormat": "Ongeldige notatie",
+  "validationExpectedTime": "Gebruik een tijd in de notatie UU:mm",
+  "validationAnimeIdentifier": "anilistId of title is verplicht",
+  "validationCalendarDate": "Ongeldige kalenderdatum",
+  "validationOneField": "Geef ten minste één veld op",
+  "validationDateTime": "Ongeldige datum of tijd",
+  "validationRecurrenceTimezone": "recurrenceTimezone is verplicht wanneer recurrence is ingesteld",
+  "validationNoteContent": "title of body is verplicht",
+  "validationIdentifierRequired": "identifier is verplicht",
+  "validationUsernameRequired": "username is verplicht"
+}

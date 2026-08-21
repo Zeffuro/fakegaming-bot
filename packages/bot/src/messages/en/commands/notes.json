@@ -1,0 +1,54 @@
+{
+    "notes": {
+        "name": "notes",
+        "description": "Add, list, show, and delete your personal notes",
+        "options": {
+            "add": {
+                "name": "add",
+                "description": "Save a personal note",
+                "options": {
+                    "body": {
+                        "name": "body",
+                        "description": "Note text"
+                    },
+                    "title": {
+                        "name": "title",
+                        "description": "Optional note title"
+                    },
+                    "pinned": {
+                        "name": "pinned",
+                        "description": "Pin this note to the top of your list"
+                    }
+                }
+            },
+            "list": {
+                "name": "list",
+                "description": "List your personal notes"
+            },
+            "show": {
+                "name": "show",
+                "description": "Show one of your notes",
+                "options": {
+                    "note": {
+                        "name": "note",
+                        "description": "Note number from /notes list or its short ID"
+                    }
+                }
+            },
+            "delete": {
+                "name": "delete",
+                "description": "Delete one of your notes",
+                "options": {
+                    "note": {
+                        "name": "note",
+                        "description": "Note number from /notes list or its short ID"
+                    }
+                }
+            }
+        }
+    },
+    "Save to Notes": {
+        "name": "Save to Notes",
+        "description": "Save a message excerpt and jump link to your private notes"
+    }
+}

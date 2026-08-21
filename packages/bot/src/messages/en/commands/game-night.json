@@ -1,0 +1,44 @@
+{
+    "game-night": {
+        "name": "game-night",
+        "description": "Nominate and vote on games for a server game night",
+        "options": {
+            "start": {
+                "name": "start",
+                "description": "Start a new game night in this channel",
+                "options": {
+                    "name": {
+                        "name": "name",
+                        "description": "A short name for this game night"
+                    },
+                    "duration": {
+                        "name": "duration",
+                        "description": "Hours before an unfinished game night expires"
+                    }
+                }
+            },
+            "nominate": {
+                "name": "nominate",
+                "description": "Nominate one game for the active game night",
+                "options": {
+                    "game": {
+                        "name": "game",
+                        "description": "The game to nominate"
+                    }
+                }
+            },
+            "open": {
+                "name": "open",
+                "description": "Open voting on the nominations"
+            },
+            "close": {
+                "name": "close",
+                "description": "Close voting and pick the winner"
+            },
+            "status": {
+                "name": "status",
+                "description": "Show the current game night state"
+            }
+        }
+    }
+}

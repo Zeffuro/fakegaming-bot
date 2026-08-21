@@ -1,4 +1,4 @@
-import { resolveLocaleValue } from '@zeffuro/fakegaming-common';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { formatRiotId } from '@zeffuro/fakegaming-common/utils';
@@ -23,37 +23,27 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
         .addSubcommand(subcommand =>
             subcommand
                 .setName('list')
-                .setNameLocalization('nl', 'lijst')
                 .setDescription('List linked Riot accounts')
-                .setDescriptionLocalization('nl', 'Toon gekoppelde Riot-accounts')
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('show')
-                .setNameLocalization('nl', 'tonen')
                 .setDescription('Show a linked Riot account')
-                .setDescriptionLocalization('nl', 'Toon een gekoppeld Riot-account')
                 .addUserOption(option =>
                     option
                         .setName('user')
-                        .setNameLocalization('nl', 'gebruiker')
                         .setDescription('Discord user')
-                        .setDescriptionLocalization('nl', 'Discord-gebruiker')
                         .setRequired(true)
                 )
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName('unlink')
-                .setNameLocalization('nl', 'ontkoppelen')
                 .setDescription('Remove a linked Riot account')
-                .setDescriptionLocalization('nl', 'Verwijder een gekoppeld Riot-account')
                 .addUserOption(option =>
                     option
                         .setName('user')
-                        .setNameLocalization('nl', 'gebruiker')
                         .setDescription('Discord user')
-                        .setDescriptionLocalization('nl', 'Discord-gebruiker')
                         .setRequired(true)
                 )
         )
@@ -80,15 +70,15 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (subcommand === 'list') {
         const links = await manager.getLinkedAccountsPlain() as LinkedRiotAccountPlain[];
         if (links.length === 0) {
-            await interaction.editReply(leagueText(locale, { en: 'No Riot accounts are linked.', nl: 'Er zijn geen Riot-accounts gekoppeld.' }));
+            await interaction.editReply(leagueText(locale, "noRiotAccountsAreLinked"));
             return;
         }
 
         const lines = links.slice(0, 20).map(formatLink);
         const suffix = links.length > lines.length
-            ? resolveLocaleValue(locale, { en: `\n...and ${links.length - lines.length} more.`, nl: `\n...en nog ${links.length - lines.length}.` })
+            ? runtimeText(locale, 'league', 'andMore', {count: links.length - lines.length})
             : '';
-        await interaction.editReply(`${leagueText(locale, { en: 'Linked Riot accounts', nl: 'Gekoppelde Riot-accounts' })}:\n${lines.join('\n')}${suffix}`);
+        await interaction.editReply(`${leagueText(locale, "linkedRiotAccounts")}:\n${lines.join('\n')}${suffix}`);
         return;
     }
 
@@ -97,14 +87,14 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (subcommand === 'show') {
         const link = await manager.getLinkedAccountPlain(user.id) as LinkedRiotAccountPlain | null;
         if (!link) {
-            await interaction.editReply(resolveLocaleValue(locale, { en: `No Riot account is linked for ${user}.`, nl: `Er is geen Riot-account gekoppeld voor ${user}.` }));
+            await interaction.editReply(runtimeText(locale, 'league', 'noRiotAccountIsLinkedFor', {user: user.toString()}));
             return;
         }
 
         await interaction.editReply([
-            resolveLocaleValue(locale, { en: `Linked Riot account for ${user}:`, nl: `Gekoppeld Riot-account voor ${user}:` }),
+            runtimeText(locale, 'league', 'linkedRiotAccountFor', {user: user.toString()}),
             `Riot ID: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)}`,
-            `${leagueText(locale, { en: 'Region', nl: 'Regio' })}: ${link.region}`,
+            `${leagueText(locale, "region")}: ${link.region}`,
             `PUUID: ${formatPuuid(link.puuid)}`,
         ].join('\n'));
         return;
@@ -113,16 +103,18 @@ async function execute(interaction: ChatInputCommandInteraction) {
     if (subcommand === 'unlink') {
         const link = await manager.getLinkedAccountPlain(user.id) as LinkedRiotAccountPlain | null;
         if (!link) {
-            await interaction.editReply(resolveLocaleValue(locale, { en: `No Riot account is linked for ${user}.`, nl: `Er is geen Riot-account gekoppeld voor ${user}.` }));
+            await interaction.editReply(runtimeText(locale, 'league', 'noRiotAccountIsLinkedFor', {user: user.toString()}));
             return;
         }
 
         await manager.removeLinkedAccount(user.id);
-        await interaction.editReply(resolveLocaleValue(locale, { en: `Removed linked Riot account for ${user}: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)} [${link.region}]`, nl: `Gekoppeld Riot-account verwijderd voor ${user}: ${formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName)} [${link.region}]` }));
+        await interaction.editReply(runtimeText(locale, 'league', 'removedLinkedRiotAccountFor', {
+            user: user.toString(), riotId: formatRiotId(link.riotIdGameName, link.riotIdTagLine, link.summonerName), region: link.region,
+        }));
         return;
     }
 
-    await interaction.editReply(leagueText(locale, { en: 'Unknown Riot link action.', nl: 'Onbekende actie voor Riot-koppelingen.' }));
+    await interaction.editReply(leagueText(locale, "unknownRiotLinkAction"));
 }
 
 const testOnly = getTestOnly(META);

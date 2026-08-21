@@ -1,0 +1,14 @@
+{
+    "notSet": "{kind, select, self {{subject} do} other {{subject} does}} not have a birthday set in this server.",
+    "birthday": "{subject} birthday: {date}",
+    "removed": "{kind, select, mention {{subject} birthday has been removed.} other {{subject} birthday has been removed.}}",
+    "invalidDate": "Invalid day or month.",
+    "alreadySet": "{kind, select, self {{subject} already have a birthday set in this server.} other {{subject} already have a birthday set in this server.}}",
+    "reminderSet": "{kind, select, mention {{subject} birthday reminder is set!} other {{subject} birthday reminder is set!}}",
+    "unknownSubcommand": "Unknown birthdays subcommand.",
+    "noneUpcoming": "No birthdays in the next {days} days.",
+    "upcoming": "Upcoming birthdays in the next {days} days:",
+    "serverOnly": "Birthday lookup only works in a server.",
+    "your": "Your",
+    "you": "You"
+}
