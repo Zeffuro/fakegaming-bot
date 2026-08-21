@@ -24,6 +24,7 @@ export * from './userDigestSubscriptionManager.js';
 export * from './rolePermissionSnapshotManager.js';
 export * from './guildLocaleConfigManager.js';
 export * from './gameNightManager.js';
+export * from './voiceChannelOccupancyConfigManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';

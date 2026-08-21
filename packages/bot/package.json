@@ -20,6 +20,7 @@
     "profile": "node --inspect-brk dist/index.js"
   },
   "dependencies": {
+    "@discordjs/voice": "0.19.2",
     "@zeffuro/fakegaming-common": "workspace:*",
     "axios": "^1.19.0",
     "canvas": "^3.2.3",

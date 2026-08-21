@@ -1,5 +1,6 @@
 import { resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
 import type { SupportedOutputLocale } from '../../../core/localization.js';
+import type { VoiceChannelOccupancyTargetErrorCode } from '../shared/voiceChannelOccupancyRuntime.js';
 
 export interface GeneralCopy {
     calendar: { serverOnly: string; birthdays: string; reminders: string; empty: (days: number) => string; title: (days: number) => string };
@@ -9,6 +10,18 @@ export interface GeneralCopy {
         deleted: (id: number) => string; tooLarge: (id: number) => string; snapshot: (id: number) => string;
         saved: (id: number) => string; compressed: string; attachmentTooLarge: string; partialMembers: string;
         partialRoles: string; partialChannels: string; summary: (roles: number, source: string, members: number, channels: number) => string;
+    };
+    occupyChannel: {
+        serverOnly: string;
+        enabled: (channelId: string) => string;
+        enabledRetrying: (channelId: string) => string;
+        disabled: string;
+        alreadyDisabled: string;
+        statusDisabled: string;
+        statusReady: (channelId: string) => string;
+        statusConnecting: (channelId: string) => string;
+        statusDisconnected: (channelId: string) => string;
+        failure: Record<VoiceChannelOccupancyTargetErrorCode, string>;
     };
     poll: {
         questionRequired: string; twoOptions: string; unique: string; duration: (min: number, max: number) => string;
@@ -34,6 +47,24 @@ const en: GeneralCopy = {
         saved: id => `Saved permission snapshot #${id}`, compressed: ' The attached export is gzip-compressed.', attachmentTooLarge: ' The export exceeds Discord\'s attachment limit, but the snapshot was saved.', partialMembers: ' Discord did not provide a complete member list, so cached members were used.', partialRoles: ' Discord did not provide refreshed role data, so cached roles were used.', partialChannels: ' Discord did not provide refreshed channel data, so cached channels were used.',
         summary: (roles, source, members, channels) => `${roles} roles, ${source} members (${members}), ${channels} categories/channels`,
     },
+    occupyChannel: {
+        serverOnly: 'Voice channel occupancy only works in a server.',
+        enabled: channelId => `I am now occupying <#${channelId}> while the bot is online. I am muted and deafened.`,
+        enabledRetrying: channelId => `<#${channelId}> is configured, but the voice connection is still retrying. Use \`/occupy-channel status\` to check it.`,
+        disabled: 'Voice channel occupancy is disabled and the bot has left the channel.',
+        alreadyDisabled: 'Voice channel occupancy was already disabled.',
+        statusDisabled: 'Voice channel occupancy is disabled for this server.',
+        statusReady: channelId => `Voice channel occupancy is active in <#${channelId}>.`,
+        statusConnecting: channelId => `Voice channel occupancy is configured for <#${channelId}> and is connecting or retrying.`,
+        statusDisconnected: channelId => `Voice channel occupancy is configured for <#${channelId}>, but the bot is not connected.`,
+        failure: {
+            'guild-unavailable': 'This server is currently unavailable to the bot.',
+            'channel-unavailable': 'That voice channel is unavailable or no longer exists.',
+            'not-voice-channel': 'Choose a normal voice channel.',
+            'missing-permissions': 'I need View Channel and Connect permissions in that voice channel.',
+            'channel-full': 'That voice channel is full. Choose a channel with an available slot.',
+        },
+    },
     poll: {
         questionRequired: 'Please provide a poll question.', twoOptions: 'Please provide at least two options for the poll.', unique: 'Poll options must be unique.', duration: (min, max) => `Duration must be between ${min} and ${max} minutes.`, creating: 'Creating poll...', capacity: 'Too many active polls are already running. Please try again shortly.', creatorOnly: 'Only the poll creator can close this poll.', unavailable: 'This poll is no longer available. It may have expired or the bot restarted.', closed: 'This poll is closed.', closeButton: 'Close poll', closes: unix => `Closes <t:${unix}:R>.`, closedByExpiry: 'Poll closed when its duration elapsed.', closedByCreator: 'Poll closed by its creator.', votes: count => `${count} vote${count === 1 ? '' : 's'}`, total: count => `Total votes: ${count}`, noVotes: 'Result: no votes were cast.', winner: (name, count) => `Winner: **${name}** (${count} vote${count === 1 ? '' : 's'}).`, tie: (names, count) => `Result: tie between ${names} (${count} vote${count === 1 ? '' : 's'} each).`,
     },
@@ -53,6 +84,24 @@ const nl: GeneralCopy = {
         notFound: id => `Momentopname van rechten #${id} is niet gevonden voor deze server.`, deleted: id => `Momentopname van rechten #${id} is verwijderd.`, tooLarge: id => `Momentopname van rechten #${id} is te groot voor één Discord-bijlage.`, snapshot: id => `Momentopname van rechten #${id}`,
         saved: id => `Momentopname van rechten #${id} opgeslagen`, compressed: ' De bijgevoegde export is met gzip gecomprimeerd.', attachmentTooLarge: ' De export overschrijdt de bijlagelimiet van Discord, maar de momentopname is opgeslagen.', partialMembers: ' Discord gaf geen volledige ledenlijst; daarom zijn leden uit de cache gebruikt.', partialRoles: ' Discord gaf geen vernieuwde rolgegevens; daarom zijn rollen uit de cache gebruikt.', partialChannels: ' Discord gaf geen vernieuwde kanaalgegevens; daarom zijn kanalen uit de cache gebruikt.',
         summary: (roles, source, members, channels) => `${roles} rollen, ${source === 'fetched' ? 'opgehaalde' : 'gecachete'} leden (${members}), ${channels} categorieën/kanalen`,
+    },
+    occupyChannel: {
+        serverOnly: 'Spraakkanaalbezetting werkt alleen op een server.',
+        enabled: channelId => `Ik houd <#${channelId}> nu bezet zolang de bot online is. Ik ben gedempt en doof geschakeld.`,
+        enabledRetrying: channelId => `<#${channelId}> is ingesteld, maar de spraakverbinding probeert nog te herstellen. Controleer dit met \`/occupy-channel status\`.`,
+        disabled: 'Spraakkanaalbezetting is uitgeschakeld en de bot heeft het kanaal verlaten.',
+        alreadyDisabled: 'Spraakkanaalbezetting was al uitgeschakeld.',
+        statusDisabled: 'Spraakkanaalbezetting is uitgeschakeld voor deze server.',
+        statusReady: channelId => `Spraakkanaalbezetting is actief in <#${channelId}>.`,
+        statusConnecting: channelId => `Spraakkanaalbezetting is ingesteld voor <#${channelId}> en maakt verbinding of probeert opnieuw.`,
+        statusDisconnected: channelId => `Spraakkanaalbezetting is ingesteld voor <#${channelId}>, maar de bot is niet verbonden.`,
+        failure: {
+            'guild-unavailable': 'Deze server is momenteel niet beschikbaar voor de bot.',
+            'channel-unavailable': 'Dat spraakkanaal is niet beschikbaar of bestaat niet meer.',
+            'not-voice-channel': 'Kies een normaal spraakkanaal.',
+            'missing-permissions': 'Ik heb de rechten Kanaal bekijken en Verbinden nodig in dat spraakkanaal.',
+            'channel-full': 'Dat spraakkanaal is vol. Kies een kanaal met een beschikbare plek.',
+        },
     },
     poll: {
         questionRequired: 'Geef een vraag voor de peiling op.', twoOptions: 'Geef minstens twee opties voor de peiling op.', unique: 'De opties van een peiling moeten uniek zijn.', duration: (min, max) => `De duur moet tussen ${min} en ${max} minuten liggen.`, creating: 'Peiling wordt gemaakt...', capacity: 'Er zijn te veel actieve peilingen. Probeer het binnenkort opnieuw.', creatorOnly: 'Alleen de maker kan deze peiling sluiten.', unavailable: 'Deze peiling is niet meer beschikbaar. Mogelijk is deze verlopen of is de bot opnieuw gestart.', closed: 'Deze peiling is gesloten.', closeButton: 'Peiling sluiten', closes: unix => `Sluit <t:${unix}:R>.`, closedByExpiry: 'De peiling is gesloten toen de duur verstreek.', closedByCreator: 'De peiling is door de maker gesloten.', votes: count => `${count} ${count === 1 ? 'stem' : 'stemmen'}`, total: count => `Totaal aantal stemmen: ${count}`, noVotes: 'Resultaat: er zijn geen stemmen uitgebracht.', winner: (name, count) => `Winnaar: **${name}** (${count} ${count === 1 ? 'stem' : 'stemmen'}).`, tie: (names, count) => `Resultaat: gelijkspel tussen ${names} (elk ${count} ${count === 1 ? 'stem' : 'stemmen'}).`,

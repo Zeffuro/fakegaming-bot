@@ -30,3 +30,4 @@ export * from './guild-locale-config.js';
 export * from './game-night-session.js';
 export * from './game-night-nomination.js';
 export * from './game-night-vote.js';
+export * from './voice-channel-occupancy-config.js';

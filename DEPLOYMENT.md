@@ -33,7 +33,7 @@ This guide covers deploying the fakegaming-bot to production environments.
 ### Software Requirements
 
 - Docker & Docker Compose (for containerized deployment)
-- Node.js v22+ (for manual deployment)
+- Node.js v22.12+ (for manual deployment)
 - PostgreSQL 17+ (for production database)
 - Redis 7+ (bundled in Docker Compose, or hosted Redis; required for dashboard sessions and shared guild-permission cache)
 - Git (for cloning the repository)

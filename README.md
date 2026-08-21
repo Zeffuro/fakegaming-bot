@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/Zeffuro/fakegaming-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/Zeffuro/fakegaming-bot/actions)
 [![codecov](https://codecov.io/gh/Zeffuro/fakegaming-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/Zeffuro/fakegaming-bot)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg)](LICENSE)
-[![Node.js Version](https://img.shields.io/badge/node-%3E=22.0.0-brightgreen)](https://nodejs.org/)
+[![Node.js Version](https://img.shields.io/badge/node-%3E=22.12.0-brightgreen)](https://nodejs.org/)
 [![ESLint](https://img.shields.io/badge/code_style-eslint-blue.svg)](https://eslint.org/)
 [![Vitest](https://img.shields.io/badge/tested_with-vitest-6E9F18.svg?logo=vitest)](https://vitest.dev/)
 [![Last Commit](https://img.shields.io/github/last-commit/Zeffuro/fakegaming-bot)](https://github.com/Zeffuro/fakegaming-bot/commits)
@@ -89,6 +89,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 - Quote management system
 - Birthday tracking with automatic announcements
 - Reminder system with timezone support
+- Persistent, muted/deafened voice-channel occupancy per server
 - League of Legends & TFT stats and match history
 - Utility commands (poll, roll, weather, spin)
 
@@ -169,7 +170,7 @@ This repository uses **[pnpm workspaces](https://pnpm.io/workspaces)** to manage
 
 ### Prerequisites
 
-- Node.js (v22+ recommended)
+- Node.js (v22.12+ recommended)
 - **pnpm** (install with `npm install -g pnpm` or see [pnpm installation](https://pnpm.io/installation))
 - (Optional) Docker & Docker Compose for containerized development/production
 
@@ -447,6 +448,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
+|`/occupy-channel`|Slash|Keep a voice channel occupied while the bot is online|Administrator|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
 |`/permissions-backup`|Slash|Save and export role, category, and channel permissions|Administrator|
@@ -553,6 +555,10 @@ A: For Docker: `docker-compose pull && docker-compose up -d`. For manual: `git p
 **Q: Can I disable specific commands per server?**  
 A: Yes! Use the dashboard at `/dashboard/commands/[guildId]` or configure via API. See [API_GUIDE.md](./API_GUIDE.md).
 
+**Q: How does `/occupy-channel` affect the voice-channel timer?**
+
+A: An administrator can enable one voice channel per server. The bot stays muted and deafened, but a bot restart, outage, or forced disconnect can still end Discord's voice session and reset the displayed timer.
+
 **Q: Who maintains this project?**  
 A: [@Zeffuro](https://github.com/Zeffuro)
 
@@ -562,11 +568,13 @@ A: [@Zeffuro](https://github.com/Zeffuro)
 
 To invite the bot to your Discord server, use the following links (replace `[client_id]` with your bot's client ID):
 
-- **With Administrator permissions:**  
-  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=522368`
+- **With Administrator permissions:**
 
-- **Without Administrator permissions:**  
-  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=522360`
+  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=8`
+
+- **Without Administrator permissions:**
+
+  `https://discord.com/oauth2/authorize?client_id=[client_id]&scope=bot%20applications.commands&permissions=1571968`
 
 ---
 

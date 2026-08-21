@@ -224,6 +224,7 @@ See [DEPLOYMENT.md](../../DEPLOYMENT.md) for detailed deployment guide.
 5. Click "Reset Token" and copy the token (this is your `DISCORD_BOT_TOKEN`)
 6. Confirm the required intent is enabled:
    - `GatewayIntentBits.Guilds` is required by default.
+   - `GatewayIntentBits.GuildVoiceStates` supports `/occupy-channel` and is not privileged.
    - Privileged intents are not requested by the current bot startup path.
 
 ### Invite Bot to Server
@@ -231,15 +232,19 @@ See [DEPLOYMENT.md](../../DEPLOYMENT.md) for detailed deployment guide.
 Use this URL format (replace `CLIENT_ID`):
 
 ```
-https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot%20applications.commands&permissions=522368
+https://discord.com/oauth2/authorize?client_id=CLIENT_ID&scope=bot%20applications.commands&permissions=1571968
 ```
 
 **Required Permissions:**
+- View Channel (1024)
 - Send Messages (2048)
 - Embed Links (16384)
 - Attach Files (32768)
 - Read Message History (65536)
 - Use External Emojis (262144)
+- Connect (1048576)
+
+`/occupy-channel` does not require Speak. The bot joins explicitly muted and deafened, and normal Docker networking needs outbound UDP access for the Discord voice connection.
 
 ## Health Endpoints
 

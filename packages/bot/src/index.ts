@@ -20,6 +20,7 @@ import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
 import { getLogger, startMetricsSummaryLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { startHealthServer } from './utils/healthServer.js';
 import { startGameNightExpiryRuntime } from './modules/game-night/shared/gameNightRuntime.js';
+import { voiceChannelOccupancyRuntime } from './modules/general/shared/voiceChannelOccupancyRuntime.js';
 import {resolveInteractionOutputLocale} from './core/localization.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
@@ -76,7 +77,8 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
 
         const client = new FakegamingBot({
             intents: [
-                GatewayIntentBits.Guilds
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildVoiceStates,
             ]
         });
 
@@ -103,6 +105,13 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                 await startGameNightExpiryRuntime(client);
             } catch (error) {
                 logger.warn({ err: error }, 'Failed to restore Game Night Board expiry timers');
+            }
+            try {
+                const configs = await getConfigManager().voiceChannelOccupancyConfigManager.listConfiguredGuilds();
+                const restored = await voiceChannelOccupancyRuntime.start(client, configs);
+                logger.info({ configured: configs.length, ...restored }, 'Voice channel occupancy runtime started');
+            } catch (error) {
+                logger.warn({ err: error }, 'Failed to restore occupied voice channels');
             }
         });
 

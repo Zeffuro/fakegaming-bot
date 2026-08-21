@@ -25,6 +25,7 @@ import {UserDigestSubscriptionManager} from './userDigestSubscriptionManager.js'
 import {RolePermissionSnapshotManager} from './rolePermissionSnapshotManager.js';
 import {GuildLocaleConfigManager} from './guildLocaleConfigManager.js';
 import {GameNightManager} from './gameNightManager.js';
+import {VoiceChannelOccupancyConfigManager} from './voiceChannelOccupancyConfigManager.js';
 import {getLogger} from '../utils/logger.js';
 
 const log = getLogger({ name: 'common:config' });
@@ -60,6 +61,7 @@ export class ConfigManager {
     rolePermissionSnapshotManager = new RolePermissionSnapshotManager();
     guildLocaleConfigManager = new GuildLocaleConfigManager();
     gameNightManager = new GameNightManager();
+    voiceChannelOccupancyConfigManager = new VoiceChannelOccupancyConfigManager();
 
     /**
      * Initializes the database (optional, for Sequelize sync).

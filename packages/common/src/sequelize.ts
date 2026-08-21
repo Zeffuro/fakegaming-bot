@@ -32,6 +32,7 @@ import {GuildLocaleConfig} from './models/guild-locale-config.js';
 import {GameNightSession} from './models/game-night-session.js';
 import {GameNightNomination} from './models/game-night-nomination.js';
 import {GameNightVote} from './models/game-night-vote.js';
+import {VoiceChannelOccupancyConfig} from './models/voice-channel-occupancy-config.js';
 import path from "path";
 import {resolveDataRoot} from "./core/dataRoot.js";
 import type {Options} from 'sequelize';
@@ -96,7 +97,8 @@ export function getSequelize(useTest = false): Sequelize {
         GuildLocaleConfig,
         GameNightSession,
         GameNightNomination,
-        GameNightVote
+        GameNightVote,
+        VoiceChannelOccupancyConfig
     ]);
 
     return sequelize;

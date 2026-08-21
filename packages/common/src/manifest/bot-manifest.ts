@@ -328,6 +328,22 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         }
     },
     {
+        "name": "occupy-channel",
+        "description": "Keep a voice channel occupied while the bot is online",
+        "module": "general",
+        "permissions": "Administrator",
+        "dm_permission": false,
+        "default_member_permissions": "8",
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "kanaal-bezetten",
+                "description": "Houd een spraakkanaal bezet zolang de bot online is"
+            }
+        }
+    },
+    {
         "name": "profile-card",
         "description": "Render a Discord profile card",
         "module": "general",
@@ -1362,6 +1378,22 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                     "nl": {
                         "name": "rechten-back-up",
                         "description": "Bewaar en exporteer rol-, categorie- en kanaalrechten"
+                    }
+                }
+            },
+            {
+                "name": "occupy-channel",
+                "description": "Keep a voice channel occupied while the bot is online",
+                "module": "general",
+                "permissions": "Administrator",
+                "dm_permission": false,
+                "default_member_permissions": "8",
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "kanaal-bezetten",
+                        "description": "Houd een spraakkanaal bezet zolang de bot online is"
                     }
                 }
             },
