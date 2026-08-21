@@ -11,6 +11,7 @@ import {
 
 export const DASHBOARD_LOCALE_STORAGE_KEY = "fg.dashboard.locale";
 export const DASHBOARD_LOCALE_COOKIE_KEY = "fg.dashboard.locale";
+export const DASHBOARD_DEFAULT_TIME_ZONE = "UTC";
 
 export type DashboardLocale = SupportedLocale;
 export type DashboardLocaleValues<T> = LocaleValues<T>;

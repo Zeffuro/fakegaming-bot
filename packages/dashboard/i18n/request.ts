@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 import { dashboardMessages } from "../lib/i18n/messages";
 import {
+    DASHBOARD_DEFAULT_TIME_ZONE,
     DASHBOARD_LOCALE_COOKIE_KEY,
     getDashboardLocaleFromAcceptLanguage,
     isDashboardLocale,
@@ -17,6 +18,7 @@ export async function getDashboardRequestConfig() {
     return {
         locale,
         messages: dashboardMessages[locale],
+        timeZone: DASHBOARD_DEFAULT_TIME_ZONE,
     };
 }
 

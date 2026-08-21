@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {ThemeProvider, createTheme, CssBaseline} from "@mui/material";
 

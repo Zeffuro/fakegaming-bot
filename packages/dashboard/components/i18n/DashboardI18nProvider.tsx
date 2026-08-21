@@ -6,6 +6,7 @@ import type { DashboardMessageKey } from "@/lib/i18n/messages";
 import { dashboardMessages } from "@/lib/i18n/messages";
 import type { DashboardLocale } from "@/lib/i18n/localeStore";
 import {
+    DASHBOARD_DEFAULT_TIME_ZONE,
     dashboardLocaleMetadata,
     defaultDashboardLocale,
     getDashboardIntlLocale,
@@ -61,6 +62,7 @@ export function DashboardI18nProvider({
         <NextIntlClientProvider
             locale={locale}
             messages={dashboardMessages[locale]}
+            timeZone={DASHBOARD_DEFAULT_TIME_ZONE}
         >
             <DashboardI18nContextBridge locale={locale} setLocale={setLocale}>
                 {ready ? children : null}

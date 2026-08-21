@@ -22,11 +22,12 @@ const apiMocks = vi.hoisted(() => ({
 vi.mock("@/lib/api-client", () => ({ api: apiMocks }));
 
 function Consumer() {
-    const { locale, setLocale, t, formatNumber, formatRelativeTime } = useDashboardI18n();
+    const { locale, setLocale, t, formatDate, formatNumber, formatRelativeTime } = useDashboardI18n();
     return (
         <>
             <span>{locale}</span>
             <span>{t("common.save")}</span>
+            <span>{formatDate("2026-01-01T00:30:00Z", { dateStyle: "medium" })}</span>
             <span>{formatNumber(1234.5)}</span>
             <span>{formatRelativeTime(-1, "day", { numeric: "auto" })}</span>
             <button onClick={() => setLocale("en")}>English</button>
@@ -62,6 +63,7 @@ describe("DashboardI18nProvider", () => {
         );
 
         expect(html).toContain("Opslaan");
+        expect(html).toContain("1 jan 2026");
         expect(html).toContain("1.234,5");
     });
 

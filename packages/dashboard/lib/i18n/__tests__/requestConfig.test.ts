@@ -30,6 +30,7 @@ describe("next-intl request configuration", () => {
 
         expect(config.locale).toBe("nl");
         expect(config.messages.common.save).toBe("Opslaan");
+        expect(config.timeZone).toBe("UTC");
     });
 
     it("negotiates Accept-Language when the cookie is absent or unsupported", async () => {
