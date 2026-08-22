@@ -1,0 +1,9 @@
+{
+    "appNotFound": "I could not find a Steam app for `{query}`. Try a Steam store URL or App ID.",
+    "multipleAppsMatched": "Multiple Steam apps matched `{query}`. Pick one from autocomplete or paste a Steam store URL/App ID.",
+    "steamApp": "Steam app",
+    "appLookupFailed": "Steam app lookup failed. Please try again later.",
+    "alreadyConfigured": "Steam news for `{appName}` is already configured in <#{channelId}>.",
+    "subscribed": "Subscribed <#{channelId}> to Steam news for `{appName}` ({storeUrl}).",
+    "thisCommandCanOnlyBeUsedInA": "This command can only be used in a server."
+}
