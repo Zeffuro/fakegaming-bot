@@ -1,0 +1,55 @@
+{
+  "seasonScope": {
+    "airing": "airing/upcoming",
+    "chart": "season chart",
+    "tv": "TV only",
+    "all": "all known formats"
+  },
+  "country": {
+    "JP": "Japan",
+    "KR": "South Korea",
+    "CN": "China",
+    "TW": "Taiwan"
+  },
+  "mangaOrigin": {
+    "JP": "Manga",
+    "KR": "Manhwa",
+    "CN": "Manhua",
+    "TW": "Manhua"
+  },
+  "enum": {
+    "TV": "TV",
+    "TV_SHORT": "TV Short",
+    "OVA": "OVA",
+    "ONA": "ONA",
+    "MOVIE": "Movie",
+    "SPECIAL": "Special",
+    "MUSIC": "Music",
+    "MANGA": "Manga",
+    "NOVEL": "Novel",
+    "ONE_SHOT": "One-shot",
+    "RELEASING": "Releasing",
+    "FINISHED": "Finished",
+    "NOT_YET_RELEASED": "Not Yet Released",
+    "CANCELLED": "Cancelled",
+    "HIATUS": "Hiatus",
+    "WINTER": "Winter",
+    "SPRING": "Spring",
+    "SUMMER": "Summer",
+    "FALL": "Fall",
+    "POPULAR": "Popular",
+    "RATED": "Rated",
+    "RANKED": "Ranked"
+  },
+  "copy": {
+    "unknown": "Unknown",
+    "unknownTitle": "Unknown title",
+    "unknownYear": "Unknown year",
+    "average": "Average",
+    "mean": "Mean",
+    "novel": "Novel",
+    "mostPopular": "Most Popular",
+    "highestRated": "Highest Rated",
+    "allTime": "All Time"
+  }
+}
