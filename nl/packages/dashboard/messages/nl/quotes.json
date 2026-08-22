@@ -1,0 +1,107 @@
+{
+  "quotes": {
+    "title": "Quotes",
+    "description": "Search, add, and clean up server quotes with Discord member lookup and readable attribution.",
+    "stats": {
+      "stored": "Quotes stored",
+      "quotedMembers": "Quoted members",
+      "curators": "Curators",
+      "pending": "Pending",
+      "approved": "Approved",
+      "shown": "Shown"
+    },
+    "findAdd": {
+      "title": "Find and add quotes",
+      "description": "Search existing quotes, then add new quotes with a resolved author."
+    },
+    "search": "Search quotes, people, or IDs",
+    "author": "Author",
+    "authorPlaceholder": "Type a name, nickname, or paste a Discord user ID",
+    "typeThree": "Type at least 3 characters",
+    "noMembers": "No members found",
+    "quote": "Quote",
+    "quotePlaceholder": "Add a new quote...",
+    "add": "Add quote",
+    "tags": "Tags",
+    "tagsPlaceholder": "funny raid-night",
+    "tagsHelp": "Separate tags with spaces or commas",
+    "source": "Source",
+    "sourcePlaceholder": "Voice chat, stream, message link",
+    "context": "Context",
+    "contextPlaceholder": "Optional note about when or why this was said",
+    "none": "None",
+    "unknown": "Unknown",
+    "by": "by {author}",
+    "attribution": "By {author} | added by {submitter} | {date}",
+    "timestamp": "{date} UTC",
+    "sourceValue": "Source: {source}",
+    "contextValue": "Context: {context}",
+    "empty": {
+      "none": "No quotes yet",
+      "filtered": "No quotes match these filters",
+      "noneDescription": "Add the first quote above to start building this server's quote archive.",
+      "filteredDescription": "Adjust search or moderation status filters to broaden the quote list."
+    },
+    "status": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "filterAria": "Quote moderation filter",
+    "filterOptionAria": "{status} quote filter",
+    "action": {
+      "approve": "Approve quote",
+      "reject": "Reject quote",
+      "delete": "Delete quote",
+      "downloadCard": "Download quote card",
+      "downloadProfile": "Download author profile card",
+      "approveBeforeDownload": "Approve quote before card download",
+      "deleteDuplicate": "Delete duplicate quote",
+      "approveAria": "Approve quote {id}",
+      "rejectAria": "Reject quote {id}",
+      "downloadCardAria": "Download quote card {id}",
+      "downloadProfileAria": "Download author profile card {id}",
+      "deleteDuplicateAria": "Delete duplicate quote {id}"
+    },
+    "curation": {
+      "title": "Quote curation",
+      "description": "Review quote coverage, active curators, and the newest archive entries.",
+      "total": "Total",
+      "quoted": "Quoted",
+      "tagged": "Tagged",
+      "duplicates": "Duplicates",
+      "latest": "Latest",
+      "topMembers": "Top quoted members",
+      "noMembers": "No quoted members yet.",
+      "recent": "Recent additions",
+      "noRecent": "No recent additions yet.",
+      "topTags": "Top tags",
+      "noTags": "No tags have been added yet.",
+      "duplicateReview": "Duplicate review",
+      "noDuplicates": "No duplicate quote text detected.",
+      "tagCount": "{tag} x{count}",
+      "quoteCount": "Quotes: {count}",
+      "duplicateSummary": "Matching entries: {count} | newest {date}"
+    },
+    "day": {
+      "title": "Quote of the day",
+      "eligible": "Approved quotes eligible: {count} | {date}",
+      "loadingPreview": "Loading preview...",
+      "loadingTitle": "Loading quote preview",
+      "emptyTitle": "No approved quote available",
+      "loadingDescription": "Loading quote-of-the-day preview.",
+      "emptyDescription": "Approve at least one quote before enabling daily delivery.",
+      "channel": "Channel",
+      "utcHour": "UTC hour",
+      "dailyDelivery": "Daily delivery",
+      "deliverySummary": "{channel} at {hour}:00 UTC",
+      "chooseChannel": "Choose a channel",
+      "save": "Save daily quote"
+    },
+    "error": {
+      "downloadCard": "Failed to download quote card",
+      "downloadProfileCard": "Failed to download profile card"
+    }
+  }
+}
