@@ -1,5 +1,5 @@
 {
-    "notSet": "{kind, select, self {{subject} do} other {{subject} does}} not have a birthday set in this server.",
+    "notSet": "{kind, select, self {{subject} heeft} other {{subject} heeft}} geen verjaardag ingesteld staan op deze server.",
     "birthday": "{subject} verjaardag: {date}",
     "removed": "{kind, select, mention {De verjaardag van {subject} is verwijderd.} other {{subject} verjaardag is verwijderd.}}",
     "invalidDate": "Ongeldige dag of maand.",
