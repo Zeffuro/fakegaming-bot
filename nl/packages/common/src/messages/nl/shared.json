@@ -1,0 +1,20 @@
+{
+  "notes": {
+    "untitled": "Untitled note"
+  },
+  "recurrence": {
+    "every": "Every {interval, plural, =1 {{unit}} other {{interval} {unit}}} ({timezone})",
+    "unit": {
+      "day": "{interval, plural, one {day} other {days}}",
+      "week": "{interval, plural, one {week} other {weeks}}",
+      "month": "{interval, plural, one {month} other {months}}"
+    }
+  },
+  "elapsed": "{days, plural, one {# day} other {# days}}, {hours} hrs, {minutes} mins, {seconds} secs ago",
+  "uptimeShort": {
+    "dayHour": "{days}d {hours}h",
+    "hourMinute": "{hours}h {minutes}m",
+    "minuteSecond": "{minutes}m {seconds}s",
+    "second": "{seconds}s"
+  }
+}
