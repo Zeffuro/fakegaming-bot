@@ -1,0 +1,72 @@
+{
+    "add-quote": {
+        "name": "add-quote",
+        "description": "Add a quote",
+        "options": {
+            "quote": {
+                "name": "quote",
+                "description": "The quote text"
+            },
+            "author": {
+                "name": "author",
+                "description": "User who said the quote"
+            }
+        }
+    },
+    "delete-quote": {
+        "name": "delete-quote",
+        "description": "Delete a quote you added or authored",
+        "options": {
+            "id": {
+                "name": "id",
+                "description": "Quote ID or short ID"
+            }
+        }
+    },
+    "quote-leaderboard": {
+        "name": "quote-leaderboard",
+        "description": "Show the most quoted users in this server"
+    },
+    "quote-card": {
+        "name": "quote-card",
+        "description": "Render an approved quote as a shareable image",
+        "options": {
+            "id": {
+                "name": "id",
+                "description": "Quote ID or short ID. Leave empty for a random approved quote."
+            }
+        }
+    },
+    "quotes": {
+        "name": "quotes",
+        "description": "Get all quotes for a user",
+        "options": {
+            "user": {
+                "name": "user",
+                "description": "User to get quotes for"
+            }
+        }
+    },
+    "random-quote": {
+        "name": "random-quote",
+        "description": "Get a random quote from the server"
+    },
+    "Save as Quote": {
+        "name": "Save as Quote",
+        "description": "Save a message as a quote from the message context menu"
+    },
+    "search-quote": {
+        "name": "search-quote",
+        "description": "Search quotes by text",
+        "options": {
+            "text": {
+                "name": "text",
+                "description": "Text to search for"
+            }
+        }
+    },
+    "Show Quotes": {
+        "name": "Show Quotes",
+        "description": "Show quotes for a user from the user context menu"
+    }
+}
