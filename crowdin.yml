@@ -1,9 +1,11 @@
+preserve_hierarchy: true
+
 files:
   - source: packages/api/src/localization/messages/en/**/*.json
-    translation: packages/api/src/localization/messages/%two_letters_code%/**/%original_file_name%
+    translation: /packages/api/src/localization/messages/%two_letters_code%/**/%original_file_name%
   - source: packages/bot/src/messages/en/**/*.json
-    translation: packages/bot/src/messages/%two_letters_code%/**/%original_file_name%
+    translation: /packages/bot/src/messages/%two_letters_code%/**/%original_file_name%
   - source: packages/common/src/messages/en/**/*.json
-    translation: packages/common/src/messages/%two_letters_code%/**/%original_file_name%
+    translation: /packages/common/src/messages/%two_letters_code%/**/%original_file_name%
   - source: packages/dashboard/messages/en/**/*.json
-    translation: packages/dashboard/messages/%two_letters_code%/**/%original_file_name%
+    translation: /packages/dashboard/messages/%two_letters_code%/**/%original_file_name%
