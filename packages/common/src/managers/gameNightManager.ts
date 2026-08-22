@@ -1,8 +1,14 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { Op, UniqueConstraintError } from 'sequelize';
 import { GameNightNomination } from '../models/game-night-nomination.js';
-import { GameNightSession, type GameNightState } from '../models/game-night-session.js';
+import {
+    GameNightSession,
+    type GameNightKind,
+    type GameNightState,
+} from '../models/game-night-session.js';
 import { GameNightVote } from '../models/game-night-vote.js';
+
+export type { GameNightKind } from '../models/game-night-session.js';
 
 export const GAME_NIGHT_MAX_NOMINATIONS = 5;
 export const GAME_NIGHT_MIN_NOMINATIONS = 2;
@@ -16,6 +22,7 @@ export type GameNightErrorCode =
     | 'duplicate-nomination'
     | 'expired'
     | 'invalid-duration'
+    | 'invalid-kind'
     | 'invalid-name'
     | 'nomination-limit'
     | 'not-creator'
@@ -41,6 +48,8 @@ export interface GameNightBoard {
         messageId: string | null;
         creatorId: string;
         name: string;
+        kind: GameNightKind;
+        allowMultipleNominations: boolean;
         state: GameNightState;
         expiresAt: number;
         winnerNominationId: string | null;
@@ -78,6 +87,8 @@ export class GameNightManager {
         channelId: string;
         creatorId: string;
         name: string;
+        kind?: GameNightKind;
+        allowMultipleNominations?: boolean;
         durationHours?: number;
     }): Promise<GameNightBoard> {
         return this.withLock('game-night', async () => {
@@ -87,6 +98,8 @@ export class GameNightManager {
 
             const name = normalizeGameNightName(input.name);
             if (!name || name.length > GAME_NIGHT_MAX_NAME_LENGTH) throw new GameNightError('invalid-name');
+            const kind = input.kind ?? 'game';
+            if (!isGameNightKind(kind)) throw new GameNightError('invalid-kind');
             const durationHours = input.durationHours ?? GAME_NIGHT_DEFAULT_DURATION_HOURS;
             if (durationHours < GAME_NIGHT_MIN_DURATION_HOURS || durationHours > GAME_NIGHT_MAX_DURATION_HOURS) {
                 throw new GameNightError('invalid-duration');
@@ -99,6 +112,8 @@ export class GameNightManager {
                 messageId: null,
                 creatorId: input.creatorId,
                 name,
+                kind,
+                allowMultipleNominations: input.allowMultipleNominations ?? false,
                 state: 'nominating',
                 activeKey: input.guildId,
                 expiresAt: this.now() + durationHours * 60 * 60 * 1_000,
@@ -144,12 +159,16 @@ export class GameNightManager {
         channelId: string;
         userId: string;
         gameName: string;
+        canManageNominations?: boolean;
     }): Promise<GameNightBoard> {
         return this.withLock('game-night', async () => {
             const board = await this.requireActive(input.guildId, input.channelId);
             if (board.session.state !== 'nominating') throw new GameNightError('not-nominating');
             if (board.nominations.length >= GAME_NIGHT_MAX_NOMINATIONS) throw new GameNightError('nomination-limit');
-            if (board.nominations.some(item => item.userId === input.userId)) throw new GameNightError('own-nomination-exists');
+            const canNominateMultiple = board.session.allowMultipleNominations || input.canManageNominations === true;
+            if (!canNominateMultiple && board.nominations.some(item => item.userId === input.userId)) {
+                throw new GameNightError('own-nomination-exists');
+            }
 
             const gameName = normalizeGameNightName(input.gameName);
             if (!gameName || gameName.length > GAME_NIGHT_MAX_NAME_LENGTH) throw new GameNightError('invalid-name');
@@ -174,10 +193,10 @@ export class GameNightManager {
         });
     }
 
-    async openVoting(sessionId: string, creatorId: string): Promise<GameNightBoard> {
+    async openVoting(sessionId: string, actorId: string, canManage = false): Promise<GameNightBoard> {
         return this.withLock('game-night', async () => {
             const board = await this.requireBoard(sessionId);
-            this.requireCreator(board, creatorId);
+            this.requireController(board, actorId, canManage);
             if (board.session.state !== 'nominating') throw new GameNightError('not-nominating');
             if (board.nominations.length < GAME_NIGHT_MIN_NOMINATIONS) throw new GameNightError('too-few-nominations');
             await this.transition(board, 'nominating', { state: 'voting' });
@@ -199,10 +218,10 @@ export class GameNightManager {
         });
     }
 
-    async close(sessionId: string, creatorId: string): Promise<GameNightBoard> {
+    async close(sessionId: string, actorId: string, canManage = false): Promise<GameNightBoard> {
         return this.withLock('game-night', async () => {
             const board = await this.requireBoard(sessionId);
-            this.requireCreator(board, creatorId);
+            this.requireController(board, actorId, canManage);
             if (board.session.state === 'expired') throw new GameNightError('expired');
             if (board.session.state !== 'voting') throw new GameNightError('not-voting');
 
@@ -251,8 +270,8 @@ export class GameNightManager {
         return this.loadBoard(sessionId);
     }
 
-    private requireCreator(board: GameNightBoard, creatorId: string): void {
-        if (board.session.creatorId !== creatorId) throw new GameNightError('not-creator');
+    private requireController(board: GameNightBoard, actorId: string, canManage: boolean): void {
+        if (board.session.creatorId !== actorId && !canManage) throw new GameNightError('not-creator');
     }
 
     private async transition(
@@ -295,6 +314,8 @@ export class GameNightManager {
                 messageId: session.messageId ?? null,
                 creatorId: session.creatorId,
                 name: session.name,
+                kind: isGameNightKind(session.kind) ? session.kind : 'game',
+                allowMultipleNominations: Boolean(session.allowMultipleNominations),
                 state: session.state,
                 expiresAt: Number(session.expiresAt),
                 winnerNominationId: session.winnerNominationId ?? null,
@@ -346,6 +367,10 @@ export function normalizeGameNightName(value: string): string {
 
 export function normalizeGameNightKey(value: string): string {
     return normalizeGameNightName(value).toLocaleLowerCase('en-US');
+}
+
+export function isGameNightKind(value: unknown): value is GameNightKind {
+    return value === 'game' || value === 'movie';
 }
 
 function parseTieCandidates(value: string | null | undefined): string[] {

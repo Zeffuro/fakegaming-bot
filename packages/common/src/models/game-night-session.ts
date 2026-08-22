@@ -1,6 +1,7 @@
 import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 export type GameNightState = 'nominating' | 'voting' | 'finished' | 'expired';
+export type GameNightKind = 'game' | 'movie';
 
 @Table({ tableName: 'GameNightSessions' })
 export class GameNightSession extends Model {
@@ -22,6 +23,12 @@ export class GameNightSession extends Model {
 
     @Column(DataType.STRING)
     declare name: string;
+
+    @Column(DataType.STRING)
+    declare kind: GameNightKind;
+
+    @Column(DataType.BOOLEAN)
+    declare allowMultipleNominations: boolean;
 
     @Column(DataType.STRING)
     declare state: GameNightState;

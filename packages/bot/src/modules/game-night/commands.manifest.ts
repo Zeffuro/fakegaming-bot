@@ -1,5 +1,5 @@
-export const gameNight = { name: 'game-night', description: 'Nominate and vote on games for a server game night', dm_permission: false } as const;
+export const night = { name: 'night', description: 'Nominate and vote for a game or movie night', dm_permission: false } as const;
 
-export const COMMANDS = [gameNight] as const;
+export const COMMANDS = [night] as const;
 
 void COMMANDS;

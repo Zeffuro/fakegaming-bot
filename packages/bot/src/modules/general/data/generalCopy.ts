@@ -22,8 +22,8 @@ export interface GeneralCopy {
     };
     poll: {
         questionRequired: string; twoOptions: string; unique: string; duration: (min: number, max: number) => string;
-        creating: string; capacity: string; creatorOnly: string; unavailable: string; closed: string; closeButton: string;
-        closes: (unix: number) => string; closedByExpiry: string; closedByCreator: string; votes: (count: number) => string;
+        creating: string; capacity: string; creatorOrModerator: string; unavailable: string; closed: string; closeButton: string;
+        closes: (unix: number) => string; closedByExpiry: string; closedByCreator: string; closedByModerator: string; votes: (count: number) => string;
         total: (count: number) => string; noVotes: string; winner: (name: string, count: number) => string;
         tie: (names: string, count: number) => string;
     };

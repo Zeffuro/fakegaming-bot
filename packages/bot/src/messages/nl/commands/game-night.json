@@ -1,29 +1,41 @@
 {
-    "game-night": {
-        "name": "spelavond",
-        "description": "Nomineer en stem op spellen voor een spelavond van de server",
+    "night": {
+        "name": "avond",
+        "description": "Nomineer en stem voor een spel- of filmavond",
         "options": {
             "start": {
                 "name": "starten",
-                "description": "Start een nieuwe spelavond in dit kanaal",
+                "description": "Start een spel- of filmavond in dit kanaal",
                 "options": {
                     "name": {
                         "name": "naam",
-                        "description": "Een korte naam voor deze spelavond"
+                        "description": "Een korte naam voor deze avond"
+                    },
+                    "type": {
+                        "name": "type",
+                        "description": "Kies wat mensen kunnen nomineren",
+                        "choices": {
+                            "game": "Spelavond",
+                            "movie": "Filmavond"
+                        }
                     },
                     "duration": {
                         "name": "duur",
-                        "description": "Uren voordat een onvoltooide spelavond verloopt"
+                        "description": "Uren voordat een onvoltooide avond verloopt"
+                    },
+                    "allow-multiple": {
+                        "name": "meerdere-nominaties",
+                        "description": "Sta ieder lid toe meerdere nominaties in te dienen"
                     }
                 }
             },
             "nominate": {
                 "name": "nomineren",
-                "description": "Nomineer één spel voor de actieve spelavond",
+                "description": "Nomineer een keuze voor de actieve avond",
                 "options": {
-                    "game": {
-                        "name": "spel",
-                        "description": "Het spel dat je wilt nomineren"
+                    "choice": {
+                        "name": "keuze",
+                        "description": "Het spel of de film die je wilt nomineren"
                     }
                 }
             },
@@ -37,7 +49,7 @@
             },
             "status": {
                 "name": "status",
-                "description": "Toon de huidige status van de spelavond"
+                "description": "Toon de huidige status van de avond"
             }
         }
     }

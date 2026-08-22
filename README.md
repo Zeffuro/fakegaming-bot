@@ -434,7 +434,6 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
 |`/delete-quote`|Slash|Delete a quote you added or authored|All users|
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
-|`/game-night`|Slash|Nominate and vote on games for a server game night|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
 |`/help`|Slash|List all available commands and their descriptions.|All users|
 |`/league-form`|Slash|Summarize recent League of Legends form by Riot ID or linked user|All users|
@@ -448,6 +447,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manage-twitch-streams`|Slash|List, test, pause, resume, or remove Twitch stream notifications|Administrator|
 |`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
+|`/night`|Slash|Nominate and vote for a game or movie night|All users|
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/occupy-channel`|Slash|Keep a voice channel occupied while the bot is online|Administrator|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|

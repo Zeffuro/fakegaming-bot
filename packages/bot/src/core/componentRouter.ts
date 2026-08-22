@@ -13,7 +13,7 @@ export const COMPONENT_ROUTE_DEFINITIONS: readonly ComponentRouteDefinition[] = 
     { namespace: 'anime', commandName: 'anime' },
     { namespace: 'poll', commandName: 'poll' },
     { namespace: 'question', commandName: 'question' },
-    { namespace: 'game-night', commandName: 'game-night' },
+    { namespace: 'game-night', commandName: 'night' },
 ];
 
 export class ComponentRouter {

@@ -30,7 +30,7 @@ export interface PollSession {
     votes: Map<string, number>;
     message: PollSessionMessage;
     closedAt: number | null;
-    closeReason: 'creator' | 'expired' | null;
+    closeReason: 'creator' | 'moderator' | 'expired' | null;
     renderTimer: ReturnType<typeof setTimeout> | null;
     expiryTimer: ReturnType<typeof setTimeout> | null;
     cleanupTimer: ReturnType<typeof setTimeout> | null;
@@ -68,7 +68,7 @@ export interface PollVoteResult {
 }
 
 export interface PollCloseResult {
-    status: 'closed' | 'not-creator' | 'already-closed' | 'missing';
+    status: 'closed' | 'not-authorized' | 'already-closed' | 'missing';
     session: PollSession | null;
 }
 
@@ -146,13 +146,13 @@ export class PollSessionStore {
         return { status: 'recorded', session };
     }
 
-    public close(id: string, userId: string): PollCloseResult {
+    public close(id: string, userId: string, canManage = false): PollCloseResult {
         const session = this.get(id);
         if (!session) return { status: 'missing', session: null };
-        if (session.creatorId !== userId) return { status: 'not-creator', session };
+        if (session.creatorId !== userId && !canManage) return { status: 'not-authorized', session };
         if (session.closedAt !== null) return { status: 'already-closed', session };
 
-        this.markClosed(session, 'creator');
+        this.markClosed(session, session.creatorId === userId ? 'creator' : 'moderator');
         return { status: 'closed', session };
     }
 
@@ -180,7 +180,7 @@ export class PollSessionStore {
         }
     }
 
-    private markClosed(session: PollSession, reason: 'creator' | 'expired'): void {
+    private markClosed(session: PollSession, reason: 'creator' | 'moderator' | 'expired'): void {
         session.closedAt = this.now();
         session.closeReason = reason;
         if (session.expiryTimer !== null) {
@@ -241,7 +241,9 @@ export function renderPollMessage(session: PollSession): PollMessagePayload {
     const lines = [
         `**${session.question}**`,
         closed
-            ? session.closeReason === 'expired' ? copy.closedByExpiry : copy.closedByCreator
+            ? session.closeReason === 'expired'
+                ? copy.closedByExpiry
+                : session.closeReason === 'moderator' ? copy.closedByModerator : copy.closedByCreator
             : copy.closes(Math.floor(session.expiresAt / 1_000)),
         '',
         ...session.options.map((option, index) => {

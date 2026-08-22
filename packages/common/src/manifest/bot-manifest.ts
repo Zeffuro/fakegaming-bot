@@ -25,11 +25,6 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Bluesky module"
     },
     {
-        "name": "game-night",
-        "title": "Game Night",
-        "description": "Game Night module"
-    },
-    {
         "name": "general",
         "title": "General",
         "description": "General module"
@@ -38,6 +33,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "name": "league",
         "title": "League",
         "description": "League module"
+    },
+    {
+        "name": "game-night",
+        "title": "Nights",
+        "description": "Game and movie night nomination commands"
     },
     {
         "name": "patchnotes",
@@ -228,22 +228,6 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
             "nl": {
                 "name": "bluesky-accounts-beheren",
                 "description": "Bekijk, test, pauzeer, hervat of verwijder Bluesky-meldingen"
-            }
-        }
-    },
-    {
-        "name": "game-night",
-        "description": "Nominate and vote on games for a server game night",
-        "module": "game-night",
-        "permissions": null,
-        "dm_permission": false,
-        "default_member_permissions": null,
-        "testOnly": null,
-        "type": null,
-        "localizations": {
-            "nl": {
-                "name": "spelavond",
-                "description": "Nomineer en stem op spellen voor een spelavond van de server"
             }
         }
     },
@@ -548,6 +532,22 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
             "nl": {
                 "name": "tft-statistieken",
                 "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+            }
+        }
+    },
+    {
+        "name": "night",
+        "description": "Nominate and vote for a game or movie night",
+        "module": "game-night",
+        "permissions": null,
+        "dm_permission": false,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "avond",
+                "description": "Nomineer en stem voor een spel- of filmavond"
             }
         }
     },
@@ -1271,31 +1271,6 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
     },
     {
         "module": {
-            "name": "game-night",
-            "title": "Game Night",
-            "description": "Game Night module"
-        },
-        "commands": [
-            {
-                "name": "game-night",
-                "description": "Nominate and vote on games for a server game night",
-                "module": "game-night",
-                "permissions": null,
-                "dm_permission": false,
-                "default_member_permissions": null,
-                "testOnly": null,
-                "type": null,
-                "localizations": {
-                    "nl": {
-                        "name": "spelavond",
-                        "description": "Nomineer en stem op spellen voor een spelavond van de server"
-                    }
-                }
-            }
-        ]
-    },
-    {
-        "module": {
             "name": "general",
             "title": "General",
             "description": "General module"
@@ -1611,6 +1586,31 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                     "nl": {
                         "name": "tft-statistieken",
                         "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "game-night",
+            "title": "Nights",
+            "description": "Game and movie night nomination commands"
+        },
+        "commands": [
+            {
+                "name": "night",
+                "description": "Nominate and vote for a game or movie night",
+                "module": "game-night",
+                "permissions": null,
+                "dm_permission": false,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "avond",
+                        "description": "Nomineer en stem voor een spel- of filmavond"
                     }
                 }
             }

@@ -28,12 +28,6 @@ Total: 63 commands; 58 slash; 2 user context; 3 message context.
 | Slash | `/add-bluesky-account` | Add a Bluesky account for post notifications | Administrator |
 | Slash | `/manage-bluesky-accounts` | List, test, pause, resume, or remove Bluesky post notifications | Administrator |
 
-## Game Night
-
-| Type | Command | Description | Permissions |
-| --- | --- | --- | --- |
-| Slash | `/game-night` | Nominate and vote on games for a server game night | All users |
-
 ## General
 
 | Type | Command | Description | Permissions |
@@ -62,6 +56,12 @@ Total: 63 commands; 58 slash; 2 user context; 3 message context.
 | Slash | `/riot-links` | Manage linked Riot accounts | All users |
 | Slash | `/tft-history` | Get recent Teamfight Tactics match history by Riot ID or linked user | All users |
 | Slash | `/tft-stats` | Get Teamfight Tactics ranked stats by Riot ID or linked user | All users |
+
+## Nights
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/night` | Nominate and vote for a game or movie night | All users |
 
 ## Patchnotes
 

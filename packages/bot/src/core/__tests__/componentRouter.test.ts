@@ -41,12 +41,12 @@ describe('ComponentRouter', () => {
             ['anime', command(animeHandler)],
             ['poll', command(pollHandler)],
             ['question', command(questionHandler)],
-            ['game-night', command(gameNightHandler)],
+            ['night', command(gameNightHandler)],
         ]));
 
         expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'poll', commandName: 'poll' });
         expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'question', commandName: 'question' });
-        expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'game-night', commandName: 'game-night' });
+        expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'game-night', commandName: 'night' });
         await expect(router.dispatch(button('poll:vote:session:0'))).resolves.toBe(true);
         expect(pollHandler).toHaveBeenCalledTimes(1);
         expect(animeHandler).not.toHaveBeenCalled();

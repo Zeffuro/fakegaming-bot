@@ -36,13 +36,14 @@ function createSession(store: PollSessionStore, message = createMessage()): Poll
     return session;
 }
 
-function button(customId: string, userId = 'voter'): ButtonInteraction & {
+function button(customId: string, userId = 'voter', canManage = false): ButtonInteraction & {
     deferUpdate: ReturnType<typeof vi.fn>;
     reply: ReturnType<typeof vi.fn>;
 } {
     return {
         customId,
         user: { id: userId },
+        memberPermissions: { has: vi.fn(() => canManage) },
         deferUpdate: vi.fn().mockResolvedValue(undefined),
         reply: vi.fn().mockResolvedValue(undefined),
     } as unknown as ButtonInteraction & {
@@ -136,7 +137,7 @@ describe('PollSessionStore', () => {
         store.clear();
     });
 
-    it('only allows the creator to close and renders final results', async () => {
+    it('rejects ordinary members and lets the creator close with final results', async () => {
         const store = createStore();
         const message = createMessage();
         const session = createSession(store, message);
@@ -145,7 +146,7 @@ describe('PollSessionStore', () => {
         const intruder = button(`poll:close:${session.id}`, 'intruder');
         await expect(handleComponent(intruder)).resolves.toBe(true);
         expect(intruder.reply).toHaveBeenCalledWith(expect.objectContaining({
-            content: 'Only the poll creator can close this poll.',
+            content: 'Only the poll creator or a moderator can close this poll.',
         }));
         expect(session.closedAt).toBeNull();
 
@@ -156,6 +157,22 @@ describe('PollSessionStore', () => {
         expect(session.closedAt).not.toBeNull();
         expect(message.edit).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('Winner: **Alpha** (1 vote).'),
+        }));
+        store.clear();
+    });
+
+    it('allows moderators to close and labels the close reason accurately', async () => {
+        const store = createStore();
+        const message = createMessage();
+        const session = createSession(store, message);
+        const handleComponent = createPollComponentHandler(store);
+
+        const moderator = button(`poll:close:${session.id}`, 'moderator', true);
+        await expect(handleComponent(moderator)).resolves.toBe(true);
+        expect(moderator.deferUpdate).toHaveBeenCalledTimes(1);
+        expect(session.closeReason).toBe('moderator');
+        expect(message.edit).toHaveBeenCalledWith(expect.objectContaining({
+            content: expect.stringContaining('Poll closed by a moderator.'),
         }));
         store.clear();
     });

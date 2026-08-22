@@ -1,5 +1,5 @@
 import { resolveLocaleValue, type OutputLocaleValues } from '@zeffuro/fakegaming-common';
-import type { GameNightErrorCode } from '@zeffuro/fakegaming-common/managers';
+import type { GameNightErrorCode, GameNightKind } from '@zeffuro/fakegaming-common/managers';
 import { createBotTranslator, type BotMessages, type SupportedOutputLocale } from '../../../core/localization.js';
 import englishMessages from '../../../messages/en/game-night.json' with { type: 'json' };
 import dutchMessages from '../../../messages/nl/game-night.json' with { type: 'json' };
@@ -11,8 +11,10 @@ interface GameNightCopy {
     votingOpened: string;
     closed: string;
     unavailable: string;
-    title: (name: string) => string;
+    title: (kind: GameNightKind, name: string) => string;
     host: (creatorId: string) => string;
+    multipleNominationsEnabled: string;
+    multipleNominationsLimited: string;
     expiry: (unixSeconds: number) => string;
     nominationHeading: string;
     noNominations: string;
@@ -44,6 +46,8 @@ export function getGameNightCopy(locale: SupportedOutputLocale): GameNightCopy {
         unavailable: raw.unavailable,
         nominationHeading: raw.nominationHeading,
         noNominations: raw.noNominations,
+        multipleNominationsEnabled: raw.multipleNominationsEnabled,
+        multipleNominationsLimited: raw.multipleNominationsLimited,
         nominatingState: raw.nominatingState,
         votingState: raw.votingState,
         finishedState: raw.finishedState,
@@ -51,7 +55,7 @@ export function getGameNightCopy(locale: SupportedOutputLocale): GameNightCopy {
         openVotingButton: raw.openVotingButton,
         pickWinnerButton: raw.pickWinnerButton,
         nominated: game => t('nominated', { game }),
-        title: name => t('title', { name }),
+        title: (kind, name) => t('title', { kind, name }),
         host: creatorId => t('host', { creatorId }),
         expiry: unixSeconds => t('expiry', { unixSeconds }),
         tonight: game => t('tonight', { game }),

@@ -1,6 +1,7 @@
 import {
     ChatInputCommandInteraction,
     MessageFlags,
+    PermissionFlagsBits,
     SlashCommandBuilder,
     type ButtonInteraction,
 } from 'discord.js';
@@ -108,11 +109,12 @@ export function createPollComponentHandler(pollStore: PollSessionStore): (intera
         }
 
         if (action === 'close' && (parts.length === 3 || parts.length === 4)) {
-            const result = pollStore.close(pollId, interaction.user.id);
+            const canManage = interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) ?? false;
+            const result = pollStore.close(pollId, interaction.user.id, canManage);
             if (result.status === 'missing') return await replyUnavailable(interaction, locale);
-            if (result.status === 'not-creator') {
+            if (result.status === 'not-authorized') {
                 await interaction.reply({
-                    content: getGeneralCopy(locale).poll.creatorOnly,
+                    content: getGeneralCopy(locale).poll.creatorOrModerator,
                     flags: MessageFlags.Ephemeral,
                     allowedMentions: { parse: [] },
                 });

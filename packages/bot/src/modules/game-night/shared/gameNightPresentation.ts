@@ -21,8 +21,11 @@ export function renderGameNightBoard(board: GameNightBoard, locale: SupportedOut
     const gameNightCopy = getGameNightCopy(locale);
     const safeName = escapeMarkdown(board.session.name);
     const lines = [
-        gameNightCopy.title(safeName),
+        gameNightCopy.title(board.session.kind, safeName),
         gameNightCopy.host(board.session.creatorId),
+        board.session.allowMultipleNominations
+            ? gameNightCopy.multipleNominationsEnabled
+            : gameNightCopy.multipleNominationsLimited,
         stateLine(board, locale),
         gameNightCopy.expiry(Math.floor(board.session.expiresAt / 1_000)),
         '',
