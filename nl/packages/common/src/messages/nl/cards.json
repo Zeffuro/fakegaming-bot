@@ -1,0 +1,18 @@
+{
+  "profile": {
+    "profile": "profile",
+    "fakeGamingProfile": "FakeGaming profile",
+    "serverNickname": "Server nickname",
+    "globalName": "Global name",
+    "discordId": "Discord ID",
+    "discordUser": "Discord user"
+  },
+  "quote": {
+    "fallbackTitle": "FakeGaming Quotes",
+    "submittedBy": "submitted by",
+    "submittedByUser": "submitted by {name}",
+    "unknownAuthor": "Unknown author",
+    "discordUser": "Discord user",
+    "discordUserSuffix": "Discord user {suffix}"
+  }
+}
