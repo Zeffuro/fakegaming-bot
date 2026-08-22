@@ -1,0 +1,90 @@
+{
+    "get-patchnotes": {
+        "name": "get-patchnotes",
+        "description": "Get the latest patch notes for a game",
+        "options": {
+            "game": {
+                "name": "game",
+                "description": "Game to get patch notes for"
+            }
+        }
+    },
+    "patchnotes-history": {
+        "name": "patchnotes-history",
+        "description": "Show stored patch note history for a game",
+        "options": {
+            "game": {
+                "name": "game",
+                "description": "Game to show patch history for"
+            },
+            "count": {
+                "name": "count",
+                "description": "Number of stored patches to show"
+            }
+        }
+    },
+    "subscribe-patchnotes": {
+        "name": "subscribe-patchnotes",
+        "description": "Subscribe a channel to patch notes for a game",
+        "options": {
+            "game": {
+                "name": "game",
+                "description": "Game to subscribe to"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Channel to receive patch notes"
+            }
+        }
+    },
+    "manage-patchnotes": {
+        "name": "manage-patchnotes",
+        "description": "List, test, pause, resume, or remove patch note subscriptions",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured patch note subscriptions"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured patch note subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-patchnotes list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured patch note subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-patchnotes list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured patch note subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-patchnotes list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured patch note subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-patchnotes list"
+                    }
+                }
+            }
+        }
+    }
+}
