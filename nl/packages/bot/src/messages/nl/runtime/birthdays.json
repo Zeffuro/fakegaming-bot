@@ -1,0 +1,9 @@
+{
+    "possessiveMention": "<@{userId}>'s",
+    "birthdayFor": "{user}'s birthday: {date}",
+    "notSetInChannel": "{kind, select, self {{subject} do not have a birthday set in this channel.} other {{subject} do not have a birthday set in this channel.}}",
+    "today": "today",
+    "ageSuffix": ", turns {age}",
+    "you": "You",
+    "your": "Your"
+}
