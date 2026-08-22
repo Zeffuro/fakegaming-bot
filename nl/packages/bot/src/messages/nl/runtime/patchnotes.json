@@ -1,0 +1,7 @@
+{
+    "noPatchNotesFoundFor": "No patch notes found for `{game}`.",
+    "noStoredPatchHistoryFoundForYet": "No stored patch history found for `{game}` yet.",
+    "storedPatchHistoryFor": "Stored patch history for {game}:",
+    "subscribedToPatchNotesFor": "Subscribed <#{channelId}> to patch notes for `{game}`.",
+    "subscribedToPatchNotesForLatestPatch": "Subscribed <#{channelId}> to patch notes for `{game}`. Latest patch:"
+}
