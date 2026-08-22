@@ -19,7 +19,7 @@
     "repeat": " Repeats {interval, plural, one {every {unit}} other {every # {unit}s}} in {timezone}.",
     "invalidTimezone": "Ongeldige tijdzone. Gebruik een geldige IANA-tijdzone (bijv. Europe/Berlin) of GMT-afwijking.",
     "timezoneSet": "Tijdzone ingesteld op `{timezone}`.",
-    "serverOnly": "Berichtherinneringen werken alleen op een server.",
+    "serverOnly": "Bericht herinneringen werken alleen op een server.",
     "followUpMessage": "Kom terug op dit bericht: {url}",
     "oneHourSet": "Herinnering ingesteld voor '<t:'{timestamp}:R>."
 }
