@@ -1,0 +1,27 @@
+{
+    "verificationFailed": "Failed to verify account `{username}`. Please try again later.",
+    "bluesky": {
+        "usernameDescription": "Bluesky handle (with or without @)",
+        "success": "Bluesky account `{username}` added for notifications in <#{channelId}>.",
+        "alreadyConfigured": "Bluesky account `{username}` is already configured for notifications in this channel.",
+        "notFound": "Bluesky account `{username}` does not exist."
+    },
+    "tiktok": {
+        "usernameDescription": "TikTok username (with or without @)",
+        "success": "TikTok account `{username}` added for notifications in <#{channelId}>.",
+        "alreadyConfigured": "TikTok account `{username}` is already configured for notifications in this channel.",
+        "notFound": "TikTok user `{username}` does not exist."
+    },
+    "twitch": {
+        "usernameDescription": "Twitch username",
+        "success": "Twitch stream `{username}` added for notifications in <#{channelId}>.",
+        "alreadyConfigured": "Twitch stream `{username}` is already configured for notifications in this channel.",
+        "notFound": "Twitch user `{username}` does not exist."
+    },
+    "youtube": {
+        "usernameDescription": "Youtube username",
+        "success": "Youtube channel `{username}` added for video notifications in #{channelId}.",
+        "alreadyConfigured": "Youtube channel `{username}` is already configured for video notifications in this channel.",
+        "notFound": "Youtube channel `{username}` does not exist."
+    }
+}
