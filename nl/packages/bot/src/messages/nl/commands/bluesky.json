@@ -1,0 +1,70 @@
+{
+    "add-bluesky-account": {
+        "name": "add-bluesky-account",
+        "description": "Add a Bluesky account for post notifications",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "Bluesky handle (with or without @)"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Discord channel for notifications"
+            },
+            "message": {
+                "name": "message",
+                "description": "Custom notification message (optional)"
+            }
+        }
+    },
+    "manage-bluesky-accounts": {
+        "name": "manage-bluesky-accounts",
+        "description": "List, test, pause, resume, or remove Bluesky post notifications",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured Bluesky accounts"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured Bluesky account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-bluesky-accounts list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured Bluesky account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-bluesky-accounts list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured Bluesky account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-bluesky-accounts list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured Bluesky account",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-bluesky-accounts list"
+                    }
+                }
+            }
+        }
+    }
+}
