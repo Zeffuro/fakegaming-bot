@@ -3,7 +3,7 @@
     "birthdayFor": "De verjaardag van {user}: {date}",
     "notSetInChannel": "{kind, select, self {{subject} do not have a birthday set in this channel.} other {{subject} do not have a birthday set in this channel.}}",
     "today": "vandaag",
-    "ageSuffix": ", wordt {age}",
+    "ageSuffix": ", wordt {age} jaar",
     "you": "Je",
     "your": "Jouw"
 }
