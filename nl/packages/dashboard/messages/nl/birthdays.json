@@ -1,0 +1,32 @@
+{
+  "birthdays": {
+    "eyebrow": "Birthdays",
+    "title": "Birthday announcements",
+    "description": "Search Discord members, store their birthday, and choose exactly where celebration messages should be posted.",
+    "configuredStat": "Birthdays configured",
+    "next30DaysStat": "Next 30 days",
+    "upcomingCalendar": "Upcoming calendar",
+    "upcomingCalendarDescription": "The next birthdays from today, including leap-day fallback to February 28 on non-leap years.",
+    "noUpcomingTitle": "No upcoming birthdays",
+    "noUpcomingDescription": "Add birthdays below to populate this calendar.",
+    "addBirthday": "Add birthday",
+    "editBirthday": "Edit birthday",
+    "formDescription": "Use member search when possible; pasting a Discord user ID still works for edge cases.",
+    "invalidForm": "User, channel, day and month are required. Year must be a number when provided.",
+    "typeAtLeastThreeCharacters": "Type at least 3 characters",
+    "noMembersFound": "No members found",
+    "member": "Member",
+    "memberPlaceholder": "Search member or paste user ID",
+    "month": "Month",
+    "day": "Day",
+    "year": "Year",
+    "announcementChannel": "Announcement channel",
+    "configuredTitle": "Configured birthdays",
+    "configuredDescription": "Sorted by month and day so upcoming dates are easier to scan.",
+    "noConfiguredTitle": "No birthdays configured",
+    "noConfiguredDescription": "Add the first member birthday above to enable announcements.",
+    "editAria": "Edit birthday for {user}",
+    "deleteAria": "Delete birthday for {user}",
+    "cancelEdit": "Cancel birthday editing"
+  }
+}
