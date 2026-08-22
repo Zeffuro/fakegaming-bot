@@ -1,7 +1,7 @@
 {
     "possessiveMention": "<@{userId}>",
     "birthdayFor": "De verjaardag van {user}: {date}",
-    "notSetInChannel": "{subject} {kind, select, self {hebt} other {heeft}} geen verjaardag ingesteld op deze server.",
+    "notSetInChannel": "{kind, select, self {{subject} do not have a birthday set in this channel.} other {{subject} do not have a birthday set in this channel.}}",
     "today": "vandaag",
     "ageSuffix": ", wordt {age}",
     "you": "Je",
