@@ -1,0 +1,29 @@
+{
+  "patch": {
+    "game": "Game",
+    "timelineTitle": "Patch note timeline",
+    "storedCount": "{count} stored patches, latest first.",
+    "noStoredMatch": "No stored patches match these filters.",
+    "refresh": "Refresh",
+    "compareSelected": "Compare selected",
+    "allGames": "All games",
+    "selectedCount": "{count}/2 selected",
+    "historyLoadFailed": "Failed to load patch-note history",
+    "compareFailed": "Failed to compare patch notes",
+    "noPatchNotes": "No patch notes found.",
+    "pageOf": "Page {page} of {pages}",
+    "previous": "Previous",
+    "next": "Next",
+    "noPreview": "No preview available.",
+    "selected": "Selected",
+    "select": "Select",
+    "open": "Open",
+    "compareTitle": "Patch compare",
+    "compareLoading": "Loading compare...",
+    "from": "From",
+    "to": "To",
+    "unchangedLines": "{count} unchanged",
+    "diffTruncated": "Diff truncated to {emitted} of {total} lines.",
+    "unknownDate": "Unknown date"
+  }
+}
