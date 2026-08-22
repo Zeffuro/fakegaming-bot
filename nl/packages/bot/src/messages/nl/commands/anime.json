@@ -1,0 +1,142 @@
+{
+    "anime": {
+        "name": "anime",
+        "description": "Search anime, manage subscriptions, and view upcoming episodes",
+        "options": {
+            "search": {
+                "name": "search",
+                "description": "Search for an anime",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    }
+                }
+            },
+            "subscribe": {
+                "name": "subscribe",
+                "description": "Subscribe to anime episode reminders",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    },
+                    "channel": {
+                        "name": "channel",
+                        "description": "Optional public notification channel (admin only)"
+                    },
+                    "reminder-minutes": {
+                        "name": "reminder-minutes",
+                        "description": "Minutes before airing to remind you"
+                    }
+                }
+            },
+            "list": {
+                "name": "list",
+                "description": "Show your anime subscriptions"
+            },
+            "unsubscribe": {
+                "name": "unsubscribe",
+                "description": "Unsubscribe from anime episode reminders",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    },
+                    "channel": {
+                        "name": "channel",
+                        "description": "Optional public notification channel subscription to remove (admin only)"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause anime episode reminders",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    },
+                    "channel": {
+                        "name": "channel",
+                        "description": "Optional public notification channel subscription to pause (admin only)"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume anime episode reminders",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    },
+                    "channel": {
+                        "name": "channel",
+                        "description": "Optional public notification channel subscription to resume (admin only)"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for anime episode reminders",
+                "options": {
+                    "title": {
+                        "name": "title",
+                        "description": "Anime title"
+                    },
+                    "channel": {
+                        "name": "channel",
+                        "description": "Optional public notification channel subscription to inspect (admin only)"
+                    }
+                }
+            },
+            "next": {
+                "name": "next",
+                "description": "Show upcoming episodes for your subscriptions"
+            },
+            "season": {
+                "name": "season",
+                "description": "Browse anime airing in a season",
+                "options": {
+                    "season": {
+                        "name": "season",
+                        "description": "Season to browse",
+                        "choices": {
+                            "current": "Current",
+                            "next": "Next",
+                            "WINTER": "Winter",
+                            "SPRING": "Spring",
+                            "SUMMER": "Summer",
+                            "FALL": "Fall"
+                        }
+                    },
+                    "year": {
+                        "name": "year",
+                        "description": "Year for a specific season"
+                    },
+                    "scope": {
+                        "name": "scope",
+                        "description": "Filter seasonal results",
+                        "choices": {
+                            "airing": "Airing/upcoming",
+                            "chart": "Season chart",
+                            "tv": "TV only",
+                            "all": "All known formats"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "manga": {
+        "name": "manga",
+        "description": "Search manga, manhwa, webtoons, and light novels on AniList",
+        "options": {
+            "title": {
+                "name": "title",
+                "description": "Manga, manhwa, webtoon, or light novel title"
+            }
+        }
+    }
+}
