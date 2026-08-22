@@ -1,0 +1,18 @@
+{
+    "active": " [active]",
+    "dueNow": "due now",
+    "in": "in",
+    "statePaused": "paused",
+    "stateRecurring": "recurring",
+    "recurrenceMinute": " (every {interval, plural, one {minute} other {# minutes}}, {timezone})",
+    "recurrenceHour": " (every {interval, plural, one {hour} other {# hours}}, {timezone})",
+    "recurrenceDay": " (every {interval, plural, one {day} other {# days}}, {timezone})",
+    "recurrenceWeek": " (every {interval, plural, one {week} other {# weeks}}, {timezone})",
+    "recurrenceMonth": " (every {interval, plural, one {month} other {# months}}, {timezone})",
+    "recurrenceYear": " (every {interval, plural, one {year} other {# years}}, {timezone})",
+    "recurrenceOtherSingular": " (every {unit}, {timezone})",
+    "recurrenceOtherPlural": " (every {interval} {unit}s, {timezone})",
+    "nextRun": " Next run '<t:'{timestamp}:R>.",
+    "paused": " [paused]",
+    "unknownTime": "unknown time"
+}
