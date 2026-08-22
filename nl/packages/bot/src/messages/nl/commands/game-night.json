@@ -1,0 +1,56 @@
+{
+    "night": {
+        "name": "night",
+        "description": "Nominate and vote for a game or movie night",
+        "options": {
+            "start": {
+                "name": "start",
+                "description": "Start a game or movie night in this channel",
+                "options": {
+                    "name": {
+                        "name": "name",
+                        "description": "A short name for this night"
+                    },
+                    "type": {
+                        "name": "type",
+                        "description": "Choose what people will nominate",
+                        "choices": {
+                            "game": "Game night",
+                            "movie": "Movie night"
+                        }
+                    },
+                    "duration": {
+                        "name": "duration",
+                        "description": "Hours before an unfinished night expires"
+                    },
+                    "allow-multiple": {
+                        "name": "allow-multiple",
+                        "description": "Allow every member to submit multiple nominations"
+                    }
+                }
+            },
+            "nominate": {
+                "name": "nominate",
+                "description": "Nominate a choice for the active night",
+                "options": {
+                    "choice": {
+                        "name": "choice",
+                        "description": "The game or movie to nominate"
+                    }
+                }
+            },
+            "open": {
+                "name": "open",
+                "description": "Open voting on the nominations"
+            },
+            "close": {
+                "name": "close",
+                "description": "Close voting and pick the winner"
+            },
+            "status": {
+                "name": "status",
+                "description": "Show the current night state"
+            }
+        }
+    }
+}
