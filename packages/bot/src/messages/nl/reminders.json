@@ -16,10 +16,10 @@
     "title": "Je herinneringen:",
     "more": "\n...en nog {count}.",
     "set": "Ik herinner je over {timespan} aan: \"{message}\" (om '<t:'{timestamp}:R>).{repeat}",
-    "repeat": " Wordt {unit, select, day {{interval, plural, one {elke dag} other {elke # dagen}}} week {{interval, plural, one {elke week} other {elke # weken}}} other {{interval, plural, one {elke maand} other {elke # maanden}}}} herhaald in {timezone}.",
+    "repeat": " Repeats {interval, plural, one {every {unit}} other {every # {unit}s}} in {timezone}.",
     "invalidTimezone": "Ongeldige tijdzone. Gebruik een geldige IANA-tijdzone (bijv. Europe/Berlin) of GMT-afwijking.",
     "timezoneSet": "Tijdzone ingesteld op `{timezone}`.",
-    "serverOnly": "Berichtherinneringen werken alleen op een server.",
+    "serverOnly": "Bericht herinneringen werken alleen op een server.",
     "followUpMessage": "Kom terug op dit bericht: {url}",
     "oneHourSet": "Herinnering ingesteld voor '<t:'{timestamp}:R>."
 }

@@ -3,7 +3,7 @@
     "errorHandlingInteraction": "De interactie kon niet worden verwerkt.",
     "durationMinutesSeconds": "{minutes} min. {seconds} sec.",
     "timeAgoDays": "{count, plural, one {# dag geleden} other {# dagen geleden}}",
-    "timeAgoHours": "{count} uur geleden",
+    "timeAgoHours": "{count, plural, one {# hour ago} other {# hours ago}}",
     "timeAgoMinutes": "{count} min. geleden",
     "timeAgoNow": "zojuist",
     "onlyAdminsCanUseThisCommand": "Alleen beheerders kunnen deze opdracht gebruiken.",
