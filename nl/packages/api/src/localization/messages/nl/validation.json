@@ -1,0 +1,23 @@
+{
+  "validationBody": "Body validation failed",
+  "validationQuery": "Query validation failed",
+  "validationParams": "Params validation failed",
+  "validationRequired": "Required",
+  "validationInvalid": "Invalid value",
+  "validationString": "Expected text",
+  "validationNumber": "Expected a number",
+  "validationBoolean": "Expected true or false",
+  "validationArray": "Expected a list",
+  "validationTooSmall": "Value is too small",
+  "validationTooBig": "Value is too large",
+  "validationFormat": "Invalid format",
+  "validationExpectedTime": "Expected time in HH:mm",
+  "validationAnimeIdentifier": "anilistId or title is required",
+  "validationCalendarDate": "Invalid calendar date",
+  "validationOneField": "At least one field must be provided",
+  "validationDateTime": "Invalid date-time",
+  "validationRecurrenceTimezone": "recurrenceTimezone is required when recurrence is set",
+  "validationNoteContent": "title or body is required",
+  "validationIdentifierRequired": "identifier is required",
+  "validationUsernameRequired": "username is required"
+}
