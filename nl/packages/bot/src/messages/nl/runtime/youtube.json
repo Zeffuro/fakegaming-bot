@@ -1,0 +1,9 @@
+{
+    "couldNotFetchYoutubeFeedFor": "Could not fetch YouTube feed for `{channel}`.",
+    "couldNotResolveYoutubeChannel": "Could not resolve YouTube channel `{channel}`.",
+    "from": "from",
+    "latestVideo": "Latest video from {author}: **{title}**{published}\nhttps://www.youtube.com/watch?v={videoId}",
+    "noVideosFoundFor": "No videos found for `{channel}`.",
+    "published": "Published",
+    "unknownChannel": "Unknown channel"
+}
