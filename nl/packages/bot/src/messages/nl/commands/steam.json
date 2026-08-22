@@ -1,0 +1,70 @@
+{
+    "add-steam-news": {
+        "name": "add-steam-news",
+        "description": "Add Steam game news notifications",
+        "options": {
+            "game": {
+                "name": "game",
+                "description": "Steam game name, App ID, or store URL"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Discord channel for Steam news"
+            },
+            "message": {
+                "name": "message",
+                "description": "Custom notification message (optional)"
+            }
+        }
+    },
+    "manage-steam-news": {
+        "name": "manage-steam-news",
+        "description": "List, test, pause, resume, or remove Steam news notifications",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured Steam news subscriptions"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured Steam news subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-steam-news list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured Steam news subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-steam-news list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured Steam news subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-steam-news list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured Steam news subscription",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-steam-news list"
+                    }
+                }
+            }
+        }
+    }
+}
