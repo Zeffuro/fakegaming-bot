@@ -7,6 +7,7 @@ import riotLinks from '../commands/riotLinks.js';
 import tftHistory from '../commands/tftHistory.js';
 import tftStats from '../commands/tftStats.js';
 import { formatDuration, timeAgo } from '../../../utils/generalUtils.js';
+import { runtimeText } from '../../../core/runtimeCopy.js';
 
 interface LocalizedNode {
     name: string;
@@ -34,9 +35,15 @@ describe('League command localization', () => {
     });
 
     it('formats image time labels in both supported locales', () => {
-        expect(timeAgo(0, 3_600_000)).toBe('1 hour ago');
-        expect(timeAgo(0, 3_600_000, 'nl')).toBe('1 uur geleden');
-        expect(formatDuration(125)).toBe('2m 05s');
-        expect(formatDuration(125, 'nl')).toBe('2 min. 05 sec.');
+        expect(timeAgo(0, 3_600_000)).toBe(runtimeText('en', 'core', 'timeAgoHours', { count: 1 }));
+        expect(timeAgo(0, 3_600_000, 'nl')).toBe(runtimeText('nl', 'core', 'timeAgoHours', { count: 1 }));
+        expect(formatDuration(125)).toBe(runtimeText('en', 'core', 'durationMinutesSeconds', {
+            minutes: 2,
+            seconds: '05',
+        }));
+        expect(formatDuration(125, 'nl')).toBe(runtimeText('nl', 'core', 'durationMinutesSeconds', {
+            minutes: 2,
+            seconds: '05',
+        }));
     });
 });

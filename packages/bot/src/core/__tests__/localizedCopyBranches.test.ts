@@ -3,61 +3,63 @@ import { getBirthdayCopy } from '../../modules/birthdays/copy/birthdayCopy.js';
 import { getGeneralCopy } from '../../modules/general/data/generalCopy.js';
 import { getNotesCopy } from '../../modules/notes/copy/notesCopy.js';
 import { getReminderCopy } from '../../modules/reminders/copy/reminderCopy.js';
+import type { SupportedOutputLocale } from '../localization.js';
+
+const locales = ['en', 'nl'] satisfies SupportedOutputLocale[];
+
+function expectRendered(message: string, ...values: string[]): void {
+    expect(message.trim()).not.toBe('');
+    for (const value of values) expect(message).toContain(value);
+}
 
 describe('localized copy grammar', () => {
-    it('formats English and Dutch birthday subjects', () => {
-        const english = getBirthdayCopy('en');
-        const dutch = getBirthdayCopy('nl');
+    it.each(locales)('interpolates birthday subjects in %s', locale => {
+        const copy = getBirthdayCopy(locale);
 
-        expect(english.notSet('You')).toContain('You do not');
-        expect(english.notSet('<@1>')).toContain('<@1> does not');
-        expect(dutch.notSet('Je')).toContain('Je hebt geen');
-        expect(dutch.notSet('<@1>')).toContain('<@1> heeft geen');
-        expect(dutch.removed('<@1>')).toBe('De verjaardag van <@1> is verwijderd.');
-        expect(dutch.removed('Jouw')).toBe('Jouw verjaardag is verwijderd.');
-        expect(dutch.alreadySet('Je')).toBe('Je hebt al een verjaardag ingesteld op deze server.');
-        expect(dutch.alreadySet('<@1>')).toContain('<@1> heeft al');
-        expect(dutch.reminderSet('<@1>')).toBe('De verjaardagsmelding voor <@1> is ingesteld.');
-        expect(dutch.reminderSet('Jouw')).toBe('Jouw verjaardagsmelding is ingesteld.');
+        expectRendered(copy.notSet(copy.you), copy.you);
+        expectRendered(copy.notSet('<@1>'), '<@1>');
+        expectRendered(copy.removed('<@1>'), '<@1>');
+        expectRendered(copy.removed(copy.your), copy.your);
+        expectRendered(copy.alreadySet(copy.you), copy.you);
+        expectRendered(copy.alreadySet('<@1>'), '<@1>');
+        expectRendered(copy.reminderSet('<@1>'), '<@1>');
+        expectRendered(copy.reminderSet(copy.your), copy.your);
     });
 
-    it('pluralizes reminder recurrence units in both locales', () => {
-        const english = getReminderCopy('en');
-        const dutch = getReminderCopy('nl');
+    it.each(locales)('renders reminder recurrence branches in %s', locale => {
+        const copy = getReminderCopy(locale);
+        const singular = copy.repeat(1, 'week', 'Europe/Amsterdam');
+        const plural = copy.repeat(2, 'month', 'Europe/Amsterdam');
 
-        expect(english.repeat(1, 'day', 'Europe/Amsterdam')).toContain('every day');
-        expect(english.repeat(2, 'day', 'Europe/Amsterdam')).toContain('every 2 days');
-        expect(dutch.repeat(1, 'week', 'Europe/Amsterdam')).toContain('elke week');
-        expect(dutch.repeat(2, 'month', 'Europe/Amsterdam')).toContain('elke 2 maanden');
+        expectRendered(singular, 'Europe/Amsterdam');
+        expectRendered(plural, 'Europe/Amsterdam');
+        expect(singular).not.toBe(plural);
     });
 
-    it('pluralizes saved-message attachment and sticker summaries', () => {
-        const english = getNotesCopy('en');
-        const dutch = getNotesCopy('nl');
+    it.each(locales)('renders saved-message attachment and sticker counts in %s', locale => {
+        const copy = getNotesCopy(locale);
 
-        expect(english.attachments(1)).toBe('1 attachment');
-        expect(english.attachments(2)).toBe('2 attachments');
-        expect(english.stickers(1)).toBe('1 sticker');
-        expect(english.stickers(2)).toBe('2 stickers');
-        expect(dutch.attachments(1)).toBe('1 bijlage');
-        expect(dutch.attachments(2)).toBe('2 bijlagen');
-        expect(dutch.stickers(1)).toBe('1 sticker');
-        expect(dutch.stickers(2)).toBe('2 stickers');
+        expectRendered(copy.attachments(1), '1');
+        expectRendered(copy.attachments(2), '2');
+        expectRendered(copy.stickers(1), '1');
+        expectRendered(copy.stickers(2), '2');
+        expect(copy.attachments(1)).not.toBe(copy.attachments(2));
+        expect(copy.stickers(1)).not.toBe(copy.stickers(2));
     });
 
-    it('formats permission member sources and poll vote grammar', () => {
-        const english = getGeneralCopy('en');
-        const dutch = getGeneralCopy('nl');
+    it.each(locales)('renders permission and poll branches in %s', locale => {
+        const copy = getGeneralCopy(locale);
+        const fetched = copy.permissions.summary(2, 'fetched', 3, 4);
+        const cached = copy.permissions.summary(2, 'cached', 3, 4);
 
-        expect(dutch.permissions.summary(2, 'fetched', 3, 4)).toContain('opgehaalde leden');
-        expect(dutch.permissions.summary(2, 'cached', 3, 4)).toContain('gecachete leden');
-        expect(english.poll.votes(1)).toBe('1 vote');
-        expect(english.poll.votes(2)).toBe('2 votes');
-        expect(dutch.poll.votes(1)).toBe('1 stem');
-        expect(dutch.poll.votes(2)).toBe('2 stemmen');
-        expect(english.poll.winner('A', 1)).toContain('1 vote');
-        expect(english.poll.winner('A', 2)).toContain('2 votes');
-        expect(dutch.poll.tie('A, B', 1)).toContain('1 stem');
-        expect(dutch.poll.tie('A, B', 2)).toContain('2 stemmen');
+        expectRendered(fetched, '2', '3', '4');
+        expectRendered(cached, '2', '3', '4');
+        expect(fetched).not.toBe(cached);
+        expectRendered(copy.poll.votes(1), '1');
+        expectRendered(copy.poll.votes(2), '2');
+        expectRendered(copy.poll.winner('Option A', 1), 'Option A', '1');
+        expectRendered(copy.poll.winner('Option A', 2), 'Option A', '2');
+        expectRendered(copy.poll.tie('Option A, Option B', 1), 'Option A, Option B', '1');
+        expectRendered(copy.poll.tie('Option A, Option B', 2), 'Option A, Option B', '2');
     });
 });

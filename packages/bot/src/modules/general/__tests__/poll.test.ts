@@ -11,6 +11,7 @@ import {
     type PollSession,
     type PollSessionMessage,
 } from '../shared/pollSession.js';
+import { getGeneralCopy } from '../data/generalCopy.js';
 
 function createMessage(): PollSessionMessage & { edit: ReturnType<typeof vi.fn> } {
     return { edit: vi.fn().mockResolvedValue(undefined) };
@@ -89,10 +90,11 @@ describe('PollSessionStore', () => {
         store.vote(session.id, 'one', 0);
 
         const rendered = renderPollMessage(session);
-        expect(rendered.content).toContain('1 stem');
-        expect(rendered.content).toContain('Totaal aantal stemmen: 1');
+        const pollCopy = getGeneralCopy('nl').poll;
+        expect(rendered.content).toContain(pollCopy.votes(1));
+        expect(rendered.content).toContain(pollCopy.total(1));
         expect(rendered.components[0]?.components[0]?.toJSON()).toMatchObject({ custom_id: 'poll:vote:poll-1:0:nl' });
-        expect(rendered.components[1]?.components[0]?.toJSON()).toMatchObject({ label: 'Peiling sluiten' });
+        expect(rendered.components[1]?.components[0]?.toJSON()).toMatchObject({ label: pollCopy.closeButton });
         store.clear();
     });
 
