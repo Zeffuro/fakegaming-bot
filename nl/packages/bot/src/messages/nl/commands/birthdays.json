@@ -1,0 +1,68 @@
+{
+    "birthday": {
+        "name": "birthday",
+        "description": "Show your or another user's birthday",
+        "options": {
+            "user": {
+                "name": "user",
+                "description": "User to look up (optional)"
+            }
+        }
+    },
+    "birthdays": {
+        "name": "birthdays",
+        "description": "Show upcoming birthdays in this server",
+        "options": {
+            "upcoming": {
+                "name": "upcoming",
+                "description": "Show upcoming birthdays in this server",
+                "options": {
+                    "days": {
+                        "name": "days",
+                        "description": "How many days ahead to show"
+                    }
+                }
+            }
+        }
+    },
+    "remove-birthday": {
+        "name": "remove-birthday",
+        "description": "Remove your birthday or another user's birthday (admins only)",
+        "options": {
+            "user": {
+                "name": "user",
+                "description": "User to remove birthday for (admins only)"
+            }
+        }
+    },
+    "set-birthday": {
+        "name": "set-birthday",
+        "description": "Set your birthday and the channel to post in",
+        "options": {
+            "day": {
+                "name": "day",
+                "description": "Day of your birthday (1-31)"
+            },
+            "month": {
+                "name": "month",
+                "description": "Month of your birthday"
+            },
+            "year": {
+                "name": "year",
+                "description": "Year of your birthday (optional)"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Channel to post your birthday message (defaults to current channel)"
+            },
+            "user": {
+                "name": "user",
+                "description": "User to set birthday for (admins only)"
+            }
+        }
+    },
+    "Show Birthday": {
+        "name": "Show Birthday",
+        "description": "Show a user birthday from the user context menu"
+    }
+}
