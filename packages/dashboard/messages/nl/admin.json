@@ -532,7 +532,7 @@
           "healthWarnings": "{value, plural, one {1 statuswaarschuwing of onbekende status van providers.} other {# statuswaarschuwingen of onbekende statussen van providers.}}",
           "missingWorkerHeartbeat": "De worker heeft nog geen heartbeat gemeld.",
           "partialOverviewData": "Een of meer aanvragen voor het beheeroverzicht zijn mislukt.",
-          "fallback": "{value} signalen: {label}."
+          "fallback": "{value} {label} {value, plural, one {signal} other {signals}}."
         },
         "unknownProvider": "Onbekende provider",
         "healthStatuses": {
