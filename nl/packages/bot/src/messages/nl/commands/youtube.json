@@ -1,0 +1,80 @@
+{
+    "add-youtube-channel": {
+        "name": "add-youtube-channel",
+        "description": "Add a Youtube Channel for new video notifications",
+        "options": {
+            "username": {
+                "name": "username",
+                "description": "Youtube username"
+            },
+            "channel": {
+                "name": "channel",
+                "description": "Discord channel for notifications"
+            },
+            "message": {
+                "name": "message",
+                "description": "Custom notification message (optional)"
+            }
+        }
+    },
+    "manage-youtube-channels": {
+        "name": "manage-youtube-channels",
+        "description": "List, test, pause, resume, or remove YouTube video notifications",
+        "options": {
+            "list": {
+                "name": "list",
+                "description": "List configured YouTube channels"
+            },
+            "remove": {
+                "name": "remove",
+                "description": "Remove a configured YouTube channel",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-youtube-channels list"
+                    }
+                }
+            },
+            "pause": {
+                "name": "pause",
+                "description": "Pause notifications for a configured YouTube channel",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-youtube-channels list"
+                    }
+                }
+            },
+            "resume": {
+                "name": "resume",
+                "description": "Resume notifications for a configured YouTube channel",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-youtube-channels list"
+                    }
+                }
+            },
+            "test": {
+                "name": "test",
+                "description": "Show latest health for a configured YouTube channel",
+                "options": {
+                    "id": {
+                        "name": "id",
+                        "description": "Configuration ID from manage-youtube-channels list"
+                    }
+                }
+            }
+        }
+    },
+    "youtube-latest": {
+        "name": "youtube-latest",
+        "description": "Show the latest video from a YouTube channel ID",
+        "options": {
+            "channel": {
+                "name": "channel",
+                "description": "YouTube channel ID, handle, URL, or username"
+            }
+        }
+    }
+}
