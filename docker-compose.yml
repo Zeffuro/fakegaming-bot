@@ -165,6 +165,8 @@ services:
       RIOT_TFT_API_KEY: ${RIOT_TFT_API_KEY}
       RIOT_DEV_API_KEY: ${RIOT_DEV_API_KEY}
       OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
+      TMDB_API_TOKEN: ${TMDB_API_TOKEN:-}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
     volumes:
       - ${BOT_DATA_PATH:-./data/bot}:/app/data
     depends_on:

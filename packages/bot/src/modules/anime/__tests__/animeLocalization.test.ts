@@ -17,6 +17,7 @@ vi.mock('@zeffuro/fakegaming-common/anime', async (importOriginal) => {
     return {
         ...actual,
         getAniListAnimeById: vi.fn().mockResolvedValue(null),
+        searchAniListAnimePage: vi.fn(),
     };
 });
 
@@ -109,6 +110,24 @@ describe('anime localization', () => {
         expect(subscribeUser).toHaveBeenCalledWith({ anilistId: 404, userId: 'user-1', reminderMinutes: 30 });
         expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({
             content: expect.stringContaining('Je bent geabonneerd'),
+        }));
+    });
+
+    it('reports AniList outages instead of claiming there are no matches', async () => {
+        const animeClient = await import('@zeffuro/fakegaming-common/anime');
+        vi.mocked(animeClient.searchAniListAnimePage).mockResolvedValue({
+            items: [],
+            pageInfo: {},
+            failure: { kind: 'unavailable', status: 403, retryAfterSeconds: null },
+        });
+        const { command, interaction } = await setupCommandTest('modules/anime/commands/anime.js', {
+            interaction: { subcommand: 'search', stringOptions: { title: 'Death Note' } },
+        });
+
+        await command.execute(interaction);
+
+        expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({
+            content: 'AniList is tijdelijk niet beschikbaar. Anime en manga zoeken werkt weer zodra de API is hersteld.',
         }));
     });
 });

@@ -41,6 +41,7 @@
   "discordAuthenticationFailed": "Authenticatie met Discord is mislukt",
   "animeSubscriptionForbidden": "Je hebt geen toegang tot dit anime-abonnement",
   "animeNotFound": "Anime niet gevonden",
+  "animeProviderUnavailable": "AniList is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
   "animeNotSubscribable": "Je kunt {title} niet volgen (status: {status}).",
   "animeNotSubscribableStatus": "niet beschikbaar",
   "integrationProviderConfigRequired": "Provider en configuratie-ID zijn verplicht",

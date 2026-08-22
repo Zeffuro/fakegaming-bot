@@ -41,6 +41,7 @@
   "discordAuthenticationFailed": "Failed to authenticate with Discord",
   "animeSubscriptionForbidden": "Not authorized for this anime subscription",
   "animeNotFound": "Anime not found",
+  "animeProviderUnavailable": "AniList is temporarily unavailable. Try again later.",
   "animeNotSubscribable": "{title} is {status}.",
   "animeNotSubscribableStatus": "not subscribable",
   "integrationProviderConfigRequired": "Provider and config ID are required",

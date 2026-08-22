@@ -105,6 +105,8 @@ TWITCH_CLIENT_ID=your_twitch_client_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_api_key
 OPENWEATHER_API_KEY=your_weather_api_key
+TMDB_API_TOKEN=your_tmdb_api_read_access_token
+# Alternatively: TMDB_API_KEY=your_tmdb_v3_api_key
 
 # Twitch (optional jitter to avoid thundering herd on startup; milliseconds)
 TWITCH_STARTUP_JITTER_MS=8000
@@ -420,7 +422,7 @@ To prevent accidental secret leaks and ensure consistent `.env` formatting:
 
 Rotation steps when a secret is exposed:
 - Immediately rotate the following (as applicable):
-  - DISCORD_BOT_TOKEN, DISCORD_CLIENT_SECRET, JWT_SECRET, SERVICE_API_TOKEN, TWITCH_CLIENT_SECRET, YOUTUBE_API_KEY, RIOT_* keys, OPENWEATHER_API_KEY, POSTGRES_PASSWORD
+  - DISCORD_BOT_TOKEN, DISCORD_CLIENT_SECRET, JWT_SECRET, SERVICE_API_TOKEN, TWITCH_CLIENT_SECRET, YOUTUBE_API_KEY, RIOT_* keys, OPENWEATHER_API_KEY, TMDB_API_TOKEN, TMDB_API_KEY, POSTGRES_PASSWORD
 - Update DATABASE_URL and any service configs using the rotated secret.
 - Redeploy services; verify they start cleanly.
 - Clear affected Redis session/cache keys or restart with an empty Redis data volume if a dashboard refresh session was exposed.

@@ -35,6 +35,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "League module"
     },
     {
+        "name": "media",
+        "title": "Media",
+        "description": "Movie and TV show lookup commands"
+    },
+    {
         "name": "game-night",
         "title": "Nights",
         "description": "Game and movie night nomination commands"
@@ -532,6 +537,22 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
             "nl": {
                 "name": "tft-statistieken",
                 "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+            }
+        }
+    },
+    {
+        "name": "media",
+        "description": "Search for movies and TV shows",
+        "module": "media",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "media",
+                "description": "Zoek films en tv-series"
             }
         }
     },
@@ -1586,6 +1607,31 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                     "nl": {
                         "name": "tft-statistieken",
                         "description": "Toon TFT-rangstatistieken via Riot ID of gekoppelde gebruiker"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "media",
+            "title": "Media",
+            "description": "Movie and TV show lookup commands"
+        },
+        "commands": [
+            {
+                "name": "media",
+                "description": "Search for movies and TV shows",
+                "module": "media",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "media",
+                        "description": "Zoek films en tv-series"
                     }
                 }
             }

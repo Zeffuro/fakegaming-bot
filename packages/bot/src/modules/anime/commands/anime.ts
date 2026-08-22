@@ -18,6 +18,8 @@ import {
     isAniListSubscribable,
     mapAniListTitleToInput,
     searchAniListAnime,
+    searchAniListAnimePage,
+    type AniListFailure,
     type AniListSeason,
     type AniListSeasonScope,
     type AniListTitle,
@@ -292,7 +294,11 @@ async function executeSearch(interaction: ChatInputCommandInteraction, locale: S
     const input = interaction.options.getString('title', true);
     const selectedId = parseAniListChoice(input);
     if (!selectedId) {
-        const results = await searchAniListAnime(input);
+        const { items: results, failure } = await searchAniListAnimePage(input);
+        if (failure) {
+            await interaction.reply({ content: formatAniListFailure(failure, locale), flags: MessageFlags.Ephemeral });
+            return;
+        }
         for (const result of results.slice(0, 10)) {
             await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(result));
         }
@@ -314,6 +320,13 @@ async function executeSearch(interaction: ChatInputCommandInteraction, locale: S
         embeds: [buildAnimeEmbed(anime, locale)],
         components: [buildAnimeActionRow(anime.id, locale)],
     });
+}
+
+function formatAniListFailure(failure: AniListFailure, locale: SupportedOutputLocale): string {
+    if (failure.kind === 'rate-limited') {
+        return runtimeText(locale, 'anime', 'anilistRateLimited');
+    }
+    return runtimeText(locale, 'anime', 'anilistUnavailable');
 }
 
 async function executeSubscribe(interaction: ChatInputCommandInteraction, locale: SupportedOutputLocale): Promise<void> {

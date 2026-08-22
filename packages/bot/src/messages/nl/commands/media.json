@@ -1,0 +1,27 @@
+{
+    "media": {
+        "name": "media",
+        "description": "Zoek films en tv-series",
+        "options": {
+            "search": {
+                "name": "zoeken",
+                "description": "Zoek op TMDB naar een film of tv-serie",
+                "options": {
+                    "query": {
+                        "name": "zoekopdracht",
+                        "description": "Titel van een film of tv-serie"
+                    },
+                    "type": {
+                        "name": "type",
+                        "description": "Beperk resultaten tot films of tv-series",
+                        "choices": {
+                            "all": "Alles",
+                            "movie": "Films",
+                            "tv": "Tv-series"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

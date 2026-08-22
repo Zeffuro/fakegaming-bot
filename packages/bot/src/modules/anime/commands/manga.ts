@@ -9,6 +9,7 @@ import {
     getAniListMangaById,
     mapAniListTitleToInput,
     searchAniListManga,
+    searchAniListMangaPage,
     type AniListTitle,
 } from '@zeffuro/fakegaming-common/anime';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
@@ -45,7 +46,12 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const input = interaction.options.getString('title', true);
     const selectedId = parseAniListChoice(input);
     if (!selectedId) {
-        const results = await searchAniListManga(input);
+        const { items: results, failure } = await searchAniListMangaPage(input);
+        if (failure) {
+            const key = failure.kind === 'rate-limited' ? 'anilistRateLimited' : 'anilistUnavailable';
+            await interaction.reply({ content: runtimeText(locale, 'anime', key), flags: MessageFlags.Ephemeral });
+            return;
+        }
         for (const result of results.slice(0, 10)) {
             await cacheManga(result);
         }

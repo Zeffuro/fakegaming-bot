@@ -9,6 +9,7 @@ import enBluesky from '../messages/en/commands/bluesky.json' with { type: 'json'
 import enGameNight from '../messages/en/commands/game-night.json' with { type: 'json' };
 import enGeneral from '../messages/en/commands/general.json' with { type: 'json' };
 import enLeague from '../messages/en/commands/league.json' with { type: 'json' };
+import enMedia from '../messages/en/commands/media.json' with { type: 'json' };
 import enNotes from '../messages/en/commands/notes.json' with { type: 'json' };
 import enPatchnotes from '../messages/en/commands/patchnotes.json' with { type: 'json' };
 import enQuotes from '../messages/en/commands/quotes.json' with { type: 'json' };
@@ -23,6 +24,7 @@ import nlBluesky from '../messages/nl/commands/bluesky.json' with { type: 'json'
 import nlGameNight from '../messages/nl/commands/game-night.json' with { type: 'json' };
 import nlGeneral from '../messages/nl/commands/general.json' with { type: 'json' };
 import nlLeague from '../messages/nl/commands/league.json' with { type: 'json' };
+import nlMedia from '../messages/nl/commands/media.json' with { type: 'json' };
 import nlNotes from '../messages/nl/commands/notes.json' with { type: 'json' };
 import nlPatchnotes from '../messages/nl/commands/patchnotes.json' with { type: 'json' };
 import nlQuotes from '../messages/nl/commands/quotes.json' with { type: 'json' };
@@ -42,9 +44,9 @@ interface CommandCatalogNode {
 type CommandCatalog = Readonly<Record<string, CommandCatalogNode>>;
 
 const COMMAND_CATALOGS = {
-    en: Object.assign({}, enAnime, enBirthdays, enBluesky, enGameNight, enGeneral, enLeague, enNotes,
+    en: Object.assign({}, enAnime, enBirthdays, enBluesky, enGameNight, enGeneral, enLeague, enMedia, enNotes,
         enPatchnotes, enQuotes, enReminders, enSteam, enTikTok, enTwitch, enYouTube),
-    nl: Object.assign({}, nlAnime, nlBirthdays, nlBluesky, nlGameNight, nlGeneral, nlLeague, nlNotes,
+    nl: Object.assign({}, nlAnime, nlBirthdays, nlBluesky, nlGameNight, nlGeneral, nlLeague, nlMedia, nlNotes,
         nlPatchnotes, nlQuotes, nlReminders, nlSteam, nlTikTok, nlTwitch, nlYouTube),
 } satisfies Readonly<Record<'en' | NonDefaultOutputLocale, CommandCatalog>>;
 

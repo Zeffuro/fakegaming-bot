@@ -1,0 +1,27 @@
+{
+    "media": {
+        "name": "media",
+        "description": "Search for movies and TV shows",
+        "options": {
+            "search": {
+                "name": "search",
+                "description": "Search TMDB for a movie or TV show",
+                "options": {
+                    "query": {
+                        "name": "query",
+                        "description": "Movie or TV show title"
+                    },
+                    "type": {
+                        "name": "type",
+                        "description": "Limit results to movies or TV shows",
+                        "choices": {
+                            "all": "All",
+                            "movie": "Movies",
+                            "tv": "TV shows"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

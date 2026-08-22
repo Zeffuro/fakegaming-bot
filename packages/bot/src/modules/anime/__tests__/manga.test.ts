@@ -16,6 +16,7 @@ vi.mock('@zeffuro/fakegaming-common/anime', async (importOriginal) => {
         getAniListMangaById: vi.fn(),
         mapAniListTitleToInput: vi.fn((title: AniListTitle) => ({ anilistId: title.id })),
         searchAniListManga: vi.fn(),
+        searchAniListMangaPage: vi.fn(),
         searchAniListMedia: vi.fn(),
     };
 });
@@ -44,6 +45,7 @@ async function getAnimeMocks() {
     return {
         getAniListMangaById: vi.mocked(anime.getAniListMangaById),
         searchAniListManga: vi.mocked(anime.searchAniListManga),
+        searchAniListMangaPage: vi.mocked(anime.searchAniListMangaPage),
         searchAniListMedia: vi.mocked(anime.searchAniListMedia),
     } as const;
 }
@@ -68,13 +70,13 @@ describe('manga command', () => {
     });
 
     it('searches manga titles and replies with lookup-only results', async () => {
-        const { searchAniListManga } = await getAnimeMocks();
-        searchAniListManga.mockResolvedValue([mangaResult]);
+        const { searchAniListMangaPage } = await getAnimeMocks();
+        searchAniListMangaPage.mockResolvedValue({ items: [mangaResult], pageInfo: {} });
         const { command, interaction, upsertTitle } = await setupMangaCommand();
 
         await command.execute(interaction as ChatInputCommandInteraction);
 
-        expect(searchAniListManga).toHaveBeenCalledWith('solo leveling');
+        expect(searchAniListMangaPage).toHaveBeenCalledWith('solo leveling');
         expect(upsertTitle).toHaveBeenCalledWith({ anilistId: mangaResult.id });
         expectReplyHasEmbed(interaction, { titleEquals: 'Manga search: solo leveling', descriptionContains: 'Solo Leveling' });
         expect((interaction.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]).toMatchObject({ components: [] });
@@ -118,8 +120,8 @@ describe('manga command', () => {
     });
 
     it('uses stored Dutch locale for runtime output and autocomplete labels', async () => {
-        const { searchAniListManga, searchAniListMedia } = await getAnimeMocks();
-        searchAniListManga.mockResolvedValue([mangaResult]);
+        const { searchAniListMangaPage, searchAniListMedia } = await getAnimeMocks();
+        searchAniListMangaPage.mockResolvedValue({ items: [mangaResult], pageInfo: {} });
         searchAniListMedia.mockResolvedValue([mangaResult]);
         const { command, interaction } = await setupMangaCommand('solo leveling', 'nl');
 
@@ -135,5 +137,21 @@ describe('manga command', () => {
         expect(autocompleteInteraction.respond).toHaveBeenCalledWith([
             expect.objectContaining({ name: 'Solo Leveling (Zuid-Korea - Manhwa - Afgerond)' }),
         ]);
+    });
+
+    it('distinguishes an AniList outage from an empty search', async () => {
+        const { searchAniListMangaPage } = await getAnimeMocks();
+        searchAniListMangaPage.mockResolvedValue({
+            items: [],
+            pageInfo: {},
+            failure: { kind: 'unavailable', status: 403, retryAfterSeconds: null },
+        });
+        const { command, interaction } = await setupMangaCommand();
+
+        await command.execute(interaction as ChatInputCommandInteraction);
+
+        expectEphemeralReply(interaction, {
+            equals: 'AniList is temporarily unavailable. Anime and manga search should work again when its API is restored.',
+        });
     });
 });

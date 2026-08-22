@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 63 commands; 58 slash; 2 user context; 3 message context.
+Total: 64 commands; 59 slash; 2 user context; 3 message context.
 
 ## Anime
 
@@ -56,6 +56,12 @@ Total: 63 commands; 58 slash; 2 user context; 3 message context.
 | Slash | `/riot-links` | Manage linked Riot accounts | All users |
 | Slash | `/tft-history` | Get recent Teamfight Tactics match history by Riot ID or linked user | All users |
 | Slash | `/tft-stats` | Get Teamfight Tactics ranked stats by Riot ID or linked user | All users |
+
+## Media
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/media` | Search for movies and TV shows | All users |
 
 ## Nights
 

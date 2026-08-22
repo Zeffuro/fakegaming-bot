@@ -447,6 +447,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manage-twitch-streams`|Slash|List, test, pause, resume, or remove Twitch stream notifications|Administrator|
 |`/manage-youtube-channels`|Slash|List, test, pause, resume, or remove YouTube video notifications|Administrator|
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
+|`/media`|Slash|Search for movies and TV shows|All users|
 |`/night`|Slash|Nominate and vote for a game or movie night|All users|
 |`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
 |`/occupy-channel`|Slash|Keep a voice channel occupied while the bot is online|Administrator|

@@ -13,6 +13,8 @@
     "never": "Never",
     "nextEpisode": "Next: episode",
     "noAnimeFoundFor": "No anime found for `{query}`.",
+    "anilistUnavailable": "AniList is temporarily unavailable. Anime and manga search should work again when its API is restored.",
+    "anilistRateLimited": "AniList is receiving too many requests right now. Try the search again in a minute.",
     "noMediaFound": "No {mediaType} found for `{query}`.",
     "noHealthRecord": "No health record has been recorded yet for {target} for **{title}**. The next worker poll will populate it.",
     "noMangaFoundFor": "No manga found for `{query}`.",

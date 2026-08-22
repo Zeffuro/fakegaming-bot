@@ -46,6 +46,7 @@ Direct command helper services in `src/services/`:
 
 - `riotService.ts` - Riot account, League, and TFT API access
 - `weatherService.ts` - OpenWeather/Open-Meteo weather lookup and fallback
+- `tmdbService.ts` - Optional TMDB movie and TV search for `/media`
 
 Scheduled notification delivery lives in `packages/api/src/jobs/`.
 
@@ -96,7 +97,12 @@ TWITCH_CLIENT_ID=your_twitch_id
 TWITCH_CLIENT_SECRET=your_twitch_secret
 YOUTUBE_API_KEY=your_youtube_key
 OPENWEATHER_API_KEY=your_weather_key
+TMDB_API_TOKEN=your_tmdb_api_read_access_token
 ```
+
+`TMDB_API_TOKEN` is optional unless `/media search` is used. Create a TMDB API
+Read Access Token in the account API settings. The shorter v3 API key is also
+accepted in `TMDB_API_TOKEN`, or it can be configured as `TMDB_API_KEY`.
 
 See [ENVIRONMENT.md](../../ENVIRONMENT.md) for full configuration guide.
 

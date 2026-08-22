@@ -90,11 +90,31 @@ export interface AniListPageInfo {
 export interface AniListPageResult<T> {
     items: T[];
     pageInfo: AniListPageInfo;
+    failure?: AniListFailure;
+}
+
+export type AniListFailureKind = 'rate-limited' | 'request-failed' | 'unavailable';
+
+export interface AniListFailure {
+    kind: AniListFailureKind;
+    status: number | null;
+    retryAfterSeconds: number | null;
 }
 
 interface GraphQlResponse<T> {
     data?: T;
     errors?: Array<{ message?: string; status?: number }>;
+}
+
+class AniListRequestError extends Error {
+    constructor(
+        message: string,
+        readonly status: number,
+        readonly retryAfterSeconds: number | null,
+    ) {
+        super(message);
+        this.name = 'AniListRequestError';
+    }
 }
 
 const titleFields = `
@@ -214,12 +234,30 @@ async function anilistRequest<T>(query: string, variables: Record<string, unknow
     if (!response.ok || body.errors?.length) {
         const retryAfter = response.headers.get('retry-after');
         const message = body.errors?.map((err) => err.message).filter(Boolean).join('; ') || response.statusText;
-        throw new Error(`AniList request failed (${response.status})${retryAfter ? ` retry-after=${retryAfter}` : ''}: ${message}`);
+        const graphQlStatus = body.errors?.find(error => typeof error.status === 'number')?.status;
+        const status = graphQlStatus ?? response.status;
+        const retryAfterSeconds = retryAfter === null ? null : Number.parseInt(retryAfter, 10);
+        throw new AniListRequestError(
+            `AniList request failed (${status})${retryAfter ? ` retry-after=${retryAfter}` : ''}: ${message}`,
+            status,
+            Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : null,
+        );
     }
     if (!body.data) {
         throw new Error('AniList response did not include data.');
     }
     return body.data;
+}
+
+function describeAniListFailure(error: unknown): AniListFailure {
+    if (error instanceof AniListRequestError) {
+        return {
+            kind: error.status === 403 ? 'unavailable' : error.status === 429 ? 'rate-limited' : 'request-failed',
+            status: error.status,
+            retryAfterSeconds: error.retryAfterSeconds,
+        };
+    }
+    return { kind: 'request-failed', status: null, retryAfterSeconds: null };
 }
 
 function normalizePage(value: number | undefined, fallback: number): number {
@@ -300,7 +338,11 @@ export async function searchAniListMediaPage(
         };
     } catch (err) {
         log.warn({ err, search: query, type }, 'AniList media search failed');
-        return { items: [], pageInfo: { currentPage: normalizedPage, hasNextPage: false, perPage: normalizedPerPage } };
+        return {
+            items: [],
+            pageInfo: { currentPage: normalizedPage, hasNextPage: false, perPage: normalizedPerPage },
+            failure: describeAniListFailure(err),
+        };
     }
 }
 
@@ -381,7 +423,11 @@ export async function getAniListSeasonAnimePage(
         };
     } catch (err) {
         log.warn({ err, season, seasonYear, formats, statuses }, 'AniList season lookup failed');
-        return { items: [], pageInfo: { currentPage: normalizedPage, hasNextPage: false, perPage: normalizedPerPage } };
+        return {
+            items: [],
+            pageInfo: { currentPage: normalizedPage, hasNextPage: false, perPage: normalizedPerPage },
+            failure: describeAniListFailure(err),
+        };
     }
 }
 

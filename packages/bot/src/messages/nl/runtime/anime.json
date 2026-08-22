@@ -13,6 +13,8 @@
     "never": "Nooit",
     "nextEpisode": "Volgende: aflevering",
     "noAnimeFoundFor": "Geen anime gevonden voor `{query}`.",
+    "anilistUnavailable": "AniList is tijdelijk niet beschikbaar. Anime en manga zoeken werkt weer zodra de API is hersteld.",
+    "anilistRateLimited": "AniList ontvangt momenteel te veel verzoeken. Probeer over een minuut opnieuw te zoeken.",
     "noMediaFound": "Geen {mediaType} gevonden voor `{query}`.",
     "noHealthRecord": "Er is nog geen status vastgelegd voor {target} voor **{title}**. De volgende controle vult deze in.",
     "noMangaFoundFor": "Geen manga gevonden voor `{query}`.",

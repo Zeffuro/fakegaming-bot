@@ -307,11 +307,17 @@ router.get('/calendar.ics', validateQuery(calendarTokenQuerySchema), async (req,
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       503:
+ *         description: AniList is temporarily unavailable
  */
 router.get('/search', jwtAuth, validateQuery(searchQuerySchema), async (req, res) => {
     const { q, type, page = 1, perPage = 10 } = req.query as unknown as z.infer<typeof searchQuerySchema>;
     const mediaType = parseAniListMediaType(type);
-    const { items: results, pageInfo } = await searchAniListMediaPage(q, mediaType, page, perPage);
+    const { items: results, pageInfo, failure } = await searchAniListMediaPage(q, mediaType, page, perPage);
+    if (failure) {
+        res.status(503).json({ error: apiText(requestLocale(req), 'animeProviderUnavailable') });
+        return;
+    }
     for (const media of results.slice(0, 10)) {
         await getConfigManager().animeManager.titles.upsertTitle(mapAniListTitleToInput(media));
     }
