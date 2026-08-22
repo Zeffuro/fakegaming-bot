@@ -1,0 +1,83 @@
+{
+  "commands": {
+    "eyebrow": "Commands",
+    "title": "Command management",
+    "description": "Enable or disable bot modules and individual commands while keeping each module's contents visible.",
+    "enabled": "Commands enabled",
+    "modulesDisabled": "Modules disabled",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "search": "Search commands",
+    "showingOne": "Showing 1 command",
+    "showingMany": "Showing {count} commands",
+    "noMatch": "No commands match your search.",
+    "moduleDisabled": "Module disabled",
+    "enabledCount": "{enabled}/{total} enabled",
+    "expandModule": "Expand {module}",
+    "collapseModule": "Collapse {module}",
+    "toggleModule": "Enable or disable the {module} module",
+    "toggleCommand": "Enable or disable {command}",
+    "module": {
+      "anime": {
+        "title": "Anime",
+        "description": "Anime commands"
+      },
+      "birthdays": {
+        "title": "Birthdays",
+        "description": "Birthday commands"
+      },
+      "bluesky": {
+        "title": "Bluesky",
+        "description": "Bluesky commands"
+      },
+      "gameNight": {
+        "title": "Nights",
+        "description": "Game and movie night commands"
+      },
+      "general": {
+        "title": "General",
+        "description": "General commands"
+      },
+      "league": {
+        "title": "League",
+        "description": "League of Legends and Teamfight Tactics commands"
+      },
+      "notes": {
+        "title": "Notes",
+        "description": "Personal note commands"
+      },
+      "patchnotes": {
+        "title": "Patch Notes",
+        "description": "Patch note commands"
+      },
+      "quotes": {
+        "title": "Quotes",
+        "description": "Quote commands"
+      },
+      "reminders": {
+        "title": "Reminders",
+        "description": "Reminder commands"
+      },
+      "shared": {
+        "title": "Shared",
+        "description": "Shared commands"
+      },
+      "steam": {
+        "title": "Steam",
+        "description": "Steam game news notification commands"
+      },
+      "tiktok": {
+        "title": "TikTok",
+        "description": "TikTok commands"
+      },
+      "twitch": {
+        "title": "Twitch",
+        "description": "Twitch commands"
+      },
+      "youtube": {
+        "title": "YouTube",
+        "description": "YouTube commands"
+      }
+    }
+  }
+}
