@@ -6,6 +6,12 @@
         "empty": "Geen verjaardagen of herinneringen in de komende {days} dagen.",
         "title": "Kalender voor de komende {days} dagen:"
     },
+    "dashboard": {
+        "serverOnly": "Dashboardlinks werken alleen in een server.",
+        "notConfigured": "De openbare dashboard-URL is niet ingesteld voor deze bot.",
+        "message": "Beheer deze server in het botdashboard:",
+        "open": "Dashboard openen"
+    },
     "help": {
         "userMenu": "Gebruikersmenu",
         "messageMenu": "Berichtenmenu",

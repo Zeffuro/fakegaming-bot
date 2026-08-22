@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import calendar from '../commands/calendar.js';
+import dashboard from '../commands/dashboard.js';
 import help from '../commands/help.js';
 import permissionsBackup from '../commands/permissionsBackup.js';
 import poll from '../commands/poll.js';
@@ -20,7 +21,7 @@ interface LocalizedNode {
     choices?: Array<{ name_localizations?: Record<string, string> | null }>;
 }
 
-const commands = [calendar, help, permissionsBackup, poll, profileCard, question, roll, spin, testNotification, time, weather];
+const commands = [calendar, dashboard, help, permissionsBackup, poll, profileCard, question, roll, spin, testNotification, time, weather];
 
 describe('general command localization metadata', () => {
     it('provides Dutch names and descriptions for every command and option', () => {

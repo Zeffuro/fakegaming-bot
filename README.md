@@ -432,6 +432,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/birthday`|Slash|Show your or another user's birthday|All users|
 |`/birthdays`|Slash|Show upcoming birthdays in this server|All users|
 |`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
+|`/dashboard`|Slash|Open this server in the bot dashboard|All users|
 |`/delete-quote`|Slash|Delete a quote you added or authored|All users|
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|

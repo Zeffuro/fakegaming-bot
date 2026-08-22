@@ -6,6 +6,7 @@ import dutchMessages from '../../../messages/nl/general.json' with { type: 'json
 
 export interface GeneralCopy {
     calendar: { serverOnly: string; birthdays: string; reminders: string; empty: (days: number) => string; title: (days: number) => string };
+    dashboard: { serverOnly: string; notConfigured: string; message: string; open: string };
     help: { userMenu: string; messageMenu: string; available: string; more: string; noDescription: string };
     permissions: {
         serverOnly: string; adminOnly: string; none: string; recent: string; notFound: (id: number) => string;

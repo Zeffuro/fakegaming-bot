@@ -269,6 +269,22 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         }
     },
     {
+        "name": "dashboard",
+        "description": "Open this server in the bot dashboard",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": false,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "name": "dashboard",
+                "description": "Open deze server in het botdashboard"
+            }
+        }
+    },
+    {
         "name": "poll",
         "description": "Create a button poll with live results",
         "module": "general",
@@ -1326,6 +1342,22 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                     "nl": {
                         "name": "kalender",
                         "description": "Toon komende verjaardagen en je herinneringen"
+                    }
+                }
+            },
+            {
+                "name": "dashboard",
+                "description": "Open this server in the bot dashboard",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": false,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "name": "dashboard",
+                        "description": "Open deze server in het botdashboard"
                     }
                 }
             },

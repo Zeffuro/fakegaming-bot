@@ -13,6 +13,10 @@
             }
         }
     },
+    "dashboard": {
+        "name": "dashboard",
+        "description": "Open this server in the bot dashboard"
+    },
     "poll": {
         "name": "poll",
         "description": "Create a button poll with live results",

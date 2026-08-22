@@ -2,6 +2,7 @@
 
 export const help = { name: 'help', description: 'List all available commands and their descriptions.' } as const;
 export const calendar = { name: 'calendar', description: 'Show upcoming birthdays and your reminders' } as const;
+export const dashboard = { name: 'dashboard', description: 'Open this server in the bot dashboard', dm_permission: false } as const;
 export const poll = { name: 'poll', description: 'Create a button poll with live results' } as const;
 export const question = { name: 'question', description: 'Draw a conversation question from a local deck' } as const;
 export const permissionsBackup = { name: 'permissions-backup', description: 'Save and export role, category, and channel permissions', permissions: 'Administrator', default_member_permissions: '8' } as const;
@@ -13,7 +14,7 @@ export const testNotification = { name: 'test-notification', description: 'Send 
 export const time = { name: 'time', description: 'Convert a time into Discord timestamp formats' } as const;
 export const weather = { name: 'weather', description: 'Get the current weather and a short forecast for a specified location' } as const;
 
-export const COMMANDS = [help, calendar, poll, question, permissionsBackup, occupyChannel, profileCard, roll, spin, testNotification, time, weather] as const;
+export const COMMANDS = [help, calendar, dashboard, poll, question, permissionsBackup, occupyChannel, profileCard, roll, spin, testNotification, time, weather] as const;
 
 // Mark as used for type/lint systems
 void COMMANDS;

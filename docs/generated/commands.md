@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 64 commands; 59 slash; 2 user context; 3 message context.
+Total: 65 commands; 60 slash; 2 user context; 3 message context.
 
 ## Anime
 
@@ -33,6 +33,7 @@ Total: 64 commands; 59 slash; 2 user context; 3 message context.
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
 | Slash | `/calendar` | Show upcoming birthdays and your reminders | All users |
+| Slash | `/dashboard` | Open this server in the bot dashboard | All users |
 | Slash | `/help` | List all available commands and their descriptions. | All users |
 | Slash | `/occupy-channel` | Keep a voice channel occupied while the bot is online | Administrator |
 | Slash | `/permissions-backup` | Save and export role, category, and channel permissions | Administrator |

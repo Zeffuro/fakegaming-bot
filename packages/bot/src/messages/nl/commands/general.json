@@ -13,6 +13,10 @@
             }
         }
     },
+    "dashboard": {
+        "name": "dashboard",
+        "description": "Open deze server in het botdashboard"
+    },
     "poll": {
         "name": "peiling",
         "description": "Maak een peiling met knoppen en live resultaten",

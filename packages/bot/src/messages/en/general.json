@@ -6,6 +6,12 @@
         "empty": "No birthdays or reminders in the next {days} days.",
         "title": "Upcoming calendar for the next {days} days:"
     },
+    "dashboard": {
+        "serverOnly": "Dashboard links only work in a server.",
+        "notConfigured": "The public dashboard URL is not configured for this bot.",
+        "message": "Manage this server on the bot dashboard:",
+        "open": "Open dashboard"
+    },
     "help": {
         "userMenu": "User menu",
         "messageMenu": "Message menu",
