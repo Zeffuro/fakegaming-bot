@@ -10,7 +10,6 @@ import {
 export type CommandKind = 'chatInput' | 'user' | 'message';
 
 export interface CommandLocalization {
-    name: string;
     description: string;
 }
 
@@ -33,7 +32,6 @@ export interface ImplementationCommandMetadata {
     default_member_permissions: string | null;
     type: CommandKind;
     localizations: Partial<Record<CommandLocalizationLocale, {
-        name: string | null;
         description: string | null;
     }>>;
     localizationIssues: string[];
@@ -229,12 +227,10 @@ export async function listImplementationCommandMetadata(moduleDir: string): Prom
             if (typeof name !== 'string' || name.length === 0) continue;
             const dmPermission = Reflect.get(json, 'dm_permission');
             const defaultMemberPermissions = Reflect.get(json, 'default_member_permissions');
-            const nameLocalizations = getRecord(Reflect.get(json, 'name_localizations'));
             const descriptionLocalizations = getRecord(Reflect.get(json, 'description_localizations'));
             const localizations = Object.fromEntries(COMMAND_LOCALIZATION_LOCALES.map(locale => [
                 locale,
                 {
-                    name: getNonEmptyString(nameLocalizations?.[locale]),
                     description: getNonEmptyString(descriptionLocalizations?.[locale]),
                 },
             ])) as ImplementationCommandMetadata['localizations'];
@@ -258,9 +254,8 @@ function normalizeCommandLocalizations(value: unknown): CommandLocalizations | n
     const normalized: CommandLocalizations = {};
     for (const locale of COMMAND_LOCALIZATION_LOCALES) {
         const localized = getRecord(localizations?.[locale]);
-        const name = getNonEmptyString(localized?.name);
         const description = getNonEmptyString(localized?.description);
-        if (name && description) normalized[locale] = { name, description };
+        if (description) normalized[locale] = { description };
     }
     return Object.keys(normalized).length > 0 ? normalized : null;
 }
@@ -275,9 +270,8 @@ function loadCatalogCommandLocalizations(moduleDir: string, commandName: string)
         try {
             const catalog = getRecord(JSON.parse(fs.readFileSync(catalogPath, 'utf8')));
             const command = getRecord(catalog?.[commandName]);
-            const name = getNonEmptyString(command?.name);
             const description = getNonEmptyString(command?.description);
-            if (name && description) localizations[locale] = { name, description };
+            if (description) localizations[locale] = { description };
         } catch {
             // The dedicated i18n validator reports malformed translation resources.
         }
@@ -290,16 +284,6 @@ function collectLocalizationIssues(value: unknown, path: string): string[] {
     if (!node) return [`${path}: command metadata is not an object`];
 
     const issues: string[] = [];
-    const name = getNonEmptyString(node.name);
-    const nameLocalizations = getRecord(node.name_localizations);
-    if (name) {
-        for (const locale of COMMAND_LOCALIZATION_LOCALES) {
-            if (!getNonEmptyString(nameLocalizations?.[locale])) {
-                issues.push(`${path}: missing ${commandLocaleLabel(locale)} (${locale}) name localization`);
-            }
-        }
-    }
-
     const description = getNonEmptyString(node.description);
     const descriptionLocalizations = getRecord(node.description_localizations);
     if (description) {

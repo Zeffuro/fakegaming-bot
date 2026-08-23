@@ -25,7 +25,7 @@ interface LocalizedNode {
 }
 
 function assertLocalized(node: LocalizedNode): void {
-    expect(node.name_localizations?.nl, `${node.name} Dutch name`).toBeTruthy();
+    expect(node.name_localizations, `${node.name} localized name`).toBeUndefined();
     if (node.description !== undefined) {
         expect(node.description_localizations?.nl, `${node.name} Dutch description`).toBeTruthy();
     }
@@ -34,7 +34,7 @@ function assertLocalized(node: LocalizedNode): void {
 }
 
 describe('Quotes and Patch Notes localization', () => {
-    it('provides Dutch metadata throughout both command trees', () => {
+    it('keeps names canonical and provides Dutch metadata throughout both command trees', () => {
         const commands = [
             addQuote, deleteQuote, quoteCard, quoteLeaderboard, quotes, randomQuote, saveMessageAsQuote,
             searchQuote, showQuotes, getPatchNotes, managePatchNotes, patchnotesHistory, subscribePatchNotes,

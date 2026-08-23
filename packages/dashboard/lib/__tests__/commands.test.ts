@@ -7,16 +7,15 @@ const command: BotCommand = {
     description: "Save and export permissions",
     localizations: {
         nl: {
-            name: "rechten-back-up",
             description: "Bewaar en exporteer rechten",
         },
     },
 };
 
 describe("getLocalizedBotCommand", () => {
-    it("uses Dutch manifest metadata for Dutch dashboards", () => {
+    it("uses the canonical name with the Dutch description", () => {
         expect(getLocalizedBotCommand(command, "nl")).toEqual({
-            name: "rechten-back-up",
+            name: "permissions-backup",
             description: "Bewaar en exporteer rechten",
         });
     });

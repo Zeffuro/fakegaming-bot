@@ -17,14 +17,9 @@ function getCommandType(data: LoadedCommandData): number {
 function formatHelpLabel(name: string, data: LoadedCommandData, locale: SupportedOutputLocale): string {
     const copy = getGeneralCopy(locale).help;
     const type = getCommandType(data);
-    if (type === ApplicationCommandType.User) return `${copy.userMenu}: ${localizedCommandName(data, name, locale)}`;
-    if (type === ApplicationCommandType.Message) return `${copy.messageMenu}: ${localizedCommandName(data, name, locale)}`;
-    return `/${localizedCommandName(data, name, locale)}`;
-}
-
-function localizedCommandName(data: LoadedCommandData, fallback: string, locale: SupportedOutputLocale): string {
-    const json = data.toJSON?.() as { name_localizations?: Record<string, string> } | undefined;
-    return json?.name_localizations?.[locale] ?? fallback;
+    if (type === ApplicationCommandType.User) return `${copy.userMenu}: ${name}`;
+    if (type === ApplicationCommandType.Message) return `${copy.messageMenu}: ${name}`;
+    return `/${name}`;
 }
 
 function chunkHelpLines(lines: readonly string[], locale: SupportedOutputLocale): string[] {

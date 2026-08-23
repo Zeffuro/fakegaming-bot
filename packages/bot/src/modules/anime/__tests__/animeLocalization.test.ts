@@ -31,7 +31,7 @@ interface LocalizedNode {
 }
 
 function assertLocalized(node: LocalizedNode): void {
-    expect(node.name_localizations?.nl, `${node.name} Dutch name`).toBeTruthy();
+    expect(node.name_localizations, `${node.name} localized name`).toBeUndefined();
     if (node.description !== undefined) {
         expect(node.description_localizations?.nl, `${node.name} Dutch description`).toBeTruthy();
     }
@@ -44,7 +44,7 @@ describe('anime localization', () => {
         vi.clearAllMocks();
     });
 
-    it('provides Dutch metadata for all anime and manga command nodes', () => {
+    it('keeps names canonical and provides Dutch metadata for all anime and manga command nodes', () => {
         assertLocalized(anime.data.toJSON() as LocalizedNode);
         assertLocalized(manga.data.toJSON() as LocalizedNode);
     });

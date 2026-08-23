@@ -97,10 +97,6 @@ async function main() {
                 errors.push(`Command '${c.name}' in module '${c.module}' is missing ${label} metadata.`);
                 continue;
             }
-            const localizedNameError = validateName(localized.name, c.type);
-            if (localizedNameError) {
-                errors.push(`Invalid ${label} name '${localized.name}' for '${c.name}': ${localizedNameError}`);
-            }
             const localizedDescriptionError = validateDescription(localized.description);
             if (localizedDescriptionError) {
                 errors.push(`Invalid ${label} description for '${c.name}': ${localizedDescriptionError}`);

@@ -102,6 +102,37 @@ describe('help command', () => {
         expect(middleIndex).toBeLessThan(zebraIndex);
     });
 
+    it('uses canonical command names with localized descriptions', async () => {
+        const mockCommands = new Collection();
+        mockCommands.set('add-quote', {
+            data: {
+                name: 'add-quote',
+                toJSON: () => ({
+                    name: 'add-quote',
+                    name_localizations: {nl: 'citaat-toevoegen'},
+                    description_localizations: {nl: 'Voeg een citaat toe'},
+                }),
+            },
+        });
+
+        const { command, interaction } = await setupCommandTest(
+            'modules/general/commands/help.js',
+            {
+                interaction: {client: {commands: mockCommands}},
+                managerOverrides: {
+                    guildLocaleConfigManager: {getOutputLocale: vi.fn().mockResolvedValue('nl')},
+                },
+            },
+        );
+
+        await command.execute(interaction as unknown as CommandInteraction);
+
+        expectReplyTextContains(interaction, '/add-quote');
+        expectReplyTextContains(interaction, 'Voeg een citaat toe');
+        const replyPayload = (interaction.reply as unknown as Mock).mock.calls[0][0] as { content: string };
+        expect(replyPayload.content).not.toContain('/citaat-toevoegen');
+    });
+
     it('formats context menu commands and sends long help in chunks', async () => {
         const mockCommands = new Collection();
         mockCommands.set('profile', {

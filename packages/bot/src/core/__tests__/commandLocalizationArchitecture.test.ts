@@ -13,6 +13,16 @@ describe('command localization architecture', () => {
 
         expect(violations).toEqual([]);
     });
+
+    it('keeps canonical command names out of translator-owned catalog values', () => {
+        const commandCatalogRoot = path.join(SOURCE_ROOT, 'messages');
+        const violations = listJsonFiles(commandCatalogRoot)
+            .filter(file => file.includes(`${path.sep}commands${path.sep}`))
+            .flatMap(file => findTranslatableNames(JSON.parse(readFileSync(file, 'utf8')) as unknown)
+                .map(key => `${path.relative(SOURCE_ROOT, file)}:${key}`));
+
+        expect(violations).toEqual([]);
+    });
 });
 
 function listTypeScriptFiles(directory: string): string[] {
@@ -20,5 +30,22 @@ function listTypeScriptFiles(directory: string): string[] {
         const entryPath = path.join(directory, entry.name);
         if (entry.isDirectory()) return listTypeScriptFiles(entryPath);
         return entry.isFile() && entry.name.endsWith('.ts') ? [entryPath] : [];
+    });
+}
+
+function listJsonFiles(directory: string): string[] {
+    return readdirSync(directory, {withFileTypes: true}).flatMap(entry => {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) return listJsonFiles(entryPath);
+        return entry.isFile() && entry.name.endsWith('.json') ? [entryPath] : [];
+    });
+}
+
+function findTranslatableNames(value: unknown, prefix = ''): string[] {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return [];
+    return Object.entries(value).flatMap(([key, nested]) => {
+        const pathKey = prefix ? `${prefix}.${key}` : key;
+        if (key === 'name' && typeof nested === 'string') return [pathKey];
+        return findTranslatableNames(nested, pathKey);
     });
 }

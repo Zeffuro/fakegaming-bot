@@ -82,9 +82,6 @@ async function main(): Promise<void> {
             const expected = command.localizations?.[locale];
             const actual = implementation.localizations[locale];
             const label = `${commandLocaleLabel(locale)} (${locale})`;
-            if (expected?.name !== actual?.name) {
-                mismatches.push(`${command.name}: ${label} implementation name is ${actual?.name ?? 'missing'}, expected ${expected?.name ?? 'missing'}`);
-            }
             if (implementation.type === 'chatInput' && expected?.description !== actual?.description) {
                 mismatches.push(`${command.name}: ${label} implementation description is ${actual?.description ?? 'missing'}, expected ${expected?.description ?? 'missing'}`);
             }

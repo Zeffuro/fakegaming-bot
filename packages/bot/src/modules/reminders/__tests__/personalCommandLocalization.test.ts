@@ -32,13 +32,13 @@ const commands = [
 ];
 
 describe('personal command localization metadata', () => {
-    it('provides Dutch names and descriptions throughout command trees', () => {
+    it('keeps names canonical and provides Dutch descriptions throughout command trees', () => {
         for (const command of commands) assertLocalized(command.data.toJSON() as LocalizedNode);
     });
 });
 
 function assertLocalized(node: LocalizedNode): void {
-    expect(node.name_localizations?.nl, `${node.name} Dutch name`).toBeTruthy();
+    expect(node.name_localizations, `${node.name} localized name`).toBeUndefined();
     if (node.description !== undefined) {
         expect(node.description_localizations?.nl, `${node.name} Dutch description`).toBeTruthy();
     }

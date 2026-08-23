@@ -1,18 +1,14 @@
 {
     "night": {
-        "name": "avond",
         "description": "Nomineer en stem voor een spel- of filmavond",
         "options": {
             "start": {
-                "name": "starten",
                 "description": "Start een spel- of filmavond in dit kanaal",
                 "options": {
                     "name": {
-                        "name": "naam",
                         "description": "Een korte naam voor deze avond"
                     },
                     "type": {
-                        "name": "type",
                         "description": "Kies wat mensen kunnen nomineren",
                         "choices": {
                             "game": "Spelavond",
@@ -20,35 +16,28 @@
                         }
                     },
                     "duration": {
-                        "name": "duur",
                         "description": "Uren voordat een onvoltooide avond verloopt"
                     },
                     "allow-multiple": {
-                        "name": "meerdere-nominaties",
                         "description": "Sta ieder lid toe meerdere nominaties in te dienen"
                     }
                 }
             },
             "nominate": {
-                "name": "nomineren",
                 "description": "Nomineer een keuze voor de actieve avond",
                 "options": {
                     "choice": {
-                        "name": "keuze",
                         "description": "Het spel of de film die je wilt nomineren"
                     }
                 }
             },
             "open": {
-                "name": "openen",
                 "description": "Open de stemming over de nominaties"
             },
             "close": {
-                "name": "sluiten",
                 "description": "Sluit de stemming en kies de winnaar"
             },
             "status": {
-                "name": "status",
                 "description": "Toon de huidige status van de avond"
             }
         }

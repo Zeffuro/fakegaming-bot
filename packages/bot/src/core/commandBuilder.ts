@@ -8,7 +8,6 @@ export interface LocalizedCommandMetadata {
     localizations?: Record<
         NonDefaultOutputLocale,
         {
-            name: string;
             description: string;
         }
     >;
@@ -29,18 +28,18 @@ export function createSlashCommand(
     return attachCommandLocalizations(builder, meta.name, meta.localizations);
 }
 
-export function createUserContextCommand(meta: Pick<LocalizedCommandMetadata, 'name' | 'localizations'>): ContextMenuCommandBuilder {
+export function createUserContextCommand(meta: Pick<LocalizedCommandMetadata, 'name'>): ContextMenuCommandBuilder {
     const builder = new ContextMenuCommandBuilder()
         .setName(meta.name)
         .setType(ApplicationCommandType.User);
-    return attachCommandLocalizations(builder, meta.name, meta.localizations);
+    return attachCommandLocalizations(builder, meta.name);
 }
 
-export function createMessageContextCommand(meta: Pick<LocalizedCommandMetadata, 'name' | 'localizations'>): ContextMenuCommandBuilder {
+export function createMessageContextCommand(meta: Pick<LocalizedCommandMetadata, 'name'>): ContextMenuCommandBuilder {
     const builder = new ContextMenuCommandBuilder()
         .setName(meta.name)
         .setType(ApplicationCommandType.Message);
-    return attachCommandLocalizations(builder, meta.name, meta.localizations);
+    return attachCommandLocalizations(builder, meta.name);
 }
 
 /**

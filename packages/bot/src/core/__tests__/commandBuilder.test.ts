@@ -11,22 +11,19 @@ describe('localized command builders', () => {
         const command = createSlashCommand({
             name: 'test',
             description: 'Test command',
-            localizations: { nl: { name: 'testen', description: 'Testcommando' } },
+            localizations: { nl: { description: 'Testcommando' } },
         }, builder => builder.addStringOption(option => option.setName('value').setDescription('Value')));
         const json = command.toJSON();
-        expect(json.name_localizations?.nl).toBe('testen');
+        expect(json.name_localizations).toBeUndefined();
         expect(json.description_localizations?.nl).toBe('Testcommando');
         expect(json.options?.[0]?.name).toBe('value');
     });
 
-    it('builds context commands with and without translations', () => {
-        const localized = createUserContextCommand({
-            name: 'inspect',
-            localizations: { nl: { name: 'bekijk', description: '' } },
-        }).toJSON();
-        const plain = createMessageContextCommand({ name: 'quote' }).toJSON();
-        expect(localized.name_localizations?.nl).toBe('bekijk');
-        expect(plain.name_localizations).toBeUndefined();
+    it('keeps context command names canonical', () => {
+        const user = createUserContextCommand({ name: 'Inspect' }).toJSON();
+        const message = createMessageContextCommand({ name: 'Save Quote' }).toJSON();
+        expect(user.name_localizations).toBeUndefined();
+        expect(message.name_localizations).toBeUndefined();
     });
 
     it('only accepts boolean testOnly metadata', () => {

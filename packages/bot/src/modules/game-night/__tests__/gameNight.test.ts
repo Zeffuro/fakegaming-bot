@@ -61,15 +61,15 @@ function button(customId: string, userId = 'voter', canManage = false): ButtonIn
 }
 
 describe('Game Night Board command', () => {
-    it('publishes Dutch command, subcommand, and option metadata', () => {
+    it('publishes canonical names with Dutch command, subcommand, and option descriptions', () => {
         const json = gameNightCommand.data.toJSON();
-        expect(json.name_localizations?.nl).toBe('avond');
+        expect(json.name_localizations).toBeUndefined();
         expect(json.description_localizations?.nl).toBeTruthy();
         for (const subcommand of json.options ?? []) {
-            expect(subcommand.name_localizations?.nl).toBeTruthy();
+            expect(subcommand.name_localizations).toBeUndefined();
             expect(subcommand.description_localizations?.nl).toBeTruthy();
             for (const option of 'options' in subcommand ? subcommand.options ?? [] : []) {
-                expect(option.name_localizations?.nl).toBeTruthy();
+                expect(option.name_localizations).toBeUndefined();
                 expect(option.description_localizations?.nl).toBeTruthy();
             }
         }

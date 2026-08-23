@@ -1,6 +1,6 @@
 {
   "quotes": {
-    "title": "Citaten",
+    "title": "Quotes",
     "description": "Zoek, voeg toe en ruim servercitaten op met Discord-ledenzoekfunctie en leesbare bronvermelding.",
     "stats": {
       "stored": "Opgeslagen citaten",
@@ -11,17 +11,17 @@
       "shown": "Getoond"
     },
     "findAdd": {
-      "title": "Citaten zoeken en toevoegen",
+      "title": "Quotes zoeken en toevoegen",
       "description": "Zoek bestaande citaten en voeg daarna nieuwe citaten met een gekoppelde auteur toe."
     },
-    "search": "Citaten, personen of ID's zoeken",
+    "search": "Quotes, personen of ID's zoeken",
     "author": "Auteur",
     "authorPlaceholder": "Typ een naam of bijnaam, of plak een Discord-gebruikers-ID",
     "typeThree": "Typ minstens 3 tekens",
     "noMembers": "Geen leden gevonden",
-    "quote": "Citaat",
+    "quote": "Quote",
     "quotePlaceholder": "Een nieuw citaat toevoegen...",
-    "add": "Citaat toevoegen",
+    "add": "Quotes toevoegen",
     "tags": "Tags",
     "tagsPlaceholder": "grappig raid-avond",
     "tagsHelp": "Scheid tags met spaties of komma's",
@@ -38,8 +38,8 @@
     "contextValue": "Context: {context}",
     "empty": {
       "none": "Nog geen citaten",
-      "filtered": "Geen citaten komen overeen met deze filters",
-      "noneDescription": "Voeg hierboven het eerste citaat toe om het citaatarchief van deze server op te bouwen.",
+      "filtered": "Geen Quotes komen overeen met deze filters",
+      "noneDescription": "Voeg hierboven het eerste quote toe om het citaatarchief van deze server op te bouwen.",
       "filteredDescription": "Pas de zoek- of moderatiestatusfilters aan om meer citaten te tonen."
     },
     "status": {
@@ -53,12 +53,12 @@
     "action": {
       "approve": "Citaat goedkeuren",
       "reject": "Citaat afwijzen",
-      "delete": "Citaat verwijderen",
-      "downloadCard": "Citaatkaart downloaden",
+      "delete": "Quote verwijderen",
+      "downloadCard": "Quote kaart downloaden",
       "downloadProfile": "Profielkaart van auteur downloaden",
-      "approveBeforeDownload": "Keur het citaat goed voordat je de kaart downloadt",
-      "deleteDuplicate": "Dubbel citaat verwijderen",
-      "approveAria": "Citaat {id} goedkeuren",
+      "approveBeforeDownload": "Keur het quote goed voordat je de kaart downloadt",
+      "deleteDuplicate": "Dubbel quote verwijderen",
+      "approveAria": "Quote {id} goedkeuren",
       "rejectAria": "Citaat {id} afwijzen",
       "downloadCardAria": "Citaatkaart {id} downloaden",
       "downloadProfileAria": "Profielkaart van auteur {id} downloaden",

@@ -35,7 +35,7 @@ interface LocalizedNode {
 }
 
 function assertLocalized(node: LocalizedNode): void {
-    expect(node.name_localizations?.nl, `${node.name} Dutch name`).toBeTruthy();
+    expect(node.name_localizations, `${node.name} localized name`).toBeUndefined();
     if (node.description !== undefined) {
         expect(node.description_localizations?.nl, `${node.name} Dutch description`).toBeTruthy();
     }
@@ -57,7 +57,7 @@ describe('social provider localization', () => {
         vi.unstubAllGlobals();
     });
 
-    it('provides Dutch metadata throughout every provider command tree', () => {
+    it('keeps names canonical and provides Dutch metadata throughout every provider command tree', () => {
         const commands = [
             addBlueskyAccount, manageBlueskyAccounts,
             addSteamNews, manageSteamNews,

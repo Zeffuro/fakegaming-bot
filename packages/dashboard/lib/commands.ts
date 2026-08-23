@@ -15,7 +15,7 @@ export function getLocalizedBotCommand(
 ): { name: string; description: string } {
     const localized = command.localizations?.[locale as keyof NonNullable<BotCommand["localizations"]>];
     return {
-        name: localized?.name ?? command.name,
+        name: command.name,
         description: localized?.description ?? command.description,
     };
 }

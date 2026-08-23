@@ -76,7 +76,7 @@ async function main() {
         `// Run: pnpm exec tsx scripts/generate-bot-manifest.ts\n\n` +
         `export interface BotModuleDef { name: string; title: string; description: string; }\n` +
         `export type BotCommandType = 'chatInput' | 'user' | 'message';\n` +
-        `export interface BotCommandLocalization { name: string; description: string; }\n` +
+        `export interface BotCommandLocalization { description: string; }\n` +
         `export type BotCommandLocalizationLocale = ${localizationLocaleUnion};\n` +
         `export interface BotCommand { name: string; description: string; module?: string | null; permissions?: string | null; dm_permission?: boolean | null; default_member_permissions?: string | null; testOnly?: boolean | null; type?: BotCommandType | null; localizations?: Record<BotCommandLocalizationLocale, BotCommandLocalization> | null; }\n` +
         `export interface BotModuleNode { module: BotModuleDef; commands: ReadonlyArray<BotCommand>; }\n\n`;

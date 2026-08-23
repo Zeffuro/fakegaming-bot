@@ -35,7 +35,6 @@ import nlTwitch from '../messages/nl/commands/twitch.json' with { type: 'json' }
 import nlYouTube from '../messages/nl/commands/youtube.json' with { type: 'json' };
 
 interface CommandCatalogNode {
-    readonly name: string;
     readonly description?: string;
     readonly choices?: Readonly<Record<string, string>>;
     readonly options?: Readonly<Record<string, CommandCatalogNode>>;
@@ -57,7 +56,6 @@ const DISCORD_LOCALES = {
 interface DiscordCommandNode {
     name?: string;
     description?: string;
-    name_localizations?: Record<string, string> | null;
     description_localizations?: Record<string, string> | null;
     choices?: Array<{
         name?: string;
@@ -72,7 +70,7 @@ interface SerializableCommand {
     toJSON(): unknown;
 }
 
-type RootLocalizations = Readonly<Record<string, { readonly name: string; readonly description: string }>>;
+type RootLocalizations = Readonly<Record<string, { readonly description: string }>>;
 
 /**
  * Applies package-owned command catalogs at serialization time. Some shared
@@ -96,7 +94,6 @@ function localizeCommandJson(value: unknown, commandName: string, fallbackLocali
     if (!english) {
         const node = value as DiscordCommandNode;
         for (const [locale, copy] of Object.entries(fallbackLocalizations ?? {})) {
-            node.name_localizations = { ...(node.name_localizations ?? {}), [locale]: copy.name };
             if (typeof node.description === 'string' && copy.description) {
                 node.description_localizations = { ...(node.description_localizations ?? {}), [locale]: copy.description };
             }
@@ -109,8 +106,9 @@ function localizeCommandJson(value: unknown, commandName: string, fallbackLocali
 }
 
 function applyNode(node: DiscordCommandNode, english: CommandCatalogNode, path: string): void {
-    if (node.name !== english.name) {
-        throw new Error(`Command catalog name mismatch at ${path}: expected ${String(node.name)}, found ${english.name}`);
+    const expectedName = path.split(' > ').at(-1);
+    if (node.name !== expectedName) {
+        throw new Error(`Command name mismatch at ${path}: expected ${expectedName}, found ${String(node.name)}`);
     }
     if (typeof node.description === 'string' && node.description !== english.description) {
         throw new Error(`Command catalog description mismatch at ${path}`);
@@ -122,7 +120,6 @@ function applyNode(node: DiscordCommandNode, english: CommandCatalogNode, path: 
         const localized = descendCatalog(localizedRoot, path);
         if (!localized) throw new Error(`Missing ${locale} command catalog entry at ${path}`);
 
-        node.name_localizations = { ...(node.name_localizations ?? {}), [discordLocale]: localized.name };
         if (typeof node.description === 'string') {
             if (!localized.description) throw new Error(`Missing ${locale} command description at ${path}`);
             node.description_localizations = {
