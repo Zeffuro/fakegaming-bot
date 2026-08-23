@@ -15,7 +15,7 @@
     },
     "dashboard": {
         "name": "dashboard",
-        "description": "Open deze server in het botdashboard"
+        "description": "Open this server in the bot dashboard"
     },
     "poll": {
         "name": "peiling",
