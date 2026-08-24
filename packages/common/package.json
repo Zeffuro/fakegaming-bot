@@ -208,7 +208,7 @@
     "sequelize-typescript": "^2.1.6",
     "sqlite3": "^6.0.1",
     "umzug": "^3.8.3",
-    "use-intl": "4.13.6",
+    "use-intl": "4.13.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -216,8 +216,8 @@
     "@types/ms": "^2.1.0",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "^10.8.1",
-    "typescript": "^6.0.3",
-    "vite": "8.0.16",
+    "typescript": "^7.0.2",
+    "vite": "8.2.2",
     "vitest": "4.1.11"
   }
 }
