@@ -82,6 +82,7 @@ function actorId(req: Request): string {
  *                 login: { type: string, nullable: true }
  *                 expectedLogin: { type: string, nullable: true }
  *                 jobsEnabled: { type: boolean }
+ *                 chatReplyAuthorized: { type: boolean }
  *                 chatConnected: { type: boolean }
  *                 subscribedChannels: { type: integer }
  *                 lastErrorCode: { type: string, nullable: true }
@@ -211,7 +212,7 @@ router.post('/', validateBody(twitchClipCreateRequestSchema), async (req, res) =
     await safely(req, res, async () => {
         await validateTwitchClipDestination(body.guildId, body.discordChannelId);
         const identity = await resolveTwitchClipBroadcaster(body.twitchUsername);
-        const config = await TwitchClipConfig.create({ ...body, ...identity, aliases: [...new Set(body.aliases)] });
+        const config = await TwitchClipConfig.create({ ...body, ...identity, aliases: [...new Set(body.aliases)], replyTemplate: body.replyTemplate || null });
         await recordAuditEvent(req, { action: 'twitchClip.create', targetType: 'twitchClipConfig', targetId: config.id,
             guildId: config.guildId, metadata: { channelId: config.discordChannelId, twitchUsername: config.twitchUsername } });
         res.status(201).json(config);
@@ -226,7 +227,8 @@ router.put('/:id', validateParams(idSchema), validateBody(twitchClipUpdateReques
     await safely(req, res, async () => {
         await validateTwitchClipDestination(body.guildId ?? config.guildId, body.discordChannelId ?? config.discordChannelId);
         const identity = body.twitchUsername ? await resolveTwitchClipBroadcaster(body.twitchUsername) : {};
-        await config.update({ ...body, ...identity, ...(body.aliases ? { aliases: [...new Set(body.aliases)] } : {}) });
+        await config.update({ ...body, ...identity, ...(body.aliases ? { aliases: [...new Set(body.aliases)] } : {}),
+            ...(body.replyTemplate !== undefined ? { replyTemplate: body.replyTemplate || null } : {}) });
         await recordAuditEvent(req, { action: 'twitchClip.update', targetType: 'twitchClipConfig', targetId: config.id,
             guildId: config.guildId, metadata: { channelId: config.discordChannelId } });
         res.json(config);

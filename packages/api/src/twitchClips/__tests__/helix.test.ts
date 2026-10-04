@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTwitchClipBotToken, invalidateTwitchClipBotToken } from '../botAuth.js';
-import { createTwitchCommandClip, getTwitchCommandClip, twitchClipHelix, TwitchClipApiError } from '../helix.js';
+import { createTwitchCommandClip, getTwitchCommandClip, getTwitchClipCategory, twitchClipHelix, TwitchClipApiError, sendTwitchClipChatMessage } from '../helix.js';
 
 vi.mock('../botAuth.js', () => ({ getTwitchClipBotToken: vi.fn(), invalidateTwitchClipBotToken: vi.fn() }));
 
@@ -13,6 +13,37 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe('clip Helix transport', () => {
+    it('encodes optional titles without changing clip creation permissions', async () => {
+        fetchMock.mockResolvedValueOnce(Response.json({ data: [{ id: 'Clip_slug' }] }, { status: 202 }));
+        await createTwitchCommandClip('123', 30, 'Nice play & win!');
+        const url = new URL(fetchMock.mock.calls[0][0] as string);
+        expect(url.searchParams.get('title')).toBe('Nice play & win!');
+        expect(url.searchParams.get('broadcaster_id')).toBe('123');
+    });
+
+    it('enriches categories once and degrades safely when optional metadata is unavailable', async () => {
+        fetchMock.mockResolvedValueOnce(Response.json({ data: [{ id: '1234', name: 'Minecraft' }] }));
+        expect(await getTwitchClipCategory('1234')).toBe('Minecraft');
+        expect(await getTwitchClipCategory('1234')).toBe('Minecraft');
+        expect(fetchMock).toHaveBeenCalledOnce();
+        expect(await getTwitchClipCategory(undefined)).toBeUndefined();
+        expect(await getTwitchClipCategory('../bad')).toBeUndefined();
+        fetchMock.mockRejectedValueOnce(new Error('network down'));
+        expect(await getTwitchClipCategory('1235')).toBeUndefined();
+        fetchMock.mockResolvedValueOnce(Response.json({ data: [{ id: 'other', name: 'Wrong category' }] }));
+        expect(await getTwitchClipCategory('1236')).toBeUndefined();
+    });
+    it('sends an actual threaded chat reply with the bot user identity and checks dropped messages', async () => {
+        const token = { accessToken: 'user-token', userId: 'bot-id', login: 'clipbot', chatReplyAuthorized: true };
+        fetchMock.mockResolvedValueOnce(Response.json({ data: [{ is_sent: true }] }));
+        await sendTwitchClipChatMessage('123', 'command-id', 'Clip created!', token);
+        expect(fetchMock).toHaveBeenCalledExactlyOnceWith('https://api.twitch.tv/helix/chat/messages', expect.objectContaining({
+            method: 'POST', body: JSON.stringify({ broadcaster_id: '123', sender_id: 'bot-id', message: 'Clip created!', reply_parent_message_id: 'command-id' }),
+        }));
+        fetchMock.mockResolvedValueOnce(Response.json({ data: [{ is_sent: false, drop_reason: { code: 'automod_held' } }] }));
+        await expect(sendTwitchClipChatMessage('123', 'command-id', 'Clip created!', token)).rejects.toThrow('dropped');
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
     it('uses the bot user token and duration when creating a clip', async () => {
         fetchMock.mockResolvedValueOnce(Response.json({ data: [{ id: 'Clip_slug' }] }, { status: 202 }));
         expect(await createTwitchCommandClip('123', 45)).toBe('Clip_slug');

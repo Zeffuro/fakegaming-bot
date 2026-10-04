@@ -29,6 +29,12 @@ export class TwitchClipRequest extends Model {
     @Column(DataType.DATE)
     declare requestedAt: Date;
 
+    @Column(DataType.DATE)
+    declare clipAcceptedAt: Date | null;
+
     @Column(DataType.STRING)
     declare errorCode: string | null;
+
+    @Column(DataType.DATE)
+    declare replyAttemptedAt: Date | null;
 }

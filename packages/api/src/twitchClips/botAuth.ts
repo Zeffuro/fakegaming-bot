@@ -5,6 +5,7 @@ import { TwitchClipBotAuth, TwitchClipOAuthState } from '@zeffuro/fakegaming-com
 
 const BOT_ID = 'default';
 const SCOPES = ['user:read:chat', 'clips:edit'];
+const REPLY_SCOPE = 'user:write:chat';
 const VALIDATION_INTERVAL_MS = 55 * 60 * 1000;
 const STATE_TTL_MS = 10 * 60 * 1000;
 const tokenSchema = z.object({ access_token: z.string().min(1), refresh_token: z.string().min(1), expires_in: z.number().positive() });
@@ -14,6 +15,7 @@ export interface TwitchClipBotToken {
     accessToken: string;
     userId: string;
     login: string;
+    chatReplyAuthorized?: boolean;
 }
 
 export class TwitchClipAuthError extends Error {
@@ -137,14 +139,14 @@ async function loadToken(): Promise<TwitchClipBotToken> {
             });
             identity = await validateIdentity(accessToken);
             if (!identity || identity.user_id !== row.userId) throw new TwitchClipAuthError('identity_mismatch');
-            await row.update({ expiresAt: new Date(Date.now() + identity.expires_in * 1000) });
+            await row.update({ expiresAt: new Date(Date.now() + identity.expires_in * 1000), scopes: identity.scopes });
         } else {
             if (identity.user_id !== row.userId) throw new TwitchClipAuthError('identity_mismatch');
-            await row.update({ expiresAt: new Date(Date.now() + identity.expires_in * 1000) });
+            await row.update({ expiresAt: new Date(Date.now() + identity.expires_in * 1000), scopes: identity.scopes });
         }
         validated = { encryptedToken: row.encryptedAccessToken, at: Date.now(), expectedLogin: config.expectedLogin, clientId: config.clientId };
     }
-    return { accessToken, userId: row.userId, login: row.login };
+    return { accessToken, userId: row.userId, login: row.login, chatReplyAuthorized: row.scopes.includes(REPLY_SCOPE) };
 }
 
 export async function beginTwitchClipBotConnection(actorId: string): Promise<{ url: string; state: string }> {
@@ -153,7 +155,7 @@ export async function beginTwitchClipBotConnection(actorId: string): Promise<{ u
     await TwitchClipOAuthState.destroy({ where: { expiresAt: { [Op.lte]: new Date() } } });
     await TwitchClipOAuthState.create({ id: createHash('sha256').update(state).digest('hex'), actorId, expiresAt: new Date(Date.now() + STATE_TTL_MS) });
     const query = new URLSearchParams({ client_id: config.clientId, redirect_uri: config.redirectUri,
-        response_type: 'code', scope: SCOPES.join(' '), state, force_verify: 'true' });
+        response_type: 'code', scope: [...SCOPES, REPLY_SCOPE].join(' '), state, force_verify: 'true' });
     return { url: `https://id.twitch.tv/oauth2/authorize?${query}`, state };
 }
 
@@ -169,7 +171,7 @@ export async function completeTwitchClipBotConnection(actorId: string, code: str
         if (!identity) throw new TwitchClipAuthError('invalid_token');
         await TwitchClipBotAuth.upsert({ id: BOT_ID, userId: identity.user_id, login: identity.login.toLowerCase(),
             encryptedAccessToken: encrypt(tokens.access_token, 'access'), encryptedRefreshToken: encrypt(tokens.refresh_token, 'refresh'),
-            expiresAt: new Date(Date.now() + identity.expires_in * 1000) });
+            expiresAt: new Date(Date.now() + identity.expires_in * 1000), scopes: identity.scopes });
         invalidateTwitchClipBotToken();
     });
 }
@@ -183,10 +185,10 @@ export async function disconnectTwitchClipBot(): Promise<void> {
 }
 
 export async function getTwitchClipBotStatus() {
-    const row = await TwitchClipBotAuth.findByPk(BOT_ID, { attributes: ['login'] });
+    const row = await TwitchClipBotAuth.findByPk(BOT_ID, { attributes: ['login', 'scopes'] });
     let configured = true;
     try { settings(); } catch { configured = false; }
     return { configured, connected: Boolean(row), login: row?.login ?? null,
         expectedLogin: process.env.TWITCH_BOT_USERNAME?.trim().toLowerCase() || null,
-        jobsEnabled: process.env.JOBS_ENABLED === '1' };
+        jobsEnabled: process.env.JOBS_ENABLED === '1', chatReplyAuthorized: row?.scopes.includes(REPLY_SCOPE) ?? false };
 }

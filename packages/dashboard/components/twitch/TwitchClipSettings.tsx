@@ -1,17 +1,23 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, CardContent, Chip, FormControlLabel, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, CardContent, Chip, Stack, Typography } from "@mui/material";
+import Add from "@mui/icons-material/Add";
+import MovieCreationOutlined from "@mui/icons-material/MovieCreationOutlined";
 import { useGuildFromParams } from "@/components/hooks/useGuildFromParams";
 import { useGuildChannels } from "@/components/hooks/useGuildChannels";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
-import { twitchClipsApi, type TwitchClipConfig, type TwitchClipInput, type TwitchClipPermission } from "@/lib/api/twitchClips";
+import { FeatureHero } from "@/components/dashboard/FeatureHero";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { dashboardAccents, dashboardCardSx, dangerActionButtonSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { twitchClipsApi, type TwitchClipConfig, type TwitchClipInput } from "@/lib/api/twitchClips";
 import { TwitchClipBotConnection } from "./TwitchClipBotConnection";
+import { TwitchClipDialog } from "./TwitchClipDialog";
 
+const accent = dashboardAccents.twitch;
 const defaults: Omit<TwitchClipInput, "guildId"> = {
     twitchUsername: "", discordChannelId: "", command: "!clip", aliases: [], permission: "everyone",
-    cooldownSeconds: 30, durationSeconds: 30, enabled: true,
+    cooldownSeconds: 30, durationSeconds: 30, enabled: true, replyEnabled: true, replyTemplate: null,
 };
-const permissions: TwitchClipPermission[] = ["everyone", "subscribers", "moderators", "owner"];
 
 export function TwitchClipSettings() {
     const { t } = useDashboardI18n();
@@ -21,6 +27,7 @@ export function TwitchClipSettings() {
     const [form, setForm] = useState(defaults);
     const [aliases, setAliases] = useState("");
     const [editing, setEditing] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,20 +39,18 @@ export function TwitchClipSettings() {
         return () => { active = false; };
     }, [guildId, guild, t]);
 
-    const reset = () => { setForm(defaults); setAliases(""); setEditing(null); };
+    const reset = () => { setForm(defaults); setAliases(""); setEditing(null); setDialogOpen(false); };
     const edit = (config: TwitchClipConfig) => {
         setForm({
-            twitchUsername: config.twitchUsername,
-            discordChannelId: config.discordChannelId,
-            command: config.command,
-            aliases: config.aliases,
-            permission: config.permission,
-            cooldownSeconds: config.cooldownSeconds,
-            durationSeconds: config.durationSeconds,
-            enabled: config.enabled,
+            twitchUsername: config.twitchUsername, discordChannelId: config.discordChannelId,
+            command: config.command, aliases: config.aliases, permission: config.permission,
+            cooldownSeconds: config.cooldownSeconds, durationSeconds: config.durationSeconds,
+            enabled: config.enabled, replyEnabled: config.replyEnabled ?? true, replyTemplate: config.replyTemplate ?? null,
         });
         setAliases(config.aliases.join(", "));
         setEditing(config.id);
+        setError(null);
+        setDialogOpen(true);
     };
     const perform = async (operation: () => Promise<unknown>, resetForm = false) => {
         setBusy(true);
@@ -59,56 +64,57 @@ export function TwitchClipSettings() {
         } finally { setBusy(false); }
     };
     const save = () => {
-        const input: TwitchClipInput = { ...form, guildId, twitchUsername: form.twitchUsername.trim().replace(/^@/, ""), command: form.command.trim(), aliases: aliases.split(",").map(value => value.trim()).filter(Boolean) };
+        const input: TwitchClipInput = {
+            ...form, guildId, twitchUsername: form.twitchUsername.trim().replace(/^@/, ""), command: form.command.trim(),
+            aliases: aliases.split(",").map(value => value.trim()).filter(Boolean),
+            replyTemplate: form.replyTemplate?.trim() ? form.replyTemplate : null,
+        };
         if (!input.twitchUsername || !input.discordChannelId || !input.command || !Number.isInteger(input.cooldownSeconds)
             || input.cooldownSeconds < 15 || input.cooldownSeconds > 3600 || !Number.isInteger(input.durationSeconds)
             || input.durationSeconds < 5 || input.durationSeconds > 60) {
             setError(t("clips.invalid"));
             return;
         }
+        if ((input.replyTemplate?.length ?? 0) > 400) {
+            setError(t("clips.replyTooLong"));
+            return;
+        }
         void perform(() => editing ? twitchClipsApi.update(editing, input) : twitchClipsApi.create(input), true);
     };
 
     if (!guild) return null;
-    return <Stack spacing={3}>
-        <Typography variant="h5">{t("clips.title")}</Typography>
-        <Typography color="text.secondary">{t("clips.description")}</Typography>
+    return <Stack spacing={3} sx={{ minWidth: 0 }}>
+        <FeatureHero icon={<MovieCreationOutlined />} eyebrow={t("clips.eyebrow")} title={t("clips.title")}
+            description={t("clips.description")} accent={accent} secondaryAccent={dashboardAccents.settings}
+            actions={<Button variant="contained" startIcon={<Add />} disabled={busy} sx={primaryActionButtonSx(accent)}
+                onClick={() => { reset(); setError(null); setDialogOpen(true); }}>{t("clips.add")}</Button>} />
         <TwitchClipBotConnection guildId={guildId} />
-        {error && <Alert severity="error">{error}</Alert>}
+        {error && !dialogOpen && <Alert severity="error">{error}</Alert>}
         {channelError && <Alert severity="warning">{channelError}</Alert>}
-        <Card variant="outlined"><CardContent><Stack spacing={2}>
-            <Typography variant="h6">{editing ? t("clips.editTitle") : t("clips.addTitle")}</Typography>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField fullWidth label={t("clips.username")} slotProps={{ inputLabel: { shrink: true } }} value={form.twitchUsername} onChange={event => setForm({ ...form, twitchUsername: event.target.value })} />
-                <TextField fullWidth select label={t("clips.destination")} value={form.discordChannelId} onChange={event => setForm({ ...form, discordChannelId: event.target.value })}>
-                    {form.discordChannelId && !channels.some(channel => channel.id === form.discordChannelId) && <MenuItem value={form.discordChannelId}>{form.discordChannelId}</MenuItem>}
-                    {channels.filter(channel => channel.type === 0 || channel.type === 5).map(channel => <MenuItem key={channel.id} value={channel.id}>#{channel.name}</MenuItem>)}
-                </TextField>
+        <FeaturePanel accent={accent} sx={{ p: { xs: 2, md: 3 } }}>
+            <Stack spacing={2} sx={{ position: "relative" }}>
+                <Box><Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50" }}>{t("clips.configuredTitle")}</Typography>
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)", mt: 0.5 }}>{t("clips.configuredHelp")}</Typography></Box>
+                {configs.length === 0 && <Typography sx={{ color: "rgba(255,255,255,0.68)", py: 2 }}>{t("clips.empty")}</Typography>}
+                {configs.map(config => <Card key={config.id} sx={dashboardCardSx(accent)}><CardContent><Stack spacing={1.5}>
+                    <Stack direction="row" useFlexGap spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+                        <Typography variant="h6" sx={{ fontWeight: 850, color: "grey.50", overflowWrap: "anywhere", minWidth: 0 }}>{config.twitchUsername}</Typography>
+                        <Chip size="small" label={config.enabled ? t("clips.enabled") : t("clips.paused")}
+                            sx={{ bgcolor: config.enabled ? "rgba(145,70,255,0.18)" : "rgba(255,255,255,0.07)", color: "grey.100" }} />
+                        <Chip size="small" label={config.replyEnabled === false ? t("clips.replyOff") : config.replyTemplate ? t("clips.replyCustom") : t("clips.replyDefault")}
+                            sx={{ bgcolor: "rgba(255,255,255,0.07)", color: "grey.100" }} />
+                    </Stack>
+                    <Typography sx={{ color: "grey.100", overflowWrap: "anywhere" }}>{config.command}{config.aliases.length ? ` (${config.aliases.join(", ")})` : ""} → {getChannelName(config.discordChannelId)}</Typography>
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.55)" }}>{t("clips.summary", { permission: t(`clips.${config.permission}`), cooldown: config.cooldownSeconds, duration: config.durationSeconds })}</Typography>
+                    <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: "wrap" }}>
+                        <Button variant="outlined" disabled={busy} sx={ghostActionButtonSx(accent)} onClick={() => edit(config)}>{t("clips.edit")}</Button>
+                        <Button variant="outlined" disabled={busy} sx={ghostActionButtonSx(accent)} onClick={() => void perform(() => twitchClipsApi.update(config.id, { enabled: !config.enabled }))}>{config.enabled ? t("clips.pause") : t("clips.resume")}</Button>
+                        <Button variant="outlined" disabled={busy} sx={dangerActionButtonSx} onClick={() => void perform(() => twitchClipsApi.remove(config.id), editing === config.id)}>{t("clips.delete")}</Button>
+                    </Stack>
+                </Stack></CardContent></Card>)}
             </Stack>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField fullWidth label={t("clips.command")} value={form.command} onChange={event => setForm({ ...form, command: event.target.value })} />
-                <TextField fullWidth label={t("clips.aliases")} helperText={t("clips.aliasesHelp")} value={aliases} onChange={event => setAliases(event.target.value)} />
-            </Stack>
-            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField fullWidth select label={t("clips.permission")} value={form.permission} onChange={event => setForm({ ...form, permission: event.target.value as TwitchClipPermission })}>
-                    {permissions.map(permission => <MenuItem key={permission} value={permission}>{t(`clips.${permission}`)}</MenuItem>)}
-                </TextField>
-                <TextField fullWidth type="number" label={t("clips.cooldown")} value={form.cooldownSeconds} slotProps={{ htmlInput: { min: 15, max: 3600 } }} onChange={event => setForm({ ...form, cooldownSeconds: Number(event.target.value) })} />
-                <TextField fullWidth type="number" label={t("clips.duration")} value={form.durationSeconds} slotProps={{ htmlInput: { min: 5, max: 60 } }} onChange={event => setForm({ ...form, durationSeconds: Number(event.target.value) })} />
-            </Stack>
-            <FormControlLabel label={t("clips.enabled")} control={<Switch checked={form.enabled} onChange={event => setForm({ ...form, enabled: event.target.checked })} />} />
-            <Stack direction="row" spacing={1}><Button variant="contained" disabled={busy} onClick={save}>{editing ? t("clips.save") : t("clips.add")}</Button>{editing && <Button disabled={busy} onClick={reset}>{t("clips.cancel")}</Button>}</Stack>
-        </Stack></CardContent></Card>
-        {configs.length === 0 && <Alert severity="info">{t("clips.empty")}</Alert>}
-        {configs.map(config => <Card variant="outlined" key={config.id}><CardContent><Stack spacing={1}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap" }}><Typography variant="h6" sx={{ overflowWrap: "anywhere" }}>{config.twitchUsername}</Typography><Chip size="small" label={config.enabled ? t("clips.enabled") : t("clips.paused")} /></Stack>
-            <Typography sx={{ overflowWrap: "anywhere" }}>{config.command}{config.aliases.length ? ` (${config.aliases.join(", ")})` : ""} → {getChannelName(config.discordChannelId)}</Typography>
-            <Typography variant="body2" color="text.secondary">{t("clips.summary", { permission: t(`clips.${config.permission}`), cooldown: config.cooldownSeconds, duration: config.durationSeconds })}</Typography>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                <Button disabled={busy} onClick={() => edit(config)}>{t("clips.edit")}</Button>
-                <Button disabled={busy} onClick={() => void perform(() => twitchClipsApi.update(config.id, { enabled: !config.enabled }))}>{config.enabled ? t("clips.pause") : t("clips.resume")}</Button>
-                <Button color="error" disabled={busy} onClick={() => void perform(() => twitchClipsApi.remove(config.id), editing === config.id)}>{t("clips.delete")}</Button>
-            </Stack>
-        </Stack></CardContent></Card>)}
+        </FeaturePanel>
+        <TwitchClipDialog open={dialogOpen} editing={editing !== null} form={form} onChange={setForm} aliases={aliases}
+            onAliasesChange={setAliases} channels={channels} busy={busy} error={error} onClose={reset} onSave={save} />
     </Stack>;
 }

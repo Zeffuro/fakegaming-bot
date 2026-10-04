@@ -850,6 +850,22 @@
           "enabled": {
             "default": true,
             "type": "boolean"
+          },
+          "replyEnabled": {
+            "default": true,
+            "type": "boolean"
+          },
+          "replyTemplate": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -861,7 +877,9 @@
           "permission",
           "cooldownSeconds",
           "durationSeconds",
-          "enabled"
+          "enabled",
+          "replyEnabled",
+          "replyTemplate"
         ],
         "additionalProperties": false
       },
@@ -921,6 +939,20 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "replyEnabled": {
+            "type": "boolean"
+          },
+          "replyTemplate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false
@@ -982,6 +1014,20 @@
           "enabled": {
             "type": "boolean"
           },
+          "replyEnabled": {
+            "type": "boolean"
+          },
+          "replyTemplate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -1002,6 +1048,8 @@
           "cooldownSeconds",
           "durationSeconds",
           "enabled",
+          "replyEnabled",
+          "replyTemplate",
           "id",
           "broadcasterId"
         ],
@@ -3768,6 +3816,9 @@
                       "nullable": true
                     },
                     "jobsEnabled": {
+                      "type": "boolean"
+                    },
+                    "chatReplyAuthorized": {
                       "type": "boolean"
                     },
                     "chatConnected": {

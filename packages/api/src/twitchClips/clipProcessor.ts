@@ -2,13 +2,15 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { TwitchClipConfig, TwitchClipRequest } from '@zeffuro/fakegaming-common/models';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
-import { matchesClipCommand, type TwitchClipChatMessage } from './chatMessage.js';
-import { createTwitchCommandClip, getTwitchCommandClip, TwitchClipApiError } from './helix.js';
+import { getClipCommandTitle, matchesClipCommand, type TwitchClipChatMessage } from './chatMessage.js';
+import { createTwitchCommandClip, getTwitchCommandClip, getTwitchClipCategory, TwitchClipApiError } from './helix.js';
 import { getTwitchClipTargets, reserveTwitchClipRequest } from './requestStore.js';
 import { buildTwitchClipPayload } from './clipPayload.js';
 import { resolveGuildOutputLocale } from '../localization/locale.js';
 import { hasRecordedJobNotification, sendJobNotification } from '../jobs/jobNotifications.js';
 import { recordIntegrationFailure, recordIntegrationSuccess } from '../jobs/integrationHealth.js';
+import { replyToTwitchClipRequest } from './chatReply.js';
+import { getTwitchClipDownload } from './clipDownload.js';
 
 const log = getLogger({ name: 'api:twitch-clips' });
 
@@ -55,12 +57,15 @@ export class TwitchClipProcessor {
         if (!request) return;
         try {
             const duration = Math.max(...configs.map(config => config.durationSeconds));
-            const clipId = await createTwitchCommandClip(request.broadcasterId, duration);
-            await request.update({ clipId, status: 'ready' });
+            const title = getClipCommandTitle(message);
+            const clipId = await createTwitchCommandClip(request.broadcasterId, duration, title);
+            await request.update({ clipId, status: 'ready', clipAcceptedAt: new Date() });
+            log.info(this.requestLogContext(request), 'Twitch accepted clip creation');
         } catch (error) {
             const errorCode = error instanceof TwitchClipApiError ? `twitch_http_${error.status}` : 'creation_failed';
             await request.update({ status: 'failed', errorCode });
-            await this.recordFailure(configs, errorCode);
+            await this.recordFailure(configs, errorCode, request);
+            await replyToTwitchClipRequest(request, configs, { errorCode });
             return;
         }
         // Failed queue writes remain recoverable from the persisted clip ID.
@@ -78,21 +83,28 @@ export class TwitchClipProcessor {
         const age = Date.now() - new Date(request.requestedAt).getTime();
         if (age > 24 * 60 * 60_000) {
             await request.update({ status: 'failed', errorCode: 'delivery_expired' });
-            await this.recordFailure(targets, 'delivery_expired');
+            await this.recordFailure(targets, 'delivery_expired', request);
             return;
         }
         try {
             const clip = await getTwitchCommandClip(request.clipId);
             if (!clip) {
-                if (age >= 60_000) {
+                const pollAge = Date.now() - new Date(request.clipAcceptedAt ?? request.requestedAt).getTime();
+                if (pollAge >= 60_000) {
                     await request.update({ status: 'failed', errorCode: 'clip_not_created' });
-                    await this.recordFailure(targets, 'clip_not_created');
+                    await this.recordFailure(targets, 'clip_not_created', request);
+                    await replyToTwitchClipRequest(request, targets, { errorCode: 'clip_not_created' });
                 } else {
+                    log.debug(this.requestLogContext(request), 'Twitch clip publication pending');
                     await this.scheduleDelivery(request.id, 4);
                 }
                 return;
             }
             if (clip.broadcaster_id !== request.broadcasterId) throw new Error('Clip broadcaster mismatch');
+            await replyToTwitchClipRequest(request, targets, { url: `https://clips.twitch.tv/${clip.id}` });
+            [clip.categoryName, clip.downloadUrl] = await Promise.all([
+                getTwitchClipCategory(clip.game_id), getTwitchClipDownload(clip.id),
+            ]);
             const manager = getConfigManager().notificationsManager;
             const notifications = {
                 has: (provider: string, eventId: string) => manager.has(provider, eventId),
@@ -116,7 +128,7 @@ export class TwitchClipProcessor {
                 });
                 if (!sent) {
                     pending = true;
-                    await this.recordFailure([config], 'discord_delivery_failed');
+                    await this.recordFailure([config], 'discord_delivery_failed', request);
                 } else {
                     await recordIntegrationSuccess('twitch', config, {
                         delivered: true, metadata: { clips: true, clipId: clip.id, eventId },
@@ -128,13 +140,22 @@ export class TwitchClipProcessor {
         } catch (error) {
             const errorCode = error instanceof TwitchClipApiError ? `twitch_http_${error.status}` : 'delivery_failed';
             await request.update({ errorCode });
-            await this.recordFailure(targets, errorCode);
+            await this.recordFailure(targets, errorCode, request);
             await this.scheduleDelivery(request.id, 30);
         }
     }
 
-    private async recordFailure(configs: TwitchClipConfig[], errorCode: string): Promise<void> {
-        log.warn({ errorCode }, 'Twitch clip operation failed');
+    private requestLogContext(request: TwitchClipRequest) {
+        return {
+            requestId: request.id, clipId: request.clipId, broadcasterId: request.broadcasterId,
+            requestedAt: new Date(request.requestedAt),
+            clipAcceptedAt: request.clipAcceptedAt ? new Date(request.clipAcceptedAt) : null,
+            pollAgeMs: Date.now() - new Date(request.clipAcceptedAt ?? request.requestedAt).getTime(),
+        };
+    }
+
+    private async recordFailure(configs: TwitchClipConfig[], errorCode: string, request: TwitchClipRequest): Promise<void> {
+        log.warn({ errorCode, ...this.requestLogContext(request) }, 'Twitch clip operation failed');
         await Promise.all(configs.map(config => recordIntegrationFailure('twitch', config, new Error(errorCode), {
             errorCode, metadata: { clips: true },
         })));

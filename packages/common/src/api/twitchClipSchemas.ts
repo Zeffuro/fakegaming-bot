@@ -11,6 +11,11 @@ const fields = {
     cooldownSeconds: z.number().int().min(15).max(3600),
     durationSeconds: z.number().int().min(5).max(60),
     enabled: z.boolean(),
+    replyEnabled: z.boolean(),
+    replyTemplate: z.string().trim().max(400).refine(value => !Array.from(value).some(character => {
+        const code = character.charCodeAt(0);
+        return code < 32 || code === 127;
+    })).nullable(),
 };
 
 export const twitchClipCreateRequestSchema = z.object({
@@ -21,6 +26,8 @@ export const twitchClipCreateRequestSchema = z.object({
     cooldownSeconds: fields.cooldownSeconds.default(30),
     durationSeconds: fields.durationSeconds.default(30),
     enabled: fields.enabled.default(true),
+    replyEnabled: fields.replyEnabled.default(true),
+    replyTemplate: fields.replyTemplate.default(null),
 }).strict();
 
 export const twitchClipUpdateRequestSchema = z.object(fields).partial().strict().refine(value => Object.keys(value).length > 0, {

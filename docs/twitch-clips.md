@@ -56,19 +56,26 @@ client ID, scopes, and continuing validity.
 2. Open **Admin > Twitch** (`/dashboard/admin/twitch`) and choose **Connect Twitch bot**. Authorize as
    the account named in `TWITCH_BOT_USERNAME`. Twitch may ask which account to
    use; signing into the streamer account instead will be rejected.
-3. Approve `user:read:chat` and `clips:edit`. This authorizes receiving chat and
-   creating clips as the bot. The integration does not need to write Twitch chat
-   or moderate it.
+3. Approve `user:read:chat`, `clips:edit`, and `user:write:chat`. This authorizes
+   receiving chat, creating clips, and replying as the bot. Existing connections
+   continue creating clips; reconnect once to authorize chat replies. No new
+   environment variable or streamer authorization is needed for replies.
 4. Open the server's **Twitch** dashboard page. Add the Twitch channel, Discord
    destination, command and optional aliases. Choose who may trigger it, the
    cooldown, and duration. Enable the configuration.
+   Enable chat replies and optionally enter custom success text. Leave it blank
+   for the default in the Discord server's bot-output language (English or Dutch).
+   Custom text stays verbatim and supports `{url}`, `{user}` and `{channel}`.
 5. Allow up to 30 seconds for configuration changes to reach the chat listener.
    When the broadcaster is live with clips enabled, type the command. Clip
    creation is asynchronous; the link normally appears after a short delay.
 
 Commands are case-insensitive and match the first whole word: `!clip Nice play`
-triggers `!clip`, while `!clipper` does not. The rest of the message is currently
-ignored. Subscriber access includes founders, moderators and the broadcaster.
+triggers `!clip`, while `!clipper` does not. Trailing text supplies an optional
+clip title, normalized to one line and limited to 100 Unicode characters.
+Without trailing text, Twitch supplies the default title. Twitch may reject a
+custom title that fails its moderation checks. Subscriber access includes
+founders, moderators and the broadcaster.
 Moderator access includes the broadcaster. Aliases share the channel cooldown.
 Repeated events do not request another clip.
 
@@ -77,6 +84,37 @@ command, one clip is created and delivered to each eligible destination. The
 longest configured cooldown and duration among those matching configurations
 apply to that clip. The cooldown covers the whole Twitch channel, including
 different commands and aliases.
+
+The bot sends one threaded Twitch reply when the clip becomes available, and a
+localized explanation if creation fails (including an offline streamer).
+Commands ignored during cooldown or without permission produce no reply.
+For a shared streamer, one reply-enabled matching configuration is selected by
+ascending configuration ID; its custom text or server language supplies the one
+reply. Discord delivery still uses each destination's own server language.
+Replies use a 400-character template limit and Twitch's 500-character message
+limit; oversized expansion falls back to the default to preserve the clip URL.
+Replies are attempted at most once per request and only during its first two
+minutes. A send timeout or dropped message does not retry or block Discord
+delivery. At most 20 attempts per 30 seconds are made across this bot's channels.
+Each Twitch channel is also limited to one reply attempt per second.
+User-token replies follow Twitch's normal Shared Chat distribution rules.
+
+Discord posts include the clip title, thumbnail, broadcaster, requester,
+duration, category when available, and Twitch's creation timestamp. An original
+broadcast link includes the clip's starting position when Twitch supplies both
+the VOD ID and offset. Twitch can take several minutes to populate that offset;
+posting the clip does not wait for it. Optional category lookup failures do not
+prevent delivery. Metadata labels follow the destination server's bot language.
+
+A temporary signed MP4 download link is added when Twitch's anonymous player
+GraphQL endpoint returns one. This undocumented endpoint is best-effort: timeout,
+schema/query changes, missing media or invalid URLs simply omit the field.
+It uses the public web-player Client-ID, not the application's credentials, and
+adds no environment variables or Cobalt service. Links expire; the normal clip
+URL remains the stable way to watch or reopen the clip. No video files are saved
+by the bot, and thumbnail URLs are not converted into guessed download URLs.
+Twitch's supported download endpoint instead requires `editor:manage:clips` or
+`channel:manage:clips` and corresponding channel permissions.
 
 ## Streamer authorization and managers
 
@@ -102,6 +140,9 @@ commands after the instance operator connects the shared bot account.
 - Twitch must permit the bot account to clip the stream. Disabled clips,
   follower/subscriber clipping restrictions, bans/timeouts, and offline streams
   can cause Twitch to reject creation.
+- Publication polling allows 60 seconds after Twitch accepts creation, including
+  across restarts. If the clip still cannot be retrieved, it is recorded as
+  `clip_not_created`; creation is not repeated automatically.
 - Shared Chat messages originating from another broadcaster are ignored so they
   cannot clip the wrong stream.
 - Configuration, tokens, cooldowns and requests survive restarts. Known clip IDs
@@ -120,4 +161,8 @@ Official references: [Register an app](https://dev.twitch.tv/docs/authentication
 [Chat message authorization](https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channel-chat-message),
 [EventSub WebSockets](https://dev.twitch.tv/docs/eventsub/handling-websocket-events/),
 [Create Clip](https://dev.twitch.tv/docs/api/reference/#create-clip),
+[Send Chat Message](https://dev.twitch.tv/docs/api/reference/#send-chat-message),
 [Chatbot limits](https://dev.twitch.tv/docs/chat/).
+
+Undocumented player-download request reference:
+[Cobalt's Twitch implementation](https://github.com/imputnet/cobalt/blob/main/api/src/processing/services/twitch.js).

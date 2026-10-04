@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchesClipCommand, type ClipCommandConfig, type TwitchClipChatMessage } from '../chatMessage.js';
+import { getClipCommandTitle, matchesClipCommand, type ClipCommandConfig, type TwitchClipChatMessage } from '../chatMessage.js';
 
 const config: ClipCommandConfig = {
     id: 'config', broadcasterId: '123', command: '!clip', aliases: ['!moment'],
@@ -11,6 +11,12 @@ const message: TwitchClipChatMessage = {
 };
 
 describe('Twitch clip command matching', () => {
+    it('uses trailing context as an optional bounded Unicode title', () => {
+        expect(getClipCommandTitle(message)).toBeUndefined();
+        expect(getClipCommandTitle({ ...message, message: { text: '  !moment   Nice\nplay\u0000!  ' } })).toBe('Nice play !');
+        expect(getClipCommandTitle({ ...message, message: { text: `!clip ${'😀'.repeat(101)}` } })).toBe('😀'.repeat(100));
+        expect(getClipCommandTitle({ ...message, message: { text: '!clip   ' } })).toBeUndefined();
+    });
     it('matches a whole command or alias case-insensitively with optional trailing text', () => {
         expect(matchesClipCommand(config, { ...message, message: { text: '  !CLIP nice play' } })).toBe(true);
         expect(matchesClipCommand(config, { ...message, message: { text: '!moment' } })).toBe(true);

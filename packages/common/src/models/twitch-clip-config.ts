@@ -57,4 +57,12 @@ export class TwitchClipConfig extends Model {
     @AllowNull(false)
     @Column(DataType.BOOLEAN)
     declare enabled: boolean;
+
+    @Default(true)
+    @AllowNull(false)
+    @Column(DataType.BOOLEAN)
+    declare replyEnabled: boolean;
+
+    @Column(DataType.TEXT)
+    declare replyTemplate: string | null;
 }

@@ -12,6 +12,8 @@ export interface TwitchClipInput {
     cooldownSeconds: number;
     durationSeconds: number;
     enabled: boolean;
+    replyEnabled: boolean;
+    replyTemplate: string | null;
 }
 
 export interface TwitchClipConfig extends TwitchClipInput {
@@ -26,6 +28,7 @@ export interface TwitchClipBotStatus {
     expectedLogin: string | null;
     jobsEnabled: boolean;
     chatConnected: boolean;
+    chatReplyAuthorized?: boolean;
     subscribedChannels: number;
     lastErrorCode: string | null;
 }

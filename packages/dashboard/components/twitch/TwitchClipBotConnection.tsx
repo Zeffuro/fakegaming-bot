@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Alert, Button, Card, CardContent, Stack, Typography } from "@mui/material";
+import { Alert, Button, Stack, Typography } from "@mui/material";
+import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
+import { dashboardAccents, dangerActionButtonSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useAdminAccess } from "@/components/hooks/useAdmin";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { twitchClipsApi, type TwitchClipBotStatus } from "@/lib/api/twitchClips";
@@ -13,6 +15,8 @@ const runtimeErrorKeys: Record<string, DashboardMessageKey> = {
     chat_subscription_failed: "clips.subscriptionFailed",
     chat_connection_failed: "clips.connectionFailed",
     chat_event_failed: "clips.eventFailed",
+    chat_reply_failed: "clips.replyFailed",
+    chat_reply_authorization_required: "clips.replyReconnect",
 };
 
 export function TwitchClipBotConnection({ guildId }: { guildId?: string }) {
@@ -61,25 +65,28 @@ export function TwitchClipBotConnection({ guildId }: { guildId?: string }) {
         }
     };
 
-    return <Card variant="outlined"><CardContent><Stack spacing={2}>
-        <Typography variant="h6">{t("clips.botTitle")}</Typography>
-        <Typography variant="body2" color="text.secondary">{t("clips.botDescription")}</Typography>
+    const accent = dashboardAccents.twitch;
+    return <FeaturePanel accent={accent} sx={{ p: { xs: 2, md: 3 } }}><Stack spacing={2} sx={{ position: "relative" }}>
+        <Typography variant="h6" sx={{ color: "grey.50", fontWeight: 850 }}>{t("clips.botTitle")}</Typography>
+        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.65)" }}>{t("clips.botDescription")}</Typography>
         {callbackResult === "success" && <Alert severity="success">{t("clips.connectedSuccess")}</Alert>}
         {callbackResult === "error" && <Alert severity="error">{t("clips.oauthError")}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
-        <Button disabled={busy} onClick={() => void refreshStatus()} sx={{ alignSelf: "flex-start" }}>{t("clips.refreshStatus")}</Button>
+        <Button variant="outlined" disabled={busy} onClick={() => void refreshStatus()} sx={{ ...ghostActionButtonSx(accent), alignSelf: "flex-start" }}>{t("clips.refreshStatus")}</Button>
         {status && <>
             <Alert severity={status.connected ? "success" : "warning"}>
                 {status.connected ? t("clips.connected", { login: status.login ?? status.expectedLogin ?? "" }) : t("clips.disconnected")}
             </Alert>
             {status.connected && <Typography variant="body2">{status.chatConnected ? t("clips.chatConnected", { count: status.subscribedChannels }) : t("clips.chatDisconnected")}</Typography>}
+            {status.connected && status.chatReplyAuthorized === false && <Alert severity="warning">{t("clips.replyReconnect")}</Alert>}
             {!status.jobsEnabled && <Alert severity="warning">{t("clips.jobsDisabled")}</Alert>}
-            {status.lastErrorCode && <Alert severity="warning">{t(runtimeErrorKeys[status.lastErrorCode] ?? "clips.runtimeError", { code: status.lastErrorCode })}</Alert>}
+            {status.lastErrorCode && !(status.connected && status.chatReplyAuthorized === false && status.lastErrorCode === "chat_reply_authorization_required")
+                && <Alert severity="warning">{t(runtimeErrorKeys[status.lastErrorCode] ?? "clips.runtimeError", { code: status.lastErrorCode })}</Alert>}
             {!status.configured && <Alert severity="info">{t("clips.notConfigured")}</Alert>}
-            {isAdmin ? <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
-                <Button variant="outlined" disabled={busy || !status.configured} onClick={() => void changeConnection(false)}>{t("clips.connect")}</Button>
-                {status.connected && <Button color="error" disabled={busy} onClick={() => void changeConnection(true)}>{t("clips.disconnect")}</Button>}
+            {isAdmin ? <Stack direction="row" useFlexGap spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Button variant="contained" sx={primaryActionButtonSx(accent)} disabled={busy || !status.configured} onClick={() => void changeConnection(false)}>{status.connected && status.chatReplyAuthorized === false ? t("clips.reconnect") : t("clips.connect")}</Button>
+                {status.connected && <Button variant="outlined" sx={dangerActionButtonSx} disabled={busy} onClick={() => void changeConnection(true)}>{t("clips.disconnect")}</Button>}
             </Stack> : <Typography variant="body2" color="text.secondary">{t("clips.operatorHelp")}</Typography>}
         </>}
-    </Stack></CardContent></Card>;
+    </Stack></FeaturePanel>;
 }

@@ -1169,6 +1169,7 @@ export interface paths {
                             login?: string | null;
                             expectedLogin?: string | null;
                             jobsEnabled?: boolean;
+                            chatReplyAuthorized?: boolean;
                             chatConnected?: boolean;
                             subscribedChannels?: number;
                             lastErrorCode?: string | null;
@@ -5821,6 +5822,10 @@ export interface components {
             durationSeconds: number;
             /** @default true */
             enabled: boolean;
+            /** @default true */
+            replyEnabled: boolean;
+            /** @default null */
+            replyTemplate: string | null;
         };
         TwitchClipUpdateRequest: {
             guildId?: string;
@@ -5833,6 +5838,8 @@ export interface components {
             cooldownSeconds?: number;
             durationSeconds?: number;
             enabled?: boolean;
+            replyEnabled?: boolean;
+            replyTemplate?: string | null;
         };
         TwitchClipConfig: {
             guildId: string;
@@ -5845,6 +5852,8 @@ export interface components {
             cooldownSeconds: number;
             durationSeconds: number;
             enabled: boolean;
+            replyEnabled: boolean;
+            replyTemplate: string | null;
             /** Format: uuid */
             id: string;
             broadcasterId: string;

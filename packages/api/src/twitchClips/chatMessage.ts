@@ -13,6 +13,11 @@ export const twitchClipChatMessageSchema = z.object({
 
 export type TwitchClipChatMessage = z.infer<typeof twitchClipChatMessageSchema>;
 
+export function getClipCommandTitle(message: TwitchClipChatMessage): string | undefined {
+    const title = message.message.text.trim().replace(/^\S+\s*/, '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+    return title ? Array.from(title).slice(0, 100).join('') : undefined;
+}
+
 export interface ClipCommandConfig {
     id: string;
     broadcasterId: string;

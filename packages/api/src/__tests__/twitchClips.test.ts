@@ -40,11 +40,24 @@ describe('Twitch clip configuration API', () => {
         const result = await admin.post('/api/twitchClips', payload);
         expectCreated(result);
         expect(result.body).toMatchObject({ ...payload, twitchUsername: 'streamer', broadcasterId: 'broadcaster-one',
-            command: '!clip', aliases: [], permission: 'everyone', cooldownSeconds: 30, durationSeconds: 30, enabled: true });
+            command: '!clip', aliases: [], permission: 'everyone', cooldownSeconds: 30, durationSeconds: 30, enabled: true,
+            replyEnabled: true, replyTemplate: null });
         expect(result.body.id).toMatch(/^[a-f0-9-]{36}$/);
         expect(result.headers['cache-control']).toBe('private, no-store');
         const duplicate = await admin.post('/api/twitchClips', payload);
         expectConflict(duplicate);
+    });
+
+    it('persists custom reply settings and restores the default when a template is blank', async () => {
+        const created = await admin.post('/api/twitchClips', { ...payload, replyEnabled: false, replyTemplate: '  {user}: {url}  ' });
+        expectCreated(created);
+        expect(created.body).toMatchObject({ replyEnabled: false, replyTemplate: '{user}: {url}' });
+        const saved = await admin.get('/api/twitchClips?guildId=guild-one');
+        expect(saved.body[0]).toMatchObject({ replyEnabled: false, replyTemplate: '{user}: {url}' });
+        const reset = await admin.put(`/api/twitchClips/${created.body.id}`, { replyEnabled: true, replyTemplate: '   ' });
+        expectOk(reset);
+        expect(reset.body).toMatchObject({ replyEnabled: true, replyTemplate: null });
+        expect((await TwitchClipConfig.findByPk(created.body.id))?.replyTemplate).toBeNull();
     });
 
     it('isolates list/update/delete and rejects moving a configuration into an unauthorized guild', async () => {
@@ -66,6 +79,7 @@ describe('Twitch clip configuration API', () => {
     it.each([
         { command: '!clip now' }, { aliases: ['!save clip'] }, { cooldownSeconds: 14 }, { cooldownSeconds: 3601 },
         { durationSeconds: 4 }, { durationSeconds: 61 }, { permission: 'vip' }, { broadcasterId: 'spoofed' },
+        { replyTemplate: 'x'.repeat(401) }, { replyTemplate: 'two\nlines' }, { replyEnabled: 'true' },
     ])('rejects invalid config input %j', async (invalid) => {
         expectBadRequest(await admin.post('/api/twitchClips', { ...payload, ...invalid }));
         expect(fetch).not.toHaveBeenCalled();

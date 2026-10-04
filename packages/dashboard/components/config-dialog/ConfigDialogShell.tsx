@@ -7,7 +7,7 @@ import {
     DialogContent,
     DialogTitle
 } from "@mui/material";
-import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { dashboardDialogPaperSx, ghostActionButtonSx, primaryActionButtonSx, type DashboardSx } from "@/components/dashboard/dashboardTheme";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
 interface ConfigDialogShellProps {
@@ -20,6 +20,7 @@ interface ConfigDialogShellProps {
     submitDisabled?: boolean;
     onSubmit: () => Promise<unknown> | void;
     children: ReactNode;
+    paperSx?: DashboardSx;
 }
 
 export function ConfigDialogShell({
@@ -31,7 +32,8 @@ export function ConfigDialogShell({
     submitLabel,
     submitDisabled = false,
     onSubmit,
-    children
+    children,
+    paperSx,
 }: ConfigDialogShellProps) {
     const { t } = useDashboardI18n();
     const handleSubmit = () => {
@@ -46,7 +48,7 @@ export function ConfigDialogShell({
             fullWidth
             slotProps={{
                 paper: {
-                    sx: dashboardDialogPaperSx(moduleColor)
+                    sx: { ...dashboardDialogPaperSx(moduleColor), ...paperSx }
                 }
             }}
         >

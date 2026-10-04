@@ -1,4 +1,7 @@
 {
+  "twitchClipReplyCreated": "@{user} Clip created! {url}",
+  "twitchClipReplyOffline": "@{user} I can only create clips while the streamer is live.",
+  "twitchClipReplyFailed": "@{user} Twitch could not create this clip. Check that clips are enabled and the bot is allowed to clip.",
   "tiktokViewers": "Viewers",
   "tiktokUptime": "Uptime",
   "tiktokDefaultContent": "Hey @everyone, {username} is now live! {url}",
@@ -60,5 +63,13 @@
   "digestAnimeReminders": "Anime reminders",
   "digestEpisode": " episode {episode}",
   "digestAirs": " airs '<t:'{airingAt}:R>.",
-  "durationHourUnit": "h"
+  "durationHourUnit": "h",
+  "twitchClipBroadcaster": "Broadcaster",
+  "twitchClipDownload": "Direct download",
+  "twitchClipDownloadLink": "Download MP4 (temporary link)",
+  "twitchClipRequester": "Requested by",
+  "twitchClipCategory": "Category",
+  "twitchClipDuration": "Duration",
+  "twitchClipSeconds": "{seconds, number}s",
+  "twitchClipBroadcast": "Original broadcast"
 }

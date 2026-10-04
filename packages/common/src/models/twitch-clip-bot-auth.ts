@@ -1,4 +1,4 @@
-import {Table, Column, Model, DataType, PrimaryKey, AllowNull} from 'sequelize-typescript';
+import {Table, Column, Model, DataType, PrimaryKey, AllowNull, Default} from 'sequelize-typescript';
 
 @Table
 export class TwitchClipBotAuth extends Model {
@@ -25,6 +25,11 @@ export class TwitchClipBotAuth extends Model {
     @AllowNull(false)
     @Column(DataType.DATE)
     declare expiresAt: Date;
+
+    @Default([])
+    @AllowNull(false)
+    @Column(DataType.JSON)
+    declare scopes: string[];
 }
 
 @Table

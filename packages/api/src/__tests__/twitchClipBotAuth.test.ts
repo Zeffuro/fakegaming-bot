@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TwitchClipBotAuth, TwitchClipOAuthState } from '@zeffuro/fakegaming-common/models';
 import { beginTwitchClipBotConnection, completeTwitchClipBotConnection, disconnectTwitchClipBot,
-    getTwitchClipBotToken, invalidateTwitchClipBotToken } from '../twitchClips/botAuth.js';
+    getTwitchClipBotToken, invalidateTwitchClipBotToken, getTwitchClipBotStatus } from '../twitchClips/botAuth.js';
 
 const identity = { client_id: 'client', user_id: '42', login: 'clipbot', scopes: ['user:read:chat', 'clips:edit'], expires_in: 3600 };
 const tokens = { access_token: 'access-secret', refresh_token: 'refresh-secret', expires_in: 3600 };
@@ -28,10 +28,21 @@ async function connect() {
 }
 
 describe('Twitch clip bot OAuth', () => {
-    it('requests only chat reading and clip editing scopes and hashes actor-bound state', async () => {
+    it('reports reply permission and updates it after reconnect without invalidating older clip-only grants', async () => {
+        const fetchMock = vi.fn().mockResolvedValueOnce(response(tokens)).mockResolvedValueOnce(response(identity));
+        vi.stubGlobal('fetch', fetchMock);
+        await connect();
+        expect(await getTwitchClipBotStatus()).toMatchObject({ connected: true, chatReplyAuthorized: false });
+        const withReplies = { ...identity, scopes: [...identity.scopes, 'user:write:chat'] };
+        fetchMock.mockResolvedValueOnce(response(tokens)).mockResolvedValueOnce(response(withReplies)).mockResolvedValueOnce(response(withReplies));
+        await connect();
+        expect(await getTwitchClipBotStatus()).toMatchObject({ connected: true, chatReplyAuthorized: true });
+        expect((await getTwitchClipBotToken()).chatReplyAuthorized).toBe(true);
+    });
+    it('requests chat reading, writing and clip editing scopes and hashes actor-bound state', async () => {
         const { url, state } = await beginTwitchClipBotConnection('admin');
         const params = new URL(url).searchParams;
-        expect(params.get('scope')).toBe('user:read:chat clips:edit');
+        expect(params.get('scope')).toBe('user:read:chat clips:edit user:write:chat');
         expect(params.get('force_verify')).toBe('true');
         const row = await TwitchClipOAuthState.findOne();
         expect(row?.id).not.toBe(state);
@@ -82,7 +93,7 @@ describe('Twitch clip bot OAuth', () => {
         vi.stubGlobal('fetch', fetchMock);
         await connect();
         const results = await Promise.all([getTwitchClipBotToken(), getTwitchClipBotToken(), getTwitchClipBotToken()]);
-        expect(results).toEqual(Array(3).fill({ accessToken: tokens.access_token, userId: '42', login: 'clipbot' }));
+        expect(results).toEqual(Array(3).fill({ accessToken: tokens.access_token, userId: '42', login: 'clipbot', chatReplyAuthorized: false }));
         expect(fetchMock).toHaveBeenCalledTimes(3);
         await getTwitchClipBotToken();
         expect(fetchMock).toHaveBeenCalledTimes(3);
