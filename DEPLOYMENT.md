@@ -2,6 +2,9 @@
 
 This guide covers deploying the fakegaming-bot to production environments.
 
+For optional Twitch chat-command clips, see [Twitch clip setup](docs/twitch-clips.md)
+for the bot account, OAuth redirect, encrypted-token key and dashboard connection.
+
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)

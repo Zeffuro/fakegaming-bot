@@ -6,6 +6,10 @@ import {ServerConfig} from './models/server-config.js';
 import {QuoteConfig} from './models/quote-config.js';
 import {QuoteOfDayConfig} from './models/quote-of-day-config.js';
 import {TwitchStreamConfig} from './models/twitch-stream-config.js';
+import {TwitchClipConfig} from './models/twitch-clip-config.js';
+import {TwitchClipRequest} from './models/twitch-clip-request.js';
+import {TwitchClipCooldown} from './models/twitch-clip-cooldown.js';
+import {TwitchClipBotAuth, TwitchClipOAuthState} from './models/twitch-clip-bot-auth.js';
 import {YoutubeVideoConfig} from './models/youtube-video-config.js';
 import {ReminderConfig} from './models/reminder-config.js';
 import {BirthdayConfig} from './models/birthday-config.js';
@@ -72,6 +76,11 @@ export function getSequelize(useTest = false): Sequelize {
         QuoteConfig,
         QuoteOfDayConfig,
         TwitchStreamConfig,
+        TwitchClipConfig,
+        TwitchClipRequest,
+        TwitchClipCooldown,
+        TwitchClipBotAuth,
+        TwitchClipOAuthState,
         YoutubeVideoConfig,
         ReminderConfig,
         BirthdayConfig,

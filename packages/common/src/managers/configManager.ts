@@ -5,6 +5,7 @@ import {QuoteManager} from './quoteManager.js';
 import {QuoteOfDayManager} from './quoteOfDayManager.js';
 import {ServerManager} from './serverManager.js';
 import {TwitchManager} from './twitchManager.js';
+import {TwitchClipManager} from './twitchClipManager.js';
 import {YoutubeManager} from "./youtubeManager.js";
 import {ReminderManager} from "./reminderManager.js";
 import {BirthdayManager} from "./birthdayManager.js";
@@ -39,6 +40,7 @@ export class ConfigManager {
     quoteOfDayManager = new QuoteOfDayManager();
     serverManager = new ServerManager();
     twitchManager = new TwitchManager();
+    twitchClipManager = new TwitchClipManager();
     youtubeManager = new YoutubeManager();
     reminderManager = new ReminderManager();
     birthdayManager = new BirthdayManager();

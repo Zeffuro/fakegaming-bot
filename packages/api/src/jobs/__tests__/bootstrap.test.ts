@@ -16,6 +16,7 @@ vi.mock('../reminders.js', () => ({ registerRemindersJobs: vi.fn().mockResolvedV
 vi.mock('../patchNotes.js', () => ({ registerPatchNotesJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../patchNotesScan.js', () => ({ registerPatchNotesScanJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../twitch.js', () => ({ registerTwitchJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../twitchClips.js', () => ({ registerTwitchClipJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../youtube.js', () => ({ registerYouTubeJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../tiktok.js', () => ({ registerTikTokJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../bluesky.js', () => ({ registerBlueskyJobs: vi.fn().mockResolvedValue(undefined) }));
@@ -29,6 +30,7 @@ import * as reminders from '../reminders.js';
 import * as patchNotes from '../patchNotes.js';
 import * as patchNotesScan from '../patchNotesScan.js';
 import * as twitch from '../twitch.js';
+import * as twitchClips from '../twitchClips.js';
 import * as youtube from '../youtube.js';
 import * as tiktok from '../tiktok.js';
 import * as bluesky from '../bluesky.js';
@@ -67,6 +69,7 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(patchNotes).registerPatchNotesJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotesScan).registerPatchNotesScanJobs).toHaveBeenCalled();
         expect(vi.mocked(twitch).registerTwitchJobs).toHaveBeenCalled();
+        expect(vi.mocked(twitchClips).registerTwitchClipJobs).toHaveBeenCalled();
         expect(vi.mocked(youtube).registerYouTubeJobs).toHaveBeenCalled();
         expect(vi.mocked(tiktok).registerTikTokJobs).toHaveBeenCalled();
         expect(vi.mocked(bluesky).registerBlueskyJobs).toHaveBeenCalled();

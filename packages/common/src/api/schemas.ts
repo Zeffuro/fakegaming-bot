@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SUPPORTED_OUTPUT_LOCALES } from '../utils/outputLocale.js';
 import { parseHHmmToMinutes } from '../utils/time.js';
+import { twitchClipCreateRequestSchema, twitchClipUpdateRequestSchema, twitchClipConfigResponseSchema } from './twitchClipSchemas.js';
 
 const nonEmptyString = z.string().min(1);
 const recurrenceUnitSchema = z.enum(['day', 'week', 'month']);
@@ -337,6 +338,9 @@ export const youtubeUpdateRequestSchema = z.object({
 });
 
 export const apiRequestSchemas = {
+    TwitchClipCreateRequest: twitchClipCreateRequestSchema,
+    TwitchClipUpdateRequest: twitchClipUpdateRequestSchema,
+    TwitchClipConfig: twitchClipConfigResponseSchema,
     AnimeSubscribeRequest: animeSubscribeRequestSchema,
     AuthLoginRequest: authLoginRequestSchema,
     BirthdayCreateRequest: birthdayCreateRequestSchema,

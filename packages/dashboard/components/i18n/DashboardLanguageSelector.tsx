@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, FormControl, InputLabel, MenuItem, Select, Snackbar } from "@mui/material";
-import { Translate } from "@mui/icons-material";
+import Translate from "@mui/icons-material/Translate";
 import { api } from "@/lib/api-client";
 import { dashboardLocales, isDashboardLocale } from "@/lib/i18n/localeStore";
 import { dashboardLocaleNameKeys } from "@/lib/i18n/messages";

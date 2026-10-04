@@ -1,14 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PgBossJobQueue, resolvePgBossConstructor, toPgBossQueueName } from '../pgBossAdapter.js';
 
 class MockBoss {
     public started = false;
-    public works: Array<{ name: string; fn: (pgJob: any) => Promise<void> | void }> = [];
+    public works: Array<{ name: string; options: { includeMetadata: boolean; batchSize: number }; fn: (pgJobs: any[]) => Promise<void> }> = [];
     public lastPublish: { name: string; data: unknown; options: Record<string, unknown> } | null = null;
     constructor(_cfg?: any) {}
     async start() { this.started = true; }
     async stop() { this.started = false; }
-    work(name: string, fn: (pgJob: any) => Promise<void> | void) { this.works.push({ name, fn }); }
+    work(name: string, options: { includeMetadata: boolean; batchSize: number }, fn: (pgJobs: any[]) => Promise<void>) {
+        this.works.push({ name, options, fn });
+    }
     async publish(name: string, data: unknown, options: Record<string, unknown>) { this.lastPublish = { name, data, options }; return 123; }
 }
 
@@ -32,8 +34,52 @@ describe('PgBossJobQueue (with injected boss)', () => {
         expect(boss.works.length).toBe(1);
         const work = boss.works[0];
         expect(work.name).toBe('test/job');
-        await work.fn({ id: 7, data: { x: 1 }, attempts: 2 });
+        expect(work.options).toEqual({ includeMetadata: true, batchSize: 1 });
+        await work.fn([{ id: '7', data: { x: 1 }, retryCount: 2 }]);
         expect(handled).toEqual(['test:job', { x: 1 }, 2, '7']);
+    });
+
+    it('handles every batch item sequentially with independent payloads and retry metadata', async () => {
+        const handled: string[] = [];
+        let releaseFirst: (() => void) | undefined;
+        const firstFinished = new Promise<void>(resolve => { releaseFirst = resolve; });
+        const handler = vi.fn(async (job) => {
+            handled.push(job.id);
+            if (job.id === 'first') await firstFinished;
+        });
+        queue.on('batch:job', handler);
+        const processing = boss.works[0].fn([
+            { id: 'first', data: { value: 1 }, retryCount: 0 },
+            { id: 'second', data: { value: 2 }, retryCount: 3 },
+        ]);
+        expect(handled).toEqual(['first']);
+        releaseFirst!();
+        await processing;
+        expect(handled).toEqual(['first', 'second']);
+        expect(handler.mock.calls[0][0]).toMatchObject({ id: 'first', name: 'batch:job', data: { value: 1 }, attempts: 0 });
+        expect(handler.mock.calls[1][0]).toMatchObject({ id: 'second', name: 'batch:job', data: { value: 2 }, attempts: 3 });
+    });
+
+    it('propagates handler failures to pg-boss and does not run later batch items', async () => {
+        const failure = new Error('delivery failed');
+        const handled: string[] = [];
+        queue.on('failing:job', async job => {
+            handled.push(job.id);
+            if (job.id === 'failed') throw failure;
+        });
+        await expect(boss.works[0].fn([
+            { id: 'first', data: {}, retryCount: 0 },
+            { id: 'failed', data: {}, retryCount: 1 },
+            { id: 'later', data: {}, retryCount: 0 },
+        ])).rejects.toBe(failure);
+        expect(handled).toEqual(['first', 'failed']);
+    });
+
+    it('accepts an empty batch without inventing a job', async () => {
+        const handler = vi.fn(async () => undefined);
+        queue.on('empty:job', handler);
+        await boss.works[0].fn([]);
+        expect(handler).not.toHaveBeenCalled();
     });
 
     it('schedules jobs with startAfter and singletonKey options', async () => {

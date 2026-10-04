@@ -46,6 +46,8 @@ function shouldForwardDashboardAdminAssertion(apiPath: string): boolean {
         || normalizedPath === '/riotLinks'
         || (normalizedPath.startsWith('/riotLinks/') && normalizedPath !== '/riotLinks/me')
         || normalizedPath === '/twitch/verify'
+        || normalizedPath === '/twitchClips/bot'
+        || (normalizedPath.startsWith('/twitchClips/bot/') && normalizedPath !== '/twitchClips/bot/status')
         || normalizedPath === '/youtube/resolve'
         || normalizedPath === '/tiktok/live'
         || normalizedPath === '/admin'

@@ -71,5 +71,16 @@
   "tiktokConfigNotFound": "TikTok-streamconfiguratie niet gevonden",
   "tiktokSessionAttached": "TikTok-cookiemateriaal is ingesteld, maar dit connectorpad toont geen verloopdatum en voegt geen cookies toe aan livestreamcontroles.",
   "tiktokSessionUnrecognized": "TikTok-cookiemateriaal is ingesteld, maar er is geen waarschijnlijke sessiecookie gevonden en dit connectorpad voegt geen cookies toe aan livestreamcontroles.",
-  "tiktokSessionMissing": "Er is voor dit proces geen TikTok-cookiemateriaal ingesteld."
+  "tiktokSessionMissing": "Er is voor dit proces geen TikTok-cookiemateriaal ingesteld.",
+  "twitchClipBotNotConfigured": "De Twitch-clipbot is niet ingesteld. Vraag een dashboardbeheerder om de instellingen te controleren.",
+  "twitchClipBotNotConnected": "Verbind eerst het Twitch-clipbotaccount.",
+  "twitchClipOAuthStateInvalid": "De Twitch-verbinding is verlopen of ongeldig. Start het verbinden opnieuw.",
+  "twitchClipBotIdentityMismatch": "Gebruik het ingestelde Twitch-botaccount en geef toestemming om chat te lezen en clips te maken.",
+  "twitchClipBotTokenInvalid": "De Twitch-botautorisatie is ongeldig. Verbind het botaccount opnieuw.",
+  "twitchClipProviderUnavailable": "Twitch of Discord is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
+  "twitchClipInvalidChannel": "Kies een tekst- of aankondigingskanaal op deze server dat de bot kan openen.",
+  "twitchClipStreamerNotFound": "Deze Twitch-streamer is niet gevonden.",
+  "twitchClipDuplicate": "Deze server heeft al een clipcommando voor deze Twitch-streamer.",
+  "twitchClipConfigNotFound": "Twitch-clipconfiguratie niet gevonden",
+  "twitchClipTriggeredBy": "Clip aangevraagd door {name}"
 }

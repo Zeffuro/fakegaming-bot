@@ -81,6 +81,7 @@ services:
     environment:
       - PUBLIC_URL=http://api:3001/api
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - TWITCH_REDIRECT_URI=${TWITCH_REDIRECT_URI:-http://localhost:3000/api/auth/twitch/callback}
     depends_on:
       redis:
         condition: service_healthy

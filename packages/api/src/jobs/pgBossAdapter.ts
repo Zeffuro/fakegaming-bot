@@ -3,6 +3,12 @@ import { getLogger } from '@zeffuro/fakegaming-common';
 
 type PgBossConstructor = new (config: { connectionString: string }) => any;
 
+interface PgBossJobWithMetadata<T> {
+    id: string;
+    data: T;
+    retryCount: number;
+}
+
 function readPositiveIntegerEnv(name: string, fallback: number): number {
     const raw = process.env[name];
     if (!raw) return fallback;
@@ -103,15 +109,17 @@ export class PgBossJobQueue implements JobQueue {
         }
         const queueName = toPgBossQueueName(name);
         // Do not await work() to keep synchronous semantics for tests/mocks
-        this.boss.work(queueName, async (pgJob: any) => {
-            const wrapped: Job<T> = {
-                id: String(pgJob.id),
-                name,
-                data: (pgJob && pgJob.data) as T,
-                attempts: Number(pgJob.attempts || 0),
-                async done() { /* pg-boss auto-ack on resolve */ },
-            };
-            await handler(wrapped);
+        this.boss.work(queueName, { includeMetadata: true, batchSize: 1 }, async (pgJobs: PgBossJobWithMetadata<T>[]) => {
+            for (const pgJob of pgJobs) {
+                const wrapped: Job<T> = {
+                    id: pgJob.id,
+                    name,
+                    data: pgJob.data,
+                    attempts: pgJob.retryCount ?? 0,
+                    async done() { /* pg-boss auto-ack on resolve */ },
+                };
+                await handler(wrapped);
+            }
         });
     }
 

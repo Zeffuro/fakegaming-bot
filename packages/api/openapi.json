@@ -788,6 +788,225 @@
           "updatedAt"
         ]
       },
+      "TwitchClipCreateRequest": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "twitchUsername": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 25,
+            "pattern": "^[a-zA-Z0-9_]+$"
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "command": {
+            "default": "!clip",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^\\S+$"
+          },
+          "aliases": {
+            "default": [],
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "pattern": "^\\S+$"
+            }
+          },
+          "permission": {
+            "default": "everyone",
+            "type": "string",
+            "enum": [
+              "everyone",
+              "subscribers",
+              "moderators",
+              "owner"
+            ]
+          },
+          "cooldownSeconds": {
+            "default": 30,
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 3600
+          },
+          "durationSeconds": {
+            "default": 30,
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60
+          },
+          "enabled": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "guildId",
+          "twitchUsername",
+          "discordChannelId",
+          "command",
+          "aliases",
+          "permission",
+          "cooldownSeconds",
+          "durationSeconds",
+          "enabled"
+        ],
+        "additionalProperties": false
+      },
+      "TwitchClipUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "twitchUsername": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 25,
+            "pattern": "^[a-zA-Z0-9_]+$"
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^\\S+$"
+          },
+          "aliases": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "pattern": "^\\S+$"
+            }
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "subscribers",
+              "moderators",
+              "owner"
+            ]
+          },
+          "cooldownSeconds": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 3600
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TwitchClipConfig": {
+        "type": "object",
+        "properties": {
+          "guildId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "twitchUsername": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 25,
+            "pattern": "^[a-zA-Z0-9_]+$"
+          },
+          "discordChannelId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "command": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^\\S+$"
+          },
+          "aliases": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "pattern": "^\\S+$"
+            }
+          },
+          "permission": {
+            "type": "string",
+            "enum": [
+              "everyone",
+              "subscribers",
+              "moderators",
+              "owner"
+            ]
+          },
+          "cooldownSeconds": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 3600
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 60
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "broadcasterId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "guildId",
+          "twitchUsername",
+          "discordChannelId",
+          "command",
+          "aliases",
+          "permission",
+          "cooldownSeconds",
+          "durationSeconds",
+          "enabled",
+          "id",
+          "broadcasterId"
+        ],
+        "additionalProperties": false
+      },
       "AnimeSubscribeRequest": {
         "type": "object",
         "properties": {
@@ -3511,6 +3730,282 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/twitchClips/bot/status": {
+      "get": {
+        "summary": "Get safe Twitch clip bot connection status",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bot identity and chat listener status without credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "configured": {
+                      "type": "boolean"
+                    },
+                    "connected": {
+                      "type": "boolean"
+                    },
+                    "login": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "expectedLogin": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "jobsEnabled": {
+                      "type": "boolean"
+                    },
+                    "chatConnected": {
+                      "type": "boolean"
+                    },
+                    "subscribedChannels": {
+                      "type": "integer"
+                    },
+                    "lastErrorCode": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/twitchClips/bot/connect": {
+      "post": {
+        "summary": "Begin dashboard-administrator Twitch bot OAuth",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OAuth authorization URL and single-use state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "state": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/twitchClips/bot/complete": {
+      "post": {
+        "summary": "Complete dashboard-administrator Twitch bot OAuth",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "state"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "state": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bot connected and encrypted credentials stored"
+          }
+        }
+      }
+    },
+    "/twitchClips/bot": {
+      "delete": {
+        "summary": "Disconnect the Twitch clip bot as a dashboard administrator",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stored bot credentials and pending OAuth states removed"
+          }
+        }
+      }
+    },
+    "/twitchClips": {
+      "get": {
+        "summary": "List guild Twitch chat clip configurations",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "guildId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guild clip configurations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TwitchClipConfig"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a guild Twitch chat clip configuration",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwitchClipCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Clip configuration created"
+          }
+        }
+      }
+    },
+    "/twitchClips/{id}": {
+      "put": {
+        "summary": "Update a guild Twitch chat clip configuration",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwitchClipUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Clip configuration updated"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a guild Twitch chat clip configuration",
+        "tags": [
+          "TwitchClips"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Clip configuration deleted"
           }
         }
       }

@@ -71,5 +71,16 @@
   "tiktokConfigNotFound": "TikTok stream config not found",
   "tiktokSessionAttached": "TikTok cookie material is configured, but this connector path does not expose expiry age and is not attaching cookies to live checks.",
   "tiktokSessionUnrecognized": "TikTok cookie material is configured, but no likely session cookie was detected and this connector path is not attaching cookies to live checks.",
-  "tiktokSessionMissing": "No TikTok cookie material is configured for this process."
+  "tiktokSessionMissing": "No TikTok cookie material is configured for this process.",
+  "twitchClipBotNotConfigured": "The Twitch clip bot is not configured. Ask a dashboard administrator to check its settings.",
+  "twitchClipBotNotConnected": "Connect the Twitch clip bot account first.",
+  "twitchClipOAuthStateInvalid": "The Twitch connection has expired or is invalid. Start connecting again.",
+  "twitchClipBotIdentityMismatch": "Use the configured Twitch bot account and grant chat reading and clip creation permissions.",
+  "twitchClipBotTokenInvalid": "The Twitch bot authorization is invalid. Connect the bot account again.",
+  "twitchClipProviderUnavailable": "Twitch or Discord is temporarily unavailable. Try again later.",
+  "twitchClipInvalidChannel": "Choose a text or announcement channel in this server that the bot can access.",
+  "twitchClipStreamerNotFound": "This Twitch streamer could not be found.",
+  "twitchClipDuplicate": "This server already has a clip command for this Twitch streamer.",
+  "twitchClipConfigNotFound": "Twitch clip configuration not found",
+  "twitchClipTriggeredBy": "Clip requested by {name}"
 }

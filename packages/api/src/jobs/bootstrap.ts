@@ -7,6 +7,7 @@ import { registerRemindersJobs } from './reminders.js';
 import { registerPatchNotesJobs } from './patchNotes.js';
 import { registerPatchNotesScanJobs } from './patchNotesScan.js';
 import { registerTwitchJobs } from './twitch.js';
+import { registerTwitchClipJobs } from './twitchClips.js';
 import { registerYouTubeJobs } from './youtube.js';
 import { registerTikTokJobs } from './tiktok.js';
 import { registerBlueskyJobs } from './bluesky.js';
@@ -95,6 +96,7 @@ export async function bootstrapJobs(): Promise<void> {
 
     // Register and schedule Twitch, YouTube, and TikTok polling jobs
     await registerTwitchJobs(queue);
+    await registerTwitchClipJobs(queue);
     await registerYouTubeJobs(queue);
     await registerTikTokJobs(queue);
     await registerBlueskyJobs(queue);

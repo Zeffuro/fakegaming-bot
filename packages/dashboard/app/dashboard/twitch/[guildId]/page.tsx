@@ -5,6 +5,7 @@ import type { TwitchStreamConfig } from "@zeffuro/fakegaming-common";
 import { IntegrationConfigPage } from "@/components/IntegrationConfigPage";
 import { useTwitchConfigs } from "@/components/hooks/useTwitch";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import { TwitchClipSettings } from "@/components/twitch/TwitchClipSettings";
 
 export default function GuildTwitchPage() {
   const { t } = useDashboardI18n();
@@ -20,6 +21,7 @@ export default function GuildTwitchPage() {
       channelNameField="twitchUsername"
       channelNameLabel={t("provider.channelName")}
       channelNamePlaceholder="shroud"
+      extraContent={<TwitchClipSettings />}
     />
   );
 }

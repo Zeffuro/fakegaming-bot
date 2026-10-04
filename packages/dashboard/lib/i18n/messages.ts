@@ -17,6 +17,7 @@ import permissionsEn from "../../messages/en/permissions.json";
 import personalEn from "../../messages/en/personal.json";
 import quotesEn from "../../messages/en/quotes.json";
 import settingsEn from "../../messages/en/settings.json";
+import twitchClipsEn from "../../messages/en/twitchClips.json";
 
 import adminNl from "../../messages/nl/admin.json";
 import analyticsNl from "../../messages/nl/analytics.json";
@@ -34,6 +35,7 @@ import permissionsNl from "../../messages/nl/permissions.json";
 import personalNl from "../../messages/nl/personal.json";
 import quotesNl from "../../messages/nl/quotes.json";
 import settingsNl from "../../messages/nl/settings.json";
+import twitchClipsNl from "../../messages/nl/twitchClips.json";
 
 export const englishMessages = {
     ...adminEn,
@@ -52,6 +54,7 @@ export const englishMessages = {
     ...personalEn,
     ...quotesEn,
     ...settingsEn,
+    ...twitchClipsEn,
 } as const;
 
 type MessageShape<T> = {
@@ -75,6 +78,7 @@ export const dutchMessages = {
     ...personalNl,
     ...quotesNl,
     ...settingsNl,
+    ...twitchClipsNl,
 } as const satisfies MessageShape<typeof englishMessages>;
 
 type NestedMessageKey<T> = {

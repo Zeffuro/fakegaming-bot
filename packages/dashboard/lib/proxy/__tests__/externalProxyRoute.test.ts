@@ -188,6 +188,7 @@ describe('external proxy route CSRF', () => {
             ['userDigestSubscription'],
             ['userActivity'],
             ['riotLinks', 'me'],
+            ['twitchClips', 'bot', 'status'],
         ];
 
         for (const proxy of personalRoutes) {
@@ -207,5 +208,16 @@ describe('external proxy route CSRF', () => {
             expect(headers['x-dashboard-admin-request']).toBeUndefined();
             expect(headers['x-dashboard-admin-signature']).toBeUndefined();
         }
+    });
+
+    it('forwards operator assertions for clip bot connection controls', async () => {
+        const jwt = signTestJwt({ discordId: 'admin-id' }, 'supersecret');
+        const res = await POST(
+            makeReq({ method: 'POST', jwt, csrf: 'token', headerCsrf: 'token' }),
+            { params: Promise.resolve({ proxy: ['twitchClips', 'bot', 'connect'] }) } as any
+        );
+        expectOk(res);
+        const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        expect(init.headers).toMatchObject({ 'x-service-token': 'svc-token', 'x-dashboard-admin-user': 'admin-id' });
     });
 });

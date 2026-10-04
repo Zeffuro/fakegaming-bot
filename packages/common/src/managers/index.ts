@@ -4,6 +4,7 @@ export * from './serverManager.js';
 export * from './quoteManager.js';
 export * from './quoteOfDayManager.js';
 export * from './twitchManager.js';
+export * from './twitchClipManager.js';
 export * from './youtubeManager.js';
 export * from './reminderManager.js';
 export * from './birthdayManager.js';

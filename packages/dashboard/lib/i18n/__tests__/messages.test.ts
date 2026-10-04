@@ -11,7 +11,7 @@ import type { DashboardLocale } from "@/lib/i18n/localeStore";
 describe("dashboard message catalogs", () => {
     it("keeps every translated catalog in exact parity with the default", () => {
         const defaultMessages = flattenMessages(dashboardMessages[defaultDashboardLocale]);
-        expect(Object.keys(defaultMessages)).toHaveLength(1876);
+        expect(Object.keys(defaultMessages)).toHaveLength(1926);
         for (const locale of nonDefaultDashboardLocales) {
             expect(Object.keys(flattenMessages(dashboardMessages[locale])).sort(), locale)
                 .toEqual(Object.keys(defaultMessages).sort());

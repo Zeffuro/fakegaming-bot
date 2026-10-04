@@ -95,6 +95,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed development setup.
 
 ### 🔔 Notifications & Integrations
 - Twitch stream notifications (Helix polling)
+- Twitch chat commands that create clips and post them to Discord ([setup](docs/twitch-clips.md))
 - YouTube video announcements
 - TikTok live stream alerts
 - Game patch notes (League of Legends, VALORANT, Marvel Rivals, Overwatch 2)

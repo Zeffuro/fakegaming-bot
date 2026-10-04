@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 148
+Operations: 156
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -120,6 +120,14 @@ Operations: 148
 | Twitch | DELETE | `/twitch/{id}` | Delete a Twitch stream config by id | Bearer |
 | Twitch | GET | `/twitch/exists` | Check if a Twitch stream config exists | Bearer |
 | Twitch | GET | `/twitch/verify` | Verify a Twitch username exists | Bearer |
+| TwitchClips | GET | `/twitchClips` | List guild Twitch chat clip configurations | Bearer |
+| TwitchClips | POST | `/twitchClips` | Create a guild Twitch chat clip configuration | Bearer |
+| TwitchClips | PUT | `/twitchClips/{id}` | Update a guild Twitch chat clip configuration | Bearer |
+| TwitchClips | DELETE | `/twitchClips/{id}` | Delete a guild Twitch chat clip configuration | Bearer |
+| TwitchClips | DELETE | `/twitchClips/bot` | Disconnect the Twitch clip bot as a dashboard administrator | Bearer |
+| TwitchClips | POST | `/twitchClips/bot/complete` | Complete dashboard-administrator Twitch bot OAuth | Bearer |
+| TwitchClips | POST | `/twitchClips/bot/connect` | Begin dashboard-administrator Twitch bot OAuth | Bearer |
+| TwitchClips | GET | `/twitchClips/bot/status` | Get safe Twitch clip bot connection status | Bearer |
 | UserActivity | GET | `/userActivity` | Get recent account activity for the authenticated dashboard user | Bearer |
 | UserDigestSubscription | GET | `/userDigestSubscription` | Get the authenticated user's digest subscription | Bearer |
 | UserDigestSubscription | PUT | `/userDigestSubscription` | Create or update the authenticated user's digest subscription | Bearer |

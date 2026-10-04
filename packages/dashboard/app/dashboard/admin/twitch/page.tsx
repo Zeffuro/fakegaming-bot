@@ -5,6 +5,7 @@ import { api } from "@/lib/api-client";
 import { Alert, Box, Button, Card, CardContent, Stack, TextField, Typography } from "@mui/material";
 import { useAsyncTask } from "@/components/hooks/useAsync";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
+import { TwitchClipBotConnection } from "@/components/twitch/TwitchClipBotConnection";
 
 interface VerifyResult {
     exists: boolean;
@@ -33,6 +34,7 @@ export default function AdminTwitchDebugPage() {
     return (
         <AdminPage title={t("admin.twitchPageTitle")} trail={[{ label: t("admin.twitchDebug"), href: '/dashboard/admin/twitch' }] }>
             <Box>
+                <Box sx={{ mb: 3 }}><TwitchClipBotConnection /></Box>
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ maxWidth: 700, mb: 2 }}>
                     <TextField
                         label={t("admin.twitchUsername")}

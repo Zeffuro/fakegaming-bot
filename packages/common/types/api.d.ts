@@ -1140,6 +1140,285 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/twitchClips/bot/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get safe Twitch clip bot connection status */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Bot identity and chat listener status without credentials */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            configured?: boolean;
+                            connected?: boolean;
+                            login?: string | null;
+                            expectedLogin?: string | null;
+                            jobsEnabled?: boolean;
+                            chatConnected?: boolean;
+                            subscribedChannels?: number;
+                            lastErrorCode?: string | null;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitchClips/bot/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin dashboard-administrator Twitch bot OAuth */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OAuth authorization URL and single-use state */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            url?: string;
+                            state?: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitchClips/bot/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete dashboard-administrator Twitch bot OAuth */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        code: string;
+                        state: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Bot connected and encrypted credentials stored */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitchClips/bot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect the Twitch clip bot as a dashboard administrator */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Stored bot credentials and pending OAuth states removed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitchClips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List guild Twitch chat clip configurations */
+        get: {
+            parameters: {
+                query: {
+                    guildId: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Guild clip configurations */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["TwitchClipConfig"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a guild Twitch chat clip configuration */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwitchClipCreateRequest"];
+                };
+            };
+            responses: {
+                /** @description Clip configuration created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitchClips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a guild Twitch chat clip configuration */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["TwitchClipUpdateRequest"];
+                };
+            };
+            responses: {
+                /** @description Clip configuration updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        /** Delete a guild Twitch chat clip configuration */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Clip configuration deleted */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/twitch": {
         parameters: {
             query?: never;
@@ -5522,6 +5801,53 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        TwitchClipCreateRequest: {
+            guildId: string;
+            twitchUsername: string;
+            discordChannelId: string;
+            /** @default !clip */
+            command: string;
+            /** @default [] */
+            aliases: string[];
+            /**
+             * @default everyone
+             * @enum {string}
+             */
+            permission: "everyone" | "subscribers" | "moderators" | "owner";
+            /** @default 30 */
+            cooldownSeconds: number;
+            /** @default 30 */
+            durationSeconds: number;
+            /** @default true */
+            enabled: boolean;
+        };
+        TwitchClipUpdateRequest: {
+            guildId?: string;
+            twitchUsername?: string;
+            discordChannelId?: string;
+            command?: string;
+            aliases?: string[];
+            /** @enum {string} */
+            permission?: "everyone" | "subscribers" | "moderators" | "owner";
+            cooldownSeconds?: number;
+            durationSeconds?: number;
+            enabled?: boolean;
+        };
+        TwitchClipConfig: {
+            guildId: string;
+            twitchUsername: string;
+            discordChannelId: string;
+            command: string;
+            aliases: string[];
+            /** @enum {string} */
+            permission: "everyone" | "subscribers" | "moderators" | "owner";
+            cooldownSeconds: number;
+            durationSeconds: number;
+            enabled: boolean;
+            /** Format: uuid */
+            id: string;
+            broadcasterId: string;
         };
         AnimeSubscribeRequest: {
             anilistId?: number;
