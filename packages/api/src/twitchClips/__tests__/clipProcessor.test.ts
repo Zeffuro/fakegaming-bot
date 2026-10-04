@@ -68,6 +68,17 @@ describe('Twitch command clip pipeline', () => {
         expect(sendChannelMessagePayload).toHaveBeenCalledTimes(2);
     });
 
+    it('creates only one clip when ten viewers send distinct commands at once', async () => {
+        await makeConfig();
+        const test = setup();
+        await Promise.all(Array.from({ length: 10 }, (_, i) => test.processor.receive({
+            ...message, message_id: `burst-${i}`, chatter_user_id: `viewer-${i}`,
+        })));
+        expect(createTwitchCommandClip).toHaveBeenCalledOnce();
+        expect(await TwitchClipRequest.count()).toBe(1);
+        expect(test.schedule).toHaveBeenCalledOnce();
+    });
+
     it('persists channel cooldown across processor restarts and aliases', async () => {
         await makeConfig('guild-a', { aliases: ['!moment'] });
         await setup().processor.receive(message);
