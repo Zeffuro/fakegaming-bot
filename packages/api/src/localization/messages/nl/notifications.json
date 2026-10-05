@@ -1,4 +1,7 @@
 {
+  "twitchClipReplyCreated": "@{user} Clip gemaakt! {url}",
+  "twitchClipReplyOffline": "@{user} Ik kan alleen clips maken als de streamer live is.",
+  "twitchClipReplyFailed": "@{user} Twitch kon deze clip niet maken. Controleer of clips zijn ingeschakeld en de bot clips mag maken.",
   "tiktokViewers": "Kijkers",
   "tiktokUptime": "Livestreamduur",
   "tiktokDefaultContent": "Hallo @everyone, {username} is nu live! {url}",
@@ -60,5 +63,13 @@
   "digestAnimeReminders": "Animeherinneringen",
   "digestEpisode": " aflevering {episode}",
   "digestAirs": " wordt '<t:'{airingAt}:R> uitgezonden.",
-  "durationHourUnit": "u"
+  "durationHourUnit": "u",
+  "twitchClipBroadcaster": "Streamer",
+  "twitchClipDownload": "Direct downloaden",
+  "twitchClipDownloadLink": "MP4 downloaden (tijdelijke link)",
+  "twitchClipRequester": "Aangevraagd door",
+  "twitchClipCategory": "Categorie",
+  "twitchClipDuration": "Duur",
+  "twitchClipSeconds": "{seconds, number}s",
+  "twitchClipBroadcast": "Oorspronkelijke uitzending"
 }
