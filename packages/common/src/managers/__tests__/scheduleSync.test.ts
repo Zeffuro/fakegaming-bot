@@ -3,6 +3,7 @@ import { UserScheduleManager } from '../userScheduleManager.js';
 import { ScheduleNotificationManager } from '../scheduleNotificationManager.js';
 import type { ImportedOccurrence } from '../scheduleShared.js';
 import { CalendarConnection, CalendarSource } from '../../models/calendar-connection.js';
+import { CalendarEventSnapshot, CalendarEventSnapshotState } from '../../models/calendar-publication.js';
 import { PersonalSchedule, ScheduleNotification, ScheduleOccurrence, SchedulePreferences } from '../../models/personal-schedule.js';
 
 const now = Date.parse('2026-10-07T08:00Z');
@@ -11,6 +12,7 @@ const event: ImportedOccurrence = { seriesKey: 'series', occurrenceKey: 'origina
     plannedAt: now + 60_000, endAt: now + 3_600_000, allDay: false, cancelled: false };
 const sync = (events: ImportedOccurrence[], sourceId = 'source', version = 1) => manager.syncSource(sourceId, 'owner', events, now - 86_400_000, now + 366 * 86_400_000, now, version);
 beforeEach(async () => {
+    await CalendarEventSnapshot.destroy({ where: {} }); await CalendarEventSnapshotState.destroy({ where: {} });
     await ScheduleNotification.destroy({ where: {} }); await ScheduleOccurrence.destroy({ where: {} });
     await PersonalSchedule.destroy({ where: {} }); await SchedulePreferences.destroy({ where: {} });
     await CalendarSource.destroy({ where: {} }); await CalendarConnection.destroy({ where: {} });
@@ -50,8 +52,10 @@ describe('calendar occurrence reconciliation', () => {
         await sync([{ ...event, title: 'Renamed', plannedAt: now + 86_400_000, endAt: null }]);
         await sync([{ ...event, title: 'Renamed', plannedAt: now + 86_400_000, endAt: null }]);
         expect(await manager.get(original.id, 'owner')).toEqual(done);
+        expect(await CalendarEventSnapshot.findByPk(original.id)).toMatchObject({ title: 'Renamed', plannedAt: now + 86_400_000, cancelled: false });
         await sync([]);
         expect(await manager.get(original.id, 'owner')).toEqual(done);
+        expect((await CalendarEventSnapshot.findByPk(original.id))?.cancelled).toBe(true);
         await sync([{ ...event, cancelled: true, title: '', plannedAt: 0 }]);
         expect((await manager.get(original.id, 'owner'))).toMatchObject({ ...done, cancelled: true, version: done.version + 1, nextNotifyAt: null });
         const undone = await manager.undo(original.id, 'owner', done.version + 1);

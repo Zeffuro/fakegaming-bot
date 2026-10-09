@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Op, type Transaction } from 'sequelize';
 import { PersonalSchedule, ScheduleOccurrence, SchedulePreferences } from '../models/personal-schedule.js';
 import { CalendarSource } from '../models/calendar-connection.js';
+import { CalendarPublication, CalendarPublicationDraft } from '../models/calendar-publication.js';
 import { parseHHmmToMinutes } from '../utils/time.js';
 import { serializedTransaction } from './serializedTransaction.js';
 import { requirePersonalText } from './productivityShared.js';
@@ -133,6 +134,9 @@ export class UserScheduleManager {
         await this.transaction(async transaction => {
             const source = await CalendarSource.findOne({ where: { id: sourceId, userId }, transaction, lock: transaction.LOCK.UPDATE });
             if (source) await source.update({ enabled: false, version: source.version + 1 }, { transaction });
+            await CalendarPublicationDraft.destroy({ where: { userId }, transaction });
+            const publications = await CalendarPublication.findAll({ where: { sourceId, userId, enabled: true }, transaction, lock: transaction.LOCK.UPDATE });
+            for (const publication of publications) await publication.update({ enabled: false, version: publication.version + 1 }, { transaction });
         });
     }
 

@@ -19,9 +19,11 @@ const data = createSlashCommand(META, b => {
         .addIntegerOption(o => o.setName('page').setDescription('Page number').setMinValue(1)));
     for (const [name, description] of [['show', 'Open private occurrence controls'], ['complete', 'Confirm completion now or at an earlier time'],
         ['correct', 'Correct the completion timestamp'], ['undo', 'Undo a completion'], ['snooze', 'Remind later without moving the schedule'],
-        ['note', 'Set or remove a private note'], ['history', 'Show retained history for this schedule'], ['summary', 'Show last completed and next planned']] as const) {
+        ['note', 'Set or remove a private note'], ['history', 'Show all private history or filter by an occurrence'], ['summary', 'Show last completed and next planned']] as const) {
         b.addSubcommand(s => {
-            s.setName(name).setDescription(description).addStringOption(o => o.setName('occurrence').setDescription('Occurrence ID from /schedule list').setRequired(true).setMaxLength(36));
+            s.setName(name).setDescription(description).addStringOption(o => o.setName('occurrence')
+                .setDescription(name === 'history' ? 'Optional occurrence ID to show only its schedule history' : 'Occurrence ID from /schedule list')
+                .setRequired(name !== 'history').setMaxLength(36));
             if (name === 'complete' || name === 'correct') s.addStringOption(o => o.setName('at').setDescription('Past exact date and time with optional ISO offset').setRequired(name === 'correct').setMaxLength(100));
             if (name === 'snooze') s.addStringOption(o => o.setName('when').setDescription('Future date, time or delay').setRequired(true).setMaxLength(100));
             if (name === 'note') s.addStringOption(o => o.setName('text').setDescription('Private note; omit to remove').setMaxLength(1000));
@@ -99,6 +101,10 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         if (action === 'pause' || action === 'resume') {
             if (!await manager.setEnabled(options.getString('schedule', true), userId, action === 'resume')) throw Object.assign(new Error('Missing'), { code: 'missing' });
             await interaction.editReply({ content: t(action === 'pause' ? 'paused' : 'resumed'), allowedMentions: { parse: [] } });
+            return;
+        }
+        if (action === 'history' && options.getString('occurrence') === null) {
+            await interaction.editReply(renderHistory(await manager.list(userId, 'all'), locale, options.getInteger('page') ?? 1));
             return;
         }
         const id = options.getString('occurrence', true);

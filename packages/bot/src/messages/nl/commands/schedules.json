@@ -97,10 +97,10 @@
                 }
             },
             "history": {
-                "description": "Bewaarde geschiedenis van dit schema bekijken",
+                "description": "Alle privégeschiedenis bekijken of filteren op een moment",
                 "options": {
                     "occurrence": {
-                        "description": "Moment-ID uit /schedule list"
+                        "description": "Optioneel moment-ID om alleen de geschiedenis van het bijbehorende schema te bekijken"
                     },
                     "page": {
                         "description": "Paginanummer"

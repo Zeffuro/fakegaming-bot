@@ -1,7 +1,7 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 import { Op } from 'sequelize';
 import { z } from 'zod';
-import { CalendarConnection, CalendarOAuthState, CalendarSource } from '@zeffuro/fakegaming-common/models';
+import { CalendarConnection, CalendarOAuthState, CalendarSource, CalendarPublication, CalendarPublicationDraft } from '@zeffuro/fakegaming-common/models';
 import { serializedTransaction } from '@zeffuro/fakegaming-common/managers';
 
 export const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/calendar.calendarlist.readonly', 'https://www.googleapis.com/auth/calendar.events.readonly'];
@@ -113,6 +113,9 @@ export async function completeCalendarConnection(userId: string, code: string, s
             status: 'connected', version: parsed.data.version + 1 }, { transaction });
         const sources = await CalendarSource.findAll({ where: { userId }, transaction, lock: transaction.LOCK.UPDATE });
         for (const source of sources) await source.update({ version: source.version + 1, lastSyncedAt: null }, { transaction });
+        await CalendarPublicationDraft.destroy({ where: { userId }, transaction });
+        const publications = await CalendarPublication.findAll({ where: { userId, enabled: true }, transaction, lock: transaction.LOCK.UPDATE });
+        for (const publication of publications) await publication.update({ enabled: false, version: publication.version + 1 }, { transaction });
     });
 }
 
@@ -145,6 +148,9 @@ export async function disconnectCalendar(userId: string): Promise<void> {
         await CalendarOAuthState.destroy({ where: { userId }, transaction });
         const sources = await CalendarSource.findAll({ where: { userId }, transaction, lock: transaction.LOCK.UPDATE });
         for (const source of sources) await source.update({ enabled: false, version: source.version + 1 }, { transaction });
+        await CalendarPublicationDraft.destroy({ where: { userId }, transaction });
+        const publications = await CalendarPublication.findAll({ where: { userId, enabled: true }, transaction, lock: transaction.LOCK.UPDATE });
+        for (const publication of publications) await publication.update({ enabled: false, version: publication.version + 1 }, { transaction });
     });
 }
 

@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { formatDashboardMessage, type DashboardTranslator } from '@/lib/i18n/messages';
 const mocks = vi.hoisted(() => ({ locale: 'en' as 'en' | 'nl', status: vi.fn(), calendars: vi.fn(), connect: vi.fn(), disconnect: vi.fn(), select: vi.fn(), sync: vi.fn(), remove: vi.fn(), export: vi.fn() }));
 vi.mock('@/lib/api/userCalendar', () => ({ userCalendarApi: mocks }));
+const publishing = vi.hoisted(() => ({ list: vi.fn(), guilds: vi.fn(), channels: vi.fn() }));
+vi.mock('@/lib/api/calendarPublishing', () => ({ calendarPublishingApi: { list: publishing.list } }));
+vi.mock('@/components/hooks/useDashboardData', () => ({ useDashboardData: publishing.guilds }));
+vi.mock('@/components/hooks/useGuildChannels', () => ({ useGuildChannels: publishing.channels }));
 vi.mock('@/components/i18n/DashboardI18nProvider', () => ({ useDashboardI18n: () => ({ t: translate, formatDate: (at: number) => String(at) }) }));
 const translate: DashboardTranslator = (key, values) => formatDashboardMessage(mocks.locale, key, values);
 import { CalendarPanel } from '../CalendarPanel';
@@ -17,6 +21,7 @@ describe('calendar dashboard selection', () => {
         mocks.status.mockResolvedValue({ configured: true, connected: true, sources: [{ id: 'source', calendarId: 'calendar', label: 'Private calendar', timezone: 'UTC', enabled: false, titleFilter: 'Medicine', lastSyncedAt: null }] });
         mocks.calendars.mockResolvedValue({ calendars: [{ id: 'calendar', summary: 'Private calendar', timeZone: 'UTC' }] });
         mocks.select.mockResolvedValue({ source: {}, syncPending: false });
+        publishing.list.mockResolvedValue({ publications: [] });
         container = document.createElement('div'); document.body.append(container); root = createRoot(container);
     });
     afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
@@ -50,5 +55,12 @@ describe('calendar dashboard selection', () => {
         expect(container.textContent).toContain('Unavailable');
         const resume = [...container.querySelectorAll('button')].find(item => item.textContent === translate('calendar.resume'));
         expect(resume?.disabled).toBe(false);
+    });
+    it('loads publication status without fetching servers or channels while the dialog is closed', async () => {
+        await render();
+        expect(publishing.list).toHaveBeenCalled();
+        expect(publishing.guilds).not.toHaveBeenCalled();
+        expect(publishing.channels).not.toHaveBeenCalled();
+        expect(container.textContent).not.toContain(translate('calendar.publishing.open'));
     });
 });

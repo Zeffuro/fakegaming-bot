@@ -97,10 +97,10 @@
                 }
             },
             "history": {
-                "description": "Show retained history for this schedule",
+                "description": "Show all private history or filter by an occurrence",
                 "options": {
                     "occurrence": {
-                        "description": "Occurrence ID from /schedule list"
+                        "description": "Optional occurrence ID to show only its schedule history"
                     },
                     "page": {
                         "description": "Page number"

@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 165
+Operations: 169
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -135,6 +135,10 @@ Operations: 165
 | UserCalendar | POST | `/userCalendar/complete` | Complete owner and browser bound Google Calendar OAuth | Bearer |
 | UserCalendar | POST | `/userCalendar/connect` | Begin owner and browser bound Google OAuth with PKCE | Bearer |
 | UserCalendar | GET | `/userCalendar/export` | Download all retained owner completion history without provider credentials | Bearer |
+| UserCalendar | GET | `/userCalendar/publications` | List owner calendar publication destinations without credentials | Bearer |
+| UserCalendar | DELETE | `/userCalendar/publications/{id}` | Stop owner calendar publishing while retaining existing posts and history | Bearer |
+| UserCalendar | POST | `/userCalendar/publications/confirm` | Enable calendar publishing with single-use preview and explicit visibility acknowledgments | Bearer |
+| UserCalendar | POST | `/userCalendar/publications/preview` | Preview public calendar titles and dates after live Discord permission checks | Bearer |
 | UserCalendar | POST | `/userCalendar/sources` | Select an owner calendar and optional title substring filter | Bearer |
 | UserCalendar | DELETE | `/userCalendar/sources/{id}` | Stop following an owner calendar selection and retain completion history | Bearer |
 | UserCalendar | POST | `/userCalendar/sources/{id}/sync` | Synchronize a selected owner calendar from an authoritative provider window | Bearer |

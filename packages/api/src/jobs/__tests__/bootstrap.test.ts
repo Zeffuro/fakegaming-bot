@@ -26,6 +26,7 @@ vi.mock('../userDigests.js', () => ({ registerUserDigestJobs: vi.fn().mockResolv
 vi.mock('../personalFollows.js', () => ({ registerPersonalFollowJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../personalSchedules.js', () => ({ registerPersonalScheduleJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../googleCalendar/sync.js', () => ({ registerGoogleCalendarJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../calendarPublications.js', () => ({ registerCalendarPublicationJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../quoteOfDay.js', () => ({ registerQuoteOfDayJobs: vi.fn().mockResolvedValue(undefined) }));
 
 import * as birthdays from '../birthdays.js';
@@ -43,6 +44,7 @@ import * as userDigests from '../userDigests.js';
 import * as personalFollows from '../personalFollows.js';
 import * as personalSchedules from '../personalSchedules.js';
 import * as googleCalendar from '../../googleCalendar/sync.js';
+import * as calendarPublications from '../calendarPublications.js';
 import * as quoteOfDay from '../quoteOfDay.js';
 
 async function importFresh<T = any>(modulePath: string): Promise<T> {
@@ -74,6 +76,7 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(personalFollows).registerPersonalFollowJobs).toHaveBeenCalled();
         expect(vi.mocked(personalSchedules).registerPersonalScheduleJobs).toHaveBeenCalled();
         expect(vi.mocked(googleCalendar).registerGoogleCalendarJobs).toHaveBeenCalled();
+        expect(vi.mocked(calendarPublications).registerCalendarPublicationJobs).toHaveBeenCalled();
         expect(vi.mocked(quoteOfDay).registerQuoteOfDayJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotes).registerPatchNotesJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotesScan).registerPatchNotesScanJobs).toHaveBeenCalled();

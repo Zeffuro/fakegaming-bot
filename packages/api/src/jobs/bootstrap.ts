@@ -18,6 +18,7 @@ import { registerQuoteOfDayJobs } from './quoteOfDay.js';
 import { registerPersonalFollowJobs } from './personalFollows.js';
 import { registerPersonalScheduleJobs } from './personalSchedules.js';
 import { registerGoogleCalendarJobs } from '../googleCalendar/sync.js';
+import { registerCalendarPublicationJobs } from './calendarPublications.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -90,6 +91,7 @@ export async function bootstrapJobs(): Promise<void> {
     await registerPersonalFollowJobs(queue);
     await registerPersonalScheduleJobs(queue);
     await registerGoogleCalendarJobs(queue);
+    await registerCalendarPublicationJobs(queue);
 
     // Register and schedule quote-of-the-day announcements
     await registerQuoteOfDayJobs(queue);

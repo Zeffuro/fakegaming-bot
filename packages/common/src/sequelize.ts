@@ -19,6 +19,7 @@ import {UserFollow, UserFollowEvent, UserFollowSettings} from './models/personal
 import {UserCommandPreset} from './models/user-command-preset.js';
 import {PersonalSchedule, ScheduleOccurrence, SchedulePreferences, ScheduleNotification} from './models/personal-schedule.js';
 import {CalendarConnection, CalendarOAuthState, CalendarSource} from './models/calendar-connection.js';
+import {CalendarPublication, CalendarPublicationDraft, CalendarPublicationDelivery, CalendarEventSnapshot, CalendarEventSnapshotState} from './models/calendar-publication.js';
 import {BirthdayConfig} from './models/birthday-config.js';
 import {PatchNoteConfig} from './models/patch-note-config.js';
 import {PatchNoteHistoryConfig} from './models/patch-note-history-config.js';
@@ -107,6 +108,11 @@ export function getSequelize(useTest = false): Sequelize {
         CalendarConnection,
         CalendarOAuthState,
         CalendarSource,
+        CalendarPublication,
+        CalendarPublicationDraft,
+        CalendarPublicationDelivery,
+        CalendarEventSnapshot,
+        CalendarEventSnapshotState,
         BirthdayConfig,
         PatchNoteConfig,
         PatchNoteHistoryConfig,

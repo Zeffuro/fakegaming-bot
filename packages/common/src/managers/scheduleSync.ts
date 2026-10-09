@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Op, type Transaction } from 'sequelize';
 import { CalendarConnection, CalendarSource } from '../models/calendar-connection.js';
+import { CalendarEventSnapshot, CalendarEventSnapshotState } from '../models/calendar-publication.js';
 import { PersonalSchedule, ScheduleOccurrence } from '../models/personal-schedule.js';
 import { scheduleKey, scheduleTimezone, ScheduleError, type ImportedOccurrence } from './scheduleShared.js';
 
@@ -24,7 +25,10 @@ export async function syncScheduleSource(input: {
                 scheduleId: { [Op.in]: parents.map(parent => parent.id) } }, transaction });
         }
         if (event.cancelled) {
-            if (existing) { seen.add(existing.externalKey); await updateCancellation(existing, true, transaction); }
+            if (existing) {
+                seen.add(existing.externalKey); await updateCancellation(existing, true, transaction);
+                await CalendarEventSnapshot.update({ cancelled: true }, { where: { id: existing.id, userId, sourceId }, transaction });
+            }
             continue;
         }
         if (!Number.isSafeInteger(event.plannedAt) || event.plannedAt <= 0 || !event.title.trim() || event.title.length > 160
@@ -37,7 +41,7 @@ export async function syncScheduleSource(input: {
         else if (schedule.title !== event.title || schedule.timezone !== event.timezone) await schedule.update({ title: event.title, timezone: event.timezone }, { transaction });
         seen.add(externalKey);
         if (!existing) {
-            await ScheduleOccurrence.create({ id: randomUUID(), userId, scheduleId: schedule.id, externalKey, eventId: event.eventId,
+            existing = await ScheduleOccurrence.create({ id: randomUUID(), userId, scheduleId: schedule.id, externalKey, eventId: event.eventId,
                 title: event.title, timezone: event.timezone, plannedAt: event.plannedAt, endAt: event.endAt, allDay: event.allDay,
                 cancelled: false, state: 'pending', completedAt: null, note: '', version: 0,
                 nextNotifyAt: event.plannedAt >= observedAt ? event.plannedAt : null, notificationCount: 0 }, { transaction });
@@ -53,11 +57,19 @@ export async function syncScheduleSource(input: {
                 await existing.update({ ...snapshot, eventId: event.eventId, cancelled: false, version: existing.version + 1 }, { transaction });
             }
         }
+        // Public calendar dates follow the provider; completed private history keeps its original snapshot.
+        await CalendarEventSnapshot.upsert({ id: existing.id, userId, sourceId, scheduleId: existing.scheduleId, eventId: event.eventId,
+            title: event.title, timezone: event.timezone, plannedAt: event.plannedAt, endAt: event.endAt, allDay: event.allDay, cancelled: false }, { transaction });
     }
     const schedules = await PersonalSchedule.findAll({ where: { sourceId, userId }, transaction });
     const candidates = await ScheduleOccurrence.findAll({ where: { userId, scheduleId: { [Op.in]: schedules.map(row => row.id) },
         plannedAt: { [Op.gte]: Math.max(windowStart, observedAt), [Op.lt]: windowEnd }, cancelled: false, state: 'pending' }, transaction });
     for (const row of candidates) if (!seen.has(row.externalKey)) await updateCancellation(row, true, transaction);
+    const publicCandidates = await CalendarEventSnapshot.findAll({ where: { userId, sourceId, cancelled: false,
+        plannedAt: { [Op.gte]: Math.max(windowStart, observedAt), [Op.lt]: windowEnd } }, transaction });
+    const seenIds = new Set((await ScheduleOccurrence.findAll({ where: { userId, externalKey: { [Op.in]: [...seen] } }, attributes: ['id'], transaction })).map(row => row.id));
+    for (const row of publicCandidates) if (!seenIds.has(row.id)) await row.update({ cancelled: true }, { transaction });
+    await CalendarEventSnapshotState.upsert({ sourceId, userId, observedAt }, { transaction });
     await source.update({ lastSyncedAt: observedAt }, { transaction });
 }
 

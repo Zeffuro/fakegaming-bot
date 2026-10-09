@@ -10,6 +10,7 @@ import type { AuthenticatedRequest } from '../types/express.js';
 import { beginCalendarConnection, calendarStatus, CalendarError, completeCalendarConnection, disconnectCalendar } from '../googleCalendar/auth.js';
 import { listGoogleCalendars } from '../googleCalendar/client.js';
 import { syncCalendarSource } from '../googleCalendar/sync.js';
+import { calendarPublishingRouter } from '../calendarPublishing/routes.js';
 
 const router = createBaseRouter();
 const owner = (req: Request) => (req as AuthenticatedRequest).user.discordId;
@@ -97,6 +98,7 @@ const errorKeys = {
  */
 
 router.use((_req, res, next) => { res.setHeader('Cache-Control', 'private, no-store'); res.vary('Accept-Language'); next(); });
+router.use('/publications', calendarPublishingRouter);
 async function safely(req: Request, res: Response, action: () => Promise<void>) {
     try { await action(); } catch (error) {
         if (!(error instanceof CalendarError)) {
@@ -162,5 +164,39 @@ router.delete('/sources/:id', validateParams(idSchema), async (req, res) => safe
     await getConfigManager().userScheduleManager.deactivateSource(source.id, userId);
     res.json({ success: true });
 }));
+
+/**
+ * @openapi
+ * /userCalendar/publications:
+ *   get:
+ *     summary: List owner calendar publication destinations without credentials
+ *     tags: [UserCalendar]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Owner publication destinations and delivery status }
+ * /userCalendar/publications/preview:
+ *   post:
+ *     summary: Preview public calendar titles and dates after live Discord permission checks
+ *     tags: [UserCalendar]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: Ten-minute owner-bound preview, no Discord writes }
+ * /userCalendar/publications/confirm:
+ *   post:
+ *     summary: Enable calendar publishing with single-use preview and explicit visibility acknowledgments
+ *     tags: [UserCalendar]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: Publishing enabled for the confirmed destination }
+ * /userCalendar/publications/{id}:
+ *   delete:
+ *     summary: Stop owner calendar publishing while retaining existing posts and history
+ *     tags: [UserCalendar]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+ *     responses:
+ *       200: { description: Future publication claims disabled }
+ */
 
 export { router };

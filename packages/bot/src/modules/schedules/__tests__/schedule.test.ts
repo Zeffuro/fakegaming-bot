@@ -63,6 +63,13 @@ describe('completion timestamps', () => {
 });
 
 describe('private schedule commands', () => {
+    it('makes only the history occurrence selector optional', () => {
+        const subcommands = schedule.data.toJSON().options!;
+        for (const name of ['show', 'complete', 'correct', 'undo', 'snooze', 'note', 'history', 'summary']) {
+            const subcommand = subcommands.find(option => option.name === name)!;
+            expect('options' in subcommand && subcommand.options?.find(option => option.name === 'occurrence')?.required).toBe(name !== 'history');
+        }
+    });
     it('validates dashboard URL protocols and routes to the personal page', () => {
         vi.stubEnv('DASHBOARD_URL', 'https://example.test/base?secret=discard#discard');
         expect(personalDashboardUrl()).toBe('https://example.test/base/dashboard/me');
@@ -88,6 +95,41 @@ describe('private schedule commands', () => {
         await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
         expect(interaction.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
         expect(interaction.editReply).toHaveBeenCalled();
+    });
+    it.each(['en', 'nl'] as const)('opens all owner history without an occurrence in %s', async locale => {
+        manager.userManager.getUser.mockResolvedValueOnce({ preferredLocale: locale, timezone: item.timezone });
+        manager.userScheduleManager.get.mockResolvedValue(null);
+        const completed = { ...item, state: 'completed' as const, completedAt: Date.now() };
+        manager.userScheduleManager.list.mockResolvedValue([completed]);
+        const interaction = slash('history');
+        await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(manager.userScheduleManager.get).not.toHaveBeenCalled();
+        expect(manager.userScheduleManager.list).toHaveBeenCalledWith('owner', 'all');
+        expect(interaction.editReply).toHaveBeenCalledWith(renderHistory([completed], locale));
+        expect(interaction.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
+    });
+    it('keeps occurrence-filtered history scoped to its owner and schedule', async () => {
+        const interaction = slash('history', { occurrence: id, page: 2 });
+        const records = Array.from({ length: 5 }, (_, index) => ({ ...item, id: `owner-${index}` }));
+        manager.userScheduleManager.list.mockResolvedValueOnce(records);
+        await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(manager.userScheduleManager.get).toHaveBeenCalledWith(id, 'owner');
+        expect(manager.userScheduleManager.list).toHaveBeenCalledWith('owner', 'all', item.scheduleId);
+        expect(interaction.editReply).toHaveBeenCalledWith(renderHistory(records, 'nl', 2));
+    });
+    it('rejects unavailable or other-owner history IDs without falling back to all history', async () => {
+        manager.userScheduleManager.get.mockResolvedValueOnce(null);
+        const interaction = slash('history', { occurrence: 'other-owner-occurrence' });
+        await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(manager.userScheduleManager.get).toHaveBeenCalledWith('other-owner-occurrence', 'owner');
+        expect(manager.userScheduleManager.list).not.toHaveBeenCalled();
+        expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({ content: scheduleCopy('nl')('missing'), components: [] }));
+    });
+    it('renders empty owner history without an occurrence', async () => {
+        manager.userScheduleManager.list.mockResolvedValueOnce([]);
+        const interaction = slash('history', { page: 99 });
+        await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(interaction.editReply).toHaveBeenCalledWith(renderHistory([], 'nl', 99));
     });
     it.each(['json', 'csv'])('exports all owner history in %s as a private attachment', async format => {
         const interaction = slash('export', { format });

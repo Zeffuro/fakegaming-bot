@@ -42,3 +42,4 @@ export * from './game-night-vote.js';
 export * from './voice-channel-occupancy-config.js';
 export * from './personal-schedule.js';
 export * from './calendar-connection.js';
+export * from './calendar-publication.js';

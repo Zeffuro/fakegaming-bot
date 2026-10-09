@@ -6,6 +6,8 @@ import { FeaturePanel } from '@/components/dashboard/FeaturePanel';
 import { dashboardAccents, dashboardCardSx, dashboardFieldSx, ghostActionButtonSx } from '@/components/dashboard/dashboardTheme';
 import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
 import { userCalendarApi, type AvailableCalendar, type CalendarStatus } from '@/lib/api/userCalendar';
+import { CalendarPublishingDialog } from './CalendarPublishingDialog';
+import { CalendarPublishingList } from './CalendarPublishingList';
 
 export function CalendarPanel() {
     const { t, formatDate } = useDashboardI18n();
@@ -16,6 +18,8 @@ export function CalendarPanel() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [pending, setPending] = useState(false);
+    const [publishingSourceId, setPublishingSourceId] = useState<string | null>(null);
+    const [publishingRevision, setPublishingRevision] = useState(0);
     const load = useCallback(async () => {
         const next = await userCalendarApi.status();
         setStatus(next);
@@ -62,6 +66,7 @@ export function CalendarPanel() {
                         <Button disabled={busy || !status.connected || !source.enabled} onClick={() => void run(async () => { await userCalendarApi.sync(source.id); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.sync')}</Button>
                         <Button disabled={busy || !status.connected || source.enabled || status.sources.filter(item => item.enabled).length >= 10} onClick={() => void run(async () => { const result = await userCalendarApi.select(source.calendarId, source.titleFilter ?? ''); setPending(result.syncPending); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.resume')}</Button>
                         <Button disabled={busy} onClick={() => void run(async () => { await userCalendarApi.remove(source.id); })} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t('calendar.remove')}</Button>
+                        {source.enabled && status.connected && <Button disabled={busy} onClick={() => setPublishingSourceId(source.id)} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.publishing.open')}</Button>}
                     </Stack>
                 </Stack>
             </Box>)}
@@ -72,8 +77,11 @@ export function CalendarPanel() {
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a'); link.href = url; link.download = `schedule-history.${format}`;
                     link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-                })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.export', { format: format.toUpperCase() })}</Button>)}
+            })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.export', { format: format.toUpperCase() })}</Button>)}
             </Stack>
+            <CalendarPublishingList revision={publishingRevision} />
+            {status?.connected && status.sources.filter(source => source.id === publishingSourceId && source.enabled).map(source =>
+                <CalendarPublishingDialog key={source.id} source={source} onClose={() => setPublishingSourceId(null)} onPublished={() => setPublishingRevision(value => value + 1)} />)}
         </Stack>
     </FeaturePanel>;
 }
