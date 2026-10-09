@@ -38,6 +38,7 @@ export function CalendarPublishingList({ revision }: { revision: number }) {
                 <Typography variant="body2">{t('calendar.publishing.days', { days: publication.lookaheadDays })}</Typography>
                 {publication.eventLeadDays !== null && <Typography variant="body2">{t('calendar.publishing.eventLead', { days: publication.eventLeadDays })}</Typography>}
                 {publication.publicTitle && <Typography variant="body2">{t('calendar.publishing.overridePreview', { title: publication.publicTitle })}</Typography>}
+                {publication.includeEventDetails && <Typography variant="body2">{t('calendar.publishing.detailsEnabled')}</Typography>}
                 {publication.lastError && <Alert severity="warning">{t('calendar.publishing.deliveryError')}</Alert>}
                 {publication.uncertainCount > 0 && <Alert severity="warning">{t('calendar.publishing.uncertain', { count: publication.uncertainCount })}</Alert>}
                 {publication.enabled && <Button disabled={busy} onClick={() => void stop(publication.id)} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t('calendar.publishing.stop')}</Button>}

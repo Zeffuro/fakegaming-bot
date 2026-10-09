@@ -62,6 +62,37 @@ describe('persistent calendar channel and Discord Event publishing', () => {
         await processCalendarPublications(now + 18 * DAY + 60_000); expect(transport.createEvent).toHaveBeenCalledTimes(1);
         expect(await CalendarPublicationDelivery.count()).toBe(2);
     });
+    it('keeps existing publications private until reviewed details are enabled, then updates from provider after completion', async () => {
+        const details = { htmlLink: 'https://www.google.com/calendar/event?eid=synthetic', location: 'Clinic', description: 'Provider instructions' };
+        await (await publicSnapshot()).update(details);
+        await (await occurrence()).update({ state: 'completed', completedAt: now, note: 'Private note' });
+        await processCalendarPublications(now);
+        expect((await publication()).includeEventDetails).toBe(false);
+        expect(transport.send.mock.calls[0][1].embeds[0].url).toBeUndefined();
+        expect(JSON.stringify(transport.send.mock.calls[0][1])).not.toContain('Provider instructions');
+        await (await publication()).update({ includeEventDetails: true, eventLeadDays: 30, publicTitle: 'Appointment' });
+        await processCalendarPublications(now + 60_000);
+        expect(transport.edit.mock.calls[0][2].embeds[0]).toMatchObject({ title: 'Appointment', url: details.htmlLink,
+            fields: expect.arrayContaining([expect.objectContaining({ value: 'Clinic' }), expect.objectContaining({ value: 'Provider instructions' })]) });
+        expect(transport.createEvent.mock.calls[0][1]).toMatchObject({ name: 'Appointment', entity_metadata: { location: 'Clinic' }, description: 'Provider instructions' });
+        const synced = { ...originalEvent, ...details, description: 'Updated instructions', location: 'New clinic' };
+        await seedEvents([synced]); await processCalendarPublications(now + 120_000);
+        expect(transport.editEvent.mock.calls[0][2]).toMatchObject({ name: 'Appointment', description: 'Updated instructions', entity_metadata: { location: 'New clinic' } });
+        expect((await occurrence()).note).toBe('Private note');
+        expect(JSON.stringify(transport.edit.mock.calls.at(-1)![2])).not.toContain('Private note');
+        expect(transport.send).toHaveBeenCalledTimes(1); expect(transport.createEvent).toHaveBeenCalledTimes(1);
+    });
+    it('rechecks shared provider details before a claimed public write', async () => {
+        await (await publication()).update({ includeEventDetails: true });
+        await (await publicSnapshot()).update({ description: 'Reviewed instructions' });
+        transport.validate.mockImplementation(async () => {
+            if (await CalendarPublicationDelivery.count({ where: { status: 'sending' } })) await (await publicSnapshot()).update({ description: 'Changed instructions' });
+            return { guildName: 'My server', channelName: 'reminders' };
+        });
+        await processCalendarPublications(now);
+        expect(transport.send).not.toHaveBeenCalled();
+        expect((await CalendarPublicationDelivery.findOne())?.status).toBe('rejected');
+    });
     it('updates stored messages and scheduled Events when provider dates change without creating duplicates', async () => {
         await (await publication()).update({ eventLeadDays: 30 });
         await processCalendarPublications(now);

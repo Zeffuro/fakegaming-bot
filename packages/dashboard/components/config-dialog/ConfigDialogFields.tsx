@@ -13,6 +13,7 @@ import {
     Typography
 } from "@mui/material";
 import { Refresh } from "@mui/icons-material";
+import { DiscordChannelPicker } from "./DiscordChannelPicker";
 import { dashboardFieldSx } from "@/components/dashboard/dashboardTheme";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 
@@ -119,7 +120,6 @@ export function ConfigDialogFields({
     const fieldSx = dashboardFieldSx(moduleColor);
     const nameValue = getConfigStringValue(value, channelNameField);
     const selectedChannelId = getConfigStringValue(value, "discordChannelId");
-    const selectedChannel = channels.find((channel) => channel.id === selectedChannelId) ?? null;
     const customMessage = getConfigStringValue(value, "customMessage");
     const template = getMessageTemplate(moduleName, t);
     const showTwitchVodControls = moduleName === "Twitch";
@@ -277,70 +277,12 @@ export function ConfigDialogFields({
             )}
 
             <Stack direction="row" spacing={1} sx={{ alignItems: "flex-start", mb: 2 }}>
-                <Autocomplete
-                    fullWidth
-                    options={channels}
-                    getOptionLabel={(option) => `#${option.name}`}
-                    value={selectedChannel}
-                    onChange={(_event, nextValue) => onFieldChange("discordChannelId", nextValue?.id ?? "")}
+                <DiscordChannelPicker
+                    channels={channels}
+                    value={selectedChannelId}
+                    onChange={id => onFieldChange("discordChannelId", id)}
+                    accent={moduleColor}
                     loading={loadingChannels}
-                    disabled={loadingChannels}
-                    slots={{
-                        paper: ({ children, ...other }) => (
-                            <div
-                                {...other}
-                                style={{
-                                    backgroundColor: "rgb(66, 66, 66)",
-                                    border: "1px solid rgb(97, 97, 97)",
-                                    borderRadius: "4px",
-                                    ...other.style
-                                }}
-                            >
-                                {children}
-                            </div>
-                        )
-                    }}
-                    renderInput={(params) => {
-                        const inputSlotProps = params.slotProps.input;
-                        return (
-                            <TextField
-                                {...params}
-                                label={t("common.discordChannel")}
-                                sx={fieldSx}
-                                slotProps={{
-                                    ...params.slotProps,
-                                    input: {
-                                        ...inputSlotProps,
-                                        endAdornment: (
-                                            <>
-                                                {loadingChannels ? <CircularProgress size={20} /> : null}
-                                                {inputSlotProps.endAdornment}
-                                            </>
-                                        )
-                                    }
-                                }}
-                            />
-                        );
-                    }}
-                    renderOption={(props, option) => (
-                        <li
-                            {...props}
-                            style={{
-                                ...props.style,
-                                backgroundColor: "rgb(66, 66, 66)",
-                                color: "rgb(245, 245, 245)",
-                                padding: "8px 16px"
-                            }}
-                        >
-                            #{option.name}
-                        </li>
-                    )}
-                    noOptionsText={loadingChannels ? t("config.loadingChannels") : t("config.noChannelsAvailable")}
-                    sx={{
-                        flex: 1,
-                        "& .MuiAutocomplete-popupIndicator": { color: "grey.400" },
-                        "& .MuiAutocomplete-clearIndicator": { color: "grey.400" }
-                    }}
                 />
                 {onRefreshChannels && (
                     <Tooltip title={t("common.refreshChannels")}>

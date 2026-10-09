@@ -10,6 +10,7 @@ export interface ScheduleRecord {
 export interface ImportedOccurrence {
     seriesKey: string; occurrenceKey: string; eventId: string; title: string; timezone: string;
     plannedAt: number; endAt: number | null; allDay: boolean; cancelled: boolean;
+    htmlLink?: string | null; location?: string | null; description?: string | null;
 }
 export interface ScheduleSettings {
     timezone: string; quietStart: string | null; quietEnd: string | null;

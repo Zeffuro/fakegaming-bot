@@ -61,6 +61,17 @@ describe('calendar occurrence reconciliation', () => {
         const undone = await manager.undo(original.id, 'owner', done.version + 1);
         expect(undone).toMatchObject({ cancelled: true, state: 'pending', note: 'Recorded', nextNotifyAt: null });
     });
+    it('refreshes and clears provider details after completion while private history stays frozen', async () => {
+        await sync([{ ...event, htmlLink: 'https://www.google.com/calendar/event?eid=first', location: 'Old clinic', description: 'Provider instructions' }]);
+        const original = (await manager.list('owner', 'all'))[0]!;
+        const done = await manager.complete(original.id, 'owner', 0, now, 'Private note');
+        await sync([{ ...event, htmlLink: 'https://calendar.google.com/calendar/event?eid=changed', location: 'New clinic', description: 'New instructions' }]);
+        expect(await CalendarEventSnapshot.findByPk(original.id)).toMatchObject({ htmlLink: 'https://calendar.google.com/calendar/event?eid=changed', location: 'New clinic', description: 'New instructions' });
+        expect(await manager.get(original.id, 'owner')).toEqual(done);
+        await sync([event]);
+        expect(await CalendarEventSnapshot.findByPk(original.id)).toMatchObject({ htmlLink: null, location: null, description: null });
+        expect((await manager.get(original.id, 'owner'))?.note).toBe('Private note');
+    });
 
     it('scopes provider tombstones to the selected source even when another selection imports the same event ID', async () => {
         await CalendarSource.create({ id: 'second', userId: 'owner', calendarId: 'calendar', label: 'Filtered', timezone: 'UTC', enabled: true, version: 1 });

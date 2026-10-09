@@ -12,6 +12,7 @@ export class CalendarPublication extends Model {
     @Column(DataType.INTEGER) declare lookaheadDays: number;
     @Column(DataType.INTEGER) declare eventLeadDays: number | null;
     @Column(DataType.STRING(100)) declare publicTitle: string | null;
+    @Column({ type: DataType.BOOLEAN, defaultValue: false }) declare includeEventDetails: boolean;
     @Column({ type: DataType.BOOLEAN, defaultValue: false }) declare enabled: boolean;
     @Column({ type: DataType.INTEGER, defaultValue: 1 }) declare version: number;
     @Column(DataType.STRING(32)) declare lastError: string | null;
@@ -54,6 +55,9 @@ export class CalendarEventSnapshot extends Model {
     @Column(DataType.STRING(64)) declare scheduleId: string;
     @Column(DataType.STRING(1024)) declare eventId: string;
     @Column(DataType.STRING(160)) declare title: string;
+    @Column(DataType.STRING(2048)) declare htmlLink: string | null;
+    @Column(DataType.STRING(100)) declare location: string | null;
+    @Column(DataType.STRING(1000)) declare description: string | null;
     @Column(DataType.STRING(100)) declare timezone: string;
     @Column(DataType.BIGINT) declare plannedAt: number;
     @Column(DataType.BIGINT) declare endAt: number | null;

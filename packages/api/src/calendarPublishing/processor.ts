@@ -32,7 +32,7 @@ async function claim(publication: CalendarPublication, occurrenceId: string, kin
         const now = clock();
         if (delivery?.status === 'sending' || delivery?.status === 'missing' || (delivery?.status === 'uncertain' && !delivery.remoteId)) return null;
         if (delivery && delivery.status !== 'sent' && Number(delivery.attemptedAt) > now - RETRY_DELAY) return null;
-        const shared = publicOccurrence(row, current.publicTitle);
+        const shared = publicOccurrence(row, current.publicTitle, current.includeEventDetails);
         if (!delivery?.remoteId && (shared.cancelled || shared.plannedAt <= now || shared.plannedAt > now + current.lookaheadDays * DAY)) return null;
         if (kind === 'event') {
             if (current.eventLeadDays === null) return null;
@@ -68,7 +68,7 @@ async function freshForWrite(publication: CalendarPublication, occurrenceId: str
         const row = await CalendarEventSnapshot.findOne({ where: { id: occurrenceId, userId: current.userId, sourceId: current.sourceId }, transaction, lock: transaction.LOCK.UPDATE });
         if (!row) return false;
         const now = clock();
-        const shared = publicOccurrence(row, current.publicTitle);
+        const shared = publicOccurrence(row, current.publicTitle, current.includeEventDetails);
         if (!claimed.remoteId && (shared.cancelled || shared.plannedAt <= now || shared.plannedAt > now + current.lookaheadDays * DAY)) return false;
         if (kind === 'event' && (current.eventLeadDays === null || (!claimed.remoteId && shared.plannedAt > now + current.eventLeadDays * DAY)
             || (claimed.remoteId && !shared.cancelled && shared.plannedAt <= now))) return false;
@@ -96,7 +96,8 @@ export async function processCalendarPublications(now = Date.now()): Promise<{ s
                 await publicationSource(publication.userId, publication.sourceId);
                 await validatePublicationDestination(publication.userId, publication.guildId, publication.channelId, publication.eventLeadDays !== null);
                 const input: PublicationInput = { sourceId: publication.sourceId, guildId: publication.guildId, channelId: publication.channelId,
-                    lookaheadDays: publication.lookaheadDays, eventLeadDays: publication.eventLeadDays, publicTitle: publication.publicTitle };
+                    lookaheadDays: publication.lookaheadDays, eventLeadDays: publication.eventLeadDays, publicTitle: publication.publicTitle,
+                    includeEventDetails: publication.includeEventDetails };
                 const future = await futurePublicationRows(publication.userId, input, clock());
                 if (future.length > 100) throw new PublicationError('too_many');
                 const previous = await CalendarPublicationDelivery.findAll({ where: { publicationId: publication.id, remoteId: { [Op.ne]: null } },

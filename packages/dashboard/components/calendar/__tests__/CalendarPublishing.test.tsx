@@ -31,16 +31,29 @@ describe('calendar publication consent', () => {
     const button = (key: Parameters<typeof translate>[0]) => [...document.querySelectorAll('button')].find(element => element.textContent === translate(key))!;
     const click = async (key: Parameters<typeof translate>[0]) => { expect(button(key)).toBeDefined(); await act(async () => button(key).click()); };
     const field = (key: Parameters<typeof translate>[0]) => {
-        const label = [...document.querySelectorAll('label')].find(element => element.textContent === translate(key));
+        const label = [...document.querySelectorAll('label, [id$="-label"]')].find(element => element.textContent === translate(key));
         expect(label).toBeDefined();
-        return document.getElementById(label!.htmlFor) as HTMLInputElement | HTMLSelectElement;
+        const control = label instanceof HTMLLabelElement ? document.getElementById(label.htmlFor)!
+            : document.querySelector(`[aria-labelledby="${label!.id}"]`)!;
+        return (control.tagName === 'DIV' ? control.parentElement!.querySelector('input') : control) as HTMLInputElement;
     };
     const change = async (key: Parameters<typeof translate>[0], value: string) => {
         const input = field(key);
+        if (key === 'calendar.publishing.channel' || input.getAttribute('aria-hidden') === 'true') {
+            const combobox = input.getAttribute('aria-hidden') === 'true' ? input.parentElement!.querySelector('[role="combobox"]')! : input;
+            await act(async () => { combobox.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 })); });
+            if (key === 'calendar.publishing.channel') {
+                await act(async () => { input.focus(); input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true })); });
+            }
+            const label = key === 'calendar.publishing.channel' ? `#${value === 'channel' ? 'events' : value}` : null;
+            const option = [...document.querySelectorAll<HTMLElement>('[role="option"]')].find(element => label ? element.textContent === label : element.dataset.value === value);
+            expect(option).toBeDefined();
+            await act(async () => option!.click());
+            return;
+        }
         await act(async () => {
-            const prototype = input.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
-            Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(input, value);
-            input.dispatchEvent(new Event(input.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+            Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
         });
     };
     const check = async (key: Parameters<typeof translate>[0]) => {
@@ -60,9 +73,9 @@ describe('calendar publication consent', () => {
         expect(button('calendar.publishing.enable').disabled).toBe(true);
         expect(mocks.preview).not.toHaveBeenCalled(); expect(mocks.confirm).not.toHaveBeenCalled();
         await destination();
-        expect(field('calendar.publishing.channel').textContent).not.toContain('voice');
+        expect(field('calendar.publishing.channel').value).toBe('#events');
         await click('calendar.publishing.preview');
-        expect(mocks.preview).toHaveBeenCalledWith({ sourceId: 'source', guildId: 'guild', channelId: 'channel', lookaheadDays: 180, eventLeadDays: null, publicTitle: null });
+        expect(mocks.preview).toHaveBeenCalledWith({ sourceId: 'source', guildId: 'guild', channelId: 'channel', lookaheadDays: 180, eventLeadDays: null, publicTitle: null, includeEventDetails: false });
         expect(document.body.textContent).toContain(translate('calendar.publishing.destination', { guild: 'Gaming', channel: 'events' }));
         for (const event of events) expect(document.body.textContent).toContain(event.title);
         await check('calendar.publishing.acknowledgeChannel');
@@ -85,7 +98,7 @@ describe('calendar publication consent', () => {
         await check('calendar.publishing.acknowledgeEvents'); await click('calendar.publishing.enable');
         expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ acknowledgeServerEvents: true }));
     });
-    it.each(['guild', 'channel', 'lookahead', 'override', 'createEvents'] as const)('invalidates preview and consent when %s changes', async setting => {
+    it.each(['guild', 'channel', 'lookahead', 'override', 'createEvents', 'includeEventDetails'] as const)('invalidates preview and consent when %s changes', async setting => {
         await render(); await destination(); await click('calendar.publishing.preview'); await channelConsent();
         expect(button('calendar.publishing.enable').disabled).toBe(false);
         if (setting === 'guild') await change('calendar.publishing.guild', 'other');
@@ -93,6 +106,7 @@ describe('calendar publication consent', () => {
         if (setting === 'lookahead') await change('calendar.publishing.lookahead', '90');
         if (setting === 'override') await change('calendar.publishing.override', 'Appointment');
         if (setting === 'createEvents') await check('calendar.publishing.createEvents');
+        if (setting === 'includeEventDetails') await check('calendar.publishing.includeEventDetails');
         expect(button('calendar.publishing.enable').disabled).toBe(true);
         expect(document.body.textContent).not.toContain('Event 5');
         expect(mocks.confirm).not.toHaveBeenCalled();
@@ -131,6 +145,30 @@ describe('calendar publication consent', () => {
         expect(mocks.preview).toHaveBeenCalledWith(expect.objectContaining({ publicTitle: 'Appointment' }));
         expect(document.body.textContent).not.toContain('Event 5');
         expect(document.body.textContent).toContain('Appointment');
+    });
+    it.each(['en', 'nl'] as const)('previews approved event details and requires detailed consent in %s', async locale => {
+        mocks.locale = locale;
+        const url = 'https://calendar.google.com/calendar/event?eid=c2FtcGxl';
+        const details = { title: 'Appointment', url, duration: '1 hour', location: 'Clinic', description: 'Bring the appointment letter\nSecond line' };
+        mocks.preview.mockResolvedValueOnce({ ...preview, includeEventDetails: true, eventLeadDays: 7, events: [
+            { ...events[0], duration: details.duration, channelMessage: details },
+            { ...events[1], duration: null, channelMessage: { title: 'Event 1', url: null, duration: null, location: null, description: null } },
+        ] });
+        await render(); await destination(); await check('calendar.publishing.includeEventDetails'); await click('calendar.publishing.preview');
+        expect(mocks.preview).toHaveBeenCalledWith(expect.objectContaining({ includeEventDetails: true }));
+        const link = document.querySelector<HTMLAnchorElement>(`a[href="${url}"]`)!;
+        expect(link.textContent).toBe(translate('calendar.publishing.openEvent'));
+        expect(link.rel).toBe('noopener noreferrer');
+        expect(document.body.textContent).toContain(translate('calendar.publishing.duration', { duration: details.duration }));
+        expect(document.body.textContent).toContain(translate('calendar.publishing.location', { location: details.location }));
+        expect(document.body.textContent).toContain(translate('calendar.publishing.description', { description: details.description }));
+        expect(document.querySelectorAll('a')).toHaveLength(1);
+        await check('calendar.publishing.acknowledgeChannelDetails'); await change('calendar.publishing.confirmName', 'events');
+        expect(button('calendar.publishing.enable').disabled).toBe(true);
+        await check('calendar.publishing.acknowledgeEventsDetails');
+        expect(button('calendar.publishing.enable').disabled).toBe(false);
+        await click('calendar.publishing.enable');
+        expect(mocks.confirm).toHaveBeenCalledWith(expect.objectContaining({ acknowledgeServerEvents: true }));
     });
     it.each(['en', 'nl'] as const)('shows every exact Discord Event field including truncation and fallback duration in %s', async locale => {
         mocks.locale = locale;

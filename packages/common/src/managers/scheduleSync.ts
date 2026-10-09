@@ -4,6 +4,7 @@ import { CalendarConnection, CalendarSource } from '../models/calendar-connectio
 import { CalendarEventSnapshot, CalendarEventSnapshotState } from '../models/calendar-publication.js';
 import { PersonalSchedule, ScheduleOccurrence } from '../models/personal-schedule.js';
 import { scheduleKey, scheduleTimezone, ScheduleError, type ImportedOccurrence } from './scheduleShared.js';
+import { calendarDetailText, googleCalendarEventLink } from '../utils/calendarDetails.js';
 
 export async function syncScheduleSource(input: {
     sourceId: string; userId: string; events: ImportedOccurrence[]; windowStart: number; windowEnd: number; observedAt: number; sourceVersion: number;
@@ -59,7 +60,9 @@ export async function syncScheduleSource(input: {
         }
         // Public calendar dates follow the provider; completed private history keeps its original snapshot.
         await CalendarEventSnapshot.upsert({ id: existing.id, userId, sourceId, scheduleId: existing.scheduleId, eventId: event.eventId,
-            title: event.title, timezone: event.timezone, plannedAt: event.plannedAt, endAt: event.endAt, allDay: event.allDay, cancelled: false }, { transaction });
+            title: event.title, timezone: event.timezone, plannedAt: event.plannedAt, endAt: event.endAt, allDay: event.allDay, cancelled: false,
+            htmlLink: googleCalendarEventLink(event.htmlLink), location: calendarDetailText(event.location, 100),
+            description: calendarDetailText(event.description, 1000) }, { transaction });
     }
     const schedules = await PersonalSchedule.findAll({ where: { sourceId, userId }, transaction });
     const candidates = await ScheduleOccurrence.findAll({ where: { userId, scheduleId: { [Op.in]: schedules.map(row => row.id) },

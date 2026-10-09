@@ -18,7 +18,7 @@ const userId = '123456789012345678';
 const otherUser = '223456789012345678';
 const sourceId = randomUUID();
 const now = Date.UTC(2026, 9, 9, 8);
-const input: PublicationInput = { sourceId, guildId: '323456789012345678', channelId: '423456789012345678', lookaheadDays: 180, eventLeadDays: null, publicTitle: null };
+const input: PublicationInput = { sourceId, guildId: '323456789012345678', channelId: '423456789012345678', lookaheadDays: 180, eventLeadDays: null, publicTitle: null, includeEventDetails: false };
 const event = { seriesKey: 'medicine', occurrenceKey: 'first', eventId: 'google-private-id', title: 'Synthetic medicine', timezone: 'Europe/Amsterdam',
     plannedAt: now + 25 * 86_400_000, endAt: now + 25 * 86_400_000 + 3_600_000, allDay: false, cancelled: false };
 let actor: string | null = userId;
@@ -51,7 +51,9 @@ describe('calendar publishing privacy and preview confirmation', () => {
     it('previews future data with no public configuration or sensitive fields, then enables once', async () => {
         const preview = await request(app).post('/publish/preview').send(input);
         expectOk(preview); expect(preview.body.count).toBe(1); expect(preview.body.eventCount).toBe(0);
-        expect(preview.body.events[0]).toEqual({ title: event.title, plannedAt: event.plannedAt, endAt: event.endAt, timezone: event.timezone, allDay: false, discordEvent: null });
+        expect(preview.body.events[0]).toMatchObject({ title: event.title, plannedAt: event.plannedAt, endAt: event.endAt, timezone: event.timezone, allDay: false, discordEvent: null,
+            htmlLink: null, location: null, description: null, duration: '1 hour',
+            channelMessage: { title: event.title, url: null, duration: '1 hour', location: null, description: null } });
         expect(preview.text).not.toContain('private@email'); expect(preview.text).not.toContain('google-private-id');
         expect(await CalendarPublication.count()).toBe(0); expect(await CalendarPublicationDelivery.count()).toBe(0);
         const body = { draftId: preview.body.draftId, acknowledgeChannel: true, acknowledgeServerEvents: false, confirmChannelName: 'reminders' };
@@ -59,6 +61,31 @@ describe('calendar publishing privacy and preview confirmation', () => {
         expectCreated(result); expect(result.body.publication).toMatchObject({ enabled: true, eventLeadDays: null, uncertainCount: 0 });
         expectConflict(await request(app).post('/publish/confirm').send(body));
         expect(destination.validate).toHaveBeenCalledTimes(2);
+    });
+    it('keeps old callers private and confirms only exact reviewed detail settings', async () => {
+        await CalendarEventSnapshot.update({ htmlLink: 'https://www.google.com/calendar/event?eid=synthetic', location: 'Clinic', description: 'Provider description' }, { where: { userId } });
+        const { includeEventDetails: _details, ...legacy } = input;
+        const preview = await request(app).post('/publish/preview').send(legacy);
+        expectOk(preview); expect(preview.body.includeEventDetails).toBe(false);
+        expect(preview.body.events[0].channelMessage).toMatchObject({ url: null, location: null, description: null });
+        const confirmation = { draftId: preview.body.draftId, acknowledgeChannel: true, acknowledgeServerEvents: false, confirmChannelName: 'reminders' };
+        expectBadRequest(await request(app).post('/publish/confirm').send({ ...confirmation, includeEventDetails: true }));
+        expectCreated(await request(app).post('/publish/confirm').send(confirmation));
+        expect((await CalendarPublication.findOne())?.includeEventDetails).toBe(false);
+    });
+    it('previews exact approved channel and Event details and invalidates detail changes', async () => {
+        await CalendarEventSnapshot.update({ htmlLink: 'https://www.google.com/calendar/event?eid=synthetic', location: 'Clinic [A]', description: 'Read *instructions* @everyone' }, { where: { userId } });
+        const settings = { ...input, includeEventDetails: true, eventLeadDays: 30, publicTitle: 'Appointment' };
+        const preview = await previewPublication(userId, settings, now);
+        expect(preview.includeEventDetails).toBe(true);
+        expect(preview.events[0].channelMessage).toEqual({ title: 'Appointment', url: 'https://www.google.com/calendar/event?eid=synthetic',
+            duration: '1 hour', location: 'Clinic \\[A\\]', description: 'Read \\*instructions\\* @\u200beveryone' });
+        expect(preview.events[0].discordEvent).toMatchObject({ name: 'Appointment', location: 'Clinic [A]', description: 'Read \\*instructions\\* @\u200beveryone' });
+        expect(JSON.stringify(preview)).not.toContain(event.title);
+        await CalendarEventSnapshot.update({ description: 'Changed instructions' }, { where: { userId } });
+        await expect(confirmPublication(userId, preview.draftId, 'reminders', true, now)).rejects.toMatchObject({ code: 'stale_preview' });
+        const fresh = await previewPublication(userId, settings, now);
+        await expect(confirmPublication(userId, fresh.draftId, 'reminders', true, now)).resolves.toMatchObject({ includeEventDetails: true });
     });
     it('requires a real authenticated calendar owner before guild lookups or data access', async () => {
         actor = null; expectUnauthorized(await request(app).get('/publish'));

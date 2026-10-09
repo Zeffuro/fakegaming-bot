@@ -25,5 +25,11 @@
     "calendarPublicAllDay": "Gebeurtenis voor de hele dag",
     "calendarPublicTimezone": "Tijdzone van kalender: {timezone}",
     "calendarPublicLocation": "Kalenderherinnering",
-    "calendarPublicEventDescription": "Geïmporteerde kalenderdatum. Persoonlijke herinneringen en voltooiingsgeschiedenis blijven privé."
+    "calendarPublicEventDescription": "Geïmporteerde kalenderdatum. Persoonlijke herinneringen en voltooiingsgeschiedenis blijven privé.",
+    "calendarPublicDuration": "Duur",
+    "calendarPublicDurationDays": "{count, plural, one {# dag} other {# dagen}}",
+    "calendarPublicDurationHours": "{count, plural, one {# uur} other {# uur}}",
+    "calendarPublicDurationMinutes": "{count, plural, one {# minuut} other {# minuten}}",
+    "calendarPublicLocationLabel": "Locatie",
+    "calendarPublicDescription": "Beschrijving"
 }

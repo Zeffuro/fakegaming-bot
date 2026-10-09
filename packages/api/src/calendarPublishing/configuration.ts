@@ -6,23 +6,27 @@ import { CalendarConnection, CalendarSource, CalendarPublication, CalendarPublic
 import { serializedTransaction } from '@zeffuro/fakegaming-common/managers';
 import { validatePublicationDestination } from './discord.js';
 import { resolveGuildOutputLocale } from '../localization/locale.js';
-import { publicationEvent } from './payload.js';
+import { publicationEvent, publicationMessageDetails } from './payload.js';
 
 export const DAY = 86_400_000;
 export const publicationInputSchema = z.object({
     sourceId: z.string().uuid(), guildId: z.string().regex(/^\d{17,20}$/), channelId: z.string().regex(/^\d{17,20}$/),
     lookaheadDays: z.number().int().min(30).max(365), eventLeadDays: z.number().int().min(1).max(30).nullable(),
     publicTitle: z.string().trim().min(1).max(100).nullable(),
+    includeEventDetails: z.boolean().optional().default(false),
 }).strict();
 export type PublicationInput = z.infer<typeof publicationInputSchema>;
 export class PublicationError extends Error {
     constructor(public readonly code: 'not_found' | 'stale_preview' | 'too_many' | 'not_ready' | 'conflict') { super(code); }
 }
-export interface PublicOccurrence { id: string; title: string; plannedAt: number; endAt: number | null; timezone: string; allDay: boolean; cancelled: boolean }
+export interface PublicOccurrence { id: string; title: string; plannedAt: number; endAt: number | null; timezone: string; allDay: boolean; cancelled: boolean;
+    htmlLink?: string | null; location?: string | null; description?: string | null }
 export const hashPublication = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-export function publicOccurrence(row: CalendarEventSnapshot, title: string | null): PublicOccurrence {
+export function publicOccurrence(row: CalendarEventSnapshot, title: string | null, includeEventDetails = false): PublicOccurrence {
     return { id: row.id, title: title ?? row.title, plannedAt: Number(row.plannedAt), endAt: row.endAt === null ? null : Number(row.endAt),
-        timezone: row.timezone, allDay: row.allDay, cancelled: row.cancelled };
+        timezone: row.timezone, allDay: row.allDay, cancelled: row.cancelled,
+        htmlLink: includeEventDetails ? row.htmlLink ?? null : null, location: includeEventDetails ? row.location ?? null : null,
+        description: includeEventDetails ? row.description ?? null : null };
 }
 
 export async function publicationSource(userId: string, sourceId: string, transaction?: Transaction): Promise<CalendarSource> {
@@ -45,7 +49,7 @@ async function snapshot(userId: string, input: PublicationInput, previewAt: numb
     const source = await publicationSource(userId, input.sourceId, transaction);
     const rows = await futurePublicationRows(userId, input, previewAt, transaction);
     if (rows.length > 100) throw new PublicationError('too_many');
-    const events = rows.map(row => publicOccurrence(row, input.publicTitle));
+    const events = rows.map(row => publicOccurrence(row, input.publicTitle, input.includeEventDetails));
     return { events, hash: hashPublication({ calendarId: source.calendarId, titleFilter: source.titleFilter, timezone: source.timezone, events }) };
 }
 
@@ -61,10 +65,11 @@ export async function previewPublication(userId: string, input: PublicationInput
             snapshotHash: current.hash, previewAt: now, expiresAt: now + 10 * 60_000 }, { transaction });
         return { draftId: draft.id, expiresAt: Number(draft.expiresAt), ...destination, count: current.events.length,
             eventCount: input.eventLeadDays === null ? 0 : current.events.filter(row => row.plannedAt <= now + input.eventLeadDays! * DAY).length,
-            lookaheadDays: input.lookaheadDays, eventLeadDays: input.eventLeadDays, publicTitle: input.publicTitle,
+            lookaheadDays: input.lookaheadDays, eventLeadDays: input.eventLeadDays, publicTitle: input.publicTitle, includeEventDetails: input.includeEventDetails,
             events: current.events.map(({ id: _id, cancelled: _cancelled, ...row }) => {
                 const details = input.eventLeadDays === null ? null : publicationEvent({ id: _id, cancelled: _cancelled, ...row }, locale);
-                return { ...row, discordEvent: details === null ? null : { name: details.name as string,
+                const channelMessage = publicationMessageDetails({ id: _id, cancelled: _cancelled, ...row }, locale);
+                return { ...row, duration: channelMessage.duration, channelMessage, discordEvent: details === null ? null : { name: details.name as string,
                     plannedAt: Date.parse(details.scheduled_start_time as string), endAt: Date.parse(details.scheduled_end_time as string),
                     location: (details.entity_metadata as { location: string }).location, description: details.description as string } };
             }) };
@@ -99,7 +104,8 @@ export async function confirmPublication(userId: string, draftId: string, channe
 export async function publicationView(row: CalendarPublication) {
     const uncertainCount = await CalendarPublicationDelivery.count({ where: { publicationId: row.id, status: 'uncertain' } });
     return { id: row.id, sourceId: row.sourceId, guildId: row.guildId, channelId: row.channelId, guildName: row.guildName, channelName: row.channelName,
-        lookaheadDays: row.lookaheadDays, eventLeadDays: row.eventLeadDays, publicTitle: row.publicTitle, enabled: row.enabled, lastError: row.lastError, uncertainCount };
+        lookaheadDays: row.lookaheadDays, eventLeadDays: row.eventLeadDays, publicTitle: row.publicTitle, includeEventDetails: row.includeEventDetails,
+        enabled: row.enabled, lastError: row.lastError, uncertainCount };
 }
 
 export async function stopPublication(userId: string, id: string): Promise<void> {

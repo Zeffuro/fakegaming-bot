@@ -5,6 +5,17 @@ import { calendarDateAtNine, fetchGoogleOccurrences, listGoogleCalendars, normal
 const event = { id: 'instance', recurringEventId: 'series', summary: 'Planned item', originalStartTime: { dateTime: '2026-10-20T10:00:00+02:00' }, start: { dateTime: '2026-10-21T12:00:00+02:00' }, end: { dateTime: '2026-10-21T13:00:00+02:00' } };
 describe('authoritative Google Calendar snapshots', () => {
     beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
+    it('imports only bounded readable provider details, without HTML resources or unsafe links', () => {
+        expect(normalizeGoogleEvent(event, 'UTC')).toMatchObject({ htmlLink: null, location: null, description: null });
+        const result = normalizeGoogleEvent({ ...event, htmlLink: 'https://www.google.com/calendar/event?eid=synthetic', location: ' Clinic @everyone ',
+            description: 'Plain text<br>Next <b>step</b> &amp; advice<script>secret()</script><img src="https://remote.test/a">' }, 'UTC');
+        expect(result).toMatchObject({ htmlLink: 'https://www.google.com/calendar/event?eid=synthetic', location: 'Clinic @\u200beveryone', description: 'Plain text\nNext step & advice' });
+        expect(normalizeGoogleEvent({ ...event, htmlLink: 'https://evil.test/calendar/event?eid=id', location: ' ', description: '<p> </p>' }, 'UTC'))
+            .toMatchObject({ htmlLink: null, location: null, description: null });
+        const large = normalizeGoogleEvent({ ...event, location: 'a'.repeat(101), description: 'b'.repeat(1001) }, 'UTC');
+        expect(large.location).toHaveLength(100); expect(large.description).toHaveLength(1000);
+        expect(fetch).not.toHaveBeenCalled();
+    });
     it('keeps stable original instance identity when a recurring occurrence moves', () => {
         const moved = normalizeGoogleEvent(event, 'Europe/Amsterdam');
         expect(moved).toMatchObject({ seriesKey: 'series', occurrenceKey: `time:${Date.parse('2026-10-20T08:00:00Z')}`, plannedAt: Date.parse('2026-10-21T10:00:00Z') });

@@ -25,5 +25,11 @@
     "calendarPublicAllDay": "All-day event",
     "calendarPublicTimezone": "Calendar timezone: {timezone}",
     "calendarPublicLocation": "Calendar reminder",
-    "calendarPublicEventDescription": "Imported calendar date. Personal reminders and completion history remain private."
+    "calendarPublicEventDescription": "Imported calendar date. Personal reminders and completion history remain private.",
+    "calendarPublicDuration": "Duration",
+    "calendarPublicDurationDays": "{count, plural, one {# day} other {# days}}",
+    "calendarPublicDurationHours": "{count, plural, one {# hour} other {# hours}}",
+    "calendarPublicDurationMinutes": "{count, plural, one {# minute} other {# minutes}}",
+    "calendarPublicLocationLabel": "Location",
+    "calendarPublicDescription": "Description"
 }

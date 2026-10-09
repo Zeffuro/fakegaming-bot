@@ -1,10 +1,12 @@
 import { z } from 'zod';
+import { calendarDetailText, googleCalendarEventLink } from '@zeffuro/fakegaming-common/utils';
 import { CalendarError, getCalendarToken, googleJson } from './auth.js';
 
 export interface GoogleCalendarItem { id: string; summary: string; timeZone: string }
 export interface ImportedCalendarOccurrence {
     seriesKey: string; occurrenceKey: string; eventId: string; title: string; timezone: string;
     plannedAt: number; endAt: number | null; allDay: boolean; cancelled: boolean;
+    htmlLink: string | null; location: string | null; description: string | null;
 }
 const timezone = z.string().max(100).refine(value => {
     try { new Intl.DateTimeFormat('en', { timeZone: value }); return true; } catch { return false; }
@@ -20,7 +22,8 @@ const timeSchema = z.object({ date: date.optional(), dateTime: dateTime.optional
     .refine(value => Boolean(value.date) !== Boolean(value.dateTime) && (!value.dateTime || hasOffset(value.dateTime) || Boolean(value.timeZone)));
 const eventSchema = z.object({ id: z.string().min(1).max(1024), status: z.enum(['confirmed', 'tentative', 'cancelled']).optional(),
     summary: z.string().max(10000).optional(), recurringEventId: z.string().min(1).max(1024).optional(), originalStartTime: timeSchema.optional(),
-    start: timeSchema.optional(), end: timeSchema.optional() });
+    start: timeSchema.optional(), end: timeSchema.optional(), htmlLink: z.string().max(10000).nullish(),
+    location: z.string().max(10000).nullish(), description: z.string().max(100000).nullish() });
 const eventPage = z.object({ items: z.array(eventSchema).max(2500).optional(), nextPageToken: z.string().min(1).max(4096).optional(), timeZone: timezone.optional() })
     .refine(value => value.items !== undefined || value.timeZone !== undefined);
 const calendarPage = z.object({ items: z.array(z.object({ id: z.string().min(1).max(1024), summary: z.string().max(10000).optional(),
@@ -96,7 +99,9 @@ export function normalizeGoogleEvent(raw: unknown, fallbackTimezone: string): Im
     if (!cancelled && endAt !== null && endAt < plannedAt) throw new CalendarError('invalid_snapshot');
     return { seriesKey: event.recurringEventId ?? event.id,
         occurrenceKey: event.originalStartTime ? timeKey(event.originalStartTime) : event.id, eventId: event.id,
-        title: event.summary ?? '', timezone: zone, plannedAt, endAt, allDay: Boolean(start?.date), cancelled };
+        title: event.summary ?? '', timezone: zone, plannedAt, endAt, allDay: Boolean(start?.date), cancelled,
+        htmlLink: googleCalendarEventLink(event.htmlLink), location: calendarDetailText(event.location, 100),
+        description: calendarDetailText(event.description, 1000, true) };
 }
 
 export async function fetchGoogleOccurrences(userId: string, calendarId: string, zone: string, windowStart: number, windowEnd: number): Promise<ImportedCalendarOccurrence[]> {
@@ -105,7 +110,7 @@ export async function fetchGoogleOccurrences(userId: string, calendarId: string,
     let next: string | undefined;
     for (let page = 0; page < 40; page += 1) {
         const params = new URLSearchParams({ singleEvents: 'true', showDeleted: 'true', maxResults: '2500',
-            fields: 'items(id,status,summary,recurringEventId,originalStartTime,start,end),nextPageToken,timeZone',
+            fields: 'items(id,status,summary,recurringEventId,originalStartTime,start,end,htmlLink,location,description),nextPageToken,timeZone',
             timeMin: new Date(windowStart).toISOString(), timeMax: new Date(windowEnd).toISOString(), timeZone: zone });
         if (next) params.set('pageToken', next);
         const parsed = eventPage.safeParse(await authorizedJson(userId, `calendars/${encodeURIComponent(calendarId)}/events`, params));
