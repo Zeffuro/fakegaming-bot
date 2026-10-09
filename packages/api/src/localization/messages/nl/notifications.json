@@ -71,5 +71,10 @@
   "twitchClipCategory": "Categorie",
   "twitchClipDuration": "Duur",
   "twitchClipSeconds": "{seconds, number}s",
-  "twitchClipBroadcast": "Oorspronkelijke uitzending"
+  "twitchClipBroadcast": "Oorspronkelijke uitzending",
+  "reminderSnoozeTenMinutes": "Snooze 10m",
+  "reminderSnoozeOneHour": "Snooze 1u",
+  "reminderCustomSnooze": "Aangepast…",
+  "reminderDismiss": "Sluiten",
+  "taskDone": "Gereed"
 }
