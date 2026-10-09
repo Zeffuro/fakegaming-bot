@@ -13,6 +13,12 @@
             },
             "repeat-timezone": {
                 "description": "Timezone for repeats; defaults to your saved timezone"
+            },
+            "at": {
+                "description": "Exact date or time, e.g. 2026-10-08 19:30 or 19:30"
+            },
+            "timezone": {
+                "description": "Timezone for the exact time; defaults to your saved timezone or UTC"
             }
         }
     },
@@ -64,5 +70,8 @@
                 "description": "Reminder number from /reminders or its short ID"
             }
         }
+    },
+    "Remind Me": {
+        "description": "Choose when to follow up on a message"
     }
 }

@@ -1,6 +1,6 @@
 {
     "notes": {
-        "description": "Add, list, show, and delete your personal notes",
+        "description": "Manage your personal notes and saved inbox",
         "options": {
             "add": {
                 "description": "Save a personal note",
@@ -13,11 +13,38 @@
                     },
                     "pinned": {
                         "description": "Pin this note to the top of your list"
+                    },
+                    "tags": {
+                        "description": "Comma-separated tags (up to 10)"
+                    },
+                    "source-url": {
+                        "description": "Optional source link (HTTP or HTTPS)"
                     }
                 }
             },
             "list": {
-                "description": "List your personal notes"
+                "description": "List your personal notes",
+                "options": {
+                    "query": {
+                        "description": "Search note titles and text"
+                    },
+                    "tag": {
+                        "description": "Filter by one tag"
+                    },
+                    "status": {
+                        "description": "Filter by inbox state",
+                        "choices": {
+                            "active": "Active",
+                            "unread": "Unread",
+                            "read": "Read",
+                            "archived": "Archived",
+                            "all": "All"
+                        }
+                    },
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
             },
             "show": {
                 "description": "Show one of your notes",
@@ -32,6 +59,25 @@
                 "options": {
                     "note": {
                         "description": "Note number from /notes list or its short ID"
+                    }
+                }
+            },
+            "edit": {
+                "description": "Update tags or inbox state",
+                "options": {
+                    "note": {
+                        "description": "Note short ID or number from your full list"
+                    },
+                    "tags": {
+                        "description": "Comma-separated tags (up to 10); empty clears tags"
+                    },
+                    "status": {
+                        "description": "Set inbox state",
+                        "choices": {
+                            "unread": "Unread",
+                            "read": "Read",
+                            "archived": "Archived"
+                        }
                     }
                 }
             }

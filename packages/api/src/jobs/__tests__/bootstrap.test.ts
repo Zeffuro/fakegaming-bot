@@ -23,6 +23,9 @@ vi.mock('../bluesky.js', () => ({ registerBlueskyJobs: vi.fn().mockResolvedValue
 vi.mock('../anime.js', () => ({ registerAnimeJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../steamNews.js', () => ({ registerSteamNewsJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../userDigests.js', () => ({ registerUserDigestJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../personalFollows.js', () => ({ registerPersonalFollowJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../personalSchedules.js', () => ({ registerPersonalScheduleJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../../googleCalendar/sync.js', () => ({ registerGoogleCalendarJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../quoteOfDay.js', () => ({ registerQuoteOfDayJobs: vi.fn().mockResolvedValue(undefined) }));
 
 import * as birthdays from '../birthdays.js';
@@ -37,6 +40,9 @@ import * as bluesky from '../bluesky.js';
 import * as anime from '../anime.js';
 import * as steamNews from '../steamNews.js';
 import * as userDigests from '../userDigests.js';
+import * as personalFollows from '../personalFollows.js';
+import * as personalSchedules from '../personalSchedules.js';
+import * as googleCalendar from '../../googleCalendar/sync.js';
 import * as quoteOfDay from '../quoteOfDay.js';
 
 async function importFresh<T = any>(modulePath: string): Promise<T> {
@@ -65,6 +71,9 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(birthdays).registerBirthdaysJobs).toHaveBeenCalled();
         expect(vi.mocked(reminders).registerRemindersJobs).toHaveBeenCalled();
         expect(vi.mocked(userDigests).registerUserDigestJobs).toHaveBeenCalled();
+        expect(vi.mocked(personalFollows).registerPersonalFollowJobs).toHaveBeenCalled();
+        expect(vi.mocked(personalSchedules).registerPersonalScheduleJobs).toHaveBeenCalled();
+        expect(vi.mocked(googleCalendar).registerGoogleCalendarJobs).toHaveBeenCalled();
         expect(vi.mocked(quoteOfDay).registerQuoteOfDayJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotes).registerPatchNotesJobs).toHaveBeenCalled();
         expect(vi.mocked(patchNotesScan).registerPatchNotesScanJobs).toHaveBeenCalled();

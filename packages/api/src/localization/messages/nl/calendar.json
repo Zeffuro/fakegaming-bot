@@ -1,0 +1,11 @@
+{
+    "calendarNotConfigured": "Google Agenda is nog niet geconfigureerd op deze server.",
+    "calendarNotConnected": "Verbind Google Agenda voordat je agenda's kiest of synchroniseert.",
+    "calendarInvalidState": "Deze verbindingspoging voor Google Agenda is verlopen of ongeldig. Begin opnieuw.",
+    "calendarInvalidToken": "De toestemming voor Google Agenda is verlopen of geweigerd. Verbind je account opnieuw.",
+    "calendarProviderUnavailable": "Google Agenda is tijdelijk niet beschikbaar. Probeer het later opnieuw.",
+    "calendarInvalidSnapshot": "Google Agenda gaf een onvolledig of ongeldig resultaat terug. Je opgeslagen afspraken zijn bewaard.",
+    "calendarConflict": "De selectielimiet is bereikt of de verbinding is gewijzigd. Vernieuw en probeer opnieuw.",
+    "googleCalendarSelectionNotFound": "Deze agenda of selectie is niet beschikbaar voor jouw account.",
+    "calendarUntitledEvent": "Afspraak zonder titel"
+}

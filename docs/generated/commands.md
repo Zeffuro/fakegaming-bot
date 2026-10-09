@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 65 commands; 60 slash; 2 user context; 3 message context.
+Total: 72 commands; 66 slash; 2 user context; 4 message context.
 
 ## Anime
 
@@ -104,6 +104,7 @@ Total: 65 commands; 60 slash; 2 user context; 3 message context.
 | Slash | `/set-reminder` | Set a reminder | All users |
 | Slash | `/set-timezone` | Set your timezone | All users |
 | Slash | `/snooze-reminder` | Snooze one of your pending reminders | All users |
+| Message context | `Remind Me` | Choose when to follow up on a message | All users |
 | Message context | `Remind Me in 1h` | Set a one-hour reminder for a message from the message context menu | All users |
 
 ## Tiktok
@@ -134,8 +135,22 @@ Total: 65 commands; 60 slash; 2 user context; 3 message context.
 
 | Type | Command | Description | Permissions |
 | --- | --- | --- | --- |
-| Slash | `/notes` | Add, list, show, and delete your personal notes | All users |
+| Slash | `/notes` | Manage your personal notes and saved inbox | All users |
 | Message context | `Save to Notes` | Save a message excerpt and jump link to your private notes | All users |
+
+## Personal
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/countdowns` | Manage private countdowns to exact dates | All users |
+| Slash | `/session` | Track private focus and gaming sessions | All users |
+| Slash | `/tasks` | Manage your private tasks and checklists | All users |
+
+## Schedules
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/schedule` | Manage private schedules and completion history | All users |
 
 ## Steam
 
@@ -143,3 +158,15 @@ Total: 65 commands; 60 slash; 2 user context; 3 message context.
 | --- | --- | --- | --- |
 | Slash | `/add-steam-news` | Add Steam game news notifications | Administrator |
 | Slash | `/manage-steam-news` | List, test, pause, resume, or remove Steam news notifications | Administrator |
+
+## Presets
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/preset` | Save and run your private command presets | All users |
+
+## Private follows
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/follows` | Manage your private game and stream notifications | All users |

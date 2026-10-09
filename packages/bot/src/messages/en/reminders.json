@@ -21,5 +21,23 @@
     "timezoneSet": "Timezone set to `{timezone}`.",
     "serverOnly": "Message reminders only work in a server.",
     "followUpMessage": "Follow up on this message: {url}",
-    "oneHourSet": "Reminder set for '<t:'{timestamp}:R>."
+    "oneHourSet": "Reminder set for '<t:'{timestamp}:R>.",
+    "flexible": {
+        "chooseTime": "When should I remind you about this message?",
+        "tenMinutes": "10 minutes",
+        "oneHour": "1 hour",
+        "tomorrow": "Tomorrow",
+        "custom": "Custom",
+        "customTitle": "Choose reminder time",
+        "whenLabel": "When?",
+        "whenPlaceholder": "30m, tomorrow, 2026-10-08 19:30, or 19:30",
+        "timezoneLabel": "Timezone (optional)",
+        "timezonePlaceholder": "Your saved timezone, or UTC",
+        "unavailable": "This reminder action has expired, was already used, or belongs to someone else.",
+        "invalidTime": "Invalid time or timezone. Use 30m, tomorrow, YYYY-MM-DD HH:mm, HH:mm, or an ISO date with offset. Local times skipped or repeated by daylight saving are not accepted.",
+        "dismissed": "Reminder dismissed.",
+        "actionFailed": "The reminder could not be saved. Please try again."
+    },
+    "chooseOneTime": "Choose exactly one of timespan or at. The timezone option can only be used with at.",
+    "exactSet": "Reminder set for '<t:'{timestamp}:F> ('<t:'{timestamp}:R>): \"{message}\".{repeat}"
 }

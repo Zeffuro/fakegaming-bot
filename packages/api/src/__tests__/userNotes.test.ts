@@ -8,6 +8,28 @@ describe('User notes API', () => {
         await configManager.userNoteManager.removeAll();
     });
 
+    it('exposes inbox metadata and validates owner-scoped filters and state updates', async () => {
+        const owner = givenAuthenticatedClient(app, { discordId: 'inbox-owner' });
+        const other = givenAuthenticatedClient(app, { discordId: 'inbox-other' });
+        const saved = await owner.post('/api/userNotes', { body: '100% guide', tags: [' Games '], sourceUrl: 'https://example.com/' });
+        expectCreated(saved);
+        expect(saved.body).toMatchObject({ status: 'unread', tags: ['games'], sourceUrl: 'https://example.com/' });
+        expectNotFound(await other.put(`/api/userNotes/${saved.body.id}`, { status: 'archived' }));
+        const filtered = await owner.get('/api/userNotes?query=100%25&tag=games&status=unread&page=1&pageSize=5');
+        expectOk(filtered);
+        expect(filtered.body).toMatchObject({ total: 1, page: 1, pages: 1 });
+        expect(filtered.body.notes).toHaveLength(1);
+        expect((await other.get('/api/userNotes?status=all')).body.notes).toHaveLength(0);
+        const archived = await owner.put(`/api/userNotes/${saved.body.id}`, { status: 'archived', tags: [] });
+        expectOk(archived);
+        expect(archived.body).toMatchObject({ status: 'archived', tags: [] });
+        expect((await owner.get('/api/userNotes?status=active')).body.notes).toHaveLength(0);
+        expect((await owner.get('/api/userNotes?status=archived')).body.notes).toHaveLength(1);
+        expectBadRequest(await owner.put(`/api/userNotes/${saved.body.id}`, { sourceUrl: 'javascript:alert(1)' }));
+        expectBadRequest(await owner.put(`/api/userNotes/${saved.body.id}`, { status: 'unknown' }));
+        expectBadRequest(await owner.get('/api/userNotes?page=0'));
+    });
+
     it('creates, lists, updates, and deletes notes for the authenticated user', async () => {
         const client = givenAuthenticatedClient(app, { discordId: 'note-user' });
 

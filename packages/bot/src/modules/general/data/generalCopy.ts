@@ -24,6 +24,7 @@ export interface GeneralCopy {
     poll: {
         questionRequired: string; twoOptions: string; unique: string; duration: (min: number, max: number) => string;
         creating: string; capacity: string; creatorOrModerator: string; unavailable: string; closed: string; closeButton: string;
+        failure: string; singleVoting: string; multipleVoting: string; selected: (count: number) => string;
         closes: (unix: number) => string; closedByExpiry: string; closedByCreator: string; closedByModerator: string; votes: (count: number) => string;
         total: (count: number) => string; noVotes: string; winner: (name: string, count: number) => string;
         tie: (names: string, count: number) => string;
@@ -62,6 +63,7 @@ export function getGeneralCopy(locale: SupportedOutputLocale): GeneralCopy {
             ...raw.poll,
             duration: (min, max) => t('poll.duration', { min, max }), closes: unix => t('poll.closes', { unix }),
             votes: count => t('poll.votes', { count }), total: count => t('poll.total', { count }),
+            selected: count => t('poll.selected', { count }),
             winner: (name, count) => t('poll.winner', { name, count }), tie: (names, count) => t('poll.tie', { names, count }),
         },
         profile: { ...raw.profile, caption: mention => t('profile.caption', { mention }) },

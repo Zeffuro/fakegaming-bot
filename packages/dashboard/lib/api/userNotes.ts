@@ -6,6 +6,9 @@ export interface UserNote {
     title: string;
     body: string;
     pinned: boolean;
+    status?: 'unread' | 'read' | 'archived';
+    tags?: string[];
+    sourceUrl?: string | null;
     createdAt: string | null;
     updatedAt: string | null;
 }
@@ -18,12 +21,18 @@ export interface UserNoteInput {
     title?: string;
     body?: string;
     pinned?: boolean;
+    status?: 'unread' | 'read' | 'archived';
+    tags?: string[];
+    sourceUrl?: string | null;
 }
 
 export interface UserNoteUpdateInput {
     title?: string;
     body?: string;
     pinned?: boolean;
+    status?: 'unread' | 'read' | 'archived';
+    tags?: string[];
+    sourceUrl?: string | null;
 }
 
 export const userNotesApi = {

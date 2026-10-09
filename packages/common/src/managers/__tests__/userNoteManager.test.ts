@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { configManager } from '../../vitest.setup.js';
+import { UserNoteManager } from '../userNoteManager.js';
 
 describe('UserNoteManager', () => {
     const manager = configManager.userNoteManager;
@@ -85,5 +86,38 @@ describe('UserNoteManager', () => {
 
         expect(english.title).toBe('Untitled note');
         expect(dutch.title).toBe('Naamloze notitie');
+    });
+
+    it('persists inbox metadata across manager recreation and enforces ownership', async () => {
+        const created = await manager.createForUser({ discordId: 'owner', body: 'Saved link', tags: [' Games ', 'games', 'CO-OP'], sourceUrl: 'https://example.com/game' });
+        expect(created).toMatchObject({ status: 'unread', tags: ['games', 'co-op'], sourceUrl: 'https://example.com/game' });
+        const restarted = new UserNoteManager();
+        expect(await restarted.getForUser(created.id, 'owner')).toMatchObject({ status: 'unread', tags: ['games', 'co-op'] });
+        expect(await restarted.updateForUser(created.id, 'other', { status: 'archived' })).toBeNull();
+        expect(await restarted.updateForUser(created.id, 'owner', { status: 'read' })).toMatchObject({ status: 'read' });
+        expect(await restarted.updateForUser(created.id, 'owner', { status: 'archived', tags: [] })).toMatchObject({ status: 'archived', tags: [] });
+        expect((await restarted.inboxForUser('owner')).notes).toHaveLength(0);
+        expect((await restarted.inboxForUser('owner', { status: 'archived' })).notes).toHaveLength(1);
+        expect((await restarted.inboxForUser('other', { status: 'all' })).notes).toHaveLength(0);
+    });
+
+    it('searches literal text and tags with stable paging', async () => {
+        for (let index = 0; index < 7; index++) {
+            await manager.createForUser({ discordId: 'owner', title: `Guide ${index}`, body: '100% raid_coop', tags: ['raid'], pinned: index === 0 });
+        }
+        await manager.createForUser({ discordId: 'owner', body: 'Unrelated', tags: ['movie'] });
+        const page = await manager.inboxForUser('owner', { query: '100% raid_', tag: 'RAID', page: 2, pageSize: 5 });
+        expect(page).toMatchObject({ total: 7, page: 2, pages: 2 });
+        expect(page.notes).toHaveLength(2);
+        expect((await manager.inboxForUser('owner', { query: 'missing' })).notes).toHaveLength(0);
+        expect((await manager.inboxForUser('owner', { tag: 'movie' })).notes).toHaveLength(1);
+    });
+
+    it('rejects unsafe source URLs and oversized tags without changing saved state', async () => {
+        const created = await manager.createForUser({ discordId: 'owner', body: 'Safe' });
+        await expect(manager.updateForUser(created.id, 'owner', { sourceUrl: 'javascript:alert(1)' })).rejects.toThrow();
+        await expect(manager.updateForUser(created.id, 'owner', { sourceUrl: 'https://user:secret@example.com/' })).rejects.toThrow();
+        await expect(manager.updateForUser(created.id, 'owner', { tags: ['x'.repeat(33)] })).rejects.toThrow();
+        expect(await manager.getForUser(created.id, 'owner')).toMatchObject({ sourceUrl: null, tags: [], status: 'unread' });
     });
 });

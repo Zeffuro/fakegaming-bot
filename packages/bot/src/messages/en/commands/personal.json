@@ -1,0 +1,180 @@
+{
+    "tasks": {
+        "description": "Manage your private tasks and checklists",
+        "options": {
+            "add": {
+                "description": "Create a private task or checklist",
+                "options": {
+                    "title": {
+                        "description": "Task title"
+                    },
+                    "checklist": {
+                        "description": "Up to ten checklist items separated by |"
+                    },
+                    "due": {
+                        "description": "Future date, time or delay"
+                    },
+                    "repeat": {
+                        "description": "Repeat after completion, e.g. daily or every 2 weeks"
+                    },
+                    "timezone": {
+                        "description": "IANA timezone; defaults to your saved timezone or UTC"
+                    }
+                }
+            },
+            "list": {
+                "description": "List your tasks",
+                "options": {
+                    "completed": {
+                        "description": "Show completed tasks"
+                    },
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "show": {
+                "description": "Open a task and its controls",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    }
+                }
+            },
+            "done": {
+                "description": "Complete this occurrence",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    }
+                }
+            },
+            "snooze": {
+                "description": "Move this occurrence to a later time",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    },
+                    "when": {
+                        "description": "Future date, time or delay"
+                    }
+                }
+            },
+            "check": {
+                "description": "Toggle a checklist item",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    },
+                    "item": {
+                        "description": "Checklist item number"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a task",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    }
+                }
+            }
+        }
+    },
+    "session": {
+        "description": "Track private focus and gaming sessions",
+        "options": {
+            "start": {
+                "description": "Start a focus or gaming session",
+                "options": {
+                    "kind": {
+                        "description": "Session type",
+                        "choices": {
+                            "focus": "Focus",
+                            "gaming": "Gaming"
+                        }
+                    },
+                    "title": {
+                        "description": "Session title"
+                    },
+                    "minutes": {
+                        "description": "Session or focus block minutes; Pomodoro defaults to 25"
+                    },
+                    "pomodoro": {
+                        "description": "Alternate focus and break blocks"
+                    },
+                    "break-minutes": {
+                        "description": "Pomodoro break minutes; default 5"
+                    },
+                    "cycles": {
+                        "description": "Pomodoro focus blocks; default 4"
+                    },
+                    "break-every": {
+                        "description": "Optional break reminder after these active minutes"
+                    }
+                }
+            },
+            "status": {
+                "description": "Show your active session"
+            },
+            "pause": {
+                "description": "Pause your active session"
+            },
+            "resume": {
+                "description": "Resume your paused session"
+            },
+            "stop": {
+                "description": "Stop your active session"
+            },
+            "stats": {
+                "description": "Show your retained time totals"
+            }
+        }
+    },
+    "countdowns": {
+        "description": "Manage private countdowns to exact dates",
+        "options": {
+            "add": {
+                "description": "Create a countdown to a future date",
+                "options": {
+                    "title": {
+                        "description": "Countdown title"
+                    },
+                    "at": {
+                        "description": "Exact date and time, e.g. 2026-12-25 09:00"
+                    },
+                    "timezone": {
+                        "description": "IANA timezone; defaults to your saved timezone or UTC"
+                    },
+                    "advance-minutes": {
+                        "description": "Optional alert this many minutes before the date"
+                    }
+                }
+            },
+            "list": {
+                "description": "List upcoming countdowns in date order",
+                "options": {
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "show": {
+                "description": "Show a countdown",
+                "options": {
+                    "countdown": {
+                        "description": "Countdown ID from /countdowns list"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a countdown and its alerts",
+                "options": {
+                    "countdown": {
+                        "description": "Countdown ID from /countdowns list"
+                    }
+                }
+            }
+        }
+    }
+}

@@ -16,5 +16,6 @@ export * from './riotId.js';
 export * from './quoteMetadata.js';
 export * from './quoteOfDay.js';
 export * from './reminderRecurrence.js';
+export * from './reminderTime.js';
 export * from './digestSchedule.js';
 export * from './outputLocale.js';

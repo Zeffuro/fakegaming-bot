@@ -85,9 +85,29 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Personal note commands"
     },
     {
+        "name": "personal",
+        "title": "Personal",
+        "description": "Private tasks, sessions and countdowns"
+    },
+    {
+        "name": "schedules",
+        "title": "Schedules",
+        "description": "Private schedules and completion history"
+    },
+    {
         "name": "steam",
         "title": "Steam",
         "description": "Steam game news notification commands"
+    },
+    {
+        "name": "presets",
+        "title": "Presets",
+        "description": "Private saved command options"
+    },
+    {
+        "name": "follows",
+        "title": "Private follows",
+        "description": "Personal game and stream notifications"
     }
 ] as const;
 
@@ -813,6 +833,21 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         }
     },
     {
+        "name": "Remind Me",
+        "description": "Choose when to follow up on a message",
+        "module": "reminders",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": "message",
+        "localizations": {
+            "nl": {
+                "description": "Kies wanneer je een herinnering voor een bericht wilt"
+            }
+        }
+    },
+    {
         "name": "delete-reminder",
         "description": "Delete one of your pending reminders",
         "module": "reminders",
@@ -1009,7 +1044,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "notes",
-        "description": "Add, list, show, and delete your personal notes",
+        "description": "Manage your personal notes and saved inbox",
         "module": "notes",
         "permissions": null,
         "dm_permission": null,
@@ -1018,7 +1053,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null,
         "localizations": {
             "nl": {
-                "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze"
+                "description": "Beheer je persoonlijke notities en opgeslagen inbox"
             }
         }
     },
@@ -1034,6 +1069,66 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "localizations": {
             "nl": {
                 "description": "Bewaar een berichtfragment en link in je privénotities"
+            }
+        }
+    },
+    {
+        "name": "tasks",
+        "description": "Manage your private tasks and checklists",
+        "module": "personal",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Beheer je privétaken en checklists"
+            }
+        }
+    },
+    {
+        "name": "session",
+        "description": "Track private focus and gaming sessions",
+        "module": "personal",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Houd privésessies voor focus en gamen bij"
+            }
+        }
+    },
+    {
+        "name": "countdowns",
+        "description": "Manage private countdowns to exact dates",
+        "module": "personal",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Beheer privéaftellers naar exacte datums"
+            }
+        }
+    },
+    {
+        "name": "schedule",
+        "description": "Manage private schedules and completion history",
+        "module": "schedules",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Privéschema’s en voltooiingsgeschiedenis beheren"
             }
         }
     },
@@ -1064,6 +1159,36 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "localizations": {
             "nl": {
                 "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+            }
+        }
+    },
+    {
+        "name": "preset",
+        "description": "Save and run your private command presets",
+        "module": "presets",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Bewaar en gebruik je privé-commandopresets"
+            }
+        }
+    },
+    {
+        "name": "follows",
+        "description": "Manage your private game and stream notifications",
+        "module": "follows",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Beheer je privé-meldingen voor spellen en streams"
             }
         }
     }
@@ -1879,6 +2004,21 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 }
             },
             {
+                "name": "Remind Me",
+                "description": "Choose when to follow up on a message",
+                "module": "reminders",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": "message",
+                "localizations": {
+                    "nl": {
+                        "description": "Kies wanneer je een herinnering voor een bericht wilt"
+                    }
+                }
+            },
+            {
                 "name": "delete-reminder",
                 "description": "Delete one of your pending reminders",
                 "module": "reminders",
@@ -2119,7 +2259,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
         "commands": [
             {
                 "name": "notes",
-                "description": "Add, list, show, and delete your personal notes",
+                "description": "Manage your personal notes and saved inbox",
                 "module": "notes",
                 "permissions": null,
                 "dm_permission": null,
@@ -2128,7 +2268,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "type": null,
                 "localizations": {
                     "nl": {
-                        "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze"
+                        "description": "Beheer je persoonlijke notities en opgeslagen inbox"
                     }
                 }
             },
@@ -2144,6 +2284,84 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "localizations": {
                     "nl": {
                         "description": "Bewaar een berichtfragment en link in je privénotities"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "personal",
+            "title": "Personal",
+            "description": "Private tasks, sessions and countdowns"
+        },
+        "commands": [
+            {
+                "name": "tasks",
+                "description": "Manage your private tasks and checklists",
+                "module": "personal",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Beheer je privétaken en checklists"
+                    }
+                }
+            },
+            {
+                "name": "session",
+                "description": "Track private focus and gaming sessions",
+                "module": "personal",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Houd privésessies voor focus en gamen bij"
+                    }
+                }
+            },
+            {
+                "name": "countdowns",
+                "description": "Manage private countdowns to exact dates",
+                "module": "personal",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Beheer privéaftellers naar exacte datums"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "schedules",
+            "title": "Schedules",
+            "description": "Private schedules and completion history"
+        },
+        "commands": [
+            {
+                "name": "schedule",
+                "description": "Manage private schedules and completion history",
+                "module": "schedules",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Privéschema’s en voltooiingsgeschiedenis beheren"
                     }
                 }
             }
@@ -2183,6 +2401,54 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "localizations": {
                     "nl": {
                         "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "presets",
+            "title": "Presets",
+            "description": "Private saved command options"
+        },
+        "commands": [
+            {
+                "name": "preset",
+                "description": "Save and run your private command presets",
+                "module": "presets",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Bewaar en gebruik je privé-commandopresets"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "follows",
+            "title": "Private follows",
+            "description": "Personal game and stream notifications"
+        },
+        "commands": [
+            {
+                "name": "follows",
+                "description": "Manage your private game and stream notifications",
+                "module": "follows",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Beheer je privé-meldingen voor spellen en streams"
                     }
                 }
             }

@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 156
+Operations: 165
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -129,6 +129,15 @@ Operations: 156
 | TwitchClips | POST | `/twitchClips/bot/connect` | Begin dashboard-administrator Twitch bot OAuth | Bearer |
 | TwitchClips | GET | `/twitchClips/bot/status` | Get safe Twitch clip bot connection status | Bearer |
 | UserActivity | GET | `/userActivity` | Get recent account activity for the authenticated dashboard user | Bearer |
+| UserCalendar | GET | `/userCalendar` | Get safe personal calendar status and selections | Bearer |
+| UserCalendar | DELETE | `/userCalendar` | Disconnect personal Google Calendar and pause imports while preserving history | Bearer |
+| UserCalendar | GET | `/userCalendar/calendars` | List calendars readable by the authenticated Google account | Bearer |
+| UserCalendar | POST | `/userCalendar/complete` | Complete owner and browser bound Google Calendar OAuth | Bearer |
+| UserCalendar | POST | `/userCalendar/connect` | Begin owner and browser bound Google OAuth with PKCE | Bearer |
+| UserCalendar | GET | `/userCalendar/export` | Download all retained owner completion history without provider credentials | Bearer |
+| UserCalendar | POST | `/userCalendar/sources` | Select an owner calendar and optional title substring filter | Bearer |
+| UserCalendar | DELETE | `/userCalendar/sources/{id}` | Stop following an owner calendar selection and retain completion history | Bearer |
+| UserCalendar | POST | `/userCalendar/sources/{id}/sync` | Synchronize a selected owner calendar from an authoritative provider window | Bearer |
 | UserDigestSubscription | GET | `/userDigestSubscription` | Get the authenticated user's digest subscription | Bearer |
 | UserDigestSubscription | PUT | `/userDigestSubscription` | Create or update the authenticated user's digest subscription | Bearer |
 | UserDigestSubscription | PATCH | `/userDigestSubscription/paused` | Pause or resume the authenticated user's digest subscription | Bearer |

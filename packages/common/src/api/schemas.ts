@@ -299,7 +299,27 @@ export const userReminderSnoozeRequestSchema = z.object({
     timespan: nonEmptyString,
 }).strict();
 
+const noteInboxFields = {
+    tags: z.array(z.string().trim().min(1).max(32)).max(10).optional(),
+    status: z.enum(['unread', 'read', 'archived']).optional(),
+    sourceUrl: z.string().max(2048).url().refine(value => {
+        try {
+            const url = new URL(value);
+            return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password;
+        } catch { return false; }
+    }, { message: 'A public HTTP or HTTPS URL is required' }).nullable().optional(),
+};
+
+export const userNoteInboxQuerySchema = z.object({
+    query: z.string().trim().max(100).optional(),
+    tag: z.string().trim().max(32).optional(),
+    status: z.enum(['unread', 'read', 'archived', 'active', 'all']).optional(),
+    page: z.coerce.number().int().min(1).max(100000).optional(),
+    pageSize: z.coerce.number().int().min(1).max(50).optional(),
+}).strict();
+
 export const userNoteCreateRequestSchema = z.object({
+    ...noteInboxFields,
     title: z.string().trim().max(160).optional(),
     body: z.string().max(20000).optional(),
     pinned: z.boolean().optional(),
@@ -308,6 +328,7 @@ export const userNoteCreateRequestSchema = z.object({
 });
 
 export const userNoteUpdateRequestSchema = z.object({
+    ...noteInboxFields,
     title: z.string().trim().max(160).optional(),
     body: z.string().max(20000).optional(),
     pinned: z.boolean().optional(),

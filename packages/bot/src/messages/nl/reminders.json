@@ -21,5 +21,23 @@
     "timezoneSet": "Tijdzone ingesteld op `{timezone}`.",
     "serverOnly": "Bericht herinneringen werken alleen op een server.",
     "followUpMessage": "Kom terug op dit bericht: {url}",
-    "oneHourSet": "Herinnering ingesteld voor '<t:'{timestamp}:R>."
+    "oneHourSet": "Herinnering ingesteld voor '<t:'{timestamp}:R>.",
+    "flexible": {
+        "chooseTime": "Wanneer wil je een herinnering voor dit bericht?",
+        "tenMinutes": "10 minuten",
+        "oneHour": "1 uur",
+        "tomorrow": "Morgen",
+        "custom": "Aangepast",
+        "customTitle": "Herinneringstijd kiezen",
+        "whenLabel": "Wanneer?",
+        "whenPlaceholder": "30m, tomorrow, 2026-10-08 19:30, of 19:30",
+        "timezoneLabel": "Tijdzone (optioneel)",
+        "timezonePlaceholder": "Je opgeslagen tijdzone, of UTC",
+        "unavailable": "Deze actie is verlopen, al gebruikt of van iemand anders.",
+        "invalidTime": "Ongeldige tijd of tijdzone. Gebruik 30m, tomorrow, YYYY-MM-DD HH:mm, HH:mm of een ISO-datum met tijdzone-offset. Lokale tijden die door de zomertijd worden overgeslagen of herhaald zijn niet toegestaan.",
+        "dismissed": "Herinnering gesloten.",
+        "actionFailed": "De herinnering kon niet worden opgeslagen. Probeer het opnieuw."
+    },
+    "chooseOneTime": "Kies precies één van timespan of at. De optie timezone kan alleen samen met at worden gebruikt.",
+    "exactSet": "Herinnering ingesteld voor '<t:'{timestamp}:F> ('<t:'{timestamp}:R>): \"{message}\".{repeat}"
 }

@@ -1,0 +1,13 @@
+{
+    "schedulePlanned": "Planned: {time} ({timezone})",
+    "scheduleCompleted": "Completed: {time}",
+    "schedulePending": "Awaiting your confirmation",
+    "scheduleCancelled": "Cancelled in the calendar; your history is retained",
+    "scheduleTaken": "Taken now",
+    "scheduleEarlier": "Log earlier time",
+    "scheduleLater": "Remind later",
+    "scheduleHistory": "History",
+    "scheduleUndo": "Undo completion",
+    "scheduleNote": "Note",
+    "scheduleAllDay": "All-day event"
+}

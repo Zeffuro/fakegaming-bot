@@ -1,0 +1,174 @@
+{
+    "schedule": {
+        "description": "Privéschema’s en voltooiingsgeschiedenis beheren",
+        "options": {
+            "add": {
+                "description": "Een vast privéschema maken",
+                "options": {
+                    "title": {
+                        "description": "Privétitel"
+                    },
+                    "at": {
+                        "description": "Exacte toekomstige datum en tijd"
+                    },
+                    "timezone": {
+                        "description": "IANA-tijdzone; standaard je opgeslagen tijdzone"
+                    },
+                    "repeat-weeks": {
+                        "description": "Vast interval in weken; weglaten voor één moment"
+                    }
+                }
+            },
+            "list": {
+                "description": "Privémomenten bekijken",
+                "options": {
+                    "filter": {
+                        "description": "Status van het moment",
+                        "choices": {
+                            "upcoming": "Komend",
+                            "unconfirmed": "Onbevestigd",
+                            "completed": "Voltooid",
+                            "all": "Alle"
+                        }
+                    },
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "show": {
+                "description": "Privéknoppen voor een moment openen",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    }
+                }
+            },
+            "complete": {
+                "description": "Voltooiing nu of eerder bevestigen",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    },
+                    "at": {
+                        "description": "Exacte datum en tijd in het verleden met optionele ISO-offset"
+                    }
+                }
+            },
+            "correct": {
+                "description": "Tijdstip van voltooiing corrigeren",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    },
+                    "at": {
+                        "description": "Exacte datum en tijd in het verleden met optionele ISO-offset"
+                    }
+                }
+            },
+            "undo": {
+                "description": "Voltooiing ongedaan maken",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    }
+                }
+            },
+            "snooze": {
+                "description": "Later herinneren zonder het schema te verplaatsen",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    },
+                    "when": {
+                        "description": "Toekomstige datum, tijd of vertraging"
+                    }
+                }
+            },
+            "note": {
+                "description": "Privénotitie instellen of verwijderen",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    },
+                    "text": {
+                        "description": "Privénotitie; weglaten om te verwijderen"
+                    }
+                }
+            },
+            "history": {
+                "description": "Bewaarde geschiedenis van dit schema bekijken",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    },
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "summary": {
+                "description": "Laatst voltooid en volgende gepland bekijken",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    }
+                }
+            },
+            "pause": {
+                "description": "Privéschema pauzeren",
+                "options": {
+                    "schedule": {
+                        "description": "Schema-ID uit /schedule show"
+                    }
+                }
+            },
+            "resume": {
+                "description": "Privéschema hervatten",
+                "options": {
+                    "schedule": {
+                        "description": "Schema-ID uit /schedule show"
+                    }
+                }
+            },
+            "configure": {
+                "description": "Privéopvolging en stille uren instellen",
+                "options": {
+                    "timezone": {
+                        "description": "IANA-tijdzone voor stille uren"
+                    },
+                    "quiet-start": {
+                        "description": "Begin stille uren UU:mm; combineren met quiet-end"
+                    },
+                    "quiet-end": {
+                        "description": "Einde stille uren UU:mm; combineren met quiet-start"
+                    },
+                    "clear-quiet": {
+                        "description": "Stille uren verwijderen"
+                    },
+                    "followup-minutes": {
+                        "description": "Minuten tussen opvolgingen; minstens 15 indien ingeschakeld"
+                    },
+                    "max-followups": {
+                        "description": "Maximum aantal opvolgingen; nul schakelt ze uit"
+                    }
+                }
+            },
+            "export": {
+                "description": "Alle bewaarde privégeschiedenis exporteren",
+                "options": {
+                    "format": {
+                        "description": "Exportformaat",
+                        "choices": {
+                            "json": "JSON",
+                            "csv": "CSV"
+                        }
+                    }
+                }
+            },
+            "connect": {
+                "description": "Google-agenda’s kiezen in je privédashboard"
+            }
+        }
+    }
+}

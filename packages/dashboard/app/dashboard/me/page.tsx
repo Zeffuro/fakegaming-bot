@@ -24,12 +24,10 @@ import {
     Add,
     AlarmAdd,
     Delete,
-    Edit,
     ManageAccounts,
     NoteAlt,
     NotificationsActive,
     Movie,
-    PushPin,
     PauseCircle,
     PlayArrow,
     Refresh,
@@ -58,6 +56,8 @@ import { useUserAnimeSubscriptions } from "@/components/hooks/useUserAnimeSubscr
 import { useUserActivity } from "@/components/hooks/useUserActivity";
 import { useUserDigestSubscription } from "@/components/hooks/useUserDigestSubscription";
 import { useUserNotes } from "@/components/hooks/useUserNotes";
+import { NoteInboxPanel } from "@/components/notes/NoteInboxPanel";
+import { CalendarPanel } from "@/components/calendar/CalendarPanel";
 import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
@@ -167,7 +167,6 @@ export default function PersonalDashboardPage() {
     const [reminderForm, setReminderForm] = useState<ReminderFormState>(emptyReminderForm);
     const [settingsForm, setSettingsForm] = useState<SettingsFormState>(emptySettingsForm);
     const [digestForm, setDigestForm] = useState<DigestFormState>(emptyDigestForm);
-    const [noteQuery, setNoteQuery] = useState("");
     const [noteLocalError, setNoteLocalError] = useState<string | null>(null);
     const [reminderLocalError, setReminderLocalError] = useState<string | null>(null);
     const [settingsLocalError, setSettingsLocalError] = useState<string | null>(null);
@@ -201,13 +200,7 @@ export default function PersonalDashboardPage() {
         () => notes.find((note) => note.id === editingId) ?? null,
         [editingId, notes],
     );
-    const filteredNotes = useMemo(() => {
-        const query = noteQuery.trim().toLowerCase();
-        if (!query) return notes;
-        return notes.filter((note) =>
-            note.title.toLowerCase().includes(query) || note.body.toLowerCase().includes(query)
-        );
-    }, [noteQuery, notes]);
+
 
     const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? digestLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError ?? digestError ?? activityError ?? riotError;
     const loading = notesLoading || remindersLoading || animeLoading || settingsLoading || digestLoading || activityLoading || riotLoading;
@@ -472,6 +465,7 @@ export default function PersonalDashboardPage() {
                 />
 
                 <Stack spacing={3}>
+                    <CalendarPanel />
                     {pageError && (
                         <Alert severity="error" sx={{ bgcolor: "rgba(127,29,29,0.52)", color: "error.light" }}>
                             {pageError}
@@ -555,56 +549,7 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
 
-                            <FeaturePanel accent={dashboardAccents.quotes}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                {t("personal.notesTitle")}
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {noteQuery.trim()
-                                                    ? t("personal.notesFiltered", { shown: formatNumber(filteredNotes.length), total: formatNumber(notes.length) })
-                                                    : t("personal.notesSaved", { count: formatNumber(notes.length) })}
-                                            </Typography>
-                                        </Box>
-                                        <TextField
-                                            value={noteQuery}
-                                            onChange={(event) => setNoteQuery(event.target.value)}
-                                            placeholder={t("personal.searchNotes")}
-                                            size="small"
-                                            sx={{ width: { xs: "100%", md: 280 }, ...dashboardFieldSx(dashboardAccents.quotes) }}
-                                            slotProps={{
-                                                input: {
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <Search fontSize="small" sx={{ color: "rgba(255,255,255,0.58)" }} />
-                                                        </InputAdornment>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    </Stack>
-
-                                    {notes.length === 0 ? (
-                                        <EmptyPersonalState icon={<NoteAlt />} title={t("personal.noNotes")} accent={dashboardAccents.commands} />
-                                    ) : filteredNotes.length === 0 ? (
-                                        <EmptyPersonalState icon={<Search />} title={t("personal.noMatchingNotes")} accent={dashboardAccents.quotes} />
-                                    ) : (
-                                        <Stack spacing={1.5}>
-                                            {filteredNotes.map((note) => (
-                                                <NoteCard
-                                                    key={note.id}
-                                                    note={note}
-                                                    onTogglePinned={togglePinned}
-                                                    onEdit={startEdit}
-                                                    onDelete={removeNote}
-                                                />
-                                            ))}
-                                        </Stack>
-                                    )}
-                                </Stack>
-                            </FeaturePanel>
+                            <NoteInboxPanel notes={notes} saving={notesSaving} onTogglePinned={togglePinned} onEdit={startEdit} onDelete={removeNote} onUpdate={updateNote} />
 
                             <FeaturePanel accent={dashboardAccents.birthdays}>
                                 <Stack spacing={2.25} sx={{ position: "relative" }}>
@@ -1394,71 +1339,6 @@ function AnimeSubscriptionCard({ subscription, saving, onTogglePaused, onDelete 
                 >
                     {paused ? t("anime.resumeReminders") : t("anime.pauseReminders")}
                 </Button>
-            </Stack>
-        </Box>
-    );
-}
-
-function NoteCard({ note, onTogglePinned, onEdit, onDelete }: {
-    note: UserNote;
-    onTogglePinned: (note: UserNote) => void | Promise<void>;
-    onEdit: (note: UserNote) => void;
-    onDelete: (note: UserNote) => void | Promise<void>;
-}) {
-    const { t, formatDate } = useDashboardI18n();
-
-    return (
-        <Box sx={{ ...dashboardCardSx(note.pinned ? dashboardAccents.commands : dashboardAccents.quotes), p: 2.25 }}>
-            <Stack spacing={1.5} sx={{ position: "relative" }}>
-                <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
-                    <Box sx={{ minWidth: 0 }}>
-                        <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
-                            <Typography sx={{ color: "grey.50", fontWeight: 900, overflowWrap: "anywhere" }}>
-                                {note.title}
-                            </Typography>
-                            {note.pinned && (
-                                <Chip
-                                    icon={<PushPin fontSize="small" />}
-                                    label={t("personal.pinned")}
-                                    size="small"
-                                    sx={{ bgcolor: alpha(dashboardAccents.commands, 0.16), color: "grey.50" }}
-                                />
-                            )}
-                        </Stack>
-                        <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.46)" }}>
-                            {t("personal.noteUpdated", { date: formatOptionalDate(note.updatedAt, formatDate, t("common.unknown")) })}
-                        </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={0.5}>
-                        <Tooltip title={note.pinned ? t("personal.unpin") : t("personal.pin")}>
-                            <IconButton
-                                aria-label={note.pinned ? t("personal.unpinNoteAria") : t("personal.pinNoteAria")}
-                                onClick={() => void onTogglePinned(note)}
-                                sx={{ color: note.pinned ? dashboardAccents.commands : "grey.300" }}
-                            >
-                                <PushPin fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t("common.edit")}>
-                            <IconButton aria-label={t("personal.editNoteAria")} onClick={() => onEdit(note)} sx={{ color: "grey.300" }}>
-                                <Edit fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t("common.delete")}>
-                            <IconButton aria-label={t("personal.deleteNoteAria")} onClick={() => void onDelete(note)} sx={{ color: dashboardAccents.quotes }}>
-                                <Delete fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    </Stack>
-                </Stack>
-                {note.body ? (
-                    <>
-                        <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-                        <Typography sx={{ color: "rgba(255,255,255,0.74)", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
-                            {note.body}
-                        </Typography>
-                    </>
-                ) : null}
             </Stack>
         </Box>
     );

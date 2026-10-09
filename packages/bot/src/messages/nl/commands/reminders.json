@@ -13,6 +13,12 @@
             },
             "repeat-timezone": {
                 "description": "Tijdzone voor herhaling; standaard je opgeslagen tijdzone"
+            },
+            "at": {
+                "description": "Exacte datum of tijd, bijv. 2026-10-08 19:30 of 19:30"
+            },
+            "timezone": {
+                "description": "Tijdzone voor de exacte tijd; standaard je opgeslagen tijdzone of UTC"
             }
         }
     },
@@ -64,5 +70,8 @@
                 "description": "Nummer uit /herinneringen of het korte ID"
             }
         }
+    },
+    "Remind Me": {
+        "description": "Kies wanneer je een herinnering voor een bericht wilt"
     }
 }

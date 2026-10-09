@@ -18,4 +18,13 @@ export class UserNoteConfig extends Model {
 
     @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
     declare pinned: boolean;
+
+    @Column({ type: DataType.STRING(16), allowNull: false, defaultValue: 'unread' })
+    declare status: 'unread' | 'read' | 'archived';
+
+    @Column({ type: DataType.JSON, allowNull: false, defaultValue: [] })
+    declare tags: string[];
+
+    @Column({ type: DataType.STRING(2048), allowNull: true })
+    declare sourceUrl: string | null;
 }

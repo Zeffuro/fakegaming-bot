@@ -1,0 +1,32 @@
+{
+    "errors": {
+        "invalid": "Check the supplied values. Use a future date or delay, a valid timezone and the documented limits.",
+        "missing": "This personal item is unavailable or belongs to someone else.",
+        "stale": "These controls are out of date or already used. Open the item again for current controls.",
+        "capacity": "Your personal item limit has been reached. Remove an item before adding another.",
+        "exists": "You already have a running or paused session. Stop it before starting another.",
+        "failure": "The action could not be saved. Please try again shortly."
+    },
+    "common": { "page": "Page {page} of {pages}", "removed": "Removed.", "empty": "No items to show.", "id": "ID: {id}" },
+    "tasks": {
+        "title": "Your tasks and checklists", "completed": "Your completed tasks", "done": "Done", "snooze": "Snooze 10m",
+        "due": "Due '<t:'{unix}:F> ('<t:'{unix}:R>)", "noDue": "No due date", "completedAt": "Completed '<t:'{unix}:R>",
+        "repeating": "Repeats after you press Done; Snooze only moves this occurrence.", "count": "Completions: {count, number}",
+        "check": "Toggle item {index}", "summary": "{title} — {done}/{total} items — {due}"
+    },
+    "session": {
+        "focus": "Focus", "gaming": "Gaming", "pause": "Pause", "resume": "Resume", "stop": "Stop",
+        "states": { "running": "Running", "paused": "Paused", "stopped": "Stopped", "finished": "Finished" },
+        "phases": { "focus": "Focus", "break": "Break" },
+        "status": "{kind}: **{title}** — {state}", "time": "Active time: {minutes, number} min; breaks: {breakMinutes, number} min",
+        "remaining": "This phase: {minutes, number} min remaining", "cycle": "Pomodoro {cycle}/{cycles} — {phase}",
+        "none": "You have no active session.", "stats": "Totals for retained sessions (90-day history):\nFocus: {focus, number} min\nGaming: {gaming, number} min\nPomodoro breaks: {breaks, number} min\nSessions: {count, number}",
+        "alertFocus": "{title}: your next focus block starts now.", "alertBreak": "{title}: time for your Pomodoro break.",
+        "alertFinished": "{title}: your session is finished.", "alertTakeBreak": "{title}: time to take a break."
+    },
+    "countdowns": {
+        "title": "Your upcoming countdowns", "entry": "**{title}** — '<t:'{unix}:F> ('<t:'{unix}:R>) — {timezone}\nID: {id}",
+        "advance": "Advance alert: {minutes, number} min before", "dueMessage": "{title}: your countdown has reached its date.",
+        "advanceMessage": "{title}: coming up '<t:'{unix}:F>."
+    }
+}

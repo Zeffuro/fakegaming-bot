@@ -14,6 +14,8 @@ export interface ReminderCopy {
     repeat: (interval: number, unit: ReminderRecurrenceUnit, timezone: string) => string;
     invalidTimezone: string; timezoneSet: (timezone: string) => string; serverOnly: string;
     followUpMessage: (url: string) => string; oneHourSet: (timestamp: number) => string;
+    chooseOneTime: string; invalidTime: string;
+    exactSet: (message: string, timestamp: number, repeat: string) => string;
 }
 
 export function getReminderCopy(locale: SupportedOutputLocale): ReminderCopy {
@@ -25,6 +27,8 @@ export function getReminderCopy(locale: SupportedOutputLocale): ReminderCopy {
         recurringOnlyResume: raw.recurringOnlyResume, invalidTimespan: raw.invalidTimespan,
         invalidSnooze: raw.invalidSnooze, invalidRepeat: raw.invalidRepeat, none: raw.none, title: raw.title,
         invalidTimezone: raw.invalidTimezone, serverOnly: raw.serverOnly,
+        chooseOneTime: raw.chooseOneTime, invalidTime: raw.flexible.invalidTime,
+        exactSet: (message, timestamp, repeat) => t('exactSet', { message, timestamp, repeat }),
         deleted: (id, message) => t('deleted', { id, message }), alreadyPaused: id => t('alreadyPaused', { id }),
         alreadyActive: id => t('alreadyActive', { id }), paused: (id, message) => t('paused', { id, message }),
         resumed: (id, message, nextRun) => t('resumed', { id, message, nextRun }),

@@ -20,6 +20,7 @@ import { tierEmojiNames } from './modules/league/constants/leagueTierEmojis.js';
 import { getLogger, startMetricsSummaryLogger, incMetric } from '@zeffuro/fakegaming-common';
 import { startHealthServer } from './utils/healthServer.js';
 import { startGameNightExpiryRuntime } from './modules/game-night/shared/gameNightRuntime.js';
+import { initializePollRuntime } from './modules/general/shared/pollRuntime.js';
 import { voiceChannelOccupancyRuntime } from './modules/general/shared/voiceChannelOccupancyRuntime.js';
 import {resolveInteractionOutputLocale} from './core/localization.js';
 
@@ -107,6 +108,11 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                 logger.warn({ err: error }, 'Failed to restore Game Night Board expiry timers');
             }
             try {
+                await initializePollRuntime(client);
+            } catch (error) {
+                logger.warn({ err: error }, 'Failed to restore poll expiry timers');
+            }
+            try {
                 const configs = await getConfigManager().voiceChannelOccupancyConfigManager.listConfiguredGuilds();
                 const restored = await voiceChannelOccupancyRuntime.start(client, configs);
                 logger.info({ configured: configs.length, ...restored }, 'Voice channel occupancy runtime started');
@@ -117,9 +123,11 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
 
 
         client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-            if (interaction.isButton()) {
+            if (interaction.isButton() || interaction.isModalSubmit()) {
                 try {
-                    const handled = await componentRouter.dispatch(interaction);
+                    const handled = interaction.isButton()
+                        ? await componentRouter.dispatch(interaction)
+                        : await componentRouter.dispatchModal(interaction);
                     if (handled) return;
                 } catch (error) {
                     incMetric('component_error', { name: componentNamespace(interaction.customId) });
@@ -131,6 +139,14 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
                                 content: runtimeText(locale, "core", "errorHandlingInteraction"),
                                 flags: MessageFlags.Ephemeral
                             });
+                        } else if (interaction.deferred) {
+                            const locale = await resolveInteractionOutputLocale(interaction);
+                            const content = runtimeText(locale, "core", "errorHandlingInteraction");
+                            if (interaction.isModalSubmit() || interaction.ephemeral) {
+                                await interaction.editReply({ content });
+                            } else {
+                                await interaction.followUp({ content, flags: MessageFlags.Ephemeral });
+                            }
                         }
                     } catch (err) {
                         logger.error({ err }, 'Failed to send component error reply:');

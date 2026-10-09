@@ -17,5 +17,23 @@
     "stickers": "{count, plural, one {# sticker} other {# stickers}}",
     "and": "and",
     "contextSaved": "Saved this message to your private notes as `{id}`.",
-    "contextFailed": "I could not save that message to your private notes. Please try again later."
+    "contextFailed": "I could not save that message to your private notes. Please try again later.",
+    "inbox": {
+        "unread": "unread",
+        "read": "read",
+        "archived": "archived",
+        "open": "Open",
+        "remind": "Remind me",
+        "archive": "Archive",
+        "restore": "Restore",
+        "tenMinutes": "10 minutes",
+        "oneHour": "1 hour",
+        "tomorrow": "Tomorrow",
+        "custom": "Custom",
+        "chooseTime": "When should I remind you about this saved item?",
+        "chooseEdit": "Choose tags or a status to update.",
+        "invalidTags": "Use up to 10 comma-separated tags, each at most 32 characters.",
+        "page": "Page {page}/{pages} · {count} items. Use /notes list page to browse.",
+        "invalidSource": "Use a valid HTTP or HTTPS source link without credentials."
+    }
 }

@@ -1,0 +1,32 @@
+{
+    "calendar": {
+        "title": "Agenda en voltooiing",
+        "description": "Kies je Google-agenda's en afspraken voor privéherinneringen om voltooiing vast te leggen. Een afspraak voltooien verandert nooit toekomstige afspraken.",
+        "connectionError": "Google Agenda kon niet worden verbonden of geladen. Probeer het opnieuw.",
+        "connected": "Google Agenda verbonden. Kies hieronder welke agenda's en afspraken je wilt volgen.",
+        "notConfigured": "Google Agenda vereist serverconfiguratie voordat je kunt verbinden. Handmatige schema's zijn beschikbaar via /schedule add.",
+        "setup": "Serverconfiguratie: schakel Google Calendar API in, maak een OAuth-client voor een webapplicatie, registreer de dashboard-URL met /api/auth/google-calendar/callback en stel GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI en een willekeurige GOOGLE_CALENDAR_TOKEN_ENC_KEY van minstens 32 tekens in. Google kan verificatie van het OAuth-toestemmingsscherm of registratie als testgebruiker vereisen.",
+        "connect": "Google Agenda verbinden",
+        "reconnect": "Google Agenda opnieuw verbinden",
+        "disconnect": "Verbinding verbreken",
+        "refresh": "Vernieuwen",
+        "calendar": "Agenda",
+        "choose": "Kies een agenda",
+        "filter": "Titel bevat (optioneel)",
+        "filterHelp": "Laat leeg voor alle afspraken. Anders worden alleen titels met deze tekst geïmporteerd. Kies maximaal 10 combinaties van agenda en filter.",
+        "select": "Deze afspraken volgen",
+        "syncPending": "Je selectie is opgeslagen. De eerste synchronisatie wacht nog en wordt automatisch opnieuw geprobeerd.",
+        "empty": "Nog geen agenda's geselecteerd.",
+        "selectedFilter": "Titel bevat: {filter}",
+        "allEvents": "Alle afspraken",
+        "active": "Actief",
+        "inactive": "Gepauzeerd; kies opnieuw of hervat na het verbinden",
+        "lastSync": "Laatst gesynchroniseerd: {date}",
+        "neverSynced": "Nog niet gesynchroniseerd",
+        "sync": "Nu synchroniseren",
+        "resume": "Hervatten",
+        "remove": "Niet meer volgen",
+        "export": "Geschiedenis exporteren ({format})",
+        "historyHelp": "Het verbreken van de verbinding of stoppen met volgen bewaart je voltooiingsgeschiedenis. Gebruik /schedule history, /schedule summary en /schedule export in Discord om deze te bekijken of exporteren. Agendatoegang is alleen-lezen; herinneringen zijn privéberichten. Eerder geïmporteerde afspraken uit het verleden sturen geen herinneringen."
+    }
+}

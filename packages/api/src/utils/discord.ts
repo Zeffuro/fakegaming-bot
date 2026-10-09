@@ -10,7 +10,12 @@ interface DiscordPostOptions {
     missingTokenMessage: string;
     failureMessage: string;
     exceptionMessage: string;
+    timeoutMs?: number;
 }
+
+export type DiscordSendResult =
+    | { status: 'sent'; message: Record<string, unknown> }
+    | { status: 'rejected' | 'unknown' };
 
 function getBotToken(missingTokenMessage: string): string | null {
     const token = process.env.DISCORD_BOT_TOKEN;
@@ -21,16 +26,17 @@ function getBotToken(missingTokenMessage: string): string | null {
     return token;
 }
 
-async function postDiscordJson({
+async function postDiscordJsonResult({
     path,
     payload,
     logContext,
     missingTokenMessage,
     failureMessage,
-    exceptionMessage
-}: DiscordPostOptions): Promise<any | null> {
+    exceptionMessage,
+    timeoutMs,
+}: DiscordPostOptions): Promise<DiscordSendResult> {
     const token = getBotToken(missingTokenMessage);
-    if (!token) return null;
+    if (!token) return { status: 'rejected' };
 
     try {
         const res = await fetch(`${DISCORD_API_BASE}${path}`, {
@@ -39,7 +45,8 @@ async function postDiscordJson({
                 'Authorization': `Bot ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
         });
 
         if (res.status === 429) {
@@ -50,14 +57,22 @@ async function postDiscordJson({
         if (!res.ok) {
             const bodyText = await res.text().catch(() => '');
             log.warn({ ...logContext, status: res.status, body: bodyText.slice(0, 512) }, failureMessage);
-            return null;
+            return { status: res.status >= 500 ? 'unknown' : 'rejected' };
         }
 
-        return await res.json();
+        const message: unknown = await res.json();
+        return typeof message === 'object' && message !== null && !Array.isArray(message)
+            ? { status: 'sent', message: message as Record<string, unknown> }
+            : { status: 'unknown' };
     } catch (err) {
         log.error({ ...logContext, err }, exceptionMessage);
-        return null;
+        return { status: 'unknown' };
     }
+}
+
+async function postDiscordJson(options: DiscordPostOptions): Promise<any | null> {
+    const result = await postDiscordJsonResult(options);
+    return result.status === 'sent' ? result.message : null;
 }
 
 async function sendChannelPayload(channelId: string, payload: Record<string, unknown>): Promise<any | null> {
@@ -71,14 +86,15 @@ async function sendChannelPayload(channelId: string, payload: Record<string, unk
     });
 }
 
-async function createDmChannel(userId: string): Promise<string | null> {
+async function createDmChannel(userId: string, timeoutMs?: number): Promise<string | null> {
     const dm = await postDiscordJson({
         path: '/users/@me/channels',
         payload: { recipient_id: userId },
         logContext: { userId },
         missingTokenMessage: 'DISCORD_BOT_TOKEN is not set; cannot send direct messages',
         failureMessage: 'Failed to create DM channel',
-        exceptionMessage: 'Error creating DM channel'
+        exceptionMessage: 'Error creating DM channel',
+        timeoutMs,
     });
     if (!dm) return null;
 
@@ -122,4 +138,14 @@ export async function sendDirectMessage(userId: string, content: string): Promis
 export async function sendDirectMessagePayload(userId: string, payload: Record<string, unknown>): Promise<any | null> {
     const channelId = await createDmChannel(userId);
     return channelId ? await sendChannelMessagePayload(channelId, payload) : null;
+}
+
+export async function sendDirectMessagePayloadResult(userId: string, payload: Record<string, unknown>): Promise<DiscordSendResult> {
+    const channelId = await createDmChannel(userId, 15_000);
+    if (!channelId) return { status: 'rejected' };
+    return postDiscordJsonResult({
+        path: `/channels/${channelId}/messages`, payload, logContext: { userId, channelId }, timeoutMs: 15_000,
+        missingTokenMessage: 'DISCORD_BOT_TOKEN is not set; cannot send direct messages',
+        failureMessage: 'Failed to send reminder DM', exceptionMessage: 'Reminder DM send outcome unknown',
+    });
 }

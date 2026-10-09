@@ -136,7 +136,9 @@ export async function setupManagerMocks(configManagerOverrides: Record<string, M
 
     // Ensure any subsequent imports of the managers module return the current active mock
     vi.doMock('@zeffuro/fakegaming-common/managers', async () => {
+        const actual = await vi.importActual<Record<string, unknown>>('@zeffuro/fakegaming-common/managers');
         return {
+            ...actual,
             // Read from global to avoid depending on a specific module instance
             getConfigManager: () => (globalThis as any).__FG_ACTIVE_CONFIG_MANAGER__ as ConfigManager,
         } as unknown as { getConfigManager: () => ConfigManager };

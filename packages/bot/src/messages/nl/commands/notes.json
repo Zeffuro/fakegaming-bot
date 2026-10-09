@@ -1,6 +1,6 @@
 {
     "notes": {
-        "description": "Voeg persoonlijke notities toe, bekijk ze of verwijder ze",
+        "description": "Beheer je persoonlijke notities en opgeslagen inbox",
         "options": {
             "add": {
                 "description": "Sla een persoonlijke notitie op",
@@ -13,11 +13,38 @@
                     },
                     "pinned": {
                         "description": "Zet deze notitie bovenaan je lijst vast"
+                    },
+                    "tags": {
+                        "description": "Tags gescheiden door komma’s (maximaal 10)"
+                    },
+                    "source-url": {
+                        "description": "Optionele bronlink (HTTP of HTTPS)"
                     }
                 }
             },
             "list": {
-                "description": "Toon je persoonlijke notities"
+                "description": "Toon je persoonlijke notities",
+                "options": {
+                    "query": {
+                        "description": "Zoek in titels en tekst van notities"
+                    },
+                    "tag": {
+                        "description": "Filter op één tag"
+                    },
+                    "status": {
+                        "description": "Filter op inboxstatus",
+                        "choices": {
+                            "active": "Actief",
+                            "unread": "Ongelezen",
+                            "read": "Gelezen",
+                            "archived": "Gearchiveerd",
+                            "all": "Alles"
+                        }
+                    },
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
             },
             "show": {
                 "description": "Toon een van je notities",
@@ -32,6 +59,25 @@
                 "options": {
                     "note": {
                         "description": "Nummer uit /notities lijst of het korte ID"
+                    }
+                }
+            },
+            "edit": {
+                "description": "Werk tags of inboxstatus bij",
+                "options": {
+                    "note": {
+                        "description": "Korte ID of nummer van de notitie uit je volledige lijst"
+                    },
+                    "tags": {
+                        "description": "Tags gescheiden door komma’s (maximaal 10); leeg wist tags"
+                    },
+                    "status": {
+                        "description": "Stel inboxstatus in",
+                        "choices": {
+                            "unread": "Ongelezen",
+                            "read": "Gelezen",
+                            "archived": "Gearchiveerd"
+                        }
                     }
                 }
             }

@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChatInputCommandInteraction, MessageContextMenuCommandInteraction } from 'discord.js';
-import { createMockConfigManager, expectReplyTextContains, setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+import { createMockConfigManager, setupCommandTest } from '@zeffuro/fakegaming-common/testing';
+
+function expectEditTextContains(interaction: unknown, text: string): void {
+    const edit = (interaction as { editReply: ReturnType<typeof vi.fn> }).editReply;
+    expect(edit.mock.calls[0]?.[0]?.content).toContain(text);
+}
 
 const notes = [
     {
@@ -38,9 +43,9 @@ describe('notes command', () => {
         );
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
-        expectReplyTextContains(interaction, 'Je notities:');
-        expectReplyTextContains(interaction, '[vastgezet] Pinned note');
-        expectReplyTextContains(interaction, 'Pinned body');
+        expectEditTextContains(interaction, 'Je notities:');
+        expectEditTextContains(interaction, '[vastgezet] Pinned note');
+        expectEditTextContains(interaction, 'Pinned body');
     });
 
     it('adds a note with an optional title', async () => {
@@ -73,7 +78,7 @@ describe('notes command', () => {
             pinned: false,
             locale: 'en',
         });
-        expectReplyTextContains(interaction, 'Saved note `cccccccc`');
+        expectEditTextContains(interaction, 'Saved note `cccccccc`');
     });
 
     it('passes the stored Dutch locale when creating a note', async () => {
@@ -96,7 +101,19 @@ describe('notes command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         expect(createForUser).toHaveBeenCalledWith(expect.objectContaining({locale: 'nl'}));
-        expectReplyTextContains(interaction, 'Notitie `dddddddd` opgeslagen');
+        expectEditTextContains(interaction, 'Notitie `dddddddd` opgeslagen');
+    });
+
+    it('rejects executable or credential-bearing source links before saving', async () => {
+        const createForUser = vi.fn();
+        const { command, interaction } = await setupCommandTest('modules/notes/commands/notes.js', {
+            interaction: { subcommand: 'add', stringOptions: { body: 'Bookmark', 'source-url': 'javascript:alert(1)' } },
+            managerOverrides: { userNoteManager: { createForUser } },
+        });
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(createForUser).not.toHaveBeenCalled();
+        expectEditTextContains(interaction, 'HTTP or HTTPS');
+        expect(interaction.deferReply).toHaveBeenCalled();
     });
 
     it('lists saved notes for the user', async () => {
@@ -112,9 +129,28 @@ describe('notes command', () => {
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        expectReplyTextContains(interaction, 'Your notes:');
-        expectReplyTextContains(interaction, '`aaaaaaaa` [pinned] Pinned note');
-        expectReplyTextContains(interaction, 'Second body');
+        expectEditTextContains(interaction, 'Your notes:');
+        expectEditTextContains(interaction, '`aaaaaaaa` [pinned] Pinned note');
+        expectEditTextContains(interaction, 'Second body');
+    });
+
+    it('filters tags and unread state, and shows a second page without renumbering note IDs', async () => {
+        const inboxNotes = Array.from({ length: 7 }, (_, index) => ({
+            ...notes[1], id: `aaaaaaaa-aaaa-aaaa-aaaa-${String(index).padStart(12, '0')}`, title: `Guide ${index}`,
+            body: 'Raid guide', status: 'unread', tags: ['raid'],
+        }));
+        inboxNotes.push({ ...inboxNotes[0]!, id: 'archived-note', title: 'Archived', status: 'archived' });
+        const { command, interaction } = await setupCommandTest('modules/notes/commands/notes.js', {
+            interaction: { subcommand: 'list', stringOptions: { query: 'guide', tag: 'raid', status: 'unread' }, integerOptions: { page: 2 } },
+            managerOverrides: { userNoteManager: { listForUser: vi.fn().mockResolvedValue(inboxNotes) } },
+        });
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expectEditTextContains(interaction, 'Guide 5');
+        expectEditTextContains(interaction, 'Page 2/2');
+        const payload = (interaction.editReply as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+        expect(payload.content).not.toContain('Guide 0');
+        expect(payload.content).not.toContain('Archived');
+        expect(payload.components[0].toJSON().components).toHaveLength(2);
     });
 
     it('shows a note by short id', async () => {
@@ -133,8 +169,8 @@ describe('notes command', () => {
 
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
-        expectReplyTextContains(interaction, '**Second note**');
-        expectReplyTextContains(interaction, 'Second body');
+        expectEditTextContains(interaction, '**Second note**');
+        expectEditTextContains(interaction, 'Second body');
     });
 
     it('deletes a note by list number', async () => {
@@ -158,7 +194,7 @@ describe('notes command', () => {
         await command.execute(interaction as unknown as ChatInputCommandInteraction);
 
         expect(removeForUser).toHaveBeenCalledWith('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb', '123456789012345678');
-        expectReplyTextContains(interaction, 'Deleted note `bbbbbbbb`');
+        expectEditTextContains(interaction, 'Deleted note `bbbbbbbb`');
     });
 });
 
@@ -189,13 +225,14 @@ describe('Save to Notes message context command', () => {
         expect(createForUser).toHaveBeenCalledWith(expect.objectContaining({
             discordId: '123456789012345678',
             title: 'Saved message',
+            sourceUrl: 'https://discord.com/channels/guild-1/channel-1/message-1',
             body: expect.stringContaining('Source: https://discord.com/channels/guild-1/channel-1/message-1'),
         }));
         const body = createForUser.mock.calls[0]?.[0].body as string;
         expect(body).toContain('...');
         expect(body).not.toContain('x'.repeat(1600));
-        expectReplyTextContains(interaction, 'Saved this message to your private notes');
-        expect(interaction.reply).toHaveBeenCalledWith(expect.objectContaining({allowedMentions: {parse: []}}));
+        expectEditTextContains(interaction, 'Saved this message to your private notes');
+        expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({allowedMentions: {parse: []}}));
     });
 
     it('saves attachment-only messages in DMs without downloading them', async () => {
@@ -243,8 +280,8 @@ describe('Save to Notes message context command', () => {
 
         await command.execute(interaction as unknown as MessageContextMenuCommandInteraction);
 
-        expectReplyTextContains(interaction, 'could not save');
-        const replyContent = (interaction.reply as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]?.content as string;
+        expectEditTextContains(interaction, 'could not save');
+        const replyContent = (interaction.editReply as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]?.content as string;
         expect(replyContent).not.toContain('secret content');
     });
 });

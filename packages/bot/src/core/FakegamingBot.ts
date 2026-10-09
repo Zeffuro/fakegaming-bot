@@ -6,6 +6,7 @@ import {
     ClientOptions,
     Collection,
     MessageContextMenuCommandInteraction,
+    ModalSubmitInteraction,
     UserContextMenuCommandInteraction,
 } from 'discord.js';
 
@@ -26,6 +27,7 @@ export interface LoadedCommand {
     execute: (interaction: ExecutableCommandInteraction) => Promise<void>;
     autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
     handleComponent?: (interaction: ButtonInteraction) => Promise<boolean>;
+    handleModal?: (interaction: ModalSubmitInteraction) => Promise<boolean>;
     moduleName?: string;
 }
 

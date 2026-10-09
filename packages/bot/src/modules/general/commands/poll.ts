@@ -6,21 +6,20 @@ import {
     type ButtonInteraction,
 } from 'discord.js';
 import { createSlashCommand, getTestOnly } from '../../../core/commandBuilder.js';
-import { isSupportedOutputLocale, resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
+import { isSupportedOutputLocale, resolveInteractionOutputLocale } from '../../../core/localization.js';
 import { getGeneralCopy } from '../data/generalCopy.js';
 import { poll as META } from '../commands.manifest.js';
 import {
     POLL_DEFAULT_DURATION_MINUTES,
     POLL_MAX_DURATION_MINUTES,
     POLL_MIN_DURATION_MINUTES,
-    PollSessionStore,
-    renderPollMessage,
-} from '../shared/pollSession.js';
+    PollError,
+} from '@zeffuro/fakegaming-common/managers';
+import { getPollRuntime, type PollRuntime } from '../shared/pollRuntime.js';
 
 const MAX_OPTIONS = 5;
 const MAX_QUESTION_LENGTH = 200;
 const MAX_OPTION_LENGTH = 200;
-const pollSessions = new PollSessionStore();
 
 const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
     b
@@ -36,14 +35,16 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
             .setMinValue(POLL_MIN_DURATION_MINUTES)
             .setMaxValue(POLL_MAX_DURATION_MINUTES)
             .setRequired(false))
+        .addBooleanOption(option => option.setName('multiple').setDescription('Allow selecting several options (click again to remove)').setRequired(false))
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    await interaction.deferReply();
     const locale = await resolveInteractionOutputLocale(interaction);
     const copy = getGeneralCopy(locale).poll;
     const question = normalizePollQuestion(interaction.options.getString('question', true));
     if (!question) {
-        await interaction.reply(copy.questionRequired);
+        await interaction.editReply(copy.questionRequired);
         return;
     }
     const options: string[] = [];
@@ -52,88 +53,73 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         if (opt?.trim()) options.push(opt.trim());
     }
     if (options.length < 2) {
-        await interaction.reply(copy.twoOptions);
+        await interaction.editReply(copy.twoOptions);
         return;
     }
     if (hasDuplicatePollOptions(options)) {
-        await interaction.reply(copy.unique);
+        await interaction.editReply(copy.unique);
         return;
     }
     const durationMinutes = interaction.options.getInteger('duration') ?? POLL_DEFAULT_DURATION_MINUTES;
     if (durationMinutes < POLL_MIN_DURATION_MINUTES || durationMinutes > POLL_MAX_DURATION_MINUTES) {
-        await interaction.reply(copy.duration(POLL_MIN_DURATION_MINUTES, POLL_MAX_DURATION_MINUTES));
+        await interaction.editReply(copy.duration(POLL_MIN_DURATION_MINUTES, POLL_MAX_DURATION_MINUTES));
         return;
     }
-
-    await interaction.reply({ content: copy.creating, allowedMentions: { parse: [] } });
-    const pollMessage = await interaction.fetchReply();
-
-    const session = pollSessions.create({
-        creatorId: interaction.user.id,
-        question,
-        options,
-        durationMinutes,
-        message: pollMessage,
-        locale,
-    });
-    if (!session) {
-        await interaction.editReply(copy.capacity);
-        return;
+    try {
+        const runtime = getPollRuntime();
+        const message = await interaction.fetchReply();
+        const session = await runtime.manager.create({
+            guildId: interaction.guildId ?? `dm:${interaction.user.id}`, channelId: interaction.channelId, messageId: message.id,
+            creatorId: interaction.user.id, question, options, durationMinutes,
+            allowMultiple: interaction.options.getBoolean('multiple') ?? false, locale,
+        });
+        runtime.track(session);
+        await runtime.refresh(session.id).catch(() => undefined);
+    } catch (error) {
+        if (error instanceof PollError) {
+            await interaction.editReply(error.code === 'capacity' ? copy.capacity : copy.failure);
+        } else {
+            await interaction.editReply(copy.failure);
+        }
     }
-
-    await interaction.editReply(renderPollMessage(session));
 }
 
-export function createPollComponentHandler(pollStore: PollSessionStore): (interaction: ButtonInteraction) => Promise<boolean> {
+export function createPollComponentHandler(runtime: Pick<PollRuntime, 'manager' | 'track' | 'refresh'>): (interaction: ButtonInteraction) => Promise<boolean> {
     return async (interaction: ButtonInteraction): Promise<boolean> => {
         const parts = interaction.customId.split(':');
         if (parts[0] !== 'poll') return false;
-
         const action = parts[1];
         const pollId = parts[2];
         const encodedLocale = parts.at(-1);
+        await interaction.deferUpdate();
         const locale = isSupportedOutputLocale(encodedLocale) ? encodedLocale : await resolveInteractionOutputLocale(interaction);
-        if (!pollId || !action) return await replyUnavailable(interaction, locale);
-
-        if (action === 'vote') {
-            if ((parts.length !== 4 && parts.length !== 5) || !/^(0|[1-9]\d*)$/.test(parts[3] ?? '')) {
-                return await replyUnavailable(interaction, locale);
-            }
-            const optionIndex = Number(parts[3]);
-            const result = pollStore.vote(pollId, interaction.user.id, optionIndex);
-            if (result.status === 'missing') return await replyUnavailable(interaction, locale);
-            if (result.status === 'closed') return await replyClosed(interaction, locale);
-
-            await interaction.deferUpdate();
-            return true;
+        const copy = getGeneralCopy(locale).poll;
+        const validVote = action === 'vote' && (parts.length === 4 || parts.length === 5)
+            && /^(0|[1-9]\d*)$/.test(parts[3] ?? '');
+        const validClose = action === 'close' && (parts.length === 3 || parts.length === 4);
+        if (!pollId || (!validVote && !validClose)) {
+            return replyPrivate(interaction, copy.unavailable);
         }
-
-        if (action === 'close' && (parts.length === 3 || parts.length === 4)) {
-            const canManage = interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) ?? false;
-            const result = pollStore.close(pollId, interaction.user.id, canManage);
-            if (result.status === 'missing') return await replyUnavailable(interaction, locale);
-            if (result.status === 'not-authorized') {
-                await interaction.reply({
-                    content: getGeneralCopy(locale).poll.creatorOrModerator,
-                    flags: MessageFlags.Ephemeral,
-                    allowedMentions: { parse: [] },
-                });
-                return true;
-            }
-            if (result.status === 'already-closed') return await replyClosed(interaction, locale);
-
-            await interaction.deferUpdate();
-            if (result.session) {
-                try {
-                    await pollStore.renderNow(result.session);
-                } catch {
-                    // The session is closed even when Discord no longer permits editing its message.
-                }
+        const scope = { guildId: interaction.guildId ?? `dm:${interaction.user.id}`, channelId: interaction.channelId, messageId: interaction.message.id };
+        try {
+            const board = validVote
+                ? await runtime.manager.vote(pollId, scope, interaction.user.id, Number(parts[3]))
+                : await runtime.manager.close(pollId, scope, interaction.user.id,
+                    interaction.memberPermissions?.has(PermissionFlagsBits.ManageMessages) ?? false);
+            runtime.track(board);
+            if (validClose) {
+                // Rendering failures retain the durable final result for runtime recovery.
+                await runtime.refresh(board.id).catch(() => undefined);
+            } else if (board.allowMultiple) {
+                await replyPrivate(interaction, copy.selected((board.votes.get(interaction.user.id) ?? []).length));
             }
             return true;
+        } catch (error) {
+            const content = error instanceof PollError
+                ? error.code === 'closed' ? copy.closed : error.code === 'not-authorized' ? copy.creatorOrModerator : copy.unavailable
+                : copy.failure;
+            return replyPrivate(interaction, content);
         }
-
-        return await replyUnavailable(interaction, locale);
     };
 }
 
@@ -146,23 +132,12 @@ export function normalizePollQuestion(question: string): string {
     return question.trim();
 }
 
-const handleComponent = createPollComponentHandler(pollSessions);
-
-async function replyUnavailable(interaction: ButtonInteraction, locale: SupportedOutputLocale): Promise<boolean> {
-    await interaction.reply({
-        content: getGeneralCopy(locale).poll.unavailable,
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: { parse: [] },
-    });
-    return true;
+async function handleComponent(interaction: ButtonInteraction): Promise<boolean> {
+    return createPollComponentHandler(getPollRuntime())(interaction);
 }
 
-async function replyClosed(interaction: ButtonInteraction, locale: SupportedOutputLocale): Promise<boolean> {
-    await interaction.reply({
-        content: getGeneralCopy(locale).poll.closed,
-        flags: MessageFlags.Ephemeral,
-        allowedMentions: { parse: [] },
-    });
+async function replyPrivate(interaction: ButtonInteraction, content: string): Promise<boolean> {
+    await interaction.followUp({ content, flags: MessageFlags.Ephemeral, allowedMentions: { parse: [] } });
     return true;
 }
 

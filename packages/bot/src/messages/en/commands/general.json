@@ -36,6 +36,9 @@
             },
             "duration": {
                 "description": "Minutes before this poll closes (default: 10)"
+            },
+            "multiple": {
+                "description": "Allow selecting several options (click again to remove)"
             }
         }
     },

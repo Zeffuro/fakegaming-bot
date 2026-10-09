@@ -82,6 +82,10 @@ services:
       - PUBLIC_URL=http://api:3001/api
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
       - TWITCH_REDIRECT_URI=${TWITCH_REDIRECT_URI:-http://localhost:3000/api/auth/twitch/callback}
+      - GOOGLE_CALENDAR_CLIENT_ID=${GOOGLE_CALENDAR_CLIENT_ID:-}
+      - GOOGLE_CALENDAR_CLIENT_SECRET=${GOOGLE_CALENDAR_CLIENT_SECRET:-}
+      - GOOGLE_CALENDAR_REDIRECT_URI=${GOOGLE_CALENDAR_REDIRECT_URI:-http://localhost:3000/api/auth/google-calendar/callback}
+      - GOOGLE_CALENDAR_TOKEN_ENC_KEY=${GOOGLE_CALENDAR_TOKEN_ENC_KEY:-}
     depends_on:
       redis:
         condition: service_healthy

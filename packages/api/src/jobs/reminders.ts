@@ -2,7 +2,9 @@ import { DEFAULT_OUTPUT_LOCALE, getLogger, getOutputLocaleMetadata } from '@zeff
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, computeNextMinuteBoundaryDelaySeconds, formatMinuteKey, computeBackoffWithNearWindow } from '@zeffuro/fakegaming-common/jobs';
-import { sendDirectMessage } from '../utils/discord.js';
+import { sendDirectMessagePayloadResult } from '../utils/discord.js';
+import { buildReminderDeliveryPayload } from './reminderDelivery.js';
+import { prepareProductivityNotification } from './productivityReminders.js';
 import { getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurrenceRule, type ReminderRecurrenceUnit } from '@zeffuro/fakegaming-common/utils';
 import { recordJobRun } from './status.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
@@ -63,6 +65,7 @@ export function formatReminderElapsed(ms: number, locale: SupportedOutputLocale 
 
 async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:reminders' })): Promise<{ processed: number; errors: number }>{
     const cm = getConfigManager();
+    await cm.reminderInteractionManager.prune();
     const all = await cm.reminderManager.getAllPlain() as unknown as ReminderPlain[];
     const nowMs = now.getTime();
     const due = all.filter((r) => isDueReminder(r, nowMs));
@@ -73,38 +76,68 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
     for (const r of due) {
         const timestamp = normalizeTimestamp(r.timestamp);
         if (timestamp === null) continue;
+        let sendClaimed = false;
 
         try {
+            const personal = await prepareProductivityNotification(r);
+            if (!personal) {
+                await cm.reminderManager.removeReminder(r.id);
+                continue;
+            }
             const baseMs = timestamp - getReminderTimespanMs(r.timespan);
             const locale = await resolveUserOutputLocale(r.userId);
             const elapsed = formatReminderElapsed(Math.max(0, nowMs - baseMs), locale);
-            const sent = await sendDirectMessage(r.userId, buildReminderContent(r.message, elapsed, locale));
-            if (sent) {
-                const nextTimestamp = getNextRecurringTimestamp(r, timestamp, nowMs);
-                if (nextTimestamp !== null) {
-                    await cm.reminderManager.rescheduleRecurringReminder(r.id, nextTimestamp, nowMs);
-                    processed += 1;
-                    log.info({ id: r.id, userId: r.userId, nextTimestamp }, 'Recurring reminder sent and rescheduled');
+            const delivery = await cm.reminderInteractionManager.prepareDelivery(r, timestamp);
+            if (delivery.status === 'sending') {
+                if (Number(delivery.attemptedAt) > nowMs - 5 * 60_000) continue;
+                await cm.reminderInteractionManager.markUncertain(delivery.id);
+                log.warn({ id: r.id, deliveryId: delivery.id }, 'Interrupted reminder send outcome unknown; not replaying');
+                errors += 1;
+            } else if (delivery.status === 'pending') {
+                sendClaimed = await cm.reminderInteractionManager.claimDelivery(delivery.id, timestamp);
+                if (!sendClaimed) continue;
+                const result = await sendDirectMessagePayloadResult(
+                    r.userId, buildReminderDeliveryPayload(delivery.id, buildReminderContent(personal.content, elapsed, locale), locale, personal),
+                );
+                if (result.status === 'rejected') {
+                    const delay = computeReminderRetryBackoffSeconds(now, timestamp);
+                    await cm.reminderInteractionManager.releaseDelivery(delivery.id, nowMs + delay * 1000);
+                    sendClaimed = false;
+                    errors += 1;
+                    log.warn({ id: r.id, userId: r.userId, delay }, 'Reminder rejected by Discord; scheduled retry');
                     continue;
                 }
-
-                await cm.reminderManager.removeReminder(r.id);
-                processed += 1;
-                log.info({ id: r.id, userId: r.userId }, 'Reminder sent and removed');
-            } else {
-                // Push timestamp into the future with exponential backoff
-                const delay = computeReminderRetryBackoffSeconds(now, timestamp);
-                const nextTs = nowMs + delay * 1000;
-                await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as any, { id: r.id } as any);
-                errors += 1;
-                log.warn({ id: r.id, userId: r.userId, delay }, 'Failed to send reminder; scheduled retry');
+                if (result.status === 'sent' && typeof result.message.id === 'string' && typeof result.message.channel_id === 'string') {
+                    await cm.reminderInteractionManager.markDelivered(delivery.id, result.message.id, result.message.channel_id);
+                } else {
+                    await cm.reminderInteractionManager.markUncertain(delivery.id);
+                    errors += 1;
+                    log.warn({ id: r.id, deliveryId: delivery.id }, 'Reminder send outcome unknown; not replaying');
+                }
             }
+            sendClaimed = true;
+            const nextTimestamp = getNextRecurringTimestamp(r, Number(delivery.scheduledAt), nowMs);
+            await cm.reminderInteractionManager.finalizeDelivery(delivery.id, nextTimestamp, nowMs);
+            if (nextTimestamp !== null) {
+                processed += 1;
+                log.info({ id: r.id, userId: r.userId, nextTimestamp }, 'Reminder occurrence finalized and next recurrence scheduled');
+                continue;
+            }
+            processed += 1;
+            log.info({ id: r.id, userId: r.userId }, 'Reminder occurrence finalized');
         } catch (err) {
+            if (sendClaimed) {
+                errors += 1;
+                log.error({ err, id: r.id }, 'Reminder send claimed; retaining occurrence for recovery without replay');
+                continue;
+            }
             // On error, apply backoff similarly
             const delay = computeReminderRetryBackoffSeconds(now, timestamp);
             const nextTs = nowMs + delay * 1000;
             try {
-                await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as any, { id: r.id } as any);
+                await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as never, {
+                    id: r.id, userId: r.userId, timestamp, completed: r.completed ?? null,
+                } as never);
             } catch {
                 // ignore secondary failure to update
             }
@@ -176,16 +209,17 @@ export async function registerRemindersJobs(queue: JobQueue, now: Date = new Dat
         const startedAt = new Date().toISOString();
         try {
             const { processed, errors } = await processDueReminders(new Date());
-            // Self-schedule next minute boundary with idempotency key
-            const delay = computeNextReminderRunDelaySeconds();
-            const nextAt = new Date(Date.now() + delay * 1000);
-            const key = `reminders:next:${formatMinuteKey(nextAt)}`;
-            await scheduleSingleton(queue, 'reminders:run', {}, delay, key);
             recordJobRun('reminders', { startedAt, finishedAt: new Date().toISOString(), ok: errors === 0, meta: { processed, errors } });
         } catch (err) {
             recordJobRun('reminders', { startedAt, finishedAt: new Date().toISOString(), ok: false, error: err instanceof Error ? err.message : 'Unknown error' });
         } finally {
-            await job.done();
+            try {
+                const delay = computeNextReminderRunDelaySeconds();
+                const nextAt = new Date(Date.now() + delay * 1000);
+                await scheduleSingleton(queue, 'reminders:run', {}, delay, `reminders:next:${formatMinuteKey(nextAt)}`);
+            } finally {
+                await job.done();
+            }
         }
     });
 

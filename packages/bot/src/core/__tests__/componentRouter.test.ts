@@ -1,4 +1,4 @@
-import type { ButtonInteraction } from 'discord.js';
+import type { ButtonInteraction, ModalSubmitInteraction } from 'discord.js';
 import { describe, expect, it, vi } from 'vitest';
 import {
     COMPONENT_ROUTE_DEFINITIONS,
@@ -42,6 +42,11 @@ describe('ComponentRouter', () => {
             ['poll', command(pollHandler)],
             ['question', command(questionHandler)],
             ['night', command(gameNightHandler)],
+            ['Remind Me', command(async () => true)],
+            ['notes', command(async () => true)],
+            ['tasks', command(async () => true)],
+            ['session', command(async () => true)],
+            ['schedule', command(async () => true)],
         ]));
 
         expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'poll', commandName: 'poll' });
@@ -51,6 +56,18 @@ describe('ComponentRouter', () => {
         expect(pollHandler).toHaveBeenCalledTimes(1);
         expect(animeHandler).not.toHaveBeenCalled();
         expect(questionHandler).not.toHaveBeenCalled();
+    });
+
+    it('routes reminder forms separately from buttons', async () => {
+        const handleComponent = vi.fn(async () => true);
+        const handleModal = vi.fn(async () => true);
+        const reminder = { ...command(handleComponent), handleModal };
+        const router = new ComponentRouter(new Map([['Remind Me', reminder]]), [{ namespace: 'reminder', commandName: 'Remind Me' }]);
+        const modal = { customId: 'reminder:custom-draft:id' } as ModalSubmitInteraction;
+        await expect(router.dispatchModal(modal)).resolves.toBe(true);
+        expect(handleModal).toHaveBeenCalledWith(modal);
+        expect(handleComponent).not.toHaveBeenCalled();
+        await expect(router.dispatchModal({ customId: 'unknown:form' } as ModalSubmitInteraction)).resolves.toBe(false);
     });
 
     it('keeps unknown component behavior as unhandled', async () => {

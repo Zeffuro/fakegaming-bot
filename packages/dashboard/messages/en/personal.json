@@ -185,6 +185,25 @@
     "activityUnknownGuild": "Unknown server",
     "activityChannel": "channel {channelId}",
     "activityFailed": "failed",
-    "activityUnknownAction": "Activity: {action}"
+    "activityUnknownAction": "Activity: {action}",
+    "inboxStatus": "Inbox status",
+    "inboxTags": "Tags",
+    "inbox": {
+      "active": "Active",
+      "all": "All",
+      "unread": "Unread",
+      "read": "Read",
+      "archived": "Archived",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {page} of {pages}",
+      "markRead": "Mark read",
+      "markUnread": "Mark unread",
+      "archive": "Archive",
+      "restore": "Restore",
+      "openSource": "Open source",
+      "saveTags": "Save tags",
+      "invalidTags": "Use up to 10 tags, at most 32 characters each."
+    }
   }
 }

@@ -1,7 +1,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
 import {setupCommandTest, expectEphemeralReply, expectReplyText, createMockConfigManager} from '@zeffuro/fakegaming-common/testing';
 import {ChatInputCommandInteraction} from 'discord.js';
-import {parseReminderRecurrence, parseTimespan} from '@zeffuro/fakegaming-common/utils';
+import {parseReminderRecurrence, parseReminderTime, parseTimespan} from '@zeffuro/fakegaming-common/utils';
 import {v4 as uuidv4} from 'uuid';
 
 // Mock the uuid library
@@ -12,6 +12,7 @@ vi.mock('uuid', () => ({
 // Mock the shared time utils module
 vi.mock('@zeffuro/fakegaming-common/utils', () => ({
     parseReminderRecurrence: vi.fn(),
+    parseReminderTime: vi.fn(),
     parseTimespan: vi.fn()
 }));
 
@@ -29,6 +30,51 @@ describe('setReminder command', () => {
         // Make Date.now() return a consistent value
         vi.spyOn(Date, 'now').mockReturnValue(1633027200000); // October 1, 2021
         vi.mocked(uuidv4 as unknown as () => string).mockReturnValue('mock-uuid-1234');
+    });
+
+    it('sets an exact date in the saved timezone', async () => {
+        vi.mocked(parseReminderTime).mockReturnValue({ timestamp: 1633116600000, timespan: 'at:2021-10-01 19:30' });
+        const addReminder = vi.fn();
+        const { command, interaction } = await setupCommandTest('modules/reminders/commands/setReminder.js', {
+            interaction: { stringOptions: { at: '2021-10-01 19:30', message: 'Raid' } },
+            managerOverrides: {
+                userManager: { getUser: vi.fn().mockResolvedValue({ timezone: 'Europe/Amsterdam' }) },
+                reminderManager: { addReminder },
+            },
+        });
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(parseReminderTime).toHaveBeenCalledWith('2021-10-01 19:30', 'Europe/Amsterdam');
+        expect(addReminder).toHaveBeenCalledWith(expect.objectContaining({ timestamp: 1633116600000, message: 'Raid' }));
+    });
+
+    it('uses UTC for exact times without a saved timezone', async () => {
+        vi.mocked(parseReminderTime).mockReturnValue(null);
+        const addReminder = vi.fn();
+        const { command, interaction } = await setupCommandTest('modules/reminders/commands/setReminder.js', {
+            interaction: { stringOptions: { at: '2021-10-01 19:30', message: 'Raid' } },
+            managerOverrides: {
+                userManager: { getUser: vi.fn().mockResolvedValue(null) },
+                reminderManager: { addReminder },
+            },
+        });
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(parseReminderTime).toHaveBeenCalledWith('2021-10-01 19:30', 'UTC');
+        expect(addReminder).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        { timespan: '1h', at: '19:30' },
+        {},
+        { timespan: '1h', timezone: 'UTC' },
+    ])('requires exactly one time form and an appropriate timezone: %j', async options => {
+        const addReminder = vi.fn();
+        const { command, interaction } = await setupCommandTest('modules/reminders/commands/setReminder.js', {
+            interaction: { stringOptions: { ...options, message: 'Raid' } },
+            managerOverrides: { reminderManager: { addReminder } },
+        });
+        await command.execute(interaction as unknown as ChatInputCommandInteraction);
+        expect(addReminder).not.toHaveBeenCalled();
+        expectEphemeralReply(interaction, { contains: 'exactly one' });
     });
 
     it('uses Dutch app copy while preserving the reminder message', async () => {

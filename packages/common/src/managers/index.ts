@@ -7,6 +7,14 @@ export * from './twitchManager.js';
 export * from './twitchClipManager.js';
 export * from './youtubeManager.js';
 export * from './reminderManager.js';
+export * from './reminderInteractionManager.js';
+export * from './pollManager.js';
+export * from './userTaskManager.js';
+export * from './productivityShared.js';
+export * from './userSessionManager.js';
+export * from './userCountdownManager.js';
+export * from './userFollowManager.js';
+export * from './userCommandPresetManager.js';
 export * from './birthdayManager.js';
 export * from './patchNotesManager.js';
 export * from './disabledCommandManager.js';
@@ -29,3 +37,7 @@ export * from './voiceChannelOccupancyConfigManager.js';
 
 // Export the singleton getter separately - this is commonly used directly
 export { getConfigManager } from './configManagerSingleton.js';
+export * from './userScheduleManager.js';
+export * from './scheduleNotificationManager.js';
+export * from './scheduleShared.js';
+export * from './serializedTransaction.js';

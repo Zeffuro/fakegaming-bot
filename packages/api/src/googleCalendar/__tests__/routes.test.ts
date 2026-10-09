@@ -1,0 +1,107 @@
+import express, { type ErrorRequestHandler } from 'express';
+import request from 'supertest';
+import { randomUUID } from 'node:crypto';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CalendarConnection, CalendarOAuthState, CalendarSource, PersonalSchedule, ScheduleOccurrence } from '@zeffuro/fakegaming-common/models';
+import type { AuthenticatedRequest } from '../../types/express.js';
+import { configManager } from '../../vitest.setup.js';
+import { expectBadRequest, expectConflict, expectCreated, expectNotFound, expectOk, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
+const provider = vi.hoisted(() => ({ listGoogleCalendars: vi.fn(), syncCalendarSource: vi.fn() }));
+vi.mock('../client.js', () => ({ listGoogleCalendars: provider.listGoogleCalendars }));
+vi.mock('../sync.js', () => ({ syncCalendarSource: provider.syncCalendarSource }));
+import { router } from '../../routes/userCalendar.js';
+
+const userId = 'calendar-route-owner';
+const sourceId = randomUUID();
+const app = express();
+app.use(express.json());
+app.use((req, _res, next) => { (req as AuthenticatedRequest).user = { discordId: userId, username: 'Owner' }; next(); });
+app.use('/calendar', router);
+const forwardedError = vi.fn();
+const onError: ErrorRequestHandler = (error, _req, res, _next) => { forwardedError(error); res.status(500).json({ error: 'Unexpected error was forwarded' }); };
+app.use(onError);
+describe('owner-scoped Google Calendar selection and history export', () => {
+    beforeEach(async () => {
+        forwardedError.mockClear();
+        vi.stubEnv('GOOGLE_CALENDAR_CLIENT_ID', 'test-client'); vi.stubEnv('GOOGLE_CALENDAR_CLIENT_SECRET', 'test-secret');
+        vi.stubEnv('GOOGLE_CALENDAR_REDIRECT_URI', 'http://localhost:3000/api/auth/google-calendar/callback');
+        vi.stubEnv('GOOGLE_CALENDAR_TOKEN_ENC_KEY', 'test-encryption-key-at-least-thirty-two-characters');
+        await CalendarSource.destroy({ where: { userId } }); await CalendarConnection.destroy({ where: { userId } });
+        await CalendarOAuthState.destroy({ where: { userId } });
+        await ScheduleOccurrence.destroy({ where: { userId } }); await PersonalSchedule.destroy({ where: { userId } });
+        await CalendarConnection.create({ userId, status: 'connected', version: 1, encryptedAccessToken: 'hidden-access', encryptedRefreshToken: 'hidden-refresh' });
+        provider.listGoogleCalendars.mockResolvedValue([{ id: 'chosen', summary: 'Chosen calendar', timeZone: 'Europe/Amsterdam' }]);
+        provider.syncCalendarSource.mockResolvedValue(undefined);
+    });
+    it('never exposes connection secrets and rejects sources from another owner', async () => {
+        await CalendarSource.create({ id: sourceId, userId: 'other-owner', calendarId: 'private', label: 'private', timezone: 'UTC' });
+        const status = await request(app).get('/calendar');
+        expect(status.body).toEqual({ configured: true, connected: true, sources: [] });
+        expect(status.text).not.toContain('hidden-');
+        expectNotFound(await request(app).delete(`/calendar/sources/${sourceId}`));
+        expectNotFound(await request(app).post(`/calendar/sources/${sourceId}/sync`));
+        await CalendarSource.destroy({ where: { id: sourceId } });
+    });
+    it('selects only available calendars and preserves stable selection identity after pause and reconnect', async () => {
+        expectNotFound(await request(app).post('/calendar/sources').send({ calendarId: 'unavailable' }));
+        const selected = await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: '  Medicine  ' });
+        expectCreated(selected);
+        expect(selected.body.source).toMatchObject({ label: 'Chosen calendar', titleFilter: 'Medicine', enabled: true });
+        const id = selected.body.source.id;
+        expectConflict(await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: 'Medicine' }));
+        expectOk(await request(app).delete(`/calendar/sources/${id}`));
+        const resumed = await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: 'Medicine' });
+        expect(resumed.body.source).toMatchObject({ id, enabled: true });
+        expect(resumed.body.source.version).toBeGreaterThan(selected.body.source.version);
+        await request(app).delete('/calendar');
+        expectBadRequest(await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: 'Medicine' }));
+    });
+    it('saves selections when the initial provider sync fails without returning credentials', async () => {
+        provider.syncCalendarSource.mockRejectedValueOnce(new Error('secret'));
+        const result = await request(app).post('/calendar/sources').send({ calendarId: 'chosen' });
+        expectCreated(result); expect(result.body.syncPending).toBe(true); expect(result.text).not.toContain('secret');
+        expect(await CalendarSource.count({ where: { userId } })).toBe(1);
+    });
+    it('contains unexpected database errors without forwarding private SQL or parameters to global logging', async () => {
+        const privateValue = 'synthetic-private-calendar-title-and-filter';
+        const failure = Object.assign(new Error(privateValue), { sql: `INSERT INTO CalendarSources VALUES ('${privateValue}')`, parameters: [privateValue] });
+        vi.spyOn(CalendarSource, 'create').mockRejectedValueOnce(failure);
+        const result = await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: privateValue });
+        expectServiceUnavailable(result);
+        expect(result.body.error.code).toBe('PROVIDER_UNAVAILABLE');
+        expect(result.body.error.message).toBeTruthy();
+        expect(result.text).not.toContain(privateValue);
+        expect(result.text).not.toContain('INSERT');
+        expect(forwardedError).not.toHaveBeenCalled();
+        expect(await CalendarSource.count({ where: { userId } })).toBe(0);
+    });
+    it('caps active selections, permits retained inactive history, and guards reactivation', async () => {
+        const enabledIds = Array.from({ length: 10 }, () => randomUUID());
+        for (const id of enabledIds) await CalendarSource.create({ id, userId, calendarId: id, label: 'Active calendar', timezone: 'UTC', enabled: true });
+        const disabledId = randomUUID();
+        await CalendarSource.create({ id: disabledId, userId, calendarId: 'chosen', label: 'Retained calendar', timezone: 'UTC', enabled: false });
+        expectConflict(await request(app).post('/calendar/sources').send({ calendarId: 'chosen' }));
+        expectOk(await request(app).delete(`/calendar/sources/${enabledIds[0]}`));
+        const resumed = await request(app).post('/calendar/sources').send({ calendarId: 'chosen' });
+        expectCreated(resumed); expect(resumed.body.source.id).toBe(disabledId);
+        expect(await CalendarSource.count({ where: { userId, enabled: true } })).toBe(10);
+        expect(await CalendarSource.count({ where: { userId } })).toBe(11);
+        expectConflict(await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: 'Different filter' }));
+        expectOk(await request(app).delete(`/calendar/sources/${enabledIds[1]}`));
+        expectCreated(await request(app).post('/calendar/sources').send({ calendarId: 'chosen', titleFilter: 'Different filter' }));
+        expect(await CalendarSource.count({ where: { userId, enabled: true } })).toBe(10);
+    });
+    it('exports all owner history, including manual schedules while disconnected', async () => {
+        const schedule = await configManager.userScheduleManager.createManual({ userId, title: 'Private record', plannedAt: Date.now() + 3600_000, timezone: 'UTC' });
+        await configManager.userScheduleManager.complete(schedule.id, userId, schedule.version);
+        await request(app).delete('/calendar');
+        const json = await request(app).get('/calendar/export?format=json');
+        expectOk(json); expect(json.body.occurrences).toHaveLength(1);
+        expect(json.body.occurrences[0]).toMatchObject({ userId, state: 'completed', title: 'Private record' });
+        expect(json.headers['content-disposition']).toContain('schedule-history.json');
+        expect(json.text).not.toContain('hidden-');
+        const csv = await request(app).get('/calendar/export?format=csv');
+        expectOk(csv); expect(csv.headers['content-type']).toContain('text/csv'); expect(csv.text).toContain('Private record');
+        expectBadRequest(await request(app).get('/calendar/export?format=xml'));
+    });
+});

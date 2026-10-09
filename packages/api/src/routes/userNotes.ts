@@ -4,10 +4,11 @@ import {
     isSupportedOutputLocale,
     type SupportedOutputLocale,
 } from '@zeffuro/fakegaming-common';
-import { validateBody, validateParams } from '../localization/validation.js';
+import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
 import {
     userNoteCreateRequestSchema,
     userNoteUpdateRequestSchema,
+    userNoteInboxQuerySchema,
 } from '@zeffuro/fakegaming-common/api';
 import type { UserNoteRecord } from '@zeffuro/fakegaming-common/managers';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
@@ -70,8 +71,13 @@ function toIsoString(value: unknown): string | null {
  *       200:
  *         description: Personal notes
  */
-router.get('/', async (req, res) => {
+router.get('/', validateQuery(userNoteInboxQuerySchema), async (req, res) => {
     const discordId = getAuthenticatedDiscordId(req as AuthenticatedRequest);
+    if (Object.keys(req.query).length > 0) {
+        const inbox = await getConfigManager().userNoteManager.inboxForUser(discordId, userNoteInboxQuerySchema.parse(req.query));
+        res.json({ ...inbox, notes: inbox.notes.map(serializeNote) });
+        return;
+    }
     const notes = await getConfigManager().userNoteManager.listForUser(discordId);
     res.json({ notes: notes.map(serializeNote) });
 });
@@ -103,6 +109,9 @@ router.post('/', validateBody(userNoteCreateRequestSchema), async (req, res) => 
         title: body.title,
         body: body.body ?? '',
         pinned: body.pinned,
+        tags: body.tags,
+        status: body.status,
+        sourceUrl: body.sourceUrl,
         locale,
     });
     res.status(201).json(serializeNote(note));

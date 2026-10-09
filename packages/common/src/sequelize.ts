@@ -12,6 +12,13 @@ import {TwitchClipCooldown} from './models/twitch-clip-cooldown.js';
 import {TwitchClipBotAuth, TwitchClipOAuthState} from './models/twitch-clip-bot-auth.js';
 import {YoutubeVideoConfig} from './models/youtube-video-config.js';
 import {ReminderConfig} from './models/reminder-config.js';
+import {ReminderDraft, ReminderDelivery} from './models/reminder-interaction.js';
+import {PollSession} from './models/poll-session.js';
+import {UserTask, UserSession, UserCountdown} from './models/personal-productivity.js';
+import {UserFollow, UserFollowEvent, UserFollowSettings} from './models/personal-notifications.js';
+import {UserCommandPreset} from './models/user-command-preset.js';
+import {PersonalSchedule, ScheduleOccurrence, SchedulePreferences, ScheduleNotification} from './models/personal-schedule.js';
+import {CalendarConnection, CalendarOAuthState, CalendarSource} from './models/calendar-connection.js';
 import {BirthdayConfig} from './models/birthday-config.js';
 import {PatchNoteConfig} from './models/patch-note-config.js';
 import {PatchNoteHistoryConfig} from './models/patch-note-history-config.js';
@@ -83,6 +90,23 @@ export function getSequelize(useTest = false): Sequelize {
         TwitchClipOAuthState,
         YoutubeVideoConfig,
         ReminderConfig,
+        ReminderDraft,
+        ReminderDelivery,
+        PollSession,
+        UserTask,
+        UserSession,
+        UserCountdown,
+        UserFollow,
+        UserFollowEvent,
+        UserFollowSettings,
+        UserCommandPreset,
+        PersonalSchedule,
+        ScheduleOccurrence,
+        SchedulePreferences,
+        ScheduleNotification,
+        CalendarConnection,
+        CalendarOAuthState,
+        CalendarSource,
         BirthdayConfig,
         PatchNoteConfig,
         PatchNoteHistoryConfig,

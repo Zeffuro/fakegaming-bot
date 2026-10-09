@@ -4,11 +4,13 @@ import {createMessageContextCommand, getTestOnly} from '../../../core/commandBui
 import {saveMessageToNotes as META} from '../commands.manifest.js';
 import {resolveInteractionOutputLocale, type SupportedOutputLocale} from '../../../core/localization.js';
 import {getNotesCopy} from '../copy/notesCopy.js';
+import {renderNoteActions} from '../shared/noteInbox.js';
 
 const data = createMessageContextCommand(META);
 const MAX_EXCERPT_LENGTH = 1500;
 
 async function execute(interaction: MessageContextMenuCommandInteraction): Promise<void> {
+    await interaction.deferReply({flags: MessageFlags.Ephemeral});
     const locale = await resolveInteractionOutputLocale(interaction);
     const copy = getNotesCopy(locale);
     const targetMessage = interaction.targetMessage;
@@ -26,18 +28,18 @@ async function execute(interaction: MessageContextMenuCommandInteraction): Promi
             discordId: interaction.user.id,
             title: copy.savedMessageTitle,
             body,
+            sourceUrl: messageLink,
             locale,
         });
 
-        await interaction.reply({
+        await interaction.editReply({
             content: copy.contextSaved(note.id.slice(0, 8)),
-            flags: MessageFlags.Ephemeral,
             allowedMentions: {parse: []},
+            components: renderNoteActions(note, locale),
         });
     } catch {
-        await interaction.reply({
+        await interaction.editReply({
             content: copy.contextFailed,
-            flags: MessageFlags.Ephemeral,
             allowedMentions: {parse: []},
         });
     }

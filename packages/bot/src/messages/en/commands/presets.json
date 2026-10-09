@@ -1,0 +1,18 @@
+{
+    "preset": {
+        "description": "Save and run your private command presets",
+        "options": {
+            "save": { "description": "Save or replace a command preset", "options": {
+                "name": { "description": "Your preset name" },
+                "command": { "description": "Command to save", "choices": {
+                    "weather":"weather", "time":"time", "get-patchnotes":"get-patchnotes", "league-form":"league-form", "league-history":"league-history", "league-stats":"league-stats",
+                    "tft-history":"tft-history", "tft-stats":"tft-stats", "stream-status":"stream-status", "twitch-latest-vod":"twitch-latest-vod", "youtube-latest":"youtube-latest", "media search":"media search", "anime search":"anime search", "manga":"manga", "roll":"roll"
+                } },
+                "options": { "description": "Saved options, e.g. location:Amsterdam or game:valorant" }
+            } },
+            "run": { "description": "Run a saved preset", "options": { "name": { "description": "Your preset name" } } },
+            "list": { "description": "List your saved presets", "options": { "page": { "description": "Page number" } } },
+            "delete": { "description": "Delete a saved preset", "options": { "name": { "description": "Your preset name" } } }
+        }
+    }
+}

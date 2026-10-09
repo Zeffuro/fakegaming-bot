@@ -55,7 +55,7 @@ export function computeNextSteamNewsDelaySeconds(): number {
     return Math.max(300, base + jitter);
 }
 
-export async function fetchSteamNewsForApp(appId: number, count = 5): Promise<SteamNewsItem[]> {
+export async function fetchSteamNewsForApp(appId: number, count = 5, signal?: AbortSignal): Promise<SteamNewsItem[]> {
     const params = new URLSearchParams({
         appid: String(appId),
         count: String(count),
@@ -63,7 +63,8 @@ export async function fetchSteamNewsForApp(appId: number, count = 5): Promise<St
         feeds: STEAM_NEWS_FEED,
         format: 'json',
     });
-    const response = await fetch(`https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?${params.toString()}`);
+    const url = `https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?${params.toString()}`;
+    const response = await (signal ? fetch(url, { signal }) : fetch(url));
     if (!response.ok) {
         throw new Error(`Steam news request failed with status ${response.status}`);
     }

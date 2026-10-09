@@ -71,5 +71,10 @@
   "twitchClipCategory": "Category",
   "twitchClipDuration": "Duration",
   "twitchClipSeconds": "{seconds, number}s",
-  "twitchClipBroadcast": "Original broadcast"
+  "twitchClipBroadcast": "Original broadcast",
+  "reminderSnoozeTenMinutes": "Snooze 10m",
+  "reminderSnoozeOneHour": "Snooze 1h",
+  "reminderCustomSnooze": "Custom…",
+  "reminderDismiss": "Dismiss",
+  "taskDone": "Done"
 }

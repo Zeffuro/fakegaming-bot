@@ -18,6 +18,10 @@ import enSteam from '../messages/en/commands/steam.json' with { type: 'json' };
 import enTikTok from '../messages/en/commands/tiktok.json' with { type: 'json' };
 import enTwitch from '../messages/en/commands/twitch.json' with { type: 'json' };
 import enYouTube from '../messages/en/commands/youtube.json' with { type: 'json' };
+import enPresets from '../messages/en/commands/presets.json' with { type: 'json' };
+import enFollows from '../messages/en/commands/follows.json' with { type: 'json' };
+import enPersonal from '../messages/en/commands/personal.json' with { type: 'json' };
+import enSchedules from '../messages/en/commands/schedules.json' with { type: 'json' };
 import nlAnime from '../messages/nl/commands/anime.json' with { type: 'json' };
 import nlBirthdays from '../messages/nl/commands/birthdays.json' with { type: 'json' };
 import nlBluesky from '../messages/nl/commands/bluesky.json' with { type: 'json' };
@@ -33,6 +37,10 @@ import nlSteam from '../messages/nl/commands/steam.json' with { type: 'json' };
 import nlTikTok from '../messages/nl/commands/tiktok.json' with { type: 'json' };
 import nlTwitch from '../messages/nl/commands/twitch.json' with { type: 'json' };
 import nlYouTube from '../messages/nl/commands/youtube.json' with { type: 'json' };
+import nlPresets from '../messages/nl/commands/presets.json' with { type: 'json' };
+import nlFollows from '../messages/nl/commands/follows.json' with { type: 'json' };
+import nlPersonal from '../messages/nl/commands/personal.json' with { type: 'json' };
+import nlSchedules from '../messages/nl/commands/schedules.json' with { type: 'json' };
 
 interface CommandCatalogNode {
     readonly description?: string;
@@ -44,9 +52,9 @@ type CommandCatalog = Readonly<Record<string, CommandCatalogNode>>;
 
 const COMMAND_CATALOGS = {
     en: Object.assign({}, enAnime, enBirthdays, enBluesky, enGameNight, enGeneral, enLeague, enMedia, enNotes,
-        enPatchnotes, enQuotes, enReminders, enSteam, enTikTok, enTwitch, enYouTube),
+        enPatchnotes, enQuotes, enReminders, enSteam, enTikTok, enTwitch, enYouTube, enPresets, enFollows, enPersonal, enSchedules),
     nl: Object.assign({}, nlAnime, nlBirthdays, nlBluesky, nlGameNight, nlGeneral, nlLeague, nlMedia, nlNotes,
-        nlPatchnotes, nlQuotes, nlReminders, nlSteam, nlTikTok, nlTwitch, nlYouTube),
+        nlPatchnotes, nlQuotes, nlReminders, nlSteam, nlTikTok, nlTwitch, nlYouTube, nlPresets, nlFollows, nlPersonal, nlSchedules),
 } satisfies Readonly<Record<'en' | NonDefaultOutputLocale, CommandCatalog>>;
 
 const DISCORD_LOCALES = {

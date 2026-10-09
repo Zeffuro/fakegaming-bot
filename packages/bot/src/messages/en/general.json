@@ -62,7 +62,7 @@
         "creating": "Creating poll...",
         "capacity": "Too many active polls are already running. Please try again shortly.",
         "creatorOrModerator": "Only the poll creator or a moderator can close this poll.",
-        "unavailable": "This poll is no longer available. It may have expired or the bot restarted.",
+        "unavailable": "This poll is no longer available. Older polls created before persistent storage cannot be restored.",
         "closed": "This poll is closed.",
         "closeButton": "Close poll",
         "closes": "Closes '<t:'{unix}:R>.",
@@ -73,7 +73,11 @@
         "total": "Total votes: {count}",
         "noVotes": "Result: no votes were cast.",
         "winner": "Winner: **{name}** ({count, plural, one {# vote} other {# votes}}).",
-        "tie": "Result: tie between {names} ({count, plural, one {# vote} other {# votes}} each)."
+        "tie": "Result: tie between {names} ({count, plural, one {# vote} other {# votes}} each).",
+        "failure": "Unable to complete this poll action. Please try again shortly.",
+        "singleVoting": "Select one option. You can change your vote.",
+        "multipleVoting": "Select several options; click an option again to remove it. Percentages are per voter.",
+        "selected": "{count, plural, =0 {You have no options selected.} one {You have # option selected.} other {You have # options selected.}}"
     },
     "profile": {
         "caption": "Profile card for {mention}",

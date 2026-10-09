@@ -1,0 +1,32 @@
+{
+    "errors": {
+        "invalid": "Controleer de waarden. Gebruik een toekomstige datum of duur, een geldige tijdzone en de vermelde limieten.",
+        "missing": "Dit persoonlijke item is niet beschikbaar of is van iemand anders.",
+        "stale": "Deze knoppen zijn verouderd of al gebruikt. Open het item opnieuw voor de actuele knoppen.",
+        "capacity": "Je limiet voor persoonlijke items is bereikt. Verwijder een item voordat je een nieuw item toevoegt.",
+        "exists": "Je hebt al een actieve of gepauzeerde sessie. Stop die voordat je een nieuwe start.",
+        "failure": "De actie kon niet worden opgeslagen. Probeer het binnenkort opnieuw."
+    },
+    "common": { "page": "Pagina {page} van {pages}", "removed": "Verwijderd.", "empty": "Geen items om te tonen.", "id": "ID: {id}" },
+    "tasks": {
+        "title": "Je taken en checklists", "completed": "Je voltooide taken", "done": "Gereed", "snooze": "Sluimer 10m",
+        "due": "Gepland '<t:'{unix}:F> ('<t:'{unix}:R>)", "noDue": "Geen geplande datum", "completedAt": "Voltooid '<t:'{unix}:R>",
+        "repeating": "Herhaalt nadat je op Gereed drukt; Sluimer verplaatst alleen deze uitvoering.", "count": "Voltooid: {count, number}",
+        "check": "Schakel item {index}", "summary": "{title} — {done}/{total} items — {due}"
+    },
+    "session": {
+        "focus": "Focus", "gaming": "Gaming", "pause": "Pauzeer", "resume": "Hervat", "stop": "Stop",
+        "states": { "running": "Actief", "paused": "Gepauzeerd", "stopped": "Gestopt", "finished": "Voltooid" },
+        "phases": { "focus": "Focus", "break": "Pauze" },
+        "status": "{kind}: **{title}** — {state}", "time": "Actieve tijd: {minutes, number} min; pauzes: {breakMinutes, number} min",
+        "remaining": "Deze fase: nog {minutes, number} min", "cycle": "Pomodoro {cycle}/{cycles} — {phase}",
+        "none": "Je hebt geen actieve sessie.", "stats": "Totalen van bewaarde sessies (90 dagen geschiedenis):\nFocus: {focus, number} min\nGaming: {gaming, number} min\nPomodoropauzes: {breaks, number} min\nSessies: {count, number}",
+        "alertFocus": "{title}: je volgende focusblok begint nu.", "alertBreak": "{title}: tijd voor je pomodoropauze.",
+        "alertFinished": "{title}: je sessie is voltooid.", "alertTakeBreak": "{title}: tijd om pauze te nemen."
+    },
+    "countdowns": {
+        "title": "Je komende aftellers", "entry": "**{title}** — '<t:'{unix}:F> ('<t:'{unix}:R>) — {timezone}\nID: {id}",
+        "advance": "Voorafmelding: {minutes, number} min van tevoren", "dueMessage": "{title}: je afteller heeft de datum bereikt.",
+        "advanceMessage": "{title}: binnenkort '<t:'{unix}:F>."
+    }
+}

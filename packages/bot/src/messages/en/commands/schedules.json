@@ -1,0 +1,174 @@
+{
+    "schedule": {
+        "description": "Manage private schedules and completion history",
+        "options": {
+            "add": {
+                "description": "Create a fixed private schedule",
+                "options": {
+                    "title": {
+                        "description": "Private title"
+                    },
+                    "at": {
+                        "description": "Future exact date and time"
+                    },
+                    "timezone": {
+                        "description": "IANA timezone; defaults to your saved timezone"
+                    },
+                    "repeat-weeks": {
+                        "description": "Fixed interval in weeks; omit for one occurrence"
+                    }
+                }
+            },
+            "list": {
+                "description": "List private occurrences",
+                "options": {
+                    "filter": {
+                        "description": "Occurrence state",
+                        "choices": {
+                            "upcoming": "Upcoming",
+                            "unconfirmed": "Unconfirmed",
+                            "completed": "Completed",
+                            "all": "All"
+                        }
+                    },
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "show": {
+                "description": "Open private occurrence controls",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    }
+                }
+            },
+            "complete": {
+                "description": "Confirm completion now or at an earlier time",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    },
+                    "at": {
+                        "description": "Past exact date and time with optional ISO offset"
+                    }
+                }
+            },
+            "correct": {
+                "description": "Correct the completion timestamp",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    },
+                    "at": {
+                        "description": "Past exact date and time with optional ISO offset"
+                    }
+                }
+            },
+            "undo": {
+                "description": "Undo a completion",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    }
+                }
+            },
+            "snooze": {
+                "description": "Remind later without moving the schedule",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    },
+                    "when": {
+                        "description": "Future date, time or delay"
+                    }
+                }
+            },
+            "note": {
+                "description": "Set or remove a private note",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    },
+                    "text": {
+                        "description": "Private note; omit to remove"
+                    }
+                }
+            },
+            "history": {
+                "description": "Show retained history for this schedule",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    },
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "summary": {
+                "description": "Show last completed and next planned",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    }
+                }
+            },
+            "pause": {
+                "description": "Pause a private schedule",
+                "options": {
+                    "schedule": {
+                        "description": "Schedule ID from /schedule show"
+                    }
+                }
+            },
+            "resume": {
+                "description": "Resume a private schedule",
+                "options": {
+                    "schedule": {
+                        "description": "Schedule ID from /schedule show"
+                    }
+                }
+            },
+            "configure": {
+                "description": "Set private follow-ups and quiet hours",
+                "options": {
+                    "timezone": {
+                        "description": "IANA timezone for quiet hours"
+                    },
+                    "quiet-start": {
+                        "description": "Quiet hours start HH:mm; pair with quiet-end"
+                    },
+                    "quiet-end": {
+                        "description": "Quiet hours end HH:mm; pair with quiet-start"
+                    },
+                    "clear-quiet": {
+                        "description": "Remove quiet hours"
+                    },
+                    "followup-minutes": {
+                        "description": "Minutes between follow-ups; at least 15 when enabled"
+                    },
+                    "max-followups": {
+                        "description": "Maximum follow-ups; zero disables them"
+                    }
+                }
+            },
+            "export": {
+                "description": "Export all retained private completion history",
+                "options": {
+                    "format": {
+                        "description": "Export format",
+                        "choices": {
+                            "json": "JSON",
+                            "csv": "CSV"
+                        }
+                    }
+                }
+            },
+            "connect": {
+                "description": "Choose Google calendars in your private dashboard"
+            }
+        }
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "preset": {
+        "description": "Bewaar en gebruik je privé-commandopresets",
+        "options": {
+            "save": { "description": "Bewaar of vervang een commandopreset", "options": {
+                "name": { "description": "De naam van je preset" },
+                "command": { "description": "Het commando om te bewaren", "choices": {
+                    "weather":"weather", "time":"time", "get-patchnotes":"get-patchnotes", "league-form":"league-form", "league-history":"league-history", "league-stats":"league-stats",
+                    "tft-history":"tft-history", "tft-stats":"tft-stats", "stream-status":"stream-status", "twitch-latest-vod":"twitch-latest-vod", "youtube-latest":"youtube-latest", "media search":"media search", "anime search":"anime search", "manga":"manga", "roll":"roll"
+                } },
+                "options": { "description": "Opgeslagen opties, bijvoorbeeld location:Amsterdam of game:valorant" }
+            } },
+            "run": { "description": "Voer een opgeslagen preset uit", "options": { "name": { "description": "De naam van je preset" } } },
+            "list": { "description": "Toon je opgeslagen presets", "options": { "page": { "description": "Paginanummer" } } },
+            "delete": { "description": "Verwijder een opgeslagen preset", "options": { "name": { "description": "De naam van je preset" } } }
+        }
+    }
+}

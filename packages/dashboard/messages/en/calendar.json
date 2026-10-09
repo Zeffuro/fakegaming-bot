@@ -1,0 +1,32 @@
+{
+    "calendar": {
+        "title": "Calendar completion",
+        "description": "Choose your Google calendars and events for private completion reminders. Completing an occurrence never changes its future schedule.",
+        "connectionError": "Google Calendar could not be connected or loaded. Try again.",
+        "connected": "Google Calendar connected. Choose the calendars and events to follow below.",
+        "notConfigured": "Google Calendar needs server configuration before you can connect. Manual schedules are available with /schedule add.",
+        "setup": "Server setup: enable Google Calendar API, create a Web application OAuth client, register the dashboard URL followed by /api/auth/google-calendar/callback, then set GOOGLE_CALENDAR_CLIENT_ID, GOOGLE_CALENDAR_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI and a random GOOGLE_CALENDAR_TOKEN_ENC_KEY of at least 32 characters. Google may require OAuth consent-screen verification or a test-user entry.",
+        "connect": "Connect Google Calendar",
+        "reconnect": "Reconnect Google Calendar",
+        "disconnect": "Disconnect",
+        "refresh": "Refresh",
+        "calendar": "Calendar",
+        "choose": "Choose a calendar",
+        "filter": "Event title contains (optional)",
+        "filterHelp": "Leave empty for every event. Otherwise only titles containing this text are imported. Choose up to 10 calendar/filter selections.",
+        "select": "Follow these events",
+        "syncPending": "Your selection is saved. The first sync is pending; it will retry automatically.",
+        "empty": "No calendars selected yet.",
+        "selectedFilter": "Title contains: {filter}",
+        "allEvents": "All events",
+        "active": "Active",
+        "inactive": "Paused; reselect or resume after connecting",
+        "lastSync": "Last synced: {date}",
+        "neverSynced": "Not synced yet",
+        "sync": "Sync now",
+        "resume": "Resume",
+        "remove": "Stop following",
+        "export": "Export history ({format})",
+        "historyHelp": "Disconnecting or stopping a calendar preserves your completion history. Use /schedule history, /schedule summary and /schedule export in Discord to review or export it. Calendar access is read-only; reminders are private DMs. Past events imported initially do not send reminders."
+    }
+}

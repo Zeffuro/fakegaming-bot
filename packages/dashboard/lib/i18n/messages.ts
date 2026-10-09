@@ -5,6 +5,7 @@ import adminEn from "../../messages/en/admin.json";
 import analyticsEn from "../../messages/en/analytics.json";
 import animeEn from "../../messages/en/anime.json";
 import birthdaysEn from "../../messages/en/birthdays.json";
+import calendarEn from "../../messages/en/calendar.json";
 import commandsEn from "../../messages/en/commands.json";
 import configEn from "../../messages/en/config.json";
 import coreEn from "../../messages/en/core.json";
@@ -23,6 +24,7 @@ import adminNl from "../../messages/nl/admin.json";
 import analyticsNl from "../../messages/nl/analytics.json";
 import animeNl from "../../messages/nl/anime.json";
 import birthdaysNl from "../../messages/nl/birthdays.json";
+import calendarNl from "../../messages/nl/calendar.json";
 import commandsNl from "../../messages/nl/commands.json";
 import configNl from "../../messages/nl/config.json";
 import coreNl from "../../messages/nl/core.json";
@@ -42,6 +44,7 @@ export const englishMessages = {
     ...analyticsEn,
     ...animeEn,
     ...birthdaysEn,
+    ...calendarEn,
     ...commandsEn,
     ...configEn,
     ...coreEn,
@@ -66,6 +69,7 @@ export const dutchMessages = {
     ...analyticsNl,
     ...animeNl,
     ...birthdaysNl,
+    ...calendarNl,
     ...commandsNl,
     ...configNl,
     ...coreNl,

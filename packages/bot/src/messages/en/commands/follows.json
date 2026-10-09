@@ -1,0 +1,26 @@
+{
+    "follows": {
+        "description":"Manage your private game and stream notifications",
+        "options": {
+            "twitch": {"description":"Follow a Twitch channel privately","options":{
+                "username":{"description":"Twitch username"},
+                "mode":{"description":"Immediate DM or daily digest","choices":{"immediate":"Immediate","digest":"Daily digest"}}
+            }},
+            "steam": {"description":"Follow Steam game news privately","options":{
+                "game":{"description":"Steam game name, App ID, or store URL"},
+                "mode":{"description":"Immediate DM or daily digest","choices":{"immediate":"Immediate","digest":"Daily digest"}}
+            }},
+            "list":{"description":"List your private follows","options":{"page":{"description":"Page number"}}},
+            "pause":{"description":"Pause a private follow","options":{"id":{"description":"Follow from your list"}}},
+            "resume":{"description":"Resume a private follow","options":{"id":{"description":"Follow from your list"}}},
+            "remove":{"description":"Remove a private follow","options":{"id":{"description":"Follow from your list"}}},
+            "settings":{"description":"View or change quiet hours and daily digest time","options":{
+                "timezone":{"description":"Your timezone, e.g. Europe/Amsterdam"},
+                "quiet-start":{"description":"Quiet hours start, HH:mm"},
+                "quiet-end":{"description":"Quiet hours end, HH:mm"},
+                "clear-quiet":{"description":"Turn quiet hours off"},
+                "digest-at":{"description":"Daily digest time, HH:mm"}
+            }}
+        }
+    }
+}

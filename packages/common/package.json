@@ -76,6 +76,10 @@
       "import": "./dist/steam/index.js",
       "types": "./dist/steam/index.d.ts"
     },
+    "./notifications": {
+      "import": "./dist/notifications/index.js",
+      "types": "./dist/notifications/index.d.ts"
+    },
     "./api": {
       "import": "./dist/api/index.js",
       "types": "./dist/api/index.d.ts"

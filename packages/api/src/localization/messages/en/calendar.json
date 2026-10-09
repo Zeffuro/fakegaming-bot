@@ -1,0 +1,11 @@
+{
+    "calendarNotConfigured": "Google Calendar has not been configured on this server.",
+    "calendarNotConnected": "Connect Google Calendar before selecting or syncing calendars.",
+    "calendarInvalidState": "This Google Calendar connection attempt has expired or is invalid. Start again.",
+    "calendarInvalidToken": "Google Calendar authorization expired or was rejected. Reconnect your account.",
+    "calendarProviderUnavailable": "Google Calendar is temporarily unavailable. Try again later.",
+    "calendarInvalidSnapshot": "Google Calendar returned an incomplete or invalid result. Your saved events were preserved.",
+    "calendarConflict": "The selection limit was reached or the connection changed. Refresh and try again.",
+    "googleCalendarSelectionNotFound": "That calendar or selection is not available to your account.",
+    "calendarUntitledEvent": "Untitled event"
+}

@@ -433,9 +433,11 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/birthday`|Slash|Show your or another user's birthday|All users|
 |`/birthdays`|Slash|Show upcoming birthdays in this server|All users|
 |`/calendar`|Slash|Show upcoming birthdays and your reminders|All users|
+|`/countdowns`|Slash|Manage private countdowns to exact dates|All users|
 |`/dashboard`|Slash|Open this server in the bot dashboard|All users|
 |`/delete-quote`|Slash|Delete a quote you added or authored|All users|
 |`/delete-reminder`|Slash|Delete one of your pending reminders|All users|
+|`/follows`|Slash|Manage your private game and stream notifications|All users|
 |`/get-patchnotes`|Slash|Get the latest patch notes for a game|All users|
 |`/help`|Slash|List all available commands and their descriptions.|All users|
 |`/league-form`|Slash|Summarize recent League of Legends form by Riot ID or linked user|All users|
@@ -451,12 +453,13 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/manga`|Slash|Search manga, manhwa, webtoons, and light novels on AniList|All users|
 |`/media`|Slash|Search for movies and TV shows|All users|
 |`/night`|Slash|Nominate and vote for a game or movie night|All users|
-|`/notes`|Slash|Add, list, show, and delete your personal notes|All users|
+|`/notes`|Slash|Manage your personal notes and saved inbox|All users|
 |`/occupy-channel`|Slash|Keep a voice channel occupied while the bot is online|Administrator|
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
 |`/permissions-backup`|Slash|Save and export role, category, and channel permissions|Administrator|
 |`/poll`|Slash|Create a button poll with live results|All users|
+|`/preset`|Slash|Save and run your private command presets|All users|
 |`/profile-card`|Slash|Render a Discord profile card|All users|
 |`/question`|Slash|Draw a conversation question from a local deck|All users|
 |`/quote-card`|Slash|Render an approved quote as a shareable image|All users|
@@ -468,7 +471,9 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/resume-reminder`|Slash|Resume one of your recurring reminders|All users|
 |`/riot-links`|Slash|Manage linked Riot accounts|All users|
 |`/roll`|Slash|Roll dice or generate a random number|All users|
+|`/schedule`|Slash|Manage private schedules and completion history|All users|
 |`/search-quote`|Slash|Search quotes by text|All users|
+|`/session`|Slash|Track private focus and gaming sessions|All users|
 |`/set-birthday`|Slash|Set your birthday and the channel to post in|All users|
 |`/set-reminder`|Slash|Set a reminder|All users|
 |`/set-timezone`|Slash|Set your timezone|All users|
@@ -476,6 +481,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/spin`|Slash|Spin the wheel to pick someone!|All users|
 |`/stream-status`|Slash|Check whether a Twitch channel is live|All users|
 |`/subscribe-patchnotes`|Slash|Subscribe a channel to patch notes for a game|All users|
+|`/tasks`|Slash|Manage your private tasks and checklists|All users|
 |`/test-notification`|Slash|Send a sample notification to a channel|All users|
 |`/tft-history`|Slash|Get recent Teamfight Tactics match history by Riot ID or linked user|All users|
 |`/tft-stats`|Slash|Get Teamfight Tactics ranked stats by Riot ID or linked user|All users|
@@ -483,6 +489,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/twitch-latest-vod`|Slash|Show the latest Twitch archive VOD for a channel|All users|
 |`/weather`|Slash|Get the current weather and a short forecast for a specified location|All users|
 |`/youtube-latest`|Slash|Show the latest video from a YouTube channel ID|All users|
+|`Remind Me`|Message context|Choose when to follow up on a message|All users|
 |`Remind Me in 1h`|Message context|Set a one-hour reminder for a message from the message context menu|All users|
 |`Save as Quote`|Message context|Save a message as a quote from the message context menu|All users|
 |`Save to Notes`|Message context|Save a message excerpt and jump link to your private notes|All users|

@@ -15,6 +15,9 @@ import { registerAnimeJobs } from './anime.js';
 import { registerSteamNewsJobs } from './steamNews.js';
 import { registerUserDigestJobs } from './userDigests.js';
 import { registerQuoteOfDayJobs } from './quoteOfDay.js';
+import { registerPersonalFollowJobs } from './personalFollows.js';
+import { registerPersonalScheduleJobs } from './personalSchedules.js';
+import { registerGoogleCalendarJobs } from '../googleCalendar/sync.js';
 
 let activeQueue: JobQueue | null = null;
 
@@ -84,6 +87,9 @@ export async function bootstrapJobs(): Promise<void> {
 
     // Register and schedule personal digest summaries
     await registerUserDigestJobs(queue);
+    await registerPersonalFollowJobs(queue);
+    await registerPersonalScheduleJobs(queue);
+    await registerGoogleCalendarJobs(queue);
 
     // Register and schedule quote-of-the-day announcements
     await registerQuoteOfDayJobs(queue);
