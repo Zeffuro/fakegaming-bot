@@ -1,0 +1,13 @@
+{
+    "schedulePlanned": "Gepland: {time} ({timezone})",
+    "scheduleCompleted": "Voltooid: {time}",
+    "schedulePending": "Wacht op jouw bevestiging",
+    "scheduleCancelled": "Geannuleerd in de agenda; je geschiedenis blijft bewaard",
+    "scheduleTaken": "Nu genomen",
+    "scheduleEarlier": "Eerder tijdstip vastleggen",
+    "scheduleLater": "Later herinneren",
+    "scheduleHistory": "Geschiedenis",
+    "scheduleUndo": "Voltooiing ongedaan maken",
+    "scheduleNote": "Notitie",
+    "scheduleAllDay": "Gebeurtenis voor de hele dag"
+}
