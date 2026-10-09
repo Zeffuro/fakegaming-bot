@@ -1,0 +1,180 @@
+{
+    "tasks": {
+        "description": "Beheer je privétaken en checklists",
+        "options": {
+            "add": {
+                "description": "Maak een privétaak of checklist",
+                "options": {
+                    "title": {
+                        "description": "Titel van de taak"
+                    },
+                    "checklist": {
+                        "description": "Maximaal tien checklistitems gescheiden door |"
+                    },
+                    "due": {
+                        "description": "Toekomstige datum, tijd of wachttijd"
+                    },
+                    "repeat": {
+                        "description": "Herhaal na voltooiing, bijvoorbeeld daily of every 2 weeks"
+                    },
+                    "timezone": {
+                        "description": "IANA-tijdzone; standaard je opgeslagen tijdzone of UTC"
+                    }
+                }
+            },
+            "list": {
+                "description": "Toon je taken",
+                "options": {
+                    "completed": {
+                        "description": "Toon voltooide taken"
+                    },
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "show": {
+                "description": "Open een taak en de knoppen",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    }
+                }
+            },
+            "done": {
+                "description": "Voltooi deze keer de taak",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    }
+                }
+            },
+            "snooze": {
+                "description": "Verplaats deze keer naar een later tijdstip",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    },
+                    "when": {
+                        "description": "Toekomstige datum, tijd of wachttijd"
+                    }
+                }
+            },
+            "check": {
+                "description": "Vink een checklistitem aan of uit",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    },
+                    "item": {
+                        "description": "Nummer van het checklistitem"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Verwijder een taak",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    }
+                }
+            }
+        }
+    },
+    "session": {
+        "description": "Houd privésessies voor focus en gamen bij",
+        "options": {
+            "start": {
+                "description": "Start een focus- of gamesessie",
+                "options": {
+                    "kind": {
+                        "description": "Type sessie",
+                        "choices": {
+                            "focus": "Focus",
+                            "gaming": "Gamen"
+                        }
+                    },
+                    "title": {
+                        "description": "Titel van de sessie"
+                    },
+                    "minutes": {
+                        "description": "Minuten per sessie of focusblok; Pomodoro gebruikt standaard 25"
+                    },
+                    "pomodoro": {
+                        "description": "Wissel focusblokken en pauzes af"
+                    },
+                    "break-minutes": {
+                        "description": "Pauzeminuten bij Pomodoro; standaard 5"
+                    },
+                    "cycles": {
+                        "description": "Aantal focusblokken bij Pomodoro; standaard 4"
+                    },
+                    "break-every": {
+                        "description": "Optionele pauzeherinnering na dit aantal actieve minuten"
+                    }
+                }
+            },
+            "status": {
+                "description": "Toon je actieve sessie"
+            },
+            "pause": {
+                "description": "Pauzeer je actieve sessie"
+            },
+            "resume": {
+                "description": "Hervat je gepauzeerde sessie"
+            },
+            "stop": {
+                "description": "Stop je actieve sessie"
+            },
+            "stats": {
+                "description": "Toon je bewaarde tijdtotalen"
+            }
+        }
+    },
+    "countdowns": {
+        "description": "Beheer privéaftellers naar exacte datums",
+        "options": {
+            "add": {
+                "description": "Maak een afteller naar een toekomstige datum",
+                "options": {
+                    "title": {
+                        "description": "Titel van de afteller"
+                    },
+                    "at": {
+                        "description": "Exacte datum en tijd, bijvoorbeeld 2026-12-25 09:00"
+                    },
+                    "timezone": {
+                        "description": "IANA-tijdzone; standaard je opgeslagen tijdzone of UTC"
+                    },
+                    "advance-minutes": {
+                        "description": "Optionele melding dit aantal minuten vóór de datum"
+                    }
+                }
+            },
+            "list": {
+                "description": "Toon toekomstige aftellers op datumvolgorde",
+                "options": {
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "show": {
+                "description": "Toon een afteller",
+                "options": {
+                    "countdown": {
+                        "description": "Afteller-ID uit /countdowns list"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Verwijder een afteller en de meldingen",
+                "options": {
+                    "countdown": {
+                        "description": "Afteller-ID uit /countdowns list"
+                    }
+                }
+            }
+        }
+    }
+}
