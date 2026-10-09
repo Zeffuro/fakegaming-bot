@@ -36,6 +36,9 @@
             },
             "duration": {
                 "description": "Minuten voordat de peiling sluit (standaard: 10)"
+            },
+            "multiple": {
+                "description": "Sta meerdere keuzes toe (klik nogmaals om te verwijderen)"
             }
         }
     },
