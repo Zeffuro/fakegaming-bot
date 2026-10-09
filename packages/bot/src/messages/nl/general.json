@@ -62,7 +62,7 @@
         "creating": "Poll wordt gemaakt...",
         "capacity": "Er zijn te veel actieve polls. Probeer het binnenkort opnieuw.",
         "creatorOrModerator": "Alleen de maker of een moderator kan deze poll sluiten.",
-        "unavailable": "Deze poll is niet meer beschikbaar. Mogelijk is deze verlopen of is de bot opnieuw gestart.",
+        "unavailable": "Deze poll is niet meer beschikbaar. Oudere polls van vóór de permanente opslag kunnen niet worden hersteld.",
         "closed": "Deze poll is gesloten.",
         "closeButton": "Poll sluiten",
         "closes": "Sluit '<t:'{unix}:R>.",
@@ -73,7 +73,11 @@
         "total": "Totaal aantal stemmen: {count}",
         "noVotes": "Resultaat: er zijn geen stemmen uitgebracht.",
         "winner": "Winnaar: **{name}** ({count, plural, one {# stem} other {# stemmen}}).",
-        "tie": "Resultaat: gelijkspel tussen {names} (elk {count, plural, one {# stem} other {# stemmen}})."
+        "tie": "Resultaat: gelijkspel tussen {names} (elk {count, plural, one {# stem} other {# stemmen}}).",
+        "failure": "Deze pollactie kon niet worden voltooid. Probeer het binnenkort opnieuw.",
+        "singleVoting": "Kies één optie. Je kunt je stem wijzigen.",
+        "multipleVoting": "Kies meerdere opties; klik nogmaals op een optie om die te verwijderen. Percentages zijn per stemmer.",
+        "selected": "{count, plural, =0 {Je hebt geen opties geselecteerd.} one {Je hebt # optie geselecteerd.} other {Je hebt # opties geselecteerd.}}"
     },
     "profile": {
         "caption": "Profielkaart voor {mention}",
