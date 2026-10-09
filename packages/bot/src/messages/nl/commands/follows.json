@@ -1,0 +1,89 @@
+{
+    "follows": {
+        "description": "Beheer je privé-meldingen voor spellen en streams",
+        "options": {
+            "twitch": {
+                "description": "Volg een Twitch-kanaal privé",
+                "options": {
+                "username": {
+                    "description": "Twitch-gebruikersnaam"
+                },
+                "mode": {
+                    "description": "Directe DM of dagelijks overzicht",
+                    "choices": {
+                        "immediate": "Direct",
+                        "digest": "Dagelijks overzicht"
+                    }
+                }
+                }
+            },
+            "steam": {
+                "description": "Volg Steam-spelnieuws privé",
+                "options": {
+                "game": {
+                    "description": "Naam van een Steam-spel, App ID of winkel-URL"
+                },
+                "mode": {
+                    "description": "Directe DM of dagelijks overzicht",
+                    "choices": {
+                        "immediate": "Direct",
+                        "digest": "Dagelijks overzicht"
+                    }
+                }
+                }
+            },
+            "list": {
+                "description": "Toon je privé-abonnementen",
+                "options": {
+                "page": {
+                    "description": "Paginanummer"
+                }
+                }
+            },
+            "pause": {
+                "description": "Pauzeer een privé-abonnement",
+                "options": {
+                "id": {
+                    "description": "Abonnement uit je lijst"
+                }
+                }
+            },
+            "resume": {
+                "description": "Hervat een privé-abonnement",
+                "options": {
+                "id": {
+                    "description": "Abonnement uit je lijst"
+                }
+                }
+            },
+            "remove": {
+                "description": "Verwijder een privé-abonnement",
+                "options": {
+                "id": {
+                    "description": "Abonnement uit je lijst"
+                }
+                }
+            },
+            "settings": {
+                "description": "Bekijk of wijzig stille uren en de tijd van het dagelijkse overzicht",
+                "options": {
+                "timezone": {
+                    "description": "Je tijdzone, bijvoorbeeld Europe/Amsterdam"
+                },
+                "quiet-start": {
+                    "description": "Begin van stille uren, HH:mm"
+                },
+                "quiet-end": {
+                    "description": "Einde van stille uren, HH:mm"
+                },
+                "clear-quiet": {
+                    "description": "Schakel stille uren uit"
+                },
+                "digest-at": {
+                    "description": "Tijd van het dagelijkse overzicht, HH:mm"
+                }
+                }
+            }
+        }
+    }
+}
