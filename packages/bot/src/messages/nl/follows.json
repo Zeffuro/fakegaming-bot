@@ -1,0 +1,15 @@
+{
+    "added": "Je volgt {label} privé: {mode}. Je ontvangt nieuwe updates via DM; oud nieuws wordt overgeslagen.",
+    "immediate": "Directe DM",
+    "digest": "Dagelijks overzicht",
+    "paused": "Gepauzeerd",
+    "notFound": "Dat kanaal of spel is niet gevonden.",
+    "ambiguous": "Meerdere spellen komen overeen. Kies een spel via automatisch aanvullen of gebruik de Steam App ID.",
+    "list": "Je privé-abonnementen — pagina",
+    "empty": "Geen abonnementen op deze pagina. Voeg er een toe met /follows twitch of /follows steam.",
+    "settings": "Tijdzone: {timezone}\nStille uren: {quiet}\nDagelijks overzicht: {digest}",
+    "off": "Uit",
+    "updated": "Abonnement bijgewerkt.",
+    "missing": "Dat abonnement is niet van jou of bestaat niet meer.",
+    "failed": "Je abonnementen konden niet worden bijgewerkt. Controleer de providerconfiguratie, tijdzone en tijden in HH:mm. Stel beide tijden voor stille uren samen in. Je kunt maximaal 30 kanalen of spellen volgen."
+}
