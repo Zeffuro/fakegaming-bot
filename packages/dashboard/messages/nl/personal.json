@@ -185,6 +185,25 @@
     "activityUnknownGuild": "Onbekende server",
     "activityChannel": "kanaal {channelId}",
     "activityFailed": "mislukt",
-    "activityUnknownAction": "Activiteit: {action}"
+    "activityUnknownAction": "Activiteit: {action}",
+    "inboxStatus": "Inboxstatus",
+    "inboxTags": "Tags",
+    "inbox": {
+      "active": "Actief",
+      "all": "Alles",
+      "unread": "Ongelezen",
+      "read": "Gelezen",
+      "archived": "Gearchiveerd",
+      "previous": "Vorige",
+      "next": "Volgende",
+      "page": "Pagina {page} van {pages}",
+      "markRead": "Markeer als gelezen",
+      "markUnread": "Markeer als ongelezen",
+      "archive": "Archiveren",
+      "restore": "Herstellen",
+      "openSource": "Bron openen",
+      "saveTags": "Tags opslaan",
+      "invalidTags": "Gebruik maximaal 10 tags, elk maximaal 32 tekens."
+    }
   }
 }
