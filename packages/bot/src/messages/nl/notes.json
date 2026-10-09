@@ -17,5 +17,23 @@
     "stickers": "{count, plural, one {# sticker} other {# stickers}}",
     "and": "en",
     "contextSaved": "Dit bericht is als `{id}` opgeslagen in je privénotities.",
-    "contextFailed": "Ik kon dat bericht niet opslaan in je privénotities. Probeer het later opnieuw."
+    "contextFailed": "Ik kon dat bericht niet opslaan in je privénotities. Probeer het later opnieuw.",
+    "inbox": {
+        "unread": "ongelezen",
+        "read": "gelezen",
+        "archived": "gearchiveerd",
+        "open": "Openen",
+        "remind": "Herinner mij",
+        "archive": "Archiveren",
+        "restore": "Herstellen",
+        "tenMinutes": "10 minuten",
+        "oneHour": "1 uur",
+        "tomorrow": "Morgen",
+        "custom": "Aangepast",
+        "chooseTime": "Wanneer wil je een herinnering voor dit opgeslagen item?",
+        "chooseEdit": "Kies tags of een status om bij te werken.",
+        "invalidTags": "Gebruik maximaal 10 tags gescheiden door komma’s, elk maximaal 32 tekens.",
+        "page": "Pagina {page}/{pages} · {count} items. Gebruik /notes list page om te bladeren.",
+        "invalidSource": "Gebruik een geldige HTTP- of HTTPS-bronlink zonder inloggegevens."
+    }
 }
