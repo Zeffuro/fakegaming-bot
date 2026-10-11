@@ -3,7 +3,7 @@
     "title": "Your dashboard layout",
     "customize": "Customize panels",
     "close": "Close customization",
-    "description": "Choose which panels to show and use the arrows to change their order. Save to use this layout on your other devices. Hiding a panel keeps its saved data.",
+    "description": "Show or hide panels and change their order. Your saved data stays intact.",
     "moveUp": "Move {name} up",
     "moveDown": "Move {name} down",
     "save": "Save layout",
@@ -14,10 +14,37 @@
     "loading": "Loading dashboard layout…",
     "failed": "Could not update your dashboard layout.",
     "sections": {
-      "today": "Today", "calendar": "Calendar", "tasks": "Tasks", "briefing": "Morning briefing", "notificationHistory": "Notification history",
-      "pollTemplates": "Poll templates", "checklistTemplates": "Reusable lists", "noteEditor": "Create or edit a note",
-      "notes": "Saved notes", "reminders": "Reminders", "anime": "Anime reminders", "reminderEditor": "Create a reminder",
-      "subscriptions": "Subscriptions", "settings": "Personal settings", "digest": "Personal digest", "riot": "Riot account", "activity": "Activity"
+      "today": "Today",
+      "calendar": "Calendar",
+      "tasks": "Tasks",
+      "briefing": "Morning briefing",
+      "notificationHistory": "Notification history",
+      "pollTemplates": "Poll templates",
+      "checklistTemplates": "Reusable lists",
+      "noteEditor": "Create or edit a note",
+      "notes": "Saved notes",
+      "reminders": "Reminders",
+      "anime": "Anime reminders",
+      "reminderEditor": "Create a reminder",
+      "subscriptions": "Subscriptions",
+      "settings": "Personal settings",
+      "digest": "Personal digest",
+      "riot": "Riot account",
+      "activity": "Activity"
+    },
+    "navigation": "Personal dashboard views",
+    "emptyView": "No panels shown here. Use Customize to add them.",
+    "configure": "Configure",
+    "help": "Help",
+    "manageNotifications": "Notifications",
+    "manageAccount": "Account settings",
+    "views": {
+      "overview": "Overview",
+      "workspace": "Tasks & notes",
+      "calendar": "Calendar",
+      "notifications": "Notifications",
+      "account": "Account",
+      "all": "All panels"
     }
   }
 }

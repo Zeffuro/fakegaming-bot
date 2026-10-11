@@ -1,5 +1,6 @@
 {
     "briefing": {
+        "help": "Help",
         "title": "Privé-ochtendoverzicht",
         "description": "Ontvang één privébericht in Discord met de taken, herinneringen en agenda-items van vandaag en te late items, plus het aftellen voor vandaag. Taken zonder deadline tellen mee. Lege dagen worden overgeslagen.",
         "enabled": "Stuur mij een ochtendoverzicht",

@@ -33,6 +33,34 @@ describe('calendar dashboard selection', () => {
         const button = [...container.querySelectorAll('button')].find(item => item.textContent === translate(key));
         expect(button).toBeDefined(); await act(async () => button?.click());
     };
+    it.each(['en', 'nl'] as const)('collapses setup for selected calendars and keeps source status visible in %s', async locale => {
+        mocks.locale = locale; await render();
+        const setup = [...container.querySelectorAll('details')].find(value => value.querySelector('summary')?.textContent === translate('calendar.settings'))!;
+        expect(setup.open).toBe(false);
+        expect(container.querySelector('input')?.closest('details')).toBe(setup);
+        expect([...container.querySelectorAll('button')].find(value => value.textContent === translate('calendar.reconnect'))?.closest('details')).toBe(setup);
+        expect([...container.querySelectorAll('button')].find(value => value.textContent === translate('calendar.resume'))?.closest('details')).toBeNull();
+        expect([...setup.querySelectorAll('summary')].some(value => value.textContent === translate('calendar.help'))).toBe(true);
+        await act(async () => { setup.open = true; setup.dispatchEvent(new Event('toggle')); });
+        expect(setup.open).toBe(true);
+    });
+    it('opens connection and calendar settings when no sources are selected', async () => {
+        mocks.status.mockResolvedValue({ configured: true, connected: true, sources: [] }); await render();
+        expect(container.querySelector('details')?.open).toBe(true);
+        expect(mocks.select).not.toHaveBeenCalled();
+    });
+    it('keeps publication status and delivery warnings outside collapsed details', async () => {
+        publishing.list.mockResolvedValue({ publications: [{ id: 'publication', guildName: 'Server', channelName: 'calendar', enabled: true,
+            lookaheadDays: 7, eventLeadDays: 3, publicTitle: 'Public title', includeEventDetails: true, lastError: 'Delivery failed', uncertainCount: 1 }] });
+        await render();
+        const warning = [...container.querySelectorAll('[role="alert"]')].find(value => value.textContent?.includes(translate('calendar.publishing.deliveryError')))!;
+        expect(warning).toBeDefined(); expect(warning.closest('details')).toBeNull();
+        const stop = [...container.querySelectorAll('button')].find(value => value.textContent === translate('calendar.publishing.stop'))!;
+        expect(stop.closest('details')).toBeNull();
+        const details = [...container.querySelectorAll('details')].find(value => value.querySelector('summary')?.textContent === translate('calendar.publicationDetails'))!;
+        expect(details.open).toBe(false); expect(details.textContent).toContain('Public title');
+        expect(container.textContent).toContain(translate('calendar.publishing.enabled'));
+    });
     it.each(['en', 'nl'] as const)('resumes stable calendar/filter selections and preserves history guidance in %s', async locale => {
         mocks.locale = locale;
         await render();

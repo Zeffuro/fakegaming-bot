@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Alert, Button, FormControlLabel, Stack, Switch, TextField, Typography } from '@mui/material';
 import { notificationPauseApi, type PersonalNotificationPausePreferences } from '@/lib/api/notificationPause';
 import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
@@ -14,11 +14,13 @@ function localResume(timestamp: number | null, timezone: string): string {
     const part = (type: string) => parts.find(value => value.type === type)?.value ?? '';
     return `${part('year')}-${part('month')}-${part('day')}T${part('hour')}:${part('minute')}`;
 }
-export function NotificationPausePanel({ revision }: { revision?: string }) {
+export function NotificationPausePanel({ revision, compact = false }: { revision?: string; compact?: boolean }) {
     const { t, formatDate } = useDashboardI18n();
     const [settings, setSettings] = useState<PersonalNotificationPausePreferences | null>(null);
     const [enabled, setEnabled] = useState(false); const [resumeAt, setResumeAt] = useState('');
     const [busy, setBusy] = useState(true); const [error, setError] = useState<string | null>(null); const [saved, setSaved] = useState(false);
+    const [expanded, setExpanded] = useState(false);
+    const settingsId = useId();
     const pending = useRef(false); const sequence = useRef(0);
     function apply(value: PersonalNotificationPausePreferences) {
         const effective = value.enabled && value.resumeAt !== null && value.resumeAt <= Date.now()
@@ -58,28 +60,37 @@ export function NotificationPausePanel({ revision }: { revision?: string }) {
         finally { pending.current = false; if (current === sequence.current) setBusy(false); }
     }
     const disabled = busy || !settings; const buttonSx = ghostActionButtonSx(dashboardAccents.settings);
-    return <FeaturePanel accent={dashboardAccents.settings}><Stack spacing={2} sx={{ position: 'relative', minWidth: 0 }}>
-        <Typography variant="h6" sx={{ color: 'grey.50', fontWeight: 900 }}>{t('notificationPause.title')}</Typography>
-        <Typography sx={{ color: 'grey.300', overflowWrap: 'anywhere' }}>{t('notificationPause.description')}</Typography>
+    return <FeaturePanel accent={dashboardAccents.settings} sx={compact ? { p: 2 } : undefined}><Stack spacing={2} sx={{ position: 'relative', minWidth: 0 }}>
+        {!compact && <Typography variant="h6" sx={{ color: 'grey.50', fontWeight: 900 }}>{t('notificationPause.title')}</Typography>}
         {error && <Alert severity="error">{error}</Alert>}
         {saved && <Alert severity="success">{t('notificationPause.saved')}</Alert>}
-        {busy && <Typography sx={{ color: 'grey.300' }}>{t('notificationPause.loading')}</Typography>}
-        {settings && <Typography role="status" sx={{ color: 'grey.100', overflowWrap: 'anywhere' }}>
-            {settings.enabled ? settings.resumeAt === null ? t('notificationPause.pausedIndefinitely')
-                : t('notificationPause.pausedUntil', { date: formatDate(settings.resumeAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: settings.timezone }) })
-                : t('notificationPause.active')}
-        </Typography>}
-        <FormControlLabel sx={{ color: 'grey.100' }} label={t('notificationPause.enabled')} control={<Switch checked={enabled} disabled={disabled}
-            onChange={(_, value) => { setEnabled(value); setSaved(false); if (!value) setResumeAt(''); }} />} />
-        <TextField type="datetime-local" label={t('notificationPause.resumeAt')} value={resumeAt} disabled={disabled || !enabled}
-            onChange={event => { setResumeAt(event.target.value); setSaved(false); }} slotProps={{ inputLabel: { shrink: true } }}
-            helperText={t('notificationPause.timezone', { timezone: settings?.timezone ?? 'UTC' })}
-            sx={{ ...dashboardFieldSx(dashboardAccents.settings), '& input': { colorScheme: 'dark' } }} />
-        <Typography sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('notificationPause.behavior')}</Typography>
-        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <Button disabled={disabled} onClick={() => void run('save')} sx={buttonSx}>{t('notificationPause.save')}</Button>
-            <Button disabled={disabled || !settings?.enabled} onClick={() => void run('resume')} sx={buttonSx}>{t('notificationPause.resume')}</Button>
-            <Button disabled={busy} onClick={() => void run('reload')} sx={buttonSx}>{t('notificationPause.reload')}</Button>
+        {busy && <Typography role="status" sx={{ color: 'grey.300' }}>{t('notificationPause.loading')}</Typography>}
+        <Stack direction={{ xs: 'column', sm: compact ? 'row' : 'column' }} sx={{ gap: 1, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: compact ? 'center' : 'stretch' } }}>
+            {settings && <Typography role="status" sx={{ color: 'grey.100', overflowWrap: 'anywhere' }}>
+                {settings.enabled ? settings.resumeAt === null ? t(compact ? 'notificationPause.compactPaused' : 'notificationPause.pausedIndefinitely')
+                    : t(compact ? 'notificationPause.compactPausedUntil' : 'notificationPause.pausedUntil', { date: formatDate(settings.resumeAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: settings.timezone }) })
+                    : t(compact ? 'notificationPause.compactActive' : 'notificationPause.active')}
+            </Typography>}
+            {compact && <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                <Button aria-expanded={expanded} aria-controls={expanded ? settingsId : undefined} onClick={() => setExpanded(value => !value)} sx={buttonSx}>{t('notificationPause.settings')}</Button>
+                {settings?.enabled && <Button disabled={disabled} onClick={() => void run('resume')} sx={buttonSx}>{t('notificationPause.resume')}</Button>}
+                {error && !expanded && <Button disabled={busy} onClick={() => void run('reload')} sx={buttonSx}>{t('notificationPause.reload')}</Button>}
+            </Stack>}
         </Stack>
+        {(!compact || expanded) && <Stack spacing={2} id={compact ? settingsId : undefined}>
+            <Typography sx={{ color: 'grey.300', overflowWrap: 'anywhere' }}>{t('notificationPause.description')}</Typography>
+            <FormControlLabel sx={{ color: 'grey.100' }} label={t('notificationPause.enabled')} control={<Switch checked={enabled} disabled={disabled}
+                onChange={(_, value) => { setEnabled(value); setSaved(false); if (!value) setResumeAt(''); }} />} />
+            <TextField type="datetime-local" label={t('notificationPause.resumeAt')} value={resumeAt} disabled={disabled || !enabled}
+                onChange={event => { setResumeAt(event.target.value); setSaved(false); }} slotProps={{ inputLabel: { shrink: true } }}
+                helperText={t('notificationPause.timezone', { timezone: settings?.timezone ?? 'UTC' })}
+                sx={{ ...dashboardFieldSx(dashboardAccents.settings), '& input': { colorScheme: 'dark' } }} />
+            <Typography sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('notificationPause.behavior')}</Typography>
+            <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                <Button disabled={disabled} onClick={() => void run('save')} sx={buttonSx}>{t('notificationPause.save')}</Button>
+                {!compact && <Button disabled={disabled || !settings?.enabled} onClick={() => void run('resume')} sx={buttonSx}>{t('notificationPause.resume')}</Button>}
+                <Button disabled={busy} onClick={() => void run('reload')} sx={buttonSx}>{t('notificationPause.reload')}</Button>
+            </Stack>
+        </Stack>}
     </Stack></FeaturePanel>;
 }

@@ -128,7 +128,6 @@ export function TodayPanel({ revision, onRemindersChanged }: { revision?: string
                 <Typography variant="h5" sx={{ color: 'grey.50', fontWeight: 900 }}>{t('today.title')}</Typography>
                 <Button disabled={disabled} onClick={() => void load()} sx={actionSx}>{t('today.refresh')}</Button>
             </Stack>
-            <Typography sx={{ color: 'grey.300' }}>{t('today.description')}</Typography>
             {data && <Typography variant="body2" sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('today.date', { day: data.day, timezone: data.timezone })}</Typography>}
             {error && <Alert severity="error">{error}</Alert>}
             {completed && <Alert severity="success" action={<Button disabled={disabled} onClick={() => void run(async () => {

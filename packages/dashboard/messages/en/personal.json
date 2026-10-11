@@ -2,7 +2,7 @@
   "personal": {
     "eyebrow": "Personal",
     "title": "Your dashboard",
-    "description": "Account-level notes, reminders, settings, and DM subscriptions that follow your Discord login instead of a server.",
+    "description": "Your day, saved notes and personal notifications.",
     "statNotes": "notes",
     "statPinned": "pinned",
     "statReminders": "reminders",
@@ -16,7 +16,7 @@
     "noteFormDescription": "Titles are optional. Blank titles use the first line of the note.",
     "pinned": "Pinned",
     "secretWarningTitle": "Do not store secrets",
-    "secretWarningBody": "Do not store passwords, API keys, tokens, recovery codes, private keys, or other secrets.",
+    "secretWarningBody": "Keep passwords, tokens and recovery codes out of notes.",
     "titleOptional": "Title (optional)",
     "noteLabel": "Note",
     "saveChanges": "Save changes",

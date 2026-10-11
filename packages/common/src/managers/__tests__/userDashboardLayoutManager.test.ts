@@ -15,8 +15,9 @@ describe('personal dashboard layout persistence', () => {
         expect(upgraded.version).toBe(7); expect(upgraded.sections.slice(0, legacy.length)).toEqual(legacy);
         expect(upgraded.sections.at(-1)).toEqual({ id: 'notificationHistory', visible: true });
     });
-    it('defaults every section visible without creating a row and persists per account', async () => {
+    it('uses focused priority defaults without creating a row and persists per account', async () => {
         expect(await manager.get('owner')).toEqual(input()); expect(await UserDashboardLayout.count()).toBe(0);
+        expect((await manager.get('owner')).sections.slice(0, 4).map(section => section.id)).toEqual(['today', 'subscriptions', 'tasks', 'notes']);
         const value = input(); value.sections.reverse(); value.sections[0].visible = false;
         expect(await manager.save('owner', value)).toEqual({ ...value, version: 1 });
         expect(await new UserDashboardLayoutManager().get('owner')).toEqual({ ...value, version: 1 });

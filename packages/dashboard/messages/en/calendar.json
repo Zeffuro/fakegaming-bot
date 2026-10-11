@@ -60,7 +60,12 @@
             "deliveryError": "A post or event could not be updated or delivered. Check permissions and whether it was deleted or the Discord Event has already finished.",
             "uncertain": "{count} delivery outcomes are unknown. New posts and events with unknown outcomes will not be recreated automatically; check Discord before making changes."
         },
-        "title": "Calendar completion",
+        "title": "Calendar",
+        "settings": "Connection, calendars and exports",
+        "help": "How it works",
+        "overlapDetails": "About overlaps and sync status",
+        "publishingHelp": "About stopping publishing",
+        "publicationDetails": "Publishing details",
         "description": "Choose your Google calendars and events for private completion reminders. Completing an occurrence never changes its future schedule.",
         "connectionError": "Google Calendar could not be connected or loaded. Try again.",
         "connected": "Google Calendar connected. Choose the calendars and events to follow below.",

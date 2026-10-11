@@ -5,7 +5,9 @@ export interface DashboardSection { id: DashboardSectionId; visible: boolean }
 export interface PersonalDashboardLayout { schemaVersion: 1; version: number; sections: DashboardSection[] }
 
 export function defaultDashboardSections(): DashboardSection[] {
-    return dashboardSectionIds.map(id => ({ id, visible: true }));
+    const order: DashboardSectionId[] = ['today', 'subscriptions', 'tasks', 'notes', 'checklistTemplates', 'pollTemplates', 'noteEditor',
+        'calendar', 'reminders', 'anime', 'briefing', 'digest', 'notificationHistory', 'reminderEditor', 'settings', 'riot', 'activity'];
+    return order.map(id => ({ id, visible: true }));
 }
 
 export function mergeDashboardSections(saved: unknown): DashboardSection[] {

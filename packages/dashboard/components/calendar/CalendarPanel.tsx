@@ -22,9 +22,11 @@ export function CalendarPanel() {
     const [publishingSourceId, setPublishingSourceId] = useState<string | null>(null);
     const [publishingRevision, setPublishingRevision] = useState(0);
     const [overlapRevision, setOverlapRevision] = useState(0);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const load = useCallback(async () => {
         const next = await userCalendarApi.status();
         setStatus(next);
+        if (!next.connected || next.sources.length === 0) setSettingsOpen(true);
         setOverlapRevision(value => value + 1);
         if (next.configured && next.connected) setCalendars((await userCalendarApi.calendars()).calendars);
         else setCalendars([]);
@@ -39,24 +41,45 @@ export function CalendarPanel() {
     return <FeaturePanel accent={dashboardAccents.commands}>
         <Stack spacing={2.25} sx={{ position: 'relative', minWidth: 0 }}>
             <Typography variant="h5" sx={{ color: 'grey.50', fontWeight: 900 }}>{t('calendar.title')}</Typography>
-            <Typography sx={{ color: 'grey.300' }}>{t('calendar.description')}</Typography>
             {error && <Alert severity="error">{error}</Alert>}
             {oauthResult === 'error' && <Alert severity="error">{t('calendar.connectionError')}</Alert>}
             {oauthResult === 'success' && <Alert severity="success">{t('calendar.connected')}</Alert>}
-            {status && !status.configured && <Alert severity="info"><Typography>{t('calendar.notConfigured')}</Typography><Typography component="div" variant="body2" sx={{ overflowWrap: 'anywhere', mt: 1 }}>{t('calendar.setup')}</Typography></Alert>}
-            {status?.configured && <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-                <Button disabled={busy} onClick={() => void run(async () => { const result = await userCalendarApi.connect(); window.location.assign(result.url); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t(status.connected ? 'calendar.reconnect' : 'calendar.connect')}</Button>
-                {status.connected && <Button disabled={busy} onClick={() => void run(async () => { await userCalendarApi.disconnect(); })} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t('calendar.disconnect')}</Button>}
-                <Button disabled={busy} onClick={() => void run(async () => undefined)} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.refresh')}</Button>
-            </Stack>}
-            {status?.connected && <Stack spacing={1.5}>
-                <TextField select label={t('calendar.calendar')} value={selected} onChange={event => setSelected(event.target.value)} size="small" sx={dashboardFieldSx(dashboardAccents.commands)}>
-                    <MenuItem value="">{t('calendar.choose')}</MenuItem>
-                    {calendars.map(calendar => <MenuItem key={calendar.id} value={calendar.id} sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{calendar.summary}</MenuItem>)}
-                </TextField>
-                <TextField label={t('calendar.filter')} helperText={t('calendar.filterHelp')} value={filter} onChange={event => setFilter(event.target.value)} slotProps={{ htmlInput: { maxLength: 200 } }} size="small" sx={dashboardFieldSx(dashboardAccents.commands)} />
-                <Button disabled={busy || !selected || status.sources.filter(source => source.enabled).length >= 10} onClick={() => void run(async () => { const result = await userCalendarApi.select(selected, filter.trim()); setPending(result.syncPending); setSelected(''); setFilter(''); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.select')}</Button>
-            </Stack>}
+            {status && !status.configured && <Alert severity="info">{t('calendar.notConfigured')}</Alert>}
+            {status && <Box component="details" open={settingsOpen}
+                onToggle={event => setSettingsOpen(event.currentTarget.open)} sx={{ color: 'grey.300' }}>
+                <Box component="summary" sx={{ cursor: 'pointer', fontWeight: 700 }}>{t('calendar.settings')}</Box>
+                <Stack spacing={1.5} sx={{ mt: 2 }}>
+                    {status?.configured && <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+                        <Button disabled={busy} onClick={() => void run(async () => { const result = await userCalendarApi.connect(); window.location.assign(result.url); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t(status.connected ? 'calendar.reconnect' : 'calendar.connect')}</Button>
+                        {status.connected && <Button disabled={busy} onClick={() => void run(async () => { await userCalendarApi.disconnect(); })} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t('calendar.disconnect')}</Button>}
+                        <Button disabled={busy} onClick={() => void run(async () => undefined)} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.refresh')}</Button>
+                    </Stack>}
+                    {status?.connected && <Stack spacing={1.5}>
+                        <TextField select label={t('calendar.calendar')} value={selected} onChange={event => setSelected(event.target.value)} size="small" sx={dashboardFieldSx(dashboardAccents.commands)}>
+                            <MenuItem value="">{t('calendar.choose')}</MenuItem>
+                            {calendars.map(calendar => <MenuItem key={calendar.id} value={calendar.id} sx={{ whiteSpace: 'normal', overflowWrap: 'anywhere' }}>{calendar.summary}</MenuItem>)}
+                        </TextField>
+                        <TextField label={t('calendar.filter')} helperText={t('calendar.filterHelp')} value={filter} onChange={event => setFilter(event.target.value)} slotProps={{ htmlInput: { maxLength: 200 } }} size="small" sx={dashboardFieldSx(dashboardAccents.commands)} />
+                        <Button disabled={busy || !selected || status.sources.filter(source => source.enabled).length >= 10} onClick={() => void run(async () => { const result = await userCalendarApi.select(selected, filter.trim()); setPending(result.syncPending); setSelected(''); setFilter(''); })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.select')}</Button>
+                    </Stack>}
+                    <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+                        {(['json', 'csv'] as const).map(format => <Button key={format} disabled={busy} onClick={() => void run(async () => {
+                            const blob = await userCalendarApi.export(format);
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a'); link.href = url; link.download = `schedule-history.${format}`;
+                            link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.export', { format: format.toUpperCase() })}</Button>)}
+                    </Stack>
+                    <Box component="details">
+                        <Box component="summary" sx={{ cursor: 'pointer' }}>{t('calendar.help')}</Box>
+                        <Stack spacing={1} sx={{ mt: 1 }}>
+                            <Typography variant="body2">{t('calendar.description')}</Typography>
+                            <Typography variant="body2">{t('calendar.historyHelp')}</Typography>
+                            {!status.configured && <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{t('calendar.setup')}</Typography>}
+                        </Stack>
+                    </Box>
+                </Stack>
+            </Box>}
             {pending && <Alert severity="info">{t('calendar.syncPending')}</Alert>}
             {status?.sources.length === 0 && <Typography sx={{ color: 'grey.300' }}>{t('calendar.empty')}</Typography>}
             {status?.sources.map(source => <Box key={source.id} sx={{ ...dashboardCardSx(dashboardAccents.commands), p: 2 }}>
@@ -73,15 +96,6 @@ export function CalendarPanel() {
                     </Stack>
                 </Stack>
             </Box>)}
-            <Typography variant="body2" sx={{ color: 'grey.400' }}>{t('calendar.historyHelp')}</Typography>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
-                {(['json', 'csv'] as const).map(format => <Button key={format} disabled={busy} onClick={() => void run(async () => {
-                    const blob = await userCalendarApi.export(format);
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a'); link.href = url; link.download = `schedule-history.${format}`;
-                    link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-            })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.export', { format: format.toUpperCase() })}</Button>)}
-            </Stack>
             <CalendarOverlapWarnings revision={overlapRevision} />
             <CalendarPublishingList revision={publishingRevision} />
             {status?.connected && status.sources.filter(source => source.id === publishingSourceId && source.enabled).map(source =>

@@ -12,6 +12,7 @@ interface FeatureHeroStat {
 }
 
 interface FeatureHeroProps {
+  compact?: boolean;
   icon: React.ReactNode;
   eyebrow?: string;
   title: string;
@@ -24,6 +25,7 @@ interface FeatureHeroProps {
 }
 
 export function FeatureHero({
+  compact = false,
   icon,
   eyebrow,
   title,
@@ -38,12 +40,12 @@ export function FeatureHero({
     <FeaturePanel
       accent={accent}
       sx={{
-        p: { xs: 2.5, md: 3.5 },
+        p: compact ? { xs: 2, md: 3 } : { xs: 2.5, md: 3.5 },
         mb: 3,
         background: `linear-gradient(135deg, ${alpha(accent, 0.22)}, rgba(18,24,34,0.96) 44%, ${alpha(secondaryAccent, 0.14)})`,
       }}
     >
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={3} sx={{ justifyContent: "space-between", position: "relative" }}>
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={compact ? 2 : 3} sx={{ justifyContent: "space-between", position: "relative" }}>
         <Stack spacing={1.5} sx={{ maxWidth: 780 }}>
           <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
             {eyebrow && (
@@ -61,10 +63,10 @@ export function FeatureHero({
               />
             ))}
           </Stack>
-          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0 }}>
+          <Typography variant="h3" sx={{ color: "grey.50", fontWeight: 900, letterSpacing: 0, ...(compact ? { fontSize: { xs: 30, md: 40 } } : {}) }}>
             {title}
           </Typography>
-          <Typography sx={{ color: "rgba(255,255,255,0.68)", fontSize: { xs: 15, md: 17 }, maxWidth: 700 }}>
+          <Typography sx={{ color: "rgba(255,255,255,0.68)", fontSize: compact ? { xs: 14, md: 15 } : { xs: 15, md: 17 }, maxWidth: 700 }}>
             {description}
           </Typography>
         </Stack>

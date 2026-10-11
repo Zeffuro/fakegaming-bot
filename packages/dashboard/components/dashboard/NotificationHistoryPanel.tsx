@@ -39,8 +39,11 @@ export function NotificationHistoryPanel({ timezone = 'UTC' }: { timezone?: stri
     const date = (value: number) => formatDate(value, { timeZone: timezone, dateStyle: 'medium', timeStyle: 'short' });
     return <FeaturePanel accent={dashboardAccents.settings}><Stack spacing={2} sx={{ position: 'relative', minWidth: 0 }}>
         <Typography variant="h5" sx={{ color: 'grey.50', fontWeight: 900, fontSize: { xs: '1.125rem', sm: '1.5rem' }, overflowWrap: 'anywhere' }}>{t('notificationHistory.title')}</Typography>
-        <Typography sx={{ color: 'grey.300', overflowWrap: 'anywhere' }}>{t('notificationHistory.description', { days: 90, count: 1000 })}</Typography>
-        <Typography sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('notificationHistory.collection')}</Typography>
+        <Box component="details" sx={{ color: 'grey.400' }}>
+            <Typography component="summary" sx={{ cursor: 'pointer', fontWeight: 700 }}>{t('dashboardLayout.help')}</Typography>
+            <Typography sx={{ mt: 1, overflowWrap: 'anywhere' }}>{t('notificationHistory.description', { days: 90, count: 1000 })}</Typography>
+            <Typography sx={{ mt: 1, overflowWrap: 'anywhere' }}>{t('notificationHistory.collection')}</Typography>
+        </Box>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ minWidth: 0 }}>
             <TextField id="notification-history-kind" select label={t('notificationHistory.kindFilter')} value={kind}
                 slotProps={{ select: { native: true } }} sx={{ ...dashboardFieldSx(dashboardAccents.settings), minWidth: { sm: 200 } }}

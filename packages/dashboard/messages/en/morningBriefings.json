@@ -1,5 +1,6 @@
 {
     "briefing": {
+        "help": "Help",
         "title": "Private morning briefing",
         "description": "Get one private Discord message with today's and overdue tasks, reminders, calendar items and today's countdowns. Undated tasks are included. Empty days are skipped.",
         "enabled": "Send me a morning briefing",

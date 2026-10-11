@@ -40,16 +40,19 @@ export function CalendarOverlapWarnings({ revision }: { revision: number }) {
     </Stack>;
     return <Stack spacing={1.5} sx={{ minWidth: 0 }}>
         <Typography variant="h6">{t('calendarOverlaps.title')}</Typography>
-        <Typography variant="body2" sx={{ color: 'grey.400' }}>{t('calendarOverlaps.help')}</Typography>
+        <Box component="details" sx={{ color: 'grey.400' }}>
+            <Box component="summary" sx={{ cursor: 'pointer' }}>{t('calendar.overlapDetails')}</Box>
+            <Typography variant="body2" sx={{ mt: 1 }}>{t('calendarOverlaps.help')}</Typography>
+            {page?.connected && page.sources.map(source => <Typography key={source.id} variant="body2" sx={{ overflowWrap: 'anywhere' }}>{source.lastSyncedAt === null
+                ? t('calendarOverlaps.pendingSource', { source: source.label })
+                : t('calendarOverlaps.sourceSync', { source: source.label, date: formatDate(source.lastSyncedAt) })}</Typography>)}
+        </Box>
         {loading && <Typography role="status">{t('calendarOverlaps.loading')}</Typography>}
         {error && <Alert severity="error" action={<Button onClick={() => setRetry(value => value + 1)}>{t('calendarOverlaps.retry')}</Button>}>{t('calendarOverlaps.failed')}</Alert>}
         {!loading && page && <>
             {!page.connected && <Typography>{t('calendarOverlaps.disconnected')}</Typography>}
             {page.connected && <>
                 {page.sources.length === 0 && <Typography>{t('calendarOverlaps.noSources')}</Typography>}
-                {page.sources.map(source => <Typography key={source.id} variant="body2" sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{source.lastSyncedAt === null
-                    ? t('calendarOverlaps.pendingSource', { source: source.label })
-                    : t('calendarOverlaps.sourceSync', { source: source.label, date: formatDate(source.lastSyncedAt) })}</Typography>)}
                 {page.sources.length > 0 && <Typography>{t(page.total > 0 ? 'calendarOverlaps.count' : 'calendarOverlaps.empty', { count: page.total })}</Typography>}
                 {page.overlaps.map(pair => <Box key={`${pair.first.id}:${pair.second.id}`} sx={{ ...dashboardCardSx(dashboardAccents.commands), p: 2 }}>
                     <Stack spacing={1.5}>{event(pair.first)}{event(pair.second)}</Stack>

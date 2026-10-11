@@ -37,6 +37,8 @@ describe('private calendar overlap warnings', () => {
         await render();
         expect(container.textContent).toContain(translate('calendarOverlaps.help'));
         expect(container.textContent).toContain(translate('calendarOverlaps.pendingSource', { source: 'Unsynced calendar' }));
+        expect(container.querySelector('details')?.open).toBe(false);
+        expect(container.querySelector('summary')?.textContent).toBe(translate('calendar.overlapDetails'));
         expect(container.textContent).toContain('<Private event>'); expect(container.querySelector('private')).toBeNull();
         expect(container.textContent).toContain('1000:Europe/Amsterdam'); expect(container.textContent).toContain('1000:America/New_York');
         expect(container.textContent).toContain('Long private calendar name');
@@ -52,6 +54,7 @@ describe('private calendar overlap warnings', () => {
         await render(1);
         expect(container.textContent).toContain(translate('calendarOverlaps.failed'));
         expect(container.textContent).not.toContain('<Private event>'); expect(container.textContent).not.toContain('secret');
+        expect(container.querySelector('[role="alert"]')?.closest('details')).toBeNull();
         await click('calendarOverlaps.retry'); expect(container.textContent).toContain('<Private event>');
     });
     it('explains missing active sources and disconnection rather than claiming a complete calendar check', async () => {

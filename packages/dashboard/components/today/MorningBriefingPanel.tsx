@@ -41,7 +41,6 @@ export function MorningBriefingPanel({ revision }: { revision?: string }) {
     const buttonSx = ghostActionButtonSx(dashboardAccents.commands);
     return <FeaturePanel accent={dashboardAccents.commands}><Stack spacing={2} sx={{ position: 'relative', minWidth: 0 }}>
         <Typography variant="h5" sx={{ color: 'grey.50', fontWeight: 900 }}>{t('briefing.title')}</Typography>
-        <Typography sx={{ color: 'grey.300', overflowWrap: 'anywhere' }}>{t('briefing.description')}</Typography>
         {error && <Alert severity="error">{error}</Alert>}
         {saved && <Alert severity="success">{t('briefing.saved')}</Alert>}
         {loading && <Typography sx={{ color: 'grey.300' }}>{t('briefing.loading')}</Typography>}
@@ -52,14 +51,20 @@ export function MorningBriefingPanel({ revision }: { revision?: string }) {
                 slotProps={{ inputLabel: { shrink: true } }} sx={{ maxWidth: 220, '& input': { colorScheme: 'dark' } }}
                 onChange={event => { setSettings({ ...settings, localTime: event.target.value }); setSaved(false); setPreview(null); }} />
             <Typography sx={{ color: 'grey.300', overflowWrap: 'anywhere' }}>{t('briefing.timezone', { timezone: settings.timezone })}</Typography>
-            <Typography sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('briefing.timing')}</Typography>
         </>}
         <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
             <Button disabled={disabled || !valid} onClick={() => void run('save')} sx={buttonSx}>{t('briefing.save')}</Button>
             <Button disabled={disabled} onClick={() => void run('preview')} sx={buttonSx}>{t('briefing.preview')}</Button>
             <Button disabled={busy || loading} onClick={() => void load()} sx={buttonSx}>{t('briefing.refresh')}</Button>
         </Stack>
-        <Typography sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>{t('briefing.previewHelp')}</Typography>
+        <Box component="details" sx={{ color: 'grey.400', overflowWrap: 'anywhere' }}>
+            <Box component="summary" sx={{ cursor: 'pointer', color: 'grey.300' }}>{t('briefing.help')}</Box>
+            <Stack spacing={1} sx={{ mt: 1 }}>
+                <Typography>{t('briefing.description')}</Typography>
+                <Typography>{t('briefing.timing')}</Typography>
+                <Typography>{t('briefing.previewHelp')}</Typography>
+            </Stack>
+        </Box>
         {preview && <Box sx={{ ...dashboardCardSx(dashboardAccents.commands), p: 2, minWidth: 0 }}>
             {preview.empty && <Typography sx={{ color: 'grey.300' }}>{t('briefing.empty')}</Typography>}
             <Typography component="pre" sx={{ color: 'grey.100', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', fontFamily: 'inherit', m: 0 }}>{preview.content}</Typography>

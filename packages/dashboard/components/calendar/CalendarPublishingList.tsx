@@ -29,16 +29,24 @@ export function CalendarPublishingList({ revision }: { revision: number }) {
         {error && <Alert severity="error">{error}</Alert>}
         {publications.length > 0 && <>
             <Typography variant="h6">{t('calendar.publishing.settings')}</Typography>
-            <Typography variant="body2" sx={{ color: 'grey.400' }}>{t('calendar.publishing.stopHelp')}</Typography>
+            <Box component="details" sx={{ color: 'grey.400' }}>
+                <Box component="summary" sx={{ cursor: 'pointer' }}>{t('calendar.publishingHelp')}</Box>
+                <Typography variant="body2" sx={{ mt: 1 }}>{t('calendar.publishing.stopHelp')}</Typography>
+            </Box>
         </>}
         {publications.map(publication => <Box key={publication.id} sx={{ ...dashboardCardSx(dashboardAccents.commands), p: 2 }}>
             <Stack spacing={1} sx={{ overflowWrap: 'anywhere' }}>
                 <Typography>{t('calendar.publishing.destination', { guild: publication.guildName, channel: publication.channelName })}</Typography>
                 <Typography variant="body2">{t(publication.enabled ? 'calendar.publishing.enabled' : 'calendar.publishing.stopped')}</Typography>
-                <Typography variant="body2">{t('calendar.publishing.days', { days: publication.lookaheadDays })}</Typography>
-                {publication.eventLeadDays !== null && <Typography variant="body2">{t('calendar.publishing.eventLead', { days: publication.eventLeadDays })}</Typography>}
-                {publication.publicTitle && <Typography variant="body2">{t('calendar.publishing.overridePreview', { title: publication.publicTitle })}</Typography>}
-                {publication.includeEventDetails && <Typography variant="body2">{t('calendar.publishing.detailsEnabled')}</Typography>}
+                <Box component="details">
+                    <Box component="summary" sx={{ cursor: 'pointer' }}>{t('calendar.publicationDetails')}</Box>
+                    <Stack spacing={0.5} sx={{ mt: 1 }}>
+                        <Typography variant="body2">{t('calendar.publishing.days', { days: publication.lookaheadDays })}</Typography>
+                        {publication.eventLeadDays !== null && <Typography variant="body2">{t('calendar.publishing.eventLead', { days: publication.eventLeadDays })}</Typography>}
+                        {publication.publicTitle && <Typography variant="body2">{t('calendar.publishing.overridePreview', { title: publication.publicTitle })}</Typography>}
+                        {publication.includeEventDetails && <Typography variant="body2">{t('calendar.publishing.detailsEnabled')}</Typography>}
+                    </Stack>
+                </Box>
                 {publication.lastError && <Alert severity="warning">{t('calendar.publishing.deliveryError')}</Alert>}
                 {publication.uncertainCount > 0 && <Alert severity="warning">{t('calendar.publishing.uncertain', { count: publication.uncertainCount })}</Alert>}
                 {publication.enabled && <Button disabled={busy} onClick={() => void stop(publication.id)} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t('calendar.publishing.stop')}</Button>}

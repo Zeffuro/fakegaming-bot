@@ -1,6 +1,10 @@
 {
   "notificationPause": {
     "title": "Pause personal notifications",
+    "settings": "Notification settings",
+    "compactActive": "Personal notifications active",
+    "compactPaused": "Personal notifications paused",
+    "compactPausedUntil": "Notifications paused until {date}",
     "description": "Pause all automatic personal DMs: reminders, followed Twitch and Steam updates, personal digests, anime reminders, Calendar and schedule reminders, and morning briefings.",
     "enabled": "Pause all personal notifications",
     "resumeAt": "Resume automatically (optional)",

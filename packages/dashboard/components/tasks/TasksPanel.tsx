@@ -54,10 +54,12 @@ export function TasksPanel() {
                 <Typography sx={{ fontWeight: 800, overflowWrap: 'anywhere' }}>{task.title}</Typography>
                 <Typography sx={{ color: 'grey.300' }}>{task.dueAt === null ? t('taskEditor.noDue') : formatDate(task.dueAt, { timeZone: data?.timezone ?? 'UTC', dateStyle: 'medium', timeStyle: 'short' })}</Typography>
                 {task.checklist.map((item, index) => <Typography key={index} sx={{ color: 'grey.300', overflowWrap: 'anywhere', textDecoration: item.done ? 'line-through' : 'none' }}>{item.done ? '☑' : '☐'} {item.text}</Typography>)}
-                {kind === 'active' && <Button disabled={loading || busy} onClick={() => setEditing(task)} sx={actionSx}>{t('taskEditor.edit')}</Button>}
-                {kind === 'active' && <Button disabled={loading || busy} onClick={() => void act(task, 'tomorrow')} sx={actionSx}>{t('today.tomorrow')}</Button>}
-                {task.canUndo && <Button disabled={loading || busy} onClick={() => void act(task, 'undo')} sx={actionSx}>{t('taskEditor.undo')}</Button>}
-                {task.checklist.length > 0 && <Button disabled={loading || busy} onClick={() => setCopying(task)} sx={actionSx}>{t('checklists.saveTask')}</Button>}
+                <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
+                    {kind === 'active' && <Button disabled={loading || busy} onClick={() => setEditing(task)} sx={actionSx}>{t('taskEditor.edit')}</Button>}
+                    {kind === 'active' && <Button disabled={loading || busy} onClick={() => void act(task, 'tomorrow')} sx={actionSx}>{t('today.tomorrow')}</Button>}
+                    {task.canUndo && <Button disabled={loading || busy} onClick={() => void act(task, 'undo')} sx={actionSx}>{t('taskEditor.undo')}</Button>}
+                    {task.checklist.length > 0 && <Button disabled={loading || busy} onClick={() => setCopying(task)} sx={actionSx}>{t('checklists.saveTask')}</Button>}
+                </Stack>
             </Stack></Box>)}
             {count > 1 && <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', rowGap: 1 }}>
                 <Button disabled={current <= 1} onClick={() => setPages(value => ({ ...value, [kind]: current - 1 }))} sx={actionSx}>{t('taskEditor.previous')}</Button>
@@ -68,7 +70,6 @@ export function TasksPanel() {
     }
     return <FeaturePanel accent={dashboardAccents.commands}><Stack spacing={2.25} sx={{ position: 'relative', color: 'grey.50', minWidth: 0 }}>
         <Typography variant="h5" sx={{ fontWeight: 900 }}>{t('taskEditor.title')}</Typography>
-        <Typography sx={{ color: 'grey.300' }}>{t('taskEditor.description')}</Typography>
         {error && <Alert severity="error">{error}</Alert>}
         {loading && <CircularProgress size={20} />}
         {section('active')}{section('completed')}

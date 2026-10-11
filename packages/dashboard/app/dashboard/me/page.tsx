@@ -2,14 +2,14 @@
 import { MorningBriefingPanel } from "@/components/today/MorningBriefingPanel";
 import { PollTemplatesPanel } from "@/components/polls/PollTemplatesPanel";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, AlertTitle, Box, Button, Chip, Divider, MenuItem, Stack, Switch, TextField, Typography } from "@mui/material";
-import { Add, AlarmAdd, ManageAccounts, NoteAlt, NotificationsActive, Movie, PauseCircle, PlayArrow, Save, Schedule, WarningAmber } from "@mui/icons-material";
+import { Alert, Box, Button, Divider, Stack, Typography } from "@mui/material";
+import { Add, AlarmAdd, NoteAlt, NotificationsActive, Movie, Schedule } from "@mui/icons-material";
 import { alpha } from "@mui/material/styles";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
 import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { FeatureShell } from "@/components/dashboard/FeatureShell";
-import { dashboardAccents, dashboardFieldSx, ghostActionButtonSx, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
+import { dashboardAccents, primaryActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { subscriptionTitle } from "@/components/anime/animeUtils";
 import { useMyRiotLink } from "@/components/hooks/useMyRiotLink";
 import { useUserAnimeSubscriptions } from "@/components/hooks/useUserAnimeSubscriptions";
@@ -25,7 +25,6 @@ import { useUserReminders } from "@/components/hooks/useUserReminders";
 import { useUserSettings } from "@/components/hooks/useUserSettings";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import { type AnimeSubscriptionDashboardConfig, type UserDigestCategory, type UserDigestFrequency, type UserNote, type UserReminder, type UserSettingsUpdateInput } from "@/lib/api-client";
-import type { DashboardMessageKey } from "@/lib/i18n/messages";
 import { buildPersonalRiotSummary } from "@/lib/personalRiotSummary";
 import { buildPersonalSubscriptionOverview } from "@/lib/personalSubscriptionOverview";
 import { buildUserActivityFeed } from "@/lib/userActivityFeed";
@@ -33,7 +32,11 @@ import { buildUserActivityFeed } from "@/lib/userActivityFeed";
 import { NotificationPausePanel } from "@/components/dashboard/NotificationPausePanel";
 import { NotificationHistoryPanel } from "@/components/dashboard/NotificationHistoryPanel";
 import { PersonalDashboardSections } from "@/components/dashboard/PersonalDashboardSections";
-import { RiotLinkPanel, PersonalSubscriptionOverviewPanel, UserActivityPanel, PersonalAnimeSubscribeForm, AnimeSubscriptionCard, ReminderCard, isPausedRecurringReminder, formatDigestStatus, DigestCategoryToggle, EmptyPersonalState } from "@/components/personal/PersonalDashboardPanels";
+import type { PersonalEditorId } from "@/components/dashboard/personalDashboardViews";
+import { RiotLinkPanel, UserActivityPanel, PersonalAnimeSubscribeForm, AnimeSubscriptionCard, ReminderCard, isPausedRecurringReminder, EmptyPersonalState } from "@/components/personal/PersonalDashboardPanels";
+import { PersonalOverviewSubscriptions } from "@/components/personal/PersonalOverviewSubscriptions";
+
+import { PersonalNoteEditor, PersonalReminderEditor, PersonalSettingsEditor, PersonalDigestEditor } from "@/components/personal/PersonalDashboardForms";
 
 const emptyNoteForm = {
     title: "",
@@ -61,16 +64,6 @@ const emptyDigestForm = {
     includeReminders: true,
     includeAnime: false,
 };
-
-const weekdayOptions = [
-    { value: "0", labelKey: "personal.weekdaySunday" },
-    { value: "1", labelKey: "personal.weekdayMonday" },
-    { value: "2", labelKey: "personal.weekdayTuesday" },
-    { value: "3", labelKey: "personal.weekdayWednesday" },
-    { value: "4", labelKey: "personal.weekdayThursday" },
-    { value: "5", labelKey: "personal.weekdayFriday" },
-    { value: "6", labelKey: "personal.weekdaySaturday" },
-] as const satisfies ReadonlyArray<{ value: string; labelKey: DashboardMessageKey }>;
 
 type NoteFormState = typeof emptyNoteForm;
 type ReminderFormState = typeof emptyReminderForm;
@@ -128,6 +121,7 @@ export default function PersonalDashboardPage() {
         refresh: refreshRiotLink,
     } = useMyRiotLink();
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [editorRequest, setEditorRequest] = useState<{ id: PersonalEditorId } | null>(null);
     const [noteForm, setNoteForm] = useState<NoteFormState>(emptyNoteForm);
     const [reminderForm, setReminderForm] = useState<ReminderFormState>(emptyReminderForm);
     const [settingsForm, setSettingsForm] = useState<SettingsFormState>(emptySettingsForm);
@@ -167,7 +161,9 @@ export default function PersonalDashboardPage() {
     );
 
 
-    const pageError = noteLocalError ?? reminderLocalError ?? settingsLocalError ?? digestLocalError ?? notesError ?? remindersError ?? animeError ?? settingsError ?? digestError ?? activityError ?? riotError;
+    const pageError = (editorRequest?.id === 'noteEditor' ? null : noteLocalError ?? notesError)
+        ?? (editorRequest?.id === 'reminderEditor' ? null : reminderLocalError ?? remindersError)
+        ?? settingsLocalError ?? digestLocalError ?? animeError ?? settingsError ?? digestError ?? activityError ?? riotError;
     const loading = notesLoading || remindersLoading || animeLoading || settingsLoading || digestLoading || activityLoading || riotLoading;
     const saving = notesSaving || remindersSaving || animeSaving || settingsSaving || digestSaving;
     const pausedReminderCount = reminders.filter(isPausedRecurringReminder).length;
@@ -200,6 +196,7 @@ export default function PersonalDashboardPage() {
         setEditingId(null);
         setNoteForm(emptyNoteForm);
         setNoteLocalError(null);
+        setEditorRequest(null);
     };
 
     const startEdit = (note: UserNote) => {
@@ -210,6 +207,11 @@ export default function PersonalDashboardPage() {
             pinned: note.pinned,
         });
         setNoteLocalError(null);
+        setEditorRequest({ id: 'noteEditor' });
+    };
+    const openEditor = (id: PersonalEditorId) => {
+        if (id === 'noteEditor') resetNoteForm();
+        setEditorRequest({ id });
     };
 
     const submitNoteForm = async () => {
@@ -267,6 +269,7 @@ export default function PersonalDashboardPage() {
             });
             setReminderForm(emptyReminderForm);
             setReminderLocalError(null);
+            setEditorRequest(null);
         } catch {
             // Hook exposes the error state.
         }
@@ -403,6 +406,7 @@ export default function PersonalDashboardPage() {
         >
             <FeatureShell accent={dashboardAccents.commands} secondaryAccent={dashboardAccents.birthdays}>
                 <FeatureHero
+                    compact
                     icon={<NoteAlt />}
                     eyebrow={t("personal.eyebrow")}
                     title={t("personal.title")}
@@ -411,21 +415,23 @@ export default function PersonalDashboardPage() {
                     secondaryAccent={dashboardAccents.birthdays}
                     stats={[
                         { label: t("personal.statNotes"), value: formatNumber(notes.length) },
-                        { label: t("personal.statPinned"), value: formatNumber(notes.filter((note) => note.pinned).length) },
                         { label: t("personal.statReminders"), value: formatNumber(activeReminderCount) },
                         { label: t("anime.personalSubscriptionStat"), value: formatNumber(animeSubscriptions.length) },
-                        { label: t("personal.statDigest"), value: formatDigestStatus(digestStatus, t) },
-                        { label: t("personal.statRiotLink"), value: riotSummary.linked ? t("personal.linked") : t("personal.none") },
                     ]}
                     actions={(
+                        <Stack direction="row" sx={{ flexWrap: 'wrap', gap: 1 }}>
                         <Button
+                            size="small"
                             variant="contained"
                             startIcon={<Add />}
-                            onClick={resetNoteForm}
+                            onClick={() => openEditor('noteEditor')}
                             sx={primaryActionButtonSx(dashboardAccents.commands)}
                         >
                             {t("personal.newNote")}
                         </Button>
+                        <Button size="small" variant="contained" startIcon={<AlarmAdd />} onClick={() => openEditor('reminderEditor')}
+                            sx={primaryActionButtonSx(dashboardAccents.birthdays)}>{t('personal.createReminder')}</Button>
+                        </Stack>
                     )}
                 />
 
@@ -435,8 +441,10 @@ export default function PersonalDashboardPage() {
                             {pageError}
                         </Alert>
                     )}
-                    <NotificationPausePanel revision={settings?.timezone ?? "UTC"} />
-                    <PersonalDashboardSections panels={{
+                    <NotificationPausePanel compact revision={settings?.timezone ?? "UTC"} />
+                    <PersonalDashboardSections editorRequest={editorRequest} editorBusy={notesSaving || remindersSaving}
+                        onCreateEditor={openEditor} onCloseEditor={() => setEditorRequest(null)}
+                        editorErrors={{ noteEditor: noteLocalError ?? notesError, reminderEditor: reminderLocalError ?? remindersError }} panels={{
                         today: (
                             <TodayPanel revision={`${settings?.timezone ?? 'UTC'}:${reminders.map(item => `${item.id}:${item.timestamp}:${item.completed}`).join('|')}`} onRemindersChanged={() => void refreshReminders()} />
                         ),
@@ -458,82 +466,7 @@ export default function PersonalDashboardPage() {
                         checklistTemplates: (
                             <ChecklistTemplatesPanel />
                         ),
-                        noteEditor: (
-                            <FeaturePanel accent={dashboardAccents.commands}>
-                                <Stack spacing={2.5} sx={{ position: "relative" }}>
-                                    <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ alignItems: { md: "center" }, justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                {editingNote ? t("personal.editNote") : t("personal.createNote")}
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.62)", mt: 0.5 }}>
-                                                {t("personal.noteFormDescription")}
-                                            </Typography>
-                                        </Box>
-                                        <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-                                            <Typography sx={{ color: "grey.300", fontWeight: 700 }}>{t("personal.pinned")}</Typography>
-                                            <Switch
-                                                checked={noteForm.pinned}
-                                                onChange={(event) => setNoteForm((current) => ({ ...current, pinned: event.target.checked }))}
-                                            />
-                                        </Stack>
-                                    </Stack>
-
-                                    <Alert
-                                        severity="warning"
-                                        icon={<WarningAmber />}
-                                        sx={{
-                                            bgcolor: "rgba(255,200,87,0.12)",
-                                            color: "grey.50",
-                                            border: "1px solid rgba(255,200,87,0.30)",
-                                            "& .MuiAlert-icon": { color: "#FFC857" },
-                                        }}
-                                    >
-                                        <AlertTitle sx={{ color: "grey.50", fontWeight: 900 }}>{t("personal.secretWarningTitle")}</AlertTitle>
-                                        {t("personal.secretWarningBody")}
-                                    </Alert>
-
-                                    <TextField
-                                        label={t("personal.titleOptional")}
-                                        value={noteForm.title}
-                                        onChange={(event) => setNoteForm((current) => ({ ...current, title: event.target.value }))}
-                                        slotProps={{ htmlInput: { maxLength: 160 } }}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.commands)}
-                                    />
-                                    <TextField
-                                        label={t("personal.noteLabel")}
-                                        value={noteForm.body}
-                                        onChange={(event) => setNoteForm((current) => ({ ...current, body: event.target.value }))}
-                                        multiline
-                                        minRows={5}
-                                        slotProps={{ htmlInput: { maxLength: 20000 } }}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.commands)}
-                                    />
-                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<Save />}
-                                            disabled={saving}
-                                            onClick={() => void submitNoteForm()}
-                                            sx={primaryActionButtonSx(dashboardAccents.commands)}
-                                        >
-                                            {editingNote ? t("personal.saveChanges") : t("personal.saveNote")}
-                                        </Button>
-                                        {editingNote && (
-                                            <Button
-                                                variant="outlined"
-                                                onClick={resetNoteForm}
-                                                sx={ghostActionButtonSx(dashboardAccents.commands)}
-                                            >
-                                                {t("common.cancel")}
-                                            </Button>
-                                        )}
-                                    </Stack>
-                                </Stack>
-                            </FeaturePanel>
-                        ),
+                        noteEditor: <PersonalNoteEditor editingNote={editingNote} noteForm={noteForm} setNoteForm={setNoteForm} saving={saving} submitNoteForm={submitNoteForm} resetNoteForm={resetNoteForm} />,
                         notes: (
                             <NoteInboxPanel notes={notes} saving={notesSaving} onTogglePinned={togglePinned} onEdit={startEdit} onDelete={removeNote} onUpdate={updateNote} />
                         ),
@@ -609,236 +542,12 @@ export default function PersonalDashboardPage() {
                                 </Stack>
                             </FeaturePanel>
                         ),
-                        reminderEditor: (
-                            <FeaturePanel accent={dashboardAccents.birthdays}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack spacing={0.5}>
-                                        <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                            {t("personal.createReminder")}
-                                        </Typography>
-                                        <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                            {t("personal.reminderDmDescription")}
-                                        </Typography>
-                                    </Stack>
-                                    <TextField
-                                        label={t("personal.reminderLabel")}
-                                        value={reminderForm.message}
-                                        onChange={(event) => setReminderForm((current) => ({ ...current, message: event.target.value }))}
-                                        multiline
-                                        minRows={3}
-                                        slotProps={{ htmlInput: { maxLength: 2000 } }}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
-                                    />
-                                    <TextField
-                                        label={t("personal.when")}
-                                        value={reminderForm.timespan}
-                                        onChange={(event) => setReminderForm((current) => ({ ...current, timespan: event.target.value }))}
-                                        helperText={t("personal.timespanExamples")}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
-                                    />
-                                    <TextField
-                                        label={t("personal.repeatOptional")}
-                                        value={reminderForm.recurrence}
-                                        onChange={(event) => setReminderForm((current) => ({ ...current, recurrence: event.target.value }))}
-                                        helperText={t("personal.repeatExamples")}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
-                                    />
-                                    <TextField
-                                        label={t("personal.repeatTimezone")}
-                                        value={reminderForm.recurrenceTimezone}
-                                        onChange={(event) => setReminderForm((current) => ({ ...current, recurrenceTimezone: event.target.value }))}
-                                        placeholder={settings?.timezone ?? "Europe/Amsterdam"}
-                                        helperText={settings?.timezone ? t("personal.defaultsTo", { value: settings.timezone }) : t("personal.repeatTimezoneRequired")}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.birthdays)}
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<AlarmAdd />}
-                                        disabled={saving}
-                                        onClick={() => void submitReminderForm()}
-                                        sx={primaryActionButtonSx(dashboardAccents.birthdays)}
-                                    >
-                                        {t("personal.saveReminder")}
-                                    </Button>
-                                </Stack>
-                            </FeaturePanel>
-                        ),
+                        reminderEditor: <PersonalReminderEditor reminderForm={reminderForm} setReminderForm={setReminderForm} settings={settings} saving={saving} submitReminderForm={submitReminderForm} />,
                         subscriptions: (
-                            <PersonalSubscriptionOverviewPanel overview={subscriptionOverview} />
+                            <PersonalOverviewSubscriptions overview={subscriptionOverview} />
                         ),
-                        settings: (
-                            <FeaturePanel accent={dashboardAccents.settings}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                {t("personal.settingsTitle")}
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {t("personal.settingsDescription")}
-                                            </Typography>
-                                        </Box>
-                                        <ManageAccounts sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
-                                    </Stack>
-                                    <TextField
-                                        label={t("personal.timezone")}
-                                        value={settingsForm.timezone}
-                                        onChange={(event) => setSettingsForm((current) => ({ ...current, timezone: event.target.value }))}
-                                        placeholder="Europe/Amsterdam"
-                                        helperText={t("personal.current", { value: settings?.timezone ?? t("personal.notSet") })}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.settings)}
-                                    />
-                                    <TextField
-                                        label={t("personal.defaultReminderInterval")}
-                                        value={settingsForm.defaultReminderTimeSpan}
-                                        onChange={(event) => setSettingsForm((current) => ({ ...current, defaultReminderTimeSpan: event.target.value }))}
-                                        placeholder="1h"
-                                        helperText={t("personal.currentWithExamples", { value: settings?.defaultReminderTimeSpan ?? t("personal.notSet") })}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.settings)}
-                                    />
-                                    <Button
-                                        variant="contained"
-                                        startIcon={<Save />}
-                                        disabled={saving}
-                                        onClick={() => void submitSettingsForm()}
-                                        sx={primaryActionButtonSx(dashboardAccents.settings)}
-                                    >
-                                        {t("personal.saveSettings")}
-                                    </Button>
-                                </Stack>
-                            </FeaturePanel>
-                        ),
-                        digest: (
-                            <FeaturePanel accent={dashboardAccents.settings}>
-                                <Stack spacing={2.25} sx={{ position: "relative" }}>
-                                    <Stack direction="row" spacing={1.5} sx={{ alignItems: "center", justifyContent: "space-between" }}>
-                                        <Box>
-                                            <Typography variant="h5" sx={{ color: "grey.50", fontWeight: 900 }}>
-                                                {t("personal.digestTitle")}
-                                            </Typography>
-                                            <Typography sx={{ color: "rgba(255,255,255,0.56)" }}>
-                                                {formatDigestStatus(digestStatus, t)}
-                                            </Typography>
-                                        </Box>
-                                        <NotificationsActive sx={{ color: alpha(dashboardAccents.settings, 0.86) }} />
-                                    </Stack>
-                                    <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 0.75 }}>
-                                        <Chip
-                                            label={formatDigestStatus(digestStatus, t)}
-                                            size="small"
-                                            sx={{
-                                                bgcolor: digestStatus === "active" ? alpha(dashboardAccents.settings, 0.16) : "rgba(255,255,255,0.08)",
-                                                color: "grey.50",
-                                            }}
-                                        />
-                                        {digestSubscription?.nextRunAt ? (
-                                            <Chip
-                                                label={t("personal.next", { date: formatDateValue(digestSubscription.nextRunAt) })}
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
-                                            />
-                                        ) : null}
-                                        {digestSubscription?.lastSentAt ? (
-                                            <Chip
-                                                label={t("personal.lastSent", { date: formatDateValue(digestSubscription.lastSentAt) })}
-                                                size="small"
-                                                variant="outlined"
-                                                sx={{ color: "rgba(255,255,255,0.72)", borderColor: "rgba(255,255,255,0.16)" }}
-                                            />
-                                        ) : null}
-                                    </Stack>
-                                    <TextField
-                                        select
-                                        label={t("personal.frequency")}
-                                        value={digestForm.frequency}
-                                        onChange={(event) => setDigestForm((current) => ({ ...current, frequency: event.target.value === "weekly" ? "weekly" : "daily" }))}
-                                        fullWidth
-                                        sx={dashboardFieldSx(dashboardAccents.settings)}
-                                    >
-                                        <MenuItem value="daily">{t("personal.daily")}</MenuItem>
-                                        <MenuItem value="weekly">{t("personal.weekly")}</MenuItem>
-                                    </TextField>
-                                    {digestForm.frequency === "weekly" ? (
-                                        <TextField
-                                            select
-                                            label={t("personal.weekday")}
-                                            value={digestForm.dayOfWeek}
-                                            onChange={(event) => setDigestForm((current) => ({ ...current, dayOfWeek: event.target.value }))}
-                                            fullWidth
-                                            sx={dashboardFieldSx(dashboardAccents.settings)}
-                                        >
-                                            {weekdayOptions.map((option) => (
-                                                <MenuItem key={option.value} value={option.value}>{t(option.labelKey)}</MenuItem>
-                                            ))}
-                                        </TextField>
-                                    ) : null}
-                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-                                        <TextField
-                                            label={t("personal.deliveryTime")}
-                                            value={digestForm.runAt}
-                                            onChange={(event) => setDigestForm((current) => ({ ...current, runAt: event.target.value }))}
-                                            placeholder="09:00"
-                                            fullWidth
-                                            sx={dashboardFieldSx(dashboardAccents.settings)}
-                                        />
-                                        <TextField
-                                            label={t("personal.timezone")}
-                                            value={digestForm.timezone}
-                                            onChange={(event) => setDigestForm((current) => ({ ...current, timezone: event.target.value }))}
-                                            placeholder={settings?.timezone ?? "Europe/Amsterdam"}
-                                            fullWidth
-                                            sx={dashboardFieldSx(dashboardAccents.settings)}
-                                        />
-                                    </Stack>
-                                    <Stack spacing={1.25}>
-                                        <Typography sx={{ color: "grey.300", fontWeight: 800 }}>{t("personal.digestCategories")}</Typography>
-                                        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-                                            <DigestCategoryToggle
-                                                label={t("personal.categoryReminders")}
-                                                checked={digestForm.includeReminders}
-                                                accent={dashboardAccents.birthdays}
-                                                onChange={(checked) => setDigestForm((current) => ({ ...current, includeReminders: checked }))}
-                                            />
-                                            <DigestCategoryToggle
-                                                label={t("personal.categoryAnime")}
-                                                checked={digestForm.includeAnime}
-                                                accent={dashboardAccents.anime}
-                                                onChange={(checked) => setDigestForm((current) => ({ ...current, includeAnime: checked }))}
-                                            />
-                                        </Stack>
-                                    </Stack>
-                                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-                                        <Button
-                                            variant="contained"
-                                            startIcon={<Save />}
-                                            disabled={saving}
-                                            onClick={() => void submitDigestForm()}
-                                            sx={primaryActionButtonSx(dashboardAccents.settings)}
-                                        >
-                                            {t("personal.saveDigest")}
-                                        </Button>
-                                        {digestSubscription ? (
-                                            <Button
-                                                variant="outlined"
-                                                startIcon={digestSubscription.paused ? <PlayArrow /> : <PauseCircle />}
-                                                disabled={saving}
-                                                onClick={() => void toggleDigestPaused()}
-                                                sx={ghostActionButtonSx(dashboardAccents.settings)}
-                                            >
-                                                {digestSubscription.paused ? t("common.resume") : t("common.pause")}
-                                            </Button>
-                                        ) : null}
-                                    </Stack>
-                                </Stack>
-                            </FeaturePanel>
-                        ),
+                        settings: <PersonalSettingsEditor settingsForm={settingsForm} setSettingsForm={setSettingsForm} settings={settings} saving={saving} submitSettingsForm={submitSettingsForm} />,
+                        digest: <PersonalDigestEditor digestForm={digestForm} setDigestForm={setDigestForm} digestSubscription={digestSubscription} digestStatus={digestStatus} settings={settings} saving={saving} formatDateValue={formatDateValue} submitDigestForm={submitDigestForm} toggleDigestPaused={toggleDigestPaused} />,
                         riot: (
                             <RiotLinkPanel summary={riotSummary} loading={riotLoading} onRefresh={refreshRiotLink} />
                         ),

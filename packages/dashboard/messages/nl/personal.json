@@ -2,7 +2,7 @@
   "personal": {
     "eyebrow": "Persoonlijk",
     "title": "Jouw dashboard",
-    "description": "Notities, herinneringen, instellingen en DM-abonnementen op accountniveau die je Discord-login volgen in plaats van een server.",
+    "description": "Je dag, opgeslagen notities en persoonlijke meldingen.",
     "statNotes": "notities",
     "statPinned": "vastgezet",
     "statReminders": "herinneringen",
@@ -16,7 +16,7 @@
     "noteFormDescription": "Titels zijn optioneel. Bij een lege titel wordt de eerste regel van de notitie gebruikt.",
     "pinned": "Vastgezet",
     "secretWarningTitle": "Sla geen geheimen op",
-    "secretWarningBody": "Sla geen wachtwoorden, API-sleutels, tokens, herstelcodes, privésleutels of andere geheimen op.",
+    "secretWarningBody": "Bewaar geen wachtwoorden, tokens of herstelcodes in notities.",
     "titleOptional": "Titel (optioneel)",
     "noteLabel": "Notitie",
     "saveChanges": "Wijzigingen opslaan",

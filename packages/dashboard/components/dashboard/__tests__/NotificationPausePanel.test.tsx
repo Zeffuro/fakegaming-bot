@@ -20,6 +20,33 @@ describe('personal notification pause controls', () => {
     const button = (key: Parameters<DashboardTranslator>[0]) => [...container.querySelectorAll('button')].find(value => value.textContent === translate(key))!;
     async function click(key: Parameters<DashboardTranslator>[0]) { await act(async () => button(key).click()); }
     async function render(revision?: string) { await act(async () => root.render(<NotificationPausePanel revision={revision} />)); }
+    it.each(['en', 'nl'] as const)('keeps compact settings collapsed and resumes directly in %s', async locale => {
+        mocks.locale = locale; mocks.get.mockResolvedValue({ ...settings, enabled: true, version: 4 });
+        await act(async () => root.render(<NotificationPausePanel compact />));
+        expect(container.textContent).toContain(translate('notificationPause.compactPaused'));
+        expect(container.textContent).not.toContain(translate('notificationPause.description'));
+        expect(container.querySelector('input')).toBeNull();
+        expect(button('notificationPause.settings').getAttribute('aria-expanded')).toBe('false');
+        await click('notificationPause.settings');
+        expect(button('notificationPause.settings').getAttribute('aria-expanded')).toBe('true');
+        expect(container.querySelector('input[type="datetime-local"]')).not.toBeNull();
+        expect(container.textContent).toContain(translate('notificationPause.behavior'));
+        await click('notificationPause.settings'); await click('notificationPause.resume');
+        expect(mocks.save).toHaveBeenCalledWith({ ...settings, version: 4 });
+        expect(container.textContent).toContain(translate('notificationPause.compactActive'));
+        expect(container.querySelector('input')).toBeNull();
+    });
+    it('exposes compact loading and retryable errors without opening the editor', async () => {
+        let reject!: (reason: Error) => void;
+        mocks.get.mockReturnValueOnce(new Promise((_, fail) => { reject = fail; }));
+        await act(async () => root.render(<NotificationPausePanel compact />));
+        expect(container.textContent).toContain(translate('notificationPause.loading'));
+        await act(async () => reject(new Error('Unavailable')));
+        expect(container.querySelector('[role="alert"]')?.textContent).toContain('Unavailable');
+        await click('notificationPause.reload');
+        expect(container.textContent).toContain(translate('notificationPause.compactActive'));
+        expect(container.querySelector('input')).toBeNull();
+    });
     it.each(['en', 'nl'] as const)('defaults off and explicitly saves indefinite pause and resume in %s', async locale => {
         mocks.locale = locale; await render(); expect(mocks.save).not.toHaveBeenCalled();
         const toggle = container.querySelector('input[type="checkbox"]') as HTMLInputElement; expect(toggle.checked).toBe(false);

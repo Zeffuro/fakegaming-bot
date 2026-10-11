@@ -22,6 +22,18 @@ describe('private briefing settings panel', () => {
     afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
     const button = (key: Parameters<DashboardTranslator>[0]) => [...container.querySelectorAll('button')].find(value => value.textContent === translate(key))!;
     async function click(key: Parameters<DashboardTranslator>[0]) { await act(async () => button(key).click()); }
+    it.each(['en', 'nl'] as const)('puts briefing guidance in collapsed Help while keeping delivery controls in %s', async locale => {
+        mocks.locale = locale; await act(async () => root.render(<MorningBriefingPanel />));
+        const help = container.querySelector('details')!;
+        expect(help.open).toBe(false);
+        expect(help.querySelector('summary')?.textContent).toBe(translate('briefing.help'));
+        expect(help.textContent).toContain(translate('briefing.description'));
+        expect(help.textContent).toContain(translate('briefing.timing'));
+        expect(help.textContent).toContain(translate('briefing.previewHelp'));
+        expect(container.querySelector('input[type="time"]')?.closest('details')).toBeNull();
+        expect(button('briefing.preview').closest('details')).toBeNull();
+        expect(mocks.save).not.toHaveBeenCalled();
+    });
     it.each(['en', 'nl'] as const)('shows off by default and saves explicit opt-in in %s', async locale => {
         mocks.locale = locale; await act(async () => root.render(<MorningBriefingPanel />));
         const checkbox = container.querySelector('input[type="checkbox"]') as HTMLInputElement;
