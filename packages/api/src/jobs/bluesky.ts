@@ -411,7 +411,6 @@ export async function registerBlueskyJobs(queue: JobQueue, now: Date = new Date(
         provider: 'bluesky',
         jobName: 'bluesky:poll',
         intervalSeconds: 300,
-        initialDelaySeconds: 9,
         now,
         run: () => processBlueskyPoll(log),
     });

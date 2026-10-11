@@ -90,8 +90,53 @@ describe('PgBossJobQueue (with injected boss)', () => {
         expect(boss.lastPublish!.data).toEqual({ y: 2 });
         expect(boss.lastPublish!.options).toHaveProperty('startAfter');
         expect(boss.lastPublish!.options).toHaveProperty('singletonKey', 'abc');
+        expect(boss.lastPublish!.options.id).toMatch(/^[\da-f]{8}-[\da-f]{4}-8[\da-f]{3}-[89ab][\da-f]{3}-[\da-f]{12}$/);
         expect(boss.lastPublish!.options).toHaveProperty('retentionSeconds', 86400);
         expect(boss.lastPublish!.options).toHaveProperty('deleteAfterSeconds', 86400);
+    });
+
+    it('derives the same UUID for the same normalized queue and key across adapter instances', async () => {
+        await queue.schedule('youtube:poll', {}, { idempotencyKey: 'slot:100' });
+        const id = boss.lastPublish!.options.id;
+        const second = new PgBossJobQueue('postgres://mock');
+        const otherBoss = new MockBoss();
+        (second as any).boss = otherBoss;
+        await second.schedule('youtube/poll', { changed: true }, { idempotencyKey: 'slot:100' });
+        expect(otherBoss.lastPublish!.options.id).toBe(id);
+        await second.schedule('twitch:poll', {}, { idempotencyKey: 'slot:100' });
+        expect(otherBoss.lastPublish!.options.id).not.toBe(id);
+        await second.schedule('youtube:poll', {}, { idempotencyKey: 'slot:101' });
+        expect(otherBoss.lastPublish!.options.id).not.toBe(id);
+    });
+
+    it('returns the stable ID when send reports a duplicate across any retained job state', async () => {
+        const inserted = new Set<string>();
+        const send = vi.fn(async (_name: string, _data: unknown, options: Record<string, unknown>) => {
+            const id = String(options.id);
+            if (inserted.has(id)) return null;
+            inserted.add(id);
+            return id;
+        });
+        Object.assign(boss, { send });
+        const id = await queue.schedule('youtube:poll', {}, { idempotencyKey: 'slot:100' });
+        expect(await queue.schedule('youtube:poll', {}, { idempotencyKey: 'slot:100' })).toBe(id);
+        expect(await queue.schedule('youtube:poll', {}, { idempotencyKey: 'slot:101' })).not.toBe(id);
+        expect(inserted.size).toBe(2);
+        expect(send).toHaveBeenCalledTimes(3);
+    });
+
+    it('preserves unkeyed send results and publish duplicate fallback', async () => {
+        Object.assign(boss, { send: vi.fn(async () => null) });
+        expect(await queue.schedule('unkeyed:job', {})).toBe('null');
+        expect((boss as any).send.mock.calls[0][2]).not.toHaveProperty('id');
+        delete (boss as any).send;
+        vi.spyOn(boss, 'publish').mockImplementationOnce(async (name, data, options) => {
+            boss.lastPublish = { name, data, options };
+            return null as any;
+        });
+        const id = await queue.schedule('youtube:poll', {}, { idempotencyKey: 'fallback' });
+        expect(id).toBe(boss.lastPublish!.options.id);
+        expect(id).toMatch(/^[\da-f-]{36}$/);
     });
 
     it('throws when scheduling before boss is injected', async () => {

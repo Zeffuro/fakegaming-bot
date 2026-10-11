@@ -397,7 +397,6 @@ export async function registerYouTubeJobs(queue: JobQueue, now: Date = new Date(
         provider: 'youtube',
         jobName: 'youtube:poll',
         intervalSeconds: 300,
-        initialDelaySeconds: 5,
         now,
         run: () => processYoutubePoll(log),
     });

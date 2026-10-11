@@ -73,7 +73,6 @@ interface TwitchVodFollowupResult {
 const TWITCH_HELIX_BATCH_SIZE = 100;
 const TWITCH_USER_CACHE_TTL_MS = 60 * 60 * 1000;
 const TWITCH_VIDEO_CACHE_TTL_MS = 2 * 60 * 1000;
-const TWITCH_STARTUP_DEFAULT_DELAY_SECONDS = 5;
 const TWITCH_VOD_FOLLOWUP_DEFAULT_DELAY_MINUTES = 15;
 
 let _twitchAppToken: { token: string; expiresAt: number } | null = null;
@@ -640,7 +639,6 @@ export async function registerTwitchJobs(queue: JobQueue, now: Date = new Date()
         provider: 'twitch',
         jobName: 'twitch:poll',
         intervalSeconds: 60,
-        initialDelaySeconds: TWITCH_STARTUP_DEFAULT_DELAY_SECONDS + startupJitter,
         catchupDelaySeconds: startupJitter,
         now,
         run: () => processTwitchPoll(log, {

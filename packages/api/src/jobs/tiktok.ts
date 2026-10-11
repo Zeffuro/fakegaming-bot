@@ -443,7 +443,6 @@ export async function registerTikTokJobs(queue: JobQueue, now: Date = new Date()
         provider: 'tiktok',
         jobName: 'tiktok:poll',
         intervalSeconds: 900,
-        initialDelaySeconds: 7,
         now,
         run: () => processTikTokPoll(log),
     });
