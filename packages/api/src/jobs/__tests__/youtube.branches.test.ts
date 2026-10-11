@@ -8,14 +8,14 @@ vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 
 const upsert = vi.fn().mockResolvedValue(null);
 const has = vi.fn();
-const recordIfNew = vi.fn();
+const claimDelivery = vi.fn(async () => true);
 const manager = {
     youtubeManager: { getAllChannels: vi.fn(), upsert },
-    notificationsManager: { has, recordIfNew }
+    notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery, finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has }
 };
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => manager }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mockResolvedValue({ id: 'msg1' }) }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: vi.fn(async () => ({ status: 'sent', message: { id: 'msg1' } })) }));
 
 // Default rss-parser mock (overridden in specific tests when needed)
 vi.mock('rss-parser', () => ({ default: class Parser { async parseURL(_url: string){ return { items: [{
@@ -25,7 +25,7 @@ vi.mock('rss-parser', () => ({ default: class Parser { async parseURL(_url: stri
 describe('YouTube job branches', () => {
     beforeEach(() => {
         process.env = { ...ORIGINAL_ENV, YOUTUBE_ENRICH_EMBEDS: '0' };
-        upsert.mockReset(); has.mockReset(); recordIfNew.mockReset();
+        upsert.mockReset(); has.mockReset(); claimDelivery.mockReset();
         manager.youtubeManager.getAllChannels.mockReset();
     });
     afterEach(() => { process.env = { ...ORIGINAL_ENV }; vi.restoreAllMocks(); });
@@ -38,8 +38,8 @@ describe('YouTube job branches', () => {
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
 
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
-        expect(recordIfNew).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
+        expect(claimDelivery).not.toHaveBeenCalled();
         expect(upsert).not.toHaveBeenCalled();
     });
 
@@ -50,7 +50,7 @@ describe('YouTube job branches', () => {
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
         expect(cfg.lastVideoId).toBe('VIDX');
-        expect(recordIfNew).not.toHaveBeenCalled();
+        expect(claimDelivery).not.toHaveBeenCalled();
     });
 
     it('skips when already notified', async () => {
@@ -59,7 +59,7 @@ describe('YouTube job branches', () => {
         has.mockResolvedValue(true);
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
-        expect(recordIfNew).not.toHaveBeenCalled();
+        expect(claimDelivery).not.toHaveBeenCalled();
     });
 
     it('handles feed fetch error gracefully', async () => {
@@ -90,8 +90,8 @@ describe('YouTube job branches', () => {
 
         expect(done).toHaveBeenCalled();
         expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/videos'), expect.any(Object));
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
-        const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(1);
+        const payload = (discord as any).sendChannelMessagePayloadResult.mock.calls[0][1];
         expect(String(payload?.content)).toContain('Fallback Channel');
         expect(String(payload?.content)).toContain('FALLBACK1');
         expect(cfg.lastVideoId).toBe('FALLBACK1');
@@ -103,7 +103,7 @@ describe('YouTube job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(upsert).not.toHaveBeenCalled();
     });
 
@@ -114,8 +114,8 @@ describe('YouTube job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
-        const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(1);
+        const payload = (discord as any).sendChannelMessagePayloadResult.mock.calls[0][1];
         expect(String(payload?.content)).toContain('Watch Video X by Channel!');
         expect(String(payload?.content)).toMatch(/\n<?https:\/\/youtu\.be\/VIDX>?/);
     });
@@ -130,7 +130,7 @@ describe('YouTube job branches', () => {
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
         // Still sent despite no details
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalled();
     });
 
     it('skips configs without required IDs', async () => {
@@ -142,7 +142,7 @@ describe('YouTube job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
     });
 
     it('processes first item when lastVideoId matches second item (slice then reverse path)', async () => {
@@ -150,7 +150,7 @@ describe('YouTube job branches', () => {
         vi.resetModules();
         // Override rss-parser to return two items
         vi.doMock('rss-parser', () => ({ default: class Parser { async parseURL(){ return { items: [
-            { 'yt:videoId': 'A', title: 'A', link: 'https://youtu.be/A', author: 'Channel', published: '2025-01-01T00:00:00Z' },
+            { 'yt:videoId': 'A', title: 'A', link: 'https://youtu.be/A', author: 'Channel', published: '2025-01-01T00:10:00Z' },
             { 'yt:videoId': 'B', title: 'B', link: 'https://youtu.be/B', author: 'Channel', published: '2025-01-01T00:05:00Z' }
         ] }; } } }));
         const cfg = { id: 'yc9', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC9', lastVideoId: 'B' } as any;
@@ -161,8 +161,8 @@ describe('YouTube job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('youtube:poll', freshRegister);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
-        const payload = (discord as any).sendChannelMessagePayload.mock.calls[0][1];
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(1);
+        const payload = (discord as any).sendChannelMessagePayloadResult.mock.calls[0][1];
         expect(String(payload?.content)).toMatch(/https:\/\/youtu\.be\/A/);
         expect(cfg.lastVideoId).toBe('A');
     });
@@ -176,7 +176,7 @@ describe('YouTube job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('youtube:poll', registerYouTubeJobs);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalled();
     });
 
     it('fetches one feed and one enrichment batch for duplicate channel configs', async () => {
@@ -205,7 +205,7 @@ describe('YouTube job branches', () => {
         expect(done).toHaveBeenCalled();
         expect(parseURL).toHaveBeenCalledTimes(1);
         expect(globalThis.fetch).toHaveBeenCalledTimes(1);
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(2);
         expect(cfgs[0].lastVideoId).toBe('DEDUPED');
         expect(cfgs[1].lastVideoId).toBe('DEDUPED');
     });

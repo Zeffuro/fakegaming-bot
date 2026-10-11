@@ -1,11 +1,19 @@
-import { sendChannelMessagePayload } from '../utils/discord.js';
+import { sendChannelMessagePayloadResult } from '../utils/discord.js';
 import { getNotificationSuppression } from './notificationSuppression.js';
 import { upsertOrSaveJobConfig } from './jobConfigPersistence.js';
 
 export interface JobNotificationManager {
     has: (provider: string, eventId: string) => Promise<boolean>;
     hasForGuild?: (provider: string, eventId: string, guildId: string) => Promise<boolean>;
-    recordIfNew: (item: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<void>;
+    getDeliveryStatus: (provider: string, eventId: string, guildId: string) => Promise<'sending' | 'sent' | 'uncertain' | null>;
+    claimDelivery: (item: { provider: string; eventId: string; channelId: string; guildId: string }) => Promise<boolean>;
+    finishDelivery: (
+        provider: string,
+        eventId: string,
+        guildId: string,
+        outcome: { status: 'sent' | 'uncertain'; messageId?: string },
+    ) => Promise<void>;
+    releaseDelivery: (provider: string, eventId: string, guildId: string) => Promise<void>;
 }
 
 export async function hasRecordedJobNotification(
@@ -15,7 +23,13 @@ export async function hasRecordedJobNotification(
     guildId: string,
 ): Promise<boolean> {
     const guildScopedResult = await manager.hasForGuild?.(provider, eventId, guildId);
-    return guildScopedResult ?? await manager.has(provider, eventId);
+    const already = guildScopedResult ?? await manager.has(provider, eventId);
+    if (already) {
+        const status = await manager.getDeliveryStatus(provider, eventId, guildId);
+        if (status === 'sending') throw new Error('Notification delivery is still pending');
+        return status !== null;
+    }
+    return false;
 }
 
 export async function sendJobNotification(options: {
@@ -26,14 +40,36 @@ export async function sendJobNotification(options: {
     guildId: string;
     payload: Record<string, unknown>;
 }): Promise<boolean> {
-    const sent = await sendChannelMessagePayload(options.channelId, options.payload);
-    if (!hasDiscordMessageId(sent)) return false;
-
-    await options.manager.recordIfNew({
+    const claimed = await options.manager.claimDelivery({
         provider: options.provider,
         eventId: options.eventId,
         channelId: options.channelId,
         guildId: options.guildId,
+    });
+    if (!claimed) {
+        const status = await options.manager.getDeliveryStatus(options.provider, options.eventId, options.guildId);
+        if (status === 'sending' || status === null) throw new Error('Notification delivery is still pending');
+        return false;
+    }
+
+    let result;
+    try {
+        result = await sendChannelMessagePayloadResult(options.channelId, options.payload);
+    } catch (err) {
+        await options.manager.finishDelivery(options.provider, options.eventId, options.guildId, { status: 'uncertain' });
+        throw err;
+    }
+    if (result.status === 'rejected') {
+        await options.manager.releaseDelivery(options.provider, options.eventId, options.guildId);
+        throw new Error('Discord rejected notification delivery');
+    }
+    if (result.status !== 'sent' || !hasDiscordMessageId(result.message)) {
+        await options.manager.finishDelivery(options.provider, options.eventId, options.guildId, { status: 'uncertain' });
+        return false;
+    }
+    await options.manager.finishDelivery(options.provider, options.eventId, options.guildId, {
+        status: 'sent',
+        messageId: result.message.id,
     });
     return true;
 }

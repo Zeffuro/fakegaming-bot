@@ -1,7 +1,16 @@
 import type { Attributes, CreationAttributes, WhereOptions } from 'sequelize';
-import { col, fn, Op } from 'sequelize';
+import { col, fn, Op, UniqueConstraintError } from 'sequelize';
 import { BaseManager } from './baseManager.js';
 import { Notification } from '../models/notification.js';
+import { serializedTransaction } from './serializedTransaction.js';
+
+export interface NotificationEntry {
+    provider: string;
+    eventId: string;
+    guildId?: string | null;
+    channelId?: string;
+    messageId?: string;
+}
 
 export interface NotificationRecord {
     id?: number;
@@ -123,43 +132,59 @@ export class NotificationsManager extends BaseManager<Notification> {
         return this.exists({ provider, eventId });
     }
 
-    /**
-     * Check if a notification exists scoped to a specific guild.
-     * Does not require a unique constraint; returns true only if a record with matching provider, eventId and guildId exists.
-     */
     async hasForGuild(provider: string, eventId: string, guildId: string): Promise<boolean> {
-        return this.exists({ provider, eventId, guildId } as any);
+        return this.exists({ provider, eventId, scopeKey: guildId });
     }
 
-    async recordIfNew(entry: {
-        provider: string;
-        eventId: string;
-        guildId?: string;
-        channelId?: string;
-        messageId?: string;
-    }): Promise<{ created: boolean; record: Notification }>
-    {
-        const [record, created] = await this.findOrCreate({
-            where: { provider: entry.provider, eventId: entry.eventId },
-            defaults: entry as any
+    async getDeliveryStatus(provider: string, eventId: string, guildId: string | null | undefined,
+        now: Date = new Date()): Promise<Notification['deliveryStatus'] | null> {
+        const where = { provider, eventId, scopeKey: guildId ?? '' };
+        // The sender has a 30-second deadline; expired claims remain non-replayable.
+        await this.model.update({ deliveryStatus: 'uncertain' }, {
+            where: { ...where, deliveryStatus: 'sending', createdAt: { [Op.lt]: new Date(now.getTime() - 45_000) } },
         });
-        return { created, record };
+        return (await this.model.findOne({ where }))?.deliveryStatus ?? null;
     }
 
-    /**
-     * Upsert message metadata by (provider,eventId).
-     * If a notification exists, updates its messageId/channelId/guildId; otherwise creates it.
-     */
+    async recordIfNew(entry: NotificationEntry): Promise<{ created: boolean; record: Notification }> {
+        return this.recordScoped(entry, 'sent');
+    }
+
+    async claimDelivery(entry: NotificationEntry): Promise<boolean> {
+        return (await this.recordScoped(entry, 'sending')).created;
+    }
+
+    async finishDelivery(provider: string, eventId: string, guildId: string | null | undefined,
+        result: { status: 'sent' | 'uncertain'; messageId?: string }): Promise<void> {
+        await this.model.update({ deliveryStatus: result.status, ...(result.messageId === undefined ? {} : { messageId: result.messageId }) }, {
+            where: { provider, eventId, scopeKey: guildId ?? '', deliveryStatus: 'sending' },
+        });
+    }
+
+    async releaseDelivery(provider: string, eventId: string, guildId: string | null | undefined): Promise<void> {
+        await this.model.destroy({ where: { provider, eventId, scopeKey: guildId ?? '', deliveryStatus: 'sending' } });
+    }
+
     async setMessageMeta(provider: string, eventId: string, meta: { messageId?: string; guildId?: string; channelId?: string }): Promise<void> {
-        const where = { provider, eventId } as WhereOptions<Attributes<Notification>>;
-        const existing = await this.model.findOne({ where });
+        const { record } = await this.recordIfNew({ provider, eventId, ...meta });
+        await record.update(meta as Partial<CreationAttributes<Notification>>);
+    }
 
-        if (existing) {
-            await existing.update(meta as Partial<CreationAttributes<Notification>>);
-            return;
+    private async recordScoped(entry: NotificationEntry, deliveryStatus: Notification['deliveryStatus']): Promise<{ created: boolean; record: Notification }> {
+        const where = { provider: entry.provider, eventId: entry.eventId, scopeKey: entry.guildId ?? '' };
+        const defaults = { ...entry, scopeKey: where.scopeKey, deliveryStatus } as CreationAttributes<Notification>;
+        const database = this.model.sequelize!;
+        try {
+            const [record, created] = database.getDialect() === 'sqlite'
+                ? await serializedTransaction(database, transaction => this.model.findOrCreate({ where, defaults, transaction }))
+                : await this.model.findOrCreate({ where, defaults });
+            return { record, created };
+        } catch (error) {
+            if (!(error instanceof UniqueConstraintError)) throw error;
+            const record = await this.model.findOne({ where });
+            if (!record) throw error;
+            return { record, created: false };
         }
-
-        await this.addPlain({ provider, eventId, ...meta } as CreationAttributes<Notification>);
     }
 
     private async getProviderSummary(where: WhereOptions<Attributes<Notification>>): Promise<NotificationProviderSummary[]> {
@@ -213,7 +238,7 @@ export class NotificationsManager extends BaseManager<Notification> {
 }
 
 function buildWhere(options: NotificationListOptions): WhereOptions<Attributes<Notification>> {
-    const where: Partial<Record<keyof Attributes<Notification>, unknown>> = {};
+    const where: Partial<Record<keyof Attributes<Notification>, unknown>> = { deliveryStatus: 'sent' };
     if (options.provider) where.provider = options.provider;
     if (options.guildId) where.guildId = options.guildId;
     if (options.eventIdLike) where.eventId = { [Op.like]: options.eventIdLike };
@@ -259,10 +284,14 @@ function clampTrendDays(value: number | undefined): number {
 
 function normalizeRecord(record: NotificationRecord): NotificationRecord {
     return {
-        ...record,
+        id: record.id,
+        provider: record.provider,
+        eventId: record.eventId,
         guildId: record.guildId ?? null,
         channelId: record.channelId ?? null,
         messageId: record.messageId ?? null,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
     };
 }
 

@@ -7,10 +7,10 @@ vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 const upsert = vi.fn().mockResolvedValue(null);
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => ({
     twitchManager: { getAllStreams: vi.fn().mockResolvedValue([{ id: 't1', guildId: 'g', discordChannelId: 'chan', twitchUsername: 'streamer', isLive: false, cooldownMinutes: 0 }]), upsert },
-    notificationsManager: { has: vi.fn().mockResolvedValue(false), recordIfNew: vi.fn().mockResolvedValue(undefined) }
+    notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: vi.fn(async () => true), finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: vi.fn().mockResolvedValue(false), recordIfNew: vi.fn().mockResolvedValue(undefined) }
 }) }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mockResolvedValue({ id: 'msg1' }) }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: vi.fn(async () => ({ status: 'sent', message: { id: 'msg1' } })) }));
 
 import { registerTwitchJobs } from '../twitch.js';
 

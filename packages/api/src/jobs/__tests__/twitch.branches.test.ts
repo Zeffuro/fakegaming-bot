@@ -9,13 +9,13 @@ const ORIGINAL_ENV = { ...process.env };
 const upsert = vi.fn().mockResolvedValue(null);
 const manager = {
     twitchManager: { getAllStreams: vi.fn(), findByPkPlain: vi.fn(), upsert },
-    notificationsManager: { has: vi.fn(), recordIfNew: vi.fn() }
+    notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: vi.fn(async () => true), finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: vi.fn(), recordIfNew: vi.fn() }
 };
 
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => manager }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mockResolvedValue({ id: 'msg1' }) }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: vi.fn(async () => ({ status: 'sent', message: { id: 'msg1' } })) }));
 
 const mockFetch = vi.fn();
 
@@ -103,12 +103,12 @@ describe('Twitch job branches', () => {
         const { done } = await runJobOnce('twitch:poll', registerTwitchJobs);
         expect(done).toHaveBeenCalled();
         expect(cfg.isLive).toBe(true);
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(manager.notificationsManager.recordIfNew).not.toHaveBeenCalled();
         expect(upsert).toHaveBeenCalled();
     });
 
-    it('does not record notification when Discord send returns no id', async () => {
+    it('retains an uncertain notification when Discord send returns no id', async () => {
         const cfg = { id: 't6', guildId: 'g', discordChannelId: 'chan', twitchUsername: 'streamer3', isLive: false } as any;
         manager.twitchManager.getAllStreams.mockResolvedValueOnce([cfg]);
         manager.notificationsManager.has.mockResolvedValue(false);
@@ -122,11 +122,11 @@ describe('Twitch job branches', () => {
             return Promise.resolve({ ok: false, json: async () => ({}) });
         });
         const { discord } = await prepareDiscord();
-        (discord as any).sendChannelMessagePayload.mockResolvedValueOnce({});
+        (discord as any).sendChannelMessagePayloadResult.mockResolvedValueOnce({ status: 'unknown' });
         const { done } = await runJobOnce('twitch:poll', registerTwitchJobs);
         expect(done).toHaveBeenCalled();
         expect(cfg.isLive).toBe(true);
-        expect(manager.notificationsManager.recordIfNew).not.toHaveBeenCalled();
+        expect(manager.notificationsManager.finishDelivery).toHaveBeenCalledWith('twitch', 's3', 'g', { status: 'uncertain' });
         expect(upsert).toHaveBeenCalled();
     });
 
@@ -164,8 +164,8 @@ describe('Twitch job branches', () => {
         const { discord } = await prepareDiscord();
         const { done } = await runJobOnce('twitch:poll', registerTwitchJobs);
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(1);
-        const call = (discord as any).sendChannelMessagePayload.mock.calls[0];
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(1);
+        const call = (discord as any).sendChannelMessagePayloadResult.mock.calls[0];
         expect(call[0]).toBe('chan');
         const payload = call[1];
         expect(typeof payload?.content).toBe('string');
@@ -200,7 +200,7 @@ describe('Twitch job branches', () => {
         expect(done).toHaveBeenCalled();
         expect(usersUrls).toHaveLength(1);
         expect(usersUrls[0].match(/(?:\?|&)login=/g)).toHaveLength(1);
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledTimes(2);
     });
 
     it('schedules a VOD follow-up when a configured stream goes offline', async () => {
@@ -274,7 +274,7 @@ describe('Twitch job branches', () => {
             return Promise.resolve({ ok: true, json: async () => ({ data: [] }) });
         });
         const { discord } = await prepareDiscord();
-        (discord as any).sendChannelMessagePayload.mockResolvedValue({ id: 'msg1' });
+        (discord as any).sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'msg1' } });
         const q = new TestJobQueue();
         await registerTwitchJobs(q as any, new Date('2025-01-01T00:00:00Z'));
 
@@ -286,7 +286,7 @@ describe('Twitch job branches', () => {
         });
 
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).toHaveBeenCalledWith('chan', expect.objectContaining({
+        expect((discord as any).sendChannelMessagePayloadResult).toHaveBeenCalledWith('chan', expect.objectContaining({
             content: expect.stringContaining('Latest VOD from Streamer'),
         }));
         expect(cfg.lastVodId).toBe('vod-1');
@@ -332,7 +332,7 @@ describe('Twitch job branches', () => {
         });
 
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
             ok: true,
             meta: expect.objectContaining({
@@ -376,7 +376,7 @@ describe('Twitch job branches', () => {
         });
 
         expect(done).toHaveBeenCalled();
-        expect((discord as any).sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect((discord as any).sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(upsert).not.toHaveBeenCalled();
         expect(recordJobRun).toHaveBeenCalledWith('twitch', expect.objectContaining({
             ok: true,

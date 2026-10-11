@@ -60,6 +60,7 @@ describe('jobs/birthdays handlers', () => {
 
     it('force=true bypasses idempotency and sets message meta on success', async () => {
         const q = new TestJobQueue();
+        setMessageMetaSpy.mockResolvedValue(undefined);
         getAllPlainSpy.mockResolvedValueOnce([{ userId: 'u2', guildId: 'g1', channelId: 'c1', day: 15, month: 6, year: 1990 }] as any);
         isBirthdayTodaySpy.mockReturnValue(true as any);
         // On success, send returns { id }

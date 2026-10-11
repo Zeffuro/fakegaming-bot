@@ -45,6 +45,11 @@ interface YoutubeFeedItem {
 
 interface YoutubeVideoDetails { duration?: string; viewCount?: string }
 
+interface YoutubeFeedSnapshot {
+    items: YoutubeFeedItem[];
+    source: 'rss' | 'page';
+}
+
 interface YoutubeSendPlan {
     cfg: YoutubeChannelConfigPlain;
     channelId: string;
@@ -52,6 +57,7 @@ interface YoutubeSendPlan {
     sendVideos: YoutubeFeedItem[];
     now: Date;
     locale: SupportedOutputLocale;
+    feedSource: YoutubeFeedSnapshot['source'];
 }
 
 const parser = new Parser({
@@ -104,25 +110,33 @@ function formatYoutubeDuration(iso8601: string, locale: SupportedOutputLocale): 
     return parts.join(' ');
 }
 
-async function fetchYoutubeChannelFeed(channelId: string, log = getLogger({ name: 'api:jobs:youtube' })): Promise<YoutubeFeedItem[] | null> {
+async function fetchYoutubeChannelFeed(channelId: string, log = getLogger({ name: 'api:jobs:youtube' })): Promise<YoutubeFeedSnapshot | null> {
     const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`;
     try {
         const feed = await parser.parseURL(url);
         const items = (feed.items ?? []) as unknown as YoutubeFeedItem[];
-        return items.length > 0 ? items : null;
+        const seen = new Set<string>();
+        const unique = items.filter(item => {
+            const id = item['yt:videoId'];
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        });
+        // Publication time keeps upload order independent of feed entry order.
+        unique.sort((a, b) => (Date.parse(b.published ?? '') || 0) - (Date.parse(a.published ?? '') || 0));
+        return unique.length > 0 ? { items: unique, source: 'rss' } : null;
     } catch (err) {
         const statusCode = getHttpStatusFromError(err);
         try {
             const fallback = await fetchYouTubeChannelPageLatestVideo(channelId);
             if (fallback) {
                 log.debug({ channelId, statusCode }, 'Using YouTube channel page fallback after feed fetch failed');
-                return [{
+                return { source: 'page', items: [{
                     'yt:videoId': fallback.videoId,
                     title: fallback.title ?? undefined,
                     link: fallback.link,
                     author: fallback.author ?? undefined,
-                    published: new Date().toISOString(),
-                }];
+                }] };
             }
         } catch (fallbackErr) {
             log.debug({ err: fallbackErr, channelId }, 'Failed to fetch YouTube channel page fallback');
@@ -249,8 +263,8 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
     const plans: YoutubeSendPlan[] = [];
 
     for (const [channelId, configs] of channelsById) {
-        const feedItems = await fetchYoutubeChannelFeed(channelId, log);
-        if (!feedItems || feedItems.length === 0) {
+        const feed = await fetchYoutubeChannelFeed(channelId, log);
+        if (!feed || feed.items.length === 0) {
             errors += configs.length;
             await Promise.all(configs.map(cfg => recordIntegrationFailure('youtube', cfg, new Error(`YouTube feed unavailable for channel ${channelId}`), {
                 errorCode: 'YOUTUBE_FEED_UNAVAILABLE',
@@ -258,6 +272,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
             })));
             continue;
         }
+        const feedItems = feed.items;
 
         for (const cfg of configs) {
             try {
@@ -274,6 +289,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                             youtubeChannelId: channelId,
                             latestVideoId: cfg.lastVideoId ?? feedItems[0]?.['yt:videoId'] ?? null,
                             newVideos: 0,
+                            feedSource: feed.source,
                         },
                     });
                     continue;
@@ -303,7 +319,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 const locale = sendVideos.length > 0
                     ? await resolveGuildOutputLocale(cfg.guildId)
                     : DEFAULT_OUTPUT_LOCALE;
-                plans.push({ cfg, channelId, newVideos, sendVideos, now, locale });
+                plans.push({ cfg, channelId, newVideos, sendVideos, now, locale, feedSource: feed.source });
             } catch (err) {
                 errors += 1;
                 await recordIntegrationFailure('youtube', cfg, err, {
@@ -317,7 +333,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
     const detailsById = await fetchYoutubeVideoDetailsBatch(plans.flatMap(plan => plan.sendVideos.map(v => v['yt:videoId']).filter((v): v is string => !!v)), log);
 
     for (const plan of plans) {
-        const { cfg, channelId, newVideos, sendVideos, now, locale } = plan;
+        const { cfg, channelId, newVideos, sendVideos, now, locale, feedSource } = plan;
         try {
             let sentAny = false;
 
@@ -340,7 +356,10 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                 }
             }
 
-            cfg.lastVideoId = newVideos.at(-1)?.['yt:videoId'] ?? cfg.lastVideoId ?? null;
+            // A single page result cannot establish where the RSS cursor belongs.
+            if (feedSource === 'rss' || !cfg.lastVideoId) {
+                cfg.lastVideoId = newVideos.at(-1)?.['yt:videoId'] ?? cfg.lastVideoId ?? null;
+            }
             if (sentAny) cfg.lastNotifiedAt = now;
             await upsertOrSaveJobConfig(manager, cfg);
             await recordIntegrationSuccess('youtube', cfg, {
@@ -351,6 +370,7 @@ async function processYoutubePoll(log = getLogger({ name: 'api:jobs:youtube' }))
                     latestVideoId: cfg.lastVideoId ?? null,
                     newVideos: newVideos.length,
                     sentVideos: sendVideos.length,
+                    feedSource,
                 },
             });
         } catch (err) {

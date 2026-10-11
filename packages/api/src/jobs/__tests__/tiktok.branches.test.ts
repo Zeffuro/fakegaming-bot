@@ -7,7 +7,7 @@ const hoisted = vi.hoisted(() => {
         upsert: vi.fn(),
         notificationsHas: vi.fn(),
         recordIfNew: vi.fn(),
-        sendChannelMessagePayload: vi.fn(),
+        sendChannelMessagePayloadResult: vi.fn(),
         recordJobRun: vi.fn(),
     };
 });
@@ -15,11 +15,11 @@ const hoisted = vi.hoisted(() => {
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({
     getConfigManager: () => ({
         tiktokManager: { getAllStreams: hoisted.getAllStreams, upsert: hoisted.upsert },
-        notificationsManager: { has: hoisted.notificationsHas, recordIfNew: hoisted.recordIfNew }
+        notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: vi.fn(async () => true), finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: hoisted.notificationsHas, recordIfNew: hoisted.recordIfNew }
     })
 }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: hoisted.sendChannelMessagePayload }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: hoisted.sendChannelMessagePayloadResult }));
 vi.mock('../status.js', () => ({ recordJobRun: hoisted.recordJobRun }));
 
 // Default live-connector mock; tests can override connect to throw
@@ -48,7 +48,7 @@ describe('tiktok job branches', () => {
         hoisted.upsert.mockReset();
         hoisted.notificationsHas.mockReset();
         hoisted.recordIfNew.mockReset();
-        hoisted.sendChannelMessagePayload.mockReset();
+        hoisted.sendChannelMessagePayloadResult.mockReset();
         hoisted.recordJobRun.mockReset();
         // Set default connector to successful connect each test
         const { TikTokLiveConnection } = await import('tiktok-live-connector');
@@ -74,14 +74,14 @@ describe('tiktok job branches', () => {
 
         expect(done).toHaveBeenCalled();
         expect(TikTokLiveConnection).not.toHaveBeenCalled();
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(hoisted.upsert).not.toHaveBeenCalled();
     });
 
     it('suppresses when already notified', async () => {
         hoisted.getAllStreams.mockResolvedValue([makeCfg()]);
         hoisted.notificationsHas.mockResolvedValue(true);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'm1' } });
 
         const q = makeQueue();
         await registerTikTokJobs(q);
@@ -90,7 +90,7 @@ describe('tiktok job branches', () => {
         await h({ data: {}, done });
 
         expect(done).toHaveBeenCalled();
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         // Job sets isLive=true then persists even if already notified
         expect(hoisted.upsert).toHaveBeenCalled();
     });
@@ -98,7 +98,7 @@ describe('tiktok job branches', () => {
     it('suppresses during quiet hours', async () => {
         hoisted.getAllStreams.mockResolvedValue([makeCfg({ quietHoursStart: '00:00', quietHoursEnd: '23:59' })]);
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'm1' } });
 
         const q = makeQueue();
         await registerTikTokJobs(q);
@@ -106,7 +106,7 @@ describe('tiktok job branches', () => {
         const done = vi.fn();
         await h({ data: {}, done });
 
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(hoisted.upsert).toHaveBeenCalled();
     });
 
@@ -114,7 +114,7 @@ describe('tiktok job branches', () => {
         const last = new Date(Date.now() - 60_000);
         hoisted.getAllStreams.mockResolvedValue([makeCfg({ cooldownMinutes: 10, lastNotifiedAt: last.toISOString() })]);
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'm1' } });
 
         const q = makeQueue();
         await registerTikTokJobs(q);
@@ -122,7 +122,7 @@ describe('tiktok job branches', () => {
         const done = vi.fn();
         await h({ data: {}, done });
 
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(hoisted.upsert).toHaveBeenCalled();
     });
 
@@ -131,7 +131,7 @@ describe('tiktok job branches', () => {
         cfg.save = vi.fn().mockResolvedValue(undefined);
         hoisted.getAllStreams.mockResolvedValue([cfg]);
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'm1' } });
         hoisted.upsert.mockRejectedValue(new Error('db'));
 
         const q = makeQueue();
@@ -140,7 +140,7 @@ describe('tiktok job branches', () => {
         const done = vi.fn();
         await h({ data: {}, done });
 
-        expect(hoisted.sendChannelMessagePayload).toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).toHaveBeenCalled();
         expect(cfg.save).toHaveBeenCalled();
     });
 
@@ -169,7 +169,7 @@ describe('tiktok job branches', () => {
     it('records error when send fails inside loop', async () => {
         hoisted.getAllStreams.mockResolvedValue([makeCfg()]);
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockRejectedValue(new Error('discord down'));
+        hoisted.sendChannelMessagePayloadResult.mockRejectedValue(new Error('discord down'));
 
         const q = makeQueue();
         await registerTikTokJobs(q);
@@ -192,7 +192,7 @@ describe('tiktok job branches', () => {
             makeCfg({ id: 'dup2', guildId: 'g2', discordChannelId: 'chan2', tiktokUsername: '@freshcreator' }),
         ]);
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'm1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'm1' } });
 
         const q = makeQueue();
         await registerTikTokJobs(q);
@@ -202,6 +202,6 @@ describe('tiktok job branches', () => {
 
         expect(done).toHaveBeenCalled();
         expect(TikTokLiveConnection).toHaveBeenCalledTimes(1);
-        expect(hoisted.sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect(hoisted.sendChannelMessagePayloadResult).toHaveBeenCalledTimes(2);
     });
 });

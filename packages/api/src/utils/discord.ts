@@ -123,6 +123,22 @@ export async function sendChannelMessagePayload(channelId: string, payload: Reco
     return await sendChannelPayload(channelId, payload);
 }
 
+export async function sendChannelMessagePayloadResult(
+    channelId: string,
+    payload: Record<string, unknown>,
+    options: { timeoutMs?: number } = {},
+): Promise<DiscordSendResult> {
+    return postDiscordJsonResult({
+        path: `/channels/${channelId}/messages`,
+        payload,
+        logContext: { channelId },
+        missingTokenMessage: 'DISCORD_BOT_TOKEN is not set; cannot send Discord messages',
+        failureMessage: 'Failed to send Discord message',
+        exceptionMessage: 'Error sending Discord message',
+        timeoutMs: options.timeoutMs ?? 30_000,
+    });
+}
+
 /**
  * Send a direct message (DM) to a Discord user by creating a DM channel then posting.
  * Returns the created message JSON on success or null on failure.

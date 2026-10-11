@@ -6,18 +6,19 @@ const hoisted = vi.hoisted(() => ({
     upsert: vi.fn(),
     notificationsHas: vi.fn(),
     recordIfNew: vi.fn(),
-    sendChannelMessagePayload: vi.fn(),
+    claimDelivery: vi.fn(async () => true),
+    sendChannelMessagePayloadResult: vi.fn(),
     recordJobRun: vi.fn(),
 }));
 
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({
     getConfigManager: () => ({
         blueskyManager: { getAllAccounts: hoisted.getAllAccounts, upsert: hoisted.upsert },
-        notificationsManager: { has: hoisted.notificationsHas, recordIfNew: hoisted.recordIfNew }
+        notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: hoisted.claimDelivery, finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: hoisted.notificationsHas, recordIfNew: hoisted.recordIfNew }
     })
 }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: hoisted.sendChannelMessagePayload }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: hoisted.sendChannelMessagePayloadResult }));
 vi.mock('../status.js', () => ({ recordJobRun: hoisted.recordJobRun }));
 
 function makeQueue() {
@@ -66,10 +67,10 @@ describe('bluesky job branches', () => {
         hoisted.upsert.mockReset();
         hoisted.notificationsHas.mockReset();
         hoisted.recordIfNew.mockReset();
-        hoisted.sendChannelMessagePayload.mockReset();
+        hoisted.sendChannelMessagePayloadResult.mockReset();
         hoisted.recordJobRun.mockReset();
         hoisted.notificationsHas.mockResolvedValue(false);
-        hoisted.sendChannelMessagePayload.mockResolvedValue({ id: 'msg1' });
+        hoisted.sendChannelMessagePayloadResult.mockResolvedValue({ status: 'sent', message: { id: 'msg1' } });
         hoisted.upsert.mockResolvedValue(false);
         vi.spyOn(globalThis, 'fetch').mockResolvedValue({
             ok: true,
@@ -89,7 +90,7 @@ describe('bluesky job branches', () => {
 
         expect(done).toHaveBeenCalled();
         expect(globalThis.fetch).not.toHaveBeenCalled();
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(hoisted.upsert).not.toHaveBeenCalled();
     });
 
@@ -100,11 +101,12 @@ describe('bluesky job branches', () => {
         const { done } = await runOnce();
 
         expect(done).toHaveBeenCalled();
-        expect(hoisted.sendChannelMessagePayload).toHaveBeenCalledTimes(1);
-        const payload = hoisted.sendChannelMessagePayload.mock.calls[0]?.[1] as { content?: string };
+        expect(hoisted.sendChannelMessagePayloadResult).toHaveBeenCalledTimes(1);
+        const payload = hoisted.sendChannelMessagePayloadResult.mock.calls[0]?.[1] as { content?: string };
         expect(payload.content).toContain('Post from Bluesky: Hello Bluesky');
         expect(payload.content).toContain('https://bsky.app/profile/bsky.app/post/abc');
-        expect(hoisted.recordIfNew).toHaveBeenCalledWith({
+        expect(hoisted.recordIfNew).not.toHaveBeenCalled();
+        expect(hoisted.claimDelivery).toHaveBeenCalledWith({
             provider: 'bluesky',
             eventId: 'at://did:plc:test/app.bsky.feed.post/abc',
             channelId: 'chan1',
@@ -121,7 +123,7 @@ describe('bluesky job branches', () => {
 
         await runOnce();
 
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(cfg.lastPostUri).toBe('at://did:plc:test/app.bsky.feed.post/abc');
         expect(hoisted.upsert).toHaveBeenCalled();
     });
@@ -132,7 +134,7 @@ describe('bluesky job branches', () => {
 
         await runOnce();
 
-        expect(hoisted.sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(hoisted.sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(hoisted.upsert).not.toHaveBeenCalled();
     });
 });

@@ -105,18 +105,18 @@ export class TwitchClipProcessor {
             [clip.categoryName, clip.downloadUrl] = await Promise.all([
                 getTwitchClipCategory(clip.game_id), getTwitchClipDownload(clip.id),
             ]);
-            const manager = getConfigManager().notificationsManager;
-            const notifications = {
-                has: (provider: string, eventId: string) => manager.has(provider, eventId),
-                hasForGuild: (provider: string, eventId: string, guildId: string) => manager.hasForGuild(provider, eventId, guildId),
-                recordIfNew: async (item: { provider: string; eventId: string; channelId: string; guildId: string }) => {
-                    await manager.recordIfNew(item);
-                },
-            };
+            const notifications = getConfigManager().notificationsManager;
             let pending = false;
+            let uncertain = false;
             for (const config of targets) {
                 const eventId = `clip:${clip.id}:${config.id}`;
-                if (await hasRecordedJobNotification(notifications, 'twitch', eventId, config.guildId)) continue;
+                if (await hasRecordedJobNotification(notifications, 'twitch', eventId, config.guildId)) {
+                    if (await notifications.getDeliveryStatus('twitch', eventId, config.guildId) === 'uncertain') {
+                        uncertain = true;
+                        await this.recordFailure([config], 'discord_delivery_uncertain', request);
+                    }
+                    continue;
+                }
                 const locale = await resolveGuildOutputLocale(config.guildId);
                 const sent = await sendJobNotification({
                     manager: notifications,
@@ -127,8 +127,14 @@ export class TwitchClipProcessor {
                     payload: buildTwitchClipPayload(clip, request.triggerName, config.id, locale),
                 });
                 if (!sent) {
-                    pending = true;
-                    await this.recordFailure([config], 'discord_delivery_failed', request);
+                    const status = await notifications.getDeliveryStatus('twitch', eventId, config.guildId);
+                    if (status === 'uncertain') {
+                        uncertain = true;
+                        await this.recordFailure([config], 'discord_delivery_uncertain', request);
+                    } else if (status !== 'sent') {
+                        pending = true;
+                        await this.recordFailure([config], 'discord_delivery_failed', request);
+                    }
                 } else {
                     await recordIntegrationSuccess('twitch', config, {
                         delivered: true, metadata: { clips: true, clipId: clip.id, eventId },
@@ -136,6 +142,7 @@ export class TwitchClipProcessor {
                 }
             }
             if (pending) await this.scheduleDelivery(request.id, 30);
+            else if (uncertain) await request.update({ status: 'failed', errorCode: 'discord_delivery_uncertain' });
             else await request.update({ status: 'delivered', errorCode: null });
         } catch (error) {
             const errorCode = error instanceof TwitchClipApiError ? `twitch_http_${error.status}` : 'delivery_failed';

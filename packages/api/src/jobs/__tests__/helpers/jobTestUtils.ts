@@ -5,7 +5,7 @@ import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing'
  */
 export async function prepareDiscord(): Promise<{ discord: any }>{
     const discord = await import('../../../utils/discord.js');
-    (discord as any).sendChannelMessagePayload.mockClear?.();
+    (discord as any).sendChannelMessagePayloadResult.mockClear?.();
     return { discord };
 }
 

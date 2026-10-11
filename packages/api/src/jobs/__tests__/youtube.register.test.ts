@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
 
-vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => ({ youtubeManager: { getAllChannels: vi.fn().mockResolvedValue([]) }, notificationsManager: { has: vi.fn(), recordIfNew: vi.fn() } }) }));
+vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => ({ youtubeManager: { getAllChannels: vi.fn().mockResolvedValue([]) }, notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: vi.fn(async () => true), finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: vi.fn(), recordIfNew: vi.fn() } }) }));
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 vi.mock('@zeffuro/fakegaming-common/jobs', () => ({ scheduleSingleton: vi.fn().mockResolvedValue('id'), formatMinuteKey: (d: Date) => `${d.getTime()}` }));
 

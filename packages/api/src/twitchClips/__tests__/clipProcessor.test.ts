@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TwitchClipConfig, TwitchClipCooldown, TwitchClipRequest } from '@zeffuro/fakegaming-common/models';
 import { Notification } from '@zeffuro/fakegaming-common/models';
+import { NotificationsManager } from '@zeffuro/fakegaming-common/managers';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { TwitchClipProcessor } from '../clipProcessor.js';
 import { createTwitchCommandClip, getTwitchCommandClip, getTwitchClipCategory, TwitchClipApiError, sendTwitchClipChatMessage } from '../helix.js';
-import { sendChannelMessagePayload } from '../../utils/discord.js';
+import { sendChannelMessagePayloadResult } from '../../utils/discord.js';
 import { reserveTwitchClipRequest, recoverTwitchClipRequests } from '../requestStore.js';
 import type { TwitchClipChatMessage } from '../chatMessage.js';
 import { getTwitchClipDownload } from '../clipDownload.js';
@@ -18,7 +19,7 @@ vi.mock('../helix.js', async importOriginal => ({
 vi.mock('../botAuth.js', () => ({ getTwitchClipBotToken: vi.fn(async () => ({
     accessToken: 'test-token', userId: 'bot', login: 'clipbot', chatReplyAuthorized: true,
 })) }));
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn() }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: vi.fn() }));
 
 const message: TwitchClipChatMessage = {
     broadcaster_user_id: '123', broadcaster_user_name: 'Streamer', chatter_user_id: '456',
@@ -55,13 +56,60 @@ beforeEach(async () => {
     vi.mocked(getTwitchCommandClip).mockResolvedValue(metadata);
     vi.mocked(getTwitchClipCategory).mockResolvedValue(undefined);
     vi.mocked(getTwitchClipDownload).mockResolvedValue(undefined);
-    vi.mocked(sendChannelMessagePayload).mockResolvedValue({ id: 'discord-message' });
+    vi.mocked(sendChannelMessagePayloadResult).mockResolvedValue({ status: 'sent', message: { id: 'discord-message' } });
     vi.mocked(sendTwitchClipChatMessage).mockResolvedValue(undefined);
 });
 
 afterEach(() => { vi.useRealTimers(); });
 
 describe('Twitch command clip pipeline', () => {
+    it('terminates an uncertain delivery as failed and never replays it', async () => {
+        const config = await makeConfig();
+        const test = setup();
+        await test.processor.receive(message);
+        test.schedule.mockClear();
+        vi.mocked(sendChannelMessagePayloadResult).mockResolvedValueOnce({ status: 'unknown' });
+        await test.processor.deliver(message.message_id);
+        expect((await TwitchClipRequest.findByPk(message.message_id))?.toJSON()).toMatchObject({ status: 'failed', errorCode: 'discord_delivery_uncertain' });
+        expect(await new NotificationsManager().getDeliveryStatus('twitch', `clip:clip-id:${config.id}`, config.guildId)).toBe('uncertain');
+        expect(test.schedule).not.toHaveBeenCalled();
+        await setup().processor.deliver(message.message_id);
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledOnce();
+    });
+
+    it('marks a recovered uncertain receipt failed instead of claiming confirmed delivery', async () => {
+        const config = await makeConfig();
+        const test = setup();
+        await test.processor.receive(message);
+        const manager = new NotificationsManager();
+        const eventId = `clip:clip-id:${config.id}`;
+        await manager.claimDelivery({ provider: 'twitch', eventId, guildId: config.guildId, channelId: config.discordChannelId });
+        await manager.finishDelivery('twitch', eventId, config.guildId, { status: 'uncertain' });
+        test.schedule.mockClear();
+        await test.processor.deliver(message.message_id);
+        expect((await TwitchClipRequest.findByPk(message.message_id))?.toJSON()).toMatchObject({ status: 'failed', errorCode: 'discord_delivery_uncertain' });
+        expect(sendChannelMessagePayloadResult).not.toHaveBeenCalled();
+        expect(test.schedule).not.toHaveBeenCalled();
+    });
+
+    it('retries a pending claim after its owner is rejected', async () => {
+        const config = await makeConfig();
+        const test = setup();
+        await test.processor.receive(message);
+        const manager = new NotificationsManager();
+        const eventId = `clip:clip-id:${config.id}`;
+        await manager.claimDelivery({ provider: 'twitch', eventId, guildId: config.guildId, channelId: config.discordChannelId });
+        test.schedule.mockClear();
+        await test.processor.deliver(message.message_id);
+        expect((await TwitchClipRequest.findByPk(message.message_id))?.status).toBe('ready');
+        expect(test.schedule).toHaveBeenCalledWith('twitch-clips:deliver', { requestId: message.message_id }, expect.objectContaining({ startAfterSeconds: 30 }));
+        expect(sendChannelMessagePayloadResult).not.toHaveBeenCalled();
+        await manager.releaseDelivery('twitch', eventId, config.guildId);
+        await test.processor.deliver(message.message_id);
+        expect((await TwitchClipRequest.findByPk(message.message_id))?.status).toBe('delivered');
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledOnce();
+    });
+
     it('creates a titled clip from an alias and includes available provider metadata', async () => {
         await makeConfig('guild-a', { aliases: ['!moment'] });
         vi.mocked(getTwitchCommandClip).mockResolvedValue({ ...metadata, game_id: '27471', video_id: '2260998054', vod_offset: 2449, created_at: '2026-10-04T17:24:07Z' });
@@ -71,7 +119,7 @@ describe('Twitch command clip pipeline', () => {
         await test.processor.receive({ ...message, message: { text: '!moment Nice play' } });
         expect(createTwitchCommandClip).toHaveBeenCalledExactlyOnceWith('123', 30, 'Nice play');
         await test.processor.deliver(message.message_id);
-        const payload = vi.mocked(sendChannelMessagePayload).mock.calls[0][1];
+        const payload = vi.mocked(sendChannelMessagePayloadResult).mock.calls[0][1];
         expect(JSON.stringify(payload)).toContain('Minecraft');
         expect(JSON.stringify(payload)).toContain('public.mp4?sig=signed');
         expect(JSON.stringify(payload)).toContain('https://www.twitch.tv/videos/2260998054?t=00h40m49s');
@@ -88,15 +136,15 @@ describe('Twitch command clip pipeline', () => {
         expect(row?.status).toBe('ready');
         expect(JSON.parse(row?.targetsJson ?? '[]')).toEqual(expect.arrayContaining([first.id, second.id]));
         await Promise.all([test.processor.deliver('command-id'), test.processor.deliver('command-id')]);
-        expect(sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledTimes(2);
         expect(sendTwitchClipChatMessage).toHaveBeenCalledOnce();
-        const payload = vi.mocked(sendChannelMessagePayload).mock.calls[0][1];
+        const payload = vi.mocked(sendChannelMessagePayloadResult).mock.calls[0][1];
         expect(payload).toMatchObject({ content: metadata.url, allowed_mentions: { parse: [] }, enforce_nonce: true });
         expect(JSON.stringify(payload)).toContain('@everyone Viewer');
         expect(await Notification.count({ where: { provider: 'twitch' } })).toBe(2);
         expect((await TwitchClipRequest.findByPk('command-id'))?.status).toBe('delivered');
         await setup().processor.deliver('command-id');
-        expect(sendChannelMessagePayload).toHaveBeenCalledTimes(2);
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledTimes(2);
     });
 
     it('creates only one clip when ten viewers send distinct commands at once', async () => {
@@ -154,7 +202,7 @@ describe('Twitch command clip pipeline', () => {
         await test.processor.receive(message);
         await test.processor.deliver('command-id');
         expect(createTwitchCommandClip).toHaveBeenCalledTimes(1);
-        expect(sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(sendChannelMessagePayloadResult).not.toHaveBeenCalled();
         expect(sendTwitchClipChatMessage).toHaveBeenCalledOnce();
     });
 
@@ -166,11 +214,11 @@ describe('Twitch command clip pipeline', () => {
         await expect(test.processor.receive(message)).rejects.toThrow('queue offline');
         const pending = await recoverTwitchClipRequests();
         expect(pending.map(row => row.id)).toEqual(['command-id']);
-        vi.mocked(sendChannelMessagePayload).mockResolvedValueOnce({ id: 'sent' }).mockResolvedValueOnce(null);
+        vi.mocked(sendChannelMessagePayloadResult).mockResolvedValueOnce({ status: 'sent', message: { id: 'sent' } }).mockResolvedValueOnce({ status: 'rejected' });
         await setup().processor.deliver('command-id');
         expect((await TwitchClipRequest.findByPk('command-id'))?.status).toBe('ready');
         await setup().processor.deliver('command-id');
-        expect(sendChannelMessagePayload).toHaveBeenCalledTimes(3);
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledTimes(3);
         expect(createTwitchCommandClip).toHaveBeenCalledTimes(1);
         expect((await TwitchClipRequest.findByPk('command-id'))?.status).toBe('delivered');
         expect(sendTwitchClipChatMessage).toHaveBeenCalledOnce();
@@ -191,7 +239,7 @@ describe('Twitch command clip pipeline', () => {
         await config.destroy();
         await test.processor.deliver('other-command');
         expect((await TwitchClipRequest.findByPk('other-command'))?.status).toBe('delivered');
-        expect(sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(sendChannelMessagePayloadResult).not.toHaveBeenCalled();
     });
 
     it('gives a delayed create response the full publication window and preserves it across restarts', async () => {
@@ -219,7 +267,7 @@ describe('Twitch command clip pipeline', () => {
         await resumed.processor.deliver(message.message_id);
         expect((await TwitchClipRequest.findByPk(message.message_id))?.status).toBe('delivered');
         expect(createTwitchCommandClip).toHaveBeenCalledOnce();
-        expect(sendChannelMessagePayload).toHaveBeenCalledOnce();
+        expect(sendChannelMessagePayloadResult).toHaveBeenCalledOnce();
     });
 
     it('expires an absent clip at sixty seconds after acceptance without repeating creation', async () => {
@@ -235,7 +283,7 @@ describe('Twitch command clip pipeline', () => {
         expect((await recoverTwitchClipRequests()).length).toBe(0);
         await setup().processor.deliver(message.message_id);
         expect(createTwitchCommandClip).toHaveBeenCalledOnce();
-        expect(sendChannelMessagePayload).not.toHaveBeenCalled();
+        expect(sendChannelMessagePayloadResult).not.toHaveBeenCalled();
     });
 
     it('keeps the existing timeout for pending requests created before acceptance timestamps existed', async () => {

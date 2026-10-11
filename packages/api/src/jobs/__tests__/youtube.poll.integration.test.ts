@@ -12,10 +12,10 @@ vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 const upsert = vi.fn().mockResolvedValue(null);
 vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => ({
     youtubeManager: { getAllChannels: vi.fn().mockResolvedValue([{ id: 'cfg1', guildId: 'g', discordChannelId: 'chan', youtubeChannelId: 'UC123', lastVideoId: null, customMessage: 'Watch {title} by {channel}! {url}', cooldownMinutes: 0 }]), upsert },
-    notificationsManager: { has: vi.fn().mockResolvedValue(false), recordIfNew: vi.fn().mockResolvedValue(undefined) }
+    notificationsManager: { getDeliveryStatus: vi.fn(async () => 'sent' as const), claimDelivery: vi.fn(async () => true), finishDelivery: vi.fn(async () => undefined), releaseDelivery: vi.fn(async () => undefined), has: vi.fn().mockResolvedValue(false), recordIfNew: vi.fn().mockResolvedValue(undefined) }
 }) }));
 
-vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayload: vi.fn().mockResolvedValue({ id: 'msg1' }) }));
+vi.mock('../../utils/discord.js', () => ({ sendChannelMessagePayloadResult: vi.fn(async () => ({ status: 'sent', message: { id: 'msg1' } })) }));
 
 import { registerYouTubeJobs } from '../youtube.js';
 
