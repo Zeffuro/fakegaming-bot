@@ -9,6 +9,8 @@ import { sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 import { personalNotificationPause } from './personalNotificationPause.js';
+import { recordNotificationHistory } from './notificationHistory.js';
+import type { NotificationHistoryReason, NotificationHistoryStatus } from '@zeffuro/fakegaming-common/api';
 
 const steamCache = new Map<string, { items: SteamNewsItem[]; expiresAt: number }>();
 const log = getLogger({ name: 'api:jobs:personal-follows' });
@@ -25,7 +27,12 @@ async function poll(now: number): Promise<{ observed: number; sent: number; erro
     const deliveryTime = () => now + Math.max(0, Date.now() - startedAt);
     const cm = getConfigManager();
     const manager = cm.userFollowManager;
-    await manager.prune(now);
+    const journal = async (records: UserFollowEvent[], status: NotificationHistoryStatus, reason: NotificationHistoryReason | null = null, message?: { id?: unknown; channel_id?: unknown }) => {
+        for (const event of records) await recordNotificationHistory({ userId: event.userId, kind: 'follow', occurrenceKey: event.id,
+            title: event.title, scheduledAt: Number(event.occurredAt), observedAt: deliveryTime(), status, reason,
+            messageId: typeof message?.id === 'string' ? message.id : null, channelId: typeof message?.channel_id === 'string' ? message.channel_id : null });
+    };
+    await journal(await manager.prune(now), 'uncertain', 'interrupted');
     const follows = await manager.active();
     let observed = 0;
     let errors = 0;
@@ -67,16 +74,18 @@ async function poll(now: number): Promise<{ observed: number; sent: number; erro
     const users = new Set(pending.map(event => event.userId));
     for (const userId of users) {
         try {
-            if (await personalNotificationPause.isPaused(userId)) continue;
+            const records = pending.filter(event => event.userId === userId);
+            if (await personalNotificationPause.isPaused(userId)) { await journal(records, 'delayed', 'paused'); continue; }
             const user = await cm.userManager.getUser({ discordId: userId });
             const settings = await manager.preferences(userId, user?.timezone || 'UTC');
             const currentTime = deliveryTime();
-            if (followInQuietHours(settings, currentTime)) continue;
+            if (followInQuietHours(settings, currentTime)) { await journal(records, 'delayed', 'quietHours'); continue; }
             const local = followLocalTime(settings.timezone, currentTime);
             const locale = await resolveUserOutputLocale(userId);
-            const records = pending.filter(event => event.userId === userId);
             for (const mode of ['immediate', 'digest'] as const) {
-                if (mode === 'digest' && (local.minutes < (parseHHmmToMinutes(settings.digestAt) ?? 540) || settings.lastDigestDate === local.date)) continue;
+                if (mode === 'digest' && (local.minutes < (parseHHmmToMinutes(settings.digestAt) ?? 540) || settings.lastDigestDate === local.date)) {
+                    await journal(records.filter(event => event.mode === mode), 'delayed', 'digestTime'); continue;
+                }
                 const batches = followBatches(records.filter(event => event.mode === mode));
                 let firstDigest = mode === 'digest';
                 for (const batch of batches) {
@@ -85,13 +94,17 @@ async function poll(now: number): Promise<{ observed: number; sent: number; erro
                         now: deliveryTime, expectedDigestDate: mode === 'digest' ? local.date : undefined,
                     });
                     if (claimed.length === 0) { if (firstDigest) break; continue; }
+                    await journal(claimed, 'pending');
                     firstDigest = false;
                     const content = `${apiText(locale, mode === 'digest' ? 'personalFollowDigest' : 'personalFollowUpdates')}\n${claimed.map(followLine).join('\n')}`;
                     const gate = await personalNotificationPause.deliver(userId, () => sendDirectMessagePayloadResult(userId, { content, allowed_mentions: { parse: [] } }));
                     if (gate.paused) {
-                        await manager.settle(userId, claimed.map(event => event.id), 'pending', mode === 'digest' ? local.date : undefined); break;
+                        await manager.settle(userId, claimed.map(event => event.id), 'pending', mode === 'digest' ? local.date : undefined);
+                        await journal(claimed, 'delayed', 'paused'); break;
                     }
                     const result = gate.value;
+                    await journal(claimed, result.status === 'sent' ? 'sent' : result.status === 'rejected' ? 'failed' : 'uncertain',
+                        result.status === 'sent' ? null : result.status === 'rejected' ? 'retry' : 'unknown', result.status === 'sent' ? result.message : undefined);
                     await manager.settle(userId, claimed.map(event => event.id), result.status === 'sent' ? 'sent' : result.status === 'rejected' ? 'pending' : 'uncertain', mode === 'digest' ? local.date : undefined);
                     if (result.status === 'sent') sent += claimed.length;
                     else { errors += 1; if (result.status === 'rejected') break; }

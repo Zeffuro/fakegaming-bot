@@ -10,6 +10,10 @@ export const REMINDER_DELIVERY_RETENTION_MS = 30 * 86_400_000;
 export class ReminderInteractionManager {
     constructor(private readonly now: () => number = Date.now) {}
 
+    async pendingDelivery(reminderId: string, userId: string): Promise<ReminderDelivery | null> {
+        return ReminderDelivery.findOne({ where: { reminderId, userId, finalized: false } });
+    }
+
     async createDraft(userId: string, message: string): Promise<ReminderDraft> {
         if (!userId || !message || message.length > 1800) throw new Error('Invalid reminder draft');
         await this.prune();
@@ -35,20 +39,19 @@ export class ReminderInteractionManager {
     }
 
     async prepareDelivery(reminder: { id: string; userId: string; message: string }, scheduledAt: number): Promise<ReminderDelivery> {
+        return this.transaction(transaction => this.prepareInTransaction(reminder, scheduledAt, transaction));
+    }
+
+    async deferDelivery(reminder: { id: string; userId: string; message: string }, expectedTimestamp: number, retryTimestamp: number): Promise<boolean> {
         return this.transaction(async transaction => {
-            const active = await ReminderDelivery.findOne({
-                where: { reminderId: reminder.id, finalized: false }, transaction,
-            });
-            if (active) return active;
-            const [delivery] = await ReminderDelivery.findOrCreate({
-                where: { reminderId: reminder.id, scheduledAt },
-                defaults: {
-                    id: randomUUID(), reminderId: reminder.id, scheduledAt, sourceTimestamp: scheduledAt, userId: reminder.userId,
-                    message: reminder.message, status: 'pending', messageId: null, channelId: null, attemptedAt: null, finalized: false,
-                    expiresAt: this.now() + REMINDER_DELIVERY_RETENTION_MS,
-                }, transaction,
-            });
-            return delivery;
+            const source = await ReminderConfig.findOne({ where: { id: reminder.id, userId: reminder.userId }, transaction, lock: transaction.LOCK.UPDATE });
+            if (!source || source.completed || Number(source.timestamp) !== expectedTimestamp) return false;
+            const delivery = await this.prepareInTransaction(reminder, expectedTimestamp, transaction);
+            await delivery.reload({ transaction, lock: transaction.LOCK.UPDATE });
+            if (delivery.status !== 'pending' || delivery.finalized || Number(delivery.sourceTimestamp) !== expectedTimestamp) return false;
+            await delivery.update({ sourceTimestamp: retryTimestamp }, { transaction });
+            await source.update({ timestamp: retryTimestamp }, { transaction });
+            return true;
         });
     }
 
@@ -171,5 +174,18 @@ export class ReminderInteractionManager {
 
     private async transaction<T>(operation: (transaction: Transaction) => Promise<T>): Promise<T> {
         return serializedTransaction(ReminderDraft.sequelize!, operation);
+    }
+
+    private async prepareInTransaction(reminder: { id: string; userId: string; message: string }, scheduledAt: number, transaction: Transaction): Promise<ReminderDelivery> {
+        const active = await ReminderDelivery.findOne({ where: { reminderId: reminder.id, userId: reminder.userId, finalized: false }, transaction });
+        if (active) return active;
+        const [delivery] = await ReminderDelivery.findOrCreate({
+            where: { reminderId: reminder.id, scheduledAt }, defaults: {
+                id: randomUUID(), reminderId: reminder.id, scheduledAt, sourceTimestamp: scheduledAt, userId: reminder.userId,
+                message: reminder.message, status: 'pending', messageId: null, channelId: null, attemptedAt: null, finalized: false,
+                expiresAt: this.now() + REMINDER_DELIVERY_RETENTION_MS,
+            }, transaction,
+        });
+        return delivery;
     }
 }

@@ -61,11 +61,16 @@ function deriveOpenApiFromSequelize<T extends Model>(model: ModelCtor<T>): Recor
     };
 }
 
-/**
- * Convert a Zod schema to an OpenAPI 3.0 SchemaObject using @asteasolutions/zod-to-openapi.
- */
 export function zodSchemaToOpenApiSchema<T extends z.ZodType<unknown>>(schema: T): Record<string, unknown> {
-    const jsonSchema = z.toJSONSchema(schema);
+    const jsonSchema = z.toJSONSchema(schema, {
+        target: 'openapi-3.0',
+        override: ({ jsonSchema }) => {
+            // OpenAPI's nullable flag does not relax an enum's allowed values.
+            if (jsonSchema.nullable && jsonSchema.enum && !jsonSchema.enum.includes(null)) {
+                jsonSchema.enum = [...jsonSchema.enum, null];
+            }
+        },
+    });
     if (jsonSchema && typeof jsonSchema === 'object') {
         const { $schema: _schema, ...schemaObject } = jsonSchema as Record<string, unknown>;
         return schemaObject;

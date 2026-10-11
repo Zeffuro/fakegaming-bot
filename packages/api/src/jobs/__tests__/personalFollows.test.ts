@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { UserFollow, UserFollowEvent, UserFollowSettings } from '@zeffuro/fakegaming-common/models';
+import { UserFollow, UserFollowEvent, UserFollowSettings, PersonalNotificationHistory } from '@zeffuro/fakegaming-common/models';
 import { configManager } from '../../vitest.setup.js';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
 
@@ -15,6 +15,7 @@ describe('private follow delivery', () => {
     const manager = configManager.userFollowManager;
     let steamTarget = 100;
     beforeEach(async () => {
+        await PersonalNotificationHistory.destroy({ where: {} });
         await UserFollowEvent.destroy({ where: {} });
         await UserFollowSettings.destroy({ where: {} });
         await UserFollow.destroy({ where: {} });
@@ -51,10 +52,12 @@ describe('private follow delivery', () => {
         await processPersonalFollows(now);
         expect(mocks.send).not.toHaveBeenCalled();
         expect(await UserFollowEvent.count({ where: { status: 'pending' } })).toBe(20);
+        expect((await configManager.personalNotificationHistoryManager.list('owner', { limit: 100 })).items).toEqual(Array.from({ length: 20 }, () => expect.objectContaining({ kind: 'follow', status: 'delayed', reason: 'quietHours' })));
         await processPersonalFollows(now + 60 * 60_000);
         expect(mocks.send.mock.calls.length).toBeGreaterThan(1);
         for (const call of mocks.send.mock.calls) expect(call[1].content.length).toBeLessThanOrEqual(2000);
         expect(await UserFollowEvent.count({ where: { status: 'sent' } })).toBe(20);
+        expect((await configManager.personalNotificationHistoryManager.list('owner', { limit: 100 })).items.every(row => row.status === 'sent')).toBe(true);
         const calls = mocks.send.mock.calls.length;
         await processPersonalFollows(now + 2 * 60 * 60_000);
         expect(mocks.send).toHaveBeenCalledTimes(calls);

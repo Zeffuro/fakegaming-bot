@@ -989,6 +989,45 @@ export interface paths {
         };
         trace?: never;
     };
+    "/userNotificationHistory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the owner's private automatic notification history */
+        get: {
+            parameters: {
+                query?: {
+                    kind?: "reminder" | "follow" | "schedule" | "briefing" | "digest" | "anime";
+                    status?: "pending" | "sent" | "delayed" | "skipped" | "failed" | "uncertain";
+                    offset?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Newest first */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/userNotes": {
         parameters: {
             query?: never;
@@ -7209,7 +7248,8 @@ export interface components {
             timespan: string;
             timestamp: number;
             completed?: boolean;
-            recurrenceUnit?: ("day" | "week" | "month") | null;
+            /** @enum {string|null} */
+            recurrenceUnit?: "day" | "week" | "month" | null;
             recurrenceInterval?: number | null;
             recurrenceTimezone?: string | null;
             lastTriggeredAt?: number | null;
@@ -7314,6 +7354,7 @@ export interface components {
             tags?: string[];
             /** @enum {string} */
             status?: "unread" | "read" | "archived";
+            /** Format: uri */
             sourceUrl?: string | null;
             title?: string;
             body?: string;
@@ -7323,6 +7364,7 @@ export interface components {
             tags?: string[];
             /** @enum {string} */
             status?: "unread" | "read" | "archived";
+            /** Format: uri */
             sourceUrl?: string | null;
             title?: string;
             body?: string;
@@ -7343,7 +7385,8 @@ export interface components {
         UserUpdateRequest: {
             timezone?: string;
             defaultReminderTimeSpan?: string;
-            preferredLocale?: ("en" | "nl") | null;
+            /** @enum {string|null} */
+            preferredLocale?: "en" | "nl" | null;
         };
         YoutubeChannelRequest: {
             youtubeChannelId: string;

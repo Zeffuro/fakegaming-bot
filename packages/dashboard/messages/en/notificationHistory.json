@@ -1,0 +1,44 @@
+{
+    "notificationHistory": {
+        "title": "Notification history",
+        "description": "Your automatic personal notifications from the last {days} days, up to {count} recent records. One record follows each notification through delays and delivery.",
+        "collection": "History starts collecting after this update, so earlier notifications may be missing. Public server posts are not included.",
+        "kindFilter": "Notification type",
+        "statusFilter": "Delivery status",
+        "allKinds": "All types",
+        "allStatuses": "All statuses",
+        "refresh": "Refresh history",
+        "loading": "Loading notification history…",
+        "empty": "No notifications match these filters yet.",
+        "failed": "Could not load your notification history.",
+        "scheduledAt": "Scheduled: {date}",
+        "sentAt": "Sent: {date}",
+        "updatedAt": "Updated: {date}",
+        "openMessage": "Open Discord message",
+        "uncertainHelp": "Discord did not confirm the outcome. It may have arrived; the bot will not send it again automatically.",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {page} of {pages}",
+        "kinds": {
+            "reminder": "Reminder, task or session",
+            "follow": "Followed Twitch or Steam update",
+            "schedule": "Calendar or schedule reminder",
+            "briefing": "Morning briefing",
+            "digest": "Personal digest",
+            "anime": "Anime reminder"
+        },
+        "statuses": {
+            "pending": "Pending", "sent": "Sent", "delayed": "Delayed", "skipped": "Skipped", "failed": "Failed", "uncertain": "Outcome uncertain"
+        },
+        "reasons": {
+            "paused": "Waiting because personal notifications are paused.",
+            "quietHours": "Waiting until quiet hours end.",
+            "digestTime": "Waiting for the next digest time.",
+            "retry": "This attempt failed; a retry may follow while it remains eligible.",
+            "empty": "There was nothing to send.",
+            "ineligible": "The item or its settings changed before delivery.",
+            "unknown": "The delivery outcome could not be confirmed.",
+            "interrupted": "An interrupted send could not be confirmed after recovery."
+        }
+    }
+}

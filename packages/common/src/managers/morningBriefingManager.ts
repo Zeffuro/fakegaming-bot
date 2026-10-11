@@ -22,6 +22,12 @@ function withinWindow(settings: MorningBriefingPreferences, now: number, expecte
 }
 
 export class MorningBriefingManager {
+    async historyCandidate(userId: string, now: number): Promise<{ localDate: string; scheduledAt: number; version: number; timezone: string } | null> {
+        const settings = await this.preferences(userId);
+        if (!withinWindow(settings, now)) return null;
+        const localDate = followLocalTime(settings.timezone, now).date;
+        return { localDate, scheduledAt: briefingScheduledAt(localDate, settings.localTime, settings.timezone, now), version: settings.version, timezone: settings.timezone };
+    }
     async preferences(userId: string): Promise<MorningBriefingPreferences> {
         const [settings, user] = await Promise.all([MorningBriefingSettings.findByPk(userId), UserConfig.findByPk(userId)]);
         return { enabled: settings?.enabled ?? false, localTime: settings?.localTime ?? '09:00',
@@ -93,12 +99,34 @@ export class MorningBriefingManager {
         });
     }
 
-    async recover(now: number): Promise<void> {
-        await serializedTransaction(MorningBriefingDelivery.sequelize!, async transaction => {
+    async recover(now: number): Promise<MorningBriefingDelivery[]> {
+        return serializedTransaction(MorningBriefingDelivery.sequelize!, async transaction => {
+            const interrupted = await MorningBriefingDelivery.findAll({ where: { status: 'sending', attemptedAt: { [Op.lt]: now - 5 * 60_000 } }, transaction });
             await MorningBriefingDelivery.update({ status: 'uncertain', retryAt: null }, {
                 where: { status: 'sending', attemptedAt: { [Op.lt]: now - 5 * 60_000 } }, transaction,
             });
             await MorningBriefingDelivery.destroy({ where: { attemptedAt: { [Op.lt]: now - 90 * 86_400_000 } }, transaction });
+            return interrupted;
         });
     }
+}
+
+function briefingScheduledAt(day: string, clock: string, timezone: string, fallback: number): number {
+    const [year, month, date] = day.split('-').map(Number); const [hour, minute] = clock.split(':').map(Number);
+    const wall = Date.UTC(year!, month! - 1, date!, hour!, minute!);
+    const format = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const localUtc = (time: number) => {
+        const parts = Object.fromEntries(format.formatToParts(time).map(part => [part.type, part.value]));
+        return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
+    };
+    for (let delta = 0; delta <= BRIEFING_WINDOW_MINUTES; delta++) {
+        const target = wall + delta * 60_000;
+        const candidates = [-36, -12, 0, 12, 36].map(hours => {
+            const probe = target + hours * 3_600_000;
+            return target - (localUtc(probe) - probe);
+        }).filter(candidate => localUtc(candidate) === target);
+        if (candidates.length) return Math.min(...candidates);
+    }
+    return fallback;
 }

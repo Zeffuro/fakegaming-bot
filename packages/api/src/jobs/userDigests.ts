@@ -13,6 +13,8 @@ import { sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 import { personalNotificationPause } from './personalNotificationPause.js';
+import { recordNotificationHistory } from './notificationHistory.js';
+import type { NotificationHistoryReason, NotificationHistoryStatus } from '@zeffuro/fakegaming-common/api';
 
 interface ReminderPlain {
     id: string;
@@ -142,12 +144,17 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
     let errors = 0;
 
     for (const subscription of subscriptions) {
+        const history = (status: NotificationHistoryStatus, reason: NotificationHistoryReason | null = null, message?: { id?: unknown; channel_id?: unknown }) =>
+            recordNotificationHistory({ userId: subscription.discordId, kind: 'digest', occurrenceKey: `${subscription.id}:${subscription.lastRunAt ?? 'first'}`,
+                title: '', scheduledAt: Number(subscription.nextRunAt), observedAt: nowMs, status, reason,
+                messageId: typeof message?.id === 'string' ? message.id : null, channelId: typeof message?.channel_id === 'string' ? message.channel_id : null });
         processed += 1;
         const frequency = normalizeFrequency(subscription.frequency);
         const categories = parseDigestCategories((subscription as { categories?: unknown }).categories);
         const nextRunAt = getNextRunAfter(subscription, nowMs);
 
         if (!frequency || categories.length === 0 || nextRunAt === null) {
+            await history('failed', 'ineligible');
             await cm.userDigestSubscriptionManager.scheduleRetry(subscription.id, nowMs + retryDelaySeconds * 1000);
             errors += 1;
             log.warn({ subscriptionId: subscription.id, discordId: subscription.discordId }, 'Invalid user digest subscription');
@@ -156,6 +163,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
 
         try {
             if (await personalNotificationPause.isPaused(subscription.discordId)) {
+                await history('skipped', 'paused');
                 await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt }); skipped += 1; continue;
             }
             const locale = await resolveUserOutputLocale(subscription.discordId);
@@ -168,6 +176,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
                 : [];
 
             if (reminders.length === 0 && animeItems.length === 0) {
+                await history('skipped', 'empty');
                 await cm.userDigestSubscriptionManager.markRun(subscription.id, {
                     lastRunAt: nowMs,
                     nextRunAt,
@@ -194,21 +203,26 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
                     windowEndsAt,
                     locale,
                 });
+            await history('pending');
             const gate = await personalNotificationPause.deliver(subscription.discordId,
                 () => sendDirectMessagePayloadResult(subscription.discordId, { content, allowed_mentions: { parse: [] } }));
             if (gate.paused) {
+                await history('skipped', 'paused');
                 await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt }); skipped += 1; continue;
             }
             if (gate.value.status === 'unknown') {
+                await history('uncertain', 'unknown');
                 await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt });
                 errors += 1; log.warn({ subscriptionId: subscription.id }, 'Digest send outcome unknown; retiring run without replay'); continue;
             }
             if (gate.value.status !== 'sent') {
+                await history('failed', 'retry');
                 await cm.userDigestSubscriptionManager.scheduleRetry(subscription.id, nowMs + retryDelaySeconds * 1000);
                 errors += 1;
                 continue;
             }
 
+            await history('sent', null, gate.value.message);
             await cm.userDigestSubscriptionManager.markRun(subscription.id, {
                 lastRunAt: nowMs,
                 lastSentAt: nowMs,
@@ -216,6 +230,7 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
             });
             sent += 1;
         } catch (err) {
+            await history('failed', 'retry');
             await cm.userDigestSubscriptionManager.scheduleRetry(subscription.id, nowMs + retryDelaySeconds * 1000).catch(() => undefined);
             errors += 1;
             log.error({ err, subscriptionId: subscription.id, discordId: subscription.discordId }, 'Failed to process user digest subscription');

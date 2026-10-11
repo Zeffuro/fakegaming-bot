@@ -5,7 +5,7 @@ export interface ScheduleRecord {
     id: string; userId: string; scheduleId: string; title: string; timezone: string;
     plannedAt: number; endAt: number | null; allDay: boolean; cancelled: boolean;
     state: 'pending' | 'completed'; completedAt: number | null; note: string;
-    version: number; nextNotifyAt: number | null; notificationCount: number; sourceId: string | null;
+    version: number; nextNotifyAt: number | null; notificationCount: number; sourceId: string | null; notificationEpoch?: number;
 }
 export interface ImportedOccurrence {
     seriesKey: string; occurrenceKey: string; eventId: string; title: string; timezone: string;
@@ -51,5 +51,5 @@ export function occurrenceRecord(row: ScheduleOccurrence, sourceId: string | nul
     return { id: row.id, userId: row.userId, scheduleId: row.scheduleId, title: row.title, timezone: row.timezone,
         plannedAt: Number(row.plannedAt), endAt: row.endAt === null ? null : Number(row.endAt), allDay: row.allDay, cancelled: row.cancelled,
         state: row.state, completedAt: row.completedAt === null ? null : Number(row.completedAt), note: row.note, version: row.version,
-        nextNotifyAt: row.nextNotifyAt === null ? null : Number(row.nextNotifyAt), notificationCount: row.notificationCount, sourceId };
+        nextNotifyAt: row.nextNotifyAt === null ? null : Number(row.nextNotifyAt), notificationCount: row.notificationCount, sourceId, notificationEpoch: row.notificationEpoch };
 }

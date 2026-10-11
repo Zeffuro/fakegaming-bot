@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 194
+Operations: 195
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -65,6 +65,7 @@ Operations: 194
 | MorningBriefings | GET | `/morningBriefings` | Get private morning briefing preferences in the owner's saved timezone | Bearer |
 | MorningBriefings | PATCH | `/morningBriefings` | Enable or disable the owner's private morning briefing | Bearer |
 | MorningBriefings | GET | `/morningBriefings/preview` | Preview today's private briefing without sending a message | Bearer |
+| NotificationHistory | GET | `/userNotificationHistory` | List the owner's private automatic notification history | Bearer |
 | NotificationPause | GET | `/userNotificationPause` | Get the owner's account-wide personal notification pause | Bearer |
 | NotificationPause | PATCH | `/userNotificationPause` | Pause or resume automatic personal DMs using the saved timezone | Bearer |
 | Notifications | GET | `/notifications/admin` | List recent notification delivery records | Bearer |

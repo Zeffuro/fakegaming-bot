@@ -1,3 +1,4 @@
+import { PersonalNotificationHistoryManager } from './personalNotificationHistoryManager.js';
 import { PersonalNotificationPauseManager } from './personalNotificationPauseManager.js';
 import { UserDashboardLayoutManager } from './userDashboardLayoutManager.js';
 import { MorningBriefingManager } from './morningBriefingManager.js';
@@ -48,6 +49,7 @@ const log = getLogger({ name: 'common:config' });
  * Aggregates all manager classes.
  */
 export class ConfigManager {
+    personalNotificationHistoryManager = new PersonalNotificationHistoryManager();
     personalNotificationPauseManager = new PersonalNotificationPauseManager();
     userDashboardLayoutManager = new UserDashboardLayoutManager();
     morningBriefingManager = new MorningBriefingManager();

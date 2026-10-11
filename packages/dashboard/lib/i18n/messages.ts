@@ -1,5 +1,7 @@
 import notificationPauseEn from '../../messages/en/notificationPause.json';
 import notificationPauseNl from '../../messages/nl/notificationPause.json';
+import notificationHistoryEn from '../../messages/en/notificationHistory.json';
+import notificationHistoryNl from '../../messages/nl/notificationHistory.json';
 import dashboardLayoutEn from '../../messages/en/dashboardLayout.json';
 import dashboardLayoutNl from '../../messages/nl/dashboardLayout.json';
 import pollTemplatesNl from "../../messages/nl/pollTemplates.json";
@@ -85,6 +87,7 @@ export const englishMessages = {
     ...morningBriefingsEn,
     ...dashboardLayoutEn,
     ...notificationPauseEn,
+    ...notificationHistoryEn,
 } as const;
 
 type MessageShape<T> = {
@@ -119,6 +122,7 @@ export const dutchMessages = {
     ...morningBriefingsNl,
     ...dashboardLayoutNl,
     ...notificationPauseNl,
+    ...notificationHistoryNl,
 } as const satisfies MessageShape<typeof englishMessages>;
 
 type NestedMessageKey<T> = {

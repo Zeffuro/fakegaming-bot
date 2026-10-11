@@ -3,11 +3,12 @@ packages:
   - scripts
 
 overrides:
-  postcss: '8.5.15'
-  protobufjs: '8.6.1'
+  postcss: '8.5.29'
+  protobufjs: '8.8.0'
   'sequelize>uuid': '11.1.1'
   'twisted>uuid': '11.1.1'
-  vite: '8.0.16'
+  vite: '8.3.4'
+  'node-gyp>undici': '6.28.1'
 
 allowBuilds:
   '@parcel/watcher': true

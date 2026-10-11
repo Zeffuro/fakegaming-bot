@@ -210,25 +210,25 @@
     "canvas": "^3.2.3",
     "cheerio": "^1.2.0",
     "discord.js": "^14.27.0",
-    "dotenv": "^17.4.2",
+    "dotenv": "^18.0.7",
     "dotenv-expand": "^1000.0.0",
     "ioredis": "^6.0.0",
     "ms": "^2.1.3",
-    "pino": "^10.3.1",
+    "pino": "^10.4.0",
     "sequelize": "^6.37.8",
     "sequelize-typescript": "^2.1.6",
     "sqlite3": "^6.0.1",
     "umzug": "^3.8.3",
-    "use-intl": "4.13.6",
-    "zod": "^4.4.3"
+    "use-intl": "4.14.9",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@formatjs/icu-messageformat-parser": "3.5.17",
+    "@formatjs/icu-messageformat-parser": "3.5.21",
     "@types/ms": "^2.1.0",
-    "@vitest/coverage-v8": "4.1.11",
-    "eslint": "^10.8.1",
+    "@vitest/coverage-v8": "5.0.3",
+    "eslint": "^10.12.0",
     "typescript": "^6.0.3",
-    "vite": "8.0.16",
-    "vitest": "4.1.11"
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
   }
 }

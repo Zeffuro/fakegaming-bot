@@ -9,6 +9,7 @@ import { sendChannelMessagePayload, sendDirectMessagePayloadResult } from '../ut
 import { apiText, resolveGuildOutputLocale, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 import { personalNotificationPause } from './personalNotificationPause.js';
+import { recordNotificationHistory } from './notificationHistory.js';
 
 function computeNextAnimeDelaySeconds(now: Date = new Date(), minSeconds = 30): number {
     const ms = now.getTime();
@@ -55,7 +56,19 @@ async function sendReminder(
         return Boolean(sent && typeof (sent as { id?: unknown }).id === 'string');
     }
     if (subscription.targetType === 'dm' && subscription.userId) {
+        const input = { userId: subscription.userId, kind: 'anime' as const,
+            occurrenceKey: `${subscription.id}:${item.mediaId}:${item.episode}:${item.airingAt}`,
+            title: animeTitle(item), scheduledAt: item.airingAt * 1000 - (subscription.reminderMinutes ?? 30) * 60_000 };
+        if (await personalNotificationPause.isPaused(subscription.userId)) {
+            await recordNotificationHistory({ ...input, status: 'delayed', reason: 'paused' }); return 'paused';
+        }
+        await recordNotificationHistory({ ...input, status: 'pending' });
         const gate = await personalNotificationPause.deliver(subscription.userId, () => sendDirectMessagePayloadResult(subscription.userId!, payload));
+        await recordNotificationHistory({ ...input,
+            status: gate.paused ? 'delayed' : gate.value.status === 'sent' ? 'sent' : gate.value.status === 'rejected' ? 'failed' : 'uncertain',
+            reason: gate.paused ? 'paused' : gate.value.status === 'sent' ? null : gate.value.status === 'rejected' ? 'retry' : 'unknown',
+            messageId: !gate.paused && gate.value.status === 'sent' && typeof gate.value.message.id === 'string' ? gate.value.message.id : null,
+            channelId: !gate.paused && gate.value.status === 'sent' && typeof gate.value.message.channel_id === 'string' ? gate.value.message.channel_id : null });
         return gate.paused ? 'paused' : gate.value.status === 'unknown' ? 'uncertain' : gate.value.status === 'sent';
     }
     return false;

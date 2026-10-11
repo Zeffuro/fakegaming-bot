@@ -5,6 +5,9 @@ import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 import { sendScheduleMessage, editScheduleMessage } from './scheduleDiscord.js';
 import { personalNotificationPause } from './personalNotificationPause.js';
+import { recordNotificationHistory } from './notificationHistory.js';
+import { ScheduleOccurrence } from '@zeffuro/fakegaming-common/models';
+import type { NotificationHistoryReason, NotificationHistoryStatus } from '@zeffuro/fakegaming-common/api';
 
 const manager = new ScheduleNotificationManager();
 let running = false;
@@ -39,16 +42,31 @@ export async function processPersonalSchedules(now = Date.now()): Promise<{ sent
     let errors = 0;
     try {
         await getConfigManager().userScheduleManager.ensureManual();
-        await manager.recover(now);
+        for (const attempt of await manager.recover(now)) {
+            const occurrence = await ScheduleOccurrence.findOne({ where: { id: attempt.occurrenceId, userId: attempt.userId } }).catch(() => null);
+            await recordNotificationHistory({ userId: attempt.userId, kind: 'schedule', occurrenceKey: attempt.attemptKey,
+                title: occurrence?.title ?? '', scheduledAt: Number(attempt.scheduledAt), observedAt: now, status: 'uncertain', reason: 'interrupted' });
+        }
+        const quiet = await manager.due(now, true).catch(() => []);
+        for (const row of quiet) await recordNotificationHistory({ userId: row.userId, kind: 'schedule',
+            occurrenceKey: `${row.id}:${row.notificationEpoch ?? 0}:${row.notificationCount}`, title: row.title,
+            scheduledAt: row.nextNotifyAt ?? row.plannedAt, observedAt: deliveryNow(), status: 'delayed', reason: 'quietHours' });
         for (const row of await manager.due(now)) {
+            const history = (status: NotificationHistoryStatus, reason: NotificationHistoryReason | null = null, messageId?: string, channelId?: string) =>
+                recordNotificationHistory({ userId: row.userId, kind: 'schedule', occurrenceKey: `${row.id}:${row.notificationEpoch ?? 0}:${row.notificationCount}`,
+                    title: row.title, scheduledAt: row.nextNotifyAt ?? row.plannedAt, observedAt: deliveryNow(), status, reason, messageId, channelId });
             try {
-                if (await personalNotificationPause.isPaused(row.userId)) continue;
+                if (await personalNotificationPause.isPaused(row.userId)) { await history('delayed', 'paused'); continue; }
                 const locale = await resolveUserOutputLocale(row.userId);
                 const claim = await manager.claim(row, deliveryNow);
                 if (!claim) continue;
+                await history('pending');
                 const gate = await personalNotificationPause.deliver(row.userId, () => sendScheduleMessage(row.userId, schedulePayload(row, locale)));
-                if (gate.paused) { await manager.settle(claim.id, 'rejected', deliveryNow()); continue; }
+                if (gate.paused) { await manager.settle(claim.id, 'rejected', deliveryNow()); await history('delayed', 'paused'); continue; }
                 const result = gate.value;
+                await history(result.status === 'sent' ? 'sent' : result.status === 'rejected' ? 'failed' : 'uncertain',
+                    result.status === 'sent' ? null : result.status === 'rejected' ? 'retry' : 'unknown',
+                    result.status === 'sent' ? result.messageId : undefined, result.status === 'sent' ? result.channelId : undefined);
                 await manager.settle(claim.id, result.status, deliveryNow(),
                     result.status === 'sent' ? result.messageId : undefined, result.status === 'sent' ? result.channelId : undefined);
                 if (result.status === 'sent') sent += 1;

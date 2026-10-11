@@ -155,10 +155,12 @@ export class UserFollowManager {
         });
     }
 
-    async prune(now = Date.now()): Promise<void> {
-        await serializedTransaction(UserFollowEvent.sequelize!, async transaction => {
+    async prune(now = Date.now()): Promise<UserFollowEvent[]> {
+        return serializedTransaction(UserFollowEvent.sequelize!, async transaction => {
+            const interrupted = await UserFollowEvent.findAll({ where: { status: 'sending', attemptedAt: { [Op.lt]: now - 5 * 60_000 } }, transaction });
             await UserFollowEvent.update({ status: 'uncertain' }, { where: { status: 'sending', attemptedAt: { [Op.lt]: now - 5 * 60_000 } }, transaction });
             await UserFollowEvent.destroy({ where: { occurredAt: { [Op.lt]: now - 30 * 86_400_000 } }, transaction });
+            return interrupted;
         });
     }
 }

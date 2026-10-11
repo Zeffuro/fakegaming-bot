@@ -1,0 +1,44 @@
+{
+    "notificationHistory": {
+        "title": "Meldingsgeschiedenis",
+        "description": "Je automatische persoonlijke meldingen van de afgelopen {days} dagen, tot {count} recente vermeldingen. Eén vermelding volgt elke melding tijdens uitstel en bezorging.",
+        "collection": "De geschiedenis wordt vanaf deze update bijgehouden, dus eerdere meldingen kunnen ontbreken. Openbare serverberichten staan hier niet in.",
+        "kindFilter": "Meldingstype",
+        "statusFilter": "Bezorgstatus",
+        "allKinds": "Alle typen",
+        "allStatuses": "Alle statussen",
+        "refresh": "Geschiedenis vernieuwen",
+        "loading": "Meldingsgeschiedenis laden…",
+        "empty": "Er zijn nog geen meldingen die bij deze filters passen.",
+        "failed": "Je meldingsgeschiedenis kon niet worden geladen.",
+        "scheduledAt": "Gepland: {date}",
+        "sentAt": "Verzonden: {date}",
+        "updatedAt": "Bijgewerkt: {date}",
+        "openMessage": "Discord-bericht openen",
+        "uncertainHelp": "Discord heeft de uitkomst niet bevestigd. De melding kan zijn aangekomen; de bot verstuurt deze niet automatisch opnieuw.",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "page": "Pagina {page} van {pages}",
+        "kinds": {
+            "reminder": "Herinnering, taak of sessie",
+            "follow": "Gevolgde Twitch- of Steam-update",
+            "schedule": "Kalender- of planningsherinnering",
+            "briefing": "Ochtendoverzicht",
+            "digest": "Persoonlijk overzicht",
+            "anime": "Animeherinnering"
+        },
+        "statuses": {
+            "pending": "In afwachting", "sent": "Verzonden", "delayed": "Uitgesteld", "skipped": "Overgeslagen", "failed": "Mislukt", "uncertain": "Uitkomst onzeker"
+        },
+        "reasons": {
+            "paused": "Wacht omdat persoonlijke meldingen zijn gepauzeerd.",
+            "quietHours": "Wacht tot de stille uren voorbij zijn.",
+            "digestTime": "Wacht op het volgende overzichtstijdstip.",
+            "retry": "Deze poging is mislukt; zolang de melding geldig blijft, kan een nieuwe poging volgen.",
+            "empty": "Er was niets om te versturen.",
+            "ineligible": "Het item of de instellingen zijn vóór bezorging gewijzigd.",
+            "unknown": "De uitkomst van de bezorging kon niet worden bevestigd.",
+            "interrupted": "Een onderbroken verzending kon na herstel niet worden bevestigd."
+        }
+    }
+}

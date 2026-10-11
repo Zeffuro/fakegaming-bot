@@ -3,16 +3,19 @@ import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing'
 
 const mocks = vi.hoisted(() => ({
     send: vi.fn(), getAll: vi.fn(), update: vi.fn(), reschedule: vi.fn(), remove: vi.fn(),
-    prepare: vi.fn(), mark: vi.fn(), prune: vi.fn(), claim: vi.fn(), release: vi.fn(), uncertain: vi.fn(), finalize: vi.fn(),
+    prepare: vi.fn(), mark: vi.fn(), prune: vi.fn(), claim: vi.fn(), release: vi.fn(), uncertain: vi.fn(), finalize: vi.fn(), defer: vi.fn(),
 }));
 vi.mock('../../utils/discord.js', () => ({ sendDirectMessagePayloadResult: mocks.send }));
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 vi.mock('@zeffuro/fakegaming-common/managers', async importOriginal => ({ ...await importOriginal<object>(), getConfigManager: () => ({
+    personalNotificationHistoryManager: { record: async () => undefined },
     reminderManager: {
         getAllPlain: mocks.getAll, updatePlain: mocks.update,
         rescheduleRecurringReminder: mocks.reschedule, removeReminder: mocks.remove,
     },
     reminderInteractionManager: {
+        pendingDelivery: async () => null,
+        deferDelivery: mocks.defer,
         prepareDelivery: mocks.prepare, markDelivered: mocks.mark, prune: mocks.prune,
         claimDelivery: mocks.claim, releaseDelivery: mocks.release, markUncertain: mocks.uncertain,
         finalizeDelivery: mocks.finalize,
@@ -101,7 +104,7 @@ describe('reminder delivery jobs', () => {
         expect(mocks.send).not.toHaveBeenCalled();
         expect(mocks.remove).not.toHaveBeenCalled();
         expect(mocks.finalize).not.toHaveBeenCalled();
-        expect(mocks.update).toHaveBeenCalled();
+        expect(mocks.defer).toHaveBeenCalledWith(reminder, reminder.timestamp, now + 60_000);
     });
 
     it('does not POST when another worker owns the send claim', async () => {

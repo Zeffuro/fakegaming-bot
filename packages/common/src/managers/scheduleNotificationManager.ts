@@ -7,7 +7,7 @@ import { followInQuietHours } from './userFollowManager.js';
 import { occurrenceRecord, type ScheduleRecord } from './scheduleShared.js';
 
 export class ScheduleNotificationManager {
-    async due(now = Date.now()): Promise<ScheduleRecord[]> {
+    async due(now = Date.now(), quietOnly = false): Promise<ScheduleRecord[]> {
         const [enabledParents, activeSources, connections, preferences] = await Promise.all([
             PersonalSchedule.findAll({ where: { enabled: true } }), CalendarSource.findAll({ where: { enabled: true } }),
             CalendarConnection.findAll({ where: { status: 'connected' } }), SchedulePreferences.findAll({ where: { quietStart: { [Op.ne]: null } } }),
@@ -16,7 +16,8 @@ export class ScheduleNotificationManager {
         const activeSourceIds = new Set(activeSources.filter(source => connectedUsers.has(source.userId)).map(source => source.id));
         const quietUsers = new Set(preferences.filter(prefs => followInQuietHours({ timezone: prefs.timezone, quietStart: prefs.quietStart,
             quietEnd: prefs.quietEnd, digestAt: '09:00', lastDigestDate: null }, now)).map(prefs => prefs.userId));
-        const parents = enabledParents.filter(parent => !quietUsers.has(parent.userId) && (parent.sourceId === null || activeSourceIds.has(parent.sourceId)));
+        const parents = enabledParents.filter(parent => (quietOnly ? quietUsers.has(parent.userId) : !quietUsers.has(parent.userId))
+            && (parent.sourceId === null || activeSourceIds.has(parent.sourceId)));
         const sources = new Map(parents.map(row => [row.id, row.sourceId]));
         const rows = await ScheduleOccurrence.findAll({ where: { state: 'pending', cancelled: false, nextNotifyAt: { [Op.lte]: now },
             scheduleId: { [Op.in]: parents.map(parent => parent.id) } }, order: [['nextNotifyAt', 'ASC']], limit: 100 });
@@ -73,9 +74,10 @@ export class ScheduleNotificationManager {
         });
     }
 
-    async recover(now = Date.now()): Promise<void> {
+    async recover(now = Date.now()): Promise<ScheduleNotification[]> {
         const interrupted = await ScheduleNotification.findAll({ where: { status: 'sending', attemptedAt: { [Op.lt]: now - 5 * 60_000 } } });
         for (const row of interrupted) await this.settle(row.id, 'uncertain', now);
+        return interrupted;
     }
 
     async messagesToRefresh(limit = 100): Promise<Array<{ notification: ScheduleNotification; occurrence: ScheduleRecord }>> {

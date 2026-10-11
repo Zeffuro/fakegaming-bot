@@ -14,7 +14,7 @@
     "loading": "Loading dashboard layout…",
     "failed": "Could not update your dashboard layout.",
     "sections": {
-      "today": "Today", "calendar": "Calendar", "tasks": "Tasks", "briefing": "Morning briefing",
+      "today": "Today", "calendar": "Calendar", "tasks": "Tasks", "briefing": "Morning briefing", "notificationHistory": "Notification history",
       "pollTemplates": "Poll templates", "checklistTemplates": "Reusable lists", "noteEditor": "Create or edit a note",
       "notes": "Saved notes", "reminders": "Reminders", "anime": "Anime reminders", "reminderEditor": "Create a reminder",
       "subscriptions": "Subscriptions", "settings": "Personal settings", "digest": "Personal digest", "riot": "Riot account", "activity": "Activity"

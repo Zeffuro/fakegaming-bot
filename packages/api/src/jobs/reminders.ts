@@ -4,12 +4,13 @@ import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, computeNextMinuteBoundaryDelaySeconds, formatMinuteKey, computeBackoffWithNearWindow } from '@zeffuro/fakegaming-common/jobs';
 import { sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { buildReminderDeliveryPayload } from './reminderDelivery.js';
-import { prepareProductivityNotification } from './productivityReminders.js';
+import { notificationHistoryTitle, prepareProductivityNotification } from './productivityReminders.js';
 import { getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurrenceRule, type ReminderRecurrenceUnit } from '@zeffuro/fakegaming-common/utils';
 import { recordJobRun } from './status.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import type { SupportedOutputLocale } from '@zeffuro/fakegaming-common';
 import { personalNotificationPause } from './personalNotificationPause.js';
+import { recordNotificationHistory } from './notificationHistory.js';
 
 interface ReminderPlain {
     id: string;
@@ -78,11 +79,21 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
         const timestamp = normalizeTimestamp(r.timestamp);
         if (timestamp === null) continue;
         let sendClaimed = false;
+        let scheduledAt = timestamp;
+        let title = '';
+        let historyReady = true;
+        const history = (status: 'pending' | 'sent' | 'delayed' | 'skipped' | 'failed' | 'uncertain', reason: 'paused' | 'retry' | 'ineligible' | 'interrupted' | 'unknown' | null = null, messageId?: string, channelId?: string) =>
+            historyReady ? recordNotificationHistory({ userId: r.userId, kind: 'reminder', occurrenceKey: `${r.id}:${scheduledAt}`, title,
+                scheduledAt, observedAt: Date.now(), status, reason, messageId, channelId }) : Promise.resolve();
 
         try {
-            if (await personalNotificationPause.isPaused(r.userId)) continue;
+            try { title = await notificationHistoryTitle(r); } catch (error) { log.warn({ err: error }, 'Reminder history title unavailable'); }
+            try { scheduledAt = Number((await cm.reminderInteractionManager.pendingDelivery(r.id, r.userId))?.scheduledAt ?? timestamp); }
+            catch (error) { historyReady = false; log.warn({ err: error }, 'Reminder history occurrence unavailable'); }
+            if (await personalNotificationPause.isPaused(r.userId)) { await history('delayed', 'paused'); continue; }
             const personal = await prepareProductivityNotification(r);
             if (!personal) {
+                await history('skipped', 'ineligible');
                 await cm.reminderManager.removeReminder(r.id);
                 continue;
             }
@@ -90,22 +101,26 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
             const locale = await resolveUserOutputLocale(r.userId);
             const elapsed = formatReminderElapsed(Math.max(0, nowMs - baseMs), locale);
             const delivery = await cm.reminderInteractionManager.prepareDelivery(r, timestamp);
+            scheduledAt = Number(delivery.scheduledAt); historyReady = true;
             if (delivery.status === 'sending') {
                 if (Number(delivery.attemptedAt) > nowMs - 5 * 60_000) continue;
                 await cm.reminderInteractionManager.markUncertain(delivery.id);
+                await history('uncertain', 'interrupted');
                 log.warn({ id: r.id, deliveryId: delivery.id }, 'Interrupted reminder send outcome unknown; not replaying');
                 errors += 1;
             } else if (delivery.status === 'pending') {
                 sendClaimed = await cm.reminderInteractionManager.claimDelivery(delivery.id, timestamp);
                 if (!sendClaimed) continue;
+                await history('pending');
                 const gate = await personalNotificationPause.deliver(r.userId, () => sendDirectMessagePayloadResult(
                     r.userId, buildReminderDeliveryPayload(delivery.id, buildReminderContent(personal.content, elapsed, locale), locale, personal),
                 ));
                 if (gate.paused) {
-                    await cm.reminderInteractionManager.releaseDelivery(delivery.id); sendClaimed = false; continue;
+                    await cm.reminderInteractionManager.releaseDelivery(delivery.id); sendClaimed = false; await history('delayed', 'paused'); continue;
                 }
                 const result = gate.value;
                 if (result.status === 'rejected') {
+                    await history('failed', 'retry');
                     const delay = computeReminderRetryBackoffSeconds(now, timestamp);
                     await cm.reminderInteractionManager.releaseDelivery(delivery.id, nowMs + delay * 1000);
                     sendClaimed = false;
@@ -114,13 +129,17 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
                     continue;
                 }
                 if (result.status === 'sent' && typeof result.message.id === 'string' && typeof result.message.channel_id === 'string') {
+                    await history('sent', null, result.message.id, result.message.channel_id);
                     await cm.reminderInteractionManager.markDelivered(delivery.id, result.message.id, result.message.channel_id);
                 } else {
+                    await history('uncertain', 'unknown');
                     await cm.reminderInteractionManager.markUncertain(delivery.id);
                     errors += 1;
                     log.warn({ id: r.id, deliveryId: delivery.id }, 'Reminder send outcome unknown; not replaying');
                 }
             }
+            if (delivery.status === 'delivered') await history('sent', null, delivery.messageId ?? undefined, delivery.channelId ?? undefined);
+            if (delivery.status === 'uncertain') await history('uncertain', 'unknown');
             sendClaimed = true;
             const nextTimestamp = getNextRecurringTimestamp(r, Number(delivery.scheduledAt), nowMs);
             await cm.reminderInteractionManager.finalizeDelivery(delivery.id, nextTimestamp, nowMs);
@@ -141,9 +160,7 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
             const delay = computeReminderRetryBackoffSeconds(now, timestamp);
             const nextTs = nowMs + delay * 1000;
             try {
-                await cm.reminderManager.updatePlain({ id: r.id, timestamp: nextTs } as never, {
-                    id: r.id, userId: r.userId, timestamp, completed: r.completed ?? null,
-                } as never);
+                if (await cm.reminderInteractionManager.deferDelivery(r, timestamp, nextTs)) await history('failed', 'retry');
             } catch {
                 // ignore secondary failure to update
             }

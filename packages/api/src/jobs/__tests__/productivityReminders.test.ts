@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
-import { ReminderConfig, ReminderDelivery, UserTask, UserSession, UserCountdown } from '@zeffuro/fakegaming-common/models';
+import { ReminderConfig, ReminderDelivery, UserTask, UserSession, UserCountdown, PersonalNotificationHistory } from '@zeffuro/fakegaming-common/models';
 import { UserTaskManager, UserSessionManager, UserCountdownManager } from '@zeffuro/fakegaming-common/managers';
 import { configManager } from '../../vitest.setup.js';
 const mocks = vi.hoisted(() => ({ send: vi.fn() }));
@@ -13,6 +13,7 @@ import { buildReminderDeliveryPayload } from '../reminderDelivery.js';
 const userId = 'productivity-owner';
 const messages = { focus: 'Focus', break: 'Break', finished: 'Finished', takeBreak: 'Take break' };
 beforeEach(async () => {
+    await PersonalNotificationHistory.destroy({ where: {} });
     await ReminderDelivery.destroy({ where: {} });
     await ReminderConfig.destroy({ where: {} });
     await UserTask.destroy({ where: {} });
@@ -23,6 +24,25 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('personal reminder delivery integration', () => {
+    it.each(['task', 'session', 'countdown'])('journals the authored %s title privately through the actual reminder job', async kind => {
+        const title = `${kind} authored @everyone`;
+        let reminderId: string;
+        if (kind === 'task') {
+            reminderId = (await new UserTaskManager().create({ userId, title, dueAt: Date.now() + 60_000, timezone: 'UTC' })).reminderId!;
+        } else if (kind === 'session') {
+            reminderId = (await new UserSessionManager().start({ userId, title, kind: 'focus', minutes: 10, messages })).reminderId!;
+        } else {
+            const countdown = await new UserCountdownManager().create({ userId, title, dueAt: Date.now() + 60_000, timezone: 'UTC', dueMessage: 'Application phase body', advanceMessage: 'Soon' });
+            reminderId = `countdown:${countdown.id}:due`;
+        }
+        const scheduledAt = Date.now() - 1000;
+        await ReminderConfig.update({ timestamp: scheduledAt }, { where: { id: reminderId } });
+        const queue = new TestJobQueue(); await registerRemindersJobs(queue); await runJobHandler(queue, 'reminders:run', {});
+        expect(mocks.send).toHaveBeenCalledOnce();
+        const page = await configManager.personalNotificationHistoryManager.list(userId);
+        expect(page.items).toEqual([expect.objectContaining({ kind: 'reminder', status: 'sent', title, scheduledAt, messageUrl: null })]);
+        expect((await configManager.personalNotificationHistoryManager.list('another')).total).toBe(0);
+    });
     it('keeps a safe saved source in task DMs and omits unsafe legacy links', () => {
         const personal = { content: 'Task', task: { id: 'task', version: 1, sourceUrl: 'https://discord.com/channels/1/2/3' } };
         const payload = buildReminderDeliveryPayload('delivery', 'Task', 'nl', personal);

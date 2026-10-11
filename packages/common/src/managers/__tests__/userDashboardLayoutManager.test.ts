@@ -7,6 +7,14 @@ describe('personal dashboard layout persistence', () => {
     const manager = new UserDashboardLayoutManager();
     const input = () => ({ schemaVersion: 1 as const, version: 0, sections: defaultDashboardSections() });
     beforeEach(async () => { await UserDashboardLayout.destroy({ where: {} }); });
+    it('adds notification history without changing a saved legacy panel order or visibility', async () => {
+        const legacy = defaultDashboardSections().filter(section => section.id !== 'notificationHistory').reverse();
+        legacy[0]!.visible = false;
+        await UserDashboardLayout.create({ userId: 'legacy-layout', version: 7, schemaVersion: 1, sectionsJson: JSON.stringify(legacy) });
+        const upgraded = await manager.get('legacy-layout');
+        expect(upgraded.version).toBe(7); expect(upgraded.sections.slice(0, legacy.length)).toEqual(legacy);
+        expect(upgraded.sections.at(-1)).toEqual({ id: 'notificationHistory', visible: true });
+    });
     it('defaults every section visible without creating a row and persists per account', async () => {
         expect(await manager.get('owner')).toEqual(input()); expect(await UserDashboardLayout.count()).toBe(0);
         const value = input(); value.sections.reverse(); value.sections[0].visible = false;

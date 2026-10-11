@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
-import { PersonalSchedule, ScheduleOccurrence, ScheduleNotification, SchedulePreferences, CalendarSource, CalendarConnection } from '@zeffuro/fakegaming-common/models';
+import { PersonalSchedule, ScheduleOccurrence, ScheduleNotification, SchedulePreferences, CalendarSource, CalendarConnection, PersonalNotificationHistory } from '@zeffuro/fakegaming-common/models';
 import { UserScheduleManager, ScheduleNotificationManager } from '@zeffuro/fakegaming-common/managers';
 import { configManager } from '../../vitest.setup.js';
 const mocks = vi.hoisted(() => ({ send: vi.fn(), edit: vi.fn(), status: vi.fn(), locale: vi.fn() }));
@@ -11,6 +11,7 @@ import { processPersonalSchedules, registerPersonalScheduleJobs, schedulePayload
 
 const manager = new UserScheduleManager();
 beforeEach(async () => {
+    await PersonalNotificationHistory.destroy({ where: {} });
     await ScheduleNotification.destroy({ where: {} }); await ScheduleOccurrence.destroy({ where: {} });
     await PersonalSchedule.destroy({ where: {} }); await SchedulePreferences.destroy({ where: {} });
     await CalendarSource.destroy({ where: {} }); await CalendarConnection.destroy({ where: {} });
@@ -26,6 +27,41 @@ async function due() {
 }
 
 describe('private schedule jobs', () => {
+    it('continues eligible deliveries when a recovered notification history title cannot be read', async () => {
+        const interrupted = await due();
+        const now = Date.now();
+        expect(await new ScheduleNotificationManager().claim(interrupted, now)).not.toBeNull();
+        const eligible = await due();
+        vi.spyOn(configManager.userScheduleManager, 'ensureManual').mockResolvedValueOnce(undefined);
+        const findOne = ScheduleOccurrence.findOne.bind(ScheduleOccurrence);
+        vi.spyOn(ScheduleOccurrence, 'findOne').mockImplementation(async options => {
+            const where = options?.where as { id?: string; userId?: string } | undefined;
+            if (!options?.transaction && where?.id === interrupted.id && where.userId === interrupted.userId) {
+                throw new Error('History title unavailable');
+            }
+            return findOne(options);
+        });
+        expect((await processPersonalSchedules(now + 6 * 60_000)).sent).toBe(1);
+        expect(mocks.send).toHaveBeenCalledOnce();
+        expect((await configManager.personalNotificationHistoryManager.list(interrupted.userId)).items).toEqual(expect.arrayContaining([
+            expect.objectContaining({ status: 'uncertain', reason: 'interrupted', title: '' }),
+            expect.objectContaining({ status: 'sent', title: eligible.title }),
+        ]));
+    });
+    it('sends eligible users even when more than 100 older quiet occurrences await observation', async () => {
+        const now = Date.now(); const quiet = await due();
+        const original = (await ScheduleOccurrence.findByPk(quiet.id))!.get({ plain: true });
+        await SchedulePreferences.create({ userId: quiet.userId, timezone: 'UTC', quietStart: '00:00', quietEnd: '00:00', followupMinutes: 0, maxFollowups: 0 });
+        await ScheduleOccurrence.bulkCreate(Array.from({ length: 101 }, (_, index) => ({ ...original, id: `quiet-${index}`,
+            externalKey: `quiet-${index}`, nextNotifyAt: now - 60_000 })));
+        const eligible = await manager.createManual({ userId: 'eligible-owner', title: 'Eligible', plannedAt: now + 60_000, timezone: 'UTC' });
+        await ScheduleOccurrence.update({ nextNotifyAt: now - 1000 }, { where: { id: eligible.id } });
+        expect((await processPersonalSchedules(now)).sent).toBe(1);
+        expect(mocks.send).toHaveBeenCalledWith('eligible-owner', expect.anything());
+        expect(mocks.send).toHaveBeenCalledOnce();
+        expect((await configManager.personalNotificationHistoryManager.list(quiet.userId, { status: 'delayed', limit: 100 })).total).toBe(100);
+        expect((await configManager.personalNotificationHistoryManager.list(eligible.userId)).items[0]).toMatchObject({ status: 'sent', title: 'Eligible' });
+    });
     it('delivers once with saved user locale, durable private controls, and persists unconfirmed state after event time', async () => {
         const item = await due();
         const result = await processPersonalSchedules();

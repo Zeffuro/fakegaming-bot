@@ -31,6 +31,7 @@ import { buildPersonalSubscriptionOverview } from "@/lib/personalSubscriptionOve
 import { buildUserActivityFeed } from "@/lib/userActivityFeed";
 
 import { NotificationPausePanel } from "@/components/dashboard/NotificationPausePanel";
+import { NotificationHistoryPanel } from "@/components/dashboard/NotificationHistoryPanel";
 import { PersonalDashboardSections } from "@/components/dashboard/PersonalDashboardSections";
 import { RiotLinkPanel, PersonalSubscriptionOverviewPanel, UserActivityPanel, PersonalAnimeSubscribeForm, AnimeSubscriptionCard, ReminderCard, isPausedRecurringReminder, formatDigestStatus, DigestCategoryToggle, EmptyPersonalState } from "@/components/personal/PersonalDashboardPanels";
 
@@ -447,6 +448,9 @@ export default function PersonalDashboardPage() {
                         ),
                         briefing: (
                             <MorningBriefingPanel revision={settings?.timezone ?? 'UTC'} />
+                        ),
+                        notificationHistory: (
+                            <NotificationHistoryPanel timezone={settings?.timezone ?? 'UTC'} />
                         ),
                         pollTemplates: (
                             <PollTemplatesPanel />

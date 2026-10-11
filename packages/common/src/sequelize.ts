@@ -1,3 +1,4 @@
+import { PersonalNotificationHistory } from './models/personal-notification-history.js';
 import { PersonalNotificationPause } from './models/personal-notification-pause.js';
 import { UserDashboardLayout } from './models/user-dashboard-layout.js';
 import { MorningBriefingSettings, MorningBriefingDelivery } from './models/morning-briefing.js';
@@ -108,6 +109,7 @@ export function getSequelize(useTest = false): Sequelize {
         UserCommandPreset,
         UserChecklistTemplate,
         PersonalNotificationPause,
+        PersonalNotificationHistory,
         UserDashboardLayout,
         MorningBriefingSettings,
         MorningBriefingDelivery,

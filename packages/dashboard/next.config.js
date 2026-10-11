@@ -1,6 +1,13 @@
 import path from "path";
+import {homedir} from "node:os";
 import {fileURLToPath} from "node:url";
-import createNextIntlPlugin from "next-intl/plugin";
+
+if (process.platform === 'win32' && !process.env.SWC_NATIVE_BINDING_CACHE) {
+    // AppData can inherit capability ACLs that SWC rejects for its native cache.
+    process.env.SWC_NATIVE_BINDING_CACHE = path.join(homedir(), '.swc-cache');
+}
+
+const {default: createNextIntlPlugin} = await import('next-intl/plugin');
 
 // Compute the trace root from the directory containing this config file
 const traceRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');

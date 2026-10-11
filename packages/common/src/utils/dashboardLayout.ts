@@ -1,4 +1,4 @@
-export const dashboardSectionIds = ['today', 'calendar', 'tasks', 'briefing', 'pollTemplates', 'checklistTemplates',
+export const dashboardSectionIds = ['today', 'calendar', 'tasks', 'briefing', 'notificationHistory', 'pollTemplates', 'checklistTemplates',
     'noteEditor', 'notes', 'reminders', 'anime', 'reminderEditor', 'subscriptions', 'settings', 'digest', 'riot', 'activity'] as const;
 export type DashboardSectionId = typeof dashboardSectionIds[number];
 export interface DashboardSection { id: DashboardSectionId; visible: boolean }

@@ -46,3 +46,4 @@ export * from './morningBriefingManager.js';
 export * from './pollTemplateManager.js';
 export * from './userDashboardLayoutManager.js';
 export * from './personalNotificationPauseManager.js';
+export * from './personalNotificationHistoryManager.js';

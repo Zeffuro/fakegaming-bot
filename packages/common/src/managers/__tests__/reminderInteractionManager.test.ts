@@ -14,6 +14,43 @@ describe('ReminderInteractionManager', () => {
         await ReminderConfig.destroy({ where: {} });
     });
 
+    it('anchors preparation retries to the original occurrence and updates source binding atomically', async () => {
+        const source = { id: 'retry-source', userId: 'owner', message: 'Task' };
+        await ReminderConfig.create({ ...source, timestamp: now, timespan: '1h' });
+        expect(await manager.deferDelivery(source, now, now + 60_000)).toBe(true);
+        const delivery = (await manager.pendingDelivery(source.id, source.userId))!;
+        expect(delivery).toMatchObject({ status: 'pending', scheduledAt: now, sourceTimestamp: now + 60_000 });
+        expect(Number((await ReminderConfig.findByPk(source.id))?.timestamp)).toBe(now + 60_000);
+        const restarted = new ReminderInteractionManager(() => now);
+        expect((await restarted.prepareDelivery(source, now + 60_000)).id).toBe(delivery.id);
+        expect(await restarted.claimDelivery(delivery.id, now + 60_000)).toBe(true);
+    });
+
+    it('rejects deferral for other owners, changed sources, completed reminders and an active send claim', async () => {
+        const source = { id: 'retry-source', userId: 'owner', message: 'Task' };
+        await ReminderConfig.create({ ...source, timestamp: now, timespan: '1h' });
+        expect(await manager.deferDelivery({ ...source, userId: 'other' }, now, now + 60_000)).toBe(false);
+        expect(await manager.deferDelivery(source, now - 1, now + 60_000)).toBe(false);
+        await ReminderConfig.update({ completed: true }, { where: { id: source.id } });
+        expect(await manager.deferDelivery(source, now, now + 60_000)).toBe(false);
+        await ReminderConfig.update({ completed: false }, { where: { id: source.id } });
+        const delivery = await manager.prepareDelivery(source, now);
+        const outcomes = await Promise.all([manager.claimDelivery(delivery.id, now), manager.deferDelivery(source, now, now + 60_000)]);
+        expect(outcomes).toEqual([true, false]);
+        expect(Number((await ReminderConfig.findByPk(source.id))?.timestamp)).toBe(now);
+        expect(await delivery.reload()).toMatchObject({ status: 'sending', sourceTimestamp: now });
+    });
+
+    it('rolls back the new anchor when the source backoff write fails', async () => {
+        const source = { id: 'retry-source', userId: 'owner', message: 'Task' };
+        await ReminderConfig.create({ ...source, timestamp: now, timespan: '1h' });
+        const update = vi.spyOn(ReminderConfig.prototype, 'update').mockRejectedValueOnce(new Error('source offline'));
+        try { await expect(manager.deferDelivery(source, now, now + 60_000)).rejects.toThrow('source offline'); }
+        finally { update.mockRestore(); }
+        expect(await ReminderDelivery.count()).toBe(0);
+        expect(Number((await ReminderConfig.findByPk(source.id))?.timestamp)).toBe(now);
+    });
+
     it('persists a draft across manager recreation, with owner and single-use enforcement', async () => {
         const draft = await manager.createDraft('owner', 'original message link');
         const restarted = new ReminderInteractionManager(() => now);
