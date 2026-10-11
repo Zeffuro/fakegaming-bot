@@ -1,0 +1,14 @@
+{
+    "briefingHeading": "Je ochtendoverzicht · {day} ({timezone})",
+    "briefingTask": "Taak",
+    "briefingReminder": "Herinnering",
+    "briefingSchedule": "Agenda / planning",
+    "briefingCountdown": "Aftellen",
+    "briefingUndated": "Geen deadline",
+    "briefingOverdue": "Te laat",
+    "briefingAllDay": "Hele dag",
+    "briefingOmitted": "{count, plural, one {Nog # item in je privé-dashboard Vandaag.} other {Nog # items in je privé-dashboard Vandaag.}}",
+    "briefingEmpty": "Vandaag is er niets om op te nemen. Er wordt geen bericht verzonden.",
+    "briefingStale": "Je instellingen of opgeslagen tijdzone zijn gewijzigd. Vernieuw en probeer opnieuw.",
+    "briefingInvalid": "Kies een geldige lokale tijd en vernieuw je instellingen voor het ochtendoverzicht."
+}
