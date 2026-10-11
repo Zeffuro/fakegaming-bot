@@ -1,0 +1,30 @@
+{
+    "checklists": {
+        "title": "Herbruikbare checklists",
+        "description": "Bewaar een persoonlijke lijst en start een nieuwe taak wanneer je die nodig hebt.",
+        "create": "Nieuwe checklist",
+        "edit": "Checklist bewerken",
+        "name": "Naam van de checklist",
+        "items": "Items",
+        "itemsHelp": "Eén item per regel. Gebruik 1–10 items van maximaal 120 tekens; lege regels worden overgeslagen.",
+        "independent": "Wijzigingen gelden voor toekomstige kopieën. Gestarte taken behouden hun eigen items en voortgang.",
+        "start": "Nieuwe taak starten",
+        "fresh": "De nieuwe taak bevat alle items zonder vinkje. De opgeslagen checklist blijft herbruikbaar.",
+        "due": "Deadline (optioneel)",
+        "timezone": "Deadlines gebruiken {timezone}.",
+        "save": "Checklist opslaan",
+        "saving": "Opslaan…",
+        "cancel": "Sluiten",
+        "loading": "Laden…",
+        "empty": "Nog geen opgeslagen checklists.",
+        "failed": "De checklist kon niet worden opgeslagen. Probeer opnieuw.",
+        "remove": "Verwijderen",
+        "removeHelp": "Deze opgeslagen checklist verwijderen? Gestarte taken blijven behouden.",
+        "confirmRemove": "Checklist verwijderen",
+        "refresh": "Vernieuwen",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "page": "Pagina {page} van {pages}",
+        "saveTask": "Opslaan als herbruikbare lijst"
+    }
+}
