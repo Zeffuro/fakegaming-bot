@@ -1,0 +1,19 @@
+{
+  "notificationPause": {
+    "title": "Persoonlijke meldingen pauzeren",
+    "description": "Pauzeer alle automatische persoonlijke DM's: herinneringen, gevolgde Twitch- en Steam-updates, persoonlijke overzichten, animeherinneringen, kalender- en planningsherinneringen en ochtendoverzichten.",
+    "enabled": "Alle persoonlijke meldingen pauzeren",
+    "resumeAt": "Automatisch hervatten (optioneel)",
+    "timezone": "Exacte datum en tijd in je opgeslagen tijdzone: {timezone}. Laat leeg om te pauzeren totdat je zelf hervat.",
+    "behavior": "Je afzonderlijke instellingen blijven opgeslagen. Herinneringen, gevolgde updates en planningsmeldingen wachten totdat je hervat; overzichten slaan gepauzeerde uitvoeringen over en ochtendoverzichten hervatten alleen binnen het bezorgvenster van vandaag. Openbare serverberichten gaan door.",
+    "active": "Persoonlijke meldingen zijn actief.",
+    "pausedIndefinitely": "Alle automatische persoonlijke meldingen zijn gepauzeerd totdat je hervat.",
+    "pausedUntil": "Alle automatische persoonlijke meldingen zijn gepauzeerd tot {date}.",
+    "save": "Meldingspauze opslaan",
+    "resume": "Nu hervatten",
+    "reload": "Opgeslagen instellingen laden",
+    "saved": "Instellingen voor persoonlijke meldingen opgeslagen.",
+    "loading": "Meldingsinstellingen laden…",
+    "failed": "Je meldingspauze kon niet worden bijgewerkt."
+  }
+}
