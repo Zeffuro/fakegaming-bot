@@ -1,0 +1,6 @@
+{
+    "checklistMissing": "Deze opgeslagen checklist is niet beschikbaar of is van iemand anders.",
+    "checklistStale": "Deze checklist of tijdzone is gewijzigd. Vernieuw en probeer opnieuw.",
+    "checklistCapacity": "Je limiet voor opgeslagen checklists of actieve taken is bereikt.",
+    "checklistInvalid": "Gebruik een titel en één tot tien checklistitems van maximaal 120 tekens, en eventueel een toekomstige datum."
+}
