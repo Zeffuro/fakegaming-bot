@@ -18,13 +18,16 @@
         "completed": "Je voltooide taken",
         "done": "Gereed",
         "snooze": "Sluimer 10m",
+        "source": "Oorspronkelijke bron",
         "due": "Gepland '<t:'{unix}:F> ('<t:'{unix}:R>)",
         "noDue": "Geen geplande datum",
         "completedAt": "Voltooid '<t:'{unix}:R>",
         "repeating": "Herhaalt nadat je op Gereed drukt; Sluimer verplaatst alleen deze uitvoering.",
         "count": "Voltooid: {count, number}",
         "check": "Schakel item {index}",
-        "summary": "{title} — {done}/{total} items — {due}"
+        "summary": "{title} — {done}/{total} items — {due}",
+        "undo": "Voltooiing ongedaan maken",
+        "tomorrow": "Doe dit morgen"
     },
     "session": {
         "focus": "Focus",
@@ -59,5 +62,11 @@
         "advance": "Voorafmelding: {minutes, number} min van tevoren",
         "dueMessage": "{title}: je afteller heeft de datum bereikt.",
         "advanceMessage": "{title}: binnenkort '<t:'{unix}:F>."
+    },
+    "lists": {
+        "title": "Je herbruikbare checklists",
+        "saved": "**{title}** opgeslagen. Elk gebruik start een nieuwe taak zonder vinkjes.",
+        "items": "{count, number} items",
+        "removed": "Opgeslagen checklist verwijderd. Bestaande taken blijven behouden."
     }
 }
