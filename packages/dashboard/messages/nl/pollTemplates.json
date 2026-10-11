@@ -1,0 +1,32 @@
+{
+    "pollTemplates": {
+        "title": "Opgeslagen peilingen",
+        "description": "Bewaar persoonlijke peilinginstellingen en start een nieuwe openbare peiling in Discord. Sjablonen bevatten nooit stemmen of stemmers.",
+        "create": "Peiling opslaan",
+        "refresh": "Vernieuwen",
+        "loading": "Opgeslagen peilingen laden…",
+        "empty": "Nog geen opgeslagen peilingen.",
+        "removeHelp": "Deze instellingen verwijderen? Bestaande peilingen blijven hetzelfde.",
+        "confirmRemove": "Peiling verwijderen",
+        "cancel": "Annuleren",
+        "edit": "Peiling bewerken",
+        "remove": "Verwijderen",
+        "previous": "Vorige",
+        "next": "Volgende",
+        "page": "Pagina {page} van {pages}",
+        "name": "Sjabloonnaam",
+        "question": "Peilingvraag",
+        "options": "Opties",
+        "optionsHelp": "Twee tot vijf unieke opties, één per regel; maximaal 200 tekens per optie.",
+        "duration": "Duur in minuten (1–1440)",
+        "multiple": "Meerdere keuzes toestaan",
+        "hidden": "Resultaten verbergen totdat de peiling sluit (standaard uit)",
+        "independent": "Bewerken of verwijderen van instellingen verandert nooit bestaande peilingen.",
+        "saving": "Opslaan…",
+        "save": "Opslaan",
+        "failed": "Je opgeslagen peilingen bijwerken is mislukt. Probeer opnieuw.",
+        "startHelp": "Gebruik /polls start template:{id} in het kanaal waar je de peiling wilt plaatsen.",
+        "ranked": "Voorkeursstemmen (standaard uit)",
+        "rankedHelp": "Stemmers rangschikken opties privé. Een deel rangschikken mag; een absolute meerderheid van resterende stemmen wint. Gelijke eliminaties blijven onbeslist. Meerdere keuzes is uitgeschakeld."
+    }
+}
