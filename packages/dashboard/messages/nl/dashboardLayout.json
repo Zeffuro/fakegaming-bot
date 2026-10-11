@@ -1,0 +1,35 @@
+{
+  "dashboardLayout": {
+    "title": "Je dashboardindeling",
+    "customize": "Panelen aanpassen",
+    "close": "Aanpassen sluiten",
+    "description": "Kies welke panelen je wilt tonen en wijzig hun volgorde met de pijlen. Sla de indeling op om die ook op je andere apparaten te gebruiken. De opgeslagen gegevens van verborgen panelen blijven behouden.",
+    "moveUp": "{name} omhoog verplaatsen",
+    "moveDown": "{name} omlaag verplaatsen",
+    "save": "Indeling opslaan",
+    "reset": "Standaardindeling herstellen",
+    "reload": "Opgeslagen indeling laden",
+    "unsaved": "Je hebt niet-opgeslagen wijzigingen in de indeling.",
+    "saved": "Dashboardindeling opgeslagen.",
+    "loading": "Dashboardindeling laden…",
+    "failed": "Je dashboardindeling kon niet worden bijgewerkt.",
+    "sections": {
+      "today": "Vandaag",
+      "calendar": "Kalender",
+      "tasks": "Taken",
+      "briefing": "Ochtendoverzicht",
+      "pollTemplates": "Enquêtesjablonen",
+      "checklistTemplates": "Herbruikbare lijsten",
+      "noteEditor": "Notitie maken of bewerken",
+      "notes": "Opgeslagen notities",
+      "reminders": "Herinneringen",
+      "anime": "Animeherinneringen",
+      "reminderEditor": "Herinnering maken",
+      "subscriptions": "Abonnementen",
+      "settings": "Persoonlijke instellingen",
+      "digest": "Persoonlijk overzicht",
+      "riot": "Riot-account",
+      "activity": "Activiteit"
+    }
+  }
+}
