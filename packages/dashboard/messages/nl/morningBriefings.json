@@ -1,0 +1,19 @@
+{
+    "briefing": {
+        "title": "Privé-ochtendoverzicht",
+        "description": "Ontvang één privébericht in Discord met de taken, herinneringen en agenda-items van vandaag en te late items, plus het aftellen voor vandaag. Taken zonder deadline tellen mee. Lege dagen worden overgeslagen.",
+        "enabled": "Stuur mij een ochtendoverzicht",
+        "localTime": "Lokale bezorgtijd",
+        "timezone": "Gebruikt je opgeslagen tijdzone: {timezone}",
+        "timing": "Bezorging volgt kort na deze tijd, binnen twee uur. Oude dagen worden nooit opnieuw verzonden. Bij een overgeslagen tijd door zomertijd kan bezorging op het eerstvolgende geldige tijdstip volgen.",
+        "save": "Instellingen opslaan",
+        "preview": "Voorbeeld van vandaag",
+        "refresh": "Vernieuwen",
+        "loading": "Instellingen voor het ochtendoverzicht laden…",
+        "failed": "Je instellingen voor het ochtendoverzicht konden niet worden geladen of opgeslagen.",
+        "saved": "Instellingen voor het ochtendoverzicht opgeslagen.",
+        "previewHelp": "Het voorbeeld gebruikt je opgeslagen uitvoertaal en tijdzone. Er wordt geen bericht verzonden.",
+        "previewCount": "{included} van {total} items opgenomen; {omitted} weggelaten.",
+        "empty": "Vandaag is er niets om op te nemen. Er wordt geen bericht verzonden."
+    }
+}
