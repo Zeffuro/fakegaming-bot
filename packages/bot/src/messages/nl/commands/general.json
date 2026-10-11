@@ -14,7 +14,7 @@
         "description": "Open deze server in het botdashboard"
     },
     "poll": {
-        "description": "Maak een peiling met knoppen en live resultaten",
+        "description": "Maak een peiling met knoppen en live of verborgen resultaten",
         "options": {
             "question": {
                 "description": "De vraag van de peiling"
@@ -39,6 +39,12 @@
             },
             "multiple": {
                 "description": "Sta meerdere keuzes toe (klik nogmaals om te verwijderen)"
+            },
+            "hide-results": {
+                "description": "Verberg resultaten totdat de peiling sluit (standaard: uit)"
+            },
+            "ranked": {
+                "description": "Rangschik opties privé in plaats van één te kiezen (standaard: false)"
             }
         }
     },
@@ -185,6 +191,54 @@
         "options": {
             "location": {
                 "description": "Plaatsnaam of plaats,land (bijv. Rotterdam of Rotterdam,NL)"
+            }
+        }
+    },
+    "polls": {
+        "description": "Beheer je persoonlijke herbruikbare peilingen",
+        "options": {
+            "save": {
+                "description": "Bewaar de instellingen van een eigen peiling",
+                "options": {
+                    "poll": {
+                        "description": "Peiling-ID of bericht-ID"
+                    },
+                    "name": {
+                        "description": "Persoonlijke sjabloonnaam"
+                    }
+                }
+            },
+            "list": {
+                "description": "Toon je persoonlijke opgeslagen peilingen",
+                "options": {
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "show": {
+                "description": "Toon de opgeslagen peilinginstellingen",
+                "options": {
+                    "template": {
+                        "description": "ID van opgeslagen peilingsjabloon"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Verwijder je sjabloon zonder actieve peilingen te wijzigen",
+                "options": {
+                    "template": {
+                        "description": "ID van opgeslagen peilingsjabloon"
+                    }
+                }
+            },
+            "start": {
+                "description": "Plaats een nieuwe peiling in dit kanaal met je instellingen",
+                "options": {
+                    "template": {
+                        "description": "ID van opgeslagen peilingsjabloon"
+                    }
+                }
             }
         }
     }
