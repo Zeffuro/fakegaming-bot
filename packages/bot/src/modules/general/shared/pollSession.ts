@@ -1,5 +1,5 @@
 import { DEFAULT_OUTPUT_LOCALE } from '@zeffuro/fakegaming-common';
-import type { PollBoard } from '@zeffuro/fakegaming-common/managers';
+import { countRankedPoll, type PollBoard } from '@zeffuro/fakegaming-common/managers';
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import type { SupportedOutputLocale } from '../../../core/localization.js';
 import { encodeComponentLocale } from '../../../core/componentLocale.js';
@@ -16,6 +16,7 @@ export function renderPollMessage(session: PollBoard): PollMessagePayload {
     const counts = optionCounts(session);
     const totalVotes = session.votes.size;
     const closed = session.closedAt !== null;
+    const hidden = session.hideResults && !closed;
     const lines = [
         `**${session.question}**`,
         closed
@@ -25,20 +26,21 @@ export function renderPollMessage(session: PollBoard): PollMessagePayload {
             : copy.closes(Math.floor(session.expiresAt / 1_000)),
         '',
         ...session.options.map((option, index) => {
+            if (hidden) return `${index + 1}. ${option}`;
             const count = counts[index] ?? 0;
             const percentage = totalVotes === 0 ? 0 : Math.round((count / totalVotes) * 100);
             return `${index + 1}. ${option} - ${copy.votes(count)} (${percentage}%)`;
         }),
         '',
-        copy.total(totalVotes),
-        session.allowMultiple ? copy.multipleVoting : copy.singleVoting,
+        hidden ? copy.resultsHidden : copy.total(totalVotes),
+        session.ranked ? copy.rankedVoting : session.allowMultiple ? copy.multipleVoting : copy.singleVoting,
     ];
 
-    if (closed) lines.push(formatResult(session, counts));
+    if (closed) lines.push(session.ranked ? formatRankedResult(session) : formatResult(session, counts));
 
     return {
         content: lines.join('\n'),
-        components: pollComponents(session.id, session.options, closed, session.locale),
+        components: pollComponents(session.id, session.options, closed, session.locale, session.ranked),
         allowedMentions: { parse: [] },
     };
 }
@@ -48,6 +50,7 @@ export function pollComponents(
     options: readonly string[],
     disabled: boolean,
     locale: SupportedOutputLocale = DEFAULT_OUTPUT_LOCALE,
+    ranked = false,
 ): ActionRowBuilder<ButtonBuilder>[] {
     const optionButtons = options.map((option, index) => new ButtonBuilder()
         .setCustomId(`poll:vote:${pollId}:${index}${encodeComponentLocale(locale)}`)
@@ -61,7 +64,9 @@ export function pollComponents(
         .setDisabled(disabled);
 
     return [
-        new ActionRowBuilder<ButtonBuilder>().addComponents(...optionButtons),
+        new ActionRowBuilder<ButtonBuilder>().addComponents(...(ranked ? [new ButtonBuilder()
+            .setCustomId(`poll:rank:${pollId}${encodeComponentLocale(locale)}`).setLabel(getGeneralCopy(locale).poll.rankButton)
+            .setStyle(ButtonStyle.Primary).setDisabled(disabled)] : optionButtons)),
         new ActionRowBuilder<ButtonBuilder>().addComponents(closeButton),
     ];
 }
@@ -69,9 +74,19 @@ export function pollComponents(
 function optionCounts(session: PollBoard): number[] {
     const counts = Array.from({ length: session.options.length }, () => 0);
     for (const selections of session.votes.values()) {
-        for (const optionIndex of selections) counts[optionIndex] = (counts[optionIndex] ?? 0) + 1;
+        for (const optionIndex of session.ranked ? selections.slice(0, 1) : selections) counts[optionIndex] = (counts[optionIndex] ?? 0) + 1;
     }
     return counts;
+}
+
+function formatRankedResult(session: PollBoard): string {
+    const copy = getGeneralCopy(session.locale).poll;
+    const result = countRankedPoll(session.options.length, session.votes.values());
+    if (result.status === 'no-votes') return copy.noVotes;
+    const final = result.rounds.at(-1)!;
+    const names = result.winners.map(index => `**${shortResultName(session.options[index] ?? '')}**`).join(', ');
+    return [result.status === 'winner' ? copy.winner(shortResultName(session.options[result.winners[0]!] ?? ''), final.counts[result.winners[0]!] ?? 0) : copy.rankTie(names),
+        ...result.rounds.map((round, index) => copy.rankRound(index + 1, round.active.map(option => `${option + 1}: ${round.counts[option] ?? 0}`).join(', '), round.exhausted))].join('\n');
 }
 
 function formatResult(session: PollBoard, counts: readonly number[]): string {

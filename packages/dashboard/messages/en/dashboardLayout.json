@@ -1,0 +1,23 @@
+{
+  "dashboardLayout": {
+    "title": "Your dashboard layout",
+    "customize": "Customize panels",
+    "close": "Close customization",
+    "description": "Choose which panels to show and use the arrows to change their order. Save to use this layout on your other devices. Hiding a panel keeps its saved data.",
+    "moveUp": "Move {name} up",
+    "moveDown": "Move {name} down",
+    "save": "Save layout",
+    "reset": "Reset to defaults",
+    "reload": "Reload saved layout",
+    "unsaved": "You have unsaved layout changes.",
+    "saved": "Dashboard layout saved.",
+    "loading": "Loading dashboard layout…",
+    "failed": "Could not update your dashboard layout.",
+    "sections": {
+      "today": "Today", "calendar": "Calendar", "tasks": "Tasks", "briefing": "Morning briefing",
+      "pollTemplates": "Poll templates", "checklistTemplates": "Reusable lists", "noteEditor": "Create or edit a note",
+      "notes": "Saved notes", "reminders": "Reminders", "anime": "Anime reminders", "reminderEditor": "Create a reminder",
+      "subscriptions": "Subscriptions", "settings": "Personal settings", "digest": "Personal digest", "riot": "Riot account", "activity": "Activity"
+    }
+  }
+}

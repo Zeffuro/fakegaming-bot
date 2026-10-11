@@ -4,6 +4,7 @@ import { formatMinuteKey, scheduleSingleton, type JobQueue } from '@zeffuro/fake
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
 import { sendScheduleMessage, editScheduleMessage } from './scheduleDiscord.js';
+import { personalNotificationPause } from './personalNotificationPause.js';
 
 const manager = new ScheduleNotificationManager();
 let running = false;
@@ -41,10 +42,13 @@ export async function processPersonalSchedules(now = Date.now()): Promise<{ sent
         await manager.recover(now);
         for (const row of await manager.due(now)) {
             try {
+                if (await personalNotificationPause.isPaused(row.userId)) continue;
                 const locale = await resolveUserOutputLocale(row.userId);
                 const claim = await manager.claim(row, deliveryNow);
                 if (!claim) continue;
-                const result = await sendScheduleMessage(row.userId, schedulePayload(row, locale));
+                const gate = await personalNotificationPause.deliver(row.userId, () => sendScheduleMessage(row.userId, schedulePayload(row, locale)));
+                if (gate.paused) { await manager.settle(claim.id, 'rejected', deliveryNow()); continue; }
+                const result = gate.value;
                 await manager.settle(claim.id, result.status, deliveryNow(),
                     result.status === 'sent' ? result.messageId : undefined, result.status === 'sent' ? result.channelId : undefined);
                 if (result.status === 'sent') sent += 1;

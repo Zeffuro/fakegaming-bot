@@ -1,0 +1,32 @@
+{
+    "pollTemplates": {
+        "title": "Saved polls",
+        "description": "Keep private poll settings and start a fresh public poll in Discord. Votes and voters are never stored in templates.",
+        "create": "Create saved poll",
+        "refresh": "Refresh",
+        "loading": "Loading saved polls…",
+        "empty": "No saved polls yet.",
+        "removeHelp": "Remove these saved settings? Existing polls will remain unchanged.",
+        "confirmRemove": "Remove saved poll",
+        "cancel": "Cancel",
+        "edit": "Edit saved poll",
+        "remove": "Remove",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {page} of {pages}",
+        "name": "Template name",
+        "question": "Poll question",
+        "options": "Options",
+        "optionsHelp": "Two to five unique options, one per line; up to 200 characters each.",
+        "duration": "Duration in minutes (1–1440)",
+        "multiple": "Allow multiple choices",
+        "hidden": "Hide results until the poll closes (off by default)",
+        "independent": "Editing or removing saved settings never changes polls already started.",
+        "saving": "Saving…",
+        "save": "Save",
+        "failed": "Could not update your saved polls. Try again.",
+        "startHelp": "In the channel where you want to publish, use /polls start template:{id}.",
+        "ranked": "Ranked choice (off by default)",
+        "rankedHelp": "Voters rank options privately. Partial rankings are allowed; an absolute majority of remaining ballots wins. Elimination ties stay unresolved. Multiple choice is disabled."
+    }
+}

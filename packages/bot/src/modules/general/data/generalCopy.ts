@@ -26,8 +26,11 @@ export interface GeneralCopy {
         creating: string; capacity: string; creatorOrModerator: string; unavailable: string; closed: string; closeButton: string;
         failure: string; singleVoting: string; multipleVoting: string; selected: (count: number) => string;
         closes: (unix: number) => string; closedByExpiry: string; closedByCreator: string; closedByModerator: string; votes: (count: number) => string;
-        total: (count: number) => string; noVotes: string; winner: (name: string, count: number) => string;
+        total: (count: number) => string; resultsHidden: string; noVotes: string; winner: (name: string, count: number) => string;
         tie: (names: string, count: number) => string;
+        rankedVoting: string; rankButton: string; rankUndo: string; rankSubmit: string; rankSaved: string;
+        rankInstructions: string; rankEmpty: string; rankIncompatible: string; rankTie: (names: string) => string;
+        rankRound: (round: number, counts: string, exhausted: number) => string;
     };
     profile: { caption: (mention: string) => string; fallback: string };
     roll: { rolled: (roll: number, detail: string) => string; rolls: (rolls: string, total: number, detail: string) => string; reasonable: string; invalid: string; total: string };
@@ -65,6 +68,7 @@ export function getGeneralCopy(locale: SupportedOutputLocale): GeneralCopy {
             votes: count => t('poll.votes', { count }), total: count => t('poll.total', { count }),
             selected: count => t('poll.selected', { count }),
             winner: (name, count) => t('poll.winner', { name, count }), tie: (names, count) => t('poll.tie', { names, count }),
+            rankTie: names => t('poll.rankTie', { names }), rankRound: (round, counts, exhausted) => t('poll.rankRound', { round, counts, exhausted }),
         },
         profile: { ...raw.profile, caption: mention => t('profile.caption', { mention }) },
         roll: {

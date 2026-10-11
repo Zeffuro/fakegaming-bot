@@ -32,8 +32,17 @@ export class PollSession extends Model {
     @Column(DataType.BOOLEAN)
     declare allowMultiple: boolean;
 
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare hideResults: boolean;
+
+    @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+    declare ranked: boolean;
+
     @Column(DataType.STRING)
     declare locale: string;
+
+    @Column({ type: DataType.INTEGER, allowNull: true })
+    declare durationMinutes: number | null;
 
     @Column(DataType.BIGINT)
     declare expiresAt: number;

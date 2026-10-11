@@ -35,6 +35,7 @@ export interface UserNoteRecord {
     tags: string[];
     status: UserNoteStatus;
     sourceUrl: string | null;
+    linkedTaskId?: string | null;
     createdAt?: Date | string;
     updatedAt?: Date | string;
 }
@@ -87,6 +88,7 @@ function normalizeNoteRecord(note: UserNoteRecord): UserNoteRecord {
         tags: Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string').slice(0, 10) : [],
         status: note.status ?? 'unread',
         sourceUrl: note.sourceUrl ?? null,
+        linkedTaskId: note.linkedTaskId ?? null,
     };
 }
 

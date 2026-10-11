@@ -1,0 +1,29 @@
+{
+  "taskEditor": {
+    "title": "Taken",
+    "description": "Beheer al je privétaken, ook met toekomstige deadlines. Voltooide taken blijven 90 dagen beschikbaar.",
+    "active": "Actieve taken",
+    "completed": "Voltooide taken",
+    "empty": "Geen taken hier.",
+    "edit": "Taak bewerken",
+    "titleLabel": "Titel",
+    "dueLabel": "Deadline en tijd",
+    "dueHelp": "Gebruik een exacte datum en tijd. Maak dit veld leeg om de deadline en herinnering te verwijderen. Laat een verstreken tijd ongewijzigd om die te behouden.",
+    "timezone": "Opgeslagen tijdzone: {timezone}",
+    "loading": "Opgeslagen tijdzone laden…",
+    "checklist": "Checklist",
+    "checked": "Voltooid: {item}",
+    "item": "Onderdeel {index}",
+    "removeItem": "Onderdeel {index} verwijderen",
+    "addItem": "Checklistonderdeel toevoegen",
+    "cancel": "Annuleren",
+    "save": "Wijzigingen opslaan",
+    "saving": "Opslaan…",
+    "failed": "Je taken konden niet worden geladen of opgeslagen.",
+    "noDue": "Geen deadline",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "page": "Pagina {page} van {pages}",
+    "undo": "Voltooiing ongedaan maken"
+  }
+}

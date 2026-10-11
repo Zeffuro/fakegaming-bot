@@ -1,0 +1,19 @@
+{
+  "calendarOverlaps": {
+    "title": "Waarschuwingen voor overlappende afspraken",
+    "help": "Privéwaarschuwingen op basis van opgeslagen imports voor de komende 366 dagen, inclusief afspraken die al bezig zijn. Alleen afspraken met een tijd en een geldige eindtijd worden vergeleken; afspraken voor de hele dag zijn uitgesloten. Synchroniseer je selecties om de datums bij te werken. Deze controle neemt geen contact op met de agendaprovider.",
+    "loading": "Opgeslagen agendadatums controleren…",
+    "failed": "De waarschuwingen voor overlappende afspraken konden niet worden geladen.",
+    "retry": "Opnieuw proberen",
+    "disconnected": "Verbind je agenda om actieve imports te controleren.",
+    "noSources": "Selecteer een agenda om de geïmporteerde afspraken te controleren.",
+    "pendingSource": "{source}: wacht op de eerste geslaagde synchronisatie; nog niet meegenomen.",
+    "sourceSync": "{source}: laatst gesynchroniseerd op {date}",
+    "count": "{count, plural, one {# overlappend paar} other {# overlappende paren}}",
+    "empty": "Geen overlap gevonden in de opgeslagen afspraken met een tijd.",
+    "eventTime": "{start} – {end} ({timezone})",
+    "previous": "Vorige",
+    "next": "Volgende",
+    "page": "Pagina {page} van {pages}"
+  }
+}

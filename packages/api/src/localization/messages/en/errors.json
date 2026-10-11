@@ -82,5 +82,10 @@
   "twitchClipStreamerNotFound": "This Twitch streamer could not be found.",
   "twitchClipDuplicate": "This server already has a clip command for this Twitch streamer.",
   "twitchClipConfigNotFound": "Twitch clip configuration not found",
-  "twitchClipTriggeredBy": "Clip requested by {name}"
+  "twitchClipTriggeredBy": "Clip requested by {name}",
+  "noteTaskInvalid": "Use a title of 1–120 characters and an exact future date and time in your saved timezone.",
+  "noteTaskDeleted": "The linked task was deleted or expired. Create a new task separately.",
+  "noteTaskCapacity": "You have reached the active task limit. Remove a task first.",
+  "noteTaskFailed": "The task could not be saved. Try again shortly.",
+  "noteTaskSource": "Original source"
 }

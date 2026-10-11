@@ -1,0 +1,19 @@
+{
+    "briefing": {
+        "title": "Private morning briefing",
+        "description": "Get one private Discord message with today's and overdue tasks, reminders, calendar items and today's countdowns. Undated tasks are included. Empty days are skipped.",
+        "enabled": "Send me a morning briefing",
+        "localTime": "Local delivery time",
+        "timezone": "Uses your saved timezone: {timezone}",
+        "timing": "Delivery runs shortly after this time, within two hours. Old days are never replayed. During a daylight-saving gap, delivery can occur at the next valid time.",
+        "save": "Save briefing settings",
+        "preview": "Preview today",
+        "refresh": "Refresh",
+        "loading": "Loading briefing settings…",
+        "failed": "Could not load or save your briefing settings.",
+        "saved": "Briefing settings saved.",
+        "previewHelp": "Preview uses your saved output language and timezone. It sends no message.",
+        "previewCount": "{included} of {total} items included; {omitted} omitted.",
+        "empty": "Nothing to include today. No message will be sent."
+    }
+}

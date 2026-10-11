@@ -1,3 +1,11 @@
+import notificationPauseEn from '../../messages/en/notificationPause.json';
+import notificationPauseNl from '../../messages/nl/notificationPause.json';
+import dashboardLayoutEn from '../../messages/en/dashboardLayout.json';
+import dashboardLayoutNl from '../../messages/nl/dashboardLayout.json';
+import pollTemplatesNl from "../../messages/nl/pollTemplates.json";
+import pollTemplatesEn from "../../messages/en/pollTemplates.json";
+import morningBriefingsNl from "../../messages/nl/morningBriefings.json";
+import morningBriefingsEn from "../../messages/en/morningBriefings.json";
 import { createTranslator } from "next-intl";
 import type { DashboardLocale, DashboardLocaleValues } from "./localeStore";
 
@@ -19,6 +27,11 @@ import personalEn from "../../messages/en/personal.json";
 import quotesEn from "../../messages/en/quotes.json";
 import settingsEn from "../../messages/en/settings.json";
 import twitchClipsEn from "../../messages/en/twitchClips.json";
+import todayEn from "../../messages/en/today.json";
+import notesTaskEn from "../../messages/en/notesTask.json";
+import checklistsEn from "../../messages/en/checklists.json";
+import taskEditorEn from "../../messages/en/taskEditor.json";
+import calendarOverlapsEn from "../../messages/en/calendarOverlaps.json";
 
 import adminNl from "../../messages/nl/admin.json";
 import analyticsNl from "../../messages/nl/analytics.json";
@@ -38,6 +51,11 @@ import personalNl from "../../messages/nl/personal.json";
 import quotesNl from "../../messages/nl/quotes.json";
 import settingsNl from "../../messages/nl/settings.json";
 import twitchClipsNl from "../../messages/nl/twitchClips.json";
+import todayNl from "../../messages/nl/today.json";
+import notesTaskNl from "../../messages/nl/notesTask.json";
+import checklistsNl from "../../messages/nl/checklists.json";
+import taskEditorNl from "../../messages/nl/taskEditor.json";
+import calendarOverlapsNl from "../../messages/nl/calendarOverlaps.json";
 
 export const englishMessages = {
     ...adminEn,
@@ -58,6 +76,15 @@ export const englishMessages = {
     ...quotesEn,
     ...settingsEn,
     ...twitchClipsEn,
+    ...todayEn,
+    ...notesTaskEn,
+    ...checklistsEn,
+    ...taskEditorEn,
+    ...calendarOverlapsEn,
+    ...pollTemplatesEn,
+    ...morningBriefingsEn,
+    ...dashboardLayoutEn,
+    ...notificationPauseEn,
 } as const;
 
 type MessageShape<T> = {
@@ -83,6 +110,15 @@ export const dutchMessages = {
     ...quotesNl,
     ...settingsNl,
     ...twitchClipsNl,
+    ...todayNl,
+    ...notesTaskNl,
+    ...checklistsNl,
+    ...taskEditorNl,
+    ...calendarOverlapsNl,
+    ...pollTemplatesNl,
+    ...morningBriefingsNl,
+    ...dashboardLayoutNl,
+    ...notificationPauseNl,
 } as const satisfies MessageShape<typeof englishMessages>;
 
 type NestedMessageKey<T> = {

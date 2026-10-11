@@ -6,6 +6,8 @@ const mocks = vi.hoisted(() => ({ locale: 'en' as 'en' | 'nl', status: vi.fn(), 
 vi.mock('@/lib/api/userCalendar', () => ({ userCalendarApi: mocks }));
 const publishing = vi.hoisted(() => ({ list: vi.fn(), guilds: vi.fn(), channels: vi.fn() }));
 vi.mock('@/lib/api/calendarPublishing', () => ({ calendarPublishingApi: { list: publishing.list } }));
+const overlaps = vi.hoisted(() => ({ list: vi.fn() }));
+vi.mock('@/lib/api/calendarOverlaps', () => ({ calendarOverlapsApi: overlaps }));
 vi.mock('@/components/hooks/useDashboardData', () => ({ useDashboardData: publishing.guilds }));
 vi.mock('@/components/hooks/useGuildChannels', () => ({ useGuildChannels: publishing.channels }));
 vi.mock('@/components/i18n/DashboardI18nProvider', () => ({ useDashboardI18n: () => ({ t: translate, formatDate: (at: number) => String(at) }) }));
@@ -22,6 +24,7 @@ describe('calendar dashboard selection', () => {
         mocks.calendars.mockResolvedValue({ calendars: [{ id: 'calendar', summary: 'Private calendar', timeZone: 'UTC' }] });
         mocks.select.mockResolvedValue({ source: {}, syncPending: false });
         publishing.list.mockResolvedValue({ publications: [] });
+        overlaps.list.mockResolvedValue({ overlaps: [], sources: [], connected: true, total: 0, offset: 0, limit: 10 });
         container = document.createElement('div'); document.body.append(container); root = createRoot(container);
     });
     afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
@@ -55,6 +58,13 @@ describe('calendar dashboard selection', () => {
         expect(container.textContent).toContain('Unavailable');
         const resume = [...container.querySelectorAll('button')].find(item => item.textContent === translate('calendar.resume'));
         expect(resume?.disabled).toBe(false);
+    });
+    it('refreshes private overlap warnings after sync and selection status reloads', async () => {
+        mocks.status.mockResolvedValue({ configured: true, connected: true, sources: [{ id: 'source', calendarId: 'calendar', label: 'Private calendar', timezone: 'UTC', enabled: true, titleFilter: null, lastSyncedAt: 100 }] });
+        await render();
+        const calls = overlaps.list.mock.calls.length;
+        await click('calendar.sync');
+        expect(overlaps.list.mock.calls.length).toBeGreaterThan(calls);
     });
     it('loads publication status without fetching servers or channels while the dialog is closed', async () => {
         await render();

@@ -2,6 +2,7 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, type Button
 import { getConfigManager, normalizeNoteSourceUrl } from '@zeffuro/fakegaming-common/managers';
 import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
 import { getNotesCopy } from '../copy/notesCopy.js';
+import { openNoteTask } from './noteTask.js';
 
 export interface InboxNote {
     id: string;
@@ -11,6 +12,7 @@ export interface InboxNote {
     status?: 'unread' | 'read' | 'archived';
     tags?: string[];
     sourceUrl?: string | null;
+    linkedTaskId?: string | null;
 }
 
 export function renderNoteActions(note: InboxNote, locale: SupportedOutputLocale) {
@@ -20,6 +22,7 @@ export function renderNoteActions(note: InboxNote, locale: SupportedOutputLocale
         new ButtonBuilder().setCustomId(`notes:remind:${note.id}`).setLabel(copy.remind).setStyle(ButtonStyle.Primary),
         new ButtonBuilder().setCustomId(`notes:${note.status === 'archived' ? 'restore' : 'archive'}:${note.id}`)
             .setLabel(note.status === 'archived' ? copy.restore : copy.archive).setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`notes:task:${note.id}`).setLabel(getNotesCopy(locale).task.action).setStyle(ButtonStyle.Secondary),
     );
     try {
         const url = normalizeNoteSourceUrl(note.sourceUrl);
@@ -45,6 +48,7 @@ export function renderNoteDetails(note: InboxNote, locale: SupportedOutputLocale
 export async function handleNoteComponent(interaction: ButtonInteraction): Promise<boolean> {
     const [prefix, action, id, extra] = interaction.customId.split(':');
     if (prefix !== 'notes') return false;
+    if (action === 'task') return openNoteTask(interaction);
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const locale = await resolveInteractionOutputLocale(interaction);
     const copy = getNotesCopy(locale);

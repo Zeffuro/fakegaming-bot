@@ -1,0 +1,19 @@
+{
+  "calendarOverlaps": {
+    "title": "Calendar overlap warnings",
+    "help": "Private warnings from saved imports in the next 366 days, including events already in progress. Only timed events with a valid end are compared; all-day events are excluded. Sync your selections to update these dates. No calendar provider is contacted by this check.",
+    "loading": "Checking saved calendar dates…",
+    "failed": "Could not load calendar overlap warnings.",
+    "retry": "Retry",
+    "disconnected": "Connect your calendar to check active imports.",
+    "noSources": "Select a calendar to check its imported events.",
+    "pendingSource": "{source}: waiting for the first successful sync; not included yet.",
+    "sourceSync": "{source}: last synced {date}",
+    "count": "{count, plural, one {# overlapping pair} other {# overlapping pairs}}",
+    "empty": "No overlaps found in the saved timed events.",
+    "eventTime": "{start} – {end} ({timezone})",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {pages}"
+  }
+}

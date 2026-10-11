@@ -8,6 +8,7 @@ import { fetchSteamNewsForApp, type SteamNewsItem } from './steamNews.js';
 import { sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
+import { personalNotificationPause } from './personalNotificationPause.js';
 
 const steamCache = new Map<string, { items: SteamNewsItem[]; expiresAt: number }>();
 const log = getLogger({ name: 'api:jobs:personal-follows' });
@@ -66,6 +67,7 @@ async function poll(now: number): Promise<{ observed: number; sent: number; erro
     const users = new Set(pending.map(event => event.userId));
     for (const userId of users) {
         try {
+            if (await personalNotificationPause.isPaused(userId)) continue;
             const user = await cm.userManager.getUser({ discordId: userId });
             const settings = await manager.preferences(userId, user?.timezone || 'UTC');
             const currentTime = deliveryTime();
@@ -85,7 +87,11 @@ async function poll(now: number): Promise<{ observed: number; sent: number; erro
                     if (claimed.length === 0) { if (firstDigest) break; continue; }
                     firstDigest = false;
                     const content = `${apiText(locale, mode === 'digest' ? 'personalFollowDigest' : 'personalFollowUpdates')}\n${claimed.map(followLine).join('\n')}`;
-                    const result = await sendDirectMessagePayloadResult(userId, { content, allowed_mentions: { parse: [] } });
+                    const gate = await personalNotificationPause.deliver(userId, () => sendDirectMessagePayloadResult(userId, { content, allowed_mentions: { parse: [] } }));
+                    if (gate.paused) {
+                        await manager.settle(userId, claimed.map(event => event.id), 'pending', mode === 'digest' ? local.date : undefined); break;
+                    }
+                    const result = gate.value;
                     await manager.settle(userId, claimed.map(event => event.id), result.status === 'sent' ? 'sent' : result.status === 'rejected' ? 'pending' : 'uncertain', mode === 'digest' ? local.date : undefined);
                     if (result.status === 'sent') sent += claimed.length;
                     else { errors += 1; if (result.status === 'rejected') break; }

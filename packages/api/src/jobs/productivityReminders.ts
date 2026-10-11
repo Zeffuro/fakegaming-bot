@@ -2,7 +2,7 @@ import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 
 export interface ProductivityNotification {
     content: string;
-    task?: { id: string; version: number };
+    task?: { id: string; version: number; sourceUrl?: string | null };
     noControls?: boolean;
 }
 
@@ -10,7 +10,7 @@ export async function prepareProductivityNotification(reminder: { id: string; us
     const cm = getConfigManager();
     if (reminder.id.startsWith('task:')) {
         const task = await cm.userTaskManager.forReminder(reminder.id, reminder.userId);
-        return task ? { content: task.title, task: { id: task.id, version: task.version } } : null;
+        return task ? { content: task.title, task: { id: task.id, version: task.version, sourceUrl: task.sourceUrl } } : null;
     }
     if (reminder.id.startsWith('session:')) {
         const content = await cm.userSessionManager.prepareNotification(reminder.id, reminder.userId);

@@ -1,0 +1,19 @@
+{
+  "notificationPause": {
+    "title": "Pause personal notifications",
+    "description": "Pause all automatic personal DMs: reminders, followed Twitch and Steam updates, personal digests, anime reminders, Calendar and schedule reminders, and morning briefings.",
+    "enabled": "Pause all personal notifications",
+    "resumeAt": "Resume automatically (optional)",
+    "timezone": "Exact date and time in your saved timezone: {timezone}. Leave empty to pause until you resume.",
+    "behavior": "Your individual settings stay saved. Pending reminders, follows and schedule alerts wait until you resume; digests skip paused runs, and morning briefings resume only within today's delivery window. Public server posts continue.",
+    "active": "Personal notifications are running.",
+    "pausedIndefinitely": "All automatic personal notifications are paused until you resume.",
+    "pausedUntil": "All automatic personal notifications are paused until {date}.",
+    "save": "Save notification pause",
+    "resume": "Resume now",
+    "reload": "Reload saved settings",
+    "saved": "Personal notification settings saved.",
+    "loading": "Loading notification settings…",
+    "failed": "Could not update your notification pause."
+  }
+}

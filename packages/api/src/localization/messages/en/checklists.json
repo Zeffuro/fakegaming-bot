@@ -1,0 +1,6 @@
+{
+    "checklistMissing": "This saved checklist is unavailable or belongs to someone else.",
+    "checklistStale": "This checklist or timezone has changed. Refresh and try again.",
+    "checklistCapacity": "Your saved checklist or active task limit has been reached.",
+    "checklistInvalid": "Use a title and one to ten checklist items, each at most 120 characters, and an optional future date."
+}

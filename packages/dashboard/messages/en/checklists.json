@@ -1,0 +1,13 @@
+{
+    "checklists": {
+        "title": "Reusable checklists", "description": "Save a personal list and start a fresh task whenever you need it.",
+        "create": "New checklist", "edit": "Edit checklist", "name": "Checklist name", "items": "Items",
+        "itemsHelp": "One item per line. Use 1–10 items of up to 120 characters; blank lines are ignored.",
+        "independent": "Changes to this list affect future copies. Tasks already started keep their own items and progress.",
+        "start": "Start fresh task", "fresh": "A new task will contain all items unchecked. The saved checklist stays ready to reuse.",
+        "due": "Due date (optional)", "timezone": "Due times use {timezone}.", "save": "Save checklist", "saving": "Saving…",
+        "cancel": "Close", "loading": "Loading…", "empty": "No saved checklists yet.", "failed": "The checklist could not be saved. Try again.",
+        "remove": "Remove", "removeHelp": "Remove this saved checklist? Tasks started from it will remain.", "confirmRemove": "Remove checklist",
+        "refresh": "Refresh", "previous": "Previous", "next": "Next", "page": "Page {page} of {pages}", "saveTask": "Save as reusable list"
+    }
+}

@@ -1,0 +1,6 @@
+{
+    "pollTemplateMissing": "Deze peiling of dit sjabloon is niet beschikbaar of van iemand anders.",
+    "pollTemplateStale": "Deze opgeslagen peiling is gewijzigd. Vernieuw en probeer opnieuw.",
+    "pollTemplateCapacity": "Je limiet voor opgeslagen of actieve peilingen is bereikt.",
+    "pollTemplateInvalid": "Gebruik een naam tot 120 tekens, een vraag en twee tot vijf unieke opties tot 200 tekens, en een duur van 1–1440 minuten."
+}

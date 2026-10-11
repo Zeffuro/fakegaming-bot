@@ -4,6 +4,8 @@ import { ReminderConfig } from '../../models/reminder-config.js';
 import { ReminderDelivery } from '../../models/reminder-interaction.js';
 import { UserTaskManager } from '../userTaskManager.js';
 import { ReminderInteractionManager } from '../reminderInteractionManager.js';
+import { UserConfig } from '../../models/user-config.js';
+import { serializedTransaction } from '../serializedTransaction.js';
 
 let now = Date.parse('2026-10-23T08:00:00Z');
 const input = { userId: 'owner', title: 'Training', checklist: ['Warm up', 'Run'], timezone: 'Europe/Amsterdam' };
@@ -12,9 +14,66 @@ beforeEach(async () => {
     await ReminderDelivery.destroy({ where: {} });
     await ReminderConfig.destroy({ where: {} });
     await UserTask.destroy({ where: {} });
+    await UserConfig.upsert({ discordId: 'owner', timezone: input.timezone });
 });
 
 describe('private tasks', () => {
+    it('rechecks saved timezone after a queued settings change and rolls back external task creation', async () => {
+        const manager = new UserTaskManager(() => now);
+        const task = await manager.create(input);
+        let release!: () => void;
+        const gate = new Promise<void>(resolve => { release = resolve; });
+        const settingsChange = serializedTransaction(UserTask.sequelize!, async transaction => {
+            await gate;
+            await UserConfig.update({ timezone: 'UTC' }, { where: { discordId: 'owner' }, transaction });
+        });
+        const edit = manager.edit(task.id, 'owner', 0, { title: 'Changed', checklist: [], timezone: input.timezone });
+        release(); await settingsChange;
+        await expect(edit).rejects.toMatchObject({ code: 'invalid' });
+        expect(await manager.get(task.id, 'owner')).toMatchObject({ title: input.title, version: 0 });
+        await expect(serializedTransaction(UserTask.sequelize!, async transaction => {
+            await manager.create({ ...input, dueAt: now + 60_000 }, transaction);
+            throw new Error('Rollback caller');
+        })).rejects.toThrow('Rollback caller');
+        expect(await UserTask.count()).toBe(1); expect(await ReminderConfig.count()).toBe(0);
+    });
+    it('edits an overdue task atomically, replaces its delivery and preserves recurrence and source binding', async () => {
+        const manager = new UserTaskManager(() => now);
+        const deliveries = new ReminderInteractionManager(() => now);
+        const task = await manager.create({ ...input, dueAt: now + 60_000, recurrence: { unit: 'day', interval: 1, timezone: input.timezone } });
+        await UserTask.update({ sourceNoteId: 'source-note', sourceUrl: 'https://example.com/note' }, { where: { id: task.id } });
+        const delivery = await deliveries.prepareDelivery({ id: task.reminderId!, userId: 'owner', message: task.title }, task.dueAt!);
+        await deliveries.claimDelivery(delivery.id);
+        now += 120_000;
+        const changed = await manager.edit(task.id, 'owner', 0, { title: 'Changed', checklist: [{ text: 'Keep checked', done: true }], timezone: input.timezone });
+        expect(changed).toMatchObject({ title: 'Changed', version: 1, dueAt: task.dueAt, sourceNoteId: 'source-note',
+            sourceUrl: 'https://example.com/note', recurrence: task.recurrence, checklist: [{ text: 'Keep checked', done: true }] });
+        expect(await ReminderConfig.findByPk(task.reminderId!)).toBeNull();
+        expect((await ReminderConfig.findByPk(changed.reminderId!))?.timestamp).toBe(task.dueAt);
+        await deliveries.markDelivered(delivery.id, 'message', 'channel');
+        await expect(manager.done(task.id, 'owner', 0, { id: delivery.id, messageId: 'message', channelId: 'channel' })).rejects.toMatchObject({ code: 'stale' });
+        await expect(manager.done(task.id, 'owner', 1, { id: delivery.id, messageId: 'message', channelId: 'channel' })).rejects.toMatchObject({ code: 'stale' });
+        const cleared = await manager.edit(task.id, 'owner', 1, { title: 'Changed', checklist: [], due: null, timezone: input.timezone });
+        expect(cleared).toMatchObject({ dueAt: null, reminderId: null, recurrence: task.recurrence });
+        expect(await ReminderConfig.count()).toBe(0);
+    });
+
+    it('rejects foreign, stale, completed and invalid editor writes without changing the task', async () => {
+        const manager = new UserTaskManager(() => now);
+        const task = await manager.create(input);
+        const edit = { title: 'Changed', checklist: [], timezone: input.timezone };
+        await expect(manager.edit(task.id, 'other', 0, { ...edit, timezone: 'UTC' })).rejects.toMatchObject({ code: 'missing' });
+        await expect(manager.edit(task.id, 'owner', 99, edit)).rejects.toMatchObject({ code: 'stale' });
+        await expect(manager.edit(task.id, 'owner', 0, { ...edit, due: 'tomorrow' })).rejects.toMatchObject({ code: 'invalid' });
+        await expect(manager.edit(task.id, 'owner', 0, { ...edit, due: '2026-10-22T10:00' })).rejects.toMatchObject({ code: 'invalid' });
+        await expect(manager.edit(task.id, 'owner', 0, { ...edit, checklist: Array(11).fill({ text: 'Item', done: false }) })).rejects.toMatchObject({ code: 'invalid' });
+        expect(await manager.get(task.id, 'owner')).toMatchObject({ title: input.title, version: 0, dueAt: null });
+        const results = await Promise.allSettled([manager.edit(task.id, 'owner', 0, edit), manager.edit(task.id, 'owner', 0, edit)]);
+        expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+        expect(results.find(result => result.status === 'rejected')).toMatchObject({ reason: { code: 'stale' } });
+        await manager.done(task.id, 'owner', 1);
+        await expect(manager.edit(task.id, 'owner', 2, edit)).rejects.toMatchObject({ code: 'stale' });
+    });
     it('restores checklist and due reminder after manager restart, and scopes every mutation to its owner', async () => {
         const manager = new UserTaskManager(() => now);
         const task = await manager.create({ ...input, dueAt: now + 60_000 });

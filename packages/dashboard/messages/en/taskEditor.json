@@ -1,0 +1,29 @@
+{
+  "taskEditor": {
+    "title": "Tasks",
+    "description": "Manage all your private tasks, including future deadlines. Completed tasks remain available for 90 days.",
+    "active": "Active tasks",
+    "completed": "Completed tasks",
+    "empty": "No tasks here.",
+    "edit": "Edit task",
+    "titleLabel": "Title",
+    "dueLabel": "Due date and time",
+    "dueHelp": "Use an exact date and time. Clear this field to remove the deadline and reminder. Leave an overdue time unchanged to keep it.",
+    "timezone": "Saved timezone: {timezone}",
+    "loading": "Loading saved timezone…",
+    "checklist": "Checklist",
+    "checked": "Completed: {item}",
+    "item": "Item {index}",
+    "removeItem": "Remove item {index}",
+    "addItem": "Add checklist item",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saving": "Saving…",
+    "failed": "Could not load or save your tasks.",
+    "noDue": "No deadline",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page} of {pages}",
+    "undo": "Undo completion"
+  }
+}

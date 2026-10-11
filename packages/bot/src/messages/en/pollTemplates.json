@@ -1,0 +1,17 @@
+{
+    "saved": "Saved {title}. Template ID: {id}",
+    "page": "Page {page} of {pages}",
+    "empty": "You have no saved polls. Use /polls save or create one in the dashboard.",
+    "removed": "Saved poll removed. Existing polls are unchanged.",
+    "settings": "Duration: {duration} minutes. Multiple choices: {multiple}. Hide results: {hidden}.; ranked: {ranked}",
+    "yes": "Yes",
+    "no": "No",
+    "creating": "Creating a fresh poll…",
+    "started": "Your fresh poll was posted in this channel.",
+    "missing": "This poll or saved template is unavailable or belongs to someone else.",
+    "stale": "This saved poll has changed. Refresh and try again.",
+    "capacity": "Your saved poll or active poll limit has been reached.",
+    "invalid": "Use a name up to 120 characters, a question and two to five unique options up to 200 characters, and a duration of 1–1440 minutes.",
+    "failed": "Could not complete this poll action. Try again.",
+    "exists": "This saved poll already exists."
+}

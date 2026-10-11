@@ -5,9 +5,10 @@ import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { scheduleSingleton, formatMinuteKey } from '@zeffuro/fakegaming-common/jobs';
 import type { AnimeSubscriptionConfig } from '@zeffuro/fakegaming-common/models';
 import type { CreationAttributes } from 'sequelize';
-import { sendChannelMessagePayload, sendDirectMessagePayload } from '../utils/discord.js';
+import { sendChannelMessagePayload, sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { apiText, resolveGuildOutputLocale, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
+import { personalNotificationPause } from './personalNotificationPause.js';
 
 function computeNextAnimeDelaySeconds(now: Date = new Date(), minSeconds = 30): number {
     const ms = now.getTime();
@@ -47,15 +48,15 @@ async function sendReminder(
     subscription: CreationAttributes<AnimeSubscriptionConfig>,
     item: AniListAiringScheduleItem,
     locale: SupportedOutputLocale,
-): Promise<boolean> {
+): Promise<boolean | 'paused' | 'uncertain'> {
     const payload = buildAnimeReminderPayload(item, locale);
     if (subscription.targetType === 'channel' && subscription.channelId) {
         const sent = await sendChannelMessagePayload(subscription.channelId, payload);
         return Boolean(sent && typeof (sent as { id?: unknown }).id === 'string');
     }
     if (subscription.targetType === 'dm' && subscription.userId) {
-        const sent = await sendDirectMessagePayload(subscription.userId, payload);
-        return Boolean(sent && typeof (sent as { id?: unknown }).id === 'string');
+        const gate = await personalNotificationPause.deliver(subscription.userId, () => sendDirectMessagePayloadResult(subscription.userId!, payload));
+        return gate.paused ? 'paused' : gate.value.status === 'unknown' ? 'uncertain' : gate.value.status === 'sent';
     }
     return false;
 }
@@ -106,6 +107,7 @@ async function processAnimeNotifications(log = getLogger({ name: 'api:jobs:anime
             ? await resolveGuildOutputLocale(subscription.guildId)
             : await resolveUserOutputLocale(subscription.userId);
         const sent = await sendReminder(subscription, item, locale);
+        if (sent === 'paused') continue;
         if (!sent) {
             errors += 1;
             log.warn({ subscriptionId: subscription.id, anilistId: subscription.anilistId }, 'Failed to send anime reminder');
@@ -117,7 +119,9 @@ async function processAnimeNotifications(log = getLogger({ name: 'api:jobs:anime
             lastNotifiedEpisode: item.episode,
             lastNotifiedAiringAt: airingMs,
         }, { id: subscription.id });
-        processed += 1;
+        if (sent === 'uncertain') {
+            errors += 1; log.warn({ subscriptionId: subscription.id }, 'Anime DM outcome unknown; retiring episode without replay');
+        } else processed += 1;
     }
 
     return { processed, errors, checked: subscriptions.length, removedFinished };

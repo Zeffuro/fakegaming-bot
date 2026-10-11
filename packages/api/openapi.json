@@ -19,6 +19,74 @@
       }
     },
     "schemas": {
+      "PollTemplateInput": {
+        "type": "object",
+        "required": [
+          "title",
+          "question",
+          "options",
+          "durationMinutes"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "options": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 5,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1440
+          },
+          "allowMultiple": {
+            "type": "boolean",
+            "default": false
+          },
+          "hideResults": {
+            "type": "boolean",
+            "default": false
+          },
+          "ranked": {
+            "type": "boolean",
+            "default": false,
+            "description": "Private ordered ballots; incompatible with allowMultiple. Partial rankings are allowed."
+          }
+        }
+      },
+      "PollTemplateEdit": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PollTemplateInput"
+          },
+          {
+            "type": "object",
+            "required": [
+              "version"
+            ],
+            "properties": {
+              "version": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      },
       "DiscordMemberMinimal": {
         "type": "object",
         "properties": {
@@ -3061,6 +3129,53 @@
         }
       }
     },
+    "/userTasks": {
+      "get": {
+        "summary": "List active and retained completed tasks for the authenticated owner",
+        "tags": [
+          "UserTasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner tasks and saved timezone"
+          }
+        }
+      }
+    },
+    "/userTasks/{id}": {
+      "patch": {
+        "summary": "Edit an active owner task with a version and saved timezone guard",
+        "tags": [
+          "UserTasks"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated private task"
+          }
+        }
+      }
+    },
     "/userSettings": {
       "get": {
         "summary": "Get personal settings for the authenticated dashboard user",
@@ -3576,6 +3691,40 @@
         }
       }
     },
+    "/userNotificationPause": {
+      "get": {
+        "summary": "Get the owner's account-wide personal notification pause",
+        "tags": [
+          "NotificationPause"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective pause state and automatic resume deadline"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Pause or resume automatic personal DMs using the saved timezone",
+        "tags": [
+          "NotificationPause"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated versioned pause preferences"
+          }
+        }
+      }
+    },
     "/userNotes": {
       "get": {
         "summary": "List notes for the authenticated dashboard user",
@@ -3616,6 +3765,77 @@
         "responses": {
           "201": {
             "description": "Created note"
+          }
+        }
+      }
+    },
+    "/userNotes/{id}/task": {
+      "post": {
+        "summary": "Create or retrieve the authenticated user's task linked to a note",
+        "tags": [
+          "UserNotes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "due": {
+                    "type": "string",
+                    "nullable": true,
+                    "maxLength": 100,
+                    "description": "Exact future date and time in the saved user timezone"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "description": "Optional saved-timezone guard; cannot override user settings"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Existing linked task and created false"
+          },
+          "201": {
+            "description": "Created linked task and created true"
+          },
+          "400": {
+            "description": "Invalid title or exact date"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Linked task deleted or active task capacity reached"
           }
         }
       }
@@ -3793,6 +4013,144 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/userDashboardLayout": {
+      "get": {
+        "summary": "Get the authenticated owner's private panel layout",
+        "tags": [
+          "DashboardLayout"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versioned panel order and visibility"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Save the owner's versioned panel layout",
+        "tags": [
+          "DashboardLayout"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated private panel layout"
+          }
+        }
+      }
+    },
+    "/userDashboardLayout/reset": {
+      "post": {
+        "summary": "Reset the owner's panel layout to defaults",
+        "tags": [
+          "DashboardLayout"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All panels visible in their default order"
+          }
+        }
+      }
+    },
+    "/userChecklistTemplates": {
+      "get": {
+        "summary": "List the authenticated owner's reusable checklists",
+        "tags": [
+          "Checklists"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Private reusable checklists"
+          }
+        }
+      },
+      "post": {
+        "summary": "Save a reusable personal checklist",
+        "tags": [
+          "Checklists"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Saved checklist"
+          }
+        }
+      }
+    },
+    "/userChecklistTemplates/{id}": {
+      "patch": {
+        "summary": "Edit an owner checklist with a version check",
+        "tags": [
+          "Checklists"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated checklist"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Remove an owner checklist without changing tasks started from it",
+        "tags": [
+          "Checklists"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed checklist"
+          }
+        }
+      }
+    },
+    "/userChecklistTemplates/{id}/start": {
+      "post": {
+        "summary": "Start a fresh unchecked task from a saved checklist",
+        "tags": [
+          "Checklists"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "New independent private task"
           }
         }
       }
@@ -6406,6 +6764,202 @@
         }
       }
     },
+    "/pollTemplates": {
+      "get": {
+        "summary": "List private reusable poll templates",
+        "tags": [
+          "Poll templates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owner poll settings without votes"
+          }
+        }
+      },
+      "post": {
+        "summary": "Save a private reusable poll template",
+        "tags": [
+          "Poll templates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollTemplateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved poll template"
+          }
+        }
+      }
+    },
+    "/pollTemplates/{id}": {
+      "patch": {
+        "summary": "Edit an owner poll template with a version check",
+        "tags": [
+          "Poll templates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PollTemplateEdit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated template"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an owner template without changing live polls",
+        "tags": [
+          "Poll templates"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed template"
+          }
+        }
+      }
+    },
+    "/personalToday": {
+      "get": {
+        "summary": "Get the authenticated owner's agenda in their saved timezone",
+        "tags": [
+          "PersonalToday"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Today and overdue tasks",
+            "reminders": null,
+            "schedules": null,
+            "upcoming countdowns and active session": null
+          }
+        }
+      }
+    },
+    "/personalToday/tasks/{id}": {
+      "patch": {
+        "summary": "Complete, undo completion, snooze or toggle an owner task with a version check",
+        "tags": [
+          "PersonalToday"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated private task"
+          }
+        }
+      }
+    },
+    "/personalToday/schedules/{id}": {
+      "patch": {
+        "summary": "Complete or snooze an owner schedule occurrence with a version check",
+        "tags": [
+          "PersonalToday"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated private occurrence"
+          }
+        }
+      }
+    },
+    "/personalToday/sessions/{id}": {
+      "patch": {
+        "summary": "Pause, resume or stop an owner session with a version check",
+        "tags": [
+          "PersonalToday"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated private session"
+          }
+        }
+      }
+    },
     "/patchSubscriptions": {
       "get": {
         "summary": "List all patch subscriptions",
@@ -6945,6 +7499,59 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/morningBriefings": {
+      "get": {
+        "summary": "Get private morning briefing preferences in the owner's saved timezone",
+        "tags": [
+          "MorningBriefings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opt-in preferences",
+            "local delivery time and saved timezone": null
+          }
+        }
+      },
+      "patch": {
+        "summary": "Enable or disable the owner's private morning briefing",
+        "tags": [
+          "MorningBriefings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated versioned preferences"
+          }
+        }
+      }
+    },
+    "/morningBriefings/preview": {
+      "get": {
+        "summary": "Preview today's private briefing without sending a message",
+        "tags": [
+          "MorningBriefings"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded exact content and complete omitted item counts"
           }
         }
       }
@@ -8027,6 +8634,43 @@
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/calendarOverlaps": {
+      "get": {
+        "summary": "Page through private owner overlap warnings from stored timed calendar events",
+        "tags": [
+          "UserCalendar"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All overlapping pairs are counted and available through pagination; no provider requests"
           }
         }
       }

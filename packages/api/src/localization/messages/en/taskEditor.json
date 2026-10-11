@@ -1,0 +1,5 @@
+{
+    "taskEditorMissing": "This task is no longer available.",
+    "taskEditorStale": "This task changed or was completed. Refresh your tasks and try again.",
+    "taskEditorInvalid": "Check the title, checklist, future due date and saved timezone."
+}

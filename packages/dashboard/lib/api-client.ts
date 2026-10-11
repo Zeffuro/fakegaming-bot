@@ -27,6 +27,7 @@ export * from "./api/userReminders";
 export * from "./api/userSettings";
 export * from "./api/userDigestSubscription";
 export * from "./api/userActivity";
+export * from "./api/personalToday";
 export * from "./api/youtube";
 
 import { animeApi } from "./api/anime";
@@ -52,6 +53,7 @@ import { userRemindersApi } from "./api/userReminders";
 import { userSettingsApi } from "./api/userSettings";
 import { userDigestSubscriptionApi } from "./api/userDigestSubscription";
 import { userActivityApi } from "./api/userActivity";
+import { personalTodayApi } from "./api/personalToday";
 import { youtubeApi } from "./api/youtube";
 
 export const api = {
@@ -79,4 +81,5 @@ export const api = {
     ...userSettingsApi,
     ...userDigestSubscriptionApi,
     ...userActivityApi,
+    personalToday: personalTodayApi,
 };

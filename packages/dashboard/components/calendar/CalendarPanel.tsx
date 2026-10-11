@@ -8,6 +8,7 @@ import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
 import { userCalendarApi, type AvailableCalendar, type CalendarStatus } from '@/lib/api/userCalendar';
 import { CalendarPublishingDialog } from './CalendarPublishingDialog';
 import { CalendarPublishingList } from './CalendarPublishingList';
+import { CalendarOverlapWarnings } from './CalendarOverlapWarnings';
 
 export function CalendarPanel() {
     const { t, formatDate } = useDashboardI18n();
@@ -20,9 +21,11 @@ export function CalendarPanel() {
     const [pending, setPending] = useState(false);
     const [publishingSourceId, setPublishingSourceId] = useState<string | null>(null);
     const [publishingRevision, setPublishingRevision] = useState(0);
+    const [overlapRevision, setOverlapRevision] = useState(0);
     const load = useCallback(async () => {
         const next = await userCalendarApi.status();
         setStatus(next);
+        setOverlapRevision(value => value + 1);
         if (next.configured && next.connected) setCalendars((await userCalendarApi.calendars()).calendars);
         else setCalendars([]);
     }, []);
@@ -79,6 +82,7 @@ export function CalendarPanel() {
                     link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
             })} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t('calendar.export', { format: format.toUpperCase() })}</Button>)}
             </Stack>
+            <CalendarOverlapWarnings revision={overlapRevision} />
             <CalendarPublishingList revision={publishingRevision} />
             {status?.connected && status.sources.filter(source => source.id === publishingSourceId && source.enabled).map(source =>
                 <CalendarPublishingDialog key={source.id} source={source} onClose={() => setPublishingSourceId(null)} onPublished={() => setPublishingRevision(value => value + 1)} />)}

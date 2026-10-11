@@ -9,6 +9,7 @@ export interface UserNote {
     status?: 'unread' | 'read' | 'archived';
     tags?: string[];
     sourceUrl?: string | null;
+    linkedTaskId?: string | null;
     createdAt: string | null;
     updatedAt: string | null;
 }

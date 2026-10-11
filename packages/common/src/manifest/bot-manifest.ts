@@ -294,7 +294,7 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
     },
     {
         "name": "poll",
-        "description": "Create a button poll with live results",
+        "description": "Create a button poll with live or hidden results",
         "module": "general",
         "permissions": null,
         "dm_permission": null,
@@ -303,7 +303,22 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "type": null,
         "localizations": {
             "nl": {
-                "description": "Maak een peiling met knoppen en live resultaten"
+                "description": "Maak een peiling met knoppen en live of verborgen resultaten"
+            }
+        }
+    },
+    {
+        "name": "polls",
+        "description": "Manage your private reusable poll templates",
+        "module": "general",
+        "permissions": null,
+        "dm_permission": null,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Beheer je persoonlijke herbruikbare peilingen"
             }
         }
     },
@@ -1411,7 +1426,7 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
             },
             {
                 "name": "poll",
-                "description": "Create a button poll with live results",
+                "description": "Create a button poll with live or hidden results",
                 "module": "general",
                 "permissions": null,
                 "dm_permission": null,
@@ -1420,7 +1435,22 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "type": null,
                 "localizations": {
                     "nl": {
-                        "description": "Maak een peiling met knoppen en live resultaten"
+                        "description": "Maak een peiling met knoppen en live of verborgen resultaten"
+                    }
+                }
+            },
+            {
+                "name": "polls",
+                "description": "Manage your private reusable poll templates",
+                "module": "general",
+                "permissions": null,
+                "dm_permission": null,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Beheer je persoonlijke herbruikbare peilingen"
                     }
                 }
             },

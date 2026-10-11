@@ -8,7 +8,7 @@ import { personalCopy, personalPage } from '../shared/personalCopy.js';
 
 const id = '3c805e6c-85f8-4874-9983-034aaef50bb8';
 const task: UserTaskBoard = { id, userId: 'owner', title: 'Shopping', state: 'active', checklist: [{ text: 'Milk', done: false }], dueAt: null,
-    timezone: 'Europe/Amsterdam', recurrence: null, reminderId: `task:${id}:0`, completedAt: null, completions: 0, version: 0 };
+    timezone: 'Europe/Amsterdam', recurrence: null, reminderId: `task:${id}:0`, completedAt: null, completions: 0, version: 0, canUndo: false, sourceNoteId: null, sourceUrl: null };
 const active: UserSessionBoard = { id, userId: 'owner', title: 'Practice', kind: 'focus', state: 'running', phase: 'focus', pomodoro: true,
     cycleIndex: 1, cycles: 4, workMs: 120_000, breakElapsedMs: 60_000, phaseElapsedMs: 120_000, remainingMs: 1_380_000,
     startedAt: 1_800_000_000_000, endedAt: null, reminderId: `session:${id}:0`, version: 0 };
@@ -16,7 +16,7 @@ const countdown: UserCountdownBoard = { id, userId: 'owner', title: 'Launch', du
 const manager = {
     userManager: { getUser: vi.fn().mockResolvedValue({ timezone: 'Europe/Amsterdam', preferredLocale: 'nl' }) },
     guildLocaleConfigManager: { getOutputLocale: vi.fn().mockResolvedValue('en') },
-    userTaskManager: { create: vi.fn(), get: vi.fn(), list: vi.fn(), done: vi.fn(), snooze: vi.fn(), check: vi.fn(), remove: vi.fn() },
+    userTaskManager: { create: vi.fn(), get: vi.fn(), list: vi.fn(), done: vi.fn(), undo: vi.fn(), snooze: vi.fn(), tomorrow: vi.fn(), check: vi.fn(), remove: vi.fn() },
     userSessionManager: { start: vi.fn(), getActive: vi.fn(), transition: vi.fn(), stats: vi.fn() },
     userCountdownManager: { create: vi.fn(), get: vi.fn(), list: vi.fn(), remove: vi.fn() },
     reminderInteractionManager: { getDelivery: vi.fn(), recoverDelivery: vi.fn() },
@@ -41,8 +41,10 @@ beforeEach(() => {
     manager.userTaskManager.create.mockResolvedValue(task);
     manager.userTaskManager.get.mockResolvedValue(task);
     manager.userTaskManager.list.mockResolvedValue([task]);
-    manager.userTaskManager.done.mockResolvedValue({ ...task, state: 'completed', version: 1 });
+    manager.userTaskManager.done.mockResolvedValue({ ...task, state: 'completed', version: 1, canUndo: true });
+    manager.userTaskManager.undo.mockResolvedValue({ ...task, version: 2 });
     manager.userTaskManager.snooze.mockResolvedValue({ ...task, version: 1 });
+    manager.userTaskManager.tomorrow.mockResolvedValue({ ...task, version: 1 });
     manager.userTaskManager.check.mockResolvedValue({ ...task, version: 1, checklist: [{ text: 'Milk', done: true }] });
     manager.userTaskManager.remove.mockResolvedValue(true);
     manager.userSessionManager.start.mockResolvedValue(active);
@@ -57,6 +59,12 @@ beforeEach(() => {
 });
 
 describe('private task commands and controls', () => {
+    it('moves tomorrow with owner/version/delivered-message scope and saved personal copy', async () => {
+        const interaction = button(`user-task:m:${id}:0:delivery`);
+        await tasks.handleComponent(interaction as unknown as ButtonInteraction);
+        expect(manager.userTaskManager.tomorrow).toHaveBeenCalledWith(id, 'owner', 0, { id: 'delivery', messageId: 'message', channelId: 'channel' });
+        expect(renderTask(task, 'nl').components[0]!.components.map(component => { const data = component.toJSON(); return 'label' in data ? data.label : undefined; })).toContain('Doe dit morgen');
+    });
     it('creates a checklist using saved personal timezone/locale and defers privately before persistence', async () => {
         const interaction = slash('add', { title: 'Shopping', checklist: 'Milk|Bread', due: '1h', repeat: 'daily' });
         await tasks.execute(interaction as unknown as ChatInputCommandInteraction);
@@ -67,7 +75,7 @@ describe('private task commands and controls', () => {
         expect(interaction.editReply).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('Milk') }));
     });
 
-    it.each(['show', 'done', 'snooze', 'check', 'delete', 'list'])('handles the %s slash action privately', async action => {
+    it.each(['show', 'done', 'undo', 'snooze', 'check', 'delete', 'list'])('handles the %s slash action privately', async action => {
         const interaction = slash(action, { task: id, when: '10m', item: 1, completed: true, page: 1 });
         await tasks.execute(interaction as unknown as ChatInputCommandInteraction);
         expect(interaction.editReply).toHaveBeenCalled();
@@ -83,6 +91,20 @@ describe('private task commands and controls', () => {
         expect(interaction.editReply).toHaveBeenCalled();
     });
 
+    it('offers persisted undo after completion and uses the current owner/version without reusing delivery controls', async () => {
+        for (const locale of ['en', 'nl'] as const) {
+            const rendered = renderTask({ ...task, state: 'completed', canUndo: true, version: 1 }, locale);
+            expect(rendered.components[0].components[0].data).toMatchObject({ custom_id: `user-task:u:${id}:1`, label: personalCopy(locale)('tasks.undo') });
+        }
+        const interaction = button(`user-task:u:${id}:1`);
+        await tasks.handleComponent(interaction as unknown as ButtonInteraction);
+        expect(manager.userTaskManager.undo).toHaveBeenCalledWith(id, 'owner', 1);
+        expect(manager.reminderInteractionManager.getDelivery).not.toHaveBeenCalled();
+        manager.userTaskManager.undo.mockRejectedValueOnce(new PersonalError('missing'));
+        const foreign = button(`user-task:u:${id}:1`, 'other');
+        await tasks.handleComponent(foreign as unknown as ButtonInteraction);
+        expect(foreign.followUp).toHaveBeenCalledWith(expect.objectContaining({ flags: MessageFlags.Ephemeral }));
+    });
     it('binds delivered controls to a private DM and refuses copied or cross-user controls', async () => {
         const original = button(`user-task:d:${id}:0:delivery`);
         await tasks.handleComponent(original as unknown as ButtonInteraction);

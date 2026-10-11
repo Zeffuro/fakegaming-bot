@@ -1,3 +1,7 @@
+import { PersonalNotificationPause } from './models/personal-notification-pause.js';
+import { UserDashboardLayout } from './models/user-dashboard-layout.js';
+import { MorningBriefingSettings, MorningBriefingDelivery } from './models/morning-briefing.js';
+import { PollTemplate } from './models/poll-template.js';
 import {Sequelize} from 'sequelize-typescript';
 import {Dialect} from 'sequelize';
 import {UserConfig} from './models/user-config.js';
@@ -17,6 +21,7 @@ import {PollSession} from './models/poll-session.js';
 import {UserTask, UserSession, UserCountdown} from './models/personal-productivity.js';
 import {UserFollow, UserFollowEvent, UserFollowSettings} from './models/personal-notifications.js';
 import {UserCommandPreset} from './models/user-command-preset.js';
+import {UserChecklistTemplate} from './models/user-checklist-template.js';
 import {PersonalSchedule, ScheduleOccurrence, SchedulePreferences, ScheduleNotification} from './models/personal-schedule.js';
 import {CalendarConnection, CalendarOAuthState, CalendarSource} from './models/calendar-connection.js';
 import {CalendarPublication, CalendarPublicationDraft, CalendarPublicationDelivery, CalendarEventSnapshot, CalendarEventSnapshotState} from './models/calendar-publication.js';
@@ -101,6 +106,12 @@ export function getSequelize(useTest = false): Sequelize {
         UserFollowEvent,
         UserFollowSettings,
         UserCommandPreset,
+        UserChecklistTemplate,
+        PersonalNotificationPause,
+        UserDashboardLayout,
+        MorningBriefingSettings,
+        MorningBriefingDelivery,
+        PollTemplate,
         PersonalSchedule,
         ScheduleOccurrence,
         SchedulePreferences,

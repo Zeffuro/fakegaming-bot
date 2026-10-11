@@ -1,0 +1,14 @@
+{
+    "briefingHeading": "Your morning briefing · {day} ({timezone})",
+    "briefingTask": "Task",
+    "briefingReminder": "Reminder",
+    "briefingSchedule": "Calendar / schedule",
+    "briefingCountdown": "Countdown",
+    "briefingUndated": "No due date",
+    "briefingOverdue": "Overdue",
+    "briefingAllDay": "All day",
+    "briefingOmitted": "{count, plural, one {# more item in your private Today dashboard.} other {# more items in your private Today dashboard.}}",
+    "briefingEmpty": "Nothing to include today. No message will be sent.",
+    "briefingStale": "Your briefing settings or saved timezone changed. Refresh and try again.",
+    "briefingInvalid": "Choose a valid local time and refresh your briefing settings."
+}

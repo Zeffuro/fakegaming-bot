@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 169
+Operations: 194
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -29,7 +29,15 @@ Operations: 169
 | Bluesky | DELETE | `/bluesky/{id}` | Delete a Bluesky post config by id | Bearer |
 | Bluesky | GET | `/bluesky/exists` | Check if a Bluesky post config exists | Bearer |
 | Bluesky | GET | `/bluesky/profile` | Resolve public Bluesky profile metadata | Bearer |
+| Checklists | GET | `/userChecklistTemplates` | List the authenticated owner's reusable checklists | Bearer |
+| Checklists | POST | `/userChecklistTemplates` | Save a reusable personal checklist | Bearer |
+| Checklists | PATCH | `/userChecklistTemplates/{id}` | Edit an owner checklist with a version check | Bearer |
+| Checklists | DELETE | `/userChecklistTemplates/{id}` | Remove an owner checklist without changing tasks started from it | Bearer |
+| Checklists | POST | `/userChecklistTemplates/{id}/start` | Start a fresh unchecked task from a saved checklist | Bearer |
 | Dashboard | GET | `/dashboard/guild/{guildId}/summary` | Get dashboard summary counts for a guild | Bearer |
+| DashboardLayout | GET | `/userDashboardLayout` | Get the authenticated owner's private panel layout | Bearer |
+| DashboardLayout | PATCH | `/userDashboardLayout` | Save the owner's versioned panel layout | Bearer |
+| DashboardLayout | POST | `/userDashboardLayout/reset` | Reset the owner's panel layout to defaults | Bearer |
 | DisabledCommands | GET | `/disabledCommands` | List disabled commands (optionally filtered by guild) | Bearer |
 | DisabledCommands | POST | `/disabledCommands` | Add a new disabled command | Bearer |
 | DisabledCommands | GET | `/disabledCommands/{id}` | Get a disabled command by id | Bearer |
@@ -54,6 +62,11 @@ Operations: 169
 | Jobs | GET | `/jobs/birthdays/today` | Get number of birthday notifications processed today | Bearer |
 | Jobs | GET | `/jobs/heartbeat/last` | Get the last heartbeat payload/time | Bearer |
 | Jobs | GET | `/jobs/patchnotes/storage` | Get patch-note history storage usage and retention status | Bearer |
+| MorningBriefings | GET | `/morningBriefings` | Get private morning briefing preferences in the owner's saved timezone | Bearer |
+| MorningBriefings | PATCH | `/morningBriefings` | Enable or disable the owner's private morning briefing | Bearer |
+| MorningBriefings | GET | `/morningBriefings/preview` | Preview today's private briefing without sending a message | Bearer |
+| NotificationPause | GET | `/userNotificationPause` | Get the owner's account-wide personal notification pause | Bearer |
+| NotificationPause | PATCH | `/userNotificationPause` | Pause or resume automatic personal DMs using the saved timezone | Bearer |
 | Notifications | GET | `/notifications/admin` | List recent notification delivery records | Bearer |
 | Notifications | GET | `/notifications/guild/{guildId}` | List recent notification delivery records for a guild | Bearer |
 | PatchNotes | GET | `/patchNotes` | List all patch notes | Bearer |
@@ -73,6 +86,14 @@ Operations: 169
 | Permissions | DELETE | `/rolePermissionSnapshots/{id}` | Permanently delete a saved permission snapshot | Bearer |
 | Permissions | GET | `/rolePermissionSnapshots/live` | Read the current role and channel permission state from Discord | Bearer |
 | Permissions | POST | `/rolePermissionSnapshots/live` | Save a current role and channel permission snapshot from Discord | Bearer |
+| PersonalToday | GET | `/personalToday` | Get the authenticated owner's agenda in their saved timezone | Bearer |
+| PersonalToday | PATCH | `/personalToday/schedules/{id}` | Complete or snooze an owner schedule occurrence with a version check | Bearer |
+| PersonalToday | PATCH | `/personalToday/sessions/{id}` | Pause, resume or stop an owner session with a version check | Bearer |
+| PersonalToday | PATCH | `/personalToday/tasks/{id}` | Complete, undo completion, snooze or toggle an owner task with a version check | Bearer |
+| Poll templates | GET | `/pollTemplates` | List private reusable poll templates | Bearer |
+| Poll templates | POST | `/pollTemplates` | Save a private reusable poll template | Bearer |
+| Poll templates | PATCH | `/pollTemplates/{id}` | Edit an owner poll template with a version check | Bearer |
+| Poll templates | DELETE | `/pollTemplates/{id}` | Delete an owner template without changing live polls | Bearer |
 | Quotes | GET | `/quotes` | List all quotes | Bearer |
 | Quotes | POST | `/quotes` | Add a new quote | Bearer |
 | Quotes | GET | `/quotes/{id}` | Get a quote by id | Bearer |
@@ -129,6 +150,7 @@ Operations: 169
 | TwitchClips | POST | `/twitchClips/bot/connect` | Begin dashboard-administrator Twitch bot OAuth | Bearer |
 | TwitchClips | GET | `/twitchClips/bot/status` | Get safe Twitch clip bot connection status | Bearer |
 | UserActivity | GET | `/userActivity` | Get recent account activity for the authenticated dashboard user | Bearer |
+| UserCalendar | GET | `/calendarOverlaps` | Page through private owner overlap warnings from stored timed calendar events | Bearer |
 | UserCalendar | GET | `/userCalendar` | Get safe personal calendar status and selections | Bearer |
 | UserCalendar | DELETE | `/userCalendar` | Disconnect personal Google Calendar and pause imports while preserving history | Bearer |
 | UserCalendar | GET | `/userCalendar/calendars` | List calendars readable by the authenticated Google account | Bearer |
@@ -150,6 +172,7 @@ Operations: 169
 | UserNotes | GET | `/userNotes/{id}` | Get one note for the authenticated dashboard user | Bearer |
 | UserNotes | PUT | `/userNotes/{id}` | Update one note for the authenticated dashboard user | Bearer |
 | UserNotes | DELETE | `/userNotes/{id}` | Delete one note for the authenticated dashboard user | Bearer |
+| UserNotes | POST | `/userNotes/{id}/task` | Create or retrieve the authenticated user's task linked to a note | Bearer |
 | UserReminders | GET | `/userReminders` | List reminders for the authenticated dashboard user | Bearer |
 | UserReminders | POST | `/userReminders` | Create a reminder for the authenticated dashboard user | Bearer |
 | UserReminders | GET | `/userReminders/{id}` | Get one reminder for the authenticated dashboard user | Bearer |
@@ -165,6 +188,8 @@ Operations: 169
 | Users | PUT | `/users/{discordId}/timezone` | Set timezone for a user | Bearer |
 | UserSettings | GET | `/userSettings` | Get personal settings for the authenticated dashboard user | Bearer |
 | UserSettings | PATCH | `/userSettings` | Update personal settings for the authenticated dashboard user | Bearer |
+| UserTasks | GET | `/userTasks` | List active and retained completed tasks for the authenticated owner | Bearer |
+| UserTasks | PATCH | `/userTasks/{id}` | Edit an active owner task with a version and saved timezone guard | Bearer |
 | YouTube | GET | `/youtube` | List all YouTube video configs | Bearer |
 | YouTube | POST | `/youtube` | Create a new YouTube video config | Bearer |
 | YouTube | PUT | `/youtube` | Upsert a YouTube video config by channel | Bearer |

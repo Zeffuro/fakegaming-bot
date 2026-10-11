@@ -9,9 +9,10 @@ import {
     parseDigestCategories,
     type DigestFrequency,
 } from '@zeffuro/fakegaming-common/utils';
-import { sendDirectMessage } from '../utils/discord.js';
+import { sendDirectMessagePayloadResult } from '../utils/discord.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import { recordJobRun } from './status.js';
+import { personalNotificationPause } from './personalNotificationPause.js';
 
 interface ReminderPlain {
     id: string;
@@ -154,6 +155,9 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
         }
 
         try {
+            if (await personalNotificationPause.isPaused(subscription.discordId)) {
+                await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt }); skipped += 1; continue;
+            }
             const locale = await resolveUserOutputLocale(subscription.discordId);
             const windowEndsAt = nowMs + getDigestWindowMs(frequency);
             const reminders = categories.includes('reminders')
@@ -190,8 +194,16 @@ async function processUserDigests(now: Date, log = getLogger({ name: 'api:jobs:u
                     windowEndsAt,
                     locale,
                 });
-            const delivered = await sendDirectMessage(subscription.discordId, content);
-            if (!delivered) {
+            const gate = await personalNotificationPause.deliver(subscription.discordId,
+                () => sendDirectMessagePayloadResult(subscription.discordId, { content, allowed_mentions: { parse: [] } }));
+            if (gate.paused) {
+                await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt }); skipped += 1; continue;
+            }
+            if (gate.value.status === 'unknown') {
+                await cm.userDigestSubscriptionManager.markRun(subscription.id, { lastRunAt: nowMs, nextRunAt });
+                errors += 1; log.warn({ subscriptionId: subscription.id }, 'Digest send outcome unknown; retiring run without replay'); continue;
+            }
+            if (gate.value.status !== 'sent') {
                 await cm.userDigestSubscriptionManager.scheduleRetry(subscription.id, nowMs + retryDelaySeconds * 1000);
                 errors += 1;
                 continue;

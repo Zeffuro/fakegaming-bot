@@ -1,3 +1,4 @@
+import { registerMorningBriefingJobs } from './morningBriefings.js';
 import { getLogger, MemoryJobQueue } from '@zeffuro/fakegaming-common';
 import type { JobQueue } from '@zeffuro/fakegaming-common/jobs';
 import { registerBirthdaysJobs } from './birthdays.js';
@@ -90,6 +91,7 @@ export async function bootstrapJobs(): Promise<void> {
     await registerUserDigestJobs(queue);
     await registerPersonalFollowJobs(queue);
     await registerPersonalScheduleJobs(queue);
+    await registerMorningBriefingJobs(queue);
     await registerGoogleCalendarJobs(queue);
     await registerCalendarPublicationJobs(queue);
 

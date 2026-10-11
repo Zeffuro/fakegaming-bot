@@ -9,6 +9,7 @@ import { getNextRecurringReminderTimestamp, parseTimespan, type ReminderRecurren
 import { recordJobRun } from './status.js';
 import { apiText, resolveUserOutputLocale } from '../localization/locale.js';
 import type { SupportedOutputLocale } from '@zeffuro/fakegaming-common';
+import { personalNotificationPause } from './personalNotificationPause.js';
 
 interface ReminderPlain {
     id: string;
@@ -79,6 +80,7 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
         let sendClaimed = false;
 
         try {
+            if (await personalNotificationPause.isPaused(r.userId)) continue;
             const personal = await prepareProductivityNotification(r);
             if (!personal) {
                 await cm.reminderManager.removeReminder(r.id);
@@ -96,9 +98,13 @@ async function processDueReminders(now: Date, log = getLogger({ name: 'api:jobs:
             } else if (delivery.status === 'pending') {
                 sendClaimed = await cm.reminderInteractionManager.claimDelivery(delivery.id, timestamp);
                 if (!sendClaimed) continue;
-                const result = await sendDirectMessagePayloadResult(
+                const gate = await personalNotificationPause.deliver(r.userId, () => sendDirectMessagePayloadResult(
                     r.userId, buildReminderDeliveryPayload(delivery.id, buildReminderContent(personal.content, elapsed, locale), locale, personal),
-                );
+                ));
+                if (gate.paused) {
+                    await cm.reminderInteractionManager.releaseDelivery(delivery.id); sendClaimed = false; continue;
+                }
+                const result = gate.value;
                 if (result.status === 'rejected') {
                     const delay = computeReminderRetryBackoffSeconds(now, timestamp);
                     await cm.reminderInteractionManager.releaseDelivery(delivery.id, nowMs + delay * 1000);

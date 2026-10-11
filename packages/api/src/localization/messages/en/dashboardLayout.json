@@ -1,0 +1,4 @@
+{
+  "dashboardLayoutStale": "Your dashboard layout changed elsewhere. Reload the saved layout and try again.",
+  "dashboardLayoutInvalid": "Choose each supported panel exactly once with a valid visibility setting."
+}

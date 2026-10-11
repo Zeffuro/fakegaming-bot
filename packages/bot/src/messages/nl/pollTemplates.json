@@ -1,0 +1,17 @@
+{
+    "saved": "{title} opgeslagen. Sjabloon-ID: {id}",
+    "page": "Pagina {page} van {pages}",
+    "empty": "Je hebt geen opgeslagen peilingen. Gebruik /polls save of maak er een op het dashboard.",
+    "removed": "Opgeslagen peiling verwijderd. Bestaande peilingen blijven hetzelfde.",
+    "settings": "Duur: {duration} minuten. Meerdere keuzes: {multiple}. Resultaten verbergen: {hidden}.; voorkeursstemmen: {ranked}",
+    "yes": "Ja",
+    "no": "Nee",
+    "creating": "Nieuwe peiling maken…",
+    "started": "Je nieuwe peiling is in dit kanaal geplaatst.",
+    "missing": "Deze peiling of dit sjabloon is niet beschikbaar of van iemand anders.",
+    "stale": "Deze opgeslagen peiling is gewijzigd. Vernieuw en probeer opnieuw.",
+    "capacity": "Je limiet voor opgeslagen of actieve peilingen is bereikt.",
+    "invalid": "Gebruik een naam tot 120 tekens, een vraag en twee tot vijf unieke opties tot 200 tekens, en een duur van 1–1440 minuten.",
+    "failed": "Deze peilingactie is mislukt. Probeer opnieuw.",
+    "exists": "Deze opgeslagen peiling bestaat al."
+}

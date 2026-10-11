@@ -24,6 +24,7 @@ vi.mock('../anime.js', () => ({ registerAnimeJobs: vi.fn().mockResolvedValue(und
 vi.mock('../steamNews.js', () => ({ registerSteamNewsJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../userDigests.js', () => ({ registerUserDigestJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../personalFollows.js', () => ({ registerPersonalFollowJobs: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../morningBriefings.js', () => ({ registerMorningBriefingJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../personalSchedules.js', () => ({ registerPersonalScheduleJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../../googleCalendar/sync.js', () => ({ registerGoogleCalendarJobs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('../calendarPublications.js', () => ({ registerCalendarPublicationJobs: vi.fn().mockResolvedValue(undefined) }));
@@ -42,6 +43,7 @@ import * as anime from '../anime.js';
 import * as steamNews from '../steamNews.js';
 import * as userDigests from '../userDigests.js';
 import * as personalFollows from '../personalFollows.js';
+import * as morningBriefings from '../morningBriefings.js';
 import * as personalSchedules from '../personalSchedules.js';
 import * as googleCalendar from '../../googleCalendar/sync.js';
 import * as calendarPublications from '../calendarPublications.js';
@@ -75,6 +77,7 @@ describe('jobs/bootstrap', () => {
         expect(vi.mocked(userDigests).registerUserDigestJobs).toHaveBeenCalled();
         expect(vi.mocked(personalFollows).registerPersonalFollowJobs).toHaveBeenCalled();
         expect(vi.mocked(personalSchedules).registerPersonalScheduleJobs).toHaveBeenCalled();
+        expect(vi.mocked(morningBriefings).registerMorningBriefingJobs).toHaveBeenCalled();
         expect(vi.mocked(googleCalendar).registerGoogleCalendarJobs).toHaveBeenCalled();
         expect(vi.mocked(calendarPublications).registerCalendarPublicationJobs).toHaveBeenCalled();
         expect(vi.mocked(quoteOfDay).registerQuoteOfDayJobs).toHaveBeenCalled();

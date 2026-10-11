@@ -14,7 +14,7 @@
         "description": "Open this server in the bot dashboard"
     },
     "poll": {
-        "description": "Create a button poll with live results",
+        "description": "Create a button poll with live or hidden results",
         "options": {
             "question": {
                 "description": "The poll question"
@@ -39,6 +39,12 @@
             },
             "multiple": {
                 "description": "Allow selecting several options (click again to remove)"
+            },
+            "hide-results": {
+                "description": "Hide results until this poll closes (default: false)"
+            },
+            "ranked": {
+                "description": "Rank options privately instead of selecting one (default: false)"
             }
         }
     },
@@ -185,6 +191,54 @@
         "options": {
             "location": {
                 "description": "City name or city,country (e.g., Rotterdam or Rotterdam,NL)"
+            }
+        }
+    },
+    "polls": {
+        "description": "Manage your private reusable poll templates",
+        "options": {
+            "save": {
+                "description": "Save the settings of a poll you created",
+                "options": {
+                    "poll": {
+                        "description": "Poll ID or message ID"
+                    },
+                    "name": {
+                        "description": "Private template name"
+                    }
+                }
+            },
+            "list": {
+                "description": "List your private saved polls",
+                "options": {
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "show": {
+                "description": "Show your saved poll settings",
+                "options": {
+                    "template": {
+                        "description": "Saved poll template ID"
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete your saved poll without changing live polls",
+                "options": {
+                    "template": {
+                        "description": "Saved poll template ID"
+                    }
+                }
+            },
+            "start": {
+                "description": "Publish a fresh poll in this channel using your saved settings",
+                "options": {
+                    "template": {
+                        "description": "Saved poll template ID"
+                    }
+                }
             }
         }
     }

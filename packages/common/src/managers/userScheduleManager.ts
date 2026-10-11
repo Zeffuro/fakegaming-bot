@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Op, type Transaction } from 'sequelize';
 import { PersonalSchedule, ScheduleOccurrence, SchedulePreferences } from '../models/personal-schedule.js';
-import { CalendarSource } from '../models/calendar-connection.js';
+import { CalendarConnection, CalendarSource } from '../models/calendar-connection.js';
 import { CalendarPublication, CalendarPublicationDraft } from '../models/calendar-publication.js';
 import { parseHHmmToMinutes } from '../utils/time.js';
 import { serializedTransaction } from './serializedTransaction.js';
@@ -62,9 +62,9 @@ export class UserScheduleManager {
         return this.mutate(id, userId, version, { state: 'pending', completedAt: null, notificationCount: 0, nextNotifyAt: this.now() + 60_000 }, 'completed');
     }
 
-    async snooze(id: string, userId: string, version: number, until: number): Promise<ScheduleRecord> {
+    async snooze(id: string, userId: string, version: number, until: number, requireActive = false): Promise<ScheduleRecord> {
         if (!Number.isSafeInteger(until) || until <= this.now() || until > this.now() + 366 * 86_400_000) throw new ScheduleError('invalid');
-        return this.mutate(id, userId, version, { nextNotifyAt: until }, 'pending');
+        return this.mutate(id, userId, version, { nextNotifyAt: until }, 'pending', requireActive);
     }
 
     async note(id: string, userId: string, version: number, note: string): Promise<ScheduleRecord> {
@@ -140,13 +140,20 @@ export class UserScheduleManager {
         });
     }
 
-    private async mutate(id: string, userId: string, version: number, values: Record<string, unknown>, state?: 'pending' | 'completed'): Promise<ScheduleRecord> {
+    private async mutate(id: string, userId: string, version: number, values: Record<string, unknown>, state?: 'pending' | 'completed', requireActive = false): Promise<ScheduleRecord> {
         return this.transaction(async transaction => {
             const pointer = await ScheduleOccurrence.findOne({ where: { id, userId }, transaction });
             if (!pointer) throw new ScheduleError('missing');
+            const parentPointer = requireActive ? await PersonalSchedule.findOne({ where: { id: pointer.scheduleId, userId }, transaction }) : null;
+            if (parentPointer?.sourceId) {
+                const connection = await CalendarConnection.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE });
+                const source = await CalendarSource.findOne({ where: { id: parentPointer.sourceId, userId, enabled: true }, transaction, lock: transaction.LOCK.UPDATE });
+                if (connection?.status !== 'connected' || !source) throw new ScheduleError('stale');
+            }
             const schedule = await PersonalSchedule.findOne({ where: { id: pointer.scheduleId, userId }, transaction, lock: transaction.LOCK.UPDATE });
             const row = await ScheduleOccurrence.findOne({ where: { id, userId }, transaction, lock: transaction.LOCK.UPDATE });
             if (!schedule || !row) throw new ScheduleError('missing');
+            if (requireActive && (!schedule.enabled || row.cancelled || schedule.sourceId !== parentPointer?.sourceId)) throw new ScheduleError('stale');
             if (row.version !== version || (state && row.state !== state)) throw new ScheduleError('stale');
             if (row.cancelled && values.state !== 'completed' && !Object.hasOwn(values, 'note')) values.nextNotifyAt = null;
             const resetNotifications = Object.hasOwn(values, 'nextNotifyAt') && values.nextNotifyAt !== null;

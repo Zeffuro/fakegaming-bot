@@ -9,6 +9,10 @@ export interface NotesCopy {
     deleted: (id: string, title: string) => string; savedMessageTitle: string; emptyMessage: string; source: string;
     messageContains: (parts: string) => string; attachments: (count: number) => string; stickers: (count: number) => string;
     and: string; contextSaved: (id: string) => string; contextFailed: string;
+    task: {
+        action: string; modalTitle: string; titleLabel: string; dueLabel: string; duePlaceholder: string;
+        timezoneLabel: string; created: string; existing: string; deleted: string; invalid: string; capacity: string; failed: string;
+    };
     inbox: {
         unread: string; read: string; archived: string; open: string; remind: string; archive: string; restore: string;
         tenMinutes: string; oneHour: string; tomorrow: string; custom: string; chooseTime: string;
@@ -24,6 +28,7 @@ export function getNotesCopy(locale: SupportedOutputLocale): NotesCopy {
         unknown: raw.unknown, bodyRequired: raw.bodyRequired, none: raw.none, title: raw.title, notFound: raw.notFound,
         pinned: raw.pinned, noBody: raw.noBody, savedMessageTitle: raw.savedMessageTitle, emptyMessage: raw.emptyMessage,
         source: raw.source, and: raw.and, contextFailed: raw.contextFailed,
+        task: raw.task,
         inbox: { ...raw.inbox, page: (page, pages, count) => t('inbox.page', { page, pages, count }) },
         saved: (id, title) => t('saved', { id, title }), more: count => t('more', { count }),
         deleted: (id, title) => t('deleted', { id, title }), messageContains: parts => t('messageContains', { parts }),

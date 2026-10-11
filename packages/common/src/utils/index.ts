@@ -20,3 +20,4 @@ export * from './reminderTime.js';
 export * from './digestSchedule.js';
 export * from './outputLocale.js';
 export * from './calendarDetails.js';
+export * from './calendarOverlaps.js';

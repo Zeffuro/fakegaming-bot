@@ -110,10 +110,11 @@ describe('persisted reminder job lifecycle', () => {
                 }),
             ]);
             expect(await ReminderDelivery.findOne({ where: { reminderId: source.id } })).toMatchObject({ status: 'sending' });
-            const second = await runJobHandler(secondQueue, 'reminders:run', {});
+            const secondRun = runJobHandler(secondQueue, 'reminders:run', {});
+            completeSend();
+            const second = await secondRun;
             expect(second.done).toHaveBeenCalledOnce();
             expect(mocks.send).toHaveBeenCalledOnce();
-            expect(await configManager.reminderManager.getForUser(source.id, userId)).not.toBeNull();
         } finally {
             clearTimeout(timeout);
             completeSend();
@@ -152,11 +153,13 @@ describe('persisted reminder job lifecycle', () => {
     it.each(['sent', 'rejected'])('keeps an in-flight snooze when Discord reports %s', async status => {
         const source = await sourceReminder();
         const nextTimestamp = Date.now() + 3_600_000;
+        let snoozed: Promise<unknown> | undefined;
         mocks.send.mockImplementationOnce(async () => {
-            await configManager.reminderManager.snoozeForUser(source.id, userId, { timespan: '1h', timestamp: nextTimestamp });
+            snoozed = configManager.reminderManager.snoozeForUser(source.id, userId, { timespan: '1h', timestamp: nextTimestamp });
             return status === 'sent' ? { status, message: { id: messageId, channel_id: channelId } } : { status };
         });
         await runJobHandler(await queue(), 'reminders:run', {});
+        await snoozed;
         expect(Number((await configManager.reminderManager.getForUser(source.id, userId))?.timestamp)).toBe(nextTimestamp);
         expect(await ReminderDelivery.findOne({ where: { reminderId: source.id } })).toMatchObject({ finalized: true });
     });

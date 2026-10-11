@@ -42,8 +42,10 @@ describe('private schedule jobs', () => {
 
     it('refreshes an in-flight completion, keeps its history after message deletion and never sends another reminder', async () => {
         const item = await due();
-        mocks.send.mockImplementationOnce(async () => { await manager.complete(item.id, item.userId, 0, Date.now(), 'Recorded'); return { status: 'sent', messageId: '123', channelId: '456' }; });
+        let completion: Promise<unknown> | undefined;
+        mocks.send.mockImplementationOnce(async () => { completion = manager.complete(item.id, item.userId, 0, Date.now(), 'Recorded'); return { status: 'sent', messageId: '123', channelId: '456' }; });
         expect(await processPersonalSchedules()).toEqual({ sent: 1, edited: 1, errors: 0 });
+        await completion;
         expect(mocks.edit.mock.calls[0]?.[2]?.content).toContain('Recorded');
         const done = (await manager.get(item.id, item.userId))!;
         await manager.note(item.id, item.userId, done.version, 'Changed note');

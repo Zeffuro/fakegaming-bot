@@ -1,4 +1,9 @@
+import { PersonalNotificationPauseManager } from './personalNotificationPauseManager.js';
+import { UserDashboardLayoutManager } from './userDashboardLayoutManager.js';
+import { MorningBriefingManager } from './morningBriefingManager.js';
+import { PollTemplateManager } from './pollTemplateManager.js';
 import {getSequelize} from '../sequelize.js';
+import { UserChecklistTemplateManager } from './userChecklistTemplateManager.js';
 import {runMigrations} from '../migrate.js';
 import {UserManager} from './userManager.js';
 import {QuoteManager} from './quoteManager.js';
@@ -43,6 +48,11 @@ const log = getLogger({ name: 'common:config' });
  * Aggregates all manager classes.
  */
 export class ConfigManager {
+    personalNotificationPauseManager = new PersonalNotificationPauseManager();
+    userDashboardLayoutManager = new UserDashboardLayoutManager();
+    morningBriefingManager = new MorningBriefingManager();
+    pollTemplateManager = new PollTemplateManager();
+    userChecklistTemplateManager = new UserChecklistTemplateManager();
     userManager = new UserManager();
     quoteManager = new QuoteManager();
     quoteOfDayManager = new QuoteOfDayManager();

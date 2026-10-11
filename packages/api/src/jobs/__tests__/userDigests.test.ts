@@ -13,7 +13,8 @@ const mocks = vi.hoisted(() => ({
     recordJobRun: vi.fn(),
 }));
 
-vi.mock('@zeffuro/fakegaming-common/managers', () => ({
+vi.mock('@zeffuro/fakegaming-common/managers', async importOriginal => ({
+    ...await importOriginal<object>(),
     getConfigManager: () => ({
         userDigestSubscriptionManager: {
             listDue: mocks.listDue,
@@ -38,7 +39,10 @@ vi.mock('@zeffuro/fakegaming-common/managers', () => ({
 }));
 
 vi.mock('../../utils/discord.js', () => ({
-    sendDirectMessage: mocks.sendDirectMessage,
+    sendDirectMessagePayloadResult: async (userId: string, payload: { content: string }) => {
+        const message = await mocks.sendDirectMessage(userId, payload.content);
+        return message ? { status: 'sent', message } : { status: 'rejected' };
+    },
 }));
 
 vi.mock('../status.js', () => ({

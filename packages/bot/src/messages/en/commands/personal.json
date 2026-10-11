@@ -78,6 +78,52 @@
                         "description": "Task ID from /tasks list"
                     }
                 }
+            },
+            "save-list": {
+                "description": "Save a task checklist as a reusable personal list",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    },
+                    "name": {
+                        "description": "Saved checklist name"
+                    }
+                }
+            },
+            "lists": {
+                "description": "List your saved reusable checklists",
+                "options": {
+                    "page": {
+                        "description": "Page number"
+                    }
+                }
+            },
+            "start-list": {
+                "description": "Start a fresh unchecked task from a saved list",
+                "options": {
+                    "list": {
+                        "description": "Saved checklist ID from /tasks lists"
+                    },
+                    "due": {
+                        "description": "Optional future date, time or delay"
+                    }
+                }
+            },
+            "delete-list": {
+                "description": "Remove a saved checklist without changing its tasks",
+                "options": {
+                    "list": {
+                        "description": "Saved checklist ID from /tasks lists"
+                    }
+                }
+            },
+            "undo": {
+                "description": "Undo the latest task completion",
+                "options": {
+                    "task": {
+                        "description": "Task ID from /tasks list"
+                    }
+                }
             }
         }
     },

@@ -5,6 +5,7 @@ import { notes as META } from '../commands.manifest.js';
 import { resolveInteractionOutputLocale, type SupportedOutputLocale } from '../../../core/localization.js';
 import { getNotesCopy } from '../copy/notesCopy.js';
 import { handleNoteComponent, renderNoteDetails, renderNoteActions } from '../shared/noteInbox.js';
+import { handleNoteTaskModal } from '../shared/noteTask.js';
 
 interface NoteLike {
     id: string;
@@ -298,4 +299,4 @@ async function respond(interaction: ChatInputCommandInteraction, payload: Intera
 const testOnly = getTestOnly(META);
 
 // noinspection JSUnusedGlobalSymbols
-export default { data, execute, handleComponent: (interaction: ButtonInteraction) => handleNoteComponent(interaction), testOnly };
+export default { data, execute, handleComponent: (interaction: ButtonInteraction) => handleNoteComponent(interaction), handleModal: handleNoteTaskModal, testOnly };

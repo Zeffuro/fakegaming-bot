@@ -10,6 +10,7 @@ import { FeaturePanel } from "@/components/dashboard/FeaturePanel";
 import { dashboardAccents, dashboardCardSx, dashboardFieldSx, ghostActionButtonSx } from "@/components/dashboard/dashboardTheme";
 import { useDashboardI18n } from "@/components/i18n/DashboardI18nProvider";
 import type { UserNote, UserNoteUpdateInput } from "@/lib/api-client";
+import { NoteTaskDialog } from "./NoteTaskDialog";
 
 type NoteStatus = "active" | "all" | "unread" | "read" | "archived";
 
@@ -37,6 +38,8 @@ export function NoteInboxPanel({ notes, saving, onTogglePinned, onEdit, onDelete
     const [status, setStatus] = useState<NoteStatus>("active");
     const [page, setPage] = useState(1);
     const [error, setError] = useState<string | null>(null);
+    const [taskNote, setTaskNote] = useState<UserNote | null>(null);
+    const [linkedTasks, setLinkedTasks] = useState<Record<string, string>>({});
     const filtered = useMemo(() => filterInboxNotes(notes, query, tag, status), [notes, query, tag, status]);
     const tags = useMemo(() => [...new Set(notes.flatMap(note => note.tags ?? []))].sort(), [notes]);
     useEffect(() => {
@@ -71,7 +74,9 @@ export function NoteInboxPanel({ notes, saving, onTogglePinned, onEdit, onDelete
             </Stack>
             {error && <Alert severity="error">{error}</Alert>}
             {visible.length === 0 && <Typography sx={{ color: "grey.300" }}>{t(notes.length ? "personal.noMatchingNotes" : "personal.noNotes")}</Typography>}
-            {visible.map(note => <InboxNoteCard key={note.id} note={note} saving={saving} onTogglePinned={onTogglePinned} onEdit={onEdit} onDelete={onDelete} onUpdate={update} />)}
+            {visible.map(note => <InboxNoteCard key={note.id} note={note} saving={saving} onTogglePinned={onTogglePinned} onEdit={onEdit} onDelete={onDelete} onUpdate={update}
+                onTask={() => setTaskNote({ ...note, linkedTaskId: linkedTasks[note.id] ?? note.linkedTaskId })} />)}
+            {taskNote && <NoteTaskDialog note={taskNote} onClose={() => setTaskNote(null)} onLinked={taskId => setLinkedTasks(previous => ({ ...previous, [taskNote.id]: taskId }))} />}
             <Stack direction="row" spacing={1} sx={{ alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
                 <Button disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t("personal.inbox.previous")}</Button>
                 <Typography sx={{ color: "grey.300" }}>{t("personal.inbox.page", { page: currentPage, pages })}</Typography>
@@ -81,13 +86,14 @@ export function NoteInboxPanel({ notes, saving, onTogglePinned, onEdit, onDelete
     </FeaturePanel>;
 }
 
-function InboxNoteCard({ note, saving, onTogglePinned, onEdit, onDelete, onUpdate }: {
+function InboxNoteCard({ note, saving, onTogglePinned, onEdit, onDelete, onUpdate, onTask }: {
     note: UserNote;
     saving: boolean;
     onTogglePinned: (note: UserNote) => void | Promise<void>;
     onEdit: (note: UserNote) => void;
     onDelete: (note: UserNote) => void | Promise<void>;
     onUpdate: (id: string, input: UserNoteUpdateInput) => Promise<void>;
+    onTask: () => void;
 }) {
     const { t, formatDate } = useDashboardI18n();
     const [tags, setTags] = useState((note.tags ?? []).join(", "));
@@ -131,6 +137,7 @@ function InboxNoteCard({ note, saving, onTogglePinned, onEdit, onDelete, onUpdat
                 <Button disabled={saving || tags === storedTags} onClick={saveTags} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t("personal.inbox.saveTags")}</Button>
             </Stack>
             <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                <Button disabled={saving} onClick={onTask} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t("notesTask.create")}</Button>
                 {source && <Button component="a" href={source} target="_blank" rel="noopener noreferrer" onClick={() => { if (state === "unread") void onUpdate(note.id, { status: "read" }); }} sx={ghostActionButtonSx(dashboardAccents.commands)}>{t("personal.inbox.openSource")}</Button>}
                 <Button disabled={saving} onClick={() => void onUpdate(note.id, { status: state === "unread" ? "read" : "unread" })} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t(state === "unread" ? "personal.inbox.markRead" : "personal.inbox.markUnread")}</Button>
                 <Button disabled={saving} onClick={() => void onUpdate(note.id, { status: state === "archived" ? "read" : "archived" })} sx={ghostActionButtonSx(dashboardAccents.quotes)}>{t(state === "archived" ? "personal.inbox.restore" : "personal.inbox.archive")}</Button>

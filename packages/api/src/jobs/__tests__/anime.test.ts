@@ -24,7 +24,8 @@ vi.mock('@zeffuro/fakegaming-common/anime', async (importOriginal) => {
     };
 });
 
-vi.mock('@zeffuro/fakegaming-common/managers', () => ({
+vi.mock('@zeffuro/fakegaming-common/managers', async importOriginal => ({
+    ...await importOriginal<object>(),
     getConfigManager: () => ({
         animeManager: {
             subscriptions: {
@@ -52,7 +53,10 @@ vi.mock('@zeffuro/fakegaming-common/managers', () => ({
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
 vi.mock('../../utils/discord.js', () => ({
     sendChannelMessagePayload: hoisted.sendChannelMessagePayload,
-    sendDirectMessagePayload: hoisted.sendDirectMessagePayload,
+    sendDirectMessagePayloadResult: async (userId: string, payload: Record<string, unknown>) => {
+        const message = await hoisted.sendDirectMessagePayload(userId, payload);
+        return message ? { status: 'sent', message } : { status: 'rejected' };
+    },
 }));
 vi.mock('@zeffuro/fakegaming-common/jobs', () => ({
     scheduleSingleton: vi.fn().mockResolvedValue('jobid'),

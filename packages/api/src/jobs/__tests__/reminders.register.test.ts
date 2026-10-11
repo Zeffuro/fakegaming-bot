@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock('../../utils/discord.js', () => ({ sendDirectMessagePayloadResult: mocks.send }));
 vi.mock('../status.js', () => ({ recordJobRun: vi.fn() }));
-vi.mock('@zeffuro/fakegaming-common/managers', () => ({ getConfigManager: () => ({
+vi.mock('@zeffuro/fakegaming-common/managers', async importOriginal => ({ ...await importOriginal<object>(), getConfigManager: () => ({
     reminderManager: {
         getAllPlain: mocks.getAll, updatePlain: mocks.update,
         rescheduleRecurringReminder: mocks.reschedule, removeReminder: mocks.remove,

@@ -16,6 +16,7 @@ import {
     PollError,
 } from '@zeffuro/fakegaming-common/managers';
 import { getPollRuntime, type PollRuntime } from '../shared/pollRuntime.js';
+import { handleRankedBallot } from '../shared/rankedBallot.js';
 
 const MAX_OPTIONS = 5;
 const MAX_QUESTION_LENGTH = 200;
@@ -36,6 +37,8 @@ const data = createSlashCommand(META, (b: SlashCommandBuilder) =>
             .setMaxValue(POLL_MAX_DURATION_MINUTES)
             .setRequired(false))
         .addBooleanOption(option => option.setName('multiple').setDescription('Allow selecting several options (click again to remove)').setRequired(false))
+        .addBooleanOption(option => option.setName('hide-results').setDescription('Hide results until this poll closes (default: false)').setRequired(false))
+        .addBooleanOption(option => option.setName('ranked').setDescription('Rank options privately instead of selecting one (default: false)').setRequired(false))
 );
 
 async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -66,12 +69,16 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         return;
     }
     try {
+        const ranked = interaction.options.getBoolean('ranked') ?? false;
+        if (ranked && interaction.options.getBoolean('multiple')) { await interaction.editReply(copy.rankIncompatible); return; }
         const runtime = getPollRuntime();
         const message = await interaction.fetchReply();
         const session = await runtime.manager.create({
             guildId: interaction.guildId ?? `dm:${interaction.user.id}`, channelId: interaction.channelId, messageId: message.id,
             creatorId: interaction.user.id, question, options, durationMinutes,
             allowMultiple: interaction.options.getBoolean('multiple') ?? false, locale,
+            hideResults: interaction.options.getBoolean('hide-results') ?? false,
+            ranked,
         });
         runtime.track(session);
         await runtime.refresh(session.id).catch(() => undefined);
@@ -92,6 +99,7 @@ export function createPollComponentHandler(runtime: Pick<PollRuntime, 'manager' 
         const pollId = parts[2];
         const encodedLocale = parts.at(-1);
         await interaction.deferUpdate();
+        if (action === 'rank' || action === 'r') return handleRankedBallot(interaction, runtime);
         const locale = isSupportedOutputLocale(encodedLocale) ? encodedLocale : await resolveInteractionOutputLocale(interaction);
         const copy = getGeneralCopy(locale).poll;
         const validVote = action === 'vote' && (parts.length === 4 || parts.length === 5)

@@ -78,6 +78,52 @@
                         "description": "Taak-ID uit /tasks list"
                     }
                 }
+            },
+            "save-list": {
+                "description": "Sla een taakchecklist op als herbruikbare persoonlijke lijst",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    },
+                    "name": {
+                        "description": "Naam van de opgeslagen checklist"
+                    }
+                }
+            },
+            "lists": {
+                "description": "Toon je opgeslagen herbruikbare checklists",
+                "options": {
+                    "page": {
+                        "description": "Paginanummer"
+                    }
+                }
+            },
+            "start-list": {
+                "description": "Start een nieuwe taak zonder vinkjes uit een opgeslagen lijst",
+                "options": {
+                    "list": {
+                        "description": "Opgeslagen checklist-ID uit /tasks lists"
+                    },
+                    "due": {
+                        "description": "Optionele toekomstige datum, tijd of vertraging"
+                    }
+                }
+            },
+            "delete-list": {
+                "description": "Verwijder een opgeslagen checklist zonder de taken te wijzigen",
+                "options": {
+                    "list": {
+                        "description": "Opgeslagen checklist-ID uit /tasks lists"
+                    }
+                }
+            },
+            "undo": {
+                "description": "Maak de laatste taakvoltooiing ongedaan",
+                "options": {
+                    "task": {
+                        "description": "Taak-ID uit /tasks list"
+                    }
+                }
             }
         }
     },

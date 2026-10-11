@@ -1,0 +1,4 @@
+{
+  "notificationPauseStale": "Your notification settings or timezone changed. Reload the saved settings and try again.",
+  "notificationPauseInvalid": "Choose a valid pause setting and an optional exact future resume time in your saved timezone."
+}

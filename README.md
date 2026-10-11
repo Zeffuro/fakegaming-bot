@@ -458,7 +458,8 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/patchnotes-history`|Slash|Show stored patch note history for a game|All users|
 |`/pause-reminder`|Slash|Pause one of your recurring reminders|All users|
 |`/permissions-backup`|Slash|Save and export role, category, and channel permissions|Administrator|
-|`/poll`|Slash|Create a button poll with live results|All users|
+|`/poll`|Slash|Create a button poll with live or hidden results|All users|
+|`/polls`|Slash|Manage your private reusable poll templates|All users|
 |`/preset`|Slash|Save and run your private command presets|All users|
 |`/profile-card`|Slash|Render a Discord profile card|All users|
 |`/question`|Slash|Draw a conversation question from a local deck|All users|

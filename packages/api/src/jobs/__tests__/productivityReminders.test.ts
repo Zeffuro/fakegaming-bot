@@ -23,6 +23,13 @@ beforeEach(async () => {
 afterEach(() => vi.restoreAllMocks());
 
 describe('personal reminder delivery integration', () => {
+    it('keeps a safe saved source in task DMs and omits unsafe legacy links', () => {
+        const personal = { content: 'Task', task: { id: 'task', version: 1, sourceUrl: 'https://discord.com/channels/1/2/3' } };
+        const payload = buildReminderDeliveryPayload('delivery', 'Task', 'nl', personal);
+        expect(payload.components[0]?.components.find(component => component.style === 5)).toMatchObject({ style: 5, label: 'Oorspronkelijke bron', url: personal.task.sourceUrl });
+        expect(buildReminderDeliveryPayload('delivery', 'Task', 'en', { ...personal, task: { ...personal.task, sourceUrl: 'javascript:alert(1)' } }).components[0]?.components).toHaveLength(3);
+        expect(payload.allowed_mentions).toEqual({ parse: [] });
+    });
     it('sends a durable task occurrence with message-bound Done/Snooze controls and single-use completion', async () => {
         const tasks = new UserTaskManager();
         const task = await tasks.create({ userId, title: 'Task', dueAt: Date.now() + 60_000, timezone: 'UTC' });
@@ -32,7 +39,7 @@ describe('personal reminder delivery integration', () => {
         await runJobHandler(queue, 'reminders:run', {});
         const delivery = (await ReminderDelivery.findAll())[0]!;
         const payload = mocks.send.mock.calls[0]![1] as { components: Array<{ components: Array<{ custom_id: string }> }> };
-        expect(payload.components[0]?.components.map(item => item.custom_id)).toEqual([`user-task:d:${task.id}:0:${delivery.id}`, `user-task:s:${task.id}:0:${delivery.id}`]);
+        expect(payload.components[0]?.components.map(item => item.custom_id)).toEqual([`user-task:d:${task.id}:0:${delivery.id}`, `user-task:s:${task.id}:0:${delivery.id}`, `user-task:m:${task.id}:0:${delivery.id}`]);
         expect(delivery).toMatchObject({ status: 'delivered', messageId: 'message', channelId: 'channel', finalized: true });
         const done = await tasks.done(task.id, userId, 0, { id: delivery.id, messageId: 'message', channelId: 'channel' });
         expect(done.state).toBe('completed');
@@ -45,13 +52,15 @@ describe('personal reminder delivery integration', () => {
         const tasks = new UserTaskManager();
         const task = await tasks.create({ userId, title: 'Task', dueAt: Date.now() + 60_000, timezone: 'UTC' });
         await ReminderConfig.update({ timestamp: Date.now() - 1_000 }, { where: { id: task.reminderId } });
+        let completion: Promise<unknown> | undefined;
         mocks.send.mockImplementationOnce(async () => {
-            await tasks.done(task.id, userId, 0);
+            completion = tasks.done(task.id, userId, 0);
             return { status: 'sent', message: { id: 'message', channel_id: 'channel' } };
         });
         const queue = new TestJobQueue();
         await registerRemindersJobs(queue);
         await runJobHandler(queue, 'reminders:run', {});
+        await completion;
         expect((await tasks.get(task.id, userId))?.state).toBe('completed');
         expect(await ReminderConfig.count()).toBe(0);
         expect((await ReminderDelivery.findAll())[0]?.status).toBe('delivered');
@@ -111,7 +120,7 @@ describe('personal reminder delivery integration', () => {
         expect(await prepareProductivityNotification({ id: 'task:missing:0', userId, message: 'Task' })).toBeNull();
         const id = '00000000-0000-0000-0000-000000000000';
         const payload = buildReminderDeliveryPayload(id, 'Task', 'en', { content: 'Task', task: { id, version: 2_147_483_647 } });
-        for (const button of payload.components[0]?.components ?? []) expect(button.custom_id.length).toBeLessThanOrEqual(100);
+        for (const button of payload.components[0]?.components ?? []) if (button.custom_id) expect(button.custom_id.length).toBeLessThanOrEqual(100);
         expect(configManager.userTaskManager).toBeDefined();
     });
 });

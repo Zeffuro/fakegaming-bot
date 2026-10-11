@@ -99,6 +99,10 @@
     "./api-helpers": {
       "import": "./types/empty.js",
       "types": "./types/api-helpers.d.ts"
+    },
+    "./dashboard-layout": {
+      "import": "./dist/utils/dashboardLayout.js",
+      "types": "./dist/utils/dashboardLayout.d.ts"
     }
   },
   "typesVersions": {
@@ -186,6 +190,9 @@
       ],
       "api-helpers": [
         "types/api-helpers.d.ts"
+      ],
+      "dashboard-layout": [
+        "dist/utils/dashboardLayout.d.ts"
       ]
     }
   },

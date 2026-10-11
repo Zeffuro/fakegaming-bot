@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 72 commands; 66 slash; 2 user context; 4 message context.
+Total: 73 commands; 67 slash; 2 user context; 4 message context.
 
 ## Anime
 
@@ -37,7 +37,8 @@ Total: 72 commands; 66 slash; 2 user context; 4 message context.
 | Slash | `/help` | List all available commands and their descriptions. | All users |
 | Slash | `/occupy-channel` | Keep a voice channel occupied while the bot is online | Administrator |
 | Slash | `/permissions-backup` | Save and export role, category, and channel permissions | Administrator |
-| Slash | `/poll` | Create a button poll with live results | All users |
+| Slash | `/poll` | Create a button poll with live or hidden results | All users |
+| Slash | `/polls` | Manage your private reusable poll templates | All users |
 | Slash | `/profile-card` | Render a Discord profile card | All users |
 | Slash | `/question` | Draw a conversation question from a local deck | All users |
 | Slash | `/roll` | Roll dice or generate a random number | All users |

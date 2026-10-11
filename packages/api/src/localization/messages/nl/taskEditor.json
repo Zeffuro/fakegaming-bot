@@ -1,0 +1,5 @@
+{
+    "taskEditorMissing": "Deze taak is niet meer beschikbaar.",
+    "taskEditorStale": "Deze taak is gewijzigd of voltooid. Vernieuw je taken en probeer het opnieuw.",
+    "taskEditorInvalid": "Controleer de titel, checklist, toekomstige deadline en opgeslagen tijdzone."
+}

@@ -5,7 +5,7 @@ import { renderPollMessage } from './pollSession.js';
 
 const log = getLogger({ name: 'bot:polls' });
 
-export type PollPersistence = Pick<PollManager, 'create' | 'get' | 'vote' | 'close' | 'listForRecovery' | 'markRendered'>;
+export type PollPersistence = Pick<PollManager, 'create' | 'get' | 'vote' | 'rank' | 'close' | 'listForRecovery' | 'markRendered'>;
 
 export class PollRuntime {
     private readonly refreshTimers = new Map<string, ReturnType<typeof setTimeout>>();

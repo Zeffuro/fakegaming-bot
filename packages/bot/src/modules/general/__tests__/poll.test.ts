@@ -10,7 +10,7 @@ import { getGeneralCopy } from '../data/generalCopy.js';
 function board(overrides: Partial<PollBoard> = {}): PollBoard {
     return {
         id: 'poll-1', guildId: 'guild', channelId: 'channel', messageId: 'message', creatorId: 'creator',
-        question: 'Which option?', options: ['Alpha', 'Beta'], votes: new Map(), allowMultiple: false,
+        question: 'Which option?', options: ['Alpha', 'Beta'], votes: new Map(), allowMultiple: false, hideResults: false, ranked: false,
         expiresAt: Date.now() + 60_000, closedAt: null, closeReason: null, locale: 'en', version: 0, renderPending: true,
         ...overrides,
     };
@@ -22,6 +22,7 @@ function persistence(initial = board()) {
         create: vi.fn(async () => current),
         get: vi.fn(async () => current),
         vote: vi.fn(async () => current),
+        rank: vi.fn(async () => current),
         close: vi.fn(async () => current),
         listForRecovery: vi.fn(async () => [current]),
         markRendered: vi.fn(async (_id: string, version: number) => {
@@ -47,7 +48,7 @@ function slash(values: Record<string, string> = { question: 'Which?', option1: '
         reply: vi.fn().mockResolvedValue(undefined), editReply: vi.fn().mockResolvedValue(undefined),
         options: {
             getString: vi.fn((name: string) => values[name] ?? null),
-            getInteger: vi.fn(() => duration), getBoolean: vi.fn(() => true),
+            getInteger: vi.fn(() => duration), getBoolean: vi.fn((name: string): boolean | null => name === 'multiple' ? true : null),
         },
     };
 }
@@ -59,6 +60,32 @@ afterEach(() => {
 });
 
 describe('persistent poll components and presentation', () => {
+    it('hides every live aggregate and reveals unchanged results for every close reason in both locales', () => {
+        for (const locale of ['en', 'nl'] as const) {
+            for (const allowMultiple of [false, true]) {
+                const session = board({
+                    locale, allowMultiple, hideResults: true,
+                    votes: new Map([['one', allowMultiple ? [0, 1] : [0]], ['two', [1]]]),
+                });
+                const copy = getGeneralCopy(locale).poll;
+                const open = renderPollMessage(session);
+                expect(open.content).toContain('1. Alpha\n2. Beta');
+                expect(open.content).toContain(copy.resultsHidden);
+                expect(open.content).not.toMatch(/\d+%/);
+                expect(open.content).not.toContain(copy.total(2));
+                expect(open.content).not.toContain(copy.votes(1));
+                expect(open.content).not.toContain(copy.votes(2));
+                expect(open.components.flatMap(row => row.components).every(component => !component.data.disabled)).toBe(true);
+                for (const closeReason of ['creator', 'moderator', 'expired'] as const) {
+                    const closed = { ...session, closedAt: 1, closeReason };
+                    expect(renderPollMessage(closed)).toEqual(renderPollMessage({ ...closed, hideResults: false }));
+                    expect(renderPollMessage(closed).content).toContain(copy.total(2));
+                    expect(renderPollMessage(closed).content).not.toContain(copy.resultsHidden);
+                }
+            }
+        }
+    });
+
     it('renders single and multiple counts as the percentage of voters, with locale IDs and final ties', () => {
         const session = board({ allowMultiple: true, locale: 'nl', votes: new Map([['one', [0, 1]], ['two', [1]]]) });
         const rendered = renderPollMessage(session);
@@ -87,6 +114,8 @@ describe('persistent poll components and presentation', () => {
         }
         const metadata = pollCommand.data.toJSON();
         expect(metadata.options?.find(option => option.name === 'multiple')).toMatchObject({ type: 5 });
+        expect(metadata.options?.find(option => option.name === 'hide-results')).toMatchObject({ type: 5, required: false });
+        expect(metadata.options?.find(option => option.name === 'ranked')).toMatchObject({ type: 5, required: false });
         expect(metadata.dm_permission).not.toBe(false);
         expect(metadata.options?.find(option => option.name === 'question')).toMatchObject({ max_length: 200 });
     });
@@ -95,6 +124,17 @@ describe('persistent poll components and presentation', () => {
         expect(normalizePollQuestion('  Which?  ')).toBe('Which?');
         expect(normalizePollQuestion(' ')).toBe('');
         expect(hasDuplicatePollOptions([' Alpha ', 'ＡＬＰＨＡ'])).toBe(true);
+    });
+    it('passes ranked settings to creation and rejects combining ranked and multiple choice', async () => {
+        const state = persistence(board({ ranked: true })); const runtime = new PollRuntime(state.manager, vi.fn());
+        vi.spyOn(runtimeModule, 'getPollRuntime').mockReturnValue(runtime);
+        const ranked = slash(); ranked.options.getBoolean.mockImplementation(name => name === 'ranked');
+        await pollCommand.execute(ranked as unknown as ChatInputCommandInteraction);
+        expect(state.manager.create).toHaveBeenCalledWith(expect.objectContaining({ ranked: true, allowMultiple: false }));
+        const invalid = slash(); invalid.options.getBoolean.mockImplementation(name => name === 'ranked' || name === 'multiple');
+        await pollCommand.execute(invalid as unknown as ChatInputCommandInteraction);
+        expect(state.manager.create).toHaveBeenCalledOnce();
+        expect(invalid.editReply).toHaveBeenCalledWith(getGeneralCopy('en').poll.rankIncompatible);
     });
 
     it('renders no-vote results and a single winner without arbitrary tie breaks', () => {
@@ -164,8 +204,11 @@ describe('persistent poll components and presentation', () => {
         });
         await pollCommand.execute(value as unknown as ChatInputCommandInteraction);
         expect(manager.create).toHaveBeenCalledWith(expect.objectContaining({
-            guildId: 'guild', channelId: 'channel', messageId: 'message', allowMultiple: true, durationMinutes: 10,
+            guildId: 'guild', channelId: 'channel', messageId: 'message', allowMultiple: true, hideResults: false, durationMinutes: 10,
         }));
+        value.options.getBoolean.mockImplementation(name => name === 'hide-results');
+        await pollCommand.execute(value as unknown as ChatInputCommandInteraction);
+        expect(manager.create).toHaveBeenLastCalledWith(expect.objectContaining({ hideResults: true, allowMultiple: false }));
         runtime.stop();
     });
 
@@ -222,6 +265,33 @@ describe('persistent poll components and presentation', () => {
 });
 
 describe('poll runtime recovery and rendering', () => {
+    it('restores hidden open output and publishes results after the restored expiry timer', async () => {
+        vi.useFakeTimers();
+        const initial = board({ hideResults: true, expiresAt: Date.now() + 100, votes: new Map([['one', [1]]]) });
+        const state = persistence(initial);
+        const payloads: string[] = [];
+        const runtime = new PollRuntime(state.manager, async session => { payloads.push(renderPollMessage(session).content); });
+        const getStored = state.manager.get.getMockImplementation();
+        state.manager.get.mockImplementation(async () => {
+            const session = await getStored?.();
+            if (session?.closedAt === null && Date.now() >= session.expiresAt) {
+                const closed = { ...session, closedAt: session.expiresAt, closeReason: 'expired' as const, renderPending: true, version: 1 };
+                state.set(closed);
+                return closed;
+            }
+            return session ?? initial;
+        });
+        await runtime.start();
+        await vi.advanceTimersByTimeAsync(1);
+        expect(payloads[0]).toContain(getGeneralCopy('en').poll.resultsHidden);
+        expect(payloads[0]).not.toContain('100%');
+        await vi.advanceTimersByTimeAsync(100);
+        expect(payloads.at(-1)).toContain(getGeneralCopy('en').poll.closedByExpiry);
+        expect(payloads.at(-1)).toContain(getGeneralCopy('en').poll.winner('Beta', 1));
+        expect(payloads.at(-1)).toContain('100%');
+        runtime.stop();
+    });
+
     it('restores a DM only for its persisted recipient and refuses mismatched recipients', async () => {
         const config = getConfigManager();
         const previous = config.pollManager;

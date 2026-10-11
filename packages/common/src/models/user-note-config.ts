@@ -27,4 +27,7 @@ export class UserNoteConfig extends Model {
 
     @Column({ type: DataType.STRING(2048), allowNull: true })
     declare sourceUrl: string | null;
+
+    @Column({ type: DataType.STRING(64), allowNull: true })
+    declare linkedTaskId: string | null;
 }

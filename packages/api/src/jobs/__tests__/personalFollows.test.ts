@@ -141,8 +141,9 @@ describe('private follow delivery', () => {
         const record = await follow('steam', 'digest');
         mocks.steam.mockResolvedValue(Array.from({ length: 20 }, (_, index) => ({ gid: `change-${index}`, title: 'x'.repeat(140), url: `https://example.com/${index}${'1'.repeat(130)}`, date: now / 1000 })));
         await manager.configure('owner', { timezone: 'UTC', quietStart: null, quietEnd: null, digestAt: '09:00' });
+        let updated: Promise<unknown> | undefined;
         mocks.send.mockImplementationOnce(async () => {
-            await manager.configure('owner', {
+            updated = manager.configure('owner', {
                 timezone: change === 'timezone' ? 'Pacific/Pago_Pago' : 'UTC',
                 quietStart: change === 'quiet' ? '00:00' : null,
                 quietEnd: change === 'quiet' ? '00:00' : null,
@@ -151,6 +152,7 @@ describe('private follow delivery', () => {
             return { status: 'sent', message: { id: 'first', channel_id: 'channel' } };
         });
         await processPersonalFollows(now);
+        await updated;
         expect(mocks.send).toHaveBeenCalledOnce();
         expect(await UserFollowEvent.count({ where: { followId: record.id, status: 'sent' } })).toBeGreaterThan(0);
         expect(await UserFollowEvent.count({ where: { followId: record.id, status: 'pending' } })).toBeGreaterThan(0);

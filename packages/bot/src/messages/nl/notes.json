@@ -18,6 +18,15 @@
     "and": "en",
     "contextSaved": "Dit bericht is als `{id}` opgeslagen in je privénotities.",
     "contextFailed": "Ik kon dat bericht niet opslaan in je privénotities. Probeer het later opnieuw.",
+    "task": {
+        "action": "Taak maken / openen", "modalTitle": "Taak uit opgeslagen notitie", "titleLabel": "Taaktitel",
+        "dueLabel": "Uiterste datum en tijd (optioneel)", "duePlaceholder": "JJJJ-MM-DD UU:mm; leeg voor geen einddatum",
+        "timezoneLabel": "Je opgeslagen tijdzone (niet wijzigen)", "created": "Privétaak gemaakt. Je oorspronkelijke notitie blijft bewaard.",
+        "existing": "Deze notitie heeft al een taak. De titel en eindtijd blijven ongewijzigd.",
+        "deleted": "De gekoppelde taak is verwijderd of verlopen. Maak een nieuwe taak met /tasks add.",
+        "invalid": "Gebruik een titel van 1–120 tekens en een exacte datum en tijd in de toekomst. Wijzig je opgeslagen tijdzone niet.",
+        "capacity": "Je hebt het maximumaantal actieve taken bereikt. Verwijder eerst een taak.", "failed": "De taak kon niet worden opgeslagen. Probeer het straks opnieuw."
+    },
     "inbox": {
         "unread": "ongelezen",
         "read": "gelezen",

@@ -18,7 +18,7 @@ describe('persistent polls', () => {
         await first.vote(board.id, scope, 'two', 0);
         const restarted = new PollManager();
         const restored = await restarted.get(board.id, scope);
-        expect(restored).toMatchObject({ ...scope, locale: 'nl', allowMultiple: false, closedAt: null });
+        expect(restored).toMatchObject({ ...scope, locale: 'nl', allowMultiple: false, hideResults: false, closedAt: null });
         expect(restored?.votes).toEqual(new Map([['one', [1]], ['two', [0]]]));
         const closed = await restarted.close(board.id, scope, 'creator');
         await expect(first.vote(board.id, scope, 'three', 0)).rejects.toMatchObject({ code: 'closed' });
@@ -36,6 +36,21 @@ describe('persistent polls', () => {
         expect((await new PollManager().get(board.id))?.votes.get('one')).toEqual([1]);
         await manager.vote(board.id, scope, 'one', 1);
         expect((await manager.get(board.id))?.votes.size).toBe(0);
+    });
+
+    it('persists the optional hidden-result policy with multiple votes and final recovery', async () => {
+        let now = 1_000;
+        const manager = new PollManager({ now: () => now });
+        const board = await manager.create({ ...input, allowMultiple: true, hideResults: true });
+        await manager.vote(board.id, scope, 'one', 0);
+        await manager.vote(board.id, scope, 'one', 1);
+        const restarted = new PollManager({ now: () => now });
+        expect(await restarted.get(board.id)).toMatchObject({ hideResults: true, closedAt: null });
+        expect((await restarted.get(board.id))?.votes.get('one')).toEqual([0, 1]);
+        now = 61_001;
+        const recovered = await restarted.listForRecovery();
+        expect(recovered[0]).toMatchObject({ hideResults: true, closedAt: 61_000, closeReason: 'expired' });
+        expect(recovered[0]?.votes.get('one')).toEqual([0, 1]);
     });
 
     it('serializes same-user votes and close races without modifying final votes', async () => {

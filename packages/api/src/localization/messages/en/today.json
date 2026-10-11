@@ -1,0 +1,6 @@
+{
+    "todayMissing": "This item is no longer available.",
+    "todayStale": "This item changed. Refresh Today and try again.",
+    "todayInvalid": "The requested action is not valid.",
+    "taskTomorrow": "Do this tomorrow"
+}

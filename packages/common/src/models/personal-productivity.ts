@@ -6,14 +6,25 @@ export class UserTask extends Model {
     @Column(DataType.STRING(64))
     declare id: string;
 
+    @Index({ name: 'ux_user_task_source_note', unique: true })
     @Column(DataType.STRING(32))
     declare userId: string;
+
+    @Index({ name: 'ux_user_task_source_note', unique: true })
+    @Column({ type: DataType.STRING(64), allowNull: true })
+    declare sourceNoteId: string | null;
+
+    @Column({ type: DataType.STRING(2048), allowNull: true })
+    declare sourceUrl: string | null;
 
     @Column(DataType.STRING(120))
     declare title: string;
 
     @Column(DataType.TEXT)
     declare checklistJson: string;
+
+    @Column({ type: DataType.TEXT, allowNull: true })
+    declare undoCompletionJson: string | null;
 
     @Column(DataType.STRING(16))
     declare state: 'active' | 'completed';

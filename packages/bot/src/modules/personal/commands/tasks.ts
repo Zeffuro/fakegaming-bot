@@ -1,12 +1,23 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, type ButtonInteraction, type ChatInputCommandInteraction } from 'discord.js';
-import { getConfigManager, PersonalError, type UserTaskBoard } from '@zeffuro/fakegaming-common/managers';
+import { getConfigManager, normalizeNoteSourceUrl, PersonalError, type UserTaskBoard } from '@zeffuro/fakegaming-common/managers';
 import { parseReminderTime, parseReminderRecurrence, formatReminderRecurrence } from '@zeffuro/fakegaming-common/utils';
 import { createSlashCommand } from '../../../core/commandBuilder.js';
 import type { SupportedOutputLocale } from '../../../core/localization.js';
 import { tasks as META } from '../commands.manifest.js';
 import { personalCopy, personalDelivery, personalFailure, personalLocale, personalPage, personalTimezone } from '../shared/personalCopy.js';
+import { taskListAction } from '../shared/taskLists.js';
 
 const data = createSlashCommand(META, b => {
+    b.addSubcommand(s => s.setName('save-list').setDescription('Save a task checklist as a reusable personal list')
+        .addStringOption(o => o.setName('task').setDescription('Task ID from /tasks list').setRequired(true).setMaxLength(36))
+        .addStringOption(o => o.setName('name').setDescription('Saved checklist name').setRequired(true).setMaxLength(120)));
+    b.addSubcommand(s => s.setName('lists').setDescription('List your saved reusable checklists')
+        .addIntegerOption(o => o.setName('page').setDescription('Page number').setMinValue(1)));
+    b.addSubcommand(s => s.setName('start-list').setDescription('Start a fresh unchecked task from a saved list')
+        .addStringOption(o => o.setName('list').setDescription('Saved checklist ID from /tasks lists').setRequired(true).setMaxLength(36))
+        .addStringOption(o => o.setName('due').setDescription('Optional future date, time or delay').setMaxLength(100)));
+    b.addSubcommand(s => s.setName('delete-list').setDescription('Remove a saved checklist without changing its tasks')
+        .addStringOption(o => o.setName('list').setDescription('Saved checklist ID from /tasks lists').setRequired(true).setMaxLength(36)));
     b.addSubcommand(s => s.setName('add').setDescription('Create a private task or checklist')
         .addStringOption(o => o.setName('title').setDescription('Task title').setMaxLength(120).setRequired(true))
         .addStringOption(o => o.setName('checklist').setDescription('Up to ten checklist items separated by |').setMaxLength(1210))
@@ -16,7 +27,7 @@ const data = createSlashCommand(META, b => {
     b.addSubcommand(s => s.setName('list').setDescription('List your tasks')
         .addBooleanOption(o => o.setName('completed').setDescription('Show completed tasks'))
         .addIntegerOption(o => o.setName('page').setDescription('Page number').setMinValue(1)));
-    for (const [name, description] of [['show', 'Open a task and its controls'], ['done', 'Complete this occurrence'], ['snooze', 'Move this occurrence to a later time'], ['check', 'Toggle a checklist item'], ['delete', 'Delete a task']] as const) {
+    for (const [name, description] of [['show', 'Open a task and its controls'], ['done', 'Complete this occurrence'], ['undo', 'Undo the latest task completion'], ['snooze', 'Move this occurrence to a later time'], ['check', 'Toggle a checklist item'], ['delete', 'Delete a task']] as const) {
         b.addSubcommand(s => {
             s.setName(name).setDescription(description).addStringOption(o => o.setName('task').setDescription('Task ID from /tasks list').setRequired(true).setMaxLength(36));
             if (name === 'snooze') s.addStringOption(o => o.setName('when').setDescription('Future date, time or delay').setRequired(true).setMaxLength(100));
@@ -38,12 +49,22 @@ export function renderTask(task: UserTaskBoard, locale: SupportedOutputLocale) {
         components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder().setCustomId(`user-task:d:${task.id}:${task.version}`).setLabel(t('tasks.done')).setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`user-task:s:${task.id}:${task.version}`).setLabel(t('tasks.snooze')).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`user-task:m:${task.id}:${task.version}`).setLabel(t('tasks.tomorrow')).setStyle(ButtonStyle.Secondary),
         ));
         for (let offset = 0; offset < task.checklist.length; offset += 5) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
             task.checklist.slice(offset, offset + 5).map((_, i) => new ButtonBuilder().setCustomId(`user-task:c:${task.id}:${task.version}:${offset + i}`)
                 .setLabel(t('tasks.check', { index: offset + i + 1 })).setStyle(ButtonStyle.Secondary)),
         ));
     }
+    if (task.canUndo) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder().setCustomId(`user-task:u:${task.id}:${task.version}`).setLabel(t('tasks.undo')).setStyle(ButtonStyle.Secondary),
+    ));
+    try {
+        const source = normalizeNoteSourceUrl(task.sourceUrl);
+        if (source) components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(
+            new ButtonBuilder().setLabel(t('tasks.source')).setURL(source).setStyle(ButtonStyle.Link),
+        ));
+    } catch { /* Malformed legacy links are not actionable. */ }
     return { content: lines.join('\n'), components, allowedMentions: { parse: [] as never[] } };
 }
 
@@ -53,6 +74,11 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
     const t = personalCopy(locale);
     const manager = getConfigManager().userTaskManager;
     try {
+        const listResult = await taskListAction(interaction, locale);
+        if (listResult) {
+            await interaction.editReply('task' in listResult ? renderTask(listResult.task, locale) : { ...listResult, allowedMentions: { parse: [] } });
+            return;
+        }
         const action = interaction.options.getSubcommand();
         if (action === 'list') {
             const completed = interaction.options.getBoolean('completed') ?? false;
@@ -82,6 +108,7 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         let task = await manager.get(id, interaction.user.id);
         if (!task) throw new PersonalError('missing');
         if (action === 'done') task = await manager.done(id, interaction.user.id, task.version);
+        if (action === 'undo') task = await manager.undo(id, interaction.user.id, task.version);
         if (action === 'check') task = await manager.check(id, interaction.user.id, task.version, interaction.options.getInteger('item', true) - 1);
         if (action === 'snooze') {
             const time = parseReminderTime(interaction.options.getString('when', true), task.timezone);
@@ -98,13 +125,15 @@ async function handleComponent(interaction: ButtonInteraction): Promise<boolean>
     const locale = await personalLocale(interaction);
     try {
         const [, action, id, rawVersion, extra] = interaction.customId.split(':');
-        if (!id || !rawVersion || !/^\d+$/.test(rawVersion) || !['d', 's', 'c'].includes(action ?? '')) throw new PersonalError('invalid');
+        if (!id || !rawVersion || !/^\d+$/.test(rawVersion) || !['d', 's', 'm', 'c', 'u'].includes(action ?? '')) throw new PersonalError('invalid');
         const manager = getConfigManager().userTaskManager;
         const version = Number(rawVersion);
-        const delivery = action === 'c' ? undefined : await personalDelivery(interaction, extra);
+        const delivery = action === 'c' || action === 'u' ? undefined : await personalDelivery(interaction, extra);
         const task = action === 'd' ? await manager.done(id, interaction.user.id, version, delivery)
             : action === 's' ? await manager.snooze(id, interaction.user.id, version, Date.now() + 600_000, delivery)
-                : await manager.check(id, interaction.user.id, version, Number(extra));
+                : action === 'm' ? await manager.tomorrow(id, interaction.user.id, version, delivery)
+                : action === 'u' ? await manager.undo(id, interaction.user.id, version)
+                    : await manager.check(id, interaction.user.id, version, Number(extra));
         await interaction.editReply(renderTask(task, locale));
     } catch (error) { await interaction.followUp({ content: personalFailure(error, locale), flags: MessageFlags.Ephemeral }); }
     return true;

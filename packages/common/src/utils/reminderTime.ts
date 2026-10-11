@@ -88,7 +88,26 @@ function getWallTime(timestamp: number, formatter: Intl.DateTimeFormat): WallTim
     };
 }
 
-function resolveWallTime(wall: WallTime, formatter: Intl.DateTimeFormat): number | null {
+export function taskTomorrowTimestamp(timezone: string, now: number, dueAt: number | null): number | null {
+    if (!Number.isSafeInteger(now) || (dueAt !== null && !Number.isSafeInteger(dueAt))) return null;
+    let formatter: Intl.DateTimeFormat;
+    try {
+        formatter = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    } catch { return null; }
+    const today = getWallTime(now, formatter);
+    const next = new Date(Date.UTC(today.year, today.month - 1, today.day + 1));
+    const clock = dueAt === null ? { hour: 9, minute: 0, second: 0 } : getWallTime(dueAt, formatter);
+    const wall = { ...clock, year: next.getUTCFullYear(), month: next.getUTCMonth() + 1, day: next.getUTCDate() };
+    // Choose the first repeated clock time; a DST gap moves to the next valid minute.
+    for (let minute = wall.hour * 60 + wall.minute; minute < 1440; minute++) {
+        const timestamp = resolveWallTime({ ...wall, hour: Math.floor(minute / 60), minute: minute % 60 }, formatter, true);
+        if (timestamp !== null && timestamp > now) return timestamp;
+    }
+    return null;
+}
+
+function resolveWallTime(wall: WallTime, formatter: Intl.DateTimeFormat, allowAmbiguous = false): number | null {
     if (!validWallTime(wall)) return null;
     const naive = wallAsUtc(wall);
     const candidates = new Set<number>();
@@ -99,5 +118,5 @@ function resolveWallTime(wall: WallTime, formatter: Intl.DateTimeFormat): number
         const candidate = naive - offset;
         if (wallAsUtc(getWallTime(candidate, formatter)) === naive) candidates.add(candidate);
     }
-    return candidates.size === 1 ? [...candidates][0]! : null;
+    return candidates.size === 1 || (allowAmbiguous && candidates.size > 0) ? Math.min(...candidates) : null;
 }

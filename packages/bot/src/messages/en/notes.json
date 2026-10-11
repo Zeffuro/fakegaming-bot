@@ -18,6 +18,15 @@
     "and": "and",
     "contextSaved": "Saved this message to your private notes as `{id}`.",
     "contextFailed": "I could not save that message to your private notes. Please try again later.",
+    "task": {
+        "action": "Create / open task", "modalTitle": "Task from saved note", "titleLabel": "Task title",
+        "dueLabel": "Due date and time (optional)", "duePlaceholder": "YYYY-MM-DD HH:mm; blank for no due date",
+        "timezoneLabel": "Your saved timezone (leave unchanged)", "created": "Created a private task. Your original note is kept.",
+        "existing": "This note already has a task. Its title and due time are unchanged.",
+        "deleted": "The linked task was deleted or expired. Use /tasks add to create a new task.",
+        "invalid": "Use a title of 1–120 characters and an exact future date and time. Keep your saved timezone unchanged.",
+        "capacity": "You have reached the active task limit. Remove a task first.", "failed": "The task could not be saved. Try again shortly."
+    },
     "inbox": {
         "unread": "unread",
         "read": "read",

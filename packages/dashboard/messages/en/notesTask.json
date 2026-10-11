@@ -1,0 +1,24 @@
+{
+    "notesTask": {
+        "title": "Task from saved note",
+        "create": "Create / open task",
+        "existing": "This note already has a task. Opening it keeps its original title and due time.",
+        "titleLabel": "Task title",
+        "dueLabel": "Due date and time (optional)",
+        "dueHelp": "Use your saved timezone; leave blank for no due date.",
+        "timezone": "Saved timezone: {timezone}",
+        "cancel": "Close",
+        "submit": "Create task",
+        "busy": "Saving…",
+        "success": "Created a private task. Your original note is kept.",
+        "reused": "Opened the existing task. Its title and due time are unchanged.",
+        "failed": "The task could not be saved. Try again shortly.",
+        "taskId": "Task ID: {id}",
+        "retained": "The task keeps the original source link, even if you delete the note.",
+        "loading": "Loading your saved timezone…",
+        "open": "Open task",
+        "due": "Due: {date}",
+        "noDue": "No due date",
+        "completed": "Completed"
+    }
+}
