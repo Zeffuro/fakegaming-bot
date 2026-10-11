@@ -1,0 +1,24 @@
+{
+    "notesTask": {
+        "title": "Taak uit opgeslagen notitie",
+        "create": "Taak maken / openen",
+        "existing": "Deze notitie heeft al een taak. Bij het openen blijven de oorspronkelijke titel en eindtijd bewaard.",
+        "titleLabel": "Taaktitel",
+        "dueLabel": "Uiterste datum en tijd (optioneel)",
+        "dueHelp": "Gebruik je opgeslagen tijdzone; laat leeg voor geen einddatum.",
+        "timezone": "Opgeslagen tijdzone: {timezone}",
+        "cancel": "Sluiten",
+        "submit": "Taak maken",
+        "busy": "Opslaan…",
+        "success": "Privétaak gemaakt. Je oorspronkelijke notitie blijft bewaard.",
+        "reused": "Bestaande taak geopend. De titel en eindtijd blijven ongewijzigd.",
+        "failed": "De taak kon niet worden opgeslagen. Probeer het straks opnieuw.",
+        "taskId": "Taak-ID: {id}",
+        "retained": "De taak behoudt de oorspronkelijke bronlink, ook als je de notitie verwijdert.",
+        "loading": "Je opgeslagen tijdzone laden…",
+        "open": "Taak openen",
+        "due": "Einddatum: {date}",
+        "noDue": "Geen einddatum",
+        "completed": "Voltooid"
+    }
+}
