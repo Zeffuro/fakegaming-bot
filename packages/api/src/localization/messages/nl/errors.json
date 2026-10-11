@@ -82,5 +82,10 @@
   "twitchClipStreamerNotFound": "Deze Twitch-streamer is niet gevonden.",
   "twitchClipDuplicate": "Deze server heeft al een clipcommando voor deze Twitch-streamer.",
   "twitchClipConfigNotFound": "Twitch-clipconfiguratie niet gevonden",
-  "twitchClipTriggeredBy": "Clip aangevraagd door {name}"
+  "twitchClipTriggeredBy": "Clip aangevraagd door {name}",
+  "noteTaskInvalid": "Gebruik een titel van 1–120 tekens en een exacte datum en tijd in de toekomst in je opgeslagen tijdzone.",
+  "noteTaskDeleted": "De gekoppelde taak is verwijderd of verlopen. Maak afzonderlijk een nieuwe taak.",
+  "noteTaskCapacity": "Je hebt het maximumaantal actieve taken bereikt. Verwijder eerst een taak.",
+  "noteTaskFailed": "De taak kon niet worden opgeslagen. Probeer het straks opnieuw.",
+  "noteTaskSource": "Oorspronkelijke bron"
 }
