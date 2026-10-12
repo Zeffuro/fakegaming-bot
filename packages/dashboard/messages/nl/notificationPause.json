@@ -1,6 +1,10 @@
 {
   "notificationPause": {
     "title": "Persoonlijke meldingen pauzeren",
+    "settings": "Meldingsinstellingen",
+    "compactActive": "Persoonlijke meldingen actief",
+    "compactPaused": "Persoonlijke meldingen gepauzeerd",
+    "compactPausedUntil": "Meldingen gepauzeerd tot {date}",
     "description": "Pauzeer alle automatische persoonlijke DM's: herinneringen, gevolgde Twitch- en Steam-updates, persoonlijke overzichten, animeherinneringen, kalender- en planningsherinneringen en ochtendoverzichten.",
     "enabled": "Alle persoonlijke meldingen pauzeren",
     "resumeAt": "Automatisch hervatten (optioneel)",
