@@ -60,7 +60,12 @@
             "deliveryError": "Een bericht of evenement kon niet worden bijgewerkt of verstuurd. Controleer de rechten en of het is verwijderd of het Discord-evenement al is afgelopen.",
             "uncertain": "Van {count} publicaties is het resultaat onbekend. Nieuwe berichten en evenementen met een onbekend resultaat worden niet automatisch opnieuw aangemaakt; controleer Discord voordat je wijzigingen maakt."
         },
-        "title": "Agenda en voltooiing",
+        "title": "Agenda",
+        "settings": "Verbinding, agenda's en exports",
+        "help": "Hoe het werkt",
+        "overlapDetails": "Over overlappingen en synchronisatie",
+        "publishingHelp": "Over publiceren stoppen",
+        "publicationDetails": "Publicatiedetails",
         "description": "Kies je Google-agenda's en afspraken voor privéherinneringen om voltooiing vast te leggen. Een afspraak voltooien verandert nooit toekomstige afspraken.",
         "connectionError": "Google Agenda kon niet worden verbonden of geladen. Probeer het opnieuw.",
         "connected": "Google Agenda verbonden. Kies hieronder welke agenda's en afspraken je wilt volgen.",
