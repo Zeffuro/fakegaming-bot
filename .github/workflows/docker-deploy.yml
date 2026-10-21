@@ -26,6 +26,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.bot
+          pull: true
           push: true
           tags: zeffuro/fakegaming-bot:latest
 
@@ -34,6 +35,7 @@ jobs:
         with:
           context: .
           file: Dockerfile.api
+          pull: true
           push: true
           tags: zeffuro/fakegaming-api:latest
 
@@ -42,5 +44,6 @@ jobs:
         with:
           context: .
           file: Dockerfile.dashboard
+          pull: true
           push: true
           tags: zeffuro/fakegaming-dashboard:latest
