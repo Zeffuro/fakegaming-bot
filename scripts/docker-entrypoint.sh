@@ -13,5 +13,7 @@ for path in $APP_CHOWN_PATHS; do
     fi
 done
 
-exec gosu "$APP_USER:$APP_GROUP" "$@"
+APP_PASSWD="$(getent passwd "$APP_USER")"
+export HOME="$(printf '%s' "$APP_PASSWD" | cut -d: -f6)"
+exec setpriv --reuid="$APP_USER" --regid="$APP_GROUP" --init-groups -- "$@"
 
