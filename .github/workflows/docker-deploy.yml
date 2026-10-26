@@ -1,16 +1,30 @@
 name: Build and Push Docker Images
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-publication-main
+  cancel-in-progress: true
 
 jobs:
   build:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -28,7 +42,7 @@ jobs:
           file: Dockerfile.bot
           pull: true
           push: true
-          tags: zeffuro/fakegaming-bot:latest
+          tags: zeffuro/fakegaming-bot:sha-${{ github.event.workflow_run.head_sha }}
 
       - name: Build & push api
         uses: docker/build-push-action@v7
@@ -37,7 +51,7 @@ jobs:
           file: Dockerfile.api
           pull: true
           push: true
-          tags: zeffuro/fakegaming-api:latest
+          tags: zeffuro/fakegaming-api:sha-${{ github.event.workflow_run.head_sha }}
 
       - name: Build & push dashboard
         uses: docker/build-push-action@v7
@@ -46,4 +60,19 @@ jobs:
           file: Dockerfile.dashboard
           pull: true
           push: true
-          tags: zeffuro/fakegaming-dashboard:latest
+          tags: zeffuro/fakegaming-dashboard:sha-${{ github.event.workflow_run.head_sha }}
+
+      - name: Promote current main images
+        env:
+          BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          current_sha=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$current_sha" != "$BUILD_SHA" ]; then
+            echo "Skipping latest tags for a superseded commit."
+            exit 0
+          fi
+          for service in bot api dashboard; do
+            docker buildx imagetools create \
+              --tag "zeffuro/fakegaming-$service:latest" \
+              "zeffuro/fakegaming-$service:sha-$BUILD_SHA"
+          done

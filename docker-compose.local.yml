@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - ${REDIS_DATA_PATH:-./data/redis}:/data
     healthcheck:
@@ -51,7 +51,7 @@ services:
       - BOT_HEALTH_PORT=8081
     # Expose health port for local access
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     # Ensure the container name and restart policy are kept
     container_name: fakegaming-bot
     restart: unless-stopped
@@ -77,7 +77,7 @@ services:
     # Expose the API port for local access
     ports:
       # Map host port 3001 to container port 3001
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     environment:
       - PUBLIC_URL=http://api:3001/api
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
@@ -110,7 +110,7 @@ services:
     # Expose the Dashboard port for local access
     ports:
       # Map host port 3000 to container port 3000
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     # Set HOST=0.0.0.0 to ensure Next.js binds correctly inside the container
     environment:
       - HOST=0.0.0.0

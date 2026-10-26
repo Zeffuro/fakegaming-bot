@@ -21,7 +21,7 @@ runs:
 
     - name: Enable Corepack and install pnpm
       shell: bash
-      run: corepack enable && corepack prepare pnpm@latest --activate
+      run: corepack enable && corepack prepare pnpm@12.15.0 --activate
 
     - name: Determine pnpm store path
       id: pnpm-store
@@ -64,4 +64,4 @@ runs:
         
         # Build sqlite3 from source using node-gyp
         cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3
-        npx --yes node-gyp rebuild --release
+        "$GITHUB_WORKSPACE/node_modules/.bin/node-gyp" rebuild --release

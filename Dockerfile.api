@@ -11,7 +11,7 @@ RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update && apt-get
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@12.15.0 --activate
 
 WORKDIR /app
 
@@ -29,8 +29,8 @@ COPY scripts ./scripts
 # Install dependencies (creates symlinks)
 RUN pnpm install --recursive --frozen-lockfile
 RUN ln -sfn /app/packages/common/node_modules/sequelize /app/node_modules/sequelize
-RUN cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3 && npx --yes node-gyp rebuild --release
-RUN cd node_modules/.pnpm/canvas@*/node_modules/canvas && npx --yes node-gyp rebuild --release
+RUN cd node_modules/.pnpm/sqlite3@*/node_modules/sqlite3 && /app/node_modules/.bin/node-gyp rebuild --release
+RUN cd node_modules/.pnpm/canvas@*/node_modules/canvas && /app/node_modules/.bin/node-gyp rebuild --release
 
 # -------------------- BUILDER --------------------
 FROM base AS builder
@@ -50,20 +50,18 @@ RUN apt-get -o Acquire::Retries=5 -o Acquire::http::Timeout=30 update && apt-get
 
 WORKDIR /app
 
-ENV PNPM_HOME="/pnpm"
+ENV NODE_ENV=production
 ENV NODE_PATH="/app/node_modules"
-ENV PATH="/app/node_modules/.bin:$PNPM_HOME:$PATH"
 
 # Copy all sources
 COPY --chown=node:node --from=builder /app /app
 COPY scripts/docker-entrypoint.sh /usr/local/bin/fakegaming-entrypoint
 
-RUN corepack enable && corepack prepare pnpm@latest --activate \
-    && chmod +x /usr/local/bin/fakegaming-entrypoint \
-    && mkdir -p /app/data /pnpm \
-    && chown -R node:node /app/data /pnpm /home/node
+RUN chmod +x /usr/local/bin/fakegaming-entrypoint \
+    && mkdir -p /app/data \
+    && chown -R node:node /app/data /home/node
 
 WORKDIR /app/packages/api
 
 ENTRYPOINT ["fakegaming-entrypoint"]
-CMD ["pnpm", "start"]
+CMD ["node", "dist/index.js"]
