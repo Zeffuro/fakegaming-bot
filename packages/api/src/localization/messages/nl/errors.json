@@ -87,5 +87,15 @@
   "noteTaskDeleted": "De gekoppelde taak is verwijderd of verlopen. Maak afzonderlijk een nieuwe taak.",
   "noteTaskCapacity": "Je hebt het maximumaantal actieve taken bereikt. Verwijder eerst een taak.",
   "noteTaskFailed": "De taak kon niet worden opgeslagen. Probeer het straks opnieuw.",
-  "noteTaskSource": "Oorspronkelijke bron"
+  "noteTaskSource": "Oorspronkelijke bron",
+  "submissionInvalidCategory": "Kies een naam, twee verschillende kanalen en minstens één beoordelaarsrol.",
+  "submissionCategoryLimit": "Deze server heeft al 25 inzendcategorieën. Bewerk een bestaande categorie of schakel deze uit.",
+  "submissionStale": "Deze categorie is tijdens het bewerken gewijzigd. Vernieuw de pagina en probeer het opnieuw.",
+  "submissionProviderUnavailable": "De Discord-instellingen konden niet worden gecontroleerd. Probeer het zo opnieuw.",
+  "submissionInvalidChannel": "Kies twee verschillende kanalen in deze server: een privétekstkanaal voor beoordeling en een tekst- of aankondigingskanaal als bestemming.",
+  "submissionInvalidRole": "Kies bestaande serverrollen. Beoordelaarsrollen mogen niet iedereen of beheerde rollen zijn.",
+  "submissionReviewAccess": "Het beoordelingskanaal moet inzendingen verbergen voor iedereen behalve beoordelaarsrollen, beheerders en deze bot. Verwijder andere zichtbaarheidstoekenningen voor rollen of leden.",
+  "submissionDestinationWrite": "Gewone leden mogen geen berichten verzenden of threads maken en beantwoorden in het bestemmingskanaal. Sta dit alleen toe voor beoordelaars, beheerders en deze bot.",
+  "submissionBotPermissions": "De bot heeft in beide kanalen Kanaal bekijken, Berichten verzenden, Links insluiten, Bestanden bijvoegen en Berichtgeschiedenis lezen nodig.",
+  "submissionReviewerAccess": "Elke beoordelaarsrol heeft Kanaal bekijken en Berichtgeschiedenis lezen nodig in het beoordelingskanaal."
 }

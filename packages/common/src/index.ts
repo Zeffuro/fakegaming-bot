@@ -276,3 +276,7 @@ export * from './steam/index.js';
 
 // TikTok utilities (shared)
 export * from './utils/tiktok.js';
+
+export * from './managers/submissionManager.js';
+export * from './api/submissionSchemas.js';
+export * from './utils/submissionPermissions.js';

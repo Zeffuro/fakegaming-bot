@@ -1,0 +1,11 @@
+{
+    "submissions": {
+        "description": "Submit content and check its review status",
+        "options": {
+            "submit": { "description": "Submit a link or screenshots for review" },
+            "mine": { "description": "Check your private submission statuses", "options": { "page": { "description": "Page number" } } },
+            "show": { "description": "Open one of your submissions", "options": { "id": { "description": "Submission ID" } } },
+            "panel": { "description": "Post the submission panel (administrators only)", "options": { "channel": { "description": "Channel for the submission panel" } } }
+        }
+    }
+}

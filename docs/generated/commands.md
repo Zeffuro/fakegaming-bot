@@ -2,7 +2,7 @@
 
 Generated from `packages/common/src/manifest/bot-manifest.ts`. Do not edit by hand.
 
-Total: 73 commands; 67 slash; 2 user context; 4 message context.
+Total: 74 commands; 68 slash; 2 user context; 4 message context.
 
 ## Anime
 
@@ -159,6 +159,12 @@ Total: 73 commands; 67 slash; 2 user context; 4 message context.
 | --- | --- | --- | --- |
 | Slash | `/add-steam-news` | Add Steam game news notifications | Administrator |
 | Slash | `/manage-steam-news` | List, test, pause, resume, or remove Steam news notifications | Administrator |
+
+## Submissions
+
+| Type | Command | Description | Permissions |
+| --- | --- | --- | --- |
+| Slash | `/submissions` | Submit content and check its review status | All users |
 
 ## Presets
 

@@ -22,6 +22,7 @@ import enPresets from '../messages/en/commands/presets.json' with { type: 'json'
 import enFollows from '../messages/en/commands/follows.json' with { type: 'json' };
 import enPersonal from '../messages/en/commands/personal.json' with { type: 'json' };
 import enSchedules from '../messages/en/commands/schedules.json' with { type: 'json' };
+import enSubmissions from '../messages/en/commands/submissions.json' with { type: 'json' };
 import nlAnime from '../messages/nl/commands/anime.json' with { type: 'json' };
 import nlBirthdays from '../messages/nl/commands/birthdays.json' with { type: 'json' };
 import nlBluesky from '../messages/nl/commands/bluesky.json' with { type: 'json' };
@@ -41,6 +42,7 @@ import nlPresets from '../messages/nl/commands/presets.json' with { type: 'json'
 import nlFollows from '../messages/nl/commands/follows.json' with { type: 'json' };
 import nlPersonal from '../messages/nl/commands/personal.json' with { type: 'json' };
 import nlSchedules from '../messages/nl/commands/schedules.json' with { type: 'json' };
+import nlSubmissions from '../messages/nl/commands/submissions.json' with { type: 'json' };
 
 interface CommandCatalogNode {
     readonly description?: string;
@@ -52,9 +54,9 @@ type CommandCatalog = Readonly<Record<string, CommandCatalogNode>>;
 
 const COMMAND_CATALOGS = {
     en: Object.assign({}, enAnime, enBirthdays, enBluesky, enGameNight, enGeneral, enLeague, enMedia, enNotes,
-        enPatchnotes, enQuotes, enReminders, enSteam, enTikTok, enTwitch, enYouTube, enPresets, enFollows, enPersonal, enSchedules),
+        enPatchnotes, enQuotes, enReminders, enSteam, enTikTok, enTwitch, enYouTube, enPresets, enFollows, enPersonal, enSchedules, enSubmissions),
     nl: Object.assign({}, nlAnime, nlBirthdays, nlBluesky, nlGameNight, nlGeneral, nlLeague, nlMedia, nlNotes,
-        nlPatchnotes, nlQuotes, nlReminders, nlSteam, nlTikTok, nlTwitch, nlYouTube, nlPresets, nlFollows, nlPersonal, nlSchedules),
+        nlPatchnotes, nlQuotes, nlReminders, nlSteam, nlTikTok, nlTwitch, nlYouTube, nlPresets, nlFollows, nlPersonal, nlSchedules, nlSubmissions),
 } satisfies Readonly<Record<'en' | NonDefaultOutputLocale, CommandCatalog>>;
 
 const DISCORD_LOCALES = {

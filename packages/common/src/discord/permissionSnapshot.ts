@@ -93,7 +93,7 @@ export interface NormalizedRolePermissionSnapshot {
     sourceVersion: 2 | typeof ROLE_PERMISSION_SNAPSHOT_VERSION;
 }
 
-const DISCORD_PERMISSION_FLAGS: ReadonlyArray<readonly [string, bigint]> = [
+export const DISCORD_PERMISSION_FLAGS: ReadonlyArray<readonly [string, bigint]> = [
     ['CreateInstantInvite', 1n << 0n],
     ['KickMembers', 1n << 1n],
     ['BanMembers', 1n << 2n],

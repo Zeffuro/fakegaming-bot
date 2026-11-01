@@ -87,5 +87,15 @@
   "noteTaskDeleted": "The linked task was deleted or expired. Create a new task separately.",
   "noteTaskCapacity": "You have reached the active task limit. Remove a task first.",
   "noteTaskFailed": "The task could not be saved. Try again shortly.",
-  "noteTaskSource": "Original source"
+  "noteTaskSource": "Original source",
+  "submissionInvalidCategory": "Choose a name, two different channels, and at least one reviewer role.",
+  "submissionCategoryLimit": "This server already has 25 submission categories. Edit or disable an existing category.",
+  "submissionStale": "This category changed while you were editing. Reload it and try again.",
+  "submissionProviderUnavailable": "Discord configuration could not be verified. Try again shortly.",
+  "submissionInvalidChannel": "Choose two different channels in this server: a private text review channel and a text or announcement destination.",
+  "submissionInvalidRole": "Choose existing server roles. Reviewer roles cannot be everyone or managed roles.",
+  "submissionReviewAccess": "The review channel must hide submissions from everyone except reviewer roles, administrators, and this bot. Remove other role or member visibility grants.",
+  "submissionDestinationWrite": "The destination must prevent ordinary members from sending messages or creating and replying in threads. Allow reviewers, administrators, and this bot only.",
+  "submissionBotPermissions": "The bot needs View Channel, Send Messages, Embed Links, Attach Files, and Read Message History in both channels.",
+  "submissionReviewerAccess": "Every reviewer role needs View Channel and Read Message History in the review channel."
 }

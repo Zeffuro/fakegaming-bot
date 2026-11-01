@@ -1,3 +1,4 @@
+import { SubmissionManager } from './submissionManager.js';
 import { PersonalNotificationHistoryManager } from './personalNotificationHistoryManager.js';
 import { PersonalNotificationPauseManager } from './personalNotificationPauseManager.js';
 import { UserDashboardLayoutManager } from './userDashboardLayoutManager.js';
@@ -49,6 +50,7 @@ const log = getLogger({ name: 'common:config' });
  * Aggregates all manager classes.
  */
 export class ConfigManager {
+    submissionManager = new SubmissionManager();
     personalNotificationHistoryManager = new PersonalNotificationHistoryManager();
     personalNotificationPauseManager = new PersonalNotificationPauseManager();
     userDashboardLayoutManager = new UserDashboardLayoutManager();

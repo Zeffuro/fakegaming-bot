@@ -23,6 +23,7 @@ import { startGameNightExpiryRuntime } from './modules/game-night/shared/gameNig
 import { initializePollRuntime } from './modules/general/shared/pollRuntime.js';
 import { voiceChannelOccupancyRuntime } from './modules/general/shared/voiceChannelOccupancyRuntime.js';
 import {resolveInteractionOutputLocale} from './core/localization.js';
+import { SubmissionRuntime } from './modules/submissions/shared/runtime.js';
 
 const {__dirname} = bootstrapEnv(import.meta.url);
 
@@ -102,6 +103,11 @@ function isExecutableCommandInteraction(interaction: Interaction): interaction i
 
         client.once('clientReady', async () => {
             logger.info({ user: client.user?.tag }, `Logged in as ${client.user?.tag}`);
+            try {
+                await new SubmissionRuntime(client).start();
+            } catch (error) {
+                logger.warn({ errorType: error instanceof Error ? error.name : 'unknown' }, 'Failed to restore submission review controls');
+            }
             try {
                 await startGameNightExpiryRuntime(client);
             } catch (error) {

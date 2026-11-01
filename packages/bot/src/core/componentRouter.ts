@@ -19,6 +19,7 @@ export const COMPONENT_ROUTE_DEFINITIONS: readonly ComponentRouteDefinition[] = 
     { namespace: 'user-task', commandName: 'tasks' },
     { namespace: 'user-session', commandName: 'session' },
     { namespace: 'schedule', commandName: 'schedule' },
+    { namespace: 'submissions', commandName: 'submissions' },
 ];
 
 export class ComponentRouter {

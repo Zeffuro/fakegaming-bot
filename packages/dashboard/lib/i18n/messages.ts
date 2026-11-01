@@ -1,3 +1,5 @@
+import submissionsEn from "../../messages/en/submissions.json";
+import submissionsNl from "../../messages/nl/submissions.json";
 import notificationPauseEn from '../../messages/en/notificationPause.json';
 import notificationPauseNl from '../../messages/nl/notificationPause.json';
 import notificationHistoryEn from '../../messages/en/notificationHistory.json';
@@ -60,6 +62,7 @@ import taskEditorNl from "../../messages/nl/taskEditor.json";
 import calendarOverlapsNl from "../../messages/nl/calendarOverlaps.json";
 
 export const englishMessages = {
+    ...submissionsEn,
     ...adminEn,
     ...analyticsEn,
     ...animeEn,
@@ -95,6 +98,7 @@ type MessageShape<T> = {
 };
 
 export const dutchMessages = {
+    ...submissionsNl,
     ...adminNl,
     ...analyticsNl,
     ...animeNl,

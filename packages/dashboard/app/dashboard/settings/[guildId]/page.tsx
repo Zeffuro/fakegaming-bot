@@ -182,6 +182,14 @@ export default function GuildSettingsPage() {
 
     const destinations: SettingsDestination[] = [
         {
+            title: t("submissions.title"),
+            description: t("submissions.description"),
+            href: `/dashboard/submissions/${encodedGuildId}`,
+            accent: dashboardAccents.commands,
+            icon: <UploadFile />,
+            actionLabel: t("submissions.edit"),
+        },
+        {
             title: t("settings.destination.notifications.title"),
             description: t("settings.destination.notifications.description"),
             href: notificationSetupHref,

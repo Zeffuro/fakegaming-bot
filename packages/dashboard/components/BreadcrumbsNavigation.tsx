@@ -25,6 +25,7 @@ interface BreadcrumbsNavigationProps {
 }
 
 const moduleLabelKeys: Record<string, DashboardMessageKey> = {
+  submissions: "submissions.title",
   settings: "common.settings",
   commands: "commands.title",
   analytics: "breadcrumb.analytics",

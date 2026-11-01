@@ -54,6 +54,16 @@ function createDynamicMockManager<T extends BaseManager<any>>(
  * This allows consistent defaults while keeping the system dynamic
  */
 const DEFAULT_MANAGER_MOCKS: Record<string, ManagerMethodMocks> = {
+    submissionManager: {
+        listCategories: vi.fn().mockResolvedValue([]),
+        listOwn: vi.fn().mockResolvedValue([]),
+        listForRefresh: vi.fn().mockResolvedValue([]),
+        getCategory: vi.fn().mockResolvedValue(null),
+        getPanel: vi.fn().mockResolvedValue(null),
+        get: vi.fn().mockResolvedValue(null),
+        recoverInterrupted: vi.fn().mockResolvedValue(0),
+        pruneFinalized: vi.fn().mockResolvedValue(0),
+    },
     birthdayManager: {
         getAllPlain: vi.fn().mockResolvedValue([]),
         isBirthdayToday: vi.fn().mockReturnValue(false),

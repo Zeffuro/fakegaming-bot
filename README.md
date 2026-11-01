@@ -297,6 +297,22 @@ These commands:
 - Enable hot-reload for rapid development
 - No Docker required
 
+### Using a Remote Development Redis
+
+The development Redis host port is restricted to server loopback. Open an SSH
+tunnel using your usual server login:
+
+```bash
+ssh -N -o ExitOnForwardFailure=yes -L 16379:127.0.0.1:6379 USER@SERVER_IP
+```
+
+Keep the tunnel open and point local clients at `127.0.0.1:16379`. Use the existing
+Redis credentials, for example `REDIS_URL=redis://:PASSWORD@127.0.0.1:16379` with
+the password URL-encoded. Set the same Redis URL in the API and dashboard's local
+environment files so their sessions and guild-permission cache remain shared.
+Do not use the production Redis credentials for development. This also works
+with an IDE Redis client or Redis Insight; no public Redis port is required.
+
 ### Running Locally (Production Mode)
 
 First build all packages:
@@ -481,6 +497,7 @@ Full generated catalog: [docs/generated/commands.md](./docs/generated/commands.m
 |`/snooze-reminder`|Slash|Snooze one of your pending reminders|All users|
 |`/spin`|Slash|Spin the wheel to pick someone!|All users|
 |`/stream-status`|Slash|Check whether a Twitch channel is live|All users|
+|`/submissions`|Slash|Submit content and check its review status|All users|
 |`/subscribe-patchnotes`|Slash|Subscribe a channel to patch notes for a game|All users|
 |`/tasks`|Slash|Manage your private tasks and checklists|All users|
 |`/test-notification`|Slash|Send a sample notification to a channel|All users|

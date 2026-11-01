@@ -1,6 +1,7 @@
 "use client";
 import { Box, Button, Checkbox, FormControlLabel, IconButton, Stack, Typography } from '@mui/material';
-import { ArrowDownward, ArrowUpward } from '@mui/icons-material';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import ArrowUpward from '@mui/icons-material/ArrowUpward';
 import type { DashboardSectionId, PersonalDashboardLayout } from '@zeffuro/fakegaming-common/dashboard-layout';
 import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
 import { dashboardAccents, ghostActionButtonSx } from './dashboardTheme';

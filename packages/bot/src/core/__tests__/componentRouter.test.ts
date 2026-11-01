@@ -47,6 +47,7 @@ describe('ComponentRouter', () => {
             ['tasks', command(async () => true)],
             ['session', command(async () => true)],
             ['schedule', command(async () => true)],
+            ['submissions', command(async () => true)],
         ]));
 
         expect(COMPONENT_ROUTE_DEFINITIONS).toContainEqual({ namespace: 'poll', commandName: 'poll' });

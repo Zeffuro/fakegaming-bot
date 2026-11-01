@@ -2886,6 +2886,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/submissions/{guildId}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Discord channel and role choices for submission configuration */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Channel and role names without member or permission data */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SubmissionOptions"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/submissions/{guildId}/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List submission categories for a guild administrator */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Submission category configuration without submitted content */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SubmissionCategory"][];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Create a submission category after verifying Discord channel privacy */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SubmissionCategoryInput"];
+                };
+            };
+            responses: {
+                /** @description Category created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SubmissionCategory"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/submissions/{guildId}/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a submission category with an expected version */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    guildId: string;
+                    categoryId: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["SubmissionCategoryUpdate"];
+                };
+            };
+            responses: {
+                /** @description Category updated */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SubmissionCategory"];
+                    };
+                };
+                /** @description Category was edited concurrently */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/steamNewsSubscriptions": {
         parameters: {
             query?: never;
@@ -7084,6 +7236,47 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+        };
+        SubmissionCategoryInput: {
+            name: string;
+            destinationChannelId: string;
+            reviewChannelId: string;
+            reviewerRoleIds: string[];
+            submitterRoleIds: string[];
+            enabled: boolean;
+        };
+        SubmissionCategoryUpdate: {
+            name: string;
+            destinationChannelId: string;
+            reviewChannelId: string;
+            reviewerRoleIds: string[];
+            submitterRoleIds: string[];
+            enabled: boolean;
+            expectedVersion: number;
+        };
+        SubmissionCategory: {
+            name: string;
+            destinationChannelId: string;
+            reviewChannelId: string;
+            reviewerRoleIds: string[];
+            submitterRoleIds: string[];
+            enabled: boolean;
+            /** Format: uuid */
+            id: string;
+            guildId: string;
+            version: number;
+        };
+        SubmissionOptions: {
+            roles: {
+                id: string;
+                name: string;
+                managed: boolean;
+            }[];
+            channels: {
+                id: string;
+                name: string;
+                type: number;
+            }[];
         };
         TwitchClipCreateRequest: {
             guildId: string;

@@ -100,6 +100,11 @@ export const BOT_MODULES: ReadonlyArray<BotModuleDef> = [
         "description": "Steam game news notification commands"
     },
     {
+        "name": "submissions",
+        "title": "Submissions",
+        "description": "Private submissions, moderator review and approved community content"
+    },
+    {
         "name": "presets",
         "title": "Presets",
         "description": "Private saved command options"
@@ -1174,6 +1179,21 @@ export const BOT_COMMANDS: ReadonlyArray<BotCommand> = [
         "localizations": {
             "nl": {
                 "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+            }
+        }
+    },
+    {
+        "name": "submissions",
+        "description": "Submit content and check its review status",
+        "module": "submissions",
+        "permissions": null,
+        "dm_permission": false,
+        "default_member_permissions": null,
+        "testOnly": null,
+        "type": null,
+        "localizations": {
+            "nl": {
+                "description": "Stuur content in en bekijk de status van de beoordeling"
             }
         }
     },
@@ -2431,6 +2451,30 @@ export const BOT_TREE: ReadonlyArray<BotModuleNode> = [
                 "localizations": {
                     "nl": {
                         "description": "Bekijk, test, pauzeer, hervat of verwijder Steamnieuwsmeldingen"
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "module": {
+            "name": "submissions",
+            "title": "Submissions",
+            "description": "Private submissions, moderator review and approved community content"
+        },
+        "commands": [
+            {
+                "name": "submissions",
+                "description": "Submit content and check its review status",
+                "module": "submissions",
+                "permissions": null,
+                "dm_permission": false,
+                "default_member_permissions": null,
+                "testOnly": null,
+                "type": null,
+                "localizations": {
+                    "nl": {
+                        "description": "Stuur content in en bekijk de status van de beoordeling"
                     }
                 }
             }

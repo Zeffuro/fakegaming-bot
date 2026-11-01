@@ -49,3 +49,5 @@ export * from './poll-template.js';
 export * from './user-dashboard-layout.js';
 export * from './personal-notification-pause.js';
 export * from './personal-notification-history.js';
+
+export * from './submission.js';

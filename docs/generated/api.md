@@ -2,7 +2,7 @@
 
 Generated from `packages/api/openapi.json`. Do not edit by hand.
 
-Operations: 195
+Operations: 199
 
 | Tag | Method | Path | Summary | Auth |
 | --- | --- | --- | --- | --- |
@@ -128,6 +128,10 @@ Operations: 195
 | SteamNewsSubscriptions | GET | `/steamNewsSubscriptions/{id}` | Get a Steam news subscription by id | Bearer |
 | SteamNewsSubscriptions | PATCH | `/steamNewsSubscriptions/{id}` | Pause or resume a Steam news subscription | Bearer |
 | SteamNewsSubscriptions | DELETE | `/steamNewsSubscriptions/{id}` | Delete a Steam news subscription by id | Bearer |
+| Submissions | GET | `/submissions/{guildId}/categories` | List submission categories for a guild administrator | Bearer |
+| Submissions | POST | `/submissions/{guildId}/categories` | Create a submission category after verifying Discord channel privacy | Bearer |
+| Submissions | PUT | `/submissions/{guildId}/categories/{categoryId}` | Update a submission category with an expected version | Bearer |
+| Submissions | GET | `/submissions/{guildId}/options` | List Discord channel and role choices for submission configuration | Bearer |
 | TikTok | GET | `/tiktok` | List all TikTok stream configs | Bearer |
 | TikTok | POST | `/tiktok` | Create a new TikTok stream config | Bearer |
 | TikTok | GET | `/tiktok/{id}` | Get a TikTok stream config by id | Bearer |

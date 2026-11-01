@@ -1,3 +1,4 @@
+import { SubmissionCategory, SubmissionRecord, SubmissionLock, SubmissionPanel } from './models/submission.js';
 import { PersonalNotificationHistory } from './models/personal-notification-history.js';
 import { PersonalNotificationPause } from './models/personal-notification-pause.js';
 import { UserDashboardLayout } from './models/user-dashboard-layout.js';
@@ -84,6 +85,7 @@ export function getSequelize(useTest = false): Sequelize {
     }
 
     sequelize.addModels([
+        SubmissionCategory, SubmissionRecord, SubmissionLock, SubmissionPanel,
         UserConfig,
         LeagueConfig,
         ServerConfig,

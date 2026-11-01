@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Box, Typography } from "@mui/material";
-import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, Settings, SpeakerNotes, SportsEsports, Timeline, YouTube } from "@mui/icons-material";
+import { AlternateEmail, AutoStories, Block, Cake, FormatQuote, LiveTv, NotificationsActive, RateReview, Settings, SpeakerNotes, SportsEsports, Timeline, YouTube } from "@mui/icons-material";
 import DashboardLayout from "@/components/DashboardLayout";
 import { FeatureCard } from "@/components/dashboard/FeatureCard";
 import { FeatureHero } from "@/components/dashboard/FeatureHero";
@@ -57,6 +57,14 @@ export default function GuildDashboard() {
   }
 
   const modules: GuildDashboardModule[] = [
+    {
+      title: t("submissions.title"),
+      description: t("submissions.description"),
+      icon: <RateReview />,
+      accent: dashboardAccents.commands,
+      href: `/dashboard/submissions/${encodedGuildId}`,
+      actionLabel: t("submissions.edit"),
+    },
     {
       title: t("guildDashboard.notificationsHub"),
       description: t("guildDashboard.notificationsHubDescription"),

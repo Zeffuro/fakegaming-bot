@@ -1,0 +1,11 @@
+{
+    "submissions": {
+        "description": "Stuur content in en bekijk de status van de beoordeling",
+        "options": {
+            "submit": { "description": "Stuur een link of screenshots in ter beoordeling" },
+            "mine": { "description": "Bekijk de status van je eigen inzendingen", "options": { "page": { "description": "Paginanummer" } } },
+            "show": { "description": "Open een van je inzendingen", "options": { "id": { "description": "ID van de inzending" } } },
+            "panel": { "description": "Plaats het inzendingenpaneel (alleen beheerders)", "options": { "channel": { "description": "Kanaal voor het inzendingenpaneel" } } }
+        }
+    }
+}

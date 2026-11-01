@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Stack, Tab, Tabs, Tooltip, Typography } from '@mui/material';
-import { Close, Tune } from '@mui/icons-material';
+import Close from '@mui/icons-material/Close';
+import Tune from '@mui/icons-material/Tune';
 import { defaultDashboardSections, type DashboardSectionId, type PersonalDashboardLayout } from '@zeffuro/fakegaming-common/dashboard-layout';
 import { dashboardLayoutApi } from '@/lib/api/dashboardLayout';
 import { useDashboardI18n } from '@/components/i18n/DashboardI18nProvider';
