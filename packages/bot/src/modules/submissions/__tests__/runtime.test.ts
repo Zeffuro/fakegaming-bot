@@ -142,6 +142,20 @@ describe('submission delivery runtime', () => {
         expect(send).not.toHaveBeenCalled();
     });
 
+    it.each(['name', 'size', 'duplicate'] as const)('keeps screenshot publication uncertain for a %s mismatch', async kind => {
+        const saved = { id: '123', name: 'screenshot-1.png', contentType: 'image/png', size: 100 };
+        const uncertain = record({ status: 'uncertain', version: 3, attachmentCount: 1, attachments: [saved] });
+        const attachment = { ...saved, ...(kind === 'name' ? { name: 'other.png' } : kind === 'size' ? { size: 99 } : {}) };
+        const message = { author: { id: botId }, id: 'found', channelId: destinationId,
+            embeds: [renderPublication(uncertain, 'en').embeds[0]!.toJSON()], attachments: new Collection([['123', attachment]]) };
+        fetchMessage.mockResolvedValue(new Collection(kind === 'duplicate'
+            ? [['found', message], ['duplicate', { ...message, id: 'duplicate' }]] : [['found', message]]));
+        const manager = publicationManager({ reconcilePublish: vi.fn() });
+        expect(await new SubmissionRuntime(mockClient(), manager).reconcile(uncertain, reviewerId)).toBeNull();
+        expect(manager.reconcilePublish).not.toHaveBeenCalled();
+        expect(send).not.toHaveBeenCalled();
+    });
+
     it('keeps uncertainty when no matching bot post is found', async () => {
         fetchMessage.mockResolvedValue(new Collection());
         const manager = publicationManager({ reconcilePublish: vi.fn() });

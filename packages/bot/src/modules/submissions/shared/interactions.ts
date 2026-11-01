@@ -75,7 +75,7 @@ export function createSubmissionHandlers(manager: SubmissionManager = getConfigM
             else if (command === 'show') {
                 const item = await manager.get(interaction.guildId!, interaction.options.getString('id', true));
                 if (!item || item.userId !== interaction.user.id) throw new SubmissionControlError('missing');
-                await interaction.editReply(renderSubmission(item, locale, false, []));
+                await interaction.editReply(renderSubmission(item, locale, false));
             } else if (command === 'panel') {
                 const guild = await interaction.client.guilds.fetch(interaction.guildId!);
                 const member = await liveMember(guild, interaction.user.id);
@@ -141,7 +141,7 @@ export function createSubmissionHandlers(manager: SubmissionManager = getConfigM
                 return true;
             }
             const runtime = runtimeFor(interaction);
-            if (action === 'show') await interaction.editReply(renderSubmission(item, locale, false, []));
+            if (action === 'show') await interaction.editReply(renderSubmission(item, locale, false));
             else if (action === 'review') {
                 await runtime.refresh(item.guildId, item.id);
                 await interaction.editReply({ content: submissionCopy(locale)('reviewed') });

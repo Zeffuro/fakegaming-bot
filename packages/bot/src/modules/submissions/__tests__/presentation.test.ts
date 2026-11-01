@@ -39,10 +39,13 @@ describe('submission forms and presentation', () => {
         ]));
     });
 
-    it('renders all screenshot attachments and terminal controls correctly', () => {
+    it('keeps screenshots outside embeds so Discord retains their attachment metadata', () => {
         const attachments = Array.from({ length: 4 }, (_, index) => ({ id: String(index), name: `screenshot-${index + 1}.png`, contentType: 'image/png', size: 100 }));
         const item = record({ attachments, attachmentCount: 4, status: 'changes_requested' });
-        expect(renderPublication(item, 'en').embeds.map(embed => embed.toJSON().image?.url)).toEqual(attachments.map(file => `attachment://${file.name}`));
+        for (const payload of [renderPublication(item, 'en'), renderSubmission(item, 'en', true)]) {
+            expect(payload.embeds).toHaveLength(1);
+            expect(JSON.stringify(payload)).not.toContain('attachment://');
+        }
         expect(JSON.stringify(renderSubmission(item, 'en', false))).toContain('submissions:edit:');
         expect(JSON.stringify(renderSubmission(record({ status: 'rejected' }), 'en', true))).not.toContain('submissions:approve:');
         expect(renderOwnList(Array.from({ length: 5 }, () => item), 0, 'en').components).toHaveLength(2);

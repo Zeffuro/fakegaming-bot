@@ -49,7 +49,7 @@ export class SubmissionRuntime {
             const latest = await fetchSubmissionChannels(this.client, currentCategory, item);
             if (!canSubmit(currentCategory, await liveMember(latest.guild, userId))) throw new SubmissionControlError('unavailable');
             const locale = await resolveInteractionOutputLocale({ guildId: item.guildId });
-            const rendered = renderSubmission(item, locale, true, images.map(image => image.name));
+            const rendered = renderSubmission(item, locale, true);
             const message = await latest.review.send({ ...rendered, content: rendered.content ?? undefined,
                 files: images.map(image => image.file), nonce: nonce(`review:${item.id}:${item.version}`), enforceNonce: true });
             const attachments = images.map(image => {

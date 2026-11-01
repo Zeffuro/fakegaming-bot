@@ -35,6 +35,10 @@ describe('submission workflow with real SQLite persistence and Discord payloads'
         function member(id: string) { return { id, permissions: { has: () => false }, roles: { cache: new Collection(
             (id === botId ? [botRole] : id === reviewerId ? [reviewerId] : []).map(role => [role, roles.get(role)]),
         ) } }; }
+        function visibleAttachments<T extends { name: string }>(attachments: Collection<string, T>, embeds: unknown[]) {
+            const embedded = JSON.stringify(embeds);
+            return attachments.filter(file => !embedded.includes(`attachment://${file.name}`));
+        }
         function message(channelId: string, payload: { embeds: { toJSON: () => unknown }[]; files?: { attachment: Buffer; name: string }[] }) {
             const id = String(++sequence);
             const attachments = new Collection((payload.files ?? []).map(file => {
@@ -43,10 +47,12 @@ describe('submission workflow with real SQLite persistence and Discord payloads'
                 media.set(url, Buffer.from(file.attachment));
                 return [attachmentId, { id: attachmentId, name: file.name, size: file.attachment.length, contentType: 'image/png', url }];
             }));
-            const value = { id, channelId, author: { id: botId }, embeds: payload.embeds.map(embed => embed.toJSON()), attachments,
+            const value = { id, channelId, author: { id: botId }, embeds: payload.embeds.map(embed => embed.toJSON()),
+                attachments: visibleAttachments(attachments, payload.embeds),
                 edit: vi.fn(async (next: { embeds: { toJSON: () => unknown }[]; attachments?: unknown[] }) => {
                     value.embeds = next.embeds.map(embed => embed.toJSON());
                     if (next.attachments?.length === 0) value.attachments.clear();
+                    value.attachments = visibleAttachments(value.attachments, value.embeds);
                     return value;
                 }) };
             allMessages.set(id, value);
@@ -88,6 +94,9 @@ describe('submission workflow with real SQLite persistence and Discord payloads'
         const first = await runtime.submit(category, userId, { explanation: 'Original screenshots', link: null, credit: null, attachmentCount: 4 }, input('red', 4));
         expect(first).toMatchObject({ status: 'pending' });
         expect(first.attachments).toHaveLength(4);
+        expect(allMessages.get(first.reviewMessageId!)!.attachments.size).toBe(4);
+        await runtime.refresh(guildId, first.id);
+        expect(allMessages.get(first.reviewMessageId!)!.attachments.size).toBe(4);
         expect(review.send).toHaveBeenCalledTimes(1);
         expect(destination.send).not.toHaveBeenCalled();
         const changes = await manager.review(guildId, first.id, first.version, reviewerId, 'changes', 'Censor the name');
@@ -105,6 +114,11 @@ describe('submission workflow with real SQLite persistence and Discord payloads'
         expect(published).toMatchObject({ status: 'published', reviewerId, attachmentCount: 2, explanation: 'Corrected screenshots' });
         const publicPost = allMessages.get(published.publishedMessageId!)!;
         expect(publicPost.attachments.size).toBe(2);
+        await SubmissionRecord.update({ status: 'uncertain', publishedChannelId: null, publishedMessageId: null }, { where: { id: published.id } });
+        const uncertain = (await manager.get(guildId, published.id))!;
+        const recovered = await new SubmissionRuntime(client, manager).reconcile(uncertain, reviewerId);
+        expect(recovered?.publishedMessageId).toBe(publicPost.id);
+        expect(destination.send).toHaveBeenCalledTimes(1);
         expect(JSON.stringify(publicPost.embeds)).not.toContain(userId);
         expect(JSON.stringify(publicPost.embeds)).not.toContain('Censor the name');
         expect((await manager.listOwn(guildId, userId))[0]!.publishedMessageId).toBe(publicPost.id);

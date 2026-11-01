@@ -20,7 +20,7 @@ export function renderSubmissionPanel(locale: SupportedOutputLocale) {
     };
 }
 
-export function renderSubmission(item: SubmissionRecordData, locale: SupportedOutputLocale, review: boolean, names = item.attachments.map(file => file.name)) {
+export function renderSubmission(item: SubmissionRecordData, locale: SupportedOutputLocale, review: boolean) {
     const t = submissionCopy(locale);
     const embed = new EmbedBuilder().setTitle(item.categoryName).setDescription(escapeMarkdown(item.explanation))
         .setColor(item.status === 'published' ? 0x57f287 : item.status === 'rejected' ? 0xed4245 : 0x5865f2)
@@ -34,8 +34,8 @@ export function renderSubmission(item: SubmissionRecordData, locale: SupportedOu
         if (item.reviewerId) embed.addFields({ name: t('reviewer'), value: `<@${item.reviewerId}>` });
     }
     if (item.reason) embed.addFields({ name: t('reasonLabel'), value: escapeMarkdown(item.reason).slice(0, 1024) });
-    if (names[0]) embed.setImage(`attachment://${names[0]}`);
-    const embeds = [embed, ...names.slice(1).map(name => new EmbedBuilder().setImage(`attachment://${name}`))];
+    // Embedded uploads disappear from Discord's attachment list; keep screenshots as native attachments.
+    const embeds = [embed];
     const buttons: ButtonBuilder[] = [];
     if (review) {
         if (item.status === 'pending' || item.status === 'publish_failed') buttons.push(
@@ -65,8 +65,7 @@ export function renderPublication(item: SubmissionRecordData, locale: SupportedO
         .setColor(0x57f287).setFooter({ text: submissionMarker(item) })
         .addFields({ name: t('credits'), value: item.credit ? escapeMarkdown(item.credit) : t('anonymous') });
     if (item.link) embed.addFields({ name: t('link'), value: item.link });
-    if (item.attachments[0]) embed.setImage(`attachment://${item.attachments[0].name}`);
-    return { embeds: [embed, ...item.attachments.slice(1).map(file => new EmbedBuilder().setImage(`attachment://${file.name}`))],
+    return { embeds: [embed],
         allowedMentions: { parse: [] as never[] } };
 }
 
