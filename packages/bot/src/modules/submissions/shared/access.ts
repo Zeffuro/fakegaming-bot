@@ -5,6 +5,7 @@ import {
 import { validateSubmissionChannelPermissions, type SubmissionPermissionChannel } from '@zeffuro/fakegaming-common';
 import { getConfigManager, type SubmissionCategoryData, type SubmissionRecordData } from '@zeffuro/fakegaming-common/managers';
 import { SubmissionControlError } from './copy.js';
+import { SubmissionDiagnosticError } from './diagnostics.js';
 
 export type SubmissionInteraction = ButtonInteraction | ModalSubmitInteraction;
 export type SubmissionTextChannel = TextChannel | NewsChannel;
@@ -27,15 +28,18 @@ export async function fetchSubmissionChannels(client: Client, category: Submissi
             guild.channels.fetch(item?.destinationChannelId ?? category.destinationChannelId, { force: true }),
         ]);
         if (!review || review.type !== ChannelType.GuildText || !destination
-            || (destination.type !== ChannelType.GuildText && destination.type !== ChannelType.GuildAnnouncement)) throw new Error('Channel type');
+            || (destination.type !== ChannelType.GuildText && destination.type !== ChannelType.GuildAnnouncement)) throw new SubmissionDiagnosticError('setup', { reason: 'invalid-channel' });
         const validation = validateSubmissionChannelPermissions({
             guildId: guild.id, botId: bot.id, roles: roles.map(role => ({ id: role.id, permissions: role.permissions.bitfield.toString(), managed: role.managed })),
             botRoleIds: [...bot.roles.cache.keys()], reviewerRoleIds: category.reviewerRoleIds,
             reviewChannel: permissionChannel(review), destinationChannel: permissionChannel(destination),
         });
-        if (!validation.valid) throw new Error(validation.reason ?? 'Permissions');
+        if (!validation.valid) throw new SubmissionDiagnosticError('setup', { reason: validation.reason ?? 'invalid-channel' });
         return { guild, review, destination };
-    } catch { throw new SubmissionControlError('setup'); }
+    } catch (error) {
+        if (error instanceof SubmissionDiagnosticError) throw error;
+        throw new SubmissionControlError('setup', { cause: error });
+    }
 }
 
 function permissionChannel(channel: GuildBasedChannel & (TextChannel | NewsChannel)): SubmissionPermissionChannel {
@@ -48,7 +52,7 @@ function permissionChannel(channel: GuildBasedChannel & (TextChannel | NewsChann
 
 export async function liveMember(guild: Guild, userId: string): Promise<GuildMember> {
     try { return await guild.members.fetch({ user: userId, force: true }); }
-    catch { throw new SubmissionControlError('missing'); }
+    catch (error) { throw new SubmissionControlError('missing', { cause: error }); }
 }
 
 export function canSubmit(category: SubmissionCategoryData, member: GuildMember): boolean {

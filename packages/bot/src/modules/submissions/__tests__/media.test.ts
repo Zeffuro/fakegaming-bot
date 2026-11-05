@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createCanvas } from 'canvas';
 import { downloadSubmissionImages, SUBMISSION_IMAGE_LIMIT, validateImageInputs } from '../shared/media.js';
+import { submissionErrorDiagnostics } from '../shared/diagnostics.js';
 
 const png = createCanvas(2, 2).toBuffer('image/png');
 const image = (overrides = {}) => ({ id: '123', url: 'https://cdn.discordapp.com/ephemeral-attachments/456/123/input.png?hm=secret',
@@ -52,5 +53,44 @@ describe('submission screenshots', () => {
         await expect(downloadSubmissionImages([image()], fetch)).rejects.toThrow();
         expect(await downloadSubmissionImages([], fetch)).toEqual([]);
         expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('identifies which image failed, the HTTP status, and no signed URL', async () => {
+        const fetch = vi.fn().mockResolvedValueOnce(new Response(Uint8Array.from(png).buffer))
+            .mockResolvedValueOnce(new Response('PRIVATE RESPONSE', { status: 403 }));
+        let failure: unknown;
+        try { await downloadSubmissionImages([image(), image()], fetch); } catch (error) { failure = error; }
+        const details = submissionErrorDiagnostics(failure);
+        expect(details).toMatchObject({ reason: 'image-download-http', imageIndex: 2, httpStatus: 403, expectedBytes: png.length });
+        expect(JSON.stringify(details)).not.toMatch(/secret|PRIVATE|cdn\.discordapp/);
+    });
+
+    it('distinguishes truncated media from MIME mismatch', async () => {
+        await expect(downloadSubmissionImages([image()], fetcher(png.subarray(0, -1)))).rejects.toMatchObject({
+            details: { reason: 'image-size-mismatch', imageIndex: 1, expectedBytes: png.length, actualBytes: png.length - 1 },
+        });
+        await expect(downloadSubmissionImages([image({ contentType: 'image/jpeg' })], fetcher())).rejects.toMatchObject({
+            details: { reason: 'image-type-mismatch', expectedContentType: 'image/jpeg', detectedContentType: 'image/png' },
+        });
+    });
+
+    it('retains safe network details without changing a transport failure into validation rejection', async () => {
+        const fetch = vi.fn().mockRejectedValueOnce(new TypeError('PRIVATE URL', {
+            cause: Object.assign(new Error('PRIVATE CERTIFICATE'), { code: 'CERT_HAS_EXPIRED' }),
+        }));
+        let failure: unknown;
+        try { await downloadSubmissionImages([image()], fetch); } catch (error) { failure = error; }
+        expect(failure).toMatchObject({ code: undefined });
+        const details = submissionErrorDiagnostics(failure);
+        expect(details).toMatchObject({ reason: 'image-download-network', imageIndex: 1, causeCode: 'CERT_HAS_EXPIRED' });
+        expect(JSON.stringify(details)).not.toContain('PRIVATE');
+    });
+
+    it('records stream failures separately from HTTP and size errors', async () => {
+        const stream = new ReadableStream({ start(controller) { controller.error(Object.assign(new Error('PRIVATE STREAM'), { code: 'ECONNRESET' })); } });
+        const fetch = vi.fn().mockResolvedValueOnce(new Response(stream));
+        let failure: unknown;
+        try { await downloadSubmissionImages([image()], fetch); } catch (error) { failure = error; }
+        expect(submissionErrorDiagnostics(failure)).toMatchObject({ reason: 'image-stream-read', imageIndex: 1, actualBytes: 0, causeCode: 'ECONNRESET' });
     });
 });

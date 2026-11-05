@@ -5,6 +5,9 @@ import { downloadSubmissionImages, validateImageInputs } from '../shared/media.j
 import { canSubmit, fetchSubmissionChannels, liveMember, requireReviewer } from '../shared/access.js';
 import { mockClient, mockManager, record, category, botId, guildId, itemId, reviewerId, userId, destinationId, reviewId } from './fixtures.js';
 import { renderPublication, submissionMarker } from '../shared/presentation.js';
+import { createMockConfigManager } from '@zeffuro/fakegaming-common/testing';
+import { getLogger } from '@zeffuro/fakegaming-common';
+import { SubmissionDiagnosticError } from '../shared/diagnostics.js';
 
 vi.mock('../shared/access.js', () => ({ canSubmit: vi.fn(), fetchSubmissionChannels: vi.fn(), liveMember: vi.fn(), requireReviewer: vi.fn() }));
 vi.mock('../shared/media.js', () => ({ downloadSubmissionImages: vi.fn(), validateImageInputs: vi.fn() }));
@@ -12,9 +15,11 @@ vi.mock('../shared/media.js', () => ({ downloadSubmissionImages: vi.fn(), valida
 const edit = vi.fn(async () => undefined);
 const fetchMessage = vi.fn();
 const send = vi.fn();
+const auditRecord = vi.fn(async () => undefined);
 const access = { category: category(), guild: { name: 'Server' }, review: { messages: { fetch: fetchMessage }, send }, destination: { send, messages: { fetch: fetchMessage } } };
 
 beforeEach(() => {
+    createMockConfigManager({ auditEventManager: { record: auditRecord } });
     vi.mocked(fetchSubmissionChannels).mockResolvedValue(access as never);
     vi.mocked(requireReviewer).mockResolvedValue(access as never);
     vi.mocked(canSubmit).mockReturnValue(true);
@@ -117,6 +122,7 @@ describe('submission delivery runtime', () => {
         expect(validateImageInputs).toHaveBeenCalledWith([]);
         expect(manager.finalizeUpload).toHaveBeenCalledWith(guildId, itemId, userId, 0, { reviewChannelId: reviewId, reviewMessageId: 'review-message', attachments: [] });
         expect(vi.mocked(manager.create).mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[0]!);
+        expect(auditRecord).not.toHaveBeenCalled();
     });
 
     it('marks reserved media failures as editable instead of leaving an active upload', async () => {
@@ -126,6 +132,88 @@ describe('submission delivery runtime', () => {
             { explanation: 'Text', link: 'https://example.com', credit: null, attachmentCount: 0 }, [])).rejects.toMatchObject({ code: 'uploadFailed' });
         expect(manager.failUpload).toHaveBeenCalledWith(guildId, itemId, userId, 0);
         expect(send).not.toHaveBeenCalled();
+    });
+
+    it('records the exact image failure in runtime logs and dashboard audit without submitted content', async () => {
+        const manager = mockManager({ create: vi.fn(async () => record({ status: 'uploading', version: 0 })), failUpload: vi.fn() });
+        vi.mocked(downloadSubmissionImages).mockRejectedValueOnce(new SubmissionDiagnosticError('imagesInvalid', {
+            reason: 'image-type-mismatch', imageIndex: 2, expectedContentType: 'image/jpeg', detectedContentType: 'image/png',
+        }));
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'PRIVATE TEXT', link: 'https://private.example', credit: 'PRIVATE CREDIT', attachmentCount: 0 }, []))
+            .rejects.toMatchObject({ code: 'uploadFailed' });
+        expect(getLogger().warn).toHaveBeenCalledWith(expect.objectContaining({ submissionId: itemId, stage: 'download-images',
+            reason: 'image-type-mismatch', imageIndex: 2, elapsedMs: expect.any(Number) }), 'Submission upload failed');
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ action: 'submission.upload.failed', actorId: userId,
+            targetId: itemId, severity: 'error', status: 'failure', metadata: expect.objectContaining({
+                stage: 'download-images', reason: 'image-type-mismatch', imageIndex: 2,
+            }) }));
+        expect(JSON.stringify(auditRecord.mock.calls)).not.toContain('PRIVATE');
+        expect(JSON.stringify(auditRecord.mock.calls)).not.toContain('private.example');
+    });
+
+    it('retains Discord rejection status and code without logging the API body', async () => {
+        const manager = mockManager({ create: vi.fn(async () => record({ status: 'uploading', version: 0 })), failUpload: vi.fn() });
+        send.mockRejectedValueOnce(new DiscordAPIError({ message: 'PRIVATE REQUEST', code: 50013 }, 50013, 403,
+            'POST', 'https://discord.com/PRIVATE_URL', { body: { content: 'PRIVATE CONTENT' } }));
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'Text', link: 'https://example.com', credit: null, attachmentCount: 0 }, []))
+            .rejects.toMatchObject({ code: 'uploadFailed' });
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({
+            stage: 'send-review', errorType: 'DiscordAPIError', errorCode: 50013, httpStatus: 403,
+        }) }));
+        expect(JSON.stringify([auditRecord.mock.calls, vi.mocked(getLogger().warn).mock.calls])).not.toContain('PRIVATE');
+    });
+
+    it('logs pre-reservation failures without changing their user error or failing an unreserved upload', async () => {
+        const manager = mockManager({ create: vi.fn(), failUpload: vi.fn() });
+        vi.mocked(validateImageInputs).mockImplementationOnce(() => { throw new SubmissionDiagnosticError('imagesInvalid', { reason: 'image-total-limit' }); });
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'Text', link: null, credit: null, attachmentCount: 0 }, [])).rejects.toMatchObject({ code: 'imagesInvalid' });
+        expect(manager.create).not.toHaveBeenCalled();
+        expect(manager.failUpload).not.toHaveBeenCalled();
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ targetId: null,
+            metadata: expect.objectContaining({ stage: 'validate-images', reason: 'image-total-limit' }) }));
+    });
+
+    it('keeps the original upload error when failure-state and audit writes also fail', async () => {
+        const manager = mockManager({ create: vi.fn(async () => record({ status: 'uploading', version: 0 })),
+            failUpload: vi.fn().mockRejectedValueOnce(new Error('PRIVATE DATABASE ERROR')) });
+        vi.mocked(downloadSubmissionImages).mockRejectedValueOnce(new TypeError('PRIVATE FETCH URL', {
+            cause: Object.assign(new Error('PRIVATE CAUSE'), { code: 'ECONNRESET' }),
+        }));
+        auditRecord.mockRejectedValueOnce(new Error('PRIVATE AUDIT ERROR') as never);
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'Text', link: null, credit: null, attachmentCount: 0 }, [])).rejects.toMatchObject({ code: 'uploadFailed' });
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({
+            stage: 'download-images', errorType: 'TypeError', causeCode: 'ECONNRESET',
+        }) }));
+        expect(JSON.stringify(vi.mocked(getLogger().warn).mock.calls)).not.toContain('PRIVATE');
+    });
+
+    it('retains a sent review message ID when Discord omits the saved attachment', async () => {
+        const manager = mockManager({ create: vi.fn(async () => record({ status: 'uploading', version: 0 })), failUpload: vi.fn() });
+        vi.mocked(downloadSubmissionImages).mockResolvedValueOnce([{ name: 'screenshot-1.png', file: {}, contentType: 'image/png', size: 100 }] as never);
+        send.mockResolvedValueOnce({ id: 'orphan-review', channelId: reviewId, attachments: new Collection() });
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'Text', link: null, credit: null, attachmentCount: 1 }, [])).rejects.toMatchObject({ code: 'uploadFailed' });
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({
+            stage: 'match-review-attachments', reason: 'saved-attachment-missing', reviewMessageId: 'orphan-review',
+            imageIndex: 1, expectedAttachmentCount: 1, returnedAttachmentCount: 0,
+        }) }));
+    });
+
+    it('identifies a revision receipt failure with its current version and sent review message', async () => {
+        const manager = mockManager({ beginRevision: vi.fn(async () => record({ status: 'uploading', version: 2 })),
+            finalizeUpload: vi.fn().mockRejectedValueOnce(Object.assign(new Error('PRIVATE SQL'), { original: { code: '23505' } })), failUpload: vi.fn() });
+        send.mockResolvedValueOnce({ id: 'revision-review', channelId: reviewId, attachments: new Collection() });
+        await expect(new SubmissionRuntime(mockClient(), manager).submit(category(), userId,
+            { explanation: 'Text', link: 'https://example.com', credit: null, attachmentCount: 0 }, [], record({ status: 'upload_failed' })))
+            .rejects.toMatchObject({ code: 'uploadFailed' });
+        expect(manager.failUpload).toHaveBeenCalledWith(guildId, itemId, userId, 2);
+        expect(auditRecord).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({
+            stage: 'finalize-upload', causeCode: '23505', version: 2, revision: true, reviewMessageId: 'revision-review',
+        }) }));
     });
 
     it('reconciles a positively matched bot post without publishing it again', async () => {

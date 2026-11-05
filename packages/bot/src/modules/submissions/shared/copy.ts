@@ -8,8 +8,8 @@ export function submissionCopy(locale: SupportedOutputLocale) {
 }
 
 export class SubmissionControlError extends Error {
-    constructor(public readonly code: 'unavailable' | 'setup' | 'missing' | 'imagesInvalid') {
-        super(code);
+    constructor(public readonly code: 'unavailable' | 'setup' | 'missing' | 'imagesInvalid', options?: ErrorOptions) {
+        super(code, options);
     }
 }
 

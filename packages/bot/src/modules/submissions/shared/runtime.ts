@@ -9,6 +9,7 @@ import { canSubmit, fetchSubmissionChannels, liveMember, requireReviewer, type S
 import { SubmissionControlError, submissionCopy } from './copy.js';
 import { downloadSubmissionImages, validateImageInputs, type SubmissionImage } from './media.js';
 import { renderPublication, renderSubmission, submissionMarker } from './presentation.js';
+import { reportSubmissionFailure, SubmissionDiagnosticError, submissionErrorDiagnostics } from './diagnostics.js';
 
 const log = getLogger({ name: 'bot:submissions' });
 
@@ -36,36 +37,63 @@ export class SubmissionRuntime {
 
     async submit(category: SubmissionCategoryData, userId: string, content: SubmissionContentInput,
         uploads: Attachment[], revision?: SubmissionRecordData): Promise<SubmissionRecordData> {
-        validateImageInputs(uploads);
-        const channels = await fetchSubmissionChannels(this.client, category);
-        if (!canSubmit(category, await liveMember(channels.guild, userId))) throw new SubmissionControlError('unavailable');
-        const item = revision
-            ? await this.manager.beginRevision(category.guildId, revision.id, userId, revision.version, content)
-            : await this.manager.create({ ...content, guildId: category.guildId, categoryId: category.id, userId });
+        const startedAt = Date.now();
+        let stage = 'validate-images';
+        let item: SubmissionRecordData | undefined;
+        let reviewMessageId: string | undefined;
         try {
+            validateImageInputs(uploads);
+            stage = 'check-channels';
+            const channels = await fetchSubmissionChannels(this.client, category);
+            stage = 'check-submitter';
+            if (!canSubmit(category, await liveMember(channels.guild, userId))) throw new SubmissionControlError('unavailable');
+            stage = 'reserve-upload';
+            item = revision
+                ? await this.manager.beginRevision(category.guildId, revision.id, userId, revision.version, content)
+                : await this.manager.create({ ...content, guildId: category.guildId, categoryId: category.id, userId });
+            stage = 'download-images';
             const images = await downloadSubmissionImages(uploads);
+            stage = 'reload-category';
             const currentCategory = await this.manager.getCategory(item.guildId, item.categoryId);
             if (!currentCategory) throw new SubmissionControlError('unavailable');
+            stage = 'recheck-channels';
             const latest = await fetchSubmissionChannels(this.client, currentCategory, item);
+            stage = 'recheck-submitter';
             if (!canSubmit(currentCategory, await liveMember(latest.guild, userId))) throw new SubmissionControlError('unavailable');
+            stage = 'render-review';
             const locale = await resolveInteractionOutputLocale({ guildId: item.guildId });
             const rendered = renderSubmission(item, locale, true);
+            stage = 'send-review';
             const message = await latest.review.send({ ...rendered, content: rendered.content ?? undefined,
                 files: images.map(image => image.file), nonce: nonce(`review:${item.id}:${item.version}`), enforceNonce: true });
-            const attachments = images.map(image => {
+            reviewMessageId = message.id;
+            stage = 'match-review-attachments';
+            const attachments = images.map((image, index) => {
                 const saved = message.attachments.find(file => file.name === image.name);
-                if (!saved) throw new SubmissionControlError('imagesInvalid');
+                if (!saved) throw new SubmissionDiagnosticError('imagesInvalid', {
+                    reason: 'saved-attachment-missing', imageIndex: index + 1,
+                    expectedAttachmentCount: images.length, returnedAttachmentCount: message.attachments.size,
+                });
                 return { id: saved.id, name: image.name, contentType: image.contentType, size: image.size };
             });
+            stage = 'finalize-upload';
             const updated = await this.manager.finalizeUpload(item.guildId, item.id, userId, item.version, {
                 reviewChannelId: message.channelId, reviewMessageId: message.id, attachments,
             });
-            await this.refresh(updated.guildId, updated.id).catch(error => log.warn({ errorType: error instanceof Error ? error.name : 'unknown', submissionId: item.id }, 'Review refresh deferred'));
+            await this.refresh(updated.guildId, updated.id).catch(error => log.warn({ ...submissionErrorDiagnostics(error), submissionId: updated.id }, 'Review refresh deferred'));
             if (revision?.reviewMessageId) await this.clearPreviousReview(revision, locale);
             return updated;
         } catch (error) {
-            await this.manager.failUpload(item.guildId, item.id, userId, item.version).catch(() => undefined);
-            log.warn({ submissionId: item.id, errorType: error instanceof Error ? error.name : 'unknown' }, 'Submission upload failed');
+            const metadata = { ...submissionErrorDiagnostics(error), stage, elapsedMs: Date.now() - startedAt,
+                attachmentCount: uploads.length, version: item?.version, reviewMessageId };
+            log.warn({ ...metadata, guildId: category.guildId, categoryId: category.id, submissionId: item?.id ?? revision?.id }, 'Submission upload failed');
+            if (item) {
+                try { await this.manager.failUpload(item.guildId, item.id, userId, item.version); }
+                catch (stateError) { log.warn({ ...submissionErrorDiagnostics(stateError), submissionId: item.id }, 'Submission upload failure state update failed'); }
+            }
+            await reportSubmissionFailure({ guildId: category.guildId, categoryId: category.id, userId,
+                submissionId: item?.id ?? revision?.id, revision: revision !== undefined }, metadata);
+            if (!item) throw error;
             throw Object.assign(new Error('Submission upload failed'), { code: 'uploadFailed' });
         }
     }
