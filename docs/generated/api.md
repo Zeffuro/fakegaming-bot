@@ -71,7 +71,7 @@ Operations: 199
 | Notifications | GET | `/notifications/admin` | List recent notification delivery records | Bearer |
 | Notifications | GET | `/notifications/guild/{guildId}` | List recent notification delivery records for a guild | Bearer |
 | PatchNotes | GET | `/patchNotes` | List all patch notes | Bearer |
-| PatchNotes | POST | `/patchNotes` | Upsert (add or update) a patch note | Bearer |
+| PatchNotes | POST | `/patchNotes` | Upsert a patch note as a dashboard admin or internal service | Bearer |
 | PatchNotes | GET | `/patchNotes/{game}` | Get the latest patch note for a game | Bearer |
 | PatchNotes | GET | `/patchNotes/history` | List bounded patch-note history | Bearer |
 | PatchNotes | GET | `/patchNotes/history/compare` | Compare two stored patch-note history records | Bearer |
@@ -88,7 +88,7 @@ Operations: 199
 | Permissions | GET | `/rolePermissionSnapshots/live` | Read the current role and channel permission state from Discord | Bearer |
 | Permissions | POST | `/rolePermissionSnapshots/live` | Save a current role and channel permission snapshot from Discord | Bearer |
 | PersonalToday | GET | `/personalToday` | Get the authenticated owner's agenda in their saved timezone | Bearer |
-| PersonalToday | PATCH | `/personalToday/schedules/{id}` | Complete or snooze an owner schedule occurrence with a version check | Bearer |
+| PersonalToday | PATCH | `/personalToday/schedules/{id}` | Mark done, log completion or snooze an owner schedule occurrence with a version check | Bearer |
 | PersonalToday | PATCH | `/personalToday/sessions/{id}` | Pause, resume or stop an owner session with a version check | Bearer |
 | PersonalToday | PATCH | `/personalToday/tasks/{id}` | Complete, undo completion, snooze or toggle an owner task with a version check | Bearer |
 | Poll templates | GET | `/pollTemplates` | List private reusable poll templates | Bearer |
@@ -106,7 +106,7 @@ Operations: 199
 | Quotes | GET | `/quotes/guild/{guildId}/quote-of-day` | Preview the deterministic quote-of-the-day selection | Bearer |
 | Quotes | PUT | `/quotes/guild/{guildId}/quote-of-day/settings` | Create or update quote-of-the-day delivery settings | Bearer |
 | Quotes | GET | `/quotes/search` | Search quotes by text and guildId | Bearer |
-| Reminders | GET | `/reminders` | List all reminders | Bearer |
+| Reminders | GET | `/reminders` | List reminders accessible to the caller | Bearer |
 | Reminders | POST | `/reminders` | Add a new reminder | Bearer |
 | Reminders | GET | `/reminders/{id}` | Get a reminder by id | Bearer |
 | Reminders | DELETE | `/reminders/{id}` | Remove a reminder by id | Bearer |
@@ -115,7 +115,7 @@ Operations: 199
 | Riot Links | PUT | `/riotLinks/{discordId}` | Create or update a linked Riot account for a Discord user | Bearer |
 | Riot Links | DELETE | `/riotLinks/{discordId}` | Remove a linked Riot account for a Discord user | Bearer |
 | Riot Links | GET | `/riotLinks/me` | Get the authenticated dashboard user's linked Riot account | Bearer |
-| Servers | GET | `/servers` | List all servers | Bearer |
+| Servers | GET | `/servers` | List servers accessible to the caller | Bearer |
 | Servers | POST | `/servers` | Create a new server | Bearer |
 | Servers | GET | `/servers/{serverId}` | Get a server by ID | Bearer |
 | Servers | PUT | `/servers/{serverId}` | Update a server by ID | Bearer |
@@ -184,7 +184,7 @@ Operations: 199
 | UserReminders | DELETE | `/userReminders/{id}` | Delete one reminder for the authenticated dashboard user | Bearer |
 | UserReminders | PATCH | `/userReminders/{id}/paused` | Pause or resume one recurring reminder for the authenticated dashboard user | Bearer |
 | UserReminders | PATCH | `/userReminders/{id}/snooze` | Snooze one reminder for the authenticated dashboard user | Bearer |
-| Users | GET | `/users` | List all users | Bearer |
+| Users | GET | `/users` | List users accessible to the caller | Bearer |
 | Users | POST | `/users` | Create a new user | Bearer |
 | Users | GET | `/users/{discordId}` | Get a user by Discord ID | Bearer |
 | Users | PUT | `/users/{discordId}` | Update a user by Discord ID | Bearer |

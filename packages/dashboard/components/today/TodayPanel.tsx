@@ -97,11 +97,10 @@ export function TodayPanel({ revision, onRemindersChanged }: { revision?: string
         const { item, kind } = entry;
         const at = timestamp(entry);
         const labels = { task: 'today.tasks', reminder: 'today.reminders', schedule: 'today.schedules' } as const;
-        const allDay = kind === 'schedule' && item.allDay;
         return <TodayCard key={`${kind}:${item.id}`} title={item.title}>
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
                 <Chip size="small" label={t(labels[kind])} sx={{ color: 'grey.200' }} />
-                {!allDay && at < (data?.now ?? 0) && <Chip size="small" label={t(kind === 'schedule' ? 'today.awaiting' : 'today.overdue')} sx={{ color: dashboardAccents.birthdays }} />}
+                {kind !== 'schedule' && at < (data?.now ?? 0) && <Chip size="small" label={t('today.overdue')} sx={{ color: dashboardAccents.birthdays }} />}
                 {kind === 'task' && item.recurring && <Chip size="small" label={t('today.recurring')} sx={{ color: 'grey.200' }} />}
             </Stack>
             <Typography sx={{ color: 'grey.300' }}>{kind === 'schedule' && item.allDay
@@ -115,8 +114,9 @@ export function TodayPanel({ revision, onRemindersChanged }: { revision?: string
             {kind === 'schedule' && <>
                 {item.nextNotifyAt !== null && item.nextNotifyAt > (data?.now ?? 0) && <Typography variant="body2" sx={{ color: 'grey.400' }}>{t('today.reminderAt', { time: time(item.nextNotifyAt) })}</Typography>}
                 <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', rowGap: 1 }}>
+                    <Button disabled={disabled} onClick={() => void run(() => personalTodayApi.schedule(item.id, { action: 'done', version: item.version }))} sx={actionSx}>{t('today.done')}</Button>
+                    <Button disabled={disabled} onClick={() => void run(() => personalTodayApi.schedule(item.id, { action: 'snooze', version: item.version, minutes: 60 }))} sx={actionSx}>{t('today.snooze')}</Button>
                     <Button disabled={disabled} onClick={() => void run(() => personalTodayApi.schedule(item.id, { action: 'complete', version: item.version }))} sx={actionSx}>{t('today.complete')}</Button>
-                    <Button disabled={disabled} onClick={() => void run(() => personalTodayApi.schedule(item.id, { action: 'snooze', version: item.version, minutes: 60 }))} sx={actionSx}>{t('today.remindLater')}</Button>
                 </Stack>
             </>}
         </TodayCard>;

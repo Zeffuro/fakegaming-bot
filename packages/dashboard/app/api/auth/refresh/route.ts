@@ -20,7 +20,9 @@ export async function POST(req: NextRequest) {
     if (csrfFailure) return csrfFailure;
 
     const oldRefreshToken = req.cookies.get(REFRESH_SESSION_COOKIE_NAME)?.value;
-    const rotated = await rotateRefreshSession(oldRefreshToken);
+    let rotated;
+    try { rotated = await rotateRefreshSession(oldRefreshToken); }
+    catch { return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.serviceUnavailable") }, { status: 503 }); }
 
     if (!rotated) {
         return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.notAuthenticated") }, { status: 401 });

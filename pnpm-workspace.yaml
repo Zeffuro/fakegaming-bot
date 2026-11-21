@@ -3,11 +3,12 @@ packages:
   - scripts
 
 overrides:
-  postcss: '8.5.31'
+  postcss: '8.5.33'
   protobufjs: '8.8.1'
   'sequelize>uuid': '11.1.1'
   'twisted>uuid': '11.1.1'
-  vite: '8.3.5'
+  vite: '8.3.8'
+  'swagger-jsdoc>glob': '14.0.6'
   'node-gyp>undici': '6.29.1'
 
 minimumReleaseAge: 1440

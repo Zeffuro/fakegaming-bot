@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import app from '../app.js';
 import { configManager } from '../vitest.setup.js';
-import { expectOk, expectCreated, expectUnauthorized, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
+import { expectOk, expectCreated, expectForbidden, expectUnauthorized, expectBadRequest, expectNotFound } from '@zeffuro/fakegaming-common/testing';
 import { givenAuthenticatedClient } from './helpers/client.js';
 
 const now = Date.now();
@@ -15,13 +15,17 @@ const testPatch = {
 };
 
 beforeEach(async () => {
+    vi.stubEnv('DASHBOARD_ADMINS', 'patch-admin');
     await configManager.patchNoteHistoryManager.removeAll();
     await configManager.patchNotesManager.removeAll();
     await configManager.patchNotesManager.setLatestPatch(testPatch);
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe('PatchNotes API', () => {
     const client = givenAuthenticatedClient(app);
+    const admin = givenAuthenticatedClient(app, { discordId: 'patch-admin' });
 
     it('should list all patch notes', async () => {
         const res = await client.get('/api/patchNotes');
@@ -35,7 +39,7 @@ describe('PatchNotes API', () => {
         expect(res.body.title).toBe(testPatch.title);
     });
     it('should upsert (add/update) a patch note', async () => {
-        const res = await client.post('/api/patchNotes', {
+        const res = await admin.post('/api/patchNotes', {
             game: testPatch.game, // Use the same game as the initial patch
             title: 'Major update',
             content: 'Major update notes',
@@ -46,12 +50,25 @@ describe('PatchNotes API', () => {
         expectCreated(res);
         expect(res.body.success).toBe(true);
     });
+    it('should forbid ordinary users from changing the latest patch note', async () => {
+        const res = await client.post('/api/patchNotes', { ...testPatch, title: 'Untrusted update' });
+        expectForbidden(res);
+        const latest = await client.get(`/api/patchNotes/${testPatch.game}`);
+        expectOk(latest);
+        expect(latest.body.title).toBe(testPatch.title);
+    });
+    it('should allow internal services to write patch notes', async () => {
+        vi.stubEnv('SERVICE_API_TOKEN', 'patch-service-test');
+        const res = await client.raw.post('/api/patchNotes').set('X-Service-Token', 'patch-service-test')
+            .send({ ...testPatch, title: 'Service update' });
+        expectCreated(res);
+    });
     it('should return 404 for non-existent patch note', async () => {
         const res = await client.get('/api/patchNotes/nonexistentgame');
         expectNotFound(res);
     });
     it('should return 400 when POST /api/patchNotes with missing fields', async () => {
-        const res = await client.post('/api/patchNotes', {} as any);
+        const res = await admin.post('/api/patchNotes', {} as any);
         expectBadRequest(res);
         expect(typeof res.body.error.message).toBe('string');
     });

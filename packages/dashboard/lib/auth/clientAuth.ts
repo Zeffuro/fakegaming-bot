@@ -1,6 +1,6 @@
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
 
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<number> | null = null;
 let loginRedirectStarted = false;
 
 export function getBrowserCookie(name: string): string | undefined {
@@ -11,7 +11,7 @@ export function getBrowserCookie(name: string): string | undefined {
     return match ? decodeURIComponent(match[1]!) : undefined;
 }
 
-async function executeRefresh(): Promise<boolean> {
+async function executeRefresh(): Promise<number> {
     try {
         const csrf = getBrowserCookie("csrf");
         const response = await fetch("/api/auth/refresh", {
@@ -19,13 +19,13 @@ async function executeRefresh(): Promise<boolean> {
             credentials: "include",
             headers: csrf ? { [CSRF_HEADER_NAME]: csrf } : undefined,
         });
-        return response.ok;
+        return response.status;
     } catch {
-        return false;
+        return 0;
     }
 }
 
-export async function refreshAuthSession(): Promise<boolean> {
+export async function refreshAuthSessionStatus(): Promise<number> {
     if (refreshPromise) {
         return await refreshPromise;
     }
@@ -36,6 +36,11 @@ export async function refreshAuthSession(): Promise<boolean> {
     } finally {
         refreshPromise = null;
     }
+}
+
+export async function refreshAuthSession(): Promise<boolean> {
+    const status = await refreshAuthSessionStatus();
+    return status >= 200 && status < 300;
 }
 
 export function redirectToLogin(): void {

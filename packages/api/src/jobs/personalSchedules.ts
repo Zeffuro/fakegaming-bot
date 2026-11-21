@@ -16,19 +16,27 @@ export function schedulePayload(row: ScheduleRecord, locale: SupportedOutputLoca
     const time = (timestamp: number) => new Intl.DateTimeFormat(getOutputLocaleMetadata(locale).formatTag, {
         timeZone: row.timezone, dateStyle: 'medium', timeStyle: 'short',
     }).format(timestamp);
-    const lines = [row.title, apiText(locale, 'schedulePlanned', { time: time(row.plannedAt), timezone: row.timezone }),
-        row.completedAt === null ? apiText(locale, 'schedulePending') : apiText(locale, 'scheduleCompleted', { time: time(row.completedAt) })];
+    const lines = [row.title, apiText(locale, 'schedulePlanned', { time: time(row.plannedAt), timezone: row.timezone })];
+    if (row.state === 'completed') lines.push(row.completedAt === null ? apiText(locale, 'scheduleDone')
+        : apiText(locale, 'scheduleCompleted', { time: time(row.completedAt) }));
+    else if (row.nextNotifyAt !== null && row.nextNotifyAt > Date.now() && row.nextNotifyAt !== row.plannedAt) {
+        lines.push(apiText(locale, 'scheduleReminderAt', { time: time(row.nextNotifyAt) }));
+    }
     if (row.cancelled) lines.push(apiText(locale, 'scheduleCancelled'));
     if (row.allDay) lines.push(apiText(locale, 'scheduleAllDay'));
     if (row.note) lines.push(row.note);
-    const button = (action: string, key: 'scheduleTaken' | 'scheduleEarlier' | 'scheduleLater' | 'scheduleHistory' | 'scheduleUndo' | 'scheduleNote', style = 2) => ({
+    const button = (action: string, key: 'scheduleDone' | 'scheduleLog' | 'scheduleEarlier' | 'scheduleLater' | 'scheduleHistory' | 'scheduleUndo' | 'scheduleNote', style = 2) => ({
         type: 2, style, label: apiText(locale, key), custom_id: `schedule:${action}:${row.id}:${row.version}`,
     });
-    const controls = row.state === 'completed' ? [button('u', 'scheduleUndo'), button('t', 'scheduleEarlier')]
-        : row.cancelled ? [] : [button('d', 'scheduleTaken', 3), button('t', 'scheduleEarlier'), button('s', 'scheduleLater')];
+    const pending = row.state === 'pending' && !row.cancelled;
+    const controls = row.state === 'completed' ? [button('u', 'scheduleUndo')]
+        : pending ? [button('a', 'scheduleDone', 3), button('s', 'scheduleLater')] : [];
+    const details = [button('h', 'scheduleHistory'), button('n', 'scheduleNote')];
+    if (row.completedAt !== null) details.unshift(button('t', 'scheduleEarlier'));
+    else if (pending) details.unshift(button('t', 'scheduleLog'));
     return { content: lines.join('\n').slice(0, 2000), allowed_mentions: { parse: [] }, components: [
         ...(controls.length ? [{ type: 1, components: controls }] : []),
-        { type: 1, components: [button('h', 'scheduleHistory'), button('n', 'scheduleNote')] },
+        { type: 1, components: details },
     ] };
 }
 
@@ -47,10 +55,11 @@ export async function processPersonalSchedules(now = Date.now()): Promise<{ sent
             await recordNotificationHistory({ userId: attempt.userId, kind: 'schedule', occurrenceKey: attempt.attemptKey,
                 title: occurrence?.title ?? '', scheduledAt: Number(attempt.scheduledAt), observedAt: now, status: 'uncertain', reason: 'interrupted' });
         }
-        const quiet = await manager.due(now, true).catch(() => []);
-        for (const row of quiet) await recordNotificationHistory({ userId: row.userId, kind: 'schedule',
-            occurrenceKey: `${row.id}:${row.notificationEpoch ?? 0}:${row.notificationCount}`, title: row.title,
-            scheduledAt: row.nextNotifyAt ?? row.plannedAt, observedAt: deliveryNow(), status: 'delayed', reason: 'quietHours' });
+        for (const [scope, reason] of [['paused', 'paused'], ['quiet', 'quietHours']] as const) {
+            for (const row of await manager.due(now, scope).catch(() => [])) await recordNotificationHistory({ userId: row.userId, kind: 'schedule',
+                occurrenceKey: `${row.id}:${row.notificationEpoch ?? 0}:${row.notificationCount}`, title: row.title,
+                scheduledAt: row.nextNotifyAt ?? row.plannedAt, observedAt: deliveryNow(), status: 'delayed', reason });
+        }
         for (const row of await manager.due(now)) {
             const history = (status: NotificationHistoryStatus, reason: NotificationHistoryReason | null = null, messageId?: string, channelId?: string) =>
                 recordNotificationHistory({ userId: row.userId, kind: 'schedule', occurrenceKey: `${row.id}:${row.notificationEpoch ?? 0}:${row.notificationCount}`,

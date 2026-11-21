@@ -23,7 +23,7 @@ export function computeNextDailyRunDelaySeconds(targetHourLocal: number, now: Da
     }
     next.setHours(targetHourLocal, 0, 0, 0);
     const diffMs = next.getTime() - now.getTime();
-    return Math.max(1, Math.floor(diffMs / 1000));
+    return Math.max(1, Math.ceil(diffMs / 1000));
 }
 
 /**
@@ -33,7 +33,7 @@ export function computeNextDailyRunDelaySeconds(targetHourLocal: number, now: Da
 export function computeNextMinuteBoundaryDelaySeconds(now: Date = new Date(), minSeconds = 0): number {
     const ms = now.getTime();
     const nextMinute = new Date(Math.floor(ms / 60000) * 60000 + 60000);
-    const diff = Math.floor((nextMinute.getTime() - ms) / 1000);
+    const diff = Math.ceil((nextMinute.getTime() - ms) / 1000);
     return Math.max(minSeconds, diff);
 }
 
@@ -72,15 +72,13 @@ export function formatDateKey(d: Date): string {
 }
 
 /**
- * Format a date to a minute-scoped key: YYYYMMDD-HHMM using local time.
+ * Use UTC so both occurrences of a repeated local minute get different queue keys.
  */
 export function formatMinuteKey(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${y}${m}${day}-${hh}${mm}`;
+    const iso = d.toISOString();
+    const date = iso.slice(0, 10).replaceAll('-', '');
+    const time = iso.slice(11, 16).replace(':', '');
+    return `${date}-${time}Z`;
 }
 
 /**

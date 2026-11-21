@@ -44,6 +44,14 @@
                     }
                 }
             },
+            "done": {
+                "description": "Mark an occurrence done without logging a time",
+                "options": {
+                    "occurrence": {
+                        "description": "Occurrence ID from /schedule list"
+                    }
+                }
+            },
             "complete": {
                 "description": "Confirm completion now or at an earlier time",
                 "options": {

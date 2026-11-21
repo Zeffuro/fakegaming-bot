@@ -34,8 +34,9 @@ describe('calendar occurrence reconciliation', () => {
     it('imports stable identity, preserves a parent pause and replaces snooze only when the provider moves the event', async () => {
         await sync([event]);
         const original = (await manager.list('owner', 'all'))[0]!;
-        await manager.setEnabled(original.scheduleId, 'owner', false);
         const snoozed = await manager.snooze(original.id, 'owner', 0, now + 600_000);
+        await manager.setEnabled(original.scheduleId, 'owner', false);
+        await expect(manager.snooze(original.id, 'owner', snoozed.version, now + 900_000)).rejects.toMatchObject({ code: 'stale' });
         await sync([{ ...event, title: 'New title' }]);
         expect((await manager.get(original.id, 'owner'))).toMatchObject({ id: original.id, nextNotifyAt: snoozed.nextNotifyAt, title: 'New title' });
         await sync([{ ...event, plannedAt: now + 7_200_000, endAt: null }]);

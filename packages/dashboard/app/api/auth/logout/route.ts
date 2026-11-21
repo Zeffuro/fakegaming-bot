@@ -3,9 +3,11 @@ import { getBaseUrl } from "@/lib/util/getBaseUrl";
 import { revokeRefreshSession } from "@/lib/auth/refreshSessions";
 import { ACCESS_TOKEN_COOKIE_NAME, REFRESH_SESSION_COOKIE_NAME } from "@/lib/auth/sessionConstants";
 import { CSRF_COOKIE_NAME } from "@/lib/security/csrf";
+import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 
 export async function GET(req: NextRequest) {
-    await revokeRefreshSession(req.cookies.get(REFRESH_SESSION_COOKIE_NAME)?.value);
+    try { await revokeRefreshSession(req.cookies.get(REFRESH_SESSION_COOKIE_NAME)?.value); }
+    catch { return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.serviceUnavailable") }, { status: 503 }); }
 
     const response = NextResponse.redirect(`${getBaseUrl(req)}/`);
 

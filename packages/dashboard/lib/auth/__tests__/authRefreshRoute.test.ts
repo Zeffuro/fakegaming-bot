@@ -1,15 +1,17 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import {
-    mockCacheDelete,
-    mockCacheGet,
-    mockCacheSet,
-    resetCacheMocks,
-    setupCacheMocks,
     verifyTestJwt,
     expectForbidden,
     expectOk,
+    expectServiceUnavailable,
     expectUnauthorized
 } from '@zeffuro/fakegaming-common/testing';
+
+const store = vi.hoisted(() => ({ get: vi.fn(), eval: vi.fn() }));
+vi.mock('@zeffuro/fakegaming-common', async importOriginal => ({
+    ...await importOriginal<object>(),
+    requireRedis: async () => store,
+}));
 
 process.env.JWT_SECRET = 'supersecret';
 process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
@@ -35,8 +37,8 @@ function makeReq(opts: { refreshSession?: string; csrf?: string; headerCsrf?: st
 describe('auth/refresh route', () => {
     beforeEach(() => {
         vi.resetModules();
-        setupCacheMocks();
-        resetCacheMocks();
+        store.get.mockReset().mockResolvedValue(null);
+        store.eval.mockReset().mockResolvedValue(1);
     });
 
     async function importRoute() {
@@ -44,7 +46,7 @@ describe('auth/refresh route', () => {
     }
 
     function mockRefreshSession() {
-        mockCacheGet.mockResolvedValueOnce({
+        store.get.mockResolvedValueOnce(JSON.stringify({
             version: 1,
             user: {
                 id: '42',
@@ -57,7 +59,7 @@ describe('auth/refresh route', () => {
             updatedAt: Date.now(),
             absoluteExpiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
             discordRefreshToken: null
-        });
+        }));
     }
 
     it('rejects missing CSRF token', async () => {
@@ -77,8 +79,7 @@ describe('auth/refresh route', () => {
         expect(body.refreshed).toBe(true);
         expect((res as any).cookies.get('jwt')).toBeDefined();
         expect((res as any).cookies.get('refresh_session')).toBeDefined();
-        expect(mockCacheDelete).toHaveBeenCalledTimes(1);
-        expect(mockCacheSet).toHaveBeenCalledTimes(1);
+        expect(store.eval).toHaveBeenCalledOnce();
     });
 
     it('new access token contains the refresh session user', async () => {
@@ -104,6 +105,16 @@ describe('auth/refresh route', () => {
         expectUnauthorized(res);
         expect((res as any).cookies.get('jwt')).toBeUndefined();
         expect((res as any).cookies.get('refresh_session')).toBeUndefined();
-        expect(mockCacheDelete).not.toHaveBeenCalled();
+        expect(store.eval).not.toHaveBeenCalled();
+    });
+
+    it('returns service unavailable without issuing cookies when rotation cannot persist', async () => {
+        mockRefreshSession();
+        store.eval.mockRejectedValueOnce(new Error('Redis unavailable'));
+        const { POST } = await importRoute();
+        const res = await POST(makeReq({ refreshSession: 'refresh-token', csrf: 't', headerCsrf: 't' }));
+        expectServiceUnavailable(res);
+        expect(res.cookies.get('jwt')).toBeUndefined();
+        expect(res.cookies.get('refresh_session')).toBeUndefined();
     });
 });

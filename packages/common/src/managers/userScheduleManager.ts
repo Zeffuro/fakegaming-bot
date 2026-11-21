@@ -58,13 +58,17 @@ export class UserScheduleManager {
         return this.mutate(id, userId, version, { state: 'completed', completedAt, nextNotifyAt: null, ...(note !== undefined ? { note } : {}) });
     }
 
+    async acknowledge(id: string, userId: string, version: number): Promise<ScheduleRecord> {
+        return this.mutate(id, userId, version, { state: 'completed', completedAt: null, nextNotifyAt: null }, 'pending', true);
+    }
+
     async undo(id: string, userId: string, version: number): Promise<ScheduleRecord> {
         return this.mutate(id, userId, version, { state: 'pending', completedAt: null, notificationCount: 0, nextNotifyAt: this.now() + 60_000 }, 'completed');
     }
 
-    async snooze(id: string, userId: string, version: number, until: number, requireActive = false): Promise<ScheduleRecord> {
+    async snooze(id: string, userId: string, version: number, until: number): Promise<ScheduleRecord> {
         if (!Number.isSafeInteger(until) || until <= this.now() || until > this.now() + 366 * 86_400_000) throw new ScheduleError('invalid');
-        return this.mutate(id, userId, version, { nextNotifyAt: until }, 'pending', requireActive);
+        return this.mutate(id, userId, version, { nextNotifyAt: until }, 'pending', true);
     }
 
     async note(id: string, userId: string, version: number, note: string): Promise<ScheduleRecord> {
@@ -155,6 +159,7 @@ export class UserScheduleManager {
             if (!schedule || !row) throw new ScheduleError('missing');
             if (requireActive && (!schedule.enabled || row.cancelled || schedule.sourceId !== parentPointer?.sourceId)) throw new ScheduleError('stale');
             if (row.version !== version || (state && row.state !== state)) throw new ScheduleError('stale');
+            if (values.state === 'pending') values.nextNotifyAt = Math.max(Number(row.plannedAt), Number(values.nextNotifyAt));
             if (row.cancelled && values.state !== 'completed' && !Object.hasOwn(values, 'note')) values.nextNotifyAt = null;
             const resetNotifications = Object.hasOwn(values, 'nextNotifyAt') && values.nextNotifyAt !== null;
             await row.update({ ...values, ...(resetNotifications ? { notificationEpoch: row.notificationEpoch + 1, notificationCount: 0 } : {}), version: row.version + 1 }, { transaction });

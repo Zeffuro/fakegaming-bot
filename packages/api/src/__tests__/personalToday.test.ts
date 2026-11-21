@@ -108,6 +108,17 @@ describe('Personal Today owner API', () => {
         expectOk(await patch(client, path, { action: 'complete', version: 1 }));
         expect((await client.get('/api/personalToday')).body.schedules).toEqual([]);
     });
+    it('marks an appointment done without logging a completion time', async () => {
+        const client = givenAuthenticatedClient(app, { discordId: ownerId });
+        const item = await cm.userScheduleManager.createManual({ userId: ownerId, title: 'Picnic', plannedAt: now + 60_000, timezone: 'UTC' });
+        const path = `/api/personalToday/schedules/${item.id}`;
+        expectNotFound(await patch(givenAuthenticatedClient(app, { discordId: 'other' }), path, { action: 'done', version: 0 }));
+        const done = await patch(client, path, { action: 'done', version: 0 });
+        expectOk(done);
+        expect(done.body).toMatchObject({ state: 'completed', completedAt: null, nextNotifyAt: null, plannedAt: item.plannedAt });
+        expectConflict(await patch(client, path, { action: 'snooze', version: 0, minutes: 60 }));
+        expect((await client.get('/api/personalToday')).body.schedules).toEqual([]);
+    });
     it('pauses/resumes/stops owner session and rejects stale or foreign actions', async () => {
         const client = givenAuthenticatedClient(app, { discordId: ownerId });
         const session = await cm.userSessionManager.start({ userId: ownerId, title: 'Play', kind: 'gaming', messages: { focus: 'Focus', break: 'Break', finished: 'Done', takeBreak: 'Rest' } });

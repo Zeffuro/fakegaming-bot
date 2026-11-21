@@ -31,8 +31,8 @@ describe('Today dashboard', () => {
     });
     afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
     const render = async (revision?: string) => { await act(async () => root.render(<TodayPanel revision={revision} />)); };
-    const click = async (key: Parameters<typeof translate>[0]) => {
-        const button = [...container.querySelectorAll('button')].find(item => item.textContent === translate(key));
+    const click = async (key: Parameters<typeof translate>[0], occurrence = 0) => {
+        const button = [...container.querySelectorAll('button')].filter(item => item.textContent === translate(key))[occurrence];
         expect(button).toBeDefined(); await act(async () => button!.click());
     };
     it.each(['en', 'nl'] as const)('shows all private agenda kinds and saved timezone in %s', async locale => {
@@ -46,10 +46,11 @@ describe('Today dashboard', () => {
         await render(); await click('today.done');
         expect(mocks.task).toHaveBeenCalledWith('first', { action: 'done', version: 3 });
         await click('today.complete'); expect(mocks.schedule).toHaveBeenCalledWith('schedule', { action: 'complete', version: 2 });
-        await click('today.remindLater'); expect(mocks.schedule).toHaveBeenCalledWith('schedule', { action: 'snooze', version: 2, minutes: 60 });
+        await click('today.snooze', 2); expect(mocks.schedule).toHaveBeenCalledWith('schedule', { action: 'snooze', version: 2, minutes: 60 });
+        await click('today.done', 1); expect(mocks.schedule).toHaveBeenCalledWith('schedule', { action: 'done', version: 2 });
         await click('today.pause'); expect(mocks.session).toHaveBeenCalledWith('session', { action: 'pause', version: 4 });
         await click('today.stop'); expect(mocks.session).toHaveBeenCalledWith('session', { action: 'stop', version: 4 });
-        expect(mocks.get).toHaveBeenCalledTimes(6);
+        expect(mocks.get).toHaveBeenCalledTimes(7);
     });
     it.each(['en', 'nl'] as const)('keeps a quick undo action after the task disappears in %s and handles stale undo safely', async locale => {
         mocks.locale = locale;

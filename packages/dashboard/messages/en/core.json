@@ -93,6 +93,7 @@
     "channelsUnavailable": "Failed to fetch server channels",
     "oauthCodeMissing": "The Discord sign-in code is missing.",
     "oauthCodeInvalid": "The Discord sign-in code is invalid.",
+    "oauthStateInvalid": "This Discord sign-in has expired or was started in another browser. Start sign-in again.",
     "requestFailed": "API request failed with status: {status}",
     "network": "Unable to reach the dashboard service. Check your connection and try again.",
     "csrfMissing": "The security token is missing. Refresh the page and try again.",

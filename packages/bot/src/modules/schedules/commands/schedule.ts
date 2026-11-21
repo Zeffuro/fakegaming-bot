@@ -17,7 +17,7 @@ const data = createSlashCommand(META, b => {
     b.addSubcommand(s => s.setName('list').setDescription('List private occurrences')
         .addStringOption(o => o.setName('filter').setDescription('Occurrence state').addChoices(...['upcoming', 'unconfirmed', 'completed', 'all'].map(value => ({ name: value, value }))))
         .addIntegerOption(o => o.setName('page').setDescription('Page number').setMinValue(1)));
-    for (const [name, description] of [['show', 'Open private occurrence controls'], ['complete', 'Confirm completion now or at an earlier time'],
+    for (const [name, description] of [['show', 'Open private occurrence controls'], ['done', 'Mark an occurrence done without logging a time'], ['complete', 'Confirm completion now or at an earlier time'],
         ['correct', 'Correct the completion timestamp'], ['undo', 'Undo a completion'], ['snooze', 'Remind later without moving the schedule'],
         ['note', 'Set or remove a private note'], ['history', 'Show all private history or filter by an occurrence'], ['summary', 'Show last completed and next planned']] as const) {
         b.addSubcommand(s => {
@@ -123,9 +123,10 @@ async function execute(interaction: ChatInputCommandInteraction): Promise<void> 
         if (action === 'complete' || action === 'correct') {
             const at = options.getString('at');
             const completedAt = at ? parseCompletedTime(at, item.timezone) : Date.now();
-            if (completedAt === null || (action === 'correct' && item.state !== 'completed')) invalidSchedule();
+            if (completedAt === null || (action === 'correct' && item.completedAt === null)) invalidSchedule();
             item = await manager.complete(id, userId, item.version, completedAt);
-        } else if (action === 'undo') item = await manager.undo(id, userId, item.version);
+        } else if (action === 'done') item = await manager.acknowledge(id, userId, item.version);
+        else if (action === 'undo') item = await manager.undo(id, userId, item.version);
         else if (action === 'note') item = await manager.note(id, userId, item.version, options.getString('text') ?? '');
         else if (action === 'snooze') {
             const time = parseReminderTime(options.getString('when', true), item.timezone);

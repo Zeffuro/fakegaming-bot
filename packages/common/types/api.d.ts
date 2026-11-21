@@ -515,7 +515,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all users */
+        /** List users accessible to the caller */
         get: {
             parameters: {
                 query?: never;
@@ -525,13 +525,14 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of users */
+                /** @description The caller's user record, or all user records for dashboard admins and internal services */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
+                401: components["responses"]["Unauthorized"];
                 429: components["responses"]["RateLimitExceeded"];
             };
         };
@@ -559,6 +560,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
             };
         };
         delete?: never;
@@ -593,6 +595,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -621,6 +624,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -645,6 +649,7 @@ export interface paths {
                     content?: never;
                 };
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
             };
         };
         options?: never;
@@ -685,6 +690,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -728,6 +734,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
             };
         };
@@ -3299,7 +3306,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all servers */
+        /** List servers accessible to the caller */
         get: {
             parameters: {
                 query?: never;
@@ -3309,8 +3316,15 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of servers */
+                /** @description Servers the caller can administer, or all servers for dashboard admins and internal services */
                 200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Guild access is temporarily unavailable */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3342,6 +3356,14 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Guild access is temporarily unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -3376,7 +3398,15 @@ export interface paths {
                     };
                     content?: never;
                 };
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Guild access is temporarily unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         /** Update a server by ID */
@@ -3404,7 +3434,15 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Guild access is temporarily unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         post?: never;
@@ -3428,6 +3466,14 @@ export interface paths {
                     content?: never;
                 };
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Guild access is temporarily unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         options?: never;
@@ -3790,7 +3836,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all reminders */
+        /** List reminders accessible to the caller */
         get: {
             parameters: {
                 query?: never;
@@ -3800,7 +3846,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description List of reminders */
+                /** @description The caller's reminders, or all reminders for dashboard admins and internal services */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -3835,6 +3881,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
                 409: components["responses"]["Conflict"];
             };
         };
@@ -4514,7 +4561,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Complete or snooze an owner schedule occurrence with a version check */
+        /** Mark done, log completion or snooze an owner schedule occurrence with a version check */
         patch: {
             parameters: {
                 query?: never;
@@ -4771,7 +4818,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** Upsert (add or update) a patch note */
+        /** Upsert a patch note as a dashboard admin or internal service */
         post: {
             parameters: {
                 query?: never;
@@ -4794,6 +4841,7 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
             };
         };
         delete?: never;

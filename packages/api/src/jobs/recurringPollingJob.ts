@@ -3,7 +3,6 @@ import { scheduleSingleton } from '@zeffuro/fakegaming-common/jobs';
 import { recordJobRun } from './status.js';
 
 export interface PollingJobResult {
-    processed: number;
     errors: number;
 }
 
@@ -12,6 +11,7 @@ export interface RecurringPollingJobOptions {
     provider: string;
     jobName: string;
     intervalSeconds: number;
+    jitterSeconds?: number;
     catchupDelaySeconds?: number;
     now?: Date;
     run: () => Promise<PollingJobResult>;
@@ -24,6 +24,10 @@ export async function registerRecurringPollingJob(options: RecurringPollingJobOp
     const scheduleSlot = (slot: number, delaySeconds: number) => scheduleSingleton(
         options.queue, options.jobName, { slot }, delaySeconds, `${options.provider}:slot:${slot}`,
     );
+    const scheduleNextSlot = (slot: number, from: number) => {
+        const jitter = options.jitterSeconds ? Math.floor(Math.random() * options.jitterSeconds) : 0;
+        return scheduleSlot(slot, Math.ceil((slot * intervalMs - from) / 1000) + jitter);
+    };
 
     options.queue.on<{ slot?: number }>(options.jobName, async (job) => {
         const startedAt = new Date().toISOString();
@@ -38,8 +42,7 @@ export async function registerRecurringPollingJob(options: RecurringPollingJobOp
                 const currentSlot = Math.floor(finishedAt / intervalMs);
                 const carriedSlot = Number.isSafeInteger(job.data?.slot) ? job.data.slot! : currentSlot;
                 const slot = Math.max(currentSlot, carriedSlot) + 1;
-                const delaySeconds = Math.ceil((slot * intervalMs - finishedAt) / 1000);
-                await scheduleSlot(slot, delaySeconds);
+                await scheduleNextSlot(slot, finishedAt);
             } finally {
                 await job.done();
             }
@@ -49,5 +52,5 @@ export async function registerRecurringPollingJob(options: RecurringPollingJobOp
     const catchupDelaySeconds = options.catchupDelaySeconds ?? 0;
     const currentSlot = Math.floor(now.getTime() / intervalMs);
     await scheduleSlot(currentSlot, catchupDelaySeconds);
-    await scheduleSlot(currentSlot + 1, Math.ceil(((currentSlot + 1) * intervalMs - now.getTime()) / 1000));
+    await scheduleNextSlot(currentSlot + 1, now.getTime());
 }

@@ -44,6 +44,14 @@
                     }
                 }
             },
+            "done": {
+                "description": "Markeer een moment als klaar zonder een tijd vast te leggen",
+                "options": {
+                    "occurrence": {
+                        "description": "Moment-ID uit /schedule list"
+                    }
+                }
+            },
             "complete": {
                 "description": "Voltooiing nu of eerder bevestigen",
                 "options": {

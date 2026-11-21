@@ -29,6 +29,18 @@ describe('jobs utils', () => {
 
         const afterTarget = new Date(2025, 9, 17, 10, 0, 0);
         expect(computeNextDailyRunDelaySeconds(9, afterTarget)).toBe(23 * 60 * 60);
+        const justBefore = new Date(2025, 9, 17, 8, 59, 58, 500);
+        expect(computeNextDailyRunDelaySeconds(9, justBefore)).toBe(2);
+    });
+
+    it.each([5, 10])('assigns successive fractional-second runs distinct minute keys with a %is minimum', minimum => {
+        let current = new Date('2026-11-21T12:00:59.200Z');
+        const keys = [formatMinuteKey(current)];
+        for (let i = 0; i < 2; i++) {
+            current = new Date(current.getTime() + 1000 * computeNextMinuteBoundaryDelaySeconds(current, minimum));
+            keys.push(formatMinuteKey(current));
+        }
+        expect(new Set(keys).size).toBe(3);
     });
 
     it('computeNextMinuteBoundaryDelaySeconds computes boundary with min', () => {
@@ -52,6 +64,13 @@ describe('jobs utils', () => {
         const minuteKey = formatMinuteKey(d);
         expect(/\d{4}-\d{2}-\d{2}/.test(dateKey)).toBe(true);
         expect(/\d{8}-\d{4}/.test(minuteKey)).toBe(true);
+    });
+
+    it('distinguishes both occurrences of a local minute when daylight saving ends', () => {
+        const daylight = new Date('2026-10-25T02:30:00+02:00');
+        const standard = new Date('2026-10-25T02:30:00+01:00');
+        expect(formatMinuteKey(daylight)).toBe('20261025-0030Z');
+        expect(formatMinuteKey(standard)).toBe('20261025-0130Z');
     });
 });
 

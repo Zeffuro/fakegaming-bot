@@ -1,6 +1,11 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtOrService } from '../middleware/auth.js';
+import { isServiceRequest } from '../middleware/serviceAuth.js';
+import { isDashboardAdmin } from '../utils/dashboardAdmin.js';
+import { NotFoundError } from '@zeffuro/fakegaming-common';
+import type { Request } from 'express';
+import type { AuthenticatedRequest } from '../types/express.js';
 import { validateBody, validateParams } from '../localization/validation.js';
 import { reminderCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
@@ -14,15 +19,20 @@ const idParamSchema = z.object({ id: z.string().min(1) });
 // Router
 const router = createBaseRouter();
 
+function reminderAccess(req: Request) {
+    const userId = (req as AuthenticatedRequest).user?.discordId;
+    return { userId, canAccessAll: isServiceRequest(req) || isDashboardAdmin(userId) };
+}
+
 /**
  * @openapi
  * /reminders:
  *   get:
- *     summary: List all reminders
+ *     summary: List reminders accessible to the caller
  *     tags: [Reminders]
  *     responses:
  *       200:
- *         description: List of reminders
+ *         description: The caller's reminders, or all reminders for dashboard admins and internal services
  *         content:
  *           application/json:
  *             schema:
@@ -30,8 +40,12 @@ const router = createBaseRouter();
  *               items:
  *                 $ref: '#/components/schemas/ReminderConfig'
  */
-router.get('/', async (_req, res) => {
-    const reminders = await getConfigManager().reminderManager.getAllPlain();
+router.get('/', async (req, res) => {
+    const { userId, canAccessAll } = reminderAccess(req);
+    if (!userId) return sendLocalizedError(req, res, 401, 'UNAUTHORIZED', 'authenticationRequired');
+
+    const manager = getConfigManager().reminderManager;
+    const reminders = canAccessAll ? await manager.getAllPlain() : await manager.getRemindersByUser(userId);
     res.json(reminders);
 });
 
@@ -59,7 +73,11 @@ router.get('/', async (_req, res) => {
  */
 router.get('/:id', validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
+    const { userId, canAccessAll } = reminderAccess(req);
+    if (!userId) return sendLocalizedError(req, res, 401, 'UNAUTHORIZED', 'authenticationRequired');
+
+    const manager = getConfigManager().reminderManager;
+    const reminder = canAccessAll ? await manager.findByPkPlain(id) : await manager.getForUser(id, userId);
     if (!reminder) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
     res.json(reminder);
 });
@@ -85,10 +103,17 @@ router.get('/:id', validateParams(idParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       409:
  *         $ref: '#/components/responses/Conflict'
  */
-router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req, res) => {
+router.post('/', jwtOrService, validateBody(reminderCreateRequestSchema), async (req, res) => {
+    const { userId, canAccessAll } = reminderAccess(req);
+    if (!canAccessAll && userId !== req.body.userId) {
+        return sendLocalizedError(req, res, 403, 'FORBIDDEN', 'forbidden');
+    }
+
     try {
         const created = await getConfigManager().reminderManager.addPlain(req.body);
         await recordAuditEvent(req, {
@@ -128,11 +153,23 @@ router.post('/', jwtAuth, validateBody(reminderCreateRequestSchema), async (req,
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.delete('/:id', jwtAuth, validateParams(idParamSchema), async (req, res) => {
+router.delete('/:id', jwtOrService, validateParams(idParamSchema), async (req, res) => {
     const id = String(req.params.id);
-    const reminder = await getConfigManager().reminderManager.findByPkPlain(id as string);
-    if (!reminder) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
-    await getConfigManager().reminderManager.removeByPk(id as string);
+    const { userId, canAccessAll } = reminderAccess(req);
+    if (!userId) return sendLocalizedError(req, res, 401, 'UNAUTHORIZED', 'authenticationRequired');
+
+    const manager = getConfigManager().reminderManager;
+    try {
+        if (canAccessAll) {
+            await manager.removeByPk(id);
+        } else if (!await manager.removeForUser(id, userId)) {
+            return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
+        }
+    } catch (error) {
+        if (!(error instanceof NotFoundError)) throw error;
+        return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'reminderNotFound');
+    }
+
     await recordAuditEvent(req, {
         action: 'reminder.delete',
         targetType: 'reminder',

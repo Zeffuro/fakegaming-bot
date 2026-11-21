@@ -12,7 +12,7 @@ const item = { id, userId: 'owner', scheduleId: id, title: 'Private schedule', t
 const manager = {
     userManager: { getUser: vi.fn().mockResolvedValue({ preferredLocale: 'nl', timezone: item.timezone }) },
     guildLocaleConfigManager: { getOutputLocale: vi.fn() },
-    userScheduleManager: { get: vi.fn(), createManual: vi.fn(), list: vi.fn(), complete: vi.fn(), undo: vi.fn(), snooze: vi.fn(), note: vi.fn(),
+    userScheduleManager: { get: vi.fn(), createManual: vi.fn(), list: vi.fn(), acknowledge: vi.fn(), complete: vi.fn(), undo: vi.fn(), snooze: vi.fn(), note: vi.fn(),
         summary: vi.fn(), export: vi.fn(), preferences: vi.fn(), configure: vi.fn(), setEnabled: vi.fn() },
 };
 
@@ -37,6 +37,7 @@ beforeEach(() => {
     m.get.mockResolvedValue(item);
     m.createManual.mockResolvedValue(item);
     m.list.mockResolvedValue([item]);
+    m.acknowledge.mockResolvedValue({ ...item, state: 'completed', version: 1 });
     m.complete.mockResolvedValue({ ...item, state: 'completed', completedAt: Date.now(), version: 1 });
     m.undo.mockResolvedValue({ ...item, version: 1 });
     m.snooze.mockResolvedValue({ ...item, version: 1 });
@@ -65,7 +66,7 @@ describe('completion timestamps', () => {
 describe('private schedule commands', () => {
     it('makes only the history occurrence selector optional', () => {
         const subcommands = schedule.data.toJSON().options!;
-        for (const name of ['show', 'complete', 'correct', 'undo', 'snooze', 'note', 'history', 'summary']) {
+        for (const name of ['show', 'done', 'complete', 'correct', 'undo', 'snooze', 'note', 'history', 'summary']) {
             const subcommand = subcommands.find(option => option.name === name)!;
             expect('options' in subcommand && subcommand.options?.find(option => option.name === 'occurrence')?.required).toBe(name !== 'history');
         }
@@ -90,7 +91,7 @@ describe('private schedule commands', () => {
         expect(manager.userScheduleManager.createManual).toHaveBeenCalledWith(expect.objectContaining({ userId: 'owner', timezone: item.timezone, repeatWeeks: 2 }));
         expect(manager.guildLocaleConfigManager.getOutputLocale).not.toHaveBeenCalled();
     });
-    it.each(['show', 'list', 'complete', 'snooze', 'undo', 'note', 'history', 'summary', 'pause', 'resume', 'configure', 'connect'])('handles %s privately', async action => {
+    it.each(['show', 'list', 'done', 'complete', 'snooze', 'undo', 'note', 'history', 'summary', 'pause', 'resume', 'configure', 'connect'])('handles %s privately', async action => {
         const interaction = slash(action, { occurrence: id, schedule: id, when: '10m' });
         await schedule.execute(interaction as unknown as ChatInputCommandInteraction);
         expect(interaction.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
@@ -177,12 +178,27 @@ describe('persistent private occurrence controls', () => {
         expect(interaction.deferReply).not.toHaveBeenCalled();
         expect(interaction.showModal.mock.calls[0]![0].data.custom_id).toBe(interaction.customId);
     });
-    it.each(['d', 'u', 'h'])('handles %s with owner and current version', async action => {
+    it.each(['a', 'd', 'u', 'h'])('handles %s with owner and current version', async action => {
         const interaction = control(action);
         await schedule.handleComponent(interaction as unknown as ButtonInteraction);
         expect(interaction.deferReply).toHaveBeenCalledWith({ flags: MessageFlags.Ephemeral });
         expect(interaction.editReply).toHaveBeenCalled();
         if (action === 'd') expect(manager.userScheduleManager.complete).toHaveBeenCalledWith(id, 'owner', 0);
+        if (action === 'a') {
+            expect(manager.userScheduleManager.acknowledge).toHaveBeenCalledWith(id, 'owner', 0);
+            expect(manager.userScheduleManager.complete).not.toHaveBeenCalled();
+            expect(interaction.message.edit).toHaveBeenCalledWith(expect.objectContaining({ content: expect.stringContaining('\nKlaar\n') }));
+        }
+    });
+    it('can log the current time through the optional completion input', async () => {
+        const now = Date.now();
+        const interaction = control('t');
+        await schedule.handleComponent(interaction as unknown as ButtonInteraction);
+        const modal = interaction.showModal.mock.calls[0]![0].toJSON();
+        expect(modal.components[0].components[0].required).toBe(false);
+        await schedule.handleModal(interaction as unknown as ModalSubmitInteraction);
+        expect(manager.userScheduleManager.complete).toHaveBeenCalledWith(id, 'owner', 0, expect.any(Number));
+        expect(manager.userScheduleManager.complete.mock.calls[0]![3]).toBeGreaterThanOrEqual(now);
     });
     it.each(['t', 's', 'n'])('persists explicit %s modal input', async action => {
         const interaction = control(action, action === 't' ? '2026-01-01 09:00' : action === 's' ? '10m' : 'private note');
@@ -236,9 +252,14 @@ describe('persistent private occurrence controls', () => {
             const view = renderSchedule(completed, locale);
             expect(view.content).toContain(scheduleCopy(locale)('allDay'));
             expect(view.components[0]!.components.map(button => button.data)).toEqual([
-                expect.objectContaining({ custom_id: `schedule:u:${id}:0` }), expect.objectContaining({ custom_id: `schedule:t:${id}:0` }),
+                expect.objectContaining({ custom_id: `schedule:u:${id}:0` }),
             ]);
+            expect(view.components[1]!.components[0]!.data).toMatchObject({ custom_id: `schedule:t:${id}:0` });
             expect(renderHistory([completed], locale).content).toContain(scheduleCopy(locale)('allDay'));
+            const acknowledged = { ...completed, completedAt: null, cancelled: false };
+            expect(renderSchedule(acknowledged, locale).components[1]!.components.map(button => button.data)).not.toContainEqual(
+                expect.objectContaining({ custom_id: `schedule:t:${id}:0` }));
+            expect(renderHistory([acknowledged], locale).content).toContain(scheduleCopy(locale)('done'));
         }
     });
 });

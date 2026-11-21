@@ -6,7 +6,7 @@ import { renderHistory, renderSchedule } from './renderSchedule.js';
 import { invalidSchedule, scheduleCopy, scheduleFailure, scheduleLocale } from './scheduleCopy.js';
 
 type Interaction = ButtonInteraction | ModalSubmitInteraction;
-const ID = /^schedule:([dtshun]):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}):(\d{1,10})$/i;
+const ID = /^schedule:([adtshun]):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}):(\d{1,10})$/i;
 
 async function available(interaction: Interaction) {
     const match = ID.exec(interaction.customId);
@@ -29,12 +29,14 @@ export async function handleComponent(interaction: ButtonInteraction): Promise<b
     try {
         const { item, action } = await available(interaction);
         if (modalAction) {
-            const label = action === 'n' ? t('noteLabel') : t('timeLabel');
+            if (action === 't' && item.state === 'completed' && item.completedAt === null) invalidSchedule();
+            const logNow = action === 't' && item.state === 'pending';
+            const label = t(action === 'n' ? 'noteLabel' : action === 's' ? 'snoozeLabel' : logNow ? 'logLabel' : 'timeLabel');
             const input = new TextInputBuilder().setCustomId('value').setLabel(label).setStyle(action === 'n' ? TextInputStyle.Paragraph : TextInputStyle.Short)
-                .setRequired(action !== 'n').setMaxLength(action === 'n' ? 1000 : 100);
+                .setRequired(action !== 'n' && !logNow).setMaxLength(action === 'n' ? 1000 : 100);
             if (action === 'n' && item.note) input.setValue(item.note);
-            if (action !== 'n') input.setPlaceholder(t('timePlaceholder'));
-            const modal = new ModalBuilder().setCustomId(interaction.customId).setTitle(t(action === 't' ? 'earlier' : action === 's' ? 'later' : 'note'))
+            if (action !== 'n') input.setPlaceholder(t(action === 's' ? 'snoozePlaceholder' : 'timePlaceholder'));
+            const modal = new ModalBuilder().setCustomId(interaction.customId).setTitle(t(action === 't' ? (logNow ? 'log' : 'earlier') : action === 's' ? 'later' : 'note'))
                 .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
             await interaction.showModal(modal);
             return true;
@@ -42,7 +44,8 @@ export async function handleComponent(interaction: ButtonInteraction): Promise<b
         const manager = getConfigManager().userScheduleManager;
         if (action === 'h') await interaction.editReply(renderHistory(await manager.list(interaction.user.id, 'all', item.scheduleId), locale));
         else {
-            const updated = action === 'd' ? await manager.complete(item.id, interaction.user.id, item.version)
+            const updated = action === 'a' ? await manager.acknowledge(item.id, interaction.user.id, item.version)
+                : action === 'd' ? await manager.complete(item.id, interaction.user.id, item.version)
                 : action === 'u' ? await manager.undo(item.id, interaction.user.id, item.version) : invalidSchedule();
             const rendered = renderSchedule(updated, locale);
             await interaction.editReply(rendered);
@@ -66,7 +69,8 @@ export async function handleModal(interaction: ModalSubmitInteraction): Promise<
         const manager = getConfigManager().userScheduleManager;
         let updated;
         if (action === 't') {
-            const at = parseCompletedTime(value, item.timezone);
+            if (item.state === 'completed' && item.completedAt === null) invalidSchedule();
+            const at = item.state === 'pending' && !value.trim() ? Date.now() : parseCompletedTime(value, item.timezone);
             if (at === null) invalidSchedule();
             updated = await manager.complete(item.id, interaction.user.id, item.version, at);
         } else if (action === 's') {

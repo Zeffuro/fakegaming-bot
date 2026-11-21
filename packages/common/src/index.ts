@@ -7,7 +7,7 @@ import * as Api from './api/index.js';
 import { getSequelize } from './sequelize.js';
 export { closeSequelize } from './sequelize.js';
 
-import { cacheGet, cacheSet, cacheDel, ensureRedis } from './cache.js';
+import { cacheGet, cacheSet, cacheDel, ensureRedis, requireRedis } from './cache.js';
 import { CACHE_KEYS, CACHE_TTL, getCacheManager, defaultCacheManager, type CacheManager } from './utils/cacheManager.js';
 import { registerSchemaOverrides } from './validation/schemaOverrides.js';
 
@@ -163,6 +163,7 @@ export {
   cacheSet,
   cacheDel,
   ensureRedis,
+  requireRedis,
   CACHE_KEYS,
   CACHE_TTL,
   getCacheManager,

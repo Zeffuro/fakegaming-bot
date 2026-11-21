@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
 import { patchNoteCreateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { createBaseRouter } from '../utils/createBaseRouter.js';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtOrService } from '../middleware/auth.js';
+import { requireDashboardAdminOrService } from '../utils/dashboardAdmin.js';
 import { SUPPORTED_GAMES } from '@zeffuro/fakegaming-common';
 import { validateBody, validateParams, validateQuery } from '../localization/validation.js';
 import { sendLocalizedError } from '../localization/responses.js';
@@ -199,7 +200,7 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  * @openapi
  * /patchNotes:
  *   post:
- *     summary: Upsert (add or update) a patch note
+ *     summary: Upsert a patch note as a dashboard admin or internal service
  *     tags: [PatchNotes]
  *     security:
  *       - bearerAuth: []
@@ -216,8 +217,10 @@ router.get('/:game', validateParams(gameParamSchema), async (req, res) => {
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, validateBody(patchNoteCreateRequestSchema), async (req, res) => {
+router.post('/', jwtOrService, requireDashboardAdminOrService, validateBody(patchNoteCreateRequestSchema), async (req, res) => {
     await getConfigManager().patchNotesManager.setLatestPatch(req.body);
     res.status(201).json({ success: true });
 });

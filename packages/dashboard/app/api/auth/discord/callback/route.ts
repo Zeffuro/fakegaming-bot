@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import {getBaseUrl} from "@/lib/util/getBaseUrl";
 import { exchangeCodeForToken, fetchDiscordUser, getDiscordGuilds, issueJwt, CACHE_KEYS, CACHE_TTL, defaultCacheManager, type MinimalGuildData } from "@zeffuro/fakegaming-common";
 import { getDiscordOAuthConfig, getJwtConfig } from "@/lib/env";
 import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import type { APIGuild, APIUser } from "discord-api-types/v10";
-import { sanitizeReturnTo } from "@/lib/util/sanitizeReturnTo";
+import { discordOAuthCookie, verifyDiscordOAuthState } from "@/lib/auth/discordOAuthState";
 import { createRefreshSession } from "@/lib/auth/refreshSessions";
 import {
     ACCESS_TOKEN_COOKIE_NAME,
@@ -17,6 +16,9 @@ import { getRequestDashboardMessageFromRequest } from "@/lib/i18n/server";
 export async function GET(req: NextRequest) {
     const code = req.nextUrl.searchParams.get("code");
     if (!code) return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.oauthCodeMissing") }, { status: 400 });
+    const stateCookie = discordOAuthCookie();
+    const returnTo = verifyDiscordOAuthState(req.cookies.get(stateCookie.name)?.value, req.nextUrl.searchParams.get("state"));
+    if (!returnTo) return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.oauthStateInvalid") }, { status: 400 });
 
     const { clientId, clientSecret, redirectUri } = getDiscordOAuthConfig();
     const { secret, audience, issuer } = getJwtConfig();
@@ -51,14 +53,12 @@ export async function GET(req: NextRequest) {
     const jwtToken = issueJwt(userProfile, secret, audience, issuer, {
         expiresIn: ACCESS_TOKEN_MAX_AGE_SECONDS
     });
-    const refreshSession = await createRefreshSession({
-        user: userProfile,
-        discordRefreshToken: tokenData.refresh_token ?? null
-    });
+    let refreshSession;
+    try { refreshSession = await createRefreshSession({ user: userProfile, discordRefreshToken: tokenData.refresh_token ?? null }); }
+    catch { return NextResponse.json({ error: getRequestDashboardMessageFromRequest(req, "error.serviceUnavailable") }, { status: 503 }); }
 
-    const rawState = req.nextUrl.searchParams.get("state");
-    const returnTo = sanitizeReturnTo(rawState) || "/dashboard";
-    const response = NextResponse.redirect(new URL(returnTo, getBaseUrl(req)));
+    const response = NextResponse.redirect(new URL(returnTo, redirectUri));
+    response.cookies.set({ ...stateCookie, value: '', maxAge: 0 });
     response.cookies.set(ACCESS_TOKEN_COOKIE_NAME, jwtToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

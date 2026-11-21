@@ -19,6 +19,6 @@ export interface PersonalToday {
 export type TodayTaskAction = { action: 'done' | 'undo' | 'tomorrow'; version: number }
     | { action: 'snooze'; version: number; minutes: number }
     | { action: 'check'; version: number; index: number };
-export type TodayScheduleAction = { action: 'complete'; version: number }
+export type TodayScheduleAction = { action: 'complete' | 'done'; version: number }
     | { action: 'snooze'; version: number; minutes: number };
 export interface TodaySessionAction { action: 'pause' | 'resume' | 'stop'; version: number }

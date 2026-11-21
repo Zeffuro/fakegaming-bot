@@ -60,7 +60,7 @@ export async function getUserAccessToken(req: NextRequest, userId: string): Prom
         try {
             await updateRefreshSession(refreshToken, {
                 discordRefreshToken: tokenData.refresh_token
-            });
+            }, Date.now(), refreshSession);
         } catch (error) {
             log.warn({ err: error, userId }, "Failed to persist rotated Discord refresh token");
         }

@@ -93,6 +93,7 @@
     "channelsUnavailable": "Serverkanalen konden niet worden opgehaald",
     "oauthCodeMissing": "De Discord-inlogcode ontbreekt.",
     "oauthCodeInvalid": "De Discord-inlogcode is ongeldig.",
+    "oauthStateInvalid": "Deze Discord-aanmelding is verlopen of gestart in een andere browser. Begin opnieuw met aanmelden.",
     "requestFailed": "API-aanvraag mislukt met status: {status}",
     "network": "De dashboarddienst is niet bereikbaar. Controleer je verbinding en probeer het opnieuw.",
     "csrfMissing": "Het beveiligingstoken ontbreekt. Vernieuw de pagina en probeer het opnieuw.",

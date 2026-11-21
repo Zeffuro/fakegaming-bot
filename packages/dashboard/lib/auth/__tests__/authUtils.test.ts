@@ -2,6 +2,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { NextRequest } from 'next/server';
 import { withCacheMocks, mockCacheGet, mockCacheSet, setupCacheMocks, signTestJwt, expectUnauthorized, expectServiceUnavailable } from '@zeffuro/fakegaming-common/testing';
 
+const refreshStore = vi.hoisted(() => ({ get: vi.fn() }));
+vi.mock('@/lib/auth/refreshSessions', () => ({ getRefreshSession: refreshStore.get }));
+
 // Preserve original env and module state across tests
 const OLD_ENV = { ...process.env };
 
@@ -17,6 +20,7 @@ describe('authUtils', () => {
     withCacheMocks();
 
     beforeEach(() => {
+        refreshStore.get.mockReset().mockResolvedValue(null);
         process.env = { ...OLD_ENV };
         process.env.JWT_SECRET = 'supersecret';
         process.env.JWT_AUDIENCE = 'fakegaming-dashboard';
@@ -102,20 +106,14 @@ describe('authUtils', () => {
         });
 
         it('rehydrates guild access from Discord when the cache is missing', async () => {
-            mockCacheGet.mockImplementation(async (key: string) => {
-                if (key === 'user:user2:guilds') return null;
-                if (key === 'user:user2:access_token') return null;
-                if (key.startsWith('dashboard:refresh-session:')) {
-                    return {
-                        version: 1,
-                        user: { id: 'user2', username: 'User Two' },
-                        createdAt: Date.now(),
-                        updatedAt: Date.now(),
-                        absoluteExpiresAt: Date.now() + 60_000,
-                        discordRefreshToken: 'discord-refresh-token'
-                    };
-                }
-                return null;
+            mockCacheGet.mockResolvedValue(null);
+            refreshStore.get.mockResolvedValue({
+                version: 1,
+                user: { id: 'user2', username: 'User Two' },
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                absoluteExpiresAt: Date.now() + 60_000,
+                discordRefreshToken: 'discord-refresh-token'
             });
             const fetchSpy = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
                 const url = String(input);

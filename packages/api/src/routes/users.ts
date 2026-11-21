@@ -1,6 +1,10 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtOrService } from '../middleware/auth.js';
+import { isServiceRequest } from '../middleware/serviceAuth.js';
+import { isDashboardAdmin } from '../utils/dashboardAdmin.js';
+import type { Request, Response, NextFunction } from 'express';
+import type { AuthenticatedRequest } from '../types/express.js';
 import { validateParams, validateBody } from '../localization/validation.js';
 import {
     userCreateRequestSchema,
@@ -22,6 +26,16 @@ type UserSettingsUpdate = {
     defaultReminderTimeSpan?: string;
 };
 
+function requireUserAccess(req: Request, res: Response, next: NextFunction): void {
+    const userId = (req as AuthenticatedRequest).user?.discordId;
+    const targetId = req.params.discordId ?? req.body?.discordId;
+    if (isServiceRequest(req) || isDashboardAdmin(userId) || (userId && userId === targetId)) {
+        next();
+        return;
+    }
+    sendLocalizedError(req, res, 403, 'FORBIDDEN', 'forbidden');
+}
+
 async function updateExistingUserSettings(discordId: string, update: UserSettingsUpdate): Promise<boolean> {
     const manager = getConfigManager().userManager;
     const user = await manager.getOnePlain({ discordId });
@@ -35,11 +49,13 @@ async function updateExistingUserSettings(discordId: string, update: UserSetting
  * @openapi
  * /users:
  *   get:
- *     summary: List all users
+ *     summary: List users accessible to the caller
  *     tags: [Users]
  *     responses:
  *       200:
- *         description: List of users
+ *         description: The caller's user record, or all user records for dashboard admins and internal services
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  *       429:
  *         $ref: '#/components/responses/RateLimitExceeded'
  *     headers:
@@ -50,8 +66,14 @@ async function updateExistingUserSettings(discordId: string, update: UserSetting
  *       X-RateLimit-Reset:
  *         $ref: '#/components/headers/X-RateLimit-Reset'
  */
-router.get('/', async (_req, res) => {
-    const users = await getConfigManager().userManager.getAllPlain();
+router.get('/', async (req, res) => {
+    const userId = (req as AuthenticatedRequest).user?.discordId;
+    const manager = getConfigManager().userManager;
+    if (isServiceRequest(req) || isDashboardAdmin(userId)) {
+        return res.json(await manager.getAllPlain());
+    }
+    if (!userId) return sendLocalizedError(req, res, 401, 'UNAUTHORIZED', 'authenticationRequired');
+    const users = await manager.getManyPlain({ discordId: userId });
     res.json(users);
 });
 
@@ -70,10 +92,12 @@ router.get('/', async (_req, res) => {
  *     responses:
  *       200:
  *         description: User config
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res) => {
+router.get('/:discordId', validateParams(discordIdParamSchema), requireUserAccess, async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
     if (!user) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
@@ -101,8 +125,10 @@ router.get('/:discordId', validateParams(discordIdParamSchema), async (req, res)
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/', jwtAuth, validateBody(userCreateRequestSchema), async (req, res) => {
+router.post('/', jwtOrService, validateBody(userCreateRequestSchema), requireUserAccess, async (req, res) => {
     await getConfigManager().userManager.addPlain(req.body);
     res.status(201).json({ success: true });
 });
@@ -134,10 +160,12 @@ router.post('/', jwtAuth, validateBody(userCreateRequestSchema), async (req, res
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validateBody(userUpdateRequestSchema), async (req, res) => {
+router.put('/:discordId', jwtOrService, validateParams(discordIdParamSchema), validateBody(userUpdateRequestSchema), requireUserAccess, async (req, res) => {
     const { discordId } = req.params;
     const user = await getConfigManager().userManager.findByPkPlain(discordId as string);
     if (!user) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'userNotFound');
@@ -173,14 +201,17 @@ router.put('/:discordId', jwtAuth, validateParams(discordIdParamSchema), validat
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
 router.put(
     '/:discordId/timezone',
-    jwtAuth,
+    jwtOrService,
     validateParams(discordIdParamSchema),
     validateBody(userTimezoneUpdateRequestSchema),
+    requireUserAccess,
     async (req, res) => {
         const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timezone } = req.body as z.infer<typeof userTimezoneUpdateRequestSchema>;
@@ -217,14 +248,17 @@ router.put(
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
 router.put(
     '/:discordId/defaultReminderTimeSpan',
-    jwtAuth,
+    jwtOrService,
     validateParams(discordIdParamSchema),
     validateBody(userDefaultReminderTimeSpanUpdateRequestSchema),
+    requireUserAccess,
     async (req, res) => {
         const { discordId } = req.params as z.infer<typeof discordIdParamSchema>;
         const { timespan } = req.body as z.infer<typeof userDefaultReminderTimeSpanUpdateRequestSchema>;
@@ -253,8 +287,10 @@ router.put(
  *         description: Success
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
-router.delete('/:discordId', jwtAuth, validateParams(discordIdParamSchema), async (req, res) => {
+router.delete('/:discordId', jwtOrService, validateParams(discordIdParamSchema), requireUserAccess, async (req, res) => {
     const { discordId } = req.params;
     await getConfigManager().userManager.removeByPk(discordId as string);
     res.json({ success: true });

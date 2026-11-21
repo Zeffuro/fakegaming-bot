@@ -1,22 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { Op, type Transaction } from 'sequelize';
 import { CalendarConnection, CalendarSource } from '../models/calendar-connection.js';
+import { PersonalNotificationPause } from '../models/personal-notification-pause.js';
 import { PersonalSchedule, ScheduleNotification, ScheduleOccurrence, SchedulePreferences } from '../models/personal-schedule.js';
 import { serializedTransaction } from './serializedTransaction.js';
 import { followInQuietHours } from './userFollowManager.js';
 import { occurrenceRecord, type ScheduleRecord } from './scheduleShared.js';
 
 export class ScheduleNotificationManager {
-    async due(now = Date.now(), quietOnly = false): Promise<ScheduleRecord[]> {
-        const [enabledParents, activeSources, connections, preferences] = await Promise.all([
+    async due(now = Date.now(), scope: 'eligible' | 'quiet' | 'paused' = 'eligible'): Promise<ScheduleRecord[]> {
+        const [enabledParents, activeSources, connections, preferences, pauses] = await Promise.all([
             PersonalSchedule.findAll({ where: { enabled: true } }), CalendarSource.findAll({ where: { enabled: true } }),
             CalendarConnection.findAll({ where: { status: 'connected' } }), SchedulePreferences.findAll({ where: { quietStart: { [Op.ne]: null } } }),
+            PersonalNotificationPause.findAll({ where: { enabled: true, [Op.or]: [{ resumeAt: null }, { resumeAt: { [Op.gt]: now } }] }, attributes: ['userId'] }),
         ]);
         const connectedUsers = new Set(connections.map(connection => connection.userId));
         const activeSourceIds = new Set(activeSources.filter(source => connectedUsers.has(source.userId)).map(source => source.id));
         const quietUsers = new Set(preferences.filter(prefs => followInQuietHours({ timezone: prefs.timezone, quietStart: prefs.quietStart,
             quietEnd: prefs.quietEnd, digestAt: '09:00', lastDigestDate: null }, now)).map(prefs => prefs.userId));
-        const parents = enabledParents.filter(parent => (quietOnly ? quietUsers.has(parent.userId) : !quietUsers.has(parent.userId))
+        const pausedUsers = new Set(pauses.map(pause => pause.userId));
+        const parents = enabledParents.filter(parent => (scope === 'paused' ? pausedUsers.has(parent.userId)
+            : !pausedUsers.has(parent.userId) && quietUsers.has(parent.userId) === (scope === 'quiet'))
             && (parent.sourceId === null || activeSourceIds.has(parent.sourceId)));
         const sources = new Map(parents.map(row => [row.id, row.sourceId]));
         const rows = await ScheduleOccurrence.findAll({ where: { state: 'pending', cancelled: false, nextNotifyAt: { [Op.lte]: now },

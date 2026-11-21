@@ -3210,13 +3210,16 @@
     },
     "/users": {
       "get": {
-        "summary": "List all users",
+        "summary": "List users accessible to the caller",
         "tags": [
           "Users"
         ],
         "responses": {
           "200": {
-            "description": "List of users"
+            "description": "The caller's user record, or all user records for dashboard admins and internal services"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
           },
           "429": {
             "$ref": "#/components/responses/RateLimitExceeded"
@@ -3263,6 +3266,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3286,6 +3292,9 @@
         "responses": {
           "200": {
             "description": "User config"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3332,6 +3341,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           }
@@ -3363,6 +3375,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }
@@ -3407,6 +3422,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3454,6 +3472,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -5894,13 +5915,16 @@
     },
     "/servers": {
       "get": {
-        "summary": "List all servers",
+        "summary": "List servers accessible to the caller",
         "tags": [
           "Servers"
         ],
         "responses": {
           "200": {
-            "description": "List of servers"
+            "description": "Servers the caller can administer, or all servers for dashboard admins and internal services"
+          },
+          "503": {
+            "description": "Guild access is temporarily unavailable"
           }
         }
       },
@@ -5933,6 +5957,12 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "description": "Guild access is temporarily unavailable"
           }
         }
       }
@@ -5957,8 +5987,14 @@
           "200": {
             "description": "Server config"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "description": "Guild access is temporarily unavailable"
           }
         }
       },
@@ -6002,8 +6038,14 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "description": "Guild access is temporarily unavailable"
           }
         }
       },
@@ -6033,6 +6075,12 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "description": "Guild access is temporarily unavailable"
           }
         }
       }
@@ -6371,13 +6419,13 @@
     },
     "/reminders": {
       "get": {
-        "summary": "List all reminders",
+        "summary": "List reminders accessible to the caller",
         "tags": [
           "Reminders"
         ],
         "responses": {
           "200": {
-            "description": "List of reminders",
+            "description": "The caller's reminders, or all reminders for dashboard admins and internal services",
             "content": {
               "application/json": {
                 "schema": {
@@ -6420,6 +6468,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
@@ -7093,7 +7144,7 @@
     },
     "/personalToday/schedules/{id}": {
       "patch": {
-        "summary": "Complete or snooze an owner schedule occurrence with a version check",
+        "summary": "Mark done, log completion or snooze an owner schedule occurrence with a version check",
         "tags": [
           "PersonalToday"
         ],
@@ -7355,7 +7406,7 @@
         }
       },
       "post": {
-        "summary": "Upsert (add or update) a patch note",
+        "summary": "Upsert a patch note as a dashboard admin or internal service",
         "tags": [
           "PatchNotes"
         ],
@@ -7383,6 +7434,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           }
         }
       }

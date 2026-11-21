@@ -1,5 +1,5 @@
 import { CSRF_HEADER_NAME } from "@zeffuro/fakegaming-common/security";
-import { getBrowserCookie, redirectToLogin, refreshAuthSession } from "@/lib/auth/clientAuth";
+import { getBrowserCookie, redirectToLogin, refreshAuthSessionStatus } from "@/lib/auth/clientAuth";
 import { getDashboardLocale } from "@/lib/i18n/localeStore";
 import { formatDashboardMessage } from "@/lib/i18n/messages";
 
@@ -81,7 +81,7 @@ function getApiErrorMessage(errorData: unknown, status: number): string {
         || formatDashboardMessage(getDashboardLocale(), "error.requestFailed", { status });
 }
 
-export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+async function requestWithSession(endpoint: string, options: ApiOptions): Promise<Response> {
     const {
         method = "GET",
         body,
@@ -95,33 +95,23 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
         ...headers,
     };
 
-    if (isMutating(method) && !(CSRF_HEADER_NAME in mergedHeaders)) {
-        const csrf = getBrowserCookie("csrf");
-        if (csrf) {
-            mergedHeaders[CSRF_HEADER_NAME] = csrf;
+    const serialized = body ? JSON.stringify(body) : undefined;
+    const send = (retry: boolean) => {
+        const outgoingHeaders = { ...mergedHeaders };
+        if (isMutating(method)) {
+            const key = Object.keys(outgoingHeaders).find(name => name.toLowerCase() === CSRF_HEADER_NAME);
+            const csrf = getBrowserCookie("csrf");
+            if (csrf && (retry || !key)) outgoingHeaders[key ?? CSRF_HEADER_NAME] = csrf;
         }
-    }
-
-    const requestOptions: RequestInit = {
-        method,
-        credentials,
-        headers: mergedHeaders,
+        return fetchDashboardApi(endpoint, { method, credentials, headers: outgoingHeaders, body: serialized });
     };
-
-    if (body) {
-        requestOptions.body = JSON.stringify(body);
-    }
-
-    let response = await fetchDashboardApi(endpoint, requestOptions);
-
-    if (!response.ok && response.status === 401) {
-        const refreshed = await refreshAuthSession();
-        if (refreshed) {
-            response = await fetchDashboardApi(endpoint, requestOptions);
-        }
-        if (!response.ok) {
-            redirectToLogin();
-        }
+    let response = await send(false);
+    if (response.status === 401) {
+        const status = await refreshAuthSessionStatus();
+        if (status >= 200 && status < 300) response = await send(true);
+        else if (status === 0) throw new Error(formatDashboardMessage(getDashboardLocale(), "error.network"));
+        else if (status !== 401) throw new Error(getApiErrorMessage(null, status));
+        if (response.status === 401) redirectToLogin();
     }
 
     if (!response.ok) {
@@ -129,58 +119,16 @@ export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}):
         throw new Error(getApiErrorMessage(errorData, response.status));
     }
 
-    if (response.status === 204) return undefined as T;
+    return response;
+}
 
+export async function apiRequest<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+    const response = await requestWithSession(endpoint, options);
+    if (response.status === 204) return undefined as T;
     return await response.json();
 }
 
 export async function apiBinaryRequest(endpoint: string, options: ApiOptions = {}): Promise<Blob> {
-    const {
-        method = "GET",
-        body,
-        headers = {},
-        credentials = "include",
-    } = options;
-
-    const mergedHeaders: Record<string, string> = {
-        "Content-Type": "application/json",
-        "Accept-Language": getDashboardLocale(),
-        ...headers,
-    };
-
-    if (isMutating(method) && !(CSRF_HEADER_NAME in mergedHeaders)) {
-        const csrf = getBrowserCookie("csrf");
-        if (csrf) {
-            mergedHeaders[CSRF_HEADER_NAME] = csrf;
-        }
-    }
-
-    const requestOptions: RequestInit = {
-        method,
-        credentials,
-        headers: mergedHeaders,
-    };
-
-    if (body) {
-        requestOptions.body = JSON.stringify(body);
-    }
-
-    let response = await fetchDashboardApi(endpoint, requestOptions);
-
-    if (!response.ok && response.status === 401) {
-        const refreshed = await refreshAuthSession();
-        if (refreshed) {
-            response = await fetchDashboardApi(endpoint, requestOptions);
-        }
-        if (!response.ok) {
-            redirectToLogin();
-        }
-    }
-
-    if (!response.ok) {
-        const errorData: unknown = await response.json().catch(() => null);
-        throw new Error(getApiErrorMessage(errorData, response.status));
-    }
-
+    const response = await requestWithSession(endpoint, options);
     return await response.blob();
 }

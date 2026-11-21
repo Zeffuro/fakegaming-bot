@@ -21,6 +21,7 @@ const taskSchema = z.discriminatedUnion('action', [
     z.object({ action: z.literal('check'), version, index: z.number().int().min(0).max(9) }).strict(),
 ]);
 const scheduleSchema = z.discriminatedUnion('action', [
+    z.object({ action: z.literal('done'), version }).strict(),
     z.object({ action: z.literal('complete'), version }).strict(),
     z.object({ action: z.literal('snooze'), version, minutes }).strict(),
 ]);
@@ -67,7 +68,7 @@ async function safely(req: Request, res: Response, action: () => Promise<unknown
  *       200: { description: Updated private task }
  * /personalToday/schedules/{id}:
  *   patch:
- *     summary: Complete or snooze an owner schedule occurrence with a version check
+ *     summary: Mark done, log completion or snooze an owner schedule occurrence with a version check
  *     tags: [PersonalToday]
  *     security: [{ bearerAuth: [] }]
  *     parameters:
@@ -122,8 +123,9 @@ router.patch('/schedules/:id', validateParams(idSchema), validateBody(scheduleSc
     const { id } = req.params as z.infer<typeof idSchema>;
     const body = req.body as z.infer<typeof scheduleSchema>;
     const manager = getConfigManager().userScheduleManager;
+    if (body.action === 'done') return manager.acknowledge(id, owner(req), body.version);
     return body.action === 'complete' ? manager.complete(id, owner(req), body.version)
-        : manager.snooze(id, owner(req), body.version, Date.now() + body.minutes * 60_000, true);
+        : manager.snooze(id, owner(req), body.version, Date.now() + body.minutes * 60_000);
 }));
 router.patch('/sessions/:id', validateParams(idSchema), validateBody(sessionSchema), async (req, res) => safely(req, res, async () => {
     const { id } = req.params as z.infer<typeof idSchema>;

@@ -10,7 +10,8 @@ export function sanitizeReturnTo(input: unknown): string | null {
     if (trimmed.startsWith('//')) return null;
     if (trimmed.includes('://')) return null;
     if (trimmed.length > 2048) return null;
-    return trimmed;
+    const origin = 'https://return-to.invalid';
+    return new URL(trimmed, origin).origin === origin ? trimmed : null;
 }
 
 export type SanitizeReturn = string | null;

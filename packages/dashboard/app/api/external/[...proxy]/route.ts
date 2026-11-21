@@ -165,7 +165,7 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
             headers,
         };
 
-        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+        if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
             const bodyText = await req.text();
             if (bodyText.length > 0) {
                 options.body = bodyText;
@@ -175,14 +175,15 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
         const response = await fetch(url, options);
         const ms = Date.now() - started;
 
-        if (!response.ok) {
+        if (!response.ok && response.status !== 304) {
             const status = response.status;
+            const errorText = await response.text();
             let responseBody: unknown;
 
             try {
-                responseBody = await response.json();
+                responseBody = JSON.parse(errorText);
             } catch {
-                responseBody = await response.text();
+                responseBody = errorText;
             }
 
             const errorSummary = summarizeApiError(responseBody);
@@ -202,8 +203,8 @@ const proxyHandler = async (req: NextRequest, context: RouteContext) => {
 
         log.debug({ apiPath, status: response.status, ms, reqId }, 'Proxy response OK');
 
-        const responseBody = await response.arrayBuffer();
-        log.trace({ apiPath, responseBytes: responseBody.byteLength, reqId }, 'Proxy response body');
+        const responseBody = response.body === null ? null : await response.arrayBuffer();
+        log.trace({ apiPath, responseBytes: responseBody?.byteLength ?? 0, reqId }, 'Proxy response body');
 
         const contentType = response.headers.get('Content-Type') || 'application/json';
         const responseHeaders: Record<string, string> = {

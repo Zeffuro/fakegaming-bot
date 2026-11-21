@@ -50,3 +50,10 @@ backups/
 
 # Misc
 .devcontext
+.dev_docs/
+.codex/
+.codex-attachments/
+.codex-remote-attachments/
+AGENTS*.md
+AGENT.md
+.aiignore

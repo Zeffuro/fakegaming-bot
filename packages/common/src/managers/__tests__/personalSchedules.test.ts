@@ -47,6 +47,35 @@ describe('personal schedule history', () => {
         expect(await manager.setEnabled(first.scheduleId, 'owner', false)).toBe(true);
     });
 
+    it('dismisses only the current occurrence without creating a completion log', async () => {
+        const first = await create(8);
+        const before = await manager.list('owner', 'all', first.scheduleId);
+        await expect(manager.acknowledge(first.id, 'other', 0)).rejects.toMatchObject({ code: 'missing' });
+        const snoozed = await manager.snooze(first.id, 'owner', 0, now + 3_600_000);
+        await expect(manager.acknowledge(first.id, 'owner', 0)).rejects.toMatchObject({ code: 'stale' });
+        const done = await manager.acknowledge(first.id, 'owner', snoozed.version);
+        expect(done).toMatchObject({ state: 'completed', completedAt: null, plannedAt: first.plannedAt, nextNotifyAt: null });
+        expect(await manager.list('owner', 'completed')).toEqual([done]);
+        expect(await manager.summary('owner', first.scheduleId)).toMatchObject({ last: null, next: before[1] });
+        expect((await manager.list('owner', 'all', first.scheduleId)).slice(1)).toEqual(before.slice(1));
+        const reopened = await manager.undo(first.id, 'owner', done.version);
+        expect(reopened).toMatchObject({ state: 'pending', completedAt: null, nextNotifyAt: first.plannedAt });
+        const logged = await manager.complete(first.id, 'owner', reopened.version, now - 60_000);
+        await expect(manager.acknowledge(first.id, 'owner', logged.version)).rejects.toMatchObject({ code: 'stale' });
+        expect(await manager.get(first.id, 'owner')).toEqual(logged);
+    });
+
+    it('rejects snoozing or marking an unavailable occurrence done', async () => {
+        const item = await create();
+        await manager.setEnabled(item.scheduleId, 'owner', false);
+        await expect(manager.snooze(item.id, 'owner', 0, now + 120_000)).rejects.toMatchObject({ code: 'stale' });
+        await expect(manager.acknowledge(item.id, 'owner', 0)).rejects.toMatchObject({ code: 'stale' });
+        await manager.setEnabled(item.scheduleId, 'owner', true);
+        await ScheduleOccurrence.update({ cancelled: true }, { where: { id: item.id } });
+        await expect(manager.snooze(item.id, 'owner', 0, now + 120_000)).rejects.toMatchObject({ code: 'stale' });
+        await expect(manager.acknowledge(item.id, 'owner', 0)).rejects.toMatchObject({ code: 'stale' });
+    });
+
     it('retains unconfirmed history after the planned end and exports all owner records without credentials', async () => {
         const first = await manager.createManual({ userId: 'owner', title: '=FORMULA', plannedAt: now + 60_000, timezone: 'UTC', repeatWeeks: 8 });
         await create(null, 'other');

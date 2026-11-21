@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
-import { signTestJwt, expectForbidden, expectOk, expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
+import { signTestJwt, expectForbidden, expectNoContent, expectOk, expectServiceUnavailable, expectUnauthorized } from '@zeffuro/fakegaming-common/testing';
 
 const OLD_ENV = { ...process.env };
 
@@ -39,6 +39,7 @@ function makeReq(opts: { method: string; jwt?: string; csrf?: string; headerCsrf
 describe('external proxy route CSRF', () => {
     let GET: any;
     let POST: any;
+    let DELETE: any;
     let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(async () => {
@@ -56,7 +57,7 @@ describe('external proxy route CSRF', () => {
             return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
         });
         vi.stubGlobal('fetch', fetchMock);
-        ({ GET, POST } = await import('../../../app/api/external/[...proxy]/route.js'));
+        ({ GET, POST, DELETE } = await import('../../../app/api/external/[...proxy]/route.js'));
     });
 
     afterEach(() => {
@@ -157,6 +158,39 @@ describe('external proxy route CSRF', () => {
         );
         const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
         expect(init.body).toBeUndefined();
+    });
+
+    it('forwards the expected version when deleting a checklist template', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        const res = await DELETE(
+            makeReq({ method: 'DELETE', jwt, csrf: 'token', headerCsrf: 'token', body: { version: 3 } }),
+            { params: Promise.resolve({ proxy: ['userChecklistTemplates', 'item'] }) }
+        );
+
+        expectOk(res);
+        expect(fetchMock).toHaveBeenCalledWith('http://api.local/userChecklistTemplates/item',
+            expect.objectContaining({ method: 'DELETE', body: JSON.stringify({ version: 3 }) }));
+    });
+
+    it('returns an empty 204 after deleting a role permission snapshot', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+        const res = await DELETE(
+            makeReq({ method: 'DELETE', jwt, csrf: 'token', headerCsrf: 'token' }),
+            { params: Promise.resolve({ proxy: ['rolePermissionSnapshots', '1'] }) }
+        );
+
+        expectNoContent(res);
+        expect(res.body).toBeNull();
+    });
+
+    it('preserves the status and message for a non-JSON upstream failure', async () => {
+        const jwt = signTestJwt({ discordId: '2' }, 'supersecret');
+        fetchMock.mockResolvedValueOnce(new Response('Temporarily unavailable', { status: 503 }));
+        const res = await GET(makeReq({ method: 'GET', jwt }), { params: Promise.resolve({ proxy: ['userNotes'] }) });
+
+        expectServiceUnavailable(res);
+        expect(await res.json()).toBe('Temporarily unavailable');
     });
 
     it('forwards service-authenticated dashboard admin assertions for admin endpoints', async () => {

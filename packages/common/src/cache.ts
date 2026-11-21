@@ -78,6 +78,12 @@ export async function ensureRedis(config?: string | CacheConfig): Promise<void> 
   }
 }
 
+export async function requireRedis(): Promise<Redis> {
+  await ensureRedis();
+  if (redis?.status !== 'ready') throw new Error('Redis unavailable');
+  return redis;
+}
+
 export async function cacheGet<T>(key: string): Promise<T | null> {
   await ensureRedis();
   if (!redisReady) return null;

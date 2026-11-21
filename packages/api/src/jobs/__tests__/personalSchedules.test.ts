@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TestJobQueue, runJobHandler } from '@zeffuro/fakegaming-common/testing';
-import { PersonalSchedule, ScheduleOccurrence, ScheduleNotification, SchedulePreferences, CalendarSource, CalendarConnection, PersonalNotificationHistory } from '@zeffuro/fakegaming-common/models';
+import { PersonalSchedule, ScheduleOccurrence, ScheduleNotification, SchedulePreferences, CalendarSource, CalendarConnection, PersonalNotificationHistory, PersonalNotificationPause } from '@zeffuro/fakegaming-common/models';
 import { UserScheduleManager, ScheduleNotificationManager } from '@zeffuro/fakegaming-common/managers';
 import { configManager } from '../../vitest.setup.js';
 const mocks = vi.hoisted(() => ({ send: vi.fn(), edit: vi.fn(), status: vi.fn(), locale: vi.fn() }));
@@ -12,6 +12,7 @@ import { processPersonalSchedules, registerPersonalScheduleJobs, schedulePayload
 const manager = new UserScheduleManager();
 beforeEach(async () => {
     await PersonalNotificationHistory.destroy({ where: {} });
+    await PersonalNotificationPause.destroy({ where: {} });
     await ScheduleNotification.destroy({ where: {} }); await ScheduleOccurrence.destroy({ where: {} });
     await PersonalSchedule.destroy({ where: {} }); await SchedulePreferences.destroy({ where: {} });
     await CalendarSource.destroy({ where: {} }); await CalendarConnection.destroy({ where: {} });
@@ -48,10 +49,11 @@ describe('private schedule jobs', () => {
             expect.objectContaining({ status: 'sent', title: eligible.title }),
         ]));
     });
-    it('sends eligible users even when more than 100 older quiet occurrences await observation', async () => {
+    it.each(['quietHours', 'paused'])('sends eligible users when more than 100 older occurrences are delayed by %s', async reason => {
         const now = Date.now(); const quiet = await due();
         const original = (await ScheduleOccurrence.findByPk(quiet.id))!.get({ plain: true });
-        await SchedulePreferences.create({ userId: quiet.userId, timezone: 'UTC', quietStart: '00:00', quietEnd: '00:00', followupMinutes: 0, maxFollowups: 0 });
+        if (reason === 'paused') await PersonalNotificationPause.create({ userId: quiet.userId, enabled: true, resumeAt: null });
+        else await SchedulePreferences.create({ userId: quiet.userId, timezone: 'UTC', quietStart: '00:00', quietEnd: '00:00', followupMinutes: 0, maxFollowups: 0 });
         await ScheduleOccurrence.bulkCreate(Array.from({ length: 101 }, (_, index) => ({ ...original, id: `quiet-${index}`,
             externalKey: `quiet-${index}`, nextNotifyAt: now - 60_000 })));
         const eligible = await manager.createManual({ userId: 'eligible-owner', title: 'Eligible', plannedAt: now + 60_000, timezone: 'UTC' });
@@ -60,6 +62,7 @@ describe('private schedule jobs', () => {
         expect(mocks.send).toHaveBeenCalledWith('eligible-owner', expect.anything());
         expect(mocks.send).toHaveBeenCalledOnce();
         expect((await configManager.personalNotificationHistoryManager.list(quiet.userId, { status: 'delayed', limit: 100 })).total).toBe(100);
+        expect((await configManager.personalNotificationHistoryManager.list(quiet.userId)).items[0]).toMatchObject({ reason });
         expect((await configManager.personalNotificationHistoryManager.list(eligible.userId)).items[0]).toMatchObject({ status: 'sent', title: 'Eligible' });
     });
     it('delivers once with saved user locale, durable private controls, and persists unconfirmed state after event time', async () => {
@@ -67,13 +70,27 @@ describe('private schedule jobs', () => {
         const result = await processPersonalSchedules();
         expect(result).toEqual({ sent: 1, edited: 0, errors: 0 });
         const payload = mocks.send.mock.calls[0]?.[1] as { content: string; allowed_mentions: unknown; components: Array<{ components: Array<{ custom_id: string }> }> };
-        expect(payload.content).toContain('Wacht op jouw bevestiging');
+        expect(payload.content).toContain('Gepland:');
         expect(payload.allowed_mentions).toEqual({ parse: [] });
-        expect(payload.components[0]?.components.map(button => button.custom_id)).toEqual([`schedule:d:${item.id}:0`, `schedule:t:${item.id}:0`, `schedule:s:${item.id}:0`]);
+        expect(payload.components[0]?.components.map(button => button.custom_id)).toEqual([`schedule:a:${item.id}:0`, `schedule:s:${item.id}:0`]);
+        expect(payload.components[1]?.components[0]?.custom_id).toBe(`schedule:t:${item.id}:0`);
         await processPersonalSchedules(Date.now() + 86_400_000);
         expect(mocks.send).toHaveBeenCalledOnce();
         expect((await manager.get(item.id, item.userId))?.state).toBe('pending');
         expect((await ScheduleNotification.findOne())).toMatchObject({ status: 'sent', messageId: '123', channelId: '456' });
+    });
+
+    it('edits an appointment card after Done and suppresses configured follow-ups', async () => {
+        const item = await due();
+        await manager.configure(item.userId, { timezone: 'UTC', quietStart: null, quietEnd: null, followupMinutes: 15, maxFollowups: 2 });
+        expect((await processPersonalSchedules()).sent).toBe(1);
+        expect((await manager.get(item.id, item.userId))?.nextNotifyAt).not.toBeNull();
+        await manager.acknowledge(item.id, item.userId, item.version);
+        expect(await processPersonalSchedules(Date.now() + 16 * 60_000)).toEqual({ sent: 0, edited: 1, errors: 0 });
+        const card = mocks.edit.mock.calls[0]?.[2];
+        expect(card.content).toContain('\nKlaar');
+        expect(card.content).not.toContain('Voltooid:');
+        expect(JSON.stringify(card.components)).not.toContain(`schedule:t:${item.id}`);
     });
 
     it('refreshes an in-flight completion, keeps its history after message deletion and never sends another reminder', async () => {
@@ -149,8 +166,9 @@ describe('private schedule jobs', () => {
             const payload = schedulePayload({ ...item, allDay: true, cancelled: true, state: 'completed', completedAt: Date.now(), note: 'Note' }, locale);
             expect(payload.content).toContain('Note');
             const rows = payload.components as Array<{ components: Array<{ custom_id: string }> }>;
-            expect(rows[0]?.components.map(button => button.custom_id)).toEqual([`schedule:u:${item.id}:0`, `schedule:t:${item.id}:0`]);
-            expect(JSON.stringify(schedulePayload({ ...item, cancelled: true }, locale))).not.toContain(`schedule:d:${item.id}`);
+            expect(rows[0]?.components.map(button => button.custom_id)).toEqual([`schedule:u:${item.id}:0`]);
+            expect(rows[1]?.components[0]?.custom_id).toBe(`schedule:t:${item.id}:0`);
+            expect(JSON.stringify(schedulePayload({ ...item, cancelled: true }, locale))).not.toContain(`schedule:a:${item.id}`);
         }
     });
 

@@ -1,6 +1,7 @@
 import { createBaseRouter } from '../utils/createBaseRouter.js';
 import { getConfigManager } from '@zeffuro/fakegaming-common/managers';
-import { jwtAuth } from '../middleware/auth.js';
+import { jwtOrService } from '../middleware/auth.js';
+import { checkUserGuildAccess, filterGuildScopedRecordsForRequest } from '../utils/authHelpers.js';
 import { validateParams, validateBody } from '../localization/validation.js';
 import { serverCreateRequestSchema, serverUpdateRequestSchema } from '@zeffuro/fakegaming-common/api';
 import { z } from 'zod';
@@ -16,15 +17,19 @@ const router = createBaseRouter();
  * @openapi
  * /servers:
  *   get:
- *     summary: List all servers
+ *     summary: List servers accessible to the caller
  *     tags: [Servers]
  *     responses:
  *       200:
- *         description: List of servers
+ *         description: Servers the caller can administer, or all servers for dashboard admins and internal services
+ *       503:
+ *         description: Guild access is temporarily unavailable
  */
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
     const servers = await getConfigManager().serverManager.getAllPlain();
-    res.json(servers);
+    const records = servers.map(server => ({ guildId: server.serverId, server }));
+    const visibleRecords = await filterGuildScopedRecordsForRequest(req, res, records, undefined);
+    if (visibleRecords) res.json(visibleRecords.map(({ server }) => server));
 });
 
 /**
@@ -42,12 +47,18 @@ router.get('/', async (_req, res) => {
  *     responses:
  *       200:
  *         description: Server config
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       503:
+ *         description: Guild access is temporarily unavailable
  */
 router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) => {
-    const { serverId } = req.params;
-    const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
+    const { serverId } = req.params as z.infer<typeof serverIdParamSchema>;
+    if (!(await checkUserGuildAccess(req, res, serverId)).authorized) return;
+
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
     if (!server) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'serverNotFound');
     res.json(server);
 });
@@ -73,8 +84,14 @@ router.get('/:serverId', validateParams(serverIdParamSchema), async (req, res) =
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       503:
+ *         description: Guild access is temporarily unavailable
  */
-router.post('/', jwtAuth, validateBody(serverCreateRequestSchema), async (req, res) => {
+router.post('/', jwtOrService, validateBody(serverCreateRequestSchema), async (req, res) => {
+    if (!(await checkUserGuildAccess(req, res, req.body.serverId)).authorized) return;
+
     const created = await getConfigManager().serverManager.addPlain(req.body);
     res.status(201).json(created);
 });
@@ -106,15 +123,21 @@ router.post('/', jwtAuth, validateBody(serverCreateRequestSchema), async (req, r
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       503:
+ *         description: Guild access is temporarily unavailable
  */
-router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateBody(serverUpdateRequestSchema), async (req, res) => {
-    const { serverId } = req.params;
-    const server = await getConfigManager().serverManager.findByPkPlain(serverId as string);
+router.put('/:serverId', jwtOrService, validateParams(serverIdParamSchema), validateBody(serverUpdateRequestSchema), async (req, res) => {
+    const { serverId } = req.params as z.infer<typeof serverIdParamSchema>;
+    if (!(await checkUserGuildAccess(req, res, serverId)).authorized) return;
+
+    const server = await getConfigManager().serverManager.findByPkPlain(serverId);
     if (!server) return sendLocalizedError(req, res, 404, 'NOT_FOUND', 'serverNotFound');
-    await getConfigManager().serverManager.updatePlain(req.body, { serverId: serverId as string });
-    const updated = await getConfigManager().serverManager.findByPkPlain(serverId as string);
+    await getConfigManager().serverManager.updatePlain(req.body, { serverId });
+    const updated = await getConfigManager().serverManager.findByPkPlain(serverId);
     res.json(updated);
 });
 
@@ -137,10 +160,16 @@ router.put('/:serverId', jwtAuth, validateParams(serverIdParamSchema), validateB
  *         description: Success
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       503:
+ *         description: Guild access is temporarily unavailable
  */
-router.delete('/:serverId', jwtAuth, validateParams(serverIdParamSchema), async (req, res) => {
-    const { serverId } = req.params;
-    await getConfigManager().serverManager.removeByPk(serverId as string);
+router.delete('/:serverId', jwtOrService, validateParams(serverIdParamSchema), async (req, res) => {
+    const { serverId } = req.params as z.infer<typeof serverIdParamSchema>;
+    if (!(await checkUserGuildAccess(req, res, serverId)).authorized) return;
+
+    await getConfigManager().serverManager.removeByPk(serverId);
     res.json({ success: true });
 });
 

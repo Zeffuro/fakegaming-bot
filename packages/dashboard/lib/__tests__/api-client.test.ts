@@ -1,9 +1,52 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { api, API_ENDPOINTS } from '@/lib/api-client';
+import { apiBinaryRequest, apiRequest } from '@/lib/api/core';
+import * as clientAuth from '@/lib/auth/clientAuth';
 import { withFetchMock } from '@zeffuro/fakegaming-common/testing';
 import { setDashboardLocale } from '@/lib/i18n/localeStore';
 
 const { mockOkJsonOnce, mockErrorJsonOnce, expectFetchCalledWith, getFetchMock } = withFetchMock();
+
+describe('session refresh retries', () => {
+    afterEach(() => { document.cookie = 'csrf=; Max-Age=0; Path=/'; });
+
+    it.each(['json', 'binary'])('uses the rotated CSRF cookie when retrying a %s mutation', async kind => {
+        const redirect = vi.spyOn(clientAuth, 'redirectToLogin').mockImplementation(() => undefined);
+        document.cookie = 'csrf=first; Path=/';
+        mockErrorJsonOnce(401);
+        getFetchMock().mockImplementationOnce(async () => {
+            document.cookie = 'csrf=second; Path=/';
+            return new Response(null, { status: 200 });
+        });
+        getFetchMock().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })));
+        const request = kind === 'json' ? apiRequest : apiBinaryRequest;
+        await request('/test', { method: 'PATCH', body: { version: 1 }, headers: { 'X-CSRF-Token': 'first' } });
+        const calls = getFetchMock().mock.calls;
+        expect(calls[1][0]).toBe('/api/auth/refresh');
+        expect(new Headers(calls[0][1]?.headers).get('x-csrf-token')).toBe('first');
+        expect(new Headers(calls[2][1]?.headers).get('x-csrf-token')).toBe('second');
+        expect(calls[2][1]?.body).toBe(calls[0][1]?.body);
+        expect(redirect).not.toHaveBeenCalled();
+    });
+
+    it.each([401, 503])('redirects only if the refresh status is unauthorized (%s)', async status => {
+        const redirect = vi.spyOn(clientAuth, 'redirectToLogin').mockImplementation(() => undefined);
+        mockErrorJsonOnce(401, { error: 'Not authenticated' });
+        mockErrorJsonOnce(status);
+        await expect(apiRequest('/test')).rejects.toThrow(status === 401 ? 'Not authenticated' : '503');
+        expect(redirect).toHaveBeenCalledTimes(status === 401 ? 1 : 0);
+        expect(getFetchMock()).toHaveBeenCalledTimes(2);
+    });
+
+    it('surfaces an upstream error after a successful refresh', async () => {
+        const redirect = vi.spyOn(clientAuth, 'redirectToLogin').mockImplementation(() => undefined);
+        mockErrorJsonOnce(401);
+        mockOkJsonOnce({ refreshed: true });
+        mockErrorJsonOnce(403, { error: 'Forbidden' });
+        await expect(apiBinaryRequest('/test')).rejects.toThrow('Forbidden');
+        expect(redirect).not.toHaveBeenCalled();
+    });
+});
 
 describe('api-client', () => {
     it('sends the active dashboard locale to the API', async () => {
