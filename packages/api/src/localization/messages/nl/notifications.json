@@ -1,6 +1,7 @@
 {
   "twitchClipReplyCreated": "@{user} Clip gemaakt! {url}",
   "twitchClipReplyOffline": "@{user} Ik kan alleen clips maken als de streamer live is.",
+  "twitchClipReplyUnavailable": "@{user} Twitch heeft je aanvraag geaccepteerd, maar de clip is helaas niet beschikbaar.",
   "twitchClipReplyFailed": "@{user} Twitch kon deze clip niet maken. Controleer of clips zijn ingeschakeld en de bot clips mag maken.",
   "tiktokViewers": "Kijkers",
   "tiktokUptime": "Livestreamduur",

@@ -234,6 +234,9 @@ describe('Twitch command clip pipeline', () => {
         await TwitchClipRequest.update({ clipAcceptedAt: new Date(Date.now() - 61_000) }, { where: { id: 'command-id' } });
         await test.processor.deliver('command-id');
         expect((await TwitchClipRequest.findByPk('command-id'))?.errorCode).toBe('clip_not_created');
+        expect(sendTwitchClipChatMessage).toHaveBeenCalledExactlyOnceWith(
+            '123', 'command-id', '@@everyoneViewer Twitch accepted the clip request, but the clip never became available.', expect.anything(),
+        );
         await TwitchClipCooldown.update({ availableAt: new Date(0) }, { where: { broadcasterId: '123' } });
         await test.processor.receive({ ...message, message_id: 'other-command' });
         await config.destroy();

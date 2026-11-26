@@ -50,6 +50,10 @@ describe('Twitch clip chat replies', () => {
         expect(buildTwitchClipReply({ ...config, replyTemplate: '  ' }, 'Viewer', { url }, 'nl')).toContain('Clip gemaakt!');
         expect(buildTwitchClipReply(config, 'Viewer', { errorCode: 'twitch_http_404' }, 'nl')).toContain('streamer live is');
         expect(buildTwitchClipReply(config, 'Viewer', { errorCode: 'twitch_http_403' }, 'en')).toContain('clips are enabled');
+        expect(buildTwitchClipReply(config, 'Viewer', { errorCode: 'clip_not_created' }, 'en'))
+            .toBe('@Viewer Twitch accepted the clip request, but the clip never became available.');
+        expect(buildTwitchClipReply(config, 'Viewer', { errorCode: 'clip_not_created' }, 'nl'))
+            .toBe('@Viewer Twitch heeft je aanvraag geaccepteerd, maar de clip is helaas niet beschikbaar.');
     });
 
     it('falls back to a complete URL when template expansion exceeds the chat limit', () => {

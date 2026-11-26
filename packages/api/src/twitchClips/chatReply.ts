@@ -19,6 +19,7 @@ export function buildTwitchClipReply(
         return code >= 32 && code !== 127;
     }).slice(0, 25).join('');
     if ('errorCode' in outcome) {
+        if (outcome.errorCode === 'clip_not_created') return apiText(locale, 'twitchClipReplyUnavailable', { user });
         const key = outcome.errorCode === 'twitch_http_404' ? 'twitchClipReplyOffline' : 'twitchClipReplyFailed';
         return apiText(locale, key, { user });
     }
