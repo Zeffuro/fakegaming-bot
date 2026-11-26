@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserTask } from '../../models/personal-productivity.js';
 import { UserConfig } from '../../models/user-config.js';
 import { ReminderConfig } from '../../models/reminder-config.js';
@@ -16,7 +16,9 @@ beforeEach(async () => {
     await ReminderConfig.destroy({ where: {} });
     await UserTask.destroy({ where: {} });
     await UserConfig.upsert({ discordId: input.userId, timezone: input.timezone });
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe('undo task completion', () => {
     it('restores exact checklist progress and a fresh reminder after restart, once only', async () => {

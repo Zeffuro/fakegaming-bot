@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserTask } from '../../models/personal-productivity.js';
 import { ReminderConfig } from '../../models/reminder-config.js';
 import { ReminderDelivery } from '../../models/reminder-interaction.js';
@@ -15,7 +15,9 @@ beforeEach(async () => {
     await ReminderConfig.destroy({ where: {} });
     await UserTask.destroy({ where: {} });
     await UserConfig.upsert({ discordId: 'owner', timezone: input.timezone });
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe('private tasks', () => {
     it('rechecks saved timezone after a queued settings change and rolls back external task creation', async () => {
